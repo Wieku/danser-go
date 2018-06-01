@@ -7,6 +7,11 @@ import (
 	"strings"
 	"log"
 	"danser/audio"
+	"github.com/go-gl/mathgl/mgl32"
+	"danser/render"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"danser/settings"
+	"github.com/faiface/glhf"
 )
 
 type Slider struct {
@@ -24,6 +29,7 @@ type Slider struct {
 	divides 	int
 	LasTTI int64
 	End bool
+	vao *glhf.VertexSlice
 }
 
 func NewSlider(data []string) *Slider {
@@ -136,7 +142,7 @@ func (self *Slider) GetCurve() []m2.Vector2d {
 	return points
 }
 
-func (self *Slider) Update(time int64) bool {
+func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 	//TODO: CLEAN THIS
 	if time < self.endTime() {
 		sliderTime := self.Timings.GetSliderTime(self.pixelLength)
@@ -166,7 +172,7 @@ func (self *Slider) Update(time int64) bool {
 			pos = self.multiCurve.PointAt((1.0 - ttime/self.partLen)*rt)
 		}
 		self.Pos = pos
-		//cursor.SetPos(pos.Add(self.objData.StackOffset))
+		cursor.SetPos(pos.Add(self.objData.StackOffset))
 		//io.MouseMoveVec(pos.Add(self.objData.StackOffset))
 
 		if !self.clicked {
@@ -192,4 +198,102 @@ func (self *Slider) Update(time int64) bool {
 	//io.MouseUnClick(io.LEFT)
 
 	return true
+}
+
+func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
+	self.vao, self.divides = renderer.GetShape(self.GetCurve())
+}
+
+func (self *Slider) Render(time int64, preempt float64) {
+	in := 0
+	out := int(self.pixelLength/2)
+
+	if time < self.objData.StartTime-int64(preempt)/2 {
+		alpha := float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+		out = int(float64(out)*alpha)
+	} else if time >= self.objData.StartTime && time <= self.objData.EndTime {
+		times := int64(float64(time - self.objData.StartTime) / self.partLen) + 1
+		if times == self.repeat {
+			ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * self.partLen
+			alpha := 0.0
+			if (times%2) == 1 {
+				alpha = ttime/self.partLen
+				in = int(float64(out)*alpha)
+			} else {
+				alpha = 1.0-ttime/self.partLen
+				out = int(float64(out)*alpha)
+			}
+		}
+	} else if time > self.objData.EndTime {
+		in = out
+	}
+
+	if self.LasTTI > time {
+		log.Println("WHAAAAAAT")
+	}
+
+	self.LasTTI = time
+
+	if time <= self.objData.EndTime && !self.End{
+		subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
+		subVao.Begin()
+		subVao.Draw()
+		subVao.End()
+	}
+}
+
+func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+
+	gl.ActiveTexture(gl.TEXTURE0)
+	if settings.DIVIDES > 2 {
+		render.CircleFull.Begin()
+	} else {
+		render.Circle.Begin()
+	}
+	gl.ActiveTexture(gl.TEXTURE1)
+	render.CircleOverlay.Begin()
+	gl.ActiveTexture(gl.TEXTURE2)
+	render.SliderBall.Begin()
+
+	alpha := 1.0
+
+	if time < self.objData.StartTime-int64(preempt)/2 {
+		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+	} else if time >= self.objData.EndTime {
+		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
+	} else {
+		alpha = float64(color[3])
+	}
+
+	if settings.DIVIDES > 2 {
+		alpha *= 0.2
+	}
+
+	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+
+	if settings.DIVIDES <= 2 {
+		if time < self.objData.StartTime {
+			batch.SetTranslation(self.objData.StartPos)
+
+			batch.DrawUnitR(0)
+			batch.SetColor(1, 1, 1, alpha)
+			batch.DrawUnitR(1)
+		} else if time < self.objData.EndTime {
+			batch.SetTranslation(self.Pos)
+			batch.DrawUnitR(2)
+		}
+	} else {
+		if time < self.objData.StartTime {
+			batch.SetTranslation(self.objData.StartPos)
+			batch.DrawUnitR(0)
+		} else if time < self.objData.EndTime {
+			batch.SetTranslation(self.Pos)
+			batch.DrawUnitR(0)
+		}
+	}
+
+	if time >= self.objData.EndTime+int64(preempt/4) {
+		return true
+	}
+	return false
 }

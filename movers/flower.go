@@ -6,6 +6,7 @@ import (
 	//"osubot/io"
 	"danser/beatmap/objects"
 	"math"
+	"danser/render"
 )
 
 const (
@@ -92,7 +93,7 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 	bm.beginTime = startTime
 }
 
-func (bm FlowerBezierMover) Update(time int64/*, cursor *render.Cursor*/) {
-	//cursor.SetPos(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
+func (bm FlowerBezierMover) Update(time int64, cursor *render.Cursor) {
+	cursor.SetPos(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 	//io.MouseMoveVec(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 }

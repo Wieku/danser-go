@@ -3,6 +3,7 @@ package beatmap
 import (
 	"danser/beatmap/objects"
 	"danser/movers"
+	"danser/render"
 )
 
 type BeatMap struct {
@@ -31,18 +32,18 @@ func (b *BeatMap) Reset() {
 	//b.movers[MoverId].SetObjects(objects.DummyCircle(bmath.NewVec2d(100, 100), 0), b.Queue[0])
 }
 
-func (b *BeatMap) Update(time int64/*, cursor *render.Cursor*/) {
+func (b *BeatMap) Update(time int64, cursor *render.Cursor) {
 	b.timings.Update(time)
 	if len(b.Queue) > 0 {
 		if p := b.Queue[0]; p.GetBasicData().StartTime <= time {
-			if isDone := p.Update(time/*, cursor*/); isDone {
+			if isDone := p.Update(time, cursor); isDone {
 				b.Queue = b.Queue[1:]
 				if len(b.Queue) > 0 {
-					//b.movers[MoverId].SetObjects(p, b.Queue[0])
+					b.movers[MoverId].SetObjects(p, b.Queue[0])
 				}
 			}
 		} else {
-			//b.movers[MoverId].Update(time/*, cursor*/)
+			b.movers[MoverId].Update(time, cursor)
 		}
 	}
 }

@@ -3,11 +3,12 @@ package objects
 import (
 	om "danser/bmath"
 	"strconv"
+	"danser/render"
 )
 
 type BaseObject interface {
 	GetBasicData() *basicData
-	Update(time int64/*, cursor *render.Cursor*/) bool
+	Update(time int64, cursor *render.Cursor) bool
 }
 
 type basicData struct {

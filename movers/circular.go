@@ -5,6 +5,7 @@ import (
 	//"osubot/io"
 	"danser/beatmap/objects"
 	"math"
+	"danser/render"
 )
 
 const INVERTABLE = false
@@ -45,7 +46,7 @@ func (bm *CircularMover) SetObjects(end, start objects.BaseObject) {
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
 
-func (bm CircularMover) Update(time int64/*, cursor *render.Cursor*/) {
-	//cursor.SetPos(bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
+func (bm CircularMover) Update(time int64, cursor *render.Cursor) {
+	cursor.SetPos(bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 	//io.MouseMoveVec(bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 }

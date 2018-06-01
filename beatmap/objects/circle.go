@@ -5,6 +5,10 @@ import (
 	"danser/audio"
 	"strconv"
 	"strings"
+	"github.com/go-gl/mathgl/mgl32"
+	"danser/render"
+	"danser/settings"
+	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
 type Circle struct {
@@ -43,9 +47,9 @@ func (self Circle) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self *Circle) Update(time int64) bool {
+func (self *Circle) Update(time int64, cursor *render.Cursor) bool {
 
-	//cursor.SetPos(self.objData.StartPos)
+	cursor.SetPos(self.objData.StartPos)
 	if self.ownSampleSet == 0 {
 		audio.PlaySample(self.Timings.Current.SampleSet, self.sample)
 	} else {
@@ -57,4 +61,45 @@ func (self *Circle) Update(time int64) bool {
 
 func (self *Circle) SetTiming(timings *Timings) {
 	self.Timings = timings
+}
+
+func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+	gl.ActiveTexture(gl.TEXTURE0)
+	if settings.DIVIDES > 2 {
+		render.CircleFull.Begin()
+	} else {
+		render.Circle.Begin()
+	}
+
+	gl.ActiveTexture(gl.TEXTURE1)
+	render.CircleOverlay.Begin()
+
+	alpha := 1.0
+
+	if time < self.objData.StartTime-int64(preempt)/2 {
+		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+	} else if time >= self.objData.StartTime {
+		alpha = 1.0-float64(time - self.objData.StartTime)/(preempt/4)
+	} else {
+		alpha = float64(color[3])
+	}
+
+	if settings.DIVIDES > 2 {
+		alpha *= 0.2
+	}
+
+	batch.SetTranslation(self.objData.StartPos)
+
+	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+
+	batch.DrawUnitR(0)
+	if settings.DIVIDES <= 2 {
+		batch.SetColor(1, 1, 1, alpha)
+		batch.DrawUnitR(1)
+	}
+
+	if time >= self.objData.StartTime+int64(preempt/4) {
+		return true
+	}
+	return false
 }

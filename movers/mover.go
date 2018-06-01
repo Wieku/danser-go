@@ -4,12 +4,13 @@ import (
 	math2 "danser/bmath"
 	"danser/beatmap/objects"
 	"math"
+	"danser/render"
 )
 
 type Mover interface {
 	Reset()
 	SetObjects(end, start objects.BaseObject)
-	Update(time int64/*, cursor *render.Cursor*/)
+	Update(time int64, cursor *render.Cursor)
 }
 
 func getMPoint(l1, l2, p math2.Vector2d) math2.Vector2d {

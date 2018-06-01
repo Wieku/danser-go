@@ -3,6 +3,7 @@ package objects
 import (
 	"strconv"
 	"danser/bmath"
+	"danser/render"
 )
 
 type Pause struct {
@@ -23,9 +24,9 @@ func (self Pause) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self *Pause) Update(time int64/*, cursor *render.Cursor*/) bool {
+func (self *Pause) Update(time int64, cursor *render.Cursor) bool {
 
-	//cursor.SetPos(self.objData.StartPos)
+	cursor.SetPos(self.objData.StartPos)
 	//io.MouseMoveVec(self.objData.StartPos)
 
 	return time >= self.objData.EndTime

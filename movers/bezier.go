@@ -7,6 +7,7 @@ import (
 	"danser/beatmap/objects"
 	"math"
 	/*"danser/render"*/
+	"danser/render"
 )
 
 const (
@@ -117,7 +118,7 @@ func (bm *BezierMover) SetObjects(end, start objects.BaseObject) {
 	bm.previousSpeed = (dst+1.0) / float64(startTime-endTime) * BEZIER_AGGRESSIVENESS * sliderMult(end, start)
 }
 
-func (bm BezierMover) Update(time int64/*, cursor *render.Cursor*/) {
-	//cursor.SetPos(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
+func (bm BezierMover) Update(time int64, cursor *render.Cursor) {
+	cursor.SetPos(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 	//io.MouseMoveVec(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 }
