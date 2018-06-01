@@ -1,7 +1,5 @@
 package audio
 /*
-#cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -L${SRCDIR}/../ -L/usr/lib -Wl,-rpath=\$ORIGIN -lbass
 #include "bass.h"
  */
 import "C"

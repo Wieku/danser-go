@@ -1,38 +1,53 @@
 package main
 
-
-
 import (
-	/*"log"
-	"os"
-	"unsafe"
-	"sync"*/
 	"danser/audio"
-	"time"
-	"log"
-	"os"
 	"sync"
+	"danser/beatmap"
+	"time"
+	"flag"
+	"log"
 )
 
 func main() {
 
 	audio.Init()
-
-	file := os.Getenv("localappdata") + "\\osu!\\Songs\\342773 TheFatRat - Windfall\\TheFatRat - Windfall.mp3"
-	log.Println(file)
-	player := audio.NewMusic(file)
+	audio.LoadSamples()
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
 
-	player.RegisterCallback(func() {
-		log.Println("end!")
-		wg.Done()
-	})
+	beatmaps := beatmap.LoadBeatmaps()
 
-	player.Play()
+	artist := flag.String("artist", "", "")
+	title := flag.String("title", "", "")
+	difficulty := flag.String("difficulty", "", "")
 
-	log.Println(player.GetLength())
+	flag.Parse()
+
+	for _, bMap := range beatmaps {
+		if (*artist == "" || *artist == bMap.Artist) && (*title == "" || *title == bMap.Name) && (*difficulty == "" || *difficulty == bMap.Difficulty) {
+			wg.Add(1)
+			beatmap.ParseObjects(bMap)
+			bMap.Reset()
+
+			log.Println(bMap.Audio)
+			player := audio.NewMusic(bMap.Audio)
+			player.RegisterCallback(func() {
+				wg.Done()
+			})
+			player.Play()
+
+			go func() {
+				for {
+					timMs := player.GetPosition()*1000
+					bMap.Update(int64(timMs))
+					time.Sleep(time.Millisecond)
+				}
+			}()
+
+			break
+		}
+	}
 
 	wg.Wait()
 }

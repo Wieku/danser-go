@@ -1,8 +1,6 @@
 package audio
 
 /*
-#cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -L${SRCDIR}/../ -L/usr/lib -Wl,-rpath=\$ORIGIN -lbass
 #include "bass.h"
 
 extern void musicCallback(DWORD);
@@ -106,6 +104,10 @@ func (wv *Music) GetLength() float64 {
 
 func (wv *Music) SetPosition(pos float64) {
 	C.BASS_ChannelSetPosition(wv.channel, C.BASS_ChannelSeconds2Bytes(wv.channel, C.double(pos)), C.BASS_POS_BYTE)
+}
+
+func (wv *Music) GetPosition() float64 {
+	return float64(C.BASS_ChannelBytes2Seconds(wv.channel, C.BASS_ChannelGetPosition(wv.channel, C.BASS_POS_BYTE)))
 }
 
 func (wv *Music) GetState() int {
