@@ -43,6 +43,10 @@ type Player struct {
 	start bool
 	mus bool
 	musicPlayer *audio.Music
+	fxBatch *render.FxBatch
+	vao *glhf.VertexSlice
+	vaoD []float32
+	vaoDirty bool
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -137,6 +141,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 	}()
 
+	player.fxBatch = render.NewFxBatch()
+	player.vao = player.fxBatch.CreateVao(3*(256+128))
 	go func() {
 		var last = musicPlayer.GetPosition()
 
@@ -154,6 +160,41 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(time.Millisecond)
 		}
 	}()
+
+	go func() {
+		vertices := make([]float32, (256+128)*3*3)
+		oldFFT := make([]float32, 256+128)
+		for {
+
+			musicPlayer.Update()
+			player.SclA = math.Min(1.2, math.Max(musicPlayer.GetPeak()+0.7, 0.8))
+
+			fft := musicPlayer.GetFFT()
+
+			//last := fft[0]
+
+			for i:=0; i < len(oldFFT); i++ {
+				fft[i] = float32(math.Log10(float64(fft[i])*40))
+				oldFFT[i] = float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]) /** 3*/, float64(oldFFT[i]) + 0.02), float64(oldFFT[i]) - 0.015)))
+				/*vertices[(i-1)*3], vertices[(i-1)*3+1], vertices[(i-1)*3+2] = -1, -1, 0
+				vertices[(i-1)*3], vertices[(i-1)*3+1], vertices[(i-1)*3+2] = -1+last, 2*float32(i-1)/float32(len(fft))-1, 0
+				vertices[(i-1)*3], vertices[(i-1)*3+1], vertices[(i-1)*3+2] = -1+fft[i], 2*float32(i)/float32(len(fft))-1, 0*/
+				vertices[(i)*9], vertices[(i)*9+1], vertices[(i)*9+2] = -1/*+last*/, 2*float32(i)/float32(len(oldFFT))-1 + 0.2/float32(len(oldFFT)), 0
+				vertices[(i)*9+3], vertices[(i)*9+4], vertices[(i)*9+5] = -1, 2*float32(i)/float32(len(oldFFT))-1 - 0.2/float32(len(oldFFT)), 0
+				vertices[(i)*9+6], vertices[(i)*9+7], vertices[(i)*9+8] = -1+oldFFT[i]*3, 2*float32(i)/float32(len(oldFFT))-1, 0
+				//last = fft[i]
+			}
+
+			player.vaoD = vertices
+			player.vaoDirty = true
+			/*vertices[(i-1)*3], vertices[(i-1)*3+1], vertices[(i-1)*3+2] = -1+fft[i], -1, 0
+			vertices[(i-1)*3], vertices[(i-1)*3+1], vertices[(i-1)*3+2] = -1+fft[i], -1, 0
+			vertices[(i-1)*3], vertices[(i-1)*3+1], vertices[(i-1)*3+2] = -1+fft[i], -1, 0*/
+
+			time.Sleep(40*time.Millisecond)
+		}
+	}()
+
 	player.musicPlayer = musicPlayer
 	return player
 }
@@ -180,7 +221,7 @@ func (pl *Player) Update() {
 		} else if pl.Scl > pl.SclA {
 			pl.Scl -= (pl.Scl-pl.SclA) * timMs/50
 		}
-		pl.Scl = 1
+		//pl.Scl = 1
 	}
 
 	pl.lastTime = tim
@@ -232,6 +273,22 @@ func (pl *Player) Update() {
 	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
 	pl.batch.End()
 
+	pl.fxBatch.Begin()
+	pl.fxBatch.SetColor(1, 1, 1, 0.12*pl.Scl*pl.fadeOut)
+	pl.vao.Begin()
+
+	if pl.vaoDirty {
+		pl.vao.SetVertexData(pl.vaoD)
+		pl.vaoDirty = false
+	}
+	pl.fxBatch.SetTransform(mgl32.Ident4())
+	pl.vao.Draw()
+
+	pl.fxBatch.SetTransform(mgl32.HomogRotate3DZ(math.Pi))
+	pl.vao.Draw()
+
+	pl.vao.End()
+	pl.fxBatch.End()
 	if settings.DIVIDES > 2 {
 		pl.sliderRenderer.Begin()
 	}

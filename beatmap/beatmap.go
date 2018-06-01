@@ -4,6 +4,7 @@ import (
 	"danser/beatmap/objects"
 	"danser/movers"
 	"danser/render"
+	"danser/bmath"
 )
 
 type BeatMap struct {
@@ -29,7 +30,7 @@ func (b *BeatMap) Reset() {
 	copy(b.Queue, b.HitObjects)
 	b.timings.Reset()
 	b.movers[MoverId].Reset()
-	//b.movers[MoverId].SetObjects(objects.DummyCircle(bmath.NewVec2d(100, 100), 0), b.Queue[0])
+	b.movers[MoverId].SetObjects(objects.DummyCircle(bmath.NewVec2d(100, 100), 0), b.Queue[0])
 }
 
 func (b *BeatMap) Update(time int64, cursor *render.Cursor) {

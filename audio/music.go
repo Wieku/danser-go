@@ -14,7 +14,11 @@ static inline void setSync(HCHANNEL channel) {
 }
  */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+	//"log"
+	"math"
+)
 
 const (
 	MUSIC_STOPPED = 0
@@ -55,12 +59,15 @@ func unregisterEndCallback(channel C.DWORD, f func()) {
 
 type Music struct {
 	channel C.DWORD
+	fft []float32
+	peak float64
 }
 
 func NewMusic(path string) *Music {
 	player := &Music{}
 	ch := C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.BASS_ASYNCFILE | C.BASS_STREAM_AUTOFREE)
 	player.channel = ch
+	player.fft = make([]float32, 512)
 	return player
 }
 
@@ -112,4 +119,27 @@ func (wv *Music) GetPosition() float64 {
 
 func (wv *Music) GetState() int {
 	 return int(C.BASS_ChannelIsActive(wv.channel))
+}
+
+func (wv *Music) Update() {
+	C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
+	toPeak := -1.0
+	for _, g := range wv.fft {
+		h := math.Abs(float64(g))
+		if toPeak < h {
+			toPeak = h
+		}
+		//toAv += math.Abs(float64(g))
+	}
+	//toAv /= 512
+	wv.peak = toPeak
+}
+
+func (wv *Music) GetFFT() []float32 {
+	return wv.fft
+}
+
+func (wv *Music) GetPeak() float64 {
+
+	return wv.peak
 }
