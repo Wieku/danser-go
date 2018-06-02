@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"math"
+	"log"
 )
 
 type Cursor struct {
@@ -64,6 +65,44 @@ func (cursor *Cursor) Draw(scale float64, batch *SpriteBatch, color mgl32.Vec4) 
 	for i, sl := range cursor.Points {
 
 		batch.SetScale(scale*25 * (0.5+float64(i)/float64(len(cursor.Points))*0.4), scale*25 * (0.5+float64(i)/float64(len(cursor.Points))*0.4))
+		batch.DrawUnit(sl, 1)
+
+	}
+	//color[3] = 1
+
+	batch.SetScale(scale*27, scale*27)
+
+	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), float64(color[3]))
+	batch.DrawUnit(cursor.Position, 0)
+	batch.SetColor(1, 1, 1, math.Sqrt(float64(color[3])))
+	batch.DrawUnit(cursor.Position, 2)
+
+	batch.End()
+
+	CursorTrail.End()
+	CursorTex.End()
+	CursorTop.End()
+
+}
+
+func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, prevColor, color mgl32.Vec4) {
+	gl.Disable(gl.DEPTH_TEST)
+
+	gl.ActiveTexture(gl.TEXTURE0)
+	CursorTex.Begin()
+	gl.ActiveTexture(gl.TEXTURE1)
+	CursorTrail.Begin()
+	gl.ActiveTexture(gl.TEXTURE2)
+	CursorTop.Begin()
+
+	batch.Begin()
+	batch.SetTranslation(bmath.NewVec2d(0, 0))
+	for i, sl := range cursor.Points {
+		batch.SetColor(float64(prevColor[0]), float64(prevColor[1]), float64(prevColor[2]), 0.05*float64(prevColor[3]))
+		batch.SetScale(scale*28 * (0.5+float64(i)/float64(len(cursor.Points))*0.4), scale*28 * (0.5+float64(i)/float64(len(cursor.Points))*0.4))
+		batch.DrawUnit(sl, 1)
+		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), 0.05*float64(color[3]))
+		batch.SetScale(scale*24 * (0.5+float64(i)/float64(len(cursor.Points))*0.4), scale*24 * (0.5+float64(i)/float64(len(cursor.Points))*0.4))
 		batch.DrawUnit(sl, 1)
 
 	}

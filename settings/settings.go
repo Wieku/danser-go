@@ -1,3 +1,3 @@
 package settings
 
-var DIVIDES = 6
+var DIVIDES = 10

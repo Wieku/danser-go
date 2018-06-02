@@ -11,7 +11,7 @@ import (
 
 func LoadImage(path string) (*image.NRGBA, error) {
 	file, err := os.Open(path)
-	log.Println(file.Name())
+	log.Println("Loading image: ", file.Name())
 	if err != nil {
 		log.Println("er1")
 		return nil, err

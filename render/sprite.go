@@ -104,7 +104,7 @@ func (batch *SpriteBatch) DrawTexture(vec bmath.Vector2d, texture *glhf.Texture)
 	texture.Begin()
 	transf := (batch.position.Mul4(mgl32.Translate3D(float32(vec.X), float32(vec.Y), 0))).Mul4(batch.scale.Mul4(mgl32.Scale3D(float32(texture.Width())/2, float32(texture.Height())/2, 1)))
 	shader.SetUniformAttr(3, transf)
-	shader.SetUniformAttr(1, uint32(0))
+	shader.SetUniformAttr(1, int32(0))
 
 	vao.Draw()
 

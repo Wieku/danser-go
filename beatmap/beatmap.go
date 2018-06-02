@@ -36,7 +36,27 @@ func (b *BeatMap) Reset() {
 func (b *BeatMap) Update(time int64, cursor *render.Cursor) {
 	b.timings.Update(time)
 	if len(b.Queue) > 0 {
-		if p := b.Queue[0]; p.GetBasicData().StartTime <= time {
+		any := false
+		for i, g := range b.Queue {
+			if g.GetBasicData().StartTime > time {
+				break
+			}
+
+			any = true
+
+			if isDone := g.Update(time, cursor); isDone {
+				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
+				if len(b.Queue) > 0 {
+					b.movers[MoverId].SetObjects(g, b.Queue[i])
+				}
+			}
+		}
+
+		if !any {
+			b.movers[MoverId].Update(time, cursor)
+		}
+
+		/*if p := b.Queue[0]; p.GetBasicData().StartTime <= time {
 			if isDone := p.Update(time, cursor); isDone {
 				b.Queue = b.Queue[1:]
 				if len(b.Queue) > 0 {
@@ -45,7 +65,7 @@ func (b *BeatMap) Update(time int64, cursor *render.Cursor) {
 			}
 		} else {
 			b.movers[MoverId].Update(time, cursor)
-		}
+		}*/
 	}
 }
 
