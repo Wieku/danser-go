@@ -9,12 +9,19 @@ import (
 	"log"
 	"github.com/faiface/mainthread"
 	"github.com/faiface/glhf"
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.1/glfw"
 	"danser/states"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"image"
+	"unsafe"
+	"os"
+	"image/png"
+	"strconv"
+	"time"
 )
 
 var player *states.Player
+var pressed = false
 func run() {
 	log.Println("123545342")
 	var win *glfw.Window
@@ -79,14 +86,47 @@ func run() {
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
 			gl.Enable(gl.MULTISAMPLE)
-
+			gl.Disable(gl.DITHER)
 			gl.Viewport(0, 0, 1920, 1080)
-
 			gl.ClearColor(0,0,0,1)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			if player != nil {
 				player.Update()
+			}
+
+			if win.GetKey(glfw.KeyF2) == glfw.Press {
+
+				if !pressed {
+					w, h := win.GetFramebufferSize()
+					img := image.NewNRGBA(image.Rectangle{Min: image.Point{0, 0} , Max: image.Point{w, h} })
+					buff := make([]uint8, w*h*4)
+					buff1 := make([]uint8, w*h*4)
+					gl.PixelStorei(gl.PACK_ALIGNMENT, int32(1))
+					gl.ReadPixels(0, 0, int32(w), int32(h), gl.RGBA, gl.UNSIGNED_BYTE, unsafe.Pointer(&buff[0]))
+
+					for i := h-1; i >=0; i-- {
+						for j:=0; j < w*4; j++ {
+							if (j+1)%4 == 0 {
+								buff1[(h-1-i)*w*4+j] = 0xFF
+							} else {
+								buff1[(h-1-i)*w*4+j] = buff[i*w*4+j]
+							}
+						}
+					}
+
+					img.Pix = buff1
+					os.Mkdir("screenshots", 0644)
+					f, _ := os.OpenFile("screenshots/"+strconv.FormatInt(time.Now().UnixNano(), 10)+".png", os.O_WRONLY|os.O_CREATE, 0644)
+					defer f.Close()
+					png.Encode(f, img)
+				}
+
+				pressed = true
+			}
+
+			if win.GetKey(glfw.KeyF2) == glfw.Release {
+				pressed = false
 			}
 
 			win.SwapBuffers()
