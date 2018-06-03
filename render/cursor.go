@@ -11,6 +11,7 @@ import (
 )
 
 var cursorShader *glhf.Shader = nil
+var cursorFbo *glhf.Frame = nil
 
 func initCursor() {
 
@@ -36,6 +37,7 @@ func initCursor() {
 		panic(err)
 	}
 
+	cursorFbo = glhf.NewFrame(1920, 1080, true, false)
 }
 
 type Cursor struct {
@@ -133,7 +135,12 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	CursorTrail.Begin()
 	gl.ActiveTexture(gl.TEXTURE2)
 	CursorTop.Begin()
-
+	//gl.Disable(gl.BLEND)
+	cursorFbo.Begin()
+	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	//gl.Disable(gl.BLEND)
+	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	cursorShader.Begin()
 
 	siz := 10.0
@@ -171,8 +178,18 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	subVao.Draw()
 
 	subVao.End()
-
-
+	//gl.Enable(gl.BLEND)
+	cursorFbo.End()
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+	gl.ActiveTexture(gl.TEXTURE1)
+	cursorFbo.Texture().Begin()
+	fboShader.Begin()
+	fboShader.SetUniformAttr(0, int32(1))
+	fboShader.SetUniformAttr(1, float32(1))
+	fboSlice.Begin()
+	fboSlice.Draw()
+	fboSlice.End()
+	fboShader.End()
 
 	cursorShader.End()
 

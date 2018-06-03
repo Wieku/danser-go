@@ -32,7 +32,6 @@ func run() {
 		audio.LoadSamples()
 
 		glfw.Init()
-		log.Println("lol")
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
@@ -48,7 +47,7 @@ func run() {
 		}
 
 		win.MakeContextCurrent()
-		log.Println("lol")
+		log.Println("GLFW initialized!")
 		glhf.Init()
 		glhf.Clear(0,0,0,1)
 		win.SwapBuffers()
@@ -62,8 +61,6 @@ func run() {
 		difficulty := flag.String("difficulty", "", "")
 
 		flag.Parse()
-
-		log.Println("fgergrgrre")
 
 		go func() {
 			beatmaps := beatmap.LoadBeatmaps()
@@ -136,45 +133,5 @@ func run() {
 }
 
 func main() {
-	log.Println("lul")
 	mainthread.Run(run)
-	/*audio.Init()
-	audio.LoadSamples()
-
-	wg := sync.WaitGroup{}
-
-	beatmaps := beatmap.LoadBeatmaps()
-
-	artist := flag.String("artist", "", "")
-	title := flag.String("title", "", "")
-	difficulty := flag.String("difficulty", "", "")
-
-	flag.Parse()
-
-	for _, bMap := range beatmaps {
-		if (*artist == "" || *artist == bMap.Artist) && (*title == "" || *title == bMap.Name) && (*difficulty == "" || *difficulty == bMap.Difficulty) {
-			wg.Add(1)
-			beatmap.ParseObjects(bMap)
-			bMap.Reset()
-
-			log.Println(bMap.Audio)
-			player := audio.NewMusic(bMap.Audio)
-			player.RegisterCallback(func() {
-				wg.Done()
-			})
-			player.Play()
-
-			go func() {
-				for {
-					timMs := player.GetPosition()*1000
-					bMap.Update(int64(timMs))
-					time.Sleep(time.Millisecond)
-				}
-			}()
-
-			break
-		}
-	}
-
-	wg.Wait()*/
 }

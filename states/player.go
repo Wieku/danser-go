@@ -240,11 +240,11 @@ func (pl *Player) Update() {
 	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
 	pl.batch.SetCamera(mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1))
 	pl.batch.SetScale(0.5, 0.5)
-
+	pl.batch.SetColor(1, 1, 1, 1-pl.fadeIn)
 	pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
 	pl.batch.End()
 
-	pl.fxBatch.Begin()
+	/*pl.fxBatch.Begin()
 	pl.fxBatch.SetColor(1, 1, 1, 0.12*pl.Scl*pl.fadeOut)
 	pl.vao.Begin()
 
@@ -263,7 +263,7 @@ func (pl *Player) Update() {
 	pl.vao.Draw()
 
 	pl.vao.End()
-	pl.fxBatch.End()
+	pl.fxBatch.End()*/
 
 	if pl.start {
 		pl.sliderRenderer.Begin()
@@ -324,7 +324,8 @@ func (pl *Player) Update() {
 		}
 		pl.batch.End()
 
-		gl.BlendFunc(gl.SRC_ALPHA, /*gl.ONE*/gl.ONE_MINUS_SRC_ALPHA)
+		//gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+		gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 		gl.BlendEquation(gl.FUNC_ADD)
 		for j:=0; j < settings.DIVIDES; j++ {
 
