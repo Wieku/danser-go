@@ -21,6 +21,14 @@ func NewVec2dRad(rad, length float64) Vector2d {
 	return Vector2d{math.Cos(rad) * length, math.Sin(rad) * length}
 }
 
+func (v Vector2d) X32() float32 {
+	return float32(v.X)
+}
+
+func (v Vector2d) Y32() float32 {
+	return float32(v.Y)
+}
+
 func (v *Vector2d) Set(x, y float64) {
 	v.X = x
 	v.Y = y

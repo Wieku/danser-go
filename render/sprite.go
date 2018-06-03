@@ -41,7 +41,7 @@ func setup() {
 
 type SpriteBatch struct {
 	color mgl32.Vec4
-	projection mgl32.Mat4
+	Projection mgl32.Mat4
 	position mgl32.Mat4
 	scale mgl32.Mat4
 	transform mgl32.Mat4
@@ -65,7 +65,7 @@ func (batch *SpriteBatch) Begin() {
 	shader.Begin()
 	shader.SetUniformAttr(0, batch.color)
 	shader.SetUniformAttr(3, batch.transform)
-	shader.SetUniformAttr(2, batch.projection)
+	shader.SetUniformAttr(2, batch.Projection)
 	shader.SetUniformAttr(4, batch.lastTrans)
 	vao.Begin()
 }
@@ -139,7 +139,7 @@ func (batch *SpriteBatch) DrawUnitR(unit int) {
 func (batch *SpriteBatch) DrawSeparate(vec bmath.Vector2d, unit int) {
 	transf := (batch.position.Mul4(mgl32.Translate3D(float32(vec.X), float32(vec.Y), 0))).Mul4(batch.scale)
 	shader.SetUniformAttr(3, transf)
-	shader.SetUniformAttr(1, unit)
+	shader.SetUniformAttr(1, int32(unit))
 
 	vao.Draw()
 
@@ -147,8 +147,8 @@ func (batch *SpriteBatch) DrawSeparate(vec bmath.Vector2d, unit int) {
 }
 
 func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
-	batch.projection = camera
-	shader.SetUniformAttr(2, batch.projection)
+	batch.Projection = camera
+	shader.SetUniformAttr(2, batch.Projection)
 }
 
 func (batch *SpriteBatch) End() {

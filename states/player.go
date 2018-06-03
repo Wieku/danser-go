@@ -179,11 +179,12 @@ func (pl *Player) Update() {
 
 
 	if pl.lastTime < 0 {
-		pl.lastTime = time.Now().UnixNano()
+		pl.lastTime = utils.GetNanoTime()
 	}
-	tim := time.Now().UnixNano()
-
+	tim := utils.GetNanoTime()
 	timMs := float64(tim-pl.lastTime)/1000000.0
+
+	log.Println(1000.0/timMs)
 
 	if pl.start {
 
@@ -249,6 +250,7 @@ func (pl *Player) Update() {
 
 	if pl.vaoDirty {
 		pl.vao.SetVertexData(pl.vaoD)
+
 		pl.vaoDirty = false
 	}
 
@@ -322,7 +324,7 @@ func (pl *Player) Update() {
 		}
 		pl.batch.End()
 
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+		gl.BlendFunc(gl.SRC_ALPHA, /*gl.ONE*/gl.ONE_MINUS_SRC_ALPHA)
 		gl.BlendEquation(gl.FUNC_ADD)
 		for j:=0; j < settings.DIVIDES; j++ {
 
@@ -333,7 +335,7 @@ func (pl *Player) Update() {
 			if ind < 0 {
 				ind = settings.DIVIDES-1
 			}
-			pl.cursor.DrawM(pl.Scl, pl.batch, colors[ind], colors[j])
+			pl.cursor.DrawM(pl.Scl, pl.batch, colors[j], colors[ind])
 
 		}
 	}
