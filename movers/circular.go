@@ -1,11 +1,11 @@
 package movers
 
 import (
-	"danser/bmath/curves"
+	"github.com/wieku/danser/bmath/curves"
 	//"osubot/io"
-	"danser/beatmap/objects"
+	"github.com/wieku/danser/beatmap/objects"
 	"math"
-	"danser/render"
+	"github.com/wieku/danser/render"
 )
 
 const INVERTABLE = false

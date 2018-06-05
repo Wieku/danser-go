@@ -1,9 +1,9 @@
 package objects
 
 import (
-	om "danser/bmath"
+	om "github.com/wieku/danser/bmath"
 	"strconv"
-	"danser/render"
+	"github.com/wieku/danser/render"
 )
 
 type BaseObject interface {

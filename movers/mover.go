@@ -1,10 +1,10 @@
 package movers
 
 import (
-	math2 "danser/bmath"
-	"danser/beatmap/objects"
+	math2 "github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/beatmap/objects"
 	"math"
-	"danser/render"
+	"github.com/wieku/danser/render"
 )
 
 type Mover interface {

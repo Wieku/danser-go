@@ -1,8 +1,8 @@
 package sliders
 
 import (
-	m2 "danser/bmath"
-	"danser/bmath/curves"
+	m2 "github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/bmath/curves"
 )
 
 type SliderAlgo struct {

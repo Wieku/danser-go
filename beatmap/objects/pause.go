@@ -2,8 +2,8 @@ package objects
 
 import (
 	"strconv"
-	"danser/bmath"
-	"danser/render"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/render"
 )
 
 type Pause struct {

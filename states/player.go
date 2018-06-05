@@ -1,19 +1,19 @@
 package states
 
 import (
-	"danser/beatmap"
-	"danser/beatmap/objects"
-	"danser/render"
+	"github.com/wieku/danser/beatmap"
+	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/render"
 	"time"
 	"log"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/faiface/glhf"
 	"math"
-	"danser/audio"
+	"github.com/wieku/danser/audio"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"danser/utils"
-	"danser/bmath"
-	"danser/settings"
+	"github.com/wieku/danser/utils"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/settings"
 
 )
 
@@ -57,7 +57,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.batch = render.NewSpriteBatch()
 	player.bMap = beatMap
 	log.Println(beatMap.Name + " " + beatMap.Difficulty)
-	player.CS = (1.0 - 0.7 * (beatMap.CircleSize - 5) / 5) / 2
+	player.CS = (1.0 - 0.7 * (beatMap.CircleSize - 5) / 5) / 2 * 1.2
 	render.CS = player.CS
 	render.SetupSlider()
 
@@ -105,7 +105,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	musicPlayer := audio.NewMusic(beatMap.Audio)
 
 	go func() {
-		time.Sleep(4*time.Second)
+		time.Sleep(10*time.Second)
 
 		for i := 1; i <= 100; i++ {
 			player.fadeIn = float64(i) / 100
@@ -184,7 +184,11 @@ func (pl *Player) Update() {
 	tim := utils.GetNanoTime()
 	timMs := float64(tim-pl.lastTime)/1000000.0
 
-	log.Println(1000.0/timMs)
+	fps := 1000.0/timMs
+
+	if fps < 100 {
+		log.Println(fps)
+	}
 
 	if pl.start {
 
@@ -228,8 +232,7 @@ func (pl *Player) Update() {
 	}
 
 
-	colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut)
-
+	colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
 	render.CS = pl.CS
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	pl.batch.Begin()
@@ -238,10 +241,10 @@ func (pl *Player) Update() {
 	pl.batch.ResetTransform()
 	pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
-	pl.batch.SetCamera(mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1))
-	pl.batch.SetScale(0.5, 0.5)
-	pl.batch.SetColor(1, 1, 1, 1-pl.fadeIn)
-	pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
+	//pl.batch.SetCamera(mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1))
+	//pl.batch.SetScale(0.5, 0.5)
+	//pl.batch.SetColor(1, 1, 1, 1-pl.fadeIn)
+	//pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
 	pl.batch.End()
 
 	/*pl.fxBatch.Begin()
@@ -325,20 +328,22 @@ func (pl *Player) Update() {
 		pl.batch.End()
 
 		//gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
-		gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-		gl.BlendEquation(gl.FUNC_ADD)
-		for j:=0; j < settings.DIVIDES; j++ {
 
-			vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
-			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
-			ind := j-1
-			if ind < 0 {
-				ind = settings.DIVIDES-1
-			}
-			pl.cursor.DrawM(pl.Scl, pl.batch, colors[j], colors[ind])
+	}
 
+	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	gl.BlendEquation(gl.FUNC_ADD)
+	for j:=0; j < settings.DIVIDES; j++ {
+
+		vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
+		lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
+		pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
+		ind := j-1
+		if ind < 0 {
+			ind = settings.DIVIDES-1
 		}
+		pl.cursor.DrawM(pl.Scl, pl.batch, colors[j], colors[ind])
+
 	}
 
 }

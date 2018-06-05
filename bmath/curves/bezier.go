@@ -1,7 +1,7 @@
 package curves
 
 import (
-	math2 "danser/bmath"
+	math2 "github.com/wieku/danser/bmath"
 	"math"
 )
 

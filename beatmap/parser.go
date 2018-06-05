@@ -2,7 +2,7 @@ package beatmap
 
 import (
 	"sort"
-	"danser/beatmap/objects"
+	"github.com/wieku/danser/beatmap/objects"
 	"strconv"
 	"strings"
 	"os"

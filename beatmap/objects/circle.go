@@ -1,13 +1,13 @@
 package objects
 
 import (
-	"danser/bmath"
-	"danser/audio"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/audio"
 	"strconv"
 	"strings"
 	"github.com/go-gl/mathgl/mgl32"
-	"danser/render"
-	"danser/settings"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/settings"
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 

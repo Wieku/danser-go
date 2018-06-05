@@ -1,10 +1,10 @@
 package beatmap
 
 import (
-	"danser/beatmap/objects"
-	"danser/movers"
-	"danser/render"
-	"danser/bmath"
+	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/movers"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/bmath"
 )
 
 type BeatMap struct {

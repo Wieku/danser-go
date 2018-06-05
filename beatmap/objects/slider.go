@@ -1,16 +1,16 @@
 package objects
 
 import (
-	"danser/bmath/sliders"
-	m2 "danser/bmath"
+	"github.com/wieku/danser/bmath/sliders"
+	m2 "github.com/wieku/danser/bmath"
 	"strconv"
 	"strings"
 	"log"
-	"danser/audio"
+	"github.com/wieku/danser/audio"
 	"github.com/go-gl/mathgl/mgl32"
-	"danser/render"
+	"github.com/wieku/danser/render"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"danser/settings"
+	"github.com/wieku/danser/settings"
 	"github.com/faiface/glhf"
 )
 

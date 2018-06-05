@@ -1,13 +1,13 @@
 package render
 
 import (
-	"danser/bmath"
+	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"math"
-	//"log"
 	"github.com/faiface/glhf"
 	"sync"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -37,7 +37,7 @@ func initCursor() {
 		panic(err)
 	}
 
-	cursorFbo = glhf.NewFrame(1920, 1080, true, false)
+	cursorFbo = glhf.NewFrame(1920, 1080, true)
 }
 
 type Cursor struct {
@@ -62,7 +62,7 @@ func NewCursor() *Cursor {
 
 	vao := glhf.MakeVertexSlice(cursorShader, 1024*1024, 1024*1024) //creating approx. 4MB vao, just in case
 	verts := make ([]float32, 1024*1024*9)
-	return &Cursor{Max:1000, Position: bmath.NewVec2d(100, 100), vao: vao, vertices: verts, mutex: &sync.Mutex{}, vaoChannel: make(chan[]float32, 1)}
+	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, vertices: verts, mutex: &sync.Mutex{}, vaoChannel: make(chan[]float32, 1)}
 }
 
 
@@ -73,15 +73,24 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 func (cr *Cursor) Update(tim float64) {
 	points := cr.Position.Dst(cr.LastPos)*2
 
+	olp := len(cr.Points)
+
+
 	if points > 0 {
 		for i:=0.0; i <= 1.0; i+=1.0/points {
 			cr.Points = append(cr.Points, cr.Position.Sub(cr.LastPos).Scl(i).Add(cr.LastPos))
 		}
 	}
 
-	cr.LastPos = cr.Position
+	olp1 := len(cr.Points)
 
-	times := int64(float64(len(cr.Points))/(6*(60.0/tim))) + 1
+	mult := float64(1)
+	if olp < olp1 {
+		mult = 0
+	}
+
+	cr.LastPos = cr.Position
+	times := int64(math.Max(mult, float64(len(cr.Points))/(6*(60.0/tim))))
 
 	if len(cr.Points) > 0 {
 		if int(times) < len(cr.Points) {
@@ -135,17 +144,27 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	CursorTrail.Begin()
 	gl.ActiveTexture(gl.TEXTURE2)
 	CursorTop.Begin()
-	//gl.Disable(gl.BLEND)
+
 	cursorFbo.Begin()
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	//gl.Disable(gl.BLEND)
+
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	cursorShader.Begin()
 
-	siz := 10.0
+	siz := 18.0
 
-	cursorShader.SetUniformAttr(0, color2)
+	tohsv := colorful.Color{float64(color[0]), float64(color[1]), float64(color[2])}
+	h, s, v := tohsv.Hsv()
+	h -= 36.0
+	if h < 0 {
+		h += 360.0
+	}
+
+	col2 := colorful.Hsv(h, s, v)
+	colf2 := mgl32.Vec4{float32(col2.R), float32(col2.G), float32(col2.B), color.W()}
+
+	cursorShader.SetUniformAttr(0, colf2)
 	cursorShader.SetUniformAttr(1, int32(1))
 	cursorShader.SetUniformAttr(2, batch.Projection)
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
@@ -178,7 +197,6 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	subVao.Draw()
 
 	subVao.End()
-	//gl.Enable(gl.BLEND)
 	cursorFbo.End()
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
 	gl.ActiveTexture(gl.TEXTURE1)
@@ -225,9 +243,9 @@ uniform float points;
 
 out vec2 tex_coord;
 out float index;
-void main()
-{
-    gl_Position = proj * vec4((in_position-in_mid)*scale*(0.4f+0.6f*in_index/points)+in_mid, 1);
+
+void main() {
+    gl_Position = proj * vec4((in_position - in_mid) * scale * (0.4f + 0.6f * in_index / points) + in_mid, 1);
     tex_coord = in_tex_coord;
 	index = in_index;
 }
@@ -242,11 +260,11 @@ uniform float points;
 
 in vec2 tex_coord;
 in float index;
+
 out vec4 color;
 
-void main()
-{
+void main() {
     vec4 in_color = texture2D(tex, tex_coord);
-	color = in_color*col_tint*vec4(1,1,1, (smoothstep(0, points/3, index)));
+	color = in_color * col_tint * vec4(1, 1, 1, smoothstep(0, points / 3, index));
 }
 `

@@ -2,9 +2,9 @@ package objects
 
 import (
 	"strconv"
-	"danser/render"
+	"github.com/wieku/danser/render"
 	"math"
-	"danser/bmath"
+	"github.com/wieku/danser/bmath"
 )
 const rps = 8.0
 

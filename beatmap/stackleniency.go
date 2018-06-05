@@ -1,8 +1,8 @@
 package beatmap
 
 import (
-	"danser/beatmap/objects"
-	"danser/bmath"
+	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/bmath"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs

@@ -2,7 +2,7 @@ package render
 
 import (
 	"github.com/faiface/glhf"
-	"danser/utils"
+	"github.com/wieku/danser/utils"
 	"log"
 )
 

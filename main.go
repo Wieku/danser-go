@@ -1,16 +1,14 @@
 package main
 
 import (
-	"danser/audio"
-	//"sync"
-	"danser/beatmap"
-	//"time"
+	"github.com/wieku/danser/audio"
+	"github.com/wieku/danser/beatmap"
 	"flag"
 	"log"
 	"github.com/faiface/mainthread"
 	"github.com/faiface/glhf"
 	"github.com/go-gl/glfw/v3.1/glfw"
-	"danser/states"
+	"github.com/wieku/danser/states"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"image"
 	"unsafe"
@@ -23,7 +21,6 @@ import (
 var player *states.Player
 var pressed = false
 func run() {
-	log.Println("123545342")
 	var win *glfw.Window
 
 	mainthread.Call(func() {
@@ -37,7 +34,7 @@ func run() {
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 		glfw.WindowHint(glfw.Resizable, glfw.False)
-		glfw.WindowHint(glfw.Samples, 8)
+		glfw.WindowHint(glfw.Samples, 16)
 
 		var err error
 
@@ -83,6 +80,7 @@ func run() {
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
 			gl.Enable(gl.MULTISAMPLE)
+			//gl.Enable(gl.POLYGON_SMOOTH)
 			gl.Disable(gl.DITHER)
 			gl.Viewport(0, 0, 1920, 1080)
 			gl.ClearColor(0,0,0,1)
@@ -90,6 +88,10 @@ func run() {
 
 			if player != nil {
 				player.Update()
+			}
+
+			if win.GetKey(glfw.KeyEscape) == glfw.Press {
+				win.SetShouldClose(true)
 			}
 
 			if win.GetKey(glfw.KeyF2) == glfw.Press {
@@ -114,7 +116,7 @@ func run() {
 
 					img.Pix = buff1
 					os.Mkdir("screenshots", 0644)
-					f, _ := os.OpenFile("screenshots/"+strconv.FormatInt(time.Now().UnixNano(), 10)+".png", os.O_WRONLY|os.O_CREATE, 0644)
+					f, _ := os.OpenFile("screenshots/"+strconv.FormatInt(time.Now().UnixNano(), 10)+".png", os.O_WRONLY | os.O_CREATE, 0644)
 					defer f.Close()
 					png.Encode(f, img)
 				}

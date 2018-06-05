@@ -1,7 +1,7 @@
 package render
 
 import (
-	"danser/bmath"
+	"github.com/wieku/danser/bmath"
 	"math"
 	"github.com/faiface/glhf"
 	"log"
@@ -18,6 +18,8 @@ var cam mgl32.Mat4
 var fbo *glhf.Frame
 
 var CS float64
+
+const divides = 30
 
 func SetupSlider() {
 
@@ -42,7 +44,7 @@ func SetupSlider() {
 		log.Println(err)
 	}
 
-	fbo = glhf.NewFrame(1920, 1080, true, false)
+	fbo = glhf.NewFrame(1920, 1080, true)
 
 	fbo.Begin()
 	var depthRenderBuffer uint32
@@ -108,7 +110,7 @@ func (sr *SliderRenderer) EndAndRender() {
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
 	//gl.BlendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
-	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ActiveTexture(gl.TEXTURE0)
 	fbo.Texture().Begin()
 
@@ -139,7 +141,7 @@ func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
 }
 
 func (self *SliderRenderer) GetShape(curve []bmath.Vector2d) (*glhf.VertexSlice, int) {
-	return createMesh(curve), 30
+	return createMesh(curve), divides
 }
 
 func createMesh(curve []bmath.Vector2d) *glhf.VertexSlice {
@@ -148,7 +150,7 @@ func createMesh(curve []bmath.Vector2d) *glhf.VertexSlice {
 	vecr := make([]float32, 0)
 	num := 0
 	for _, v := range curve {
-		tab := createCircle(v.X, v.Y, 64*CS, 30)
+		tab := createCircle(v.X, v.Y, 64*CS, divides)
 		for j := range tab {
 			if j >= 2 {
 				p1, p2, p3 := tab[j-1], tab[j], tab[0]
