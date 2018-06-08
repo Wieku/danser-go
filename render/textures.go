@@ -3,7 +3,6 @@ package render
 import (
 	"github.com/faiface/glhf"
 	"github.com/wieku/danser/utils"
-	"log"
 )
 
 var Circle *glhf.Texture
@@ -15,12 +14,8 @@ var CursorTex *glhf.Texture
 var CursorTop *glhf.Texture
 var CursorTrail *glhf.Texture
 
-
 func LoadTextures() {
-	var err error
-	log.Println("tyxxturs")
-	Circle, err = utils.LoadTexture("assets/textures/hitcircle.png")
-	log.Println(err)
+	Circle, _ = utils.LoadTexture("assets/textures/hitcircle.png")
 	CircleFull, _ = utils.LoadTexture("assets/textures/hitcircle-full.png")
 	CircleOverlay, _ = utils.LoadTexture("assets/textures/hitcircleoverlay.png")
 	SliderGradient, _ = utils.LoadTexture("assets/textures/slidergradient.png")

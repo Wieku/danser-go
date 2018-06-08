@@ -16,6 +16,7 @@ import (
 	"image/png"
 	"strconv"
 	"time"
+	"github.com/wieku/danser/settings"
 )
 
 var player *states.Player
@@ -27,7 +28,7 @@ func run() {
 
 		audio.Init()
 		audio.LoadSamples()
-
+		settings.LoadSettings(0)
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
@@ -38,7 +39,7 @@ func run() {
 
 		var err error
 
-		win, err = glfw.CreateWindow(1920, 1080, "Sum test", glfw.GetPrimaryMonitor(), nil)
+		win, err = glfw.CreateWindow(1920, 1080, "osuda", glfw.GetPrimaryMonitor(), nil)
 		if err != nil {
 			panic(err)
 		}

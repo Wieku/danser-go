@@ -21,7 +21,7 @@ func NewSample(path string) *Sample {
 }
 
 func (wv *Sample) Play() {
-	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(0.4))
+	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(0.1))
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
 

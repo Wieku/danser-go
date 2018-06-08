@@ -72,7 +72,7 @@ func NewMusic(path string) *Music {
 }
 
 func (wv *Music) Play() {
-	wv.SetVolume(0.6)
+	wv.SetVolume(0.2)
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
 

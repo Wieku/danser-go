@@ -105,7 +105,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	musicPlayer := audio.NewMusic(beatMap.Audio)
 
 	go func() {
-		time.Sleep(10*time.Second)
+		time.Sleep(2*time.Second)
 
 		for i := 1; i <= 100; i++ {
 			player.fadeIn = float64(i) / 100
@@ -340,7 +340,7 @@ func (pl *Player) Update() {
 		pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 		ind := j-1
 		if ind < 0 {
-			ind = settings.DIVIDES-1
+			ind = settings.DIVIDES - 1
 		}
 		pl.cursor.DrawM(pl.Scl, pl.batch, colors[j], colors[ind])
 
