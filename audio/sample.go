@@ -6,6 +6,7 @@ import "C"
 
 import (
 	"unsafe"
+	"github.com/wieku/danser/settings"
 )
 
 type Sample struct {
@@ -21,12 +22,17 @@ func NewSample(path string) *Sample {
 }
 
 func (wv *Sample) Play() {
-	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(0.1))
+	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
 
 func (wv *Sample) PlayV(volume float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(volume))
+	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
+}
+
+func (wv *Sample) PlayRV(volume float64) {
+	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
 

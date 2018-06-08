@@ -26,24 +26,44 @@ func run() {
 
 	mainthread.Call(func() {
 
-		audio.Init()
-		audio.LoadSamples()
-		settings.LoadSettings(0)
+		artist := flag.String("artist", "", "")
+		title := flag.String("title", "", "")
+		difficulty := flag.String("difficulty", "", "")
+		settingsVersion := flag.Int("settings", 0, "")
+
+		flag.Parse()
+
+		newSettings := settings.LoadSettings(*settingsVersion)
+
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 		glfw.WindowHint(glfw.Resizable, glfw.False)
-		glfw.WindowHint(glfw.Samples, 16)
+		glfw.WindowHint(glfw.Samples, int(settings.Graphics.MSAA))
 
 		var err error
 
-		win, err = glfw.CreateWindow(1920, 1080, "osuda", glfw.GetPrimaryMonitor(), nil)
+		monitor := glfw.GetPrimaryMonitor()
+		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
+
+		if newSettings {
+			log.Println(mWidth, mHeight)
+			settings.Graphics.Width, settings.Graphics.Height = int64(mWidth), int64(mHeight)
+			settings.Save()
+			win, err = glfw.CreateWindow(mWidth, mHeight, "danser", monitor, nil)
+		} else {
+			if settings.Graphics.Fullscreen {
+				win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
+			} else {
+				win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
+			}
+		}
+
 		if err != nil {
 			panic(err)
 		}
-
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
 		glhf.Init()
@@ -52,13 +72,14 @@ func run() {
 		glfw.PollEvents()
 
 		glfw.SwapInterval(0)
+		if settings.Graphics.VSync {
+			glfw.SwapInterval(1)
+		}
+
 		player = nil
 
-		artist := flag.String("artist", "", "")
-		title := flag.String("title", "", "")
-		difficulty := flag.String("difficulty", "", "")
-
-		flag.Parse()
+		audio.Init()
+		audio.LoadSamples()
 
 		go func() {
 			beatmaps := beatmap.LoadBeatmaps()
@@ -66,7 +87,7 @@ func run() {
 				if (*artist == "" || *artist == b.Artist) && (*title == "" || *title == b.Name) && (*difficulty == "" || *difficulty == b.Difficulty) {//if b.Difficulty == "200BPM t+pazolite_cheatreal GO TO HELL  AR10" {
 
 					mainthread.Call(func(){
-						win.SetTitle("osudancer - " + b.Artist + " - " + b.Name + " [" + b.Difficulty + "]")
+						win.SetTitle("danser - " + b.Artist + " - " + b.Name + " [" + b.Difficulty + "]")
 						beatmap.ParseObjects(b)
 						player = states.NewPlayer(b)
 					})
@@ -81,7 +102,6 @@ func run() {
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
 			gl.Enable(gl.MULTISAMPLE)
-			//gl.Enable(gl.POLYGON_SMOOTH)
 			gl.Disable(gl.DITHER)
 			gl.Viewport(0, 0, 1920, 1080)
 			gl.ClearColor(0,0,0,1)

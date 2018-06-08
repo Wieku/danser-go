@@ -18,6 +18,7 @@ import (
 	"unsafe"
 	//"log"
 	"math"
+	"github.com/wieku/danser/settings"
 )
 
 const (
@@ -72,7 +73,7 @@ func NewMusic(path string) *Music {
 }
 
 func (wv *Music) Play() {
-	wv.SetVolume(0.2)
+	wv.SetVolume(settings.Audio.GeneralVolume * settings.Audio.MusicVolume)
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
 
@@ -103,6 +104,10 @@ func (wv *Music) Stop() {
 
 func (wv *Music) SetVolume(vol float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(vol))
+}
+
+func (wv *Music) SetVolumeRelative(vol float64) {
+	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.MusicVolume*vol))
 }
 
 func (wv *Music) GetLength() float64 {

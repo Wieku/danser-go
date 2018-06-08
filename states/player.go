@@ -225,10 +225,8 @@ func (pl *Player) Update() {
 
 	if len(pl.bMap.Queue) == 0 {
 		pl.fadeOut -= timMs/7500
-		if pl.fadeOut < 0.0 {
-			pl.fadeOut = 0.0
-		}
-		pl.musicPlayer.SetVolume(0.1*pl.fadeOut)
+		pl.fadeOut = math.Max(0.0, pl.fadeOut)
+		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
 	}
 
 

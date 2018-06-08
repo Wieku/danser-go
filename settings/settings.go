@@ -4,8 +4,6 @@ import (
 	"os"
 	"strconv"
 	"encoding/json"
-	//"reflect"
-	"log"
 )
 
 const SETTINGSVERSION = "v1"
@@ -15,12 +13,26 @@ type general struct {
 }
 
 type graphics struct {
-	Width int64 //1920
-	Height int64 //1080
+	Width, Height int64
+	WindowWidth, WindowHeight int64
 	Fullscreen bool //true
 	VSync bool //false
 	FPSCap int64 //1000
 	MSAA int32 //16
+}
+
+func (gr graphics) GetSize() (int64, int64) {
+	if gr.Fullscreen {
+		return gr.Width, gr.Height
+	}
+	return gr.WindowWidth, gr.WindowHeight
+}
+
+func (gr graphics) GetSizeF() (float64, float64) {
+	if gr.Fullscreen {
+		return float64(gr.Width), float64(gr.Height)
+	}
+	return float64(gr.WindowWidth), float64(gr.WindowHeight)
 }
 
 type audio struct {
@@ -84,11 +96,11 @@ var Objects *objects
 var Playfield *playfield
 
 var fileStorage *fileformat
-
-func InitDefaults() {
+var fileName string
+func initDefaults() {
 	Version = SETTINGSVERSION
-	General = &general{os.Getenv("localappdata")+string(os.PathSeparator)+"osu!"+string(os.PathSeparator)+"Songs"+string(os.PathSeparator)}
-	Graphics = &graphics{1920, 1080, true, false, 1000, 16}
+	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator)}
+	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, false}
 	Cursor = &cursor{true, 8, 0, false, 0, true, -36.0, false, 18, true, true}
 	Objects = &objects{5, true, true, 8, 0, false, 0, -1, true}
@@ -96,26 +108,28 @@ func InitDefaults() {
 	fileStorage = &fileformat{&Version, General, Graphics, Audio, Cursor, Objects, Playfield}
 }
 
-func LoadSettings(version int) {
-	InitDefaults()
-	filename := "settings"
+func LoadSettings(version int) bool {
+	initDefaults()
+	fileName = "settings"
 
 	if version > 0 {
-		filename += "-"+strconv.FormatInt(int64(version), 10)
+		fileName += "-" + strconv.FormatInt(int64(version), 10)
 	}
-	filename += ".json"
+	fileName += ".json"
 
-	file, err := os.Open(filename)
+	file, err := os.Open(fileName)
 	defer file.Close()
 	if os.IsNotExist(err) {
-		saveSettings(filename)
+		saveSettings(fileName)
+		return true
 	} else if err != nil {
 		panic(err)
 	} else {
 		load(file)
-		log.Println("grgrignrugnbyhgb ubgrugrgbrgbrgr", Graphics.FPSCap)
+		saveSettings(fileName) //this is done to save additions from the current format
 	}
 
+	return false
 }
 
 func load(file *os.File) {
@@ -123,14 +137,19 @@ func load(file *os.File) {
 	decoder.Decode(fileStorage)
 }
 
+func Save() {
+	saveSettings(fileName)
+}
+
 func saveSettings(path string) {
 	file, err := os.Create(path)
 	defer file.Close()
 
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 
+	Version = SETTINGSVERSION
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")
 	encoder.Encode(fileStorage)
