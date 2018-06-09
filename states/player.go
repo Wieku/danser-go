@@ -140,7 +140,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		for {
 
 			musicPlayer.Update()
-			player.SclA = math.Min(1.2, math.Max(musicPlayer.GetPeak()+0.7, 0.8))
+			player.SclA = math.Min(1.2, math.Max(musicPlayer.GetBeat()+0.7, 0.8))
 
 			fft := musicPlayer.GetFFT()
 
@@ -230,7 +230,13 @@ func (pl *Player) Update() {
 	}
 
 
-	colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
+	//colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
+	offst := 0.0
+	if settings.Objects.Colors.FlashToMusicPower {
+		offst = settings.Objects.Colors.FlashAmplitude * ((pl.Scl-0.8)/0.4)
+	}
+	colors := render.GetColors(pl.h+offst, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
+
 	render.CS = pl.CS
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	pl.batch.Begin()

@@ -13,7 +13,6 @@ const (
 	ANGLE = math.Pi/2
 	STRENGTH = 2.0/3
 	STREAM = 130
-	SPEED = true
 )
 
 type FlowerBezierMover struct {
@@ -46,10 +45,15 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 	var points []math2.Vector2d
 
 	scaledDistance := distance * STRENGTH
-	newAngle := ANGLE /** (distance / float64(startTime-endTime))*/
+	newAngle := ANGLE
 
 	if endPos == startPos {
-		points = []math2.Vector2d{endPos, startPos}
+		if ANGLE == 0.0 {
+			pt1 := math2.NewVec2dRad(bm.lastAngle + math.Pi, float64(startTime-endTime)/2).Add(endPos)
+			points = []math2.Vector2d{endPos, pt1, startPos}
+		} else {
+			points = []math2.Vector2d{endPos, startPos}
+		}
 	} else if ok1 && ok2 {
 		bm.invert = -1 * bm.invert
 
@@ -95,5 +99,4 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 
 func (bm FlowerBezierMover) Update(time int64, cursor *render.Cursor) {
 	cursor.SetPos(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
-	//io.MouseMoveVec(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 }

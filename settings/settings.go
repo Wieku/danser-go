@@ -42,12 +42,20 @@ type audio struct {
 	EnableBeatmapSampleVolume bool //= false
 }
 
-type cursor struct {
+type color struct {
 	EnableRainbow bool //true
 	RainbowSpeed float64 //8, degrees per second
-	Hue float64 //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
+	BaseHue float64 //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
+	Saturation float64 //1.0
+	Value float64 //1.0
 	EnableCustomHueOffset bool //false, false means that every iteration has an offset of i*360/n
 	HueOffset float64 //0, custom hue offset for mirror collages
+	FlashToMusicPower bool //true, objects size is changing with music peak amplitude
+	FlashAmplitude float64 //50, hue offset for flashes
+}
+
+type cursor struct {
+	Colors *color
 	EnableCustomTrailGlowOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
 	TrailGlowOffset float64 //-36, offset of the cursor trail glow
 	ScaleToCS bool //false, if enabled, cursor will scale to beatmap CS value
@@ -58,12 +66,9 @@ type cursor struct {
 
 type objects struct {
 	MandalaTexturesTrigger int64 //5, minimum value of cursors needed to use more translucent textures
+	DrawApproachCircles bool //true
 	UseCursorColors bool //true, overrides lower color settings
-	EnableRainbow bool //true
-	RainbowSpeed float64 //..., degrees per second
-	Hue float64 //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
-	EnableCustomHueOffset bool //false, false means that every iteration has an offset of i*360/n
-	HueOffset float64 //0, custom hue offset for mirror collages
+	Colors *color
 	ObjectsSize float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
 	ScaleToMusicPower bool //true, objects size is changing with music peak amplitude
 }
@@ -102,8 +107,8 @@ func initDefaults() {
 	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator)}
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, false}
-	Cursor = &cursor{true, 8, 0, false, 0, true, -36.0, false, 18, true, true}
-	Objects = &objects{5, true, true, 8, 0, false, 0, -1, true}
+	Cursor = &cursor{&color{true, 8, 0, 1.0, 1.0, false, 0, false, 0}, true, -36.0, false, 18, true, true}
+	Objects = &objects{5, true, true, &color{true, 8, 0, 1.0, 1.0, false, 0, true, 100.0}, -1, true}
 	Playfield = &playfield{5, 0, 0.95, 0.95, true, 1.1}
 	fileStorage = &fileformat{&Version, General, Graphics, Audio, Cursor, Objects, Playfield}
 }
@@ -155,4 +160,4 @@ func saveSettings(path string) {
 	encoder.Encode(fileStorage)
 }
 
-var DIVIDES = 10
+var DIVIDES = 2

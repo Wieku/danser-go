@@ -61,6 +61,7 @@ func unregisterEndCallback(channel C.DWORD, f func()) {
 type Music struct {
 	channel C.DWORD
 	fft []float32
+	beat float64
 	peak float64
 }
 
@@ -129,14 +130,20 @@ func (wv *Music) GetState() int {
 func (wv *Music) Update() {
 	C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
 	toPeak := -1.0
-	for _, g := range wv.fft {
+	beatAv := 0.0
+	for i, g := range wv.fft {
 		h := math.Abs(float64(g))
 		if toPeak < h {
 			toPeak = h
 		}
+		if i > 0 && i < 5 {
+			beatAv = math.Max(beatAv, float64(g))
+		}
 		//toAv += math.Abs(float64(g))
 	}
+	//beatAv /= 5.0
 	//toAv /= 512
+	wv.beat = beatAv
 	wv.peak = toPeak
 }
 
@@ -145,6 +152,9 @@ func (wv *Music) GetFFT() []float32 {
 }
 
 func (wv *Music) GetPeak() float64 {
-
 	return wv.peak
+}
+
+func (wv *Music) GetBeat() float64 {
+	return wv.beat
 }

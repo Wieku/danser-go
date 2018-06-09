@@ -255,7 +255,11 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	gl.ActiveTexture(gl.TEXTURE2)
 	render.SliderBall.Begin()
 
+	gl.ActiveTexture(gl.TEXTURE3)
+	render.ApproachCircle.Begin()
+
 	alpha := 1.0
+	arr := float64(self.objData.StartTime-time) / preempt
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
@@ -278,6 +282,13 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 			batch.DrawUnitR(0)
 			batch.SetColor(1, 1, 1, alpha)
 			batch.DrawUnitR(1)
+
+			if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
+				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+				batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
+				batch.DrawUnitR(3)
+			}
+
 		} else if time < self.objData.EndTime {
 			batch.SetTranslation(self.Pos)
 			batch.DrawUnitR(2)

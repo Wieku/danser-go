@@ -6,6 +6,7 @@ import (
 )
 
 var Circle *glhf.Texture
+var ApproachCircle *glhf.Texture
 var CircleFull *glhf.Texture
 var CircleOverlay *glhf.Texture
 var SliderGradient *glhf.Texture
@@ -16,6 +17,7 @@ var CursorTrail *glhf.Texture
 
 func LoadTextures() {
 	Circle, _ = utils.LoadTexture("assets/textures/hitcircle.png")
+	ApproachCircle, _ = utils.LoadTexture("assets/textures/approachcircle.png")
 	CircleFull, _ = utils.LoadTexture("assets/textures/hitcircle-full.png")
 	CircleOverlay, _ = utils.LoadTexture("assets/textures/hitcircleoverlay.png")
 	SliderGradient, _ = utils.LoadTexture("assets/textures/slidergradient.png")

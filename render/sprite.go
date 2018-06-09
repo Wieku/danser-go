@@ -92,6 +92,10 @@ func (batch *SpriteBatch) SetScale(scaleX, scaleY float64) {
 	shader.SetUniformAttr(3, batch.transform)
 }
 
+func (batch *SpriteBatch) SetSubScale(scaleX, scaleY float64) {
+	shader.SetUniformAttr(3, batch.position.Mul4(batch.scale.Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1))))
+}
+
 func (batch *SpriteBatch) ResetTransform() {
 	batch.scale = mgl32.Ident4()
 	batch.position = mgl32.Ident4()
