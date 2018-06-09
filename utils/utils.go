@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"github.com/faiface/glhf"
 	"log"
+	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
 func LoadImage(path string) (*image.NRGBA, error) {
@@ -29,13 +30,19 @@ func LoadImage(path string) (*image.NRGBA, error) {
 
 func LoadTexture(path string) (*glhf.Texture, error) {
 	img, err := LoadImage(path)
+	log.Println(path, img.NRGBAAt(48, 5))
 	if err == nil {
-		return glhf.NewTexture(
+		tex := glhf.NewTexture(
 			img.Bounds().Dx(),
 			img.Bounds().Dy(),
 			true,
 			img.Pix,
-		), nil
+		)
+		tex.Begin()
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		tex.End()
+		return tex, nil
 	}
 	return nil, err
 }

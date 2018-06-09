@@ -18,6 +18,7 @@ type Slider struct {
 	objData     *basicData
 	multiCurve  sliders.SliderAlgo
 	Timings     *Timings
+	TPoint     TimingPoint
 	pixelLength float64
 	partLen 	float64
 	repeat      int64
@@ -97,11 +98,11 @@ func (self Slider) GetEndAngle() float64 {
 }
 
 func (self Slider) GetPartLen() float64 {
-	return 20.0 / float64(self.Timings.GetSliderTime(self.pixelLength)) * self.pixelLength
+	return 20.0 / float64(self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)) * self.pixelLength
 }
 
 func (self Slider) GetPointAt(time int64) m2.Vector2d {
-	partLen := float64(self.Timings.GetSliderTimeS(time, self.pixelLength))
+	partLen := float64(self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength))
 	times := int64(float64(time - self.objData.StartTime) / partLen) + 1
 
 	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * partLen
@@ -119,11 +120,12 @@ func (self Slider) GetPointAt(time int64) m2.Vector2d {
 }
 
 func (self Slider) endTime() int64 {
-	return self.objData.StartTime + self.repeat * self.Timings.GetSliderTime(self.pixelLength)
+	return self.objData.StartTime + self.repeat * self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
 }
 
 func (self *Slider) SetTiming(timings *Timings) {
 	self.Timings = timings
+	self.TPoint = timings.GetPoint(self.objData.StartTime)
 	if timings.GetSliderTimeS(self.objData.StartTime, self.pixelLength) < 0 {
 		log.Println( self.objData.StartTime, self.pixelLength, "wuuuuuuuuuuuuuut")
 	}
@@ -145,7 +147,7 @@ func (self *Slider) GetCurve() []m2.Vector2d {
 func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 	//TODO: CLEAN THIS
 	if time < self.endTime() {
-		sliderTime := self.Timings.GetSliderTime(self.pixelLength)
+		sliderTime := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
 		pixLen := self.multiCurve.Length
 		self.partLen = float64(sliderTime)
 		self.objData.EndTime = self.objData.StartTime + sliderTime * self.repeat

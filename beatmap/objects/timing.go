@@ -75,6 +75,10 @@ func (tim Timings) GetSliderTime(pixelLength float64) int64 {
 	return int64(tim.partBPM * pixelLength / (100.0 * tim.SliderMult))
 }
 
+func (tim Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) int64 {
+	return int64(point.Bpm * pixelLength / (100.0 * tim.SliderMult))
+}
+
 func (tim *Timings) Reset() {
 	tim.queue = make([]TimingPoint, len(tim.points))
 	copy(tim.queue, tim.points)

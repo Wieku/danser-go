@@ -91,7 +91,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.cursor = render.NewCursor()
 
-	scl = float32(800)/float32(384)*3/4
+	scl = float32(800)/float32(384)//*3/4
 	log.Println(scl)
 	player.Cam = mgl32.Ortho( -1920/2, 1920.0/2 , 1080.0/2, -1080/2, 1, -1)
 
@@ -232,7 +232,7 @@ func (pl *Player) Update() {
 
 	//colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
 	offst := 0.0
-	if settings.Objects.Colors.FlashToMusicPower {
+	if settings.Objects.Colors.FlashToTheBeat {
 		offst = settings.Objects.Colors.FlashAmplitude * ((pl.Scl-0.8)/0.4)
 	}
 	colors := render.GetColors(pl.h+offst, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
@@ -245,6 +245,8 @@ func (pl *Player) Update() {
 	pl.batch.ResetTransform()
 	pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
+	/*pl.batch.SetColor(1, 1, 1, 1)
+	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), render.SliderGradient)*/
 	//pl.batch.SetCamera(mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1))
 	//pl.batch.SetScale(0.5, 0.5)
 	//pl.batch.SetColor(1, 1, 1, 1-pl.fadeIn)

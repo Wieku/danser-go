@@ -76,18 +76,22 @@ func NewSliderRenderer() *SliderRenderer {
 
 func (sr *SliderRenderer) Begin() {
 
+	//gl.Enable(gl.BLEND)
+	//gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA)
+	//gl.BlendEquation(gl.FUNC_ADD)
+	//gl.BlendFunc(gl.ONE, gl.ONE)
 	gl.Disable(gl.BLEND)
-	gl.BlendEquation(gl.FUNC_ADD)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthMask(true)
 	gl.DepthFunc(gl.LESS)
 
 	fbo.Begin()
-
+	//gl.Disable(gl.BLEND)
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	sliderShader.Begin()
+
 	gl.ActiveTexture(gl.TEXTURE0)
 	SliderGradient.Begin()
 	sliderShader.SetUniformAttr(1, int32(0))
@@ -108,9 +112,12 @@ func (sr *SliderRenderer) EndAndRender() {
 	sliderShader.End()
 	fbo.End()
 	gl.Disable(gl.DEPTH_TEST)
+	gl.DepthMask(false)
 	gl.Enable(gl.BLEND)
 	//gl.BlendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
+	gl.BlendEquation(gl.FUNC_ADD)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
 	gl.ActiveTexture(gl.TEXTURE0)
 	fbo.Texture().Begin()
 
@@ -123,16 +130,8 @@ func (sr *SliderRenderer) EndAndRender() {
 	fboShader.End()
 
 	fbo.Texture().End()
-	/*gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 
-	 Blit to default framebuffer *//*
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo.ID())
-	gl.BlitFramebuffer(0, 0, 1920, 1080, 0, 0, 1920, 1080, gl.COLOR_BUFFER_BIT, gl.NEAREST)
-	*/
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	//gl.DepthFunc(gl.LESS)
-	//gl.DepthMask(false)
-	//gl.Disable(gl.DEPTH_TEST)
 }
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
@@ -186,8 +185,6 @@ const sliderFrag = `
 #version 330
 
 uniform sampler2D tex;
-//uniform vec2 tex_size;
-//uniform vec3 col_tint;
 uniform vec4 col_border;
 
 in vec2 tex_coord;
@@ -195,10 +192,10 @@ out vec4 color;
 void main()
 {
     vec4 in_color = texture2D(tex, tex_coord);
-    //float blend_factor = in_color.r-in_color.b;
-	//vec4 col_tint = vec4(1, 1, 1, 1f);
-   // vec4 new_color = vec4(mix(in_color.xyz*col_border.xyz,col_tint.xyz, blend_factor),in_color.a);
-	color = in_color*col_border;
+
+	//vec4 col_tint = vec4(0, 0, 1, 0.5);
+
+	color = in_color*col_border;//vec4(mix(in_color.xyz*col_border.xyz, col_tint.xyz, 1.0-in_color.a), in_color.a*col_border.a);
 }
 `
 
@@ -232,9 +229,6 @@ out vec4 color;
 void main()
 {
     vec4 in_color = texture2D(tex, tex_coord);
-	//if (in_color.xyz == vec3(0,0,0)) {
-	//	discard;
-	//}
 	color = vec4(in_color.xyz, in_color.a*alpha);
 }
 `
