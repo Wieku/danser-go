@@ -141,6 +141,7 @@ type cursor struct {
 	ScaleToTheBeat bool //true, cursor size is changing with music peak amplitude
 	ShowCursorsOnBreaks bool //true
 	BounceOnEdges bool //false
+	TrailEndScale float64 //0.4
 }
 
 type objects struct {

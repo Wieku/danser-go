@@ -29,6 +29,7 @@ func initCursor() {
 		{Name: "proj", Type: glhf.Mat4},
 		{Name: "points", Type: glhf.Float},
 		{Name: "scale", Type: glhf.Float},
+		{Name: "endScale", Type: glhf.Float},
 	}
 
 	var err error
@@ -163,8 +164,8 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	cursorShader.SetUniformAttr(1, int32(1))
 	cursorShader.SetUniformAttr(2, batch.Projection)
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
-
 	cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
+	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
 
 	select {
 		case arr := <-cursor.vaoChannel :
@@ -236,12 +237,13 @@ in float in_index;
 uniform mat4 proj;
 uniform float scale;
 uniform float points;
+uniform float endScale;
 
 out vec2 tex_coord;
 out float index;
 
 void main() {
-    gl_Position = proj * vec4((in_position - in_mid) * scale * (0.4f + 0.6f * in_index / points) + in_mid, 1);
+    gl_Position = proj * vec4((in_position - in_mid) * scale * (endScale + (1f - endScale) * in_index / points) + in_mid, 1);
     tex_coord = in_tex_coord;
 	index = in_index;
 }
