@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser/settings"
 )
 
 var sliderShader *glhf.Shader = nil
@@ -44,7 +45,7 @@ func SetupSlider() {
 		log.Println(err)
 	}
 
-	fbo = glhf.NewFrame(1920, 1080, true, true)
+	fbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)
 
 	fboSlice = glhf.MakeVertexSlice(fboShader, 6, 6)
 	fboSlice.Begin()

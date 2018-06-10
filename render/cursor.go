@@ -7,7 +7,7 @@ import (
 	"math"
 	"github.com/wieku/glhf"
 	"sync"
-	"github.com/lucasb-eyer/go-colorful"
+	"github.com/wieku/danser/settings"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -37,7 +37,7 @@ func initCursor() {
 		panic(err)
 	}
 
-	cursorFbo = glhf.NewFrame(1920, 1080, true, false)
+	cursorFbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 }
 
 type Cursor struct {
@@ -154,17 +154,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	siz := 18.0
 
-	tohsv := colorful.Color{float64(color[0]), float64(color[1]), float64(color[2])}
-	h, s, v := tohsv.Hsv()
-	h -= 36.0
-	if h < 0 {
-		h += 360.0
-	}
-
-	col2 := colorful.Hsv(h, s, v)
-	colf2 := mgl32.Vec4{float32(col2.R), float32(col2.G), float32(col2.B), color.W()}
-
-	cursorShader.SetUniformAttr(0, colf2)
+	cursorShader.SetUniformAttr(0, GetColorShifted(color, -36.0))
 	cursorShader.SetUniformAttr(1, int32(1))
 	cursorShader.SetUniformAttr(2, batch.Projection)
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))

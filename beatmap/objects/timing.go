@@ -4,8 +4,12 @@ import "log"
 
 type TimingPoint struct {
 	Time int64
-	Bpm float64
+	BaseBpm, Bpm float64
 	SampleSet int
+}
+
+func (t TimingPoint) GetRatio() float64 {
+	return t.Bpm / t.BaseBpm
 }
 
 type Timings struct {
@@ -16,6 +20,7 @@ type Timings struct {
 	fullBPM, partBPM float64
 	BaseSet int
 	LastSet int
+	TickRate float64
 }
 
 func NewTimings() *Timings {
@@ -23,12 +28,13 @@ func NewTimings() *Timings {
 }
 
 func (tim *Timings) AddPoint(time int64, bpm float64, sampleset int) {
-	point := TimingPoint{time, bpm, sampleset}
+	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset}
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {
 		point.Bpm = tim.fullBPM / ( -100.0 / point.Bpm)
 	}
+	point.BaseBpm = tim.fullBPM
 	tim.points = append(tim.points, point)
 	tim.queue = append(tim.queue, point)
 }

@@ -52,6 +52,9 @@ func parseMetadata(line []string, beatMap *BeatMap) {
 	case "Artist":
 		beatMap.Artist = line[1]
 		break
+	case "Creator":
+		beatMap.Creator = line[1]
+		break
 	case "Version":
 		beatMap.Difficulty = line[1]
 		break
@@ -69,6 +72,10 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	if line[0] == "CircleSize" {
 		beatMap.CircleSize, _ = strconv.ParseFloat(line[1], 64)
 	}
+	if line[0] == "SliderTickRate" {
+		beatMap.timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
+	}
+
 }
 
 func parseEvents(line []string, beatMap *BeatMap) {

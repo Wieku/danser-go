@@ -1,6 +1,7 @@
 package audio
 
 var Samples [4][3]*Sample
+var Ticks [3]*Sample
 
 func LoadSamples() {
 
@@ -18,6 +19,10 @@ func LoadSamples() {
 	Samples[1][2] = NewSample("assets/sounds/drum-hitwhistle.wav")
 	Samples[2][2] = NewSample("assets/sounds/drum-hitfinish.wav")
 	Samples[3][2] = NewSample("assets/sounds/drum-hitclap.wav")
+
+	Ticks[0] = NewSample("assets/sounds/normal-slidertick.wav")
+	Ticks[1] = NewSample("assets/sounds/soft-slidertick.wav")
+	Ticks[2] = NewSample("assets/sounds/drum-slidertick.wav")
 }
 
 func PlaySample(sampleSet int, hitsound int) {
@@ -31,4 +36,8 @@ func PlaySample(sampleSet int, hitsound int) {
 	if hitsound&8 > 0 {
 		Samples[3][sampleSet-1].Play()
 	}
+}
+
+func PlaySliderTick(sampleSet int) {
+	Ticks[sampleSet-1].Play()
 }

@@ -29,7 +29,6 @@ func LoadImage(path string) (*image.NRGBA, error) {
 
 func LoadTexture(path string) (*glhf.Texture, error) {
 	img, err := LoadImage(path)
-	log.Println(path, img.NRGBAAt(48, 5))
 	if err == nil {
 		tex := glhf.NewTexture(
 			img.Bounds().Dx(),
@@ -38,9 +37,11 @@ func LoadTexture(path string) (*glhf.Texture, error) {
 			true,
 			img.Pix,
 		)
+
 		tex.Begin()
 		tex.SetWrap(glhf.CLAMP_TO_EDGE)
 		tex.End()
+
 		return tex, nil
 	}
 	return nil, err

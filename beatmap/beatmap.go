@@ -8,7 +8,7 @@ import (
 )
 
 type BeatMap struct {
-	Artist, Name, Difficulty        string
+	Artist, Name, Difficulty, Creator        string
 	SliderMultiplier, StackLeniency, CircleSize, AR, ARms float64
 	Path 							string
 	Audio 							string
@@ -22,7 +22,7 @@ type BeatMap struct {
 const MoverId = 2
 
 func NewBeatMap() *BeatMap {
-	return &BeatMap{timings: objects.NewTimings(), movers: []movers.Mover{movers.NewBezierMover(), movers.NewCircularMover(), movers.NewFlowerBezierMover()}}
+	return &BeatMap{timings: objects.NewTimings(), movers: []movers.Mover{movers.NewBezierMover(), movers.NewCircularMover(), movers.NewFlowerBezierMover()}, StackLeniency: 0.7}
 }
 
 func (b *BeatMap) Reset() {
@@ -46,7 +46,7 @@ func (b *BeatMap) Update(time int64, cursor *render.Cursor) {
 
 			if isDone := g.Update(time, cursor); isDone {
 				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
-				if len(b.Queue) > 0 {
+				if len(b.Queue) > 0 && i != len(b.Queue)-1 {
 					b.movers[MoverId].SetObjects(g, b.Queue[i])
 				}
 			}

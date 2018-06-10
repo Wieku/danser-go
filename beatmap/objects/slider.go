@@ -12,7 +12,13 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/glhf"
+	"math"
 )
+
+type tickPoint struct {
+	time int64
+	Pos m2.Vector2d
+}
 
 type Slider struct {
 	objData     *basicData
@@ -28,6 +34,8 @@ type Slider struct {
 	lastT		int64
 	Pos 		m2.Vector2d
 	divides 	int
+	TickPoints []tickPoint
+	lastTick int
 	LasTTI int64
 	End bool
 	vao *glhf.VertexSlice
@@ -78,6 +86,7 @@ func NewSlider(data []string) *Slider {
 		}
 	}
 	slider.End = false
+	slider.lastTick = -1
 	return slider
 }
 
@@ -129,6 +138,30 @@ func (self *Slider) SetTiming(timings *Timings) {
 	if timings.GetSliderTimeS(self.objData.StartTime, self.pixelLength) < 0 {
 		log.Println( self.objData.StartTime, self.pixelLength, "wuuuuuuuuuuuuuut")
 	}
+
+	tickPixLen := (100.0*self.Timings.SliderMult)/(self.Timings.TickRate*self.TPoint.GetRatio())
+	tickpoints := int(math.Ceil(self.pixelLength/tickPixLen))-1
+
+	for r:=0; r < int(self.repeat); r++ {
+		lengthFromEnd := self.pixelLength
+		for i:=1; i <= tickpoints; i++ {
+			time := self.objData.StartTime+int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
+			time2 := self.objData.StartTime+int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
+
+			if r%2 == 1 {
+				time2 = self.objData.StartTime+timings.GetSliderTimeP(self.TPoint, self.pixelLength)-int64(float64(i)*self.TPoint.Bpm/self.Timings.TickRate*(1.0/self.TPoint.GetRatio()))
+			}
+
+			lengthFromEnd -= tickPixLen
+
+			if lengthFromEnd < 0.01*self.pixelLength {
+				break
+			}
+
+			self.TickPoints = append(self.TickPoints, tickPoint{time2+timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
+		}
+	}
+
 	self.objData.EndTime = self.objData.StartTime + timings.GetSliderTimeP(self.TPoint, self.pixelLength) * self.repeat
 }
 
@@ -164,6 +197,12 @@ func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 			self.lastT = times
 		}
 
+		for i, p := range self.TickPoints {
+			if p.time < time && self.lastTick < i {
+				audio.PlaySliderTick(self.Timings.Current.SampleSet)
+				self.lastTick = i
+			}
+		}
 
 		rt := float64(self.pixelLength) / pixLen
 
@@ -260,6 +299,9 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	gl.ActiveTexture(gl.TEXTURE3)
 	render.ApproachCircle.Begin()
 
+	gl.ActiveTexture(gl.TEXTURE4)
+	render.SliderTick.Begin()
+
 	alpha := 1.0
 	arr := float64(self.objData.StartTime-time) / preempt
 
@@ -278,6 +320,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
+
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)
 
@@ -292,6 +335,32 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 			}
 
 		} else if time < self.objData.EndTime {
+
+			if settings.Objects.DrawFollowPoints {
+
+				shifted := render.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
+
+				for _, p := range self.TickPoints {
+					al := 0.0
+					if p.time > time {
+						al = math.Min(1.0, math.Max( (float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
+					}
+					if al > 0.0 {
+						batch.SetTranslation(p.Pos)
+						batch.SetSubScale(1.0/4, 1.0/4)
+						if settings.Objects.WhiteFollowPoints {
+							batch.SetColor(1, 1, 1, alpha*al)
+						} else {
+							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
+						}
+
+						batch.DrawUnitR(4)
+					}
+				}
+			}
+
+			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+			batch.SetSubScale(1.0, 1.0)
 			batch.SetTranslation(self.Pos)
 			batch.DrawUnitR(2)
 		}

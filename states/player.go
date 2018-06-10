@@ -66,7 +66,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.Background, err = utils.LoadTexture(beatMap.Bg)
 	player.Logo, err = utils.LoadTexture("assets/textures/logo.png")
 	log.Println(err)
-	winscl := 1920.0/1080.0
+	winscl := settings.Graphics.GetAspectRatio()
 	imScl := float64(player.Background.Width())/float64(player.Background.Height())
 	if imScl > winscl {
 		player.BgScl = bmath.NewVec2d(1, winscl/imScl)
@@ -91,9 +91,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.cursor = render.NewCursor()
 
-	scl = float32(800)/float32(384)//*3/4
+	scl = float32(settings.Graphics.GetHeightF()*800.0/1080.0)/float32(384)*float32(settings.Playfield.Scale)
 	log.Println(scl)
-	player.Cam = mgl32.Ortho( -1920/2, 1920.0/2 , 1080.0/2, -1080/2, 1, -1)
+	player.Cam = mgl32.Ortho( -float32(settings.Graphics.GetWidthF())/2, float32(settings.Graphics.GetWidthF())/2 , float32(settings.Graphics.GetHeightF())/2, -float32(settings.Graphics.GetHeightF())/2, 1, -1)
 
 	mat = mgl32.Scale3D(scl, scl, 1)
 

@@ -27,3 +27,20 @@ func GetColors(baseHue, hueShift float64, times int, alpha float64) []mgl32.Vec4
 
 	return colors
 }
+
+func GetColorShifted(color mgl32.Vec4, hueOffset float64) mgl32.Vec4 {
+	tohsv := colorful.Color{float64(color[0]), float64(color[1]), float64(color[2])}
+	h, s, v := tohsv.Hsv()
+	h += hueOffset
+
+	for h < 0 {
+		h += 360.0
+	}
+
+	for h > 360.0 {
+		h -= 360.0
+	}
+
+	col2 := colorful.Hsv(h, s, v)
+	return mgl32.Vec4{float32(col2.R), float32(col2.G), float32(col2.B), color.W()}
+}
