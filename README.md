@@ -3,11 +3,11 @@ danser is a visualiser for osu! maps written in Go.
 
 Application is in dev phase so only few things work. But if you want to test it, you should follow steps at the end of this readme.
 
-##Dance examples
+## Dance examples
 * [Halozy - Genryuu Kaiko [Higan Torrent] Mirror Collage](https://youtu.be/HCVIBQh4ljI)
 * [Nightcore - Flower Dance [Amachoco ARX.7] Mandala Mirror Collage](https://youtu.be/HBC89S-UwFc)
 
-##How to run it
+## How to run it
 You should have go sdk installed. Instead of cloning this repository, in your terminal type:
 ```$xslt
 go get -u github.com/wieku/danser
@@ -22,7 +22,7 @@ then:
 go run main.go
 ```
 
-####Run flags
+#### Run flags
 * `-artist="NOMA"`
 * `-title="Brain Power"`
 * `-difficulty="Overdrive"`
@@ -36,7 +36,7 @@ go run main.go -title="Brain Power" -difficulty="Overdrive"
 ```
 
 
-###Credits
+## Credits
 
 Original game was made by Dean Herbert ([@ppy](https://github.com/ppy)) and osu! community.
 
