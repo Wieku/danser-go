@@ -8,7 +8,7 @@ Application is in dev phase so only few things work. But if you want to test it,
 * [Nightcore - Flower Dance [Amachoco ARX.7] Mandala Mirror Collage](https://youtu.be/HBC89S-UwFc)
 
 ## How to run it
-You should have go sdk installed. Instead of cloning this repository, in your terminal type:
+You should have [go](https://golang.org/dl/) installed. Instead of cloning this repository, in your terminal type:
 ```$xslt
 go get -u github.com/wieku/danser
 ```
