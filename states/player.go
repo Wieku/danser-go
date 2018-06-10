@@ -67,11 +67,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.Logo, err = utils.LoadTexture("assets/textures/logo.png")
 	log.Println(err)
 	winscl := settings.Graphics.GetAspectRatio()
-	imScl := float64(player.Background.Width())/float64(player.Background.Height())
-	if imScl > winscl {
-		player.BgScl = bmath.NewVec2d(1, winscl/imScl)
-	} else {
-		player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
+
+	if player.Background != nil {
+		imScl := float64(player.Background.Width())/float64(player.Background.Height())
+		if imScl > winscl {
+			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
+		} else {
+			player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
+		}
 	}
 
 	player.sliderRenderer = render.NewSliderRenderer()
@@ -243,8 +246,10 @@ func (pl *Player) Update() {
 	pl.batch.SetCamera(mgl32.Ortho( -1, 1 , 1, -1, 1, -1))
 	pl.batch.SetColor(1, 1, 1, (0.05+(0.95*(1-pl.fadeIn)))*pl.Scl*pl.fadeOut)
 	pl.batch.ResetTransform()
-	pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
-	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
+	if pl.Background != nil {
+		pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
+		pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
+	}
 	/*pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), render.SliderGradient)*/
 	//pl.batch.SetCamera(mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1))
@@ -294,8 +299,6 @@ func (pl *Player) Update() {
 	
 	if pl.start {
 
-
-
 		pl.sliderRenderer.Begin()
 
 		for j:=0; j < settings.DIVIDES; j++ {
@@ -323,11 +326,13 @@ func (pl *Player) Update() {
 
 			pl.batch.SetScale(scale1 * 64*render.CS, scale1 *64*render.CS)
 			pl.batch.Begin()
-			for i := 0; i < len(pl.sliders); i++ {
-				res := pl.sliders[i].RenderOverlay(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
-				if res {
-					pl.sliders = append(pl.sliders[:i], pl.sliders[(i+1):]...)
-					i--
+			for i := len(pl.sliders)-1; i >= 0 && len(pl.sliders) > 0 ; i-- {
+				if i < len(pl.sliders) {
+					res := pl.sliders[i].RenderOverlay(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					if res {
+						pl.sliders = append(pl.sliders[:i], pl.sliders[(i+1):]...)
+						i++
+					}
 				}
 			}
 			pl.batch.End()
@@ -345,10 +350,12 @@ func (pl *Player) Update() {
 			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 
 			for i := len(pl.circles)-1; i >= 0 && len(pl.circles) > 0 ; i-- {
-				res := pl.circles[i].Render(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
-				if res {
-					pl.circles = append(pl.circles[:i], pl.circles[(i + 1):]...)
-					i++
+				if i < len(pl.circles) {
+					res := pl.circles[i].Render(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					if res {
+						pl.circles = append(pl.circles[:i], pl.circles[(i + 1):]...)
+						i++
+					}
 				}
 			}
 		}

@@ -11,7 +11,7 @@ import (
 
 func LoadImage(path string) (*image.NRGBA, error) {
 	file, err := os.Open(path)
-	log.Println("Loading texture: ", file.Name())
+	log.Println("Loading texture: ", path)
 	if err != nil {
 		log.Println("er1")
 		return nil, err
