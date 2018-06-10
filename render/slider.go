@@ -3,7 +3,7 @@ package render
 import (
 	"github.com/wieku/danser/bmath"
 	"math"
-	"github.com/faiface/glhf"
+	"github.com/wieku/glhf"
 	"log"
 	_ "image/png"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -44,15 +44,7 @@ func SetupSlider() {
 		log.Println(err)
 	}
 
-	fbo = glhf.NewFrame(1920, 1080, true)
-
-	fbo.Begin()
-	var depthRenderBuffer uint32
-	gl.GenRenderbuffers(1, &depthRenderBuffer)
-	gl.BindRenderbuffer( gl.RENDERBUFFER, depthRenderBuffer)
-	gl.RenderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT, 1920, 1080)
-	gl.FramebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer)
-	fbo.End()
+	fbo = glhf.NewFrame(1920, 1080, true, true)
 
 	fboSlice = glhf.MakeVertexSlice(fboShader, 6, 6)
 	fboSlice.Begin()

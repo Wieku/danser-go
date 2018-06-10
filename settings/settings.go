@@ -56,6 +56,10 @@ type audio struct {
 	EnableBeatmapSampleVolume bool //= false
 }
 
+type beat struct {
+	BeatScale float64 //1.4
+}
+
 type color struct {
 	EnableRainbow bool //true
 	RainbowSpeed float64 //8, degrees per second
@@ -69,6 +73,7 @@ type color struct {
 }
 
 type cursor struct {
+	UseObjectColors bool //true, overrides lower color settings
 	Colors *color
 	EnableCustomTrailGlowOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
 	TrailGlowOffset float64 //-36, offset of the cursor trail glow
@@ -80,12 +85,14 @@ type cursor struct {
 }
 
 type objects struct {
-	MandalaTexturesTrigger int64 //5, minimum value of cursors needed to use more translucent textures
+	MandalaTexturesTrigger int //5, minimum value of cursors needed to use more translucent textures
 	DrawApproachCircles bool //true
 	UseCursorColors bool //true, overrides lower color settings
 	Colors *color
 	ObjectsSize float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
 	ScaleToTheBeat bool //true, objects size is changing with music peak amplitude
+	SliderLOD int64 //30, number of triangles in a circle
+	SliderPathLOD int64 //0.5, int(pixelLength*(PathLOD/100)) => number of slider path points
 }
 
 type playfield struct {
@@ -103,6 +110,7 @@ type fileformat struct {
 	General *general
 	Graphics *graphics
 	Audio *audio
+	Beat *beat
 	Cursor *cursor
 	Objects *objects
 	Playfield *playfield
@@ -112,6 +120,7 @@ var Version string
 var General *general
 var Graphics *graphics
 var Audio *audio
+var Beat *beat
 var Cursor *cursor
 var Objects *objects
 var Playfield *playfield
@@ -123,10 +132,11 @@ func initDefaults() {
 	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator)}
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, false}
-	Cursor = &cursor{&color{true, 8, 0, 1.0, 1.0, false, 0, false, 0}, true, -36.0, false, 18, true, true, false}
-	Objects = &objects{5, true, true, &color{true, 8, 0, 1.0, 1.0, false, 0, true, 100.0}, -1, true}
+	Beat = &beat{1.4}
+	Cursor = &cursor{false, &color{true, 8, 0, 1.0, 1.0, false, 0, false, 0}, true, -36.0, false, 18, true, true, false}
+	Objects = &objects{5, true, true, &color{true, 8, 0, 1.0, 1.0, false, 0, true, 100.0}, -1, true, 30, 50}
 	Playfield = &playfield{5, 0, 0.95, 0.95, 1,true, 1.1}
-	fileStorage = &fileformat{&Version, General, Graphics, Audio, Cursor, Objects, Playfield}
+	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield}
 }
 
 func LoadSettings(version int) bool {
@@ -176,4 +186,4 @@ func saveSettings(path string) {
 	encoder.Encode(fileStorage)
 }
 
-var DIVIDES = 2
+var DIVIDES = 1

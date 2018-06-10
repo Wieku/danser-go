@@ -11,7 +11,7 @@ import (
 	"github.com/wieku/danser/render"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser/settings"
-	"github.com/faiface/glhf"
+	"github.com/wieku/glhf"
 )
 
 type Slider struct {
@@ -129,7 +129,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 	if timings.GetSliderTimeS(self.objData.StartTime, self.pixelLength) < 0 {
 		log.Println( self.objData.StartTime, self.pixelLength, "wuuuuuuuuuuuuuut")
 	}
-	self.objData.EndTime = self.objData.StartTime + timings.GetSliderTimeS(self.objData.StartTime, self.pixelLength) * self.repeat
+	self.objData.EndTime = self.objData.StartTime + timings.GetSliderTimeP(self.TPoint, self.pixelLength) * self.repeat
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
@@ -247,7 +247,7 @@ func (self *Slider) Render(time int64, preempt float64) {
 func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	if settings.DIVIDES > 2 {
+	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		render.CircleFull.Begin()
 	} else {
 		render.Circle.Begin()
@@ -271,13 +271,13 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 		alpha = float64(color[3])
 	}
 
-	if settings.DIVIDES > 2 {
+	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= 0.2
 	}
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
-	if settings.DIVIDES <= 2 {
+	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)
 

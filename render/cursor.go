@@ -5,7 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"math"
-	"github.com/faiface/glhf"
+	"github.com/wieku/glhf"
 	"sync"
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -37,7 +37,7 @@ func initCursor() {
 		panic(err)
 	}
 
-	cursorFbo = glhf.NewFrame(1920, 1080, true)
+	cursorFbo = glhf.NewFrame(1920, 1080, true, false)
 }
 
 type Cursor struct {

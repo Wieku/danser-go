@@ -6,7 +6,7 @@ import (
 	"flag"
 	"log"
 	"github.com/faiface/mainthread"
-	"github.com/faiface/glhf"
+	"github.com/wieku/glhf"
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/wieku/danser/states"
 	"github.com/go-gl/gl/v3.3-core/gl"
