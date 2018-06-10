@@ -14,8 +14,8 @@ func initDefaults() {
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, false}
 	Beat = &beat{1.4}
-	Cursor = &cursor{false, &color{true, 8, 0, 1.0, 1.0, false, 0, false, 0}, true, -36.0, false, 18, true, true, false}
-	Objects = &objects{5, true, true, &color{true, 8, 0, 1.0, 1.0, false, 0, true, 100.0}, -1, true, 30, 50, true, true, 0.0}
+	Cursor = &cursor{&color{true, 8, 0, 1.0, 1.0, false, 0, false, 0, 0}, true, -36.0, false, 18, true, true, false}
+	Objects = &objects{5, true, &color{true, 8, 0, 1.0, 1.0, false, 0, true, 100.0, 0}, -1, true, 30, 50, true, true, 0.0}
 	Playfield = &playfield{5, 0, 0.95, 0.95, 1,true, 1.1}
 	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield}
 }

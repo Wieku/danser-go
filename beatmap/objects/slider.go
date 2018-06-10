@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/glhf"
 	"math"
+	"github.com/wieku/danser/utils"
 )
 
 type tickPoint struct {
@@ -338,7 +339,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 
 			if settings.Objects.DrawFollowPoints {
 
-				shifted := render.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
+				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
 
 				for _, p := range self.TickPoints {
 					al := 0.0

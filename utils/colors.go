@@ -1,4 +1,4 @@
-package render
+package utils
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -6,6 +6,10 @@ import (
 )
 
 func GetColors(baseHue, hueShift float64, times int, alpha float64) []mgl32.Vec4 {
+	return GetColorsSV(baseHue, hueShift, times, 1, 1, alpha)
+}
+
+func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mgl32.Vec4 {
 	colors := make([]mgl32.Vec4, times)
 
 	for baseHue < 0.0 {
@@ -21,7 +25,7 @@ func GetColors(baseHue, hueShift float64, times int, alpha float64) []mgl32.Vec4
 		for hue >= 360.0 {
 			hue -= 360.0
 		}
-		color := colorful.Hsv(hue, 1, 1)
+		color := colorful.Hsv(hue, S, V)
 		colors[i] = mgl32.Vec4{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
 	}
 

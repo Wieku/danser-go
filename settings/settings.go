@@ -1,5 +1,10 @@
 package settings
 
+import (
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser/utils"
+)
+
 const SETTINGSVERSION = "v1"
 
 type general struct {
@@ -85,10 +90,49 @@ type color struct {
 	HueOffset float64 //0, custom hue offset for mirror collages
 	FlashToTheBeat bool //true, objects size is changing with music peak amplitude
 	FlashAmplitude float64 //50, hue offset for flashes
+	currentHue float64
+}
+
+func (cl *color) Update(delta float64) {
+	if cl.EnableRainbow {
+		cl.currentHue += cl.RainbowSpeed/1000.0 * delta
+		for cl.currentHue >= 360.0 {
+			cl.currentHue -= 360.0
+		}
+
+		for cl.currentHue < 0.0 {
+			cl.currentHue += 360.0
+		}
+	} else {
+		cl.currentHue = 0
+	}
+}
+
+func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
+	flashOffset := 0.0
+	if cl.FlashToTheBeat {
+		flashOffset = cl.FlashAmplitude * (beatScale-1.0)/(0.4*Beat.BeatScale)
+	}
+	hue := cl.BaseHue + cl.currentHue + flashOffset
+
+	for hue >= 360.0 {
+		hue -= 360.0
+	}
+
+	for hue < 0.0 {
+		hue += 360.0
+	}
+
+	offset := 360.0/float64(divides)
+
+	if cl.EnableCustomHueOffset {
+		offset = cl.HueOffset
+	}
+
+	return utils.GetColorsSV(hue, offset, divides, cl.Saturation, cl.Value, alpha)
 }
 
 type cursor struct {
-	UseObjectColors bool //true, overrides lower color settings
 	Colors *color
 	EnableCustomTrailGlowOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
 	TrailGlowOffset float64 //-36, offset of the cursor trail glow
@@ -102,7 +146,6 @@ type cursor struct {
 type objects struct {
 	MandalaTexturesTrigger int //5, minimum value of cursors needed to use more translucent textures
 	DrawApproachCircles bool //true
-	UseCursorColors bool //true, overrides lower color settings
 	Colors *color
 	ObjectsSize float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
 	ScaleToTheBeat bool //true, objects size is changing with music peak amplitude

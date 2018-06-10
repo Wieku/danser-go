@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/glhf"
 	"sync"
 	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/utils"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -152,12 +153,17 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	cursorShader.Begin()
 
-	siz := 18.0
+	siz := settings.Cursor.CursorSize
 
-	cursorShader.SetUniformAttr(0, GetColorShifted(color, -36.0))
+	if settings.Cursor.EnableCustomTrailGlowOffset {
+		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
+	}
+
+	cursorShader.SetUniformAttr(0, color2)
 	cursorShader.SetUniformAttr(1, int32(1))
 	cursorShader.SetUniformAttr(2, batch.Projection)
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
+
 	cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
 
 	select {

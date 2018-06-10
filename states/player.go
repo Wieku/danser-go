@@ -57,7 +57,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.batch = render.NewSpriteBatch()
 	player.bMap = beatMap
 	log.Println(beatMap.Name + " " + beatMap.Difficulty)
-	player.CS = (1.0 - 0.7 * (beatMap.CircleSize - 5) / 5) / 2 * 1.2
+	player.CS = (1.0 - 0.7 * (beatMap.CircleSize - 5) / 5) / 2
 	render.CS = player.CS
 	render.SetupSlider()
 
@@ -140,7 +140,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		for {
 
 			musicPlayer.Update()
-			player.SclA = math.Min(1.2, math.Max(musicPlayer.GetBeat()+0.7, 0.8))
+			player.SclA = math.Min(1.4*settings.Beat.BeatScale, math.Max(musicPlayer.GetBeat()*settings.Beat.BeatScale+1.0, 1.0))
 
 			fft := musicPlayer.GetFFT()
 
@@ -231,11 +231,11 @@ func (pl *Player) Update() {
 
 
 	//colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
-	offst := 0.0
+	/*offst := 0.0
 	if settings.Objects.Colors.FlashToTheBeat {
-		offst = settings.Objects.Colors.FlashAmplitude * ((pl.Scl-0.8)/0.4)
-	}
-	colors := render.GetColors(pl.h+offst, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
+		offst = settings.Objects.Colors.FlashAmplitude * ((pl.Scl-1.0)/(0.4*settings.Beat.BeatScale))
+	}*/
+
 
 	render.CS = pl.CS
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -275,6 +275,27 @@ func (pl *Player) Update() {
 	pl.fxBatch.End()*/
 
 	if pl.start {
+		settings.Objects.Colors.Update(timMs)
+		settings.Cursor.Colors.Update(timMs)
+	}
+
+	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	scale1 := pl.Scl
+	scale2 := pl.Scl
+
+	if !settings.Objects.ScaleToTheBeat {
+		scale1 = 1
+	}
+	
+	if !settings.Cursor.ScaleToTheBeat {
+		scale2 = 1
+	}
+	
+	if pl.start {
+
+
+
 		pl.sliderRenderer.Begin()
 
 		for j:=0; j < settings.DIVIDES; j++ {
@@ -286,7 +307,7 @@ func (pl *Player) Update() {
 			pl.sliderRenderer.SetColor(colors[j])
 
 			for i := 0; i < len(pl.sliders); i++ {
-				pl.sliderRenderer.SetScale(pl.Scl)
+				pl.sliderRenderer.SetScale(scale1)
 				pl.sliders[i].Render(pl.progressMs, pl.bMap.ARms)
 			}
 
@@ -300,7 +321,7 @@ func (pl *Player) Update() {
 			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
 			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 
-			pl.batch.SetScale(pl.Scl * 64*render.CS, pl.Scl *64*render.CS)
+			pl.batch.SetScale(scale1 * 64*render.CS, scale1 *64*render.CS)
 			pl.batch.Begin()
 			for i := 0; i < len(pl.sliders); i++ {
 				res := pl.sliders[i].RenderOverlay(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
@@ -317,7 +338,7 @@ func (pl *Player) Update() {
 		pl.batch.Begin()
 		for j:=0; j < settings.DIVIDES; j++ {
 
-			pl.batch.SetScale(64*render.CS*pl.Scl, 64*render.CS*pl.Scl)
+			pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
 
 			vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
 			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
@@ -348,7 +369,7 @@ func (pl *Player) Update() {
 		if ind < 0 {
 			ind = settings.DIVIDES - 1
 		}
-		pl.cursor.DrawM(pl.Scl, pl.batch, colors[j], colors[ind])
+		pl.cursor.DrawM(scale2, pl.batch, colors1[j], colors1[ind])
 
 	}
 
