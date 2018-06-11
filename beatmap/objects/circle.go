@@ -90,7 +90,7 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		alpha *= 0.2
+		alpha *= settings.Objects.MandalaTexturesAlpha
 	}
 
 	batch.SetTranslation(self.objData.StartPos)

@@ -247,7 +247,7 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 	self.vao, self.divides = renderer.GetShape(self.GetCurve())
 }
 
-func (self *Slider) Render(time int64, preempt float64) {
+func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, renderer *render.SliderRenderer) {
 	in := 0
 	out := int(self.pixelLength/2)
 
@@ -277,7 +277,9 @@ func (self *Slider) Render(time int64, preempt float64) {
 
 	self.LasTTI = time
 
-	if time <= self.objData.EndTime && !self.End{
+	renderer.SetColor(color)
+
+	if time <= self.objData.EndTime /*&& !self.End*/{
 		subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
 		subVao.Begin()
 		subVao.Draw()
@@ -316,7 +318,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		alpha *= 0.2
+		alpha *= settings.Objects.MandalaTexturesAlpha
 	}
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)

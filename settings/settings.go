@@ -88,8 +88,6 @@ type color struct {
 	EnableRainbow bool //true
 	RainbowSpeed float64 //8, degrees per second
 	BaseColor *hsv //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
-	//Saturation float64 //1.0
-	//Value float64 //1.0
 	EnableCustomHueOffset bool //false, false means that every iteration has an offset of i*360/n
 	HueOffset float64 //0, custom hue offset for mirror collages
 	FlashToTheBeat bool //true, objects size is changing with music peak amplitude
@@ -150,9 +148,11 @@ type cursor struct {
 
 type objects struct {
 	MandalaTexturesTrigger int //5, minimum value of cursors needed to use more translucent textures
+	MandalaTexturesAlpha float64 //0.3
 	DrawApproachCircles bool //true
 	Colors *color
 	ObjectsSize float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
+	CSMult float64 //1.2, if ObjectsSize is -1, then CS value will be multiplied by this
 	ScaleToTheBeat bool //true, objects size is changing with music peak amplitude
 	SliderLOD int64 //30, number of triangles in a circle
 	SliderPathLOD int64 //0.5, int(pixelLength*(PathLOD/100)) => number of slider path points
@@ -171,6 +171,9 @@ type playfield struct {
 	Scale float64 //1, scale the playfield (1 means that 512 will be rescaled to 800 on FullHD monitor)
 	FlashToTheBeat bool //true, background dim varies accoriding to music power
 	KiaiFactor float64 //1.2, scale and flash factor during Kiai
+	BaseRotation float64 //0, base rotation of playfield
+	RotationEnabled bool//false
+	RotationSpeed float64//2, degrees per second
 }
 
 type fileformat struct {

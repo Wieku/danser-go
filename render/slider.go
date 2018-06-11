@@ -127,8 +127,6 @@ func (sr *SliderRenderer) EndAndRender() {
 	fboShader.End()
 
 	fbo.Texture().End()
-
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {

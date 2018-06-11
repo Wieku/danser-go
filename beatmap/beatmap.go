@@ -45,8 +45,13 @@ func (b *BeatMap) Update(time int64, cursor *render.Cursor) {
 			any = true
 
 			if isDone := g.Update(time, cursor); isDone {
-				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
-				if len(b.Queue) > 0 && i != len(b.Queue)-1 {
+				if i < len(b.Queue) -1 {
+					b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
+				} else if i < len(b.Queue) {
+					b.Queue = b.Queue[:i]
+				}
+
+				if len(b.Queue) > 0 && i < len(b.Queue) {
 					b.movers[MoverId].SetObjects(g, b.Queue[i])
 				}
 			}

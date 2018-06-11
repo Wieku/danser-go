@@ -49,6 +49,7 @@ type Player struct {
 	vao *glhf.VertexSlice
 	vaoD []float32
 	vaoDirty bool
+	rotation float64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -57,7 +58,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.batch = render.NewSpriteBatch()
 	player.bMap = beatMap
 	log.Println(beatMap.Name + " " + beatMap.Difficulty)
-	player.CS = (1.0 - 0.7 * (beatMap.CircleSize - 5) / 5) / 2
+	player.CS = (1.0 - 0.7 * (beatMap.CircleSize - 5) / 5) / 2 * settings.Objects.CSMult
 	render.CS = player.CS
 	render.SetupSlider()
 
@@ -287,6 +288,16 @@ func (pl *Player) Update() {
 		settings.Objects.Colors.Update(timMs)
 		settings.Objects.CustomSliderBorderColor.Update(timMs)
 		settings.Cursor.Colors.Update(timMs)
+		if settings.Playfield.RotationEnabled {
+			pl.rotation += settings.Playfield.RotationSpeed/1000.0 * timMs
+			for pl.rotation > 360.0 {
+				pl.rotation -= 360.0
+			}
+
+			for pl.rotation < 0.0 {
+				pl.rotation += 360.0
+			}
+		}
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
@@ -299,6 +310,7 @@ func (pl *Player) Update() {
 
 	scale1 := pl.Scl
 	scale2 := pl.Scl
+	rotationRad := (pl.rotation + settings.Playfield.BaseRotation) * math.Pi / 180.0
 
 	if !settings.Objects.ScaleToTheBeat {
 		scale1 = 1
@@ -314,24 +326,29 @@ func (pl *Player) Update() {
 
 		for j:=0; j < settings.DIVIDES; j++ {
 
-			vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
-			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-			pl.sliderRenderer.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
-
-			pl.sliderRenderer.SetColor(colors2[j])
+			//vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
+			//lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
+			rot := mgl32.HomogRotate3DZ(float32(-rotationRad-float64(j)*2*math.Pi/float64(settings.DIVIDES)/*+math.Pi/2*/))
+			pl.sliderRenderer.SetCamera(pl.Cam.Mul4(/*lookAt*/rot).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 
 			for i := 0; i < len(pl.sliders); i++ {
 				pl.sliderRenderer.SetScale(scale1)
-				pl.sliders[i].Render(pl.progressMs, pl.bMap.ARms)
+				pl.sliders[i].Render(pl.progressMs, pl.bMap.ARms, colors2[j], pl.sliderRenderer)
 			}
 
 		}
 
 		pl.sliderRenderer.EndAndRender()
 
+		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
+			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+		} else {
+			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+		}
+
 		for j:=0; j < settings.DIVIDES; j++ {
 
-			vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
+			vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
 			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
 			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 
@@ -356,7 +373,7 @@ func (pl *Player) Update() {
 
 			pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
 
-			vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
+			vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
 			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
 			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 
@@ -372,15 +389,13 @@ func (pl *Player) Update() {
 		}
 		pl.batch.End()
 
-		//gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
-
 	}
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	gl.BlendEquation(gl.FUNC_ADD)
 	for j:=0; j < settings.DIVIDES; j++ {
 
-		vc := bmath.NewVec2d(0, 1).Rotate(float64(j)*2*math.Pi/float64(settings.DIVIDES))
+		vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
 		lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
 		pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 		ind := j-1
