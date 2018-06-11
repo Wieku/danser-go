@@ -33,10 +33,10 @@ void main() {
 
     int kSize = int(length(kernelSize*direction));
 
-    for (int i = 1; i < kSize; i++) {
+    for (int i = 2; i < kSize; i+=2) {
         float fac = float(i) - 0.5f;
 
-        gs = gauss(i, tSigma);
+        gs = gauss(i, tSigma)*2;
         totalGauss += 2*gs;
 
         vec2 mv = fac * direction / size;

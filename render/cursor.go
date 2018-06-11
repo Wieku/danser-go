@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
 	"io/ioutil"
+	//"log"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -54,7 +55,7 @@ type Cursor struct {
 
 	vertices []float32
 	vaoDirty bool
-	vaoChannel chan[]float32
+	vaoChannel chan*[]float32
 	vao *glhf.VertexSlice
 	lastLen int
 	mutex *sync.Mutex
@@ -67,7 +68,7 @@ func NewCursor() *Cursor {
 
 	vao := glhf.MakeVertexSlice(cursorShader, 1024*1024, 1024*1024) //creating approx. 4MB vao, just in case
 	verts := make ([]float32, 1024*1024*9)
-	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, vertices: verts, mutex: &sync.Mutex{}, vaoChannel: make(chan[]float32, 1)}
+	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, vertices: verts, mutex: &sync.Mutex{}, vaoChannel: make(chan*[]float32, 1)}
 }
 
 
@@ -117,14 +118,15 @@ func (cr *Cursor) Update(tim float64) {
 		}
 
 		select {
-			case cr.vaoChannel <- arr:
+			case cr.vaoChannel <- &arr:
 			default:
 		}
 
 		cr.vaoDirty = true
 	} else {
+		empty := make([]float32, 0)
 		select {
-		case cr.vaoChannel <- make([]float32, 0):
+		case cr.vaoChannel <- &empty:
 		default:
 		}
 	}
@@ -172,14 +174,15 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	select {
 		case arr := <-cursor.vaoChannel :
-			subVao := cursor.vao.Slice(0, len(arr)/9)
+			//log.Println(len(*arr))
+			subVao := cursor.vao.Slice(0, len(*arr)/9)
 			subVao.Begin()
 
-			subVao.SetVertexData(arr)
+			subVao.SetVertexData(*arr)
 
 			subVao.End()
 			cursor.vaoDirty = false
-			cursor.lastLen = len(arr)/(9*6)
+			cursor.lastLen = len(*arr)/(9*6)
 			break
 	default:
 

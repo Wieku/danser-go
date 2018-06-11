@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"math"
+	"github.com/wieku/danser/settings"
 )
 
 type BlurEffect struct {
@@ -104,6 +105,7 @@ func kernelSize(sigma float32) int {
 func (effect *BlurEffect) Begin() {
 	effect.fbo1.Begin()
 	glhf.Clear(0, 0, 0, 0)
+	gl.Viewport(0, 0, int32(effect.fbo1.Texture().Width()), int32(effect.fbo1.Texture().Height()))
 }
 
 func (effect *BlurEffect) EndAndProcess() *glhf.Texture {
@@ -143,6 +145,7 @@ func (effect *BlurEffect) EndAndProcess() *glhf.Texture {
 
 	effect.fboSlice.End()
 	effect.blurShader.End()
+	gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
 	return effect.fbo1.Texture()
 }
 

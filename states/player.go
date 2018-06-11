@@ -51,6 +51,7 @@ type Player struct {
 	vaoD []float32
 	vaoDirty bool
 	rotation float64
+	profiler *utils.FPSCounter
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -71,6 +72,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	winscl := settings.Graphics.GetAspectRatio()
 
 	if player.Background != nil {
+		player.blurEffect = render.NewBlurEffect(player.Background.Width(), player.Background.Height()/*int(settings.Graphics.GetHeight())*/)
+		player.blurEffect.SetBlur(0.0, 0.0)
 		imScl := float64(player.Background.Width())/float64(player.Background.Height())
 		if imScl > winscl {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
@@ -80,8 +83,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	player.sliderRenderer = render.NewSliderRenderer()
-	player.blurEffect = render.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-	player.blurEffect.SetBlur(0.0, 0.0)
 	player.bMap.Reset()
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -177,7 +178,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(40*time.Millisecond)
 		}
 	}()
-
+	player.profiler = utils.NewFPSCounter(60)
 	player.musicPlayer = musicPlayer
 	return player
 }
@@ -191,13 +192,19 @@ func (pl *Player) Update() {
 	tim := utils.GetNanoTime()
 	timMs := float64(tim-pl.lastTime)/1000000.0
 
-	fps := 1000.0/timMs
 
-	if fps < 100 {
+	pl.profiler.PutSample(1000.0/timMs)
+	fps := pl.profiler.GetFPS()
+
+	/*if fps < 100 {
 		log.Println(fps)
-	}
+	}*/
 
 	if pl.start {
+		//log.Println(fps)
+		if timMs > 5000.0/(fps) {
+			log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
+		}
 
 		pl.progressMs = int64(pl.progressMsF)
 
@@ -270,9 +277,14 @@ func (pl *Player) Update() {
 			pl.blurEffect.SetBlur(blurVal, blurVal)
 		}
 
-		pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
+		pl.batch.SetScale(1, 1)
 
-		pl.blurEffect.Begin()
+		if settings.Playfield.BlurEnable {
+			pl.blurEffect.Begin()
+		} else {
+			pl.batch.SetColor(1, 1, 1, bgAlpha)
+			pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
+		}
 
 		pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
 
@@ -280,8 +292,7 @@ func (pl *Player) Update() {
 
 		if settings.Playfield.BlurEnable {
 			texture := pl.blurEffect.EndAndProcess()
-
-			pl.batch.SetScale(1, -1)
+			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
 			pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), texture)
 		}
 
