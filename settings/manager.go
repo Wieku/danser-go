@@ -16,7 +16,7 @@ func initDefaults() {
 	Beat = &beat{1.2}
 	Cursor = &cursor{&color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, false, 0, 0}, true, -36.0, false, 18, true, true, false, 0.4}
 	Objects = &objects{5, 0.3, true, &color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, true, 100.0, 0}, -1, 1.2, true, 30, 50, true, true, 0.0, false, &color{false, 8, &hsv{0, 0.0, 1.0}, false, 0, true, 100.0, 0}}
-	Playfield = &playfield{5, 0, 0.95, 0.95, 1,true, 1.1, 0, false, 2}
+	Playfield = &playfield{5, 0,  0.95, 0.95, 0,0.6, 0.6, 1,true, true, 0.8, 1.1, 0, false, 2}
 	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield}
 }
 

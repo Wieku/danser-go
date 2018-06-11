@@ -25,6 +25,7 @@ type Player struct {
 	queue2 []objects.BaseObject
 	processed []objects.BaseObject
 	sliderRenderer *render.SliderRenderer
+	blurEffect *render.BlurEffect
 	lastTime int64
 	progressMsF float64
 	progressMs int64
@@ -79,6 +80,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	player.sliderRenderer = render.NewSliderRenderer()
+	player.blurEffect = render.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+	player.blurEffect.SetBlur(0.0, 0.0)
 	player.bMap.Reset()
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -204,6 +207,7 @@ func (pl *Player) Update() {
 		} else if pl.Scl > pl.SclA {
 			pl.Scl -= (pl.Scl-pl.SclA) * timMs/100
 		}
+
 	}
 
 	pl.lastTime = tim
@@ -246,14 +250,34 @@ func (pl *Player) Update() {
 	pl.batch.Begin()
 	pl.batch.SetCamera(mgl32.Ortho( -1, 1 , 1, -1, 1, -1))
 	bgAlpha := ((1.0-settings.Playfield.BackgroundDim)+((settings.Playfield.BackgroundDim - settings.Playfield.BackgroundInDim)*(1-pl.fadeIn)))*pl.fadeOut
+	blurVal := (settings.Playfield.BackgroundBlur - (settings.Playfield.BackgroundBlur-settings.Playfield.BackgroundInBlur)*(1-pl.fadeIn))*pl.fadeOut
+
+
 	if settings.Playfield.FlashToTheBeat {
 		bgAlpha *= pl.Scl
 	}
-	pl.batch.SetColor(1, 1, 1, bgAlpha)
+
+	if settings.Playfield.UnblurToTheBeat {
+		blurVal -= settings.Playfield.UnblurFill*(blurVal)*(pl.Scl-1.0)/(settings.Beat.BeatScale*0.4)
+	}
+
+	pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.ResetTransform()
 	if pl.Background != nil {
+		pl.blurEffect.SetBlur(/*1.0 - 0.5*(pl.Scl-1)/(0.4*settings.Beat.BeatScale), 1.0 - 0.5*(pl.Scl-1)/(0.4*settings.Beat.BeatScale)*/blurVal, blurVal)
 		pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
+
+		pl.blurEffect.Begin()
+
 		pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
+
+		pl.batch.SetColor(1, 1, 1, bgAlpha)
+
+		texture := pl.blurEffect.EndAndProcess()
+
+		pl.batch.SetScale(1, -1)
+		pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), texture)
+
 	}
 	/*pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), render.SliderGradient)*/
@@ -261,6 +285,8 @@ func (pl *Player) Update() {
 	//pl.batch.SetScale(0.5, 0.5)
 	//pl.batch.SetColor(1, 1, 1, 1-pl.fadeIn)
 	//pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
+
+
 	pl.batch.End()
 
 	/*pl.fxBatch.Begin()

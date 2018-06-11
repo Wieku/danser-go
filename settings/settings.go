@@ -168,8 +168,13 @@ type playfield struct {
 	BackgroundInDim float64 //0, background dim at the start of app
 	BackgroundDim float64 // 0.95, background dim at the beatmap start
 	BackgroundDimBreaks float64 // 0.95, background dim at the breaks
+	BackgroundInBlur float64 //0, background blur at the start of app
+	BackgroundBlur float64 // 0.6, background blur at the beatmap start
+	BackgroundBlurBreaks float64 // 0.6, background blur at the breaks
 	Scale float64 //1, scale the playfield (1 means that 512 will be rescaled to 800 on FullHD monitor)
 	FlashToTheBeat bool //true, background dim varies accoriding to music power
+	UnblurToTheBeat bool //true, background blur varies accoriding to music power
+	UnblurFill float64 //0.8, if blur is set to 0.6, then on full beat blur will be equal to 0.12
 	KiaiFactor float64 //1.2, scale and flash factor during Kiai
 	BaseRotation float64 //0, base rotation of playfield
 	RotationEnabled bool//false
