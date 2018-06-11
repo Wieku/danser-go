@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"io/ioutil"
 )
 
 var shader *glhf.Shader = nil
@@ -23,7 +24,9 @@ func setup() {
 		{Name: "model", Type: glhf.Mat4},
 		{Name: "endTrans", Type: glhf.Mat4},
 	}
-	shader, _ = glhf.NewShader(circleVertexFormat, circleUniformFormat, vertex, fragment)
+	vert , _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
+	frag , _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
+	shader, _ = glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
 
 	vao = glhf.MakeVertexSlice(shader, 6, 6)
 	vao.Begin()
@@ -163,37 +166,3 @@ func (batch *SpriteBatch) SetEndTransform(dz mgl32.Mat4) {
 	batch.lastTrans = dz
 	shader.SetUniformAttr(4, dz)
 }
-
-const vertex = `
-#version 330
-
-in vec3 in_position;
-in vec2 in_tex_coord;
-
-uniform mat4 proj; 
-uniform mat4 model; 
-uniform mat4 endTrans; 
-
-out vec2 tex_coord;
-void main()
-{
-    gl_Position = endTrans * (proj * (model * vec4(in_position, 1)));
-    tex_coord = in_tex_coord;
-}
-`
-
-const fragment = `
-#version 330
-
-uniform sampler2D tex;
-uniform vec4 col_tint;
-
-in vec2 tex_coord;
-out vec4 color;
-
-void main()
-{
-    vec4 in_color = texture2D(tex, tex_coord);
-	color = in_color*col_tint;
-}
-`

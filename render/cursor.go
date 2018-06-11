@@ -9,6 +9,7 @@ import (
 	"sync"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
+	"io/ioutil"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -33,7 +34,9 @@ func initCursor() {
 	}
 
 	var err error
-	cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, cursorVertex, cursorFragment)
+	vert , _ := ioutil.ReadFile("assets/shaders/cursortrail.vsh")
+	frag , _ := ioutil.ReadFile("assets/shaders/cursortrail.fsh")
+	cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic(err)
@@ -200,7 +203,6 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	cursorFbo.Texture().Begin()
 	fboShader.Begin()
 	fboShader.SetUniformAttr(0, int32(1))
-	fboShader.SetUniformAttr(1, float32(1))
 	fboSlice.Begin()
 	fboSlice.Draw()
 	fboSlice.End()
@@ -225,44 +227,3 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	CursorTop.End()
 
 }
-
-const cursorVertex = `
-#version 330
-
-in vec3 in_position;
-in vec3 in_mid;
-in vec2 in_tex_coord;
-in float in_index;
-
-uniform mat4 proj;
-uniform float scale;
-uniform float points;
-uniform float endScale;
-
-out vec2 tex_coord;
-out float index;
-
-void main() {
-    gl_Position = proj * vec4((in_position - in_mid) * scale * (endScale + (1f - endScale) * in_index / points) + in_mid, 1);
-    tex_coord = in_tex_coord;
-	index = in_index;
-}
-`
-
-const cursorFragment = `
-#version 330
-
-uniform sampler2D tex;
-uniform vec4 col_tint;
-uniform float points;
-
-in vec2 tex_coord;
-in float index;
-
-out vec4 color;
-
-void main() {
-    vec4 in_color = texture2D(tex, tex_coord);
-	color = in_color * col_tint * vec4(1, 1, 1, smoothstep(0, points / 3, index));
-}
-`

@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/settings"
+	"io/ioutil"
 )
 
 var sliderShader *glhf.Shader = nil
@@ -29,14 +30,20 @@ func SetupSlider() {
 	}
 	var err error
 
-	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "tex", Type: glhf.Int}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}}, sliderVec, sliderFrag)
+	svert , _ := ioutil.ReadFile("assets/shaders/slider.vsh")
+	sfrag , _ := ioutil.ReadFile("assets/shaders/slider.fsh")
+	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "tex", Type: glhf.Int}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}}, string(svert), string(sfrag))
 	if err != nil {
 		log.Println(err)
 	}
+
+
+	fvert , _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	ffrag , _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
 	fboShader, err = glhf.NewShader(glhf.AttrFormat{
 		{Name: "in_position", Type: glhf.Vec3},
 		{Name: "in_tex_coord", Type: glhf.Vec2},
-	}, glhf.AttrFormat{{Name: "tex", Type: glhf.Int}, {Name: "alpha", Type: glhf.Float}}, fboVec, fboFrag)
+	}, glhf.AttrFormat{{Name: "tex", Type: glhf.Int}}, string(fvert), string(ffrag))
 
 
 	if err != nil {
@@ -114,7 +121,6 @@ func (sr *SliderRenderer) EndAndRender() {
 
 	fboShader.Begin()
 	fboShader.SetUniformAttr(0, int32(0))
-	fboShader.SetUniformAttr(1, float32(1))
 	fboSlice.Begin()
 	fboSlice.Draw()
 	fboSlice.End()
@@ -171,69 +177,3 @@ func createCircle(x, y, radius float64, segments int) ([]bmath.Vector2d) {
 
 	return points
 }
-
-const sliderFrag = `
-#version 330
-
-uniform sampler2D tex;
-uniform vec4 col_border;
-
-in vec2 tex_coord;
-out vec4 color;
-void main()
-{
-    vec4 in_color = texture2D(tex, tex_coord);
-
-	//vec4 col_tint = vec4(0, 0, 1, 0.5);
-
-	color = in_color*col_border;//vec4(mix(in_color.xyz*col_border.xyz, col_tint.xyz, 1.0-in_color.a), in_color.a*col_border.a);
-}
-`
-
-const sliderVec = `
-#version 330
-
-in vec3 in_position;
-in vec3 center;
-in vec2 in_tex_coord;
-
-uniform mat4 proj;
-uniform mat4 trans;
-
-out vec2 tex_coord;
-void main()
-{
-    gl_Position = proj * ((trans * vec4(in_position-center, 1))+vec4(center, 0));
-    tex_coord = in_tex_coord;
-}
-`
-
-const fboFrag = `
-#version 330
-
-uniform sampler2D tex;
-uniform float alpha;
-
-in vec2 tex_coord;
-out vec4 color;
-
-void main()
-{
-    vec4 in_color = texture2D(tex, tex_coord);
-	color = vec4(in_color.xyz, in_color.a*alpha);
-}
-`
-
-const fboVec = `
-#version 330
-
-in vec3 in_position;
-in vec2 in_tex_coord;
-
-out vec2 tex_coord;
-void main()
-{
-    gl_Position = vec4(in_position, 1);
-    tex_coord = in_tex_coord;
-}
-`
