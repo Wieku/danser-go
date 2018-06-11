@@ -9,6 +9,11 @@ func GetColors(baseHue, hueShift float64, times int, alpha float64) []mgl32.Vec4
 	return GetColorsSV(baseHue, hueShift, times, 1, 1, alpha)
 }
 
+func GetColor(H, S, V, alpha float64) mgl32.Vec4 {
+	color := colorful.Hsv(H, S, V)
+	return mgl32.Vec4{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
+}
+
 func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mgl32.Vec4 {
 	colors := make([]mgl32.Vec4, times)
 
@@ -25,8 +30,8 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mg
 		for hue >= 360.0 {
 			hue -= 360.0
 		}
-		color := colorful.Hsv(hue, S, V)
-		colors[i] = mgl32.Vec4{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
+
+		colors[i] = GetColor(hue, S, V, alpha)
 	}
 
 	return colors

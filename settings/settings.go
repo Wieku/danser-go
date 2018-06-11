@@ -80,12 +80,16 @@ type beat struct {
 	BeatScale float64 //1.4
 }
 
+type hsv struct {
+	Hue, Saturation, Value float64
+}
+
 type color struct {
 	EnableRainbow bool //true
 	RainbowSpeed float64 //8, degrees per second
-	BaseHue float64 //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
-	Saturation float64 //1.0
-	Value float64 //1.0
+	BaseColor *hsv //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
+	//Saturation float64 //1.0
+	//Value float64 //1.0
 	EnableCustomHueOffset bool //false, false means that every iteration has an offset of i*360/n
 	HueOffset float64 //0, custom hue offset for mirror collages
 	FlashToTheBeat bool //true, objects size is changing with music peak amplitude
@@ -113,7 +117,7 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 	if cl.FlashToTheBeat {
 		flashOffset = cl.FlashAmplitude * (beatScale-1.0)/(0.4*Beat.BeatScale)
 	}
-	hue := cl.BaseHue + cl.currentHue + flashOffset
+	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
 
 	for hue >= 360.0 {
 		hue -= 360.0
@@ -129,7 +133,7 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 		offset = cl.HueOffset
 	}
 
-	return utils.GetColorsSV(hue, offset, divides, cl.Saturation, cl.Value, alpha)
+	return utils.GetColorsSV(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
 type cursor struct {
@@ -155,6 +159,8 @@ type objects struct {
 	DrawFollowPoints bool //true
 	WhiteFollowPoints bool //true
 	FollowPointColorOffset float64 //0.0, hue offset of the followpoint
+	EnableCustomSliderBorderColor bool
+	CustomSliderBorderColor *color
 }
 
 type playfield struct {

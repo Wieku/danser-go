@@ -281,11 +281,18 @@ func (pl *Player) Update() {
 
 	if pl.start {
 		settings.Objects.Colors.Update(timMs)
+		settings.Objects.CustomSliderBorderColor.Update(timMs)
 		settings.Cursor.Colors.Update(timMs)
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
 	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors2 := colors
+
+	if settings.Objects.EnableCustomSliderBorderColor {
+		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	}
+
 	scale1 := pl.Scl
 	scale2 := pl.Scl
 
@@ -307,7 +314,7 @@ func (pl *Player) Update() {
 			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
 			pl.sliderRenderer.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
 
-			pl.sliderRenderer.SetColor(colors[j])
+			pl.sliderRenderer.SetColor(colors2[j])
 
 			for i := 0; i < len(pl.sliders); i++ {
 				pl.sliderRenderer.SetScale(scale1)
