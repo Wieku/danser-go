@@ -26,7 +26,7 @@ go run main.go
 * `-artist="NOMA"`
 * `-title="Brain Power"`
 * `-difficulty="Overdrive"`
-* `-maker="Skystar"`
+* `-creator="Skystar"`
 * `-cursors=2` - number of cursors used in mirror collage
 * `-settings=1` - if number given is bigger than 0 (e.g. 2) then app will try to load `settings-2.json` instead of `settings.json`
 

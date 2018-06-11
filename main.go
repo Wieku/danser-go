@@ -25,7 +25,7 @@ func run() {
 		artist := flag.String("artist", "", "")
 		title := flag.String("title", "", "")
 		difficulty := flag.String("difficulty", "", "")
-		creator := flag.String("maker", "", "")
+		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 2, "")
 
