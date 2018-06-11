@@ -108,13 +108,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	musicPlayer := audio.NewMusic(beatMap.Audio)
 
 	go func() {
-		time.Sleep(2*time.Second)
+		time.Sleep(time.Duration(settings.Playfield.LeadInTime*float64(time.Second)))
 
 		for i := 1; i <= 100; i++ {
 			player.fadeIn = float64(i) / 100
 			time.Sleep(10*time.Millisecond)
 		}
-		time.Sleep(500*time.Millisecond)
+		//time.Sleep(500*time.Millisecond)
 		player.start = true
 		musicPlayer.Play()
 	}()
@@ -244,7 +244,11 @@ func (pl *Player) Update() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	pl.batch.Begin()
 	pl.batch.SetCamera(mgl32.Ortho( -1, 1 , 1, -1, 1, -1))
-	pl.batch.SetColor(1, 1, 1, (0.05+(0.95*(1-pl.fadeIn)))*pl.Scl*pl.fadeOut)
+	bgAlpha := ((1.0-settings.Playfield.BackgroundDim)+((settings.Playfield.BackgroundDim - settings.Playfield.BackgroundInDim)*(1-pl.fadeIn)))*pl.fadeOut
+	if settings.Playfield.FlashToTheBeat {
+		bgAlpha *= pl.Scl
+	}
+	pl.batch.SetColor(1, 1, 1, bgAlpha)
 	pl.batch.ResetTransform()
 	if pl.Background != nil {
 		pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
