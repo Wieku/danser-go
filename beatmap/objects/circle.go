@@ -65,7 +65,7 @@ func (self *Circle) SetTiming(timings *Timings) {
 
 func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 	gl.ActiveTexture(gl.TEXTURE0)
-	if settings.DIVIDES > 2 {
+	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		render.CircleFull.Begin()
 	} else {
 		render.Circle.Begin()
@@ -89,7 +89,7 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 		alpha = float64(color[3])
 	}
 
-	if settings.DIVIDES > 2 {
+	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= 0.2
 	}
 
@@ -98,7 +98,7 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 	batch.DrawUnitR(0)
-	if settings.DIVIDES <= 2 {
+	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		batch.SetColor(1, 1, 1, alpha)
 		batch.DrawUnitR(1)
 
