@@ -8,7 +8,7 @@ import (
 const SETTINGSVERSION = "v1"
 
 type general struct {
-	OsuDir string //localappdata
+	OsuSongsDir string //localappdata
 }
 
 type graphics struct {

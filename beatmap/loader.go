@@ -6,10 +6,11 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"github.com/wieku/danser/settings"
 )
 
 func LoadBeatmaps() []*BeatMap {
-	searchDir := os.Getenv("localappdata") + "\\osu!\\Songs\\"
+	searchDir := settings.General.OsuSongsDir
 
 	log.Println("Loading beatmaps...")
 
