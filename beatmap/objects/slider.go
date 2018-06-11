@@ -167,11 +167,12 @@ func (self *Slider) SetTiming(timings *Timings) {
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
-	t0 := 2 / self.pixelLength
+	lod := float64(settings.Objects.SliderPathLOD) / 100.0
+	t0 := (1.0 / lod) / self.pixelLength
 	rt := float64(self.pixelLength) / self.multiCurve.Length
-	points := make([]m2.Vector2d, int(self.pixelLength/2))
+	points := make([]m2.Vector2d, int(self.pixelLength*lod))
 	t:= 0.0
-	for i:=0; i < int(self.pixelLength/2); i+=1 {
+	for i:=0; i < int(self.pixelLength*lod); i+=1 {
 		points[i] = self.multiCurve.PointAt(t*rt)
 		t+=t0
 	}

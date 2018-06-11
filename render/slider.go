@@ -20,8 +20,6 @@ var fbo *glhf.Frame
 
 var CS float64
 
-const divides = 30
-
 func SetupSlider() {
 
 	sliderVertexFormat = glhf.AttrFormat{
@@ -133,7 +131,7 @@ func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
 }
 
 func (self *SliderRenderer) GetShape(curve []bmath.Vector2d) (*glhf.VertexSlice, int) {
-	return createMesh(curve), divides
+	return createMesh(curve), int(settings.Objects.SliderLOD)
 }
 
 func createMesh(curve []bmath.Vector2d) *glhf.VertexSlice {
@@ -142,7 +140,7 @@ func createMesh(curve []bmath.Vector2d) *glhf.VertexSlice {
 	vecr := make([]float32, 0)
 	num := 0
 	for _, v := range curve {
-		tab := createCircle(v.X, v.Y, 64*CS, divides)
+		tab := createCircle(v.X, v.Y, 64*CS, int(settings.Objects.SliderLOD))
 		for j := range tab {
 			if j >= 2 {
 				p1, p2, p3 := tab[j-1], tab[j], tab[0]
