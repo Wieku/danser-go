@@ -168,6 +168,7 @@ type playfield struct {
 	BackgroundInDim float64 //0, background dim at the start of app
 	BackgroundDim float64 // 0.95, background dim at the beatmap start
 	BackgroundDimBreaks float64 // 0.95, background dim at the breaks
+	BlurEnable bool //true
 	BackgroundInBlur float64 //0, background blur at the start of app
 	BackgroundBlur float64 // 0.6, background blur at the beatmap start
 	BackgroundBlurBreaks float64 // 0.6, background blur at the breaks

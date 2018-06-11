@@ -250,21 +250,26 @@ func (pl *Player) Update() {
 	pl.batch.Begin()
 	pl.batch.SetCamera(mgl32.Ortho( -1, 1 , 1, -1, 1, -1))
 	bgAlpha := ((1.0-settings.Playfield.BackgroundDim)+((settings.Playfield.BackgroundDim - settings.Playfield.BackgroundInDim)*(1-pl.fadeIn)))*pl.fadeOut
-	blurVal := (settings.Playfield.BackgroundBlur - (settings.Playfield.BackgroundBlur-settings.Playfield.BackgroundInBlur)*(1-pl.fadeIn))*pl.fadeOut
+	blurVal := 0.0
 
+	if settings.Playfield.BlurEnable {
+		blurVal = (settings.Playfield.BackgroundBlur - (settings.Playfield.BackgroundBlur-settings.Playfield.BackgroundInBlur)*(1-pl.fadeIn))*pl.fadeOut
+		if settings.Playfield.UnblurToTheBeat {
+			blurVal -= settings.Playfield.UnblurFill*(blurVal)*(pl.Scl-1.0)/(settings.Beat.BeatScale*0.4)
+		}
+	}
 
 	if settings.Playfield.FlashToTheBeat {
 		bgAlpha *= pl.Scl
 	}
 
-	if settings.Playfield.UnblurToTheBeat {
-		blurVal -= settings.Playfield.UnblurFill*(blurVal)*(pl.Scl-1.0)/(settings.Beat.BeatScale*0.4)
-	}
-
 	pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.ResetTransform()
 	if pl.Background != nil {
-		pl.blurEffect.SetBlur(/*1.0 - 0.5*(pl.Scl-1)/(0.4*settings.Beat.BeatScale), 1.0 - 0.5*(pl.Scl-1)/(0.4*settings.Beat.BeatScale)*/blurVal, blurVal)
+		if settings.Playfield.BlurEnable {
+			pl.blurEffect.SetBlur(blurVal, blurVal)
+		}
+
 		pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 
 		pl.blurEffect.Begin()
@@ -273,10 +278,12 @@ func (pl *Player) Update() {
 
 		pl.batch.SetColor(1, 1, 1, bgAlpha)
 
-		texture := pl.blurEffect.EndAndProcess()
+		if settings.Playfield.BlurEnable {
+			texture := pl.blurEffect.EndAndProcess()
 
-		pl.batch.SetScale(1, -1)
-		pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), texture)
+			pl.batch.SetScale(1, -1)
+			pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), texture)
+		}
 
 	}
 	/*pl.batch.SetColor(1, 1, 1, 1)
