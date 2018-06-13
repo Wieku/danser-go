@@ -22,7 +22,7 @@ type FlowerBezierMover struct {
 	invert float64
 }
 
-func NewFlowerBezierMover() *FlowerBezierMover {
+func NewFlowerBezierMover() Mover {
 	return &FlowerBezierMover{lastAngle: 0, invert: 1}
 }
 
@@ -95,11 +95,13 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 	}
 
 	bm.bz = curves.NewBezier(points)
-
 	bm.endTime = endTime
 	bm.beginTime = startTime
 }
 
 func (bm FlowerBezierMover) Update(time int64, cursor *render.Cursor) {
-	cursor.SetPos(bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
+	//log.Println("b", time, bm.endTime, bm.beginTime)
+	t := float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)
+	t = math.Max(0.0, math.Min(1.0, t))
+	cursor.SetPos(bm.bz.NPointAt(t))
 }

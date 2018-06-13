@@ -17,6 +17,7 @@ func NewPause(data []string) *Pause {
 	pause.objData.EndTime, _ = strconv.ParseInt(data[2], 10, 64)
 	pause.objData.StartPos = bmath.NewVec2d(512/2, 384/2)
 	pause.objData.EndPos = pause.objData.StartPos
+	pause.objData.Number = -1
 	return pause
 }
 

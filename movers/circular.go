@@ -17,7 +17,7 @@ type CircularMover struct {
 	invert float64
 }
 
-func NewCircularMover() *CircularMover {
+func NewCircularMover() Mover {
 	cm := &CircularMover{invert:-1}
 	return cm
 }

@@ -16,11 +16,12 @@ type basicData struct {
 	StartTime, EndTime int64
 	StackOffset        om.Vector2d
 	StackIndex         int64
+	Number			   int64
 }
 
 func commonParse(data []string) *basicData {
 	x, _ := strconv.ParseFloat(data[0], 64)
 	y, _ := strconv.ParseFloat(data[1], 64)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
-	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time}
+	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1}
 }

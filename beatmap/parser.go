@@ -216,5 +216,18 @@ func ParseObjects(beatMap *BeatMap) {
 
 	sort.Slice(beatMap.HitObjects, func(i, j int) bool {return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime})
 
+	num := 0
+
+	for _, o := range beatMap.HitObjects {
+		_, ok := o.(*objects.Pause)
+
+		if !ok {
+			o.GetBasicData().Number = int64(num)
+			num++
+		}
+
+	}
+
+
 	calculateStackLeniency(beatMap)
 }

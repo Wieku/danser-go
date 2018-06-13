@@ -23,7 +23,7 @@ type BezierMover struct {
 	invert float64
 }
 
-func NewBezierMover() *BezierMover {
+func NewBezierMover() Mover {
 	bm := &BezierMover{invert:1}
 	bm.pt = math2.NewVec2d(512/2, 384/2)
 	bm.previousSpeed = -1

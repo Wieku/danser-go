@@ -170,9 +170,9 @@ func (self *Slider) GetCurve() []m2.Vector2d {
 	lod := float64(settings.Objects.SliderPathLOD) / 100.0
 	t0 := (1.0 / lod) / self.pixelLength
 	rt := float64(self.pixelLength) / self.multiCurve.Length
-	points := make([]m2.Vector2d, int(self.pixelLength*lod))
+	points := make([]m2.Vector2d, int(self.pixelLength*lod)+1)
 	t:= 0.0
-	for i:=0; i < int(self.pixelLength*lod); i+=1 {
+	for i:=0; i <= int(self.pixelLength*lod); i+=1 {
 		points[i] = self.multiCurve.PointAt(t*rt)
 		t+=t0
 	}
@@ -249,7 +249,7 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 
 func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, renderer *render.SliderRenderer) {
 	in := 0
-	out := int(self.pixelLength/2)
+	out := int(math.Ceil(self.pixelLength * float64(settings.Objects.SliderPathLOD) / 100.0))+1
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha := float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
@@ -268,7 +268,22 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 			}
 		}
 	} else if time > self.objData.EndTime {
-		in = out
+		if (self.repeat%2) == 1 {
+			in = out - 1
+		} else {
+			out = 1
+		}
+
+	}
+
+	colorAlpha := 1.0
+
+	if time < self.objData.StartTime-int64(preempt)/2 {
+		colorAlpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+	} else if time >= self.objData.EndTime {
+		colorAlpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
+	} else {
+		colorAlpha = float64(color[3])
 	}
 
 	if self.LasTTI > time {
@@ -277,14 +292,15 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 
 	self.LasTTI = time
 
-	renderer.SetColor(color)
+	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)})
 
-	if time <= self.objData.EndTime /*&& !self.End*/{
+	//if time <= self.objData.EndTime /*&& !self.End*/{
+		//log.Println(in, out, self.vao.Len()/(self.divides*3), self.pixelLength)
 		subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
 		subVao.Begin()
 		subVao.Draw()
 		subVao.End()
-	}
+	//}
 }
 
 func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
@@ -374,7 +390,12 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 			batch.DrawUnitR(0)
 		} else if time < self.objData.EndTime {
 			batch.SetTranslation(self.Pos)
-			batch.DrawUnitR(0)
+
+			if settings.Objects.ForceSliderBallTexture {
+				batch.DrawUnitR(2)
+			} else {
+				batch.DrawUnitR(0)
+			}
 		}
 	}
 

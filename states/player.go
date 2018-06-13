@@ -30,7 +30,7 @@ type Player struct {
 	progressMsF float64
 	progressMs int64
 	batch *render.SpriteBatch
-	cursor *render.Cursor
+	cursors []*render.Cursor
 	circles []*objects.Circle
 	sliders []*objects.Slider
 	Background *glhf.Texture
@@ -75,14 +75,21 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.blurEffect = render.NewBlurEffect(player.Background.Width(), player.Background.Height()/*int(settings.Graphics.GetHeight())*/)
 		player.blurEffect.SetBlur(0.0, 0.0)
 		imScl := float64(player.Background.Width())/float64(player.Background.Height())
-		if imScl > winscl {
+		if imScl < winscl {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
 		} else {
-			player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
+			player.BgScl = bmath.NewVec2d(winscl/imScl, 1)
 		}
 	}
 
 	player.sliderRenderer = render.NewSliderRenderer()
+
+	player.cursors = make([]*render.Cursor, 1)
+	for i := range player.cursors {
+		player.cursors[i] = render.NewCursor()
+	}
+
+	player.bMap.SetCursors(player.cursors)
 	player.bMap.Reset()
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -97,7 +104,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mus = false
 	log.Println(beatMap.Audio)
 
-	player.cursor = render.NewCursor()
 
 	scl = float32(settings.Graphics.GetHeightF()*800.0/1080.0)/float32(384)*float32(settings.Playfield.Scale)
 	log.Println(scl)
@@ -122,6 +128,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		//time.Sleep(500*time.Millisecond)
 		player.start = true
 		musicPlayer.Play()
+		//musicPlayer.SetPosition(40)
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -133,8 +140,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.progressMsF = musicPlayer.GetPosition()*1000
 
-			player.bMap.Update(int64(player.progressMsF), player.cursor)
-			player.cursor.Update(player.progressMsF - last)
+			player.bMap.Update(int64(player.progressMsF), nil/*player.cursor*/)
+			for _, g := range player.cursors {
+				g.Update(player.progressMsF - last)
+			}
+			//player.cursor.Update(player.progressMsF - last)
 
 			last = player.progressMsF
 
@@ -345,7 +355,7 @@ func (pl *Player) Update() {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES*len(pl.cursors), pl.Scl, pl.fadeOut*pl.fadeIn)
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -446,7 +456,10 @@ func (pl *Player) Update() {
 		if ind < 0 {
 			ind = settings.DIVIDES - 1
 		}
-		pl.cursor.DrawM(scale2, pl.batch, colors1[j], colors1[ind])
+
+		for i, g := range pl.cursors {
+			g.DrawM(scale2, pl.batch, colors1[j*3+i], colors1[ind])
+		}
 
 	}
 

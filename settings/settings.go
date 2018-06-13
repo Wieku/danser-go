@@ -149,6 +149,7 @@ type cursor struct {
 type objects struct {
 	MandalaTexturesTrigger int //5, minimum value of cursors needed to use more translucent textures
 	MandalaTexturesAlpha float64 //0.3
+	ForceSliderBallTexture bool //true, if this is disabled, mandala texture will be used for slider ball
 	DrawApproachCircles bool //true
 	Colors *color
 	ObjectsSize float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
