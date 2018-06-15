@@ -28,6 +28,7 @@ func run() {
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 2, "")
+		tag := flag.Int("tag", 1, "")
 
 		flag.Parse()
 
@@ -37,6 +38,7 @@ func run() {
 		}
 
 		settings.DIVIDES = *cursors
+		settings.TAG = *tag
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
@@ -112,7 +114,7 @@ func run() {
 		mainthread.Call(func() {
 			gl.Enable(gl.MULTISAMPLE)
 			gl.Disable(gl.DITHER)
-			gl.Viewport(0, 0, 1920, 1080)
+			gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
 			gl.ClearColor(0,0,0,1)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 

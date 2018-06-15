@@ -3,7 +3,6 @@ package movers
 import (
 	math2 "github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath/curves"
-	//"osubot/io"
 	"github.com/wieku/danser/beatmap/objects"
 	"math"
 	"github.com/wieku/danser/render"
@@ -13,6 +12,7 @@ const (
 	ANGLE = math.Pi/2
 	STRENGTH = 2.0/3
 	STREAM = 130
+	LONGJUMP = 500
 )
 
 type FlowerBezierMover struct {
@@ -47,10 +47,22 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 	scaledDistance := distance * STRENGTH
 	newAngle := ANGLE
 
-	if endPos == startPos {
+	if endPos == startPos || (ANGLE == 0.0 && (startTime-endTime) > LONGJUMP) {
 		if ANGLE == 0.0 {
-			pt1 := math2.NewVec2dRad(bm.lastAngle + math.Pi, float64(startTime-endTime)/2).Add(endPos)
-			points = []math2.Vector2d{endPos, pt1, startPos}
+			bm.lastAngle += math.Pi
+			pt1 := math2.NewVec2dRad(bm.lastAngle, float64(startTime-endTime)/math.Sqrt(2)).Add(endPos)
+
+			if ok1 {
+				pt1 = math2.NewVec2dRad(s1.GetEndAngle(), float64(startTime-endTime)/math.Sqrt(2)).Add(endPos)
+			}
+
+			if !ok2 {
+				points = []math2.Vector2d{endPos, pt1, startPos}
+			} else {
+				pt2 := math2.NewVec2dRad(s2.GetStartAngle(), float64(startTime-endTime)/math.Sqrt(2)).Add(startPos)
+				points = []math2.Vector2d{endPos, pt1, pt2, startPos}
+			}
+
 		} else {
 			points = []math2.Vector2d{endPos, startPos}
 		}

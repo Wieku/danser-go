@@ -156,7 +156,7 @@ type objects struct {
 	CSMult float64 //1.2, if ObjectsSize is -1, then CS value will be multiplied by this
 	ScaleToTheBeat bool //true, objects size is changing with music peak amplitude
 	SliderLOD int64 //30, number of triangles in a circle
-	SliderPathLOD int64 //0.5, int(pixelLength*(PathLOD/100)) => number of slider path points
+	SliderPathLOD int64 //50, int(pixelLength*(PathLOD/100)) => number of slider path points
 	DrawFollowPoints bool //true
 	WhiteFollowPoints bool //true
 	FollowPointColorOffset float64 //0.0, hue offset of the followpoint
@@ -173,7 +173,7 @@ type playfield struct {
 	BackgroundInBlur float64 //0, background blur at the start of app
 	BackgroundBlur float64 // 0.6, background blur at the beatmap start
 	BackgroundBlurBreaks float64 // 0.6, background blur at the breaks
-	Scale float64 //1, scale the playfield (1 means that 512 will be rescaled to 800 on FullHD monitor)
+	Scale float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
 	FlashToTheBeat bool //true, background dim varies accoriding to music power
 	UnblurToTheBeat bool //true, background blur varies accoriding to music power
 	UnblurFill float64 //0.8, if blur is set to 0.6, then on full beat blur will be equal to 0.12
@@ -204,3 +204,4 @@ var Objects *objects
 var Playfield *playfield
 
 var DIVIDES = 2
+var TAG = 1

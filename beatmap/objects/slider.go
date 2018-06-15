@@ -294,13 +294,10 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 
 	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)})
 
-	//if time <= self.objData.EndTime /*&& !self.End*/{
-		//log.Println(in, out, self.vao.Len()/(self.divides*3), self.pixelLength)
-		subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
-		subVao.Begin()
-		subVao.Draw()
-		subVao.End()
-	//}
+	subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
+	subVao.Begin()
+	subVao.Draw()
+	subVao.End()
 }
 
 func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
@@ -367,7 +364,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 					}
 					if al > 0.0 {
 						batch.SetTranslation(p.Pos)
-						batch.SetSubScale(1.0/4, 1.0/4)
+						batch.SetSubScale(1.0/5, 1.0/5)
 						if settings.Objects.WhiteFollowPoints {
 							batch.SetColor(1, 1, 1, alpha*al)
 						} else {

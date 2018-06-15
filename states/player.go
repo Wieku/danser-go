@@ -84,7 +84,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.sliderRenderer = render.NewSliderRenderer()
 
-	player.cursors = make([]*render.Cursor, 1)
+	player.cursors = make([]*render.Cursor, settings.TAG)
 	for i := range player.cursors {
 		player.cursors[i] = render.NewCursor()
 	}
@@ -105,11 +105,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	log.Println(beatMap.Audio)
 
 
-	scl = float32(settings.Graphics.GetHeightF()*800.0/1080.0)/float32(384)*float32(settings.Playfield.Scale)
+	scl = float32(settings.Graphics.GetHeightF()*900.0/1080.0)/float32(384)*float32(settings.Playfield.Scale)
 	log.Println(scl)
 	player.Cam = mgl32.Ortho( -float32(settings.Graphics.GetWidthF())/2, float32(settings.Graphics.GetWidthF())/2 , float32(settings.Graphics.GetHeightF())/2, -float32(settings.Graphics.GetHeightF())/2, 1, -1)
 
 	mat = mgl32.Scale3D(scl, scl, 1)
+
+	//log.Println("gfrbftgyrvbytervfuef", player.Cam.Mul4(mat).Inv().Mul4x1(mgl32.Vec4{1.0, 1.0, 0.0, 1.0}).Add(mgl32.Vec4{256, 192, 0, 0}))
 
 	player.Scl = 1
 	player.h, player.s, player.v = 0.0, 1.0, 1.0
@@ -304,6 +306,7 @@ func (pl *Player) Update() {
 			texture := pl.blurEffect.EndAndProcess()
 			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
 			pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), texture)
+
 		}
 
 	}
@@ -452,13 +455,13 @@ func (pl *Player) Update() {
 		vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
 		lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
 		pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
-		ind := j-1
-		if ind < 0 {
-			ind = settings.DIVIDES - 1
-		}
 
 		for i, g := range pl.cursors {
-			g.DrawM(scale2, pl.batch, colors1[j*3+i], colors1[ind])
+			ind := j*len(pl.cursors)+i-1
+			if ind < 0 {
+				ind = settings.DIVIDES*len(pl.cursors) - 1
+			}
+			g.DrawM(scale2, pl.batch, colors1[j*len(pl.cursors)+i], colors1[ind])
 		}
 
 	}
