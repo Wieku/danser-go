@@ -9,8 +9,6 @@ func GetObject(data []string) BaseObject {
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
 	if (objType & CIRCLE) > 0 {
 		return NewCircle(data)
-	} else if (objType & SPINNER) > 0 {
-		return /*NewSpinner(data)*/nil
 	} else if (objType & SLIDER) > 0 {
 		sl := NewSlider(data)
 		if sl == nil {
@@ -25,5 +23,4 @@ func GetObject(data []string) BaseObject {
 const (
 	CIRCLE int64 = 1
 	SLIDER int64 = 2
-	SPINNER int64 = 8
 )
