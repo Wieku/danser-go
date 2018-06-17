@@ -10,13 +10,13 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
 	"io/ioutil"
-	//"log"
-	"log"
 )
 
 var cursorShader *glhf.Shader = nil
 var cursorFbo *glhf.Frame = nil
-var osuResMinX, osuResMinY, osuResMaxX, osuResMaxY float64
+//var osuResMinX, osuResMinY, osuResMaxX, osuResMaxY float64
+var Camera *bmath.Camera
+var osuRect bmath.Rectangle
 func initCursor() {
 
 	vertexFormat := glhf.AttrFormat{
@@ -45,16 +45,7 @@ func initCursor() {
 	}
 
 	cursorFbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
-	scl := float32(settings.Graphics.GetHeightF()*900.0/1080.0)/float32(384)*float32(settings.Playfield.Scale)
-	log.Println(scl)
-	cam := mgl32.Ortho( -float32(settings.Graphics.GetWidthF())/2, float32(settings.Graphics.GetWidthF())/2 , float32(settings.Graphics.GetHeightF())/2, -float32(settings.Graphics.GetHeightF())/2, 1, -1).Mul4(mgl32.Scale3D(scl, scl, 1)).Inv()
-	res := cam.Mul4x1(mgl32.Vec4{-1.0, 1.0, 0.0, 1.0}).Add(mgl32.Vec4{256, 192, 0, 0})
-	osuResMinX = float64(res[0])
-	osuResMinY = float64(res[1])
-	res = cam.Mul4x1(mgl32.Vec4{1.0, -1.0, 0.0, 1.0}).Add(mgl32.Vec4{256, 192, 0, 0})
-	osuResMaxX = float64(res[0])
-	osuResMaxY = float64(res[1])
-
+	osuRect = Camera.GetWorldRect()
 }
 
 type Cursor struct {
@@ -90,18 +81,18 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 	if settings.Cursor.BounceOnEdges {
 		for {
 			ok1, ok2 := false, false
-			if tmp.X < osuResMinX {
-				tmp.X = 2*osuResMinX - tmp.X
-			} else if tmp.X > osuResMaxX {
-				tmp.X = 2*osuResMaxX - tmp.X
+			if tmp.X < osuRect.MinX {
+				tmp.X = 2*osuRect.MinX - tmp.X
+			} else if tmp.X > osuRect.MaxX {
+				tmp.X = 2*osuRect.MaxX - tmp.X
 			} else {
 				ok1 = true
 			}
 
-			if tmp.Y < osuResMinY {
-				tmp.Y = 2*osuResMinY - tmp.Y
-			} else if tmp.Y > osuResMaxY {
-				tmp.Y = 2*osuResMaxY - tmp.Y
+			if tmp.Y < osuRect.MinY {
+				tmp.Y = 2*osuRect.MinY - tmp.Y
+			} else if tmp.Y > osuRect.MaxY {
+				tmp.Y = 2*osuRect.MaxY - tmp.Y
 			} else {
 				ok2 = true
 			}

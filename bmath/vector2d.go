@@ -3,6 +3,7 @@ package bmath
 import (
 	"fmt"
 	"math"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Vector2d struct {
@@ -27,6 +28,14 @@ func (v Vector2d) X32() float32 {
 
 func (v Vector2d) Y32() float32 {
 	return float32(v.Y)
+}
+
+func (v Vector2d) AsVec3() mgl32.Vec3 {
+	return mgl32.Vec3{float32(v.X), float32(v.Y), 0}
+}
+
+func (v Vector2d) AsVec4() mgl32.Vec4 {
+	return mgl32.Vec4{float32(v.X), float32(v.Y), 0, 1}
 }
 
 func (v *Vector2d) Set(x, y float64) {

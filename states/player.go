@@ -17,8 +17,8 @@ import (
 
 )
 
-var scl float32 = 0.0
-var mat mgl32.Mat4
+//var scl float32 = 0.0
+//var mat mgl32.Mat4
 
 type Player struct {
 	bMap *beatmap.BeatMap
@@ -36,7 +36,7 @@ type Player struct {
 	Background *glhf.Texture
 	Logo *glhf.Texture
 	BgScl bmath.Vector2d
-	Cam mgl32.Mat4
+	//Cam mgl32.Mat4
 	Scl float64
 	SclA float64
 	CS float64
@@ -52,6 +52,8 @@ type Player struct {
 	vaoDirty bool
 	rotation float64
 	profiler *utils.FPSCounter
+
+	camera *bmath.Camera
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -78,12 +80,30 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		if imScl < winscl {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
 		} else {
-			player.BgScl = bmath.NewVec2d(winscl/imScl, 1)
+			log.Println(winscl/imScl)
+			player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
 		}
 	}
 
 	player.sliderRenderer = render.NewSliderRenderer()
 
+	scl := (settings.Graphics.GetHeightF()*900.0/1080.0)/float64(384)*settings.Playfield.Scale
+
+	osuAspect := 512.0/384.0
+	screenAspect := settings.Graphics.GetWidthF()/settings.Graphics.GetHeightF()
+
+	if osuAspect > screenAspect {
+		scl = (settings.Graphics.GetWidthF()*900.0/1080.0)/float64(512)*settings.Playfield.Scale
+	}
+
+	//log.Println(scl)
+	player.camera = &bmath.Camera{}
+	player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
+	player.camera.SetOrigin(bmath.NewVec2d(512.0 / 2, 384.0 / 2))
+	player.camera.SetScale(bmath.NewVec2d(scl, scl))
+	player.camera.Update()
+
+	render.Camera = player.camera
 	player.cursors = make([]*render.Cursor, settings.TAG)
 	for i := range player.cursors {
 		player.cursors[i] = render.NewCursor()
@@ -104,12 +124,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mus = false
 	log.Println(beatMap.Audio)
 
+	//player.Cam = mgl32.Ortho( -float32(settings.Graphics.GetWidthF())/2, float32(settings.Graphics.GetWidthF())/2 , float32(settings.Graphics.GetHeightF())/2, -float32(settings.Graphics.GetHeightF())/2, 1, -1)
 
-	scl = float32(settings.Graphics.GetHeightF()*900.0/1080.0)/float32(384)*float32(settings.Playfield.Scale)
-	log.Println(scl)
-	player.Cam = mgl32.Ortho( -float32(settings.Graphics.GetWidthF())/2, float32(settings.Graphics.GetWidthF())/2 , float32(settings.Graphics.GetHeightF())/2, -float32(settings.Graphics.GetHeightF())/2, 1, -1)
-
-	mat = mgl32.Scale3D(scl, scl, 1)
+	//mat = mgl32.Scale3D(scl, scl, 1)
 
 	//log.Println("gfrbftgyrvbytervfuef", player.Cam.Mul4(mat).Inv().Mul4x1(mgl32.Vec4{1.0, 1.0, 0.0, 1.0}).Add(mgl32.Vec4{256, 192, 0, 0}))
 
@@ -369,6 +386,9 @@ func (pl *Player) Update() {
 	scale2 := pl.Scl
 	rotationRad := (pl.rotation + settings.Playfield.BaseRotation) * math.Pi / 180.0
 
+	pl.camera.SetRotation(-rotationRad)
+	pl.camera.Update()
+
 	if !settings.Objects.ScaleToTheBeat {
 		scale1 = 1
 	}
@@ -376,7 +396,10 @@ func (pl *Player) Update() {
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
 	}
-	
+
+	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+
+
 	if pl.start {
 
 		pl.sliderRenderer.Begin()
@@ -385,8 +408,8 @@ func (pl *Player) Update() {
 
 			//vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
 			//lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-			rot := mgl32.HomogRotate3DZ(float32(-rotationRad-float64(j)*2*math.Pi/float64(settings.DIVIDES)/*+math.Pi/2*/))
-			pl.sliderRenderer.SetCamera(pl.Cam.Mul4(/*lookAt*/rot).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
+
+			pl.sliderRenderer.SetCamera(cameras[j])
 
 			for i := 0; i < len(pl.sliders); i++ {
 				pl.sliderRenderer.SetScale(scale1)
@@ -405,9 +428,7 @@ func (pl *Player) Update() {
 
 		for j:=0; j < settings.DIVIDES; j++ {
 
-			vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
-			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
+			pl.batch.SetCamera(cameras[j])
 
 			pl.batch.SetScale(scale1 * 64*render.CS, scale1 *64*render.CS)
 			pl.batch.Begin()
@@ -430,9 +451,7 @@ func (pl *Player) Update() {
 
 			pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
 
-			vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
-			lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-			pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
+			pl.batch.SetCamera(cameras[j])
 
 			for i := len(pl.circles)-1; i >= 0 && len(pl.circles) > 0 ; i-- {
 				if i < len(pl.circles) {
@@ -452,9 +471,7 @@ func (pl *Player) Update() {
 	gl.BlendEquation(gl.FUNC_ADD)
 	for j:=0; j < settings.DIVIDES; j++ {
 
-		vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
-		lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-		pl.batch.SetCamera(pl.Cam.Mul4(lookAt).Mul4(mgl32.Translate3D(-512.0*scl/2, -384.0*scl/2, 0)).Mul4(mat))
+		pl.batch.SetCamera(cameras[j])
 
 		for i, g := range pl.cursors {
 			ind := j*len(pl.cursors)+i-1
