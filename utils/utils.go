@@ -46,3 +46,23 @@ func LoadTexture(path string) (*glhf.Texture, error) {
 	}
 	return nil, err
 }
+
+func LoadTextureU(path string) (*glhf.Texture, error) {
+	img, err := LoadImage(path)
+	if err == nil {
+		tex := glhf.NewTexture(
+			img.Bounds().Dx(),
+			img.Bounds().Dy(),
+			0,
+			true,
+			img.Pix,
+		)
+
+		tex.Begin()
+		tex.SetWrap(glhf.CLAMP_TO_EDGE)
+		tex.End()
+
+		return tex, nil
+	}
+	return nil, err
+}

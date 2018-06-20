@@ -8,9 +8,8 @@ import (
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
 
 func isSpinnerBreak(obj objects.BaseObject) bool {
-	_, ok1 := obj.(*objects.Spinner)
 	_, ok2 := obj.(*objects.Pause)
-	return ok1 || ok2
+	return ok2
 }
 
 func isSlider(obj objects.BaseObject) bool {

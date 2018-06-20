@@ -186,7 +186,7 @@ func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 		pixLen := self.multiCurve.Length
 		self.partLen = float64(sliderTime)
 		self.objData.EndTime = self.objData.StartTime + sliderTime * self.repeat
-		times := int64(float64(time - self.objData.StartTime) / self.partLen) + 1
+		times := int64(math.Min(float64(time - self.objData.StartTime) / self.partLen + 1, float64(self.repeat)))
 
 		ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * self.partLen
 
@@ -216,10 +216,8 @@ func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 		}
 		self.Pos = pos
 		cursor.SetPos(pos.Add(self.objData.StackOffset))
-		//io.MouseMoveVec(pos.Add(self.objData.StackOffset))
 
 		if !self.clicked {
-			//io.MouseClick(io.LEFT)
 			ss := self.sampleSets[0]
 			if ss == 0 {
 				ss = self.Timings.Current.SampleSet
@@ -238,7 +236,6 @@ func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 	audio.PlaySample(ss, self.samples[self.repeat])
 	self.End = true
 	self.clicked = false
-	//io.MouseUnClick(io.LEFT)
 
 	return true
 }
@@ -255,8 +252,8 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 		alpha := float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 		out = int(float64(out)*alpha)
 	} else if time >= self.objData.StartTime && time <= self.objData.EndTime {
-		times := int64(float64(time - self.objData.StartTime) / self.partLen) + 1
-		if times == self.repeat {
+		times := int64(math.Min(float64(time - self.objData.StartTime) / self.partLen + 1, float64(self.repeat)))
+		if times >= self.repeat {
 			ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * self.partLen
 			alpha := 0.0
 			if (times%2) == 1 {
@@ -273,7 +270,6 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 		} else {
 			out = 1
 		}
-
 	}
 
 	colorAlpha := 1.0
@@ -281,7 +277,7 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		colorAlpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 	} else if time >= self.objData.EndTime {
-		colorAlpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
+		colorAlpha = 1.0-float64(time - self.objData.EndTime)/(preempt/2)
 	} else {
 		colorAlpha = float64(color[3])
 	}
@@ -325,7 +321,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 	} else if time >= self.objData.EndTime {
-		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
+		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/2)
 	} else {
 		alpha = float64(color[3])
 	}
@@ -351,10 +347,8 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 				batch.DrawUnitR(3)
 			}
 
-		} else if time < self.objData.EndTime {
-
-			if settings.Objects.DrawFollowPoints {
-
+		} else {
+			if settings.Objects.DrawFollowPoints && time < self.objData.EndTime {
 				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
 
 				for _, p := range self.TickPoints {
@@ -396,7 +390,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 		}
 	}
 
-	if time >= self.objData.EndTime+int64(preempt/4) {
+	if time >= self.objData.EndTime+int64(preempt/2) {
 		return true
 	}
 	return false

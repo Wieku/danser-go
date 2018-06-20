@@ -18,31 +18,33 @@ float gauss(float x, float sigma) {
 }
 
 void main() {
-    color = vec4(0.0);
-
     float tSigma = length(direction*sigma);
-    //float size = length(direction*size);
-
-    float totalGauss = 0.0f;
 
     float gs = gauss(0, tSigma);
 
-    color += texture2D(tex, tex_coord)*gs;
+    vec4 inc = texture2D(tex, tex_coord);
 
-    totalGauss += gs;
+    color = inc*gs;
+
+    float totalGauss = gs;
 
     int kSize = int(length(kernelSize*direction));
 
-    for (int i = 2; i < kSize; i+=2) {
+    for (int i = 2; i < 200; i+=2) {
         float fac = float(i) - 0.5f;
 
-        gs = gauss(i, tSigma)*2;
-        totalGauss += 2*gs;
+        gs = gauss(i, tSigma)*2.0;
+        totalGauss += 2.0*gs;
 
         vec2 mv = fac * direction / size;
 
         color += texture2D(tex, tex_coord + mv) * gs;
         color += texture2D(tex, tex_coord - mv) * gs;
+
+        if (i >= kSize) {
+            break;
+        }
+
     }
 
     color /= totalGauss;

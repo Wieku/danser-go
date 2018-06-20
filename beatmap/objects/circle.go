@@ -84,16 +84,21 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 	} else if time >= self.objData.StartTime {
-		alpha = 1.0-float64(time - self.objData.StartTime)/(preempt/4)
+		alpha = 1.0-float64(time - self.objData.StartTime)/(preempt/2)
 	} else {
 		alpha = float64(color[3])
+	}
+
+	batch.SetTranslation(self.objData.StartPos)
+
+	if time >= self.objData.StartTime {
+		batch.SetSubScale(1+(1.0-alpha)*0.5, 1+(1.0-alpha)*0.5)
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= settings.Objects.MandalaTexturesAlpha
 	}
 
-	batch.SetTranslation(self.objData.StartPos)
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
@@ -110,7 +115,7 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 
 	}
 
-	if time >= self.objData.StartTime+int64(preempt/4) {
+	if time >= self.objData.StartTime+int64(preempt/2) {
 		return true
 	}
 	return false

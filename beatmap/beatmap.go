@@ -21,7 +21,7 @@ type BeatMap struct {
 	cursors 						[]*render.Cursor
 }
 
-const MoverId = 0
+const MoverId = 2
 
 func NewBeatMap() *BeatMap {
 	return &BeatMap{timings: objects.NewTimings(), movers: []func() movers.Mover {movers.NewBezierMover, movers.NewCircularMover, movers.NewFlowerBezierMover}, StackLeniency: 0.7}

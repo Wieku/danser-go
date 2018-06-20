@@ -17,15 +17,13 @@ import (
 
 )
 
-//var scl float32 = 0.0
-//var mat mgl32.Mat4
-
 type Player struct {
 	bMap *beatmap.BeatMap
 	queue2 []objects.BaseObject
 	processed []objects.BaseObject
 	sliderRenderer *render.SliderRenderer
 	blurEffect *render.BlurEffect
+	bloomEffect *render.BloomEffect
 	lastTime int64
 	progressMsF float64
 	progressMs int64
@@ -36,7 +34,6 @@ type Player struct {
 	Background *glhf.Texture
 	Logo *glhf.Texture
 	BgScl bmath.Vector2d
-	//Cam mgl32.Mat4
 	Scl float64
 	SclA float64
 	CS float64
@@ -96,7 +93,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		scl = (settings.Graphics.GetWidthF()*900.0/1080.0)/float64(512)*settings.Playfield.Scale
 	}
 
-	//log.Println(scl)
 	player.camera = &bmath.Camera{}
 	player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
 	player.camera.SetOrigin(bmath.NewVec2d(512.0 / 2, 384.0 / 2))
@@ -124,12 +120,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mus = false
 	log.Println(beatMap.Audio)
 
-	//player.Cam = mgl32.Ortho( -float32(settings.Graphics.GetWidthF())/2, float32(settings.Graphics.GetWidthF())/2 , float32(settings.Graphics.GetHeightF())/2, -float32(settings.Graphics.GetHeightF())/2, 1, -1)
-
-	//mat = mgl32.Scale3D(scl, scl, 1)
-
-	//log.Println("gfrbftgyrvbytervfuef", player.Cam.Mul4(mat).Inv().Mul4x1(mgl32.Vec4{1.0, 1.0, 0.0, 1.0}).Add(mgl32.Vec4{256, 192, 0, 0}))
-
 	player.Scl = 1
 	player.h, player.s, player.v = 0.0, 1.0, 1.0
 	player.fadeOut = 1.0
@@ -144,10 +134,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.fadeIn = float64(i) / 100
 			time.Sleep(10*time.Millisecond)
 		}
-		//time.Sleep(500*time.Millisecond)
 		player.start = true
 		musicPlayer.Play()
-		//musicPlayer.SetPosition(40)
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -184,8 +172,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			//last := fft[0]
 
 			for i:=0; i < len(oldFFT); i++ {
-				fft[i] = float32(math.Log10(float64(fft[i])*40))
-				oldFFT[i] = float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]) /** 3*/, float64(oldFFT[i]) + 0.02), float64(oldFFT[i]) - 0.015)))
+				fft[i] = float32(1.0 - math.Abs(math.Max(-50.0,20*math.Log10(float64(fft[i]))/50)))//*10.0
+				oldFFT[i] =float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]) /** 3*/, float64(oldFFT[i]) + 0.02), float64(oldFFT[i]) - 0.0075)))
 				angl := 2*float64(i)/float64(len(oldFFT))*math.Pi
 				angl1 := 2*(float64(i)/float64(len(oldFFT))-0.01)*math.Pi
 				angl2 := 2*(float64(i)/float64(len(oldFFT))+0.01)*math.Pi
@@ -207,30 +195,26 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(40*time.Millisecond)
 		}
 	}()
-	player.profiler = utils.NewFPSCounter(60)
+	player.profiler = utils.NewFPSCounter(60, false)
 	player.musicPlayer = musicPlayer
+
+	player.bloomEffect = render.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+
 	return player
 }
 
 func (pl *Player) Update() {
-
-
 	if pl.lastTime < 0 {
 		pl.lastTime = utils.GetNanoTime()
 	}
 	tim := utils.GetNanoTime()
 	timMs := float64(tim-pl.lastTime)/1000000.0
 
-
 	pl.profiler.PutSample(1000.0/timMs)
 	fps := pl.profiler.GetFPS()
 
-	/*if fps < 100 {
-		log.Println(fps)
-	}*/
-
 	if pl.start {
-		//log.Println(fps)
+
 		if timMs > 5000.0/(fps) {
 			log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
 		}
@@ -272,14 +256,6 @@ func (pl *Player) Update() {
 		pl.fadeOut = math.Max(0.0, pl.fadeOut)
 		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
 	}
-
-
-	//colors := render.GetColors(pl.h, 360.0/float64(settings.DIVIDES), settings.DIVIDES, pl.fadeOut*pl.fadeIn)
-	/*offst := 0.0
-	if settings.Objects.Colors.FlashToTheBeat {
-		offst = settings.Objects.Colors.FlashAmplitude * ((pl.Scl-1.0)/(0.4*settings.Beat.BeatScale))
-	}*/
-
 
 	render.CS = pl.CS
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -327,13 +303,6 @@ func (pl *Player) Update() {
 		}
 
 	}
-	/*pl.batch.SetColor(1, 1, 1, 1)
-	pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), render.SliderGradient)*/
-	//pl.batch.SetCamera(mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1))
-	//pl.batch.SetScale(0.5, 0.5)
-	//pl.batch.SetColor(1, 1, 1, 1-pl.fadeIn)
-	//pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
-
 
 	pl.batch.End()
 
@@ -399,16 +368,16 @@ func (pl *Player) Update() {
 
 	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
+	pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
+	pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
+	pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition * (pl.Scl-1.0)/(settings.Beat.BeatScale*0.4))
+	pl.bloomEffect.Begin()
 
 	if pl.start {
 
 		pl.sliderRenderer.Begin()
 
 		for j:=0; j < settings.DIVIDES; j++ {
-
-			//vc := bmath.NewVec2d(0, 1).Rotate(rotationRad+float64(j)*2*math.Pi/float64(settings.DIVIDES))
-			//lookAt := mgl32.LookAtV(mgl32.Vec3{0,0, 0}, mgl32.Vec3{0,0, -1}, mgl32.Vec3{float32(vc.X), float32(vc.Y), 0})
-
 			pl.sliderRenderer.SetCamera(cameras[j])
 
 			for i := 0; i < len(pl.sliders); i++ {
@@ -429,9 +398,9 @@ func (pl *Player) Update() {
 		for j:=0; j < settings.DIVIDES; j++ {
 
 			pl.batch.SetCamera(cameras[j])
-
 			pl.batch.SetScale(scale1 * 64*render.CS, scale1 *64*render.CS)
 			pl.batch.Begin()
+
 			for i := len(pl.sliders)-1; i >= 0 && len(pl.sliders) > 0 ; i-- {
 				if i < len(pl.sliders) {
 					res := pl.sliders[i].RenderOverlay(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
@@ -443,7 +412,6 @@ func (pl *Player) Update() {
 			}
 			pl.batch.End()
 			pl.batch.SetScale(1, 1)
-
 		}
 
 		pl.batch.Begin()
@@ -482,5 +450,7 @@ func (pl *Player) Update() {
 		}
 
 	}
+
+	pl.bloomEffect.EndAndRender()
 
 }

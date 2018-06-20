@@ -134,6 +134,10 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 	return utils.GetColorsSV(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
+type bloom struct {
+	Threshold, Blur, Power float64
+}
+
 type cursor struct {
 	Colors *color
 	EnableCustomTrailGlowOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
@@ -181,6 +185,10 @@ type playfield struct {
 	BaseRotation float64 //0, base rotation of playfield
 	RotationEnabled bool//false
 	RotationSpeed float64//2, degrees per second
+	BloomEnabled bool
+	BloomToTheBeat bool
+	BloomBeatAddition float64
+	Bloom *bloom
 }
 
 type fileformat struct {

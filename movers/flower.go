@@ -47,7 +47,7 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 	scaledDistance := distance * STRENGTH
 	newAngle := ANGLE
 
-	if endPos == startPos || (ANGLE == 0.0 && (startTime-endTime) > LONGJUMP) {
+	if (endPos == startPos || (ANGLE == 0.0 && (startTime-endTime) > LONGJUMP)) && end.GetBasicData().StartTime > 0  {
 		if ANGLE == 0.0 {
 			bm.lastAngle += math.Pi
 			pt1 := math2.NewVec2dRad(bm.lastAngle, float64(startTime-endTime)/math.Sqrt(2)).Add(endPos)
@@ -112,7 +112,6 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 }
 
 func (bm FlowerBezierMover) Update(time int64, cursor *render.Cursor) {
-	//log.Println("b", time, bm.endTime, bm.beginTime)
 	t := float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
 	cursor.SetPos(bm.bz.NPointAt(t))
