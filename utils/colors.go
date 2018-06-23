@@ -27,6 +27,11 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mg
 
 	for i:=0; i < times; i++ {
 		hue := baseHue + float64(i)*hueShift
+
+		for hue < 0.0 {
+			hue += 360.0
+		}
+
 		for hue >= 360.0 {
 			hue -= 360.0
 		}

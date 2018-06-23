@@ -14,7 +14,6 @@ import (
 
 var cursorShader *glhf.Shader = nil
 var cursorFbo *glhf.Frame = nil
-//var osuResMinX, osuResMinY, osuResMaxX, osuResMaxY float64
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
 func initCursor() {
@@ -53,13 +52,14 @@ type Cursor struct {
 	Max int
 	Position bmath.Vector2d
 	LastPos bmath.Vector2d
+	VaoPos bmath.Vector2d
 	RendPos bmath.Vector2d
 	time float64
 
 	vertices []float32
 	vaoDirty bool
-	vaoChannel chan*[]float32
 	vao *glhf.VertexSlice
+	subVao *glhf.VertexSlice
 	lastLen int
 	mutex *sync.Mutex
 }
@@ -70,8 +70,7 @@ func NewCursor() *Cursor {
 	}
 
 	vao := glhf.MakeVertexSlice(cursorShader, 1024*1024, 1024*1024) //creating approx. 4MB vao, just in case
-	verts := make ([]float32, 1024*1024*9)
-	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, vertices: verts, mutex: &sync.Mutex{}, vaoChannel: make(chan*[]float32, 1)}
+	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0,0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
 }
 
 
@@ -147,18 +146,19 @@ func (cr *Cursor) Update(tim float64) {
 			 fillArray(arr, bI+9*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
 		}
 
-		select {
-			case cr.vaoChannel <- &arr:
-			default:
-		}
+		cr.mutex.Lock()
+		cr.vertices = arr
+		cr.VaoPos = cr.Position
+		cr.vaoDirty = true
+		cr.mutex.Unlock()
 
 		cr.vaoDirty = true
 	} else {
-		empty := make([]float32, 0)
-		select {
-		case cr.vaoChannel <- &empty:
-		default:
-		}
+		cr.mutex.Lock()
+		cr.vertices = make([]float32, 0)
+		cr.VaoPos = cr.Position
+		cr.vaoDirty = true
+		cr.mutex.Unlock()
 	}
 }
 
@@ -202,36 +202,29 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
 	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
 
-	select {
-		case arr := <-cursor.vaoChannel :
-			//log.Println(len(*arr))
-			subVao := cursor.vao.Slice(0, len(*arr)/9)
-			subVao.Begin()
-
-			subVao.SetVertexData(*arr)
-
-			subVao.End()
-			cursor.vaoDirty = false
-			cursor.lastLen = len(*arr)/(9*6)
-			cursor.RendPos = cursor.LastPos
-			break
-	default:
-
+	cursor.mutex.Lock()
+	if cursor.vaoDirty {
+		cursor.subVao = cursor.vao.Slice(0, len(cursor.vertices)/9)
+		cursor.subVao.Begin()
+		cursor.subVao.SetVertexData(cursor.vertices)
+		cursor.subVao.End()
+		cursor.RendPos = cursor.VaoPos
+		cursor.vaoDirty = false
 	}
+	cursor.mutex.Unlock()
+	cursor.subVao.Begin()
 
-	subVao := cursor.vao.Slice(0, cursor.lastLen*6)
-	subVao.Begin()
-
-
-	subVao.Draw()
+	cursor.subVao.Draw()
 
 	cursorShader.SetUniformAttr(0, color)
 	cursorShader.SetUniformAttr(4, float32(siz*(12.0/18)*scale))
 
-	subVao.Draw()
+	cursor.subVao.Draw()
 
-	subVao.End()
+	cursor.subVao.End()
+
 	cursorFbo.End()
+
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
 	gl.ActiveTexture(gl.TEXTURE1)
 	cursorFbo.Texture().Begin()
@@ -247,7 +240,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	batch.Begin()
 
 	batch.SetTranslation(bmath.NewVec2d(0, 0))
-	batch.SetScale(scale*siz, scale*siz)
+	batch.SetScale(siz*scale, siz*scale)
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), float64(color[3]))
 	batch.DrawUnit(cursor.RendPos, 0)
@@ -259,5 +252,4 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	CursorTrail.End()
 	CursorTex.End()
 	CursorTop.End()
-
 }

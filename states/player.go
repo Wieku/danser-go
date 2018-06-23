@@ -40,6 +40,7 @@ type Player struct {
 	h, s, v float64
 	fadeOut float64
 	fadeIn float64
+	entry float64
 	start bool
 	mus bool
 	musicPlayer *audio.Music
@@ -128,7 +129,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	musicPlayer := audio.NewMusic(beatMap.Audio)
 
 	go func() {
+		player.entry = 1
 		time.Sleep(time.Duration(settings.Playfield.LeadInTime*float64(time.Second)))
+
+		/*for i := 1; i <= 100; i++ {
+			player.entry = float64(i) / 100
+			time.Sleep(10*time.Millisecond)
+		}
+
+		time.Sleep(2*time.Second)*/
 
 		for i := 1; i <= 100; i++ {
 			player.fadeIn = float64(i) / 100
@@ -192,10 +201,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.vaoD = vertices
 			player.vaoDirty = true
 
-			time.Sleep(40*time.Millisecond)
+			time.Sleep(15*time.Millisecond)
 		}
 	}()
-	player.profiler = utils.NewFPSCounter(60, false)
+	player.profiler = utils.NewFPSCounter(60, true)
 	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = render.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
@@ -261,7 +270,7 @@ func (pl *Player) Update() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	pl.batch.Begin()
 	pl.batch.SetCamera(mgl32.Ortho( -1, 1 , 1, -1, 1, -1))
-	bgAlpha := ((1.0-settings.Playfield.BackgroundDim)+((settings.Playfield.BackgroundDim - settings.Playfield.BackgroundInDim)*(1-pl.fadeIn)))*pl.fadeOut
+	bgAlpha := ((1.0-settings.Playfield.BackgroundDim)+((settings.Playfield.BackgroundDim - settings.Playfield.BackgroundInDim)*(1-pl.fadeIn)))*pl.fadeOut*pl.entry
 	blurVal := 0.0
 
 	if settings.Playfield.BlurEnable {

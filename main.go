@@ -85,11 +85,12 @@ func run() {
 			}
 		}
 
-		win.SetTitle("danser - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
-
 		if err != nil {
 			panic(err)
 		}
+
+		win.SetTitle("danser - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
 		glhf.Init()

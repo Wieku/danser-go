@@ -57,7 +57,10 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 			}
 
 			if !ok2 {
-				points = []math2.Vector2d{endPos, pt1, startPos}
+				angle := endPos.AngleRV(startPos) - newAngle * bm.invert
+				pt2 := math2.NewVec2dRad(angle, float64(startTime-endTime)/math.Sqrt(2)).Add(startPos)
+				bm.lastAngle = angle
+				points = []math2.Vector2d{endPos, pt1, pt2, startPos}
 			} else {
 				pt2 := math2.NewVec2dRad(s2.GetStartAngle(), float64(startTime-endTime)/math.Sqrt(2)).Add(startPos)
 				points = []math2.Vector2d{endPos, pt1, pt2, startPos}

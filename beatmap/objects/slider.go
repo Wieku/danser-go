@@ -277,7 +277,7 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		colorAlpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 	} else if time >= self.objData.EndTime {
-		colorAlpha = 1.0-float64(time - self.objData.EndTime)/(preempt/2)
+		colorAlpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
 	} else {
 		colorAlpha = float64(color[3])
 	}
@@ -321,7 +321,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 	} else if time >= self.objData.EndTime {
-		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/2)
+		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
 	} else {
 		alpha = float64(color[3])
 	}
@@ -390,7 +390,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 		}
 	}
 
-	if time >= self.objData.EndTime+int64(preempt/2) {
+	if time >= self.objData.EndTime+int64(preempt/4) {
 		return true
 	}
 	return false
