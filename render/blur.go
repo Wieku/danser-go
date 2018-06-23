@@ -38,8 +38,9 @@ func NewBlurEffect(width, height int) *BlurEffect {
 	vert , _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	frag , _ := ioutil.ReadFile("assets/shaders/blur.fsh")
 	effect.blurShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+
 	if err != nil {
-		panic(err)
+		panic("Blur: " + err.Error())
 	}
 
 	effect.fboSlice = glhf.MakeVertexSlice(effect.blurShader, 6, 6)

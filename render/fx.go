@@ -16,7 +16,13 @@ func setupFx() {
 		{Name: "in_color", Type: glhf.Vec4},
 		{Name: "transform", Type: glhf.Mat4},
 	}
-	fxshader, _ = glhf.NewShader(fxVertexFormat, fxUniformFormat, fxvertex, fxfragment)
+	var err error
+	fxshader, err = glhf.NewShader(fxVertexFormat, fxUniformFormat, fxvertex, fxfragment)
+
+	if err != nil {
+		panic("Fx: " + err.Error())
+	}
+
 }
 
 type FxBatch struct {

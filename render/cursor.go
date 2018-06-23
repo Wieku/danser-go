@@ -40,7 +40,7 @@ func initCursor() {
 	cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
-		panic(err)
+		panic("Cursor: " + err.Error())
 	}
 
 	cursorFbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)

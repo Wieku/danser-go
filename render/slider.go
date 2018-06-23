@@ -47,7 +47,7 @@ func SetupSlider() {
 
 
 	if err != nil {
-		log.Println(err)
+		log.Println("FboPass: " + err.Error())
 	}
 
 	fbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)

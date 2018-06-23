@@ -33,8 +33,9 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	vert , _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	frag , _ := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
 	effect.colFilter, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+
 	if err != nil {
-		panic(err)
+		panic("BloomFilter: " + err.Error())
 	}
 
 	uniformFormat = glhf.AttrFormat{
@@ -44,8 +45,9 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	}
 	frag , _ = ioutil.ReadFile("assets/shaders/combine.fsh")
 	effect.combineShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+
 	if err != nil {
-		panic(err)
+		panic("BloomCombine: " + err.Error())
 	}
 	
 	effect.fboSlice = glhf.MakeVertexSlice(effect.colFilter, 6, 6)

@@ -26,7 +26,12 @@ func setup() {
 	}
 	vert , _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
 	frag , _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
-	shader, _ = glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
+	var err error
+	shader, err = glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
+
+	if err != nil {
+		panic("Sprite: " + err.Error())
+	}
 
 	vao = glhf.MakeVertexSlice(shader, 6, 6)
 	vao.Begin()
