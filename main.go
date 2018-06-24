@@ -29,6 +29,7 @@ func run() {
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 2, "")
 		tag := flag.Int("tag", 1, "")
+		speed := flag.Float64("speed", 1.0, "")
 
 		flag.Parse()
 
@@ -39,6 +40,7 @@ func run() {
 
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
+		settings.SPEED = *speed
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 

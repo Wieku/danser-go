@@ -147,6 +147,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 		player.start = true
 		musicPlayer.Play()
+		musicPlayer.SetTempo(settings.SPEED)
 	}()
 
 	player.fxBatch = render.NewFxBatch()

@@ -30,6 +30,7 @@ go run main.go
 * `-creator="Skystar"`
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of TAG cursors
+* `-speed=1.5` - music speed. Value of 1.5 equals to osu!'s DoubleTime
 * `-settings=1` - if number given is bigger than 0 (e.g. 2) then app will try to load `settings-2.json` instead of `settings.json`
 
 Example:

@@ -212,4 +212,5 @@ var Objects *objects
 var Playfield *playfield
 
 var DIVIDES = 2
+var SPEED = 1.0
 var TAG = 1
