@@ -15,6 +15,13 @@ func LoadBeatmaps() []*BeatMap {
 	log.Println("Loading beatmaps...")
 
 	var candidates []string
+	var beatmaps []*BeatMap
+
+	_, err := os.Open(searchDir)
+	if os.IsNotExist(err) {
+		log.Println(searchDir + " does not exist!")
+		return beatmaps
+	}
 
 	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(f.Name(), ".osu") {
@@ -52,8 +59,6 @@ func LoadBeatmaps() []*BeatMap {
 
 	close(channel)
 	wg.Wait()
-
-	var beatmaps []*BeatMap
 
 	for len(channelB) > 0 {
 		beatmap := <-channelB
