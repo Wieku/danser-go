@@ -18,7 +18,7 @@ var fboSlice *glhf.VertexSlice
 var sliderVertexFormat glhf.AttrFormat
 var cam mgl32.Mat4
 var fbo *glhf.Frame
-
+var fboUnit int32
 var CS float64
 
 func SetupSlider() {
@@ -51,6 +51,9 @@ func SetupSlider() {
 	}
 
 	fbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)
+	gl.ActiveTexture(gl.TEXTURE29)
+	fbo.Texture().Begin()
+	fboUnit = 29
 
 	fboSlice = glhf.MakeVertexSlice(fboShader, 6, 6)
 	fboSlice.Begin()
@@ -74,17 +77,13 @@ func NewSliderRenderer() *SliderRenderer {
 
 func (sr *SliderRenderer) Begin() {
 
-	//gl.Enable(gl.BLEND)
-	//gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA)
-	//gl.BlendEquation(gl.FUNC_ADD)
-	//gl.BlendFunc(gl.ONE, gl.ONE)
 	gl.Disable(gl.BLEND)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthMask(true)
 	gl.DepthFunc(gl.LESS)
 
 	fbo.Begin()
-	//gl.Disable(gl.BLEND)
+
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -112,21 +111,16 @@ func (sr *SliderRenderer) EndAndRender() {
 	gl.Disable(gl.DEPTH_TEST)
 	gl.DepthMask(false)
 	gl.Enable(gl.BLEND)
-	//gl.BlendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
+
 	gl.BlendEquation(gl.FUNC_ADD)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	fbo.Texture().Begin()
-
 	fboShader.Begin()
-	fboShader.SetUniformAttr(0, int32(0))
-	fboSlice.Begin()
+	fboShader.SetUniformAttr(0, int32(fboUnit))
+	fboSlice.BeginDraw()
 	fboSlice.Draw()
-	fboSlice.End()
+	fboSlice.EndDraw()
 	fboShader.End()
-
-	fbo.Texture().End()
 }
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {

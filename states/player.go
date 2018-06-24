@@ -72,6 +72,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	winscl := settings.Graphics.GetAspectRatio()
 
 	if player.Background != nil {
+		gl.ActiveTexture(gl.TEXTURE31)
+		player.Background.Begin()
 		player.blurEffect = render.NewBlurEffect(player.Background.Width(), player.Background.Height()/*int(settings.Graphics.GetHeight())*/)
 		player.blurEffect.SetBlur(0.0, 0.0)
 		imScl := float64(player.Background.Width())/float64(player.Background.Height())
@@ -300,7 +302,7 @@ func (pl *Player) Update() {
 			pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 		}
 
-		pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), pl.Background)
+		pl.batch.DrawUnit(bmath.NewVec2d(0, 0), 31)
 
 		pl.batch.SetColor(1, 1, 1, bgAlpha)
 
@@ -407,11 +409,13 @@ func (pl *Player) Update() {
 			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 		}
 
+
+		pl.batch.Begin()
+		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
+		objects.BeginSliderOverlay()
 		for j:=0; j < settings.DIVIDES; j++ {
 
 			pl.batch.SetCamera(cameras[j])
-			pl.batch.SetScale(scale1 * 64*render.CS, scale1 *64*render.CS)
-			pl.batch.Begin()
 
 			for i := len(pl.sliders)-1; i >= 0 && len(pl.sliders) > 0 ; i-- {
 				if i < len(pl.sliders) {
@@ -422,14 +426,13 @@ func (pl *Player) Update() {
 					}
 				}
 			}
-			pl.batch.End()
-			pl.batch.SetScale(1, 1)
+
 		}
 
-		pl.batch.Begin()
-		for j:=0; j < settings.DIVIDES; j++ {
+		objects.EndSliderOverlay()
+		objects.BeginCircleRender()
 
-			pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
+		for j:=0; j < settings.DIVIDES; j++ {
 
 			pl.batch.SetCamera(cameras[j])
 
@@ -443,8 +446,10 @@ func (pl *Player) Update() {
 				}
 			}
 		}
-		pl.batch.End()
 
+		objects.EndCircleRender()
+		pl.batch.SetScale(1, 1)
+		pl.batch.End()
 	}
 
 	for _, g := range pl.cursors {
@@ -453,6 +458,7 @@ func (pl *Player) Update() {
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	gl.BlendEquation(gl.FUNC_ADD)
+	render.BeginCursorRender()
 	for j:=0; j < settings.DIVIDES; j++ {
 
 		pl.batch.SetCamera(cameras[j])
@@ -462,10 +468,12 @@ func (pl *Player) Update() {
 			if ind < 0 {
 				ind = settings.DIVIDES*len(pl.cursors) - 1
 			}
+
 			g.DrawM(scale2, pl.batch, colors1[j*len(pl.cursors)+i], colors1[ind])
 		}
 
 	}
+	render.EndCursorRender()
 
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.EndAndRender()

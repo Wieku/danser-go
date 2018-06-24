@@ -53,7 +53,6 @@ type SpriteBatch struct {
 	position mgl32.Mat4
 	scale mgl32.Mat4
 	transform mgl32.Mat4
-	lastTrans mgl32.Mat4
 }
 
 func NewSpriteBatch() *SpriteBatch {
@@ -65,7 +64,6 @@ func NewSpriteBatch() *SpriteBatch {
 		mgl32.Ident4(),
 		mgl32.Ident4(),
 		mgl32.Ident4(),
-		mgl32.Ident4(),
 		mgl32.Ident4()}
 }
 
@@ -74,8 +72,7 @@ func (batch *SpriteBatch) Begin() {
 	shader.SetUniformAttr(0, batch.color)
 	shader.SetUniformAttr(3, batch.transform)
 	shader.SetUniformAttr(2, batch.Projection)
-	shader.SetUniformAttr(4, batch.lastTrans)
-	vao.Begin()
+	vao.BeginDraw()
 }
 
 func (batch *SpriteBatch) SetColor(r, g, b, a float64) {
@@ -164,10 +161,6 @@ func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
 }
 
 func (batch *SpriteBatch) End() {
-	vao.End()
+	vao.EndDraw()
 	shader.End()
-}
-func (batch *SpriteBatch) SetEndTransform(dz mgl32.Mat4) {
-	batch.lastTrans = dz
-	shader.SetUniformAttr(4, dz)
 }

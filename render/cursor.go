@@ -44,6 +44,8 @@ func initCursor() {
 	}
 
 	cursorFbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
+	gl.ActiveTexture(gl.TEXTURE30)
+	cursorFbo.Texture().Begin()
 	osuRect = Camera.GetWorldRect()
 }
 
@@ -106,7 +108,7 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 }
 
 func (cr *Cursor) Update(tim float64) {
-	points := cr.Position.Dst(cr.LastPos)*2
+	points := cr.Position.Dst(cr.LastPos)//*2
 
 	olp := len(cr.Points)
 
@@ -152,7 +154,6 @@ func (cr *Cursor) Update(tim float64) {
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
 
-		cr.vaoDirty = true
 	} else {
 		cr.mutex.Lock()
 		cr.vertices = make([]float32, 0)
@@ -181,19 +182,27 @@ func (cursor *Cursor) UpdateRenderer() {
 	cursor.mutex.Unlock()
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *SpriteBatch, color mgl32.Vec4) {
-	cursor.DrawM(scale, batch, color, color)
-}
-
-func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4) {
-	gl.Disable(gl.DEPTH_TEST)
-
+func BeginCursorRender() {
 	gl.ActiveTexture(gl.TEXTURE0)
 	CursorTex.Begin()
 	gl.ActiveTexture(gl.TEXTURE1)
 	CursorTrail.Begin()
 	gl.ActiveTexture(gl.TEXTURE2)
 	CursorTop.Begin()
+}
+
+func EndCursorRender() {
+	CursorTop.End()
+	CursorTrail.End()
+	CursorTex.End()
+}
+
+func (cursor *Cursor) Draw(scale float64, batch *SpriteBatch, color mgl32.Vec4) {
+	cursor.DrawM(scale, batch, color, color)
+}
+
+func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4) {
+	gl.Disable(gl.DEPTH_TEST)
 
 	cursorFbo.Begin()
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
@@ -226,18 +235,6 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	cursor.subVao.EndDraw()
 
-	cursorFbo.End()
-
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
-	gl.ActiveTexture(gl.TEXTURE1)
-	cursorFbo.Texture().Begin()
-	fboShader.Begin()
-	fboShader.SetUniformAttr(0, int32(1))
-	fboSlice.Begin()
-	fboSlice.Draw()
-	fboSlice.End()
-	fboShader.End()
-
 	cursorShader.End()
 
 	batch.Begin()
@@ -252,7 +249,14 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	batch.End()
 
-	CursorTrail.End()
-	CursorTex.End()
-	CursorTop.End()
+	cursorFbo.End()
+
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+
+	fboShader.Begin()
+	fboShader.SetUniformAttr(0, int32(30))
+	fboSlice.BeginDraw()
+	fboSlice.Draw()
+	fboSlice.EndDraw()
+	fboShader.End()
 }

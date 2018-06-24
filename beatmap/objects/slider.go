@@ -291,13 +291,12 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)})
 
 	subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
-	subVao.Begin()
+	subVao.BeginDraw()
 	subVao.Draw()
-	subVao.End()
+	subVao.EndDraw()
 }
 
-func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
-
+func BeginSliderOverlay() {
 	gl.ActiveTexture(gl.TEXTURE0)
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		render.CircleFull.Begin()
@@ -314,7 +313,22 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 
 	gl.ActiveTexture(gl.TEXTURE4)
 	render.SliderTick.Begin()
+}
 
+func EndSliderOverlay() {
+	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
+		render.CircleFull.End()
+	} else {
+		render.Circle.End()
+	}
+
+	render.CircleOverlay.End()
+	render.SliderBall.End()
+	render.ApproachCircle.End()
+	render.SliderTick.End()
+}
+
+func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 	alpha := 1.0
 	arr := float64(self.objData.StartTime-time) / preempt
 
