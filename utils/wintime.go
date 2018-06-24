@@ -36,6 +36,10 @@ double getTime() {
 long long getNanoTime() {
 	return (__int64)(getTime());
 }
+#else
+long long getNanoTime() {
+	return (__int64)(0);
+}
 #endif
  */
 import "C"
