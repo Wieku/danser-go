@@ -168,6 +168,19 @@ func fillArray(dst []float32, index int, values... float32) {
 	}
 }
 
+func (cursor *Cursor) UpdateRenderer() {
+	cursor.mutex.Lock()
+	if cursor.vaoDirty {
+		cursor.subVao = cursor.vao.Slice(0, len(cursor.vertices)/9)
+		cursor.subVao.Begin()
+		cursor.subVao.SetVertexData(cursor.vertices)
+		cursor.subVao.End()
+		cursor.RendPos = cursor.VaoPos
+		cursor.vaoDirty = false
+	}
+	cursor.mutex.Unlock()
+}
+
 func (cursor *Cursor) Draw(scale float64, batch *SpriteBatch, color mgl32.Vec4) {
 	cursor.DrawM(scale, batch, color, color)
 }
@@ -202,17 +215,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
 	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
 
-	cursor.mutex.Lock()
-	if cursor.vaoDirty {
-		cursor.subVao = cursor.vao.Slice(0, len(cursor.vertices)/9)
-		cursor.subVao.Begin()
-		cursor.subVao.SetVertexData(cursor.vertices)
-		cursor.subVao.End()
-		cursor.RendPos = cursor.VaoPos
-		cursor.vaoDirty = false
-	}
-	cursor.mutex.Unlock()
-	cursor.subVao.Begin()
+	cursor.subVao.BeginDraw()
 
 	cursor.subVao.Draw()
 
@@ -221,7 +224,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	cursor.subVao.Draw()
 
-	cursor.subVao.End()
+	cursor.subVao.EndDraw()
 
 	cursorFbo.End()
 

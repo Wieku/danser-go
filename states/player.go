@@ -377,10 +377,13 @@ func (pl *Player) Update() {
 
 	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
-	pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
-	pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-	pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition * (pl.Scl-1.0)/(settings.Beat.BeatScale*0.4))
-	pl.bloomEffect.Begin()
+	if settings.Playfield.BloomEnabled {
+		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
+		pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
+		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition * (pl.Scl-1.0)/(settings.Beat.BeatScale*0.4))
+		pl.bloomEffect.Begin()
+	}
+
 
 	if pl.start {
 
@@ -444,6 +447,10 @@ func (pl *Player) Update() {
 
 	}
 
+	for _, g := range pl.cursors {
+		g.UpdateRenderer()
+	}
+
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	gl.BlendEquation(gl.FUNC_ADD)
 	for j:=0; j < settings.DIVIDES; j++ {
@@ -460,6 +467,8 @@ func (pl *Player) Update() {
 
 	}
 
-	pl.bloomEffect.EndAndRender()
+	if settings.Playfield.BloomEnabled {
+		pl.bloomEffect.EndAndRender()
+	}
 
 }
