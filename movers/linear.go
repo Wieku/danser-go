@@ -34,5 +34,5 @@ func (bm *LinearMover) SetObjects(end, start objects.BaseObject) {
 func (bm LinearMover) Update(time int64, cursor *render.Cursor) {
 	t := float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
-	cursor.SetPos(bm.bz.NPointAt(t))
+	cursor.SetPos(bm.bz.NPointAt(math.Sin(t*math.Pi/2)))
 }

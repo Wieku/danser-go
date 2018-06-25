@@ -30,6 +30,7 @@ func run() {
 		cursors := flag.Int("cursors", 2, "")
 		tag := flag.Int("tag", 1, "")
 		speed := flag.Float64("speed", 1.0, "")
+		mover := flag.String("mover", "flower", "")
 
 		flag.Parse()
 
@@ -41,6 +42,7 @@ func run() {
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
 		settings.SPEED = *speed
+		beatmap.SetMover(*mover)
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 

@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser/movers"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/bmath"
+	"strings"
 )
 
 type BeatMap struct {
@@ -21,7 +22,22 @@ type BeatMap struct {
 	cursors 						[]*render.Cursor
 }
 
-const MoverId = 2
+var MoverId = 2
+
+func SetMover(name string) {
+	name = strings.ToLower(name)
+
+	if name == "bezier" {
+		MoverId = 0
+	} else if name == "circular" {
+		MoverId = 1
+	} else if name == "linear" {
+		MoverId = 3
+	} else {
+		MoverId = 2
+	}
+
+}
 
 func NewBeatMap() *BeatMap {
 	return &BeatMap{timings: objects.NewTimings(), movers: []func() movers.Mover {movers.NewBezierMover, movers.NewCircularMover, movers.NewFlowerBezierMover, movers.NewLinearMover}, StackLeniency: 0.7}
