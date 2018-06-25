@@ -119,6 +119,7 @@ func run() {
 		mainthread.Call(func() {
 			gl.Enable(gl.MULTISAMPLE)
 			gl.Disable(gl.DITHER)
+			gl.Disable(gl.SCISSOR_TEST)
 			gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
 			gl.ClearColor(0,0,0,1)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
