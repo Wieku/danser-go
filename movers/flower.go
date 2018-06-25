@@ -6,13 +6,7 @@ import (
 	"github.com/wieku/danser/beatmap/objects"
 	"math"
 	"github.com/wieku/danser/render"
-)
-
-const (
-	ANGLE = math.Pi/2
-	STRENGTH = 2.0/3
-	STREAM = 130
-	LONGJUMP = 500
+	"github.com/wieku/danser/settings"
 )
 
 type FlowerBezierMover struct {
@@ -44,25 +38,31 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 
 	var points []math2.Vector2d
 
-	scaledDistance := distance * STRENGTH
-	newAngle := ANGLE
+	scaledDistance := distance * settings.Dance.Flower.DistanceMult
+	newAngle := settings.Dance.Flower.AngleOffset * math.Pi / 180.0
 
-	if (endPos == startPos || (ANGLE == 0.0 && (startTime-endTime) > LONGJUMP)) && end.GetBasicData().StartTime > 0  {
-		if ANGLE == 0.0 {
+	if end.GetBasicData().StartTime > 0 && settings.Dance.Flower.LongJump >= 0 && (startTime-endTime) > settings.Dance.Flower.LongJump {
+		scaledDistance = float64(startTime-endTime) * settings.Dance.Flower.LongJumpMult
+	}
+
+	if endPos == startPos {
+		if settings.Dance.Flower.LongJumpOnEqualPos {
+			scaledDistance = float64(startTime-endTime) * settings.Dance.Flower.LongJumpMult
 			bm.lastAngle += math.Pi
-			pt1 := math2.NewVec2dRad(bm.lastAngle, float64(startTime-endTime)/math.Sqrt(2)).Add(endPos)
+
+			pt1 := math2.NewVec2dRad(bm.lastAngle, scaledDistance).Add(endPos)
 
 			if ok1 {
-				pt1 = math2.NewVec2dRad(s1.GetEndAngle(), float64(startTime-endTime)/math.Sqrt(2)).Add(endPos)
+				pt1 = math2.NewVec2dRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
 			}
 
 			if !ok2 {
-				angle := endPos.AngleRV(startPos) - newAngle * bm.invert
-				pt2 := math2.NewVec2dRad(angle, float64(startTime-endTime)/math.Sqrt(2)).Add(startPos)
+				angle := bm.lastAngle - newAngle * bm.invert
+				pt2 := math2.NewVec2dRad(angle, scaledDistance).Add(startPos)
 				bm.lastAngle = angle
 				points = []math2.Vector2d{endPos, pt1, pt2, startPos}
 			} else {
-				pt2 := math2.NewVec2dRad(s2.GetStartAngle(), float64(startTime-endTime)/math.Sqrt(2)).Add(startPos)
+				pt2 := math2.NewVec2dRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
 				points = []math2.Vector2d{endPos, pt1, pt2, startPos}
 			}
 
@@ -92,8 +92,8 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 
 		points = []math2.Vector2d{endPos, pt1, pt2, startPos}
 	} else {
-		if startTime - endTime < STREAM {
-			newAngle = math.Pi/2
+		if startTime - endTime < settings.Dance.Flower.StreamTrigger {
+			newAngle = settings.Dance.Flower.StreamAngleOffset * math.Pi / 180.0
 		}
 		angle := endPos.AngleRV(startPos) - newAngle * bm.invert
 
@@ -102,7 +102,7 @@ func (bm *FlowerBezierMover) SetObjects(end, start objects.BaseObject) {
 
 		bm.lastAngle = angle
 
-		if startTime - endTime < STREAM {
+		if startTime - endTime < settings.Dance.Flower.StreamTrigger {
 			bm.invert = -1 * bm.invert
 		}
 

@@ -7,10 +7,8 @@ import (
 	"math"
 	"github.com/wieku/danser/render"
 	"log"
+	"github.com/wieku/danser/settings"
 )
-
-const INVERTABLE = false
-const CIRFRAGMENT = 1.5
 
 type CircularMover struct {
 	ca curves.Curve
@@ -33,7 +31,7 @@ func (bm *CircularMover) SetObjects(end, start objects.BaseObject) {
 	bm.endTime = end.GetBasicData().EndTime
 	bm.beginTime = start.GetBasicData().StartTime
 
-	if INVERTABLE {
+	if settings.Dance.Circular.StreamTrigger < 0 || (bm.beginTime - bm.endTime) < settings.Dance.Circular.StreamTrigger {
 		bm.invert = -1 * bm.invert
 	}
 
@@ -43,7 +41,7 @@ func (bm *CircularMover) SetObjects(end, start objects.BaseObject) {
 	}
 
 	point := endPos.Mid(startPos)
-	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(CIRFRAGMENT).Add(point)
+	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(settings.Dance.Circular.RadiusMultiplier).Add(point)
 	log.Println(point.Dst(endPos), p.Dst(point))
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
