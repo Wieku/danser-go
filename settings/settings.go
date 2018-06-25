@@ -200,6 +200,7 @@ type fileformat struct {
 	Cursor *cursor
 	Objects *objects
 	Playfield *playfield
+	Dance *dance
 }
 
 var Version string
@@ -210,6 +211,7 @@ var Beat *beat
 var Cursor *cursor
 var Objects *objects
 var Playfield *playfield
+var Dance *dance
 
 var DIVIDES = 2
 var SPEED = 1.0

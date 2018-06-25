@@ -6,10 +6,11 @@ import (
 	"github.com/wieku/danser/beatmap/objects"
 	"math"
 	"github.com/wieku/danser/render"
+	"log"
 )
 
 const INVERTABLE = false
-const CIRFRAGMENT = 0.5
+const CIRFRAGMENT = 1.5
 
 type CircularMover struct {
 	ca curves.Curve
@@ -41,12 +42,12 @@ func (bm *CircularMover) SetObjects(end, start objects.BaseObject) {
 		return
 	}
 
-	p := endPos.Mid(startPos)
-	p = p.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(CIRFRAGMENT).Add(p)
+	point := endPos.Mid(startPos)
+	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(CIRFRAGMENT).Add(point)
+	log.Println(point.Dst(endPos), p.Dst(point))
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
 
 func (bm CircularMover) Update(time int64, cursor *render.Cursor) {
 	cursor.SetPos(bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
-	//io.MouseMoveVec(bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)))
 }

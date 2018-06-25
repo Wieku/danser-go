@@ -17,7 +17,8 @@ func initDefaults() {
 	Cursor = &cursor{&color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, false, 0, 0}, true, -36.0, false, 18, true, true, false, 0.4}
 	Objects = &objects{5, 0.3, true, true, &color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, true, 100.0, 0}, -1, 1.2, true, 30, 50, true, true, 0.0, false, &color{false, 8, &hsv{0, 0.0, 1.0}, false, 0, true, 100.0, 0}}
 	Playfield = &playfield{5, 0,  0.95, 0.95, true, 0,0.6, 0.6, 1,true, true, 0.8, 1.1, 0, false, 2, true, true, 0.3, &bloom{0.0, 0.6, 0.7}}
-	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield}
+	Dance = &dance{Bezier: &bezier{60, 3}, Flower: &flower{90, 0.666, 130, 90, -1, 0.7, false}, Circular: &circular{1, 130}}
+	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield, Dance}
 }
 
 func LoadSettings(version int) bool {

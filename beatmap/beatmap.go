@@ -24,7 +24,7 @@ type BeatMap struct {
 const MoverId = 2
 
 func NewBeatMap() *BeatMap {
-	return &BeatMap{timings: objects.NewTimings(), movers: []func() movers.Mover {movers.NewBezierMover, movers.NewCircularMover, movers.NewFlowerBezierMover}, StackLeniency: 0.7}
+	return &BeatMap{timings: objects.NewTimings(), movers: []func() movers.Mover {movers.NewBezierMover, movers.NewCircularMover, movers.NewFlowerBezierMover, movers.NewLinearMover}, StackLeniency: 0.7}
 }
 
 func (b *BeatMap) Reset() {
