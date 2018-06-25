@@ -13,6 +13,7 @@ import (
 	"os"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
+	"github.com/wieku/danser/build"
 )
 
 var player *states.Player
@@ -93,7 +94,7 @@ func run() {
 			panic(err)
 		}
 
-		win.SetTitle("danser - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
