@@ -217,19 +217,22 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
 	}
 
-	cursorShader.SetUniformAttr(0, color2)
 	cursorShader.SetUniformAttr(1, int32(1))
 	cursorShader.SetUniformAttr(2, batch.Projection)
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
-	cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
-	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
-
 	cursor.subVao.BeginDraw()
 
-	cursor.subVao.Draw()
+	if settings.Cursor.EnableTrailGlow {
+		cursorShader.SetUniformAttr(0, color2)
+		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
+		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
+
+		cursor.subVao.Draw()
+	}
 
 	cursorShader.SetUniformAttr(0, color)
 	cursorShader.SetUniformAttr(4, float32(siz*(12.0/18)*scale))
+	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
 
 	cursor.subVao.Draw()
 
