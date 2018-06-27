@@ -14,6 +14,7 @@ import (
 	"github.com/wieku/glhf"
 	"math"
 	"github.com/wieku/danser/utils"
+	"sort"
 )
 
 type tickPoint struct {
@@ -127,6 +128,26 @@ func (self Slider) GetPointAt(time int64) m2.Vector2d {
 	}
 
 	return pos.Add(self.objData.StackOffset)
+}
+
+func (self *Slider) GetAsDummyCircles() []BaseObject {
+	partLen := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
+
+	var circles []BaseObject
+
+	for i := int64(0); i <= self.repeat; i++ {
+		time := self.objData.StartTime + i * partLen
+		log.Println(time)
+		circles = append(circles, DummyCircle(self.GetPointAt(time), time))
+	}
+
+	for _, p := range self.TickPoints {
+		circles = append(circles, DummyCircle(p.Pos, p.time))
+	}
+
+	sort.Slice(circles, func(i, j int) bool {return circles[i].GetBasicData().StartTime < circles[j].GetBasicData().StartTime})
+
+	return circles
 }
 
 func (self Slider) endTime() int64 {
