@@ -24,5 +24,5 @@ type dance struct {
 	TAGSliderDance bool
 	Bezier *bezier
 	Flower *flower
-	Circular *circular
+	HalfCircle *circular
 }
