@@ -140,6 +140,7 @@ type bloom struct {
 
 type cursor struct {
 	Colors *color
+	EnableTrailGlow bool //true
 	EnableCustomTrailGlowOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
 	TrailGlowOffset float64 //-36, offset of the cursor trail glow
 	ScaleToCS bool //false, if enabled, cursor will scale to beatmap CS value
@@ -148,6 +149,7 @@ type cursor struct {
 	ShowCursorsOnBreaks bool //true
 	BounceOnEdges bool //false
 	TrailEndScale float64 //0.4
+	GlowEndScale float64 //0.4
 }
 
 type objects struct {

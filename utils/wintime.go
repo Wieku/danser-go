@@ -34,11 +34,11 @@ double getTime() {
 }
 
 long long getNanoTime() {
-	return (__int64)(getTime());
+	return (long long)(getTime());
 }
 #else
 long long getNanoTime() {
-	return (__int64)(0);
+	return 0;
 }
 #endif
  */

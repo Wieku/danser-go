@@ -177,7 +177,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		for {
 
 			musicPlayer.Update()
-			player.SclA = math.Min(1.4*settings.Beat.BeatScale, math.Max(musicPlayer.GetBeat()*settings.Beat.BeatScale+1.0, 1.0))
+			player.SclA = math.Min(1.4*settings.Beat.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Beat.BeatScale+1.0, 1.0))
 
 			fft := musicPlayer.GetFFT()
 
