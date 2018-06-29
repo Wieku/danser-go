@@ -137,12 +137,11 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 
 	for i := int64(0); i <= self.repeat; i++ {
 		time := self.objData.StartTime + i * partLen
-		log.Println(time)
-		circles = append(circles, DummyCircle(self.GetPointAt(time), time))
+		circles = append(circles, DummyCircleInherit(self.GetPointAt(time), time, true))
 	}
 
 	for _, p := range self.TickPoints {
-		circles = append(circles, DummyCircle(p.Pos, p.time))
+		circles = append(circles, DummyCircleInherit(p.Pos, p.time, true))
 	}
 
 	sort.Slice(circles, func(i, j int) bool {return circles[i].GetBasicData().StartTime < circles[j].GetBasicData().StartTime})
@@ -200,7 +199,7 @@ func (self *Slider) GetCurve() []m2.Vector2d {
 	return points
 }
 
-func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
+func (self *Slider) Update(time int64) bool {
 	//TODO: CLEAN THIS
 	if time < self.endTime() {
 		sliderTime := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
@@ -235,8 +234,7 @@ func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 		} else {
 			pos = self.multiCurve.PointAt((1.0 - ttime/self.partLen)*rt)
 		}
-		self.Pos = pos
-		cursor.SetPos(pos.Add(self.objData.StackOffset))
+		self.Pos = pos.Add(self.objData.StackOffset)
 
 		if !self.clicked {
 			ss := self.sampleSets[0]
@@ -259,6 +257,10 @@ func (self *Slider) Update(time int64, cursor *render.Cursor) bool {
 	self.clicked = false
 
 	return true
+}
+
+func (self *Slider) GetPosition() m2.Vector2d {
+	return self.Pos
 }
 
 func (self *Slider) InitCurve(renderer *render.SliderRenderer) {

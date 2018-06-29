@@ -31,7 +31,7 @@ func (bm *CircularMover) SetObjects(end, start objects.BaseObject) {
 	bm.endTime = end.GetBasicData().EndTime
 	bm.beginTime = start.GetBasicData().StartTime
 
-	if settings.Dance.Circular.StreamTrigger < 0 || (bm.beginTime - bm.endTime) < settings.Dance.Circular.StreamTrigger {
+	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.beginTime - bm.endTime) < settings.Dance.HalfCircle.StreamTrigger {
 		bm.invert = -1 * bm.invert
 	}
 
@@ -41,7 +41,7 @@ func (bm *CircularMover) SetObjects(end, start objects.BaseObject) {
 	}
 
 	point := endPos.Mid(startPos)
-	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(settings.Dance.Circular.RadiusMultiplier).Add(point)
+	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(settings.Dance.HalfCircle.RadiusMultiplier).Add(point)
 	log.Println(point.Dst(endPos), p.Dst(point))
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }

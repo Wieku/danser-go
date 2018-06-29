@@ -3,7 +3,6 @@ package objects
 import (
 	"strconv"
 	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/render"
 )
 
 type Pause struct {
@@ -25,10 +24,10 @@ func (self Pause) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self *Pause) Update(time int64, cursor *render.Cursor) bool {
-
-	cursor.SetPos(self.objData.StartPos)
-	//io.MouseMoveVec(self.objData.StartPos)
-
+func (self *Pause) Update(time int64) bool {
 	return time >= self.objData.EndTime
+}
+
+func (self *Pause) GetPosition() bmath.Vector2d {
+	return self.objData.StartPos
 }

@@ -83,7 +83,7 @@ func parseEvents(line []string, beatMap *BeatMap) {
 		beatMap.Bg += strings.Replace(line[2], "\"", "", -1)
 	}
 	if line[0] == "2" {
-		beatMap.HitObjects = append(beatMap.HitObjects, objects.NewPause(line))
+		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
 	}
 }
 

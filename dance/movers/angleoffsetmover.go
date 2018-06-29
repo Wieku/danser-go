@@ -11,7 +11,7 @@ import (
 type AngleOffsetMover struct {
 	lastAngle float64
 	bz curves.Bezier
-	beginTime, endTime int64
+	startTime, endTime int64
 	invert float64
 }
 
@@ -24,11 +24,9 @@ func (bm *AngleOffsetMover) Reset() {
 	bm.invert = 1
 }
 
-func (bm *AngleOffsetMover) SetObjects(objects []objects.BaseObject) (int, int64) {
-	preprocessQueue(1, objects, settings.Dance.SliderDance)
-	
-	end := objects[0]
-	start := objects[1]
+func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
+	end := objs[0]
+	start := objs[1]
 	
 	endPos := end.GetBasicData().EndPos
 	endTime := end.GetBasicData().EndTime
@@ -106,7 +104,7 @@ func (bm *AngleOffsetMover) SetObjects(objects []objects.BaseObject) (int, int64
 
 		bm.lastAngle = angle
 
-		if startTime - endTime < settings.Dance.Flower.StreamTrigger {
+		if startTime - endTime < settings.Dance.Flower.StreamTrigger && !(start.GetBasicData().SliderPoint && end.GetBasicData().SliderPoint) {
 			bm.invert = -1 * bm.invert
 		}
 
@@ -115,12 +113,15 @@ func (bm *AngleOffsetMover) SetObjects(objects []objects.BaseObject) (int, int64
 
 	bm.bz = curves.NewBezier(points)
 	bm.endTime = endTime
-	bm.beginTime = startTime
-	return 2, startTime
+	bm.startTime = startTime
 }
 
 func (bm *AngleOffsetMover) Update(time int64) bmath.Vector2d {
-	t := float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)
+	t := float64(time - bm.endTime)/float64(bm.startTime - bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
 	return bm.bz.NPointAt(t)
+}
+
+func (bm *AngleOffsetMover) GetEndTime() int64 {
+	return bm.startTime
 }

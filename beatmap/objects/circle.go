@@ -35,11 +35,17 @@ func NewCircle(data []string) *Circle {
 }
 
 func DummyCircle(pos bmath.Vector2d, time int64) *Circle {
+	return DummyCircleInherit(pos, time, false)
+}
+
+func DummyCircleInherit(pos bmath.Vector2d, time int64, inherit bool) *Circle {
 	circle := &Circle{objData:&basicData{}}
 	circle.objData.StartPos = pos
 	circle.objData.EndPos = pos
-	circle.objData.EndTime = circle.objData.StartTime
+	circle.objData.StartTime = time
+	circle.objData.EndTime = time
 	circle.objData.EndPos = circle.objData.StartPos
+	circle.objData.SliderPoint = inherit
 	return circle
 }
 
@@ -47,9 +53,8 @@ func (self Circle) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self *Circle) Update(time int64, cursor *render.Cursor) bool {
+func (self *Circle) Update(time int64) bool {
 
-	cursor.SetPos(self.objData.StartPos)
 	if self.ownSampleSet == 0 {
 		audio.PlaySample(self.Timings.Current.SampleSet, self.sample)
 	} else {
@@ -61,6 +66,10 @@ func (self *Circle) Update(time int64, cursor *render.Cursor) bool {
 
 func (self *Circle) SetTiming(timings *Timings) {
 	self.Timings = timings
+}
+
+func (self *Circle) GetPosition() bmath.Vector2d {
+	return self.objData.StartPos
 }
 
 func BeginCircleRender() {
@@ -132,3 +141,4 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	}
 	return false
 }
+

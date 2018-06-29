@@ -3,12 +3,12 @@ package objects
 import (
 	om "github.com/wieku/danser/bmath"
 	"strconv"
-	"github.com/wieku/danser/render"
 )
 
 type BaseObject interface {
 	GetBasicData() *basicData
-	Update(time int64, cursor *render.Cursor) bool
+	Update(time int64) bool
+	GetPosition() om.Vector2d
 }
 
 type basicData struct {
@@ -17,6 +17,7 @@ type basicData struct {
 	StackOffset        om.Vector2d
 	StackIndex         int64
 	Number			   int64
+	SliderPoint		   bool
 }
 
 func commonParse(data []string) *basicData {

@@ -1,4 +1,4 @@
-package movers
+package schedulers
 
 import "github.com/wieku/danser/beatmap/objects"
 
@@ -9,8 +9,13 @@ func objectPreProcess(hitobject objects.BaseObject, sliderDance bool) ([]objects
 	return nil, false
 }
 
-func preprocessQueue(index int, queue []objects.BaseObject, sliderDance bool) {
+func preprocessQueue(index int, queue []objects.BaseObject, sliderDance bool) []objects.BaseObject {
 	if arr, ok := objectPreProcess(queue[index], sliderDance); ok {
-		queue = append(queue[:index], append(arr, queue[index+1:]...)...)
+		if index < len(queue) -1 {
+			return append(queue[:index], append(arr, queue[index+1:]...)...)
+		} else {
+			return append(queue[:index], arr...)
+		}
 	}
+	return queue
 }

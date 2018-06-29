@@ -23,9 +23,9 @@ func (bm *HalfCircleMover) Reset() {
 	bm.invert = -1
 }
 
-func (bm *HalfCircleMover) SetObjects(objects []objects.BaseObject) (int, int64) {
-	end := objects[0]
-	start := objects[1]
+func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
+	end := objs[0]
+	start := objs[1]
 
 	endPos := end.GetBasicData().EndPos
 	startPos := start.GetBasicData().StartPos
@@ -38,16 +38,19 @@ func (bm *HalfCircleMover) SetObjects(objects []objects.BaseObject) (int, int64)
 
 	if endPos == startPos {
 		bm.ca = curves.NewLinear(endPos, startPos)
-		return 2, bm.startTime
+		return
 	}
 
 	point := endPos.Mid(startPos)
 	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(settings.Dance.HalfCircle.RadiusMultiplier).Add(point)
 	log.Println(point.Dst(endPos), p.Dst(point))
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
-	return 2, bm.startTime
 }
 
-func (bm HalfCircleMover) Update(time int64) bmath.Vector2d {
+func (bm *HalfCircleMover) Update(time int64) bmath.Vector2d {
 	return bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.startTime- bm.endTime))
+}
+
+func (bm *HalfCircleMover) GetEndTime() int64 {
+	return bm.startTime
 }

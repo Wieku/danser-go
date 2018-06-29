@@ -14,7 +14,7 @@ import (
 	"github.com/wieku/danser/utils"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/settings"
-
+	"github.com/wieku/danser/dance/schedulers"
 )
 
 type Player struct {
@@ -29,6 +29,7 @@ type Player struct {
 	progressMs int64
 	batch *render.SpriteBatch
 	cursors []*render.Cursor
+	scheduler schedulers.Scheduler
 	circles []*objects.Circle
 	sliders []*objects.Slider
 	Background *glhf.Texture
@@ -108,11 +109,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursors[i] = render.NewCursor()
 	}
 
-	player.bMap.SetCursors(player.cursors)
+	//player.bMap.SetCursors(player.cursors)
 	player.bMap.Reset()
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(player.queue2, player.bMap.Queue)
+
+	toSchedule := make([]objects.BaseObject, len(player.bMap.Queue))
+	copy(toSchedule, player.bMap.Queue)
+	player.scheduler = schedulers.NewFlowerScheduler()
+	player.scheduler.Init(toSchedule, player.cursors[0])
 
 	for _, o := range player.queue2 {
 		if s, ok := o.(*objects.Slider); ok {
@@ -151,7 +157,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}()
 
 	player.fxBatch = render.NewFxBatch()
-	player.vao = player.fxBatch.CreateVao(3*(256+128))
+	player.vao = player.fxBatch.CreateVao(2*3*(256+128))
 	go func() {
 		var last = musicPlayer.GetPosition()
 
@@ -159,11 +165,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.progressMsF = musicPlayer.GetPosition()*1000
 
-			player.bMap.Update(int64(player.progressMsF), nil/*player.cursor*/)
+			player.bMap.Update(int64(player.progressMsF))
+			player.scheduler.Update(int64(player.progressMsF))
 			for _, g := range player.cursors {
 				g.Update(player.progressMsF - last)
 			}
-			//player.cursor.Update(player.progressMsF - last)
 
 			last = player.progressMsF
 
@@ -172,7 +178,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}()
 
 	go func() {
-		vertices := make([]float32, (256+128)*3*3)
+		vertices := make([]float32, (256+128)*3*3*2)
 		oldFFT := make([]float32, 256+128)
 		for {
 
@@ -181,24 +187,27 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			fft := musicPlayer.GetFFT()
 
-			//last := fft[0]
-
 			for i:=0; i < len(oldFFT); i++ {
-				fft[i] = float32(1.0 - math.Abs(math.Max(-50.0,20*math.Log10(float64(fft[i]))/50)))//*10.0
-				oldFFT[i] =float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]) /** 3*/, float64(oldFFT[i]) + 0.02), float64(oldFFT[i]) - 0.0075)))
-				angl := 2*float64(i)/float64(len(oldFFT))*math.Pi
-				angl1 := 2*(float64(i)/float64(len(oldFFT))-0.01)*math.Pi
-				angl2 := 2*(float64(i)/float64(len(oldFFT))+0.01)*math.Pi
-				x, y := float32(math.Cos(angl)), float32(math.Sin(angl))
-				x1, y1 := float32(math.Cos(angl1)), float32(math.Sin(angl1))
-				x2, y2 := float32(math.Cos(angl2)), float32(math.Sin(angl2))
+				fft[i] = fft[i]*float32(math.Pow(float64(i+1), 0.33))//float32(1.0 - math.Abs(math.Max(-75.0,20*math.Log10(float64(fft[i])))/75))//*10.0
+				oldFFT[i] =float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]) /** 3*/, float64(oldFFT[i]) + 0.05), float64(oldFFT[i]) - 0.025)))
 
-				vertices[(i)*9], vertices[(i)*9+1], vertices[(i)*9+2] = x1*0.01, y1*0.01, 0
-				vertices[(i)*9+3], vertices[(i)*9+4], vertices[(i)*9+5] = x2*0.01, y2*0.01, 0
-				vertices[(i)*9+6], vertices[(i)*9+7], vertices[(i)*9+8] = x*oldFFT[i], y*oldFFT[i], 0
-				/*vertices[(i)*9], vertices[(i)*9+1], vertices[(i)*9+2] = -1*//*+last*//*, 2*float32(i)/float32(len(oldFFT))-1 + 0.2/float32(len(oldFFT)), 0
-				vertices[(i)*9+3], vertices[(i)*9+4], vertices[(i)*9+5] = -1, 2*float32(i)/float32(len(oldFFT))-1 - 0.2/float32(len(oldFFT)), 0
-				vertices[(i)*9+6], vertices[(i)*9+7], vertices[(i)*9+8] = -1+oldFFT[i]*3, 2*float32(i)/float32(len(oldFFT))-1, 0*/
+				vI := bmath.NewVec2dRad(float64(i)/float64(len(oldFFT))*4*math.Pi, 0.005)
+				vI2 := bmath.NewVec2dRad(float64(i)/float64(len(oldFFT))*4*math.Pi, 0.5)
+
+				poH := bmath.NewVec2dRad(float64(i)/float64(len(oldFFT))*4*math.Pi, float64(oldFFT[i]))
+
+				pLL := vI.Rotate(math.Pi/2).Add(vI2).Sub(poH.Scl(0.5))
+				pLR := vI.Rotate(-math.Pi/2).Add(vI2).Sub(poH.Scl(0.5))
+				pHL := vI.Rotate(math.Pi/2).Add(poH.Scl(0.5)).Add(vI2)
+				pHR := vI.Rotate(-math.Pi/2).Add(poH.Scl(0.5)).Add(vI2)
+
+				vertices[(i)*18], vertices[(i)*18+1], vertices[(i)*18+2] = pLL.X32(), pLL.Y32(), 0
+				vertices[(i)*18+3], vertices[(i)*18+4], vertices[(i)*18+5] = pLR.X32(), pLR.Y32(), 0
+				vertices[(i)*18+6], vertices[(i)*18+7], vertices[(i)*18+8] = pHR.X32(), pHR.Y32(), 0
+				vertices[(i)*18+9], vertices[(i)*18+10], vertices[(i)*18+11] = pHR.X32(), pHR.Y32(), 0
+				vertices[(i)*18+12], vertices[(i)*18+13], vertices[(i)*18+14] = pHL.X32(), pHL.Y32(), 0
+				vertices[(i)*18+15], vertices[(i)*18+16], vertices[(i)*18+17] = pLL.X32(), pLL.Y32(), 0
+
 			}
 
 			player.vaoD = vertices
@@ -316,10 +325,19 @@ func (pl *Player) Update() {
 
 	}
 
+	/*pl.batch.SetColor(1, 1, 1, bgAlpha)
+	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+	scl := (settings.Graphics.GetWidthF()/float64(pl.Logo.Width()))/4
+	//log.Println(scl)
+	pl.batch.SetScale(scl, scl)
+	pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
+	pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
+	pl.batch.SetColor(1, 1, 1, bgAlpha*0.25)
+	pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
 	pl.batch.End()
 
-	/*pl.fxBatch.Begin()
-	pl.fxBatch.SetColor(1, 1, 1, 0.12*pl.Scl*pl.fadeOut)
+	pl.fxBatch.Begin()
+	pl.fxBatch.SetColor(pl.bgAvR, pl.bgAvG, pl.bgAvB, 0.42*pl.Scl*pl.fadeOut)
 	pl.vao.Begin()
 
 	if pl.vaoDirty {

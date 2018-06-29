@@ -7,6 +7,7 @@ import (
 
 type MultiPointMover interface {
 	Reset()
-	SetObjects(objects []objects.BaseObject) (int, int64)
+	SetObjects(objs []objects.BaseObject)
 	Update(time int64) bmath.Vector2d
+	GetEndTime() int64
 }

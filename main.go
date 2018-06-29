@@ -43,7 +43,8 @@ func run() {
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
 		settings.SPEED = *speed
-		beatmap.SetMover(*mover)
+		_ = mover
+		//beatmap.SetMover(*mover)
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
