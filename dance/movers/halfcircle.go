@@ -2,7 +2,6 @@ package movers
 
 import (
 	"math"
-	"log"
 	"github.com/wieku/danser/bmath/curves"
 	"github.com/wieku/danser/beatmap/objects"
 	"github.com/wieku/danser/settings"
@@ -43,7 +42,6 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 
 	point := endPos.Mid(startPos)
 	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(settings.Dance.HalfCircle.RadiusMultiplier).Add(point)
-	log.Println(point.Dst(endPos), p.Dst(point))
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
 

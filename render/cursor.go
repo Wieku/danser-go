@@ -59,6 +59,7 @@ type Cursor struct {
 	time float64
 
 	vertices []float32
+	vaoSize int
 	vaoDirty bool
 	vao *glhf.VertexSlice
 	subVao *glhf.VertexSlice
@@ -71,7 +72,7 @@ func NewCursor() *Cursor {
 		initCursor()
 	}
 
-	vao := glhf.MakeVertexSlice(cursorShader, 1024*1024, 1024*1024) //creating approx. 4MB vao, just in case
+	vao := glhf.MakeVertexSlice(cursorShader, 1024*1024, 1024*1024) //creating approx. 36MB vao, just in case
 	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0,0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
 }
 
@@ -136,27 +137,30 @@ func (cr *Cursor) Update(tim float64) {
 			cr.Points = cr.Points[len(cr.Points):]
 		}
 
-		arr := make([]float32, len(cr.Points)*6*9)
+		cr.mutex.Lock()
+
+		if len(cr.vertices) < len(cr.Points)*6*9 {
+			cr.vertices = make([]float32, len(cr.Points)*6*9)
+		}
 
 		for i, o := range cr.Points {
 			 bI := i*6*9
-			 fillArray(arr, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, float32(i))
-			 fillArray(arr, bI+9, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, float32(i))
-			 fillArray(arr, bI+9*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
-			 fillArray(arr, bI+9*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, float32(i))
-			 fillArray(arr, bI+9*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, float32(i))
-			 fillArray(arr, bI+9*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
+			 fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, float32(i))
+			 fillArray(cr.vertices, bI+9, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, float32(i))
+			 fillArray(cr.vertices, bI+9*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
+			 fillArray(cr.vertices, bI+9*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, float32(i))
+			 fillArray(cr.vertices, bI+9*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, float32(i))
+			 fillArray(cr.vertices, bI+9*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
 		}
 
-		cr.mutex.Lock()
-		cr.vertices = arr
+		cr.vaoSize = len(cr.Points)*6*9
 		cr.VaoPos = cr.Position
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
 
 	} else {
 		cr.mutex.Lock()
-		cr.vertices = make([]float32, 0)
+		cr.vaoSize = 0
 		cr.VaoPos = cr.Position
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
@@ -172,9 +176,9 @@ func fillArray(dst []float32, index int, values... float32) {
 func (cursor *Cursor) UpdateRenderer() {
 	cursor.mutex.Lock()
 	if cursor.vaoDirty {
-		cursor.subVao = cursor.vao.Slice(0, len(cursor.vertices)/9)
+		cursor.subVao = cursor.vao.Slice(0, cursor.vaoSize / 9)
 		cursor.subVao.Begin()
-		cursor.subVao.SetVertexData(cursor.vertices)
+		cursor.subVao.SetVertexData(cursor.vertices[0:cursor.vaoSize])
 		cursor.subVao.End()
 		cursor.RendPos = cursor.VaoPos
 		cursor.vaoDirty = false

@@ -18,6 +18,8 @@ import (
 
 var player *states.Player
 var pressed = false
+var pressedM = false
+var pressedP = false
 func run() {
 	var win *glfw.Window
 
@@ -145,6 +147,34 @@ func run() {
 
 			if win.GetKey(glfw.KeyF2) == glfw.Release {
 				pressed = false
+			}
+
+			if win.GetKey(glfw.KeyMinus) == glfw.Press {
+
+				if !pressedM {
+					if settings.DIVIDES>1 {
+						settings.DIVIDES-=1
+					}
+				}
+
+				pressedM = true
+			}
+
+			if win.GetKey(glfw.KeyMinus) == glfw.Release {
+				pressedM = false
+			}
+
+			if win.GetKey(glfw.KeyEqual) == glfw.Press {
+
+				if !pressedP {
+					settings.DIVIDES+=1
+				}
+
+				pressedP = true
+			}
+
+			if win.GetKey(glfw.KeyEqual) == glfw.Release {
+				pressedP = false
 			}
 
 			win.SwapBuffers()
