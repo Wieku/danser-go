@@ -1,11 +1,10 @@
 package movers
 
 import (
-	math2 "github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/bmath/curves"
-	"github.com/wieku/danser/beatmap/objects"
 	"math"
-	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/bmath/curves"
+	"github.com/wieku/danser/bmath"
 )
 
 type LinearMover struct {
@@ -13,26 +12,32 @@ type LinearMover struct {
 	beginTime, endTime int64
 }
 
-func NewLinearMover() Mover {
+func NewLinearMover() MultiPointMover {
 	return &LinearMover{}
 }
 
 func (bm *LinearMover) Reset() {
+
 }
 
-func (bm *LinearMover) SetObjects(end, start objects.BaseObject) {
+func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
+	end, start := objs[0], objs[1]
 	endPos := end.GetBasicData().EndPos
 	endTime := end.GetBasicData().EndTime
 	startPos := start.GetBasicData().StartPos
 	startTime := start.GetBasicData().StartTime
 
-	bm.bz = curves.NewBezier([]math2.Vector2d{endPos, startPos})
+	bm.bz = curves.NewBezier([]bmath.Vector2d{endPos, startPos})
 	bm.endTime = endTime
 	bm.beginTime = startTime
 }
 
-func (bm LinearMover) Update(time int64, cursor *render.Cursor) {
+func (bm LinearMover) Update(time int64) bmath.Vector2d {
 	t := float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
-	cursor.SetPos(bm.bz.NPointAt(math.Sin(t*math.Pi/2)))
+	return bm.bz.NPointAt(math.Sin(t*math.Pi/2))
+}
+
+func (bm *LinearMover) GetEndTime() int64 {
+	return bm.beginTime
 }

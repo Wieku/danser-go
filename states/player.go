@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/dance/schedulers"
+	"github.com/wieku/danser/dance/movers"
 )
 
 type Player struct {
@@ -30,6 +31,7 @@ type Player struct {
 	batch *render.SpriteBatch
 	cursors []*render.Cursor
 	scheduler schedulers.Scheduler
+	scheduler2 schedulers.Scheduler
 	circles []*objects.Circle
 	sliders []*objects.Slider
 	Background *glhf.Texture
@@ -116,9 +118,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	copy(player.queue2, player.bMap.Queue)
 
 	toSchedule := make([]objects.BaseObject, len(player.bMap.Queue))
+	toSchedule2 := make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(toSchedule, player.bMap.Queue)
-	player.scheduler = schedulers.NewBezierScheduler()
+	copy(toSchedule2, player.bMap.Queue)
+	player.scheduler = schedulers.NewGenericScheduler(movers.NewAngleOffsetMover)
+	player.scheduler2 = schedulers.NewGenericScheduler(movers.NewBezierMover)
 	player.scheduler.Init(toSchedule, player.cursors[0])
+	player.scheduler2.Init(toSchedule2, player.cursors[1])
 
 	for _, o := range player.queue2 {
 		if s, ok := o.(*objects.Slider); ok {
@@ -167,6 +173,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.bMap.Update(int64(player.progressMsF))
 			player.scheduler.Update(int64(player.progressMsF))
+			player.scheduler2.Update(int64(player.progressMsF))
 			for _, g := range player.cursors {
 				g.Update(player.progressMsF - last)
 			}

@@ -1,24 +1,24 @@
 package schedulers
 
 import (
-"github.com/wieku/danser/render"
-"github.com/wieku/danser/beatmap/objects"
-"github.com/wieku/danser/dance/movers"
-"github.com/wieku/danser/settings"
-"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/dance/movers"
+	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/bmath"
 )
 
-type BezierScheduler struct {
+type GenericScheduler struct {
 	cursor *render.Cursor
 	queue []objects.BaseObject
 	mover movers.MultiPointMover
 }
 
-func NewBezierScheduler() Scheduler {
-	return &BezierScheduler{mover: movers.NewBezierMover()}
+func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
+	return &GenericScheduler{mover: mover()}
 }
 
-func (sched *BezierScheduler) Init(objs []objects.BaseObject, cursor *render.Cursor) {
+func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *render.Cursor) {
 	sched.cursor = cursor
 	sched.queue = objs
 	sched.mover.Reset()
@@ -26,7 +26,7 @@ func (sched *BezierScheduler) Init(objs []objects.BaseObject, cursor *render.Cur
 	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2d(100, 100), 0), sched.queue[0]})
 }
 
-func (sched *BezierScheduler) Update(time int64) {
+func (sched *GenericScheduler) Update(time int64) {
 	if len(sched.queue) > 0 {
 		move := true
 		for i:=0; i < len(sched.queue); i++ {
