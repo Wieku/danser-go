@@ -117,7 +117,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	toSchedule := make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(toSchedule, player.bMap.Queue)
-	player.scheduler = schedulers.NewFlowerScheduler()
+	player.scheduler = schedulers.NewBezierScheduler()
 	player.scheduler.Init(toSchedule, player.cursors[0])
 
 	for _, o := range player.queue2 {

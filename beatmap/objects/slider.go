@@ -66,7 +66,7 @@ func NewSlider(data []string) *Slider {
 	slider.multiCurve = sliders.NewSliderAlgo(list[0], points)
 
 	slider.objData.EndTime = slider.objData.StartTime
-	slider.objData.EndPos = slider.multiCurve.PointAt(float64(slider.repeat%2))
+	slider.objData.EndPos = slider.objData.StartPos
 	slider.Pos = slider.objData.StartPos
 
 	slider.samples = make([]int, slider.repeat+1)
@@ -101,11 +101,11 @@ func (self Slider) GetHalf() m2.Vector2d {
 }
 
 func (self Slider) GetStartAngle() float64 {
-	return self.GetBasicData().StartPos.AngleRV(self.multiCurve.PointAt(0.02).Add(self.objData.StackOffset))
+	return self.GetBasicData().StartPos.AngleRV(self.GetPointAt(self.objData.StartTime+10)) //temporary solution
 }
 
 func (self Slider) GetEndAngle() float64 {
-	return self.GetBasicData().EndPos.AngleRV(self.multiCurve.PointAt(0.98 - float64(1-self.repeat%2)*0.96).Add(self.objData.StackOffset))
+	return self.GetBasicData().EndPos.AngleRV(self.GetPointAt(self.objData.EndTime-10)) //temporary solution
 }
 
 func (self Slider) GetPartLen() float64 {
@@ -114,7 +114,7 @@ func (self Slider) GetPartLen() float64 {
 
 func (self Slider) GetPointAt(time int64) m2.Vector2d {
 	partLen := float64(self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength))
-	times := int64(float64(time - self.objData.StartTime) / partLen) + 1
+	times := int64(math.Min(float64(time - self.objData.StartTime) / partLen + 1, float64(self.repeat)))
 
 	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * partLen
 
@@ -184,6 +184,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 	}
 
 	self.objData.EndTime = self.objData.StartTime + timings.GetSliderTimeP(self.TPoint, self.pixelLength) * self.repeat
+	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
