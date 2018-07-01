@@ -160,7 +160,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		for {
 
-			player.progressMsF = musicPlayer.GetPosition()*1000
+			player.progressMsF = musicPlayer.GetPosition()*1000+float64(settings.Audio.Offset)
 
 			player.bMap.Update(int64(player.progressMsF))
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)

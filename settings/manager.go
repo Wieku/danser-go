@@ -12,7 +12,7 @@ func initDefaults() {
 	Version = SETTINGSVERSION
 	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator)}
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
-	Audio = &audio{0.5, 0.5, 0.5, false}
+	Audio = &audio{0.5, 0.5, 0.5, 0, false}
 	Beat = &beat{1.2}
 	Cursor = &cursor{&color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, false, 0, 0}, true, true, -36.0, false, 18, true, true, false, 0.4, 0.5, 2000, 1, 0.4}
 	Objects = &objects{5, 0.3, true, true, &color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, true, 100.0, 0}, -1, 1.2, true, 30, 50, true, true, 0.0, false, &color{false, 8, &hsv{0, 0.0, 1.0}, false, 0, true, 100.0, 0}}

@@ -273,7 +273,7 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 	out := int(math.Ceil(self.pixelLength * float64(settings.Objects.SliderPathLOD) / 100.0))+1
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha := float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+		alpha := math.Abs(float64(time - (self.objData.StartTime-int64(preempt))))/(preempt/2)
 		out = int(float64(out)*alpha)
 	} else if time >= self.objData.StartTime && time <= self.objData.EndTime {
 		times := int64(math.Min(float64(time - self.objData.StartTime) / self.partLen + 1, float64(self.repeat)))

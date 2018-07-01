@@ -73,6 +73,7 @@ type audio struct {
 	GeneralVolume float64 //0.5
 	MusicVolume float64 //=0.5
 	SampleVolume float64 //=0.5
+	Offset int64
 	EnableBeatmapSampleVolume bool //= false
 }
 
