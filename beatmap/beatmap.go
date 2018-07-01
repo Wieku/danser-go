@@ -47,5 +47,10 @@ func (b *BeatMap) Update(time int64) {
 	}
 
 }
+func (beatMap *BeatMap) GetObjectsCopy() []objects.BaseObject {
+	queue := make([]objects.BaseObject, len(beatMap.HitObjects))
+	copy(queue, beatMap.HitObjects)
+	return queue
+}
 
 

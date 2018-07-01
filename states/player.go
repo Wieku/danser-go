@@ -14,8 +14,7 @@ import (
 	"github.com/wieku/danser/utils"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/dance/schedulers"
-	"github.com/wieku/danser/dance/movers"
+	"github.com/wieku/danser/dance"
 )
 
 type Player struct {
@@ -29,8 +28,7 @@ type Player struct {
 	progressMsF float64
 	progressMs int64
 	batch *render.SpriteBatch
-	cursors []*render.Cursor
-	scheduler schedulers.Scheduler
+	controller dance.Controller
 	circles []*objects.Circle
 	sliders []*objects.Slider
 	Background *glhf.Texture
@@ -105,21 +103,19 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.camera.Update()
 
 	render.Camera = player.camera
-	player.cursors = make([]*render.Cursor, settings.TAG)
-	for i := range player.cursors {
-		player.cursors[i] = render.NewCursor()
-	}
 
 	player.bMap.Reset()
+
+	player.controller = dance.NewGenericController()
+	player.controller.SetBeatMap(player.bMap)
+	player.controller.InitCursors()
+
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(player.queue2, player.bMap.Queue)
 
 	toSchedule := make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(toSchedule, player.bMap.Queue)
-	player.scheduler = schedulers.NewGenericScheduler(movers.NewAngleOffsetMover)
-
-	player.scheduler.Init(toSchedule, player.cursors[0])
 
 	for _, o := range player.queue2 {
 		if s, ok := o.(*objects.Slider); ok {
@@ -167,10 +163,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.progressMsF = musicPlayer.GetPosition()*1000
 
 			player.bMap.Update(int64(player.progressMsF))
-			player.scheduler.Update(int64(player.progressMsF))
-			for _, g := range player.cursors {
-				g.Update(player.progressMsF - last)
-			}
+			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
 
 			last = player.progressMsF
 
@@ -375,7 +368,7 @@ func (pl *Player) Update() {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES*len(pl.cursors), pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES*len(pl.controller.GetCursors()), pl.Scl, pl.fadeOut*pl.fadeIn)
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -472,7 +465,7 @@ func (pl *Player) Update() {
 		pl.batch.End()
 	}
 
-	for _, g := range pl.cursors {
+	for _, g := range pl.controller.GetCursors() {
 		g.UpdateRenderer()
 	}
 
@@ -483,13 +476,13 @@ func (pl *Player) Update() {
 
 		pl.batch.SetCamera(cameras[j])
 
-		for i, g := range pl.cursors {
-			ind := j*len(pl.cursors)+i-1
+		for i, g := range pl.controller.GetCursors() {
+			ind := j*len(pl.controller.GetCursors())+i-1
 			if ind < 0 {
-				ind = settings.DIVIDES*len(pl.cursors) - 1
+				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
 			}
 
-			g.DrawM(scale2, pl.batch, colors1[j*len(pl.cursors)+i], colors1[ind])
+			g.DrawM(scale2, pl.batch, colors1[j*len(pl.controller.GetCursors())+i], colors1[ind])
 		}
 
 	}

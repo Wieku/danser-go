@@ -14,6 +14,7 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
 	"github.com/wieku/danser/build"
+	"github.com/wieku/danser/dance"
 )
 
 var player *states.Player
@@ -46,7 +47,7 @@ func run() {
 		settings.TAG = *tag
 		settings.SPEED = *speed
 		_ = mover
-		//beatmap.SetMover(*mover)
+		dance.SetMover(*mover)
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 

@@ -22,7 +22,7 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *render.Cu
 	sched.cursor = cursor
 	sched.queue = objs
 	sched.mover.Reset()
-	sched.queue = preprocessQueue(0, sched.queue, settings.Dance.SliderDance)
+	sched.queue = PreprocessQueue(0, sched.queue, settings.Dance.SliderDance)
 	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2d(100, 100), 0), sched.queue[0]})
 }
 
@@ -48,7 +48,7 @@ func (sched *GenericScheduler) Update(time int64) {
 				i--
 
 				if len(sched.queue) > 0 {
-					sched.queue = preprocessQueue(i+1, sched.queue, settings.Dance.SliderDance)
+					sched.queue = PreprocessQueue(i+1, sched.queue, settings.Dance.SliderDance)
 					sched.mover.SetObjects([]objects.BaseObject{g, sched.queue[i+1]})
 				}
 
