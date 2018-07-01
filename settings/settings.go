@@ -149,6 +149,9 @@ type cursor struct {
 	ShowCursorsOnBreaks bool //true
 	BounceOnEdges bool //false
 	TrailEndScale float64 //0.4
+	TrailDensity float64 //0.5 - 1/TrailDensity = distance between trail points
+	TrailMaxLength int64 //2000 - maximum width (in osu!pixels) of cursortrail
+	TrailRemoveSpeed float64 //1.0 - trail removal multiplier, 0.5 means half the speed
 	GlowEndScale float64 //0.4
 }
 

@@ -51,19 +51,18 @@ func initCursor() {
 
 type Cursor struct {
 	Points []bmath.Vector2d
-	Max int
+	removeCounter float64
+
 	Position bmath.Vector2d
 	LastPos bmath.Vector2d
 	VaoPos bmath.Vector2d
 	RendPos bmath.Vector2d
-	time float64
 
 	vertices []float32
 	vaoSize int
 	vaoDirty bool
 	vao *glhf.VertexSlice
 	subVao *glhf.VertexSlice
-	lastLen int
 	mutex *sync.Mutex
 }
 
@@ -72,8 +71,9 @@ func NewCursor() *Cursor {
 		initCursor()
 	}
 
-	vao := glhf.MakeVertexSlice(cursorShader, 1024*1024, 1024*1024) //creating approx. 36MB vao, just in case
-	return &Cursor{Max:1000, LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0,0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
+	len := int(math.Ceil(float64(settings.Cursor.TrailMaxLength)*settings.Cursor.TrailDensity)*6)
+	vao := glhf.MakeVertexSlice(cursorShader, len, len)
+	return &Cursor{LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0,0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
 }
 
 
@@ -109,32 +109,32 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 }
 
 func (cr *Cursor) Update(tim float64) {
-	points := cr.Position.Dst(cr.LastPos)//*2
+	points := cr.Position.Dst(cr.LastPos)
+	density := 1.0/settings.Cursor.TrailDensity
 
-	olp := len(cr.Points)
-
-
-	if points > 0 {
-		for i:=0.0; i <= 1.0; i+=1.0/points {
-			cr.Points = append(cr.Points, cr.Position.Sub(cr.LastPos).Scl(i).Add(cr.LastPos))
+	if int(points/density) > 0 {
+		var temp bmath.Vector2d
+		for i := density; i < points; i += density {
+			temp = cr.Position.Sub(cr.LastPos).Scl(i/points).Add(cr.LastPos)
+			cr.Points = append(cr.Points, temp)
 		}
+		cr.LastPos = temp
 	}
-
-	olp1 := len(cr.Points)
-
-	mult := float64(1)
-	if olp < olp1 {
-		mult = 0
-	}
-
-	cr.LastPos = cr.Position
-	times := int64(math.Max(mult, float64(len(cr.Points))/(6*(60.0/tim))))
 
 	if len(cr.Points) > 0 {
-		if int(times) < len(cr.Points) {
-			cr.Points = cr.Points[times:]
+		cr.removeCounter += float64(len(cr.Points))/(360.0/tim)*settings.Cursor.TrailRemoveSpeed
+		times := int(math.Floor(cr.removeCounter))
+		if times < len(cr.Points) {
+			if len(cr.Points) > int(float64(settings.Cursor.TrailMaxLength)/density) {
+				cr.Points = cr.Points[len(cr.Points)-int(float64(settings.Cursor.TrailMaxLength)/density):]
+				cr.removeCounter = 0
+			} else {
+				cr.Points = cr.Points[times:]
+				cr.removeCounter -= float64(times)
+			}
 		} else {
 			cr.Points = cr.Points[len(cr.Points):]
+			cr.removeCounter = 0
 		}
 
 		cr.mutex.Lock()
@@ -157,7 +157,6 @@ func (cr *Cursor) Update(tim float64) {
 		cr.VaoPos = cr.Position
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
-
 	} else {
 		cr.mutex.Lock()
 		cr.vaoSize = 0
