@@ -64,7 +64,7 @@ func (controller *GenericController) InitCursors() {
 
 	queue := controller.bMap.GetObjectsCopy()
 
-	if settings.Dance.TAGSliderDance {
+	if settings.Dance.TAGSliderDance && settings.TAG > 1 {
 		for i:=0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}

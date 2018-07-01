@@ -1,3 +1,3 @@
 package build
 
-const VERSION = "0.1.0b"
+const VERSION = "0.1.1b"
