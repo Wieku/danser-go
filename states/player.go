@@ -67,7 +67,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	log.Println(beatMap.Bg)
 	var err error
 	player.Background, err = utils.LoadTexture(beatMap.Bg)
-	player.Logo, err = utils.LoadTexture("assets/textures/logo.png")
+	player.Logo, err = utils.LoadTexture("assets/textures/logo-medium.png")
 	log.Println(err)
 	winscl := settings.Graphics.GetAspectRatio()
 
@@ -182,8 +182,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			fft := musicPlayer.GetFFT()
 
 			for i:=0; i < len(oldFFT); i++ {
-				fft[i] = fft[i]*float32(math.Pow(float64(i+1), 0.33))//float32(1.0 - math.Abs(math.Max(-75.0,20*math.Log10(float64(fft[i])))/75))//*10.0
-				oldFFT[i] =float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]) /** 3*/, float64(oldFFT[i]) + 0.05), float64(oldFFT[i]) - 0.025)))
+				fft[i] = fft[i]*float32(math.Pow(float64(i+1), 0.33))
+				oldFFT[i] =float32(math.Max(0.001, math.Max(math.Min(float64(fft[i]), float64(oldFFT[i]) + 0.05), float64(oldFFT[i]) - 0.025)))
 
 				vI := bmath.NewVec2dRad(float64(i)/float64(len(oldFFT))*4*math.Pi, 0.005)
 				vI2 := bmath.NewVec2dRad(float64(i)/float64(len(oldFFT))*4*math.Pi, 0.5)
