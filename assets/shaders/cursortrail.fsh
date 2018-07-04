@@ -11,5 +11,5 @@ out vec4 color;
 
 void main() {
     vec4 in_color = texture2D(tex, tex_coord);
-	color = in_color * col_tint * vec4(1, 1, 1, smoothstep(0, points / 3, index));
+	color = in_color * col_tint * vec4(1, 1, 1, 1-smoothstep(points / 3, points, index));
 }

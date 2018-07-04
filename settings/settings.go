@@ -154,6 +154,7 @@ type cursor struct {
 	TrailMaxLength int64 //2000 - maximum width (in osu!pixels) of cursortrail
 	TrailRemoveSpeed float64 //1.0 - trail removal multiplier, 0.5 means half the speed
 	GlowEndScale float64 //0.4
+	InnerLengthMult float64 //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
 }
 
 type objects struct {

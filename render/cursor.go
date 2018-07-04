@@ -145,12 +145,13 @@ func (cr *Cursor) Update(tim float64) {
 
 		for i, o := range cr.Points {
 			 bI := i*6*9
-			 fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, float32(i))
-			 fillArray(cr.vertices, bI+9, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, float32(i))
-			 fillArray(cr.vertices, bI+9*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
-			 fillArray(cr.vertices, bI+9*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, float32(i))
-			 fillArray(cr.vertices, bI+9*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, float32(i))
-			 fillArray(cr.vertices, bI+9*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, float32(i))
+			 inv := float32(len(cr.Points)-i-1)
+			 fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv)
+			 fillArray(cr.vertices, bI+9, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv)
+			 fillArray(cr.vertices, bI+9*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv)
+			 fillArray(cr.vertices, bI+9*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv)
+			 fillArray(cr.vertices, bI+9*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv)
+			 fillArray(cr.vertices, bI+9*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv)
 		}
 
 		cr.vaoSize = len(cr.Points)*6*9
@@ -225,7 +226,9 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
 	cursor.subVao.BeginDraw()
 
+	innerLengthMult := float32(1.0)
 	if settings.Cursor.EnableTrailGlow {
+		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
 		cursorShader.SetUniformAttr(0, color2)
 		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
 		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
@@ -235,6 +238,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	cursorShader.SetUniformAttr(0, color)
 	cursorShader.SetUniformAttr(4, float32(siz*(12.0/18)*scale))
+	cursorShader.SetUniformAttr(3, float32(len(cursor.Points))*innerLengthMult)
 	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
 
 	cursor.subVao.Draw()
