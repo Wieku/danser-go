@@ -406,12 +406,15 @@ func (pl *Player) Update() {
 
 		for j:=0; j < settings.DIVIDES; j++ {
 			pl.sliderRenderer.SetCamera(cameras[j])
+			ind := j-1
+			if ind < 0 {
+				ind = settings.DIVIDES - 1
+			}
 
 			for i := 0; i < len(pl.sliders); i++ {
 				pl.sliderRenderer.SetScale(scale1)
-				pl.sliders[i].Render(pl.progressMs, pl.bMap.ARms, colors2[j], pl.sliderRenderer)
+				pl.sliders[i].Render(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
 			}
-
 		}
 
 		pl.sliderRenderer.EndAndRender()

@@ -173,6 +173,8 @@ type objects struct {
 	FollowPointColorOffset float64 //0.0, hue offset of the followpoint
 	EnableCustomSliderBorderColor bool
 	CustomSliderBorderColor *color
+	EnableCustomSliderBorderGradientOffset bool
+	SliderBorderGradientOffset float64 //18, hue offset of slider outer border
 }
 
 type playfield struct {

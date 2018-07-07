@@ -268,7 +268,7 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 	self.vao, self.divides = renderer.GetShape(self.GetCurve())
 }
 
-func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, renderer *render.SliderRenderer) {
+func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
 	in := 0
 	out := int(math.Ceil(self.pixelLength * float64(settings.Objects.SliderPathLOD) / 100.0))+1
 
@@ -312,7 +312,7 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, render
 
 	self.LasTTI = time
 
-	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)})
+	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)}, mgl32.Vec4{color1[0], color1[1], color1[2], float32(colorAlpha)})
 
 	subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
 	subVao.BeginDraw()

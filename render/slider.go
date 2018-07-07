@@ -10,6 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/settings"
 	"io/ioutil"
+	"github.com/wieku/danser/utils"
 )
 
 var sliderShader *glhf.Shader = nil
@@ -32,7 +33,7 @@ func SetupSlider() {
 
 	svert , _ := ioutil.ReadFile("assets/shaders/slider.vsh")
 	sfrag , _ := ioutil.ReadFile("assets/shaders/slider.fsh")
-	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "tex", Type: glhf.Int}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}}, string(svert), string(sfrag))
+	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "tex", Type: glhf.Int}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}}, string(svert), string(sfrag))
 	if err != nil {
 		log.Println(err)
 	}
@@ -95,8 +96,13 @@ func (sr *SliderRenderer) Begin() {
 	sliderShader.SetUniformAttr(2, cam)
 }
 
-func (sr *SliderRenderer) SetColor(color mgl32.Vec4) {
+func (sr *SliderRenderer) SetColor(color mgl32.Vec4, prev mgl32.Vec4) {
 	sliderShader.SetUniformAttr(0, color)
+	if settings.Objects.EnableCustomSliderBorderGradientOffset {
+		sliderShader.SetUniformAttr(4, utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset))
+	} else {
+		sliderShader.SetUniformAttr(4, prev)
+	}
 }
 
 func (sr *SliderRenderer) SetScale(scale float64) {
