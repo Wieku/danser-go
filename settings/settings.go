@@ -141,6 +141,8 @@ type bloom struct {
 
 type cursor struct {
 	Colors *color
+	EnableCustomTagColorOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used
+	TagColorOffset float64 //-36, offset of the next tag cursor
 	EnableTrailGlow bool //true
 	EnableCustomTrailGlowOffset bool //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
 	TrailGlowOffset float64 //-36, offset of the cursor trail glow
@@ -155,6 +157,34 @@ type cursor struct {
 	TrailRemoveSpeed float64 //1.0 - trail removal multiplier, 0.5 means half the speed
 	GlowEndScale float64 //0.4
 	InnerLengthMult float64 //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
+}
+
+func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) []mgl32.Vec4 {
+	if !cr.EnableCustomTagColorOffset {
+		return cr.Colors.GetColors(divides*tag, beatScale, alpha)
+	}
+	flashOffset := 0.0
+	cl := cr.Colors
+	if cl.FlashToTheBeat {
+		flashOffset = cl.FlashAmplitude * (beatScale-1.0)/(0.4*Beat.BeatScale)
+	}
+	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
+
+	for hue >= 360.0 {
+		hue -= 360.0
+	}
+
+	for hue < 0.0 {
+		hue += 360.0
+	}
+
+	offset := 360.0/float64(divides)
+
+	if cl.EnableCustomHueOffset {
+		offset = cl.HueOffset
+	}
+
+	return utils.GetColorsSVT(hue, offset, cr.TagColorOffset, divides, tag, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
 type objects struct {

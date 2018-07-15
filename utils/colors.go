@@ -42,6 +42,34 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mg
 	return colors
 }
 
+func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) []mgl32.Vec4 {
+	colors := make([]mgl32.Vec4, 0)
+
+	for baseHue < 0.0 {
+		baseHue += 360.0
+	}
+
+	for baseHue >= 360.0 {
+		baseHue -= 360.0
+	}
+
+	for i:=0; i < times; i++ {
+		hue := baseHue + float64(i)*hueShift
+
+		for hue < 0.0 {
+			hue += 360.0
+		}
+
+		for hue >= 360.0 {
+			hue -= 360.0
+		}
+
+		colors = append(colors, GetColorsSV(hue, tagShift, tag, S, V, alpha)...)
+	}
+
+	return colors
+}
+
 func GetColorShifted(color mgl32.Vec4, hueOffset float64) mgl32.Vec4 {
 	tohsv := colorful.Color{float64(color[0]), float64(color[1]), float64(color[2])}
 	h, s, v := tohsv.Hsv()

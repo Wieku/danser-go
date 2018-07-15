@@ -442,7 +442,7 @@ func (pl *Player) Update() {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES*len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors1 := settings.Cursor.GetColors(settings.DIVIDES, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
