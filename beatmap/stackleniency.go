@@ -3,6 +3,7 @@ package beatmap
 import (
 	"github.com/wieku/danser/beatmap/objects"
 	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/settings"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
@@ -33,6 +34,10 @@ func calculateStackLeniency(b *BeatMap) {
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
 	b.ARms = preempt
 	hitObjects := b.HitObjects
+
+	if !settings.Objects.StackEnabled {
+		return
+	}
 
 	for _, v := range hitObjects {
 		v.GetBasicData().StackIndex = 0

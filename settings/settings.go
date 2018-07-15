@@ -175,6 +175,7 @@ type objects struct {
 	CustomSliderBorderColor *color
 	EnableCustomSliderBorderGradientOffset bool
 	SliderBorderGradientOffset float64 //18, hue offset of slider outer border
+	StackEnabled bool //true, stack leniency
 }
 
 type playfield struct {
