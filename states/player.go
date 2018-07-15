@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/dance"
+	"github.com/wieku/danser/animation"
 )
 
 type Player struct {
@@ -52,6 +53,10 @@ type Player struct {
 	profiler *utils.FPSCounter
 
 	camera *bmath.Camera
+	dimGlider *animation.Glider
+	blurGlider *animation.Glider
+	fxGlider *animation.Glider
+	cursorGlider *animation.Glider
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -114,8 +119,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(player.queue2, player.bMap.Queue)
 
-	toSchedule := make([]objects.BaseObject, len(player.bMap.Queue))
-	copy(toSchedule, player.bMap.Queue)
 
 	for _, o := range player.queue2 {
 		if s, ok := o.(*objects.Slider); ok {
@@ -131,23 +134,74 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
+	player.dimGlider = animation.NewGlider(0.0)
+	player.blurGlider = animation.NewGlider(0.0)
+	player.fxGlider = animation.NewGlider(0.0)
+	player.cursorGlider = animation.NewGlider(0.0)
+
+	tmS := float64(player.queue2[0].GetBasicData().StartTime)
+	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
+
+	player.dimGlider.AddEvent(-1500, -1000, 1.0 - settings.Playfield.BackgroundInDim)
+	player.blurGlider.AddEvent(-1500, -1000, settings.Playfield.BackgroundInBlur)
+	player.fxGlider.AddEvent(-1500, -1000, 1.0 - settings.Playfield.SpectrumInDim)
+	player.cursorGlider.AddEvent(-1500, -1000, 0.0)
+
+	player.dimGlider.AddEvent(tmS - 750, tmS - 250, 1.0 - settings.Playfield.BackgroundDim)
+	player.blurGlider.AddEvent(tmS - 750, tmS - 250, settings.Playfield.BackgroundBlur)
+	player.fxGlider.AddEvent(tmS - 750, tmS - 250, 1.0 - settings.Playfield.SpectrumDim)
+	player.cursorGlider.AddEvent(tmS - 750, tmS - 250, 1.0)
+
+	fadeOut := settings.Playfield.FadeOutTime * 1000
+	player.dimGlider.AddEvent(tmE, tmE + fadeOut, 0.0)
+	player.fxGlider.AddEvent(tmE, tmE + fadeOut, 0.0)
+	player.cursorGlider.AddEvent(tmE, tmE + fadeOut, 0.0)
+
+	for _, p := range beatMap.Pauses {
+		bd := p.GetBasicData()
+
+		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.BackgroundDimBreaks)
+		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.BackgroundBlurBreaks)
+		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.SpectrumDimBreaks)
+		if !settings.Cursor.ShowCursorsOnBreaks {
+			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
+		}
+
+		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.BackgroundDim)
+		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.BackgroundBlur)
+		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0 - settings.Playfield.SpectrumDim)
+		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
+	}
+
 	musicPlayer := audio.NewMusic(beatMap.Audio)
 
 	go func() {
 		player.entry = 1
 		time.Sleep(time.Duration(settings.Playfield.LeadInTime*float64(time.Second)))
 
-		/*for i := 1; i <= 100; i++ {
+		start := -2000.0
+		for i := 1; i <= 100; i++ {
 			player.entry = float64(i) / 100
+			start += 10
+			player.dimGlider.Update(start)
+			player.blurGlider.Update(start)
+			player.fxGlider.Update(start)
+			player.cursorGlider.Update(start)
 			time.Sleep(10*time.Millisecond)
 		}
 
-		time.Sleep(2*time.Second)*/
+		time.Sleep(time.Duration(settings.Playfield.LeadInHold*float64(time.Second)))
 
 		for i := 1; i <= 100; i++ {
 			player.fadeIn = float64(i) / 100
+			start += 10
+			player.dimGlider.Update(start)
+			player.blurGlider.Update(start)
+			player.fxGlider.Update(start)
+			player.cursorGlider.Update(start)
 			time.Sleep(10*time.Millisecond)
 		}
+
 		player.start = true
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
@@ -166,6 +220,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
 
 			last = player.progressMsF
+
+			if player.start && len(player.bMap.Queue) > 0 {
+				player.dimGlider.Update(player.progressMsF)
+				player.blurGlider.Update(player.progressMsF)
+				player.fxGlider.Update(player.progressMsF)
+				player.cursorGlider.Update(player.progressMsF)
+			}
 
 			time.Sleep(time.Millisecond)
 		}
@@ -248,16 +309,21 @@ func (pl *Player) Update() {
 	pl.lastTime = tim
 
 	if len(pl.queue2) > 0 {
-		if p := pl.queue2[0]; p.GetBasicData().StartTime-int64(pl.bMap.ARms) <= pl.progressMs {
+		for i := 0; i < len(pl.queue2); i++ {
+			if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.ARms) <= pl.progressMs {
 
-			if s, ok := p.(*objects.Slider); ok {
-				pl.sliders = append(pl.sliders, s)
-			}
-			if s, ok := p.(*objects.Circle); ok {
-				pl.circles = append(pl.circles, s)
-			}
+				if s, ok := p.(*objects.Slider); ok {
+					pl.sliders = append(pl.sliders, s)
+				}
+				if s, ok := p.(*objects.Circle); ok {
+					pl.circles = append(pl.circles, s)
+				}
 
-			pl.queue2 = pl.queue2[1:]
+				pl.queue2 = pl.queue2[1:]
+				i--
+			} else {
+				break
+			}
 		}
 	}
 
@@ -270,17 +336,21 @@ func (pl *Player) Update() {
 		pl.fadeOut -= timMs/7500
 		pl.fadeOut = math.Max(0.0, pl.fadeOut)
 		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
+		pl.dimGlider.UpdateD(timMs)
+		pl.blurGlider.UpdateD(timMs)
+		pl.fxGlider.UpdateD(timMs)
+		pl.cursorGlider.UpdateD(timMs)
 	}
 
 	render.CS = pl.CS
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	pl.batch.Begin()
 	pl.batch.SetCamera(mgl32.Ortho( -1, 1 , 1, -1, 1, -1))
-	bgAlpha := ((1.0-settings.Playfield.BackgroundDim)+((settings.Playfield.BackgroundDim - settings.Playfield.BackgroundInDim)*(1-pl.fadeIn)))*pl.fadeOut*pl.entry
+	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
 
 	if settings.Playfield.BlurEnable {
-		blurVal = (settings.Playfield.BackgroundBlur - (settings.Playfield.BackgroundBlur-settings.Playfield.BackgroundInBlur)*(1-pl.fadeIn))*pl.fadeOut
+		blurVal = pl.blurGlider.GetValue()
 		if settings.Playfield.UnblurToTheBeat {
 			blurVal -= settings.Playfield.UnblurFill*(blurVal)*(pl.Scl-1.0)/(settings.Beat.BeatScale*0.4)
 		}
@@ -319,37 +389,41 @@ func (pl *Player) Update() {
 
 	}
 
-	/*pl.batch.SetColor(1, 1, 1, bgAlpha)
-	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-	scl := (settings.Graphics.GetWidthF()/float64(pl.Logo.Width()))/4
-	//log.Println(scl)
-	pl.batch.SetScale(scl, scl)
-	pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
-	pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
-	pl.batch.SetColor(1, 1, 1, bgAlpha*0.25)
-	pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
-	pl.batch.End()
-
-	pl.fxBatch.Begin()
-	pl.fxBatch.SetColor(pl.bgAvR, pl.bgAvG, pl.bgAvB, 0.42*pl.Scl*pl.fadeOut)
-	pl.vao.Begin()
-
-	if pl.vaoDirty {
-		pl.vao.SetVertexData(pl.vaoD)
-
-		pl.vaoDirty = false
+	if pl.fxGlider.GetValue() > 0.0 {
+		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
+		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+		scl := (settings.Graphics.GetWidthF()/float64(pl.Logo.Width()))/4
+		pl.batch.SetScale(scl, scl)
+		pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
+		pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
+		pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
+		pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
 	}
 
-	base := mgl32.Ortho( -1920/2, 1920/2 , 1080/2, -1080/2, -1, 1).Mul4(mgl32.Scale3D(600, 600, 0)).Mul4(mgl32.HomogRotate3DZ(float32(pl.h*math.Pi/180.0)))
+	pl.batch.End()
 
-	pl.fxBatch.SetTransform(base)
-	pl.vao.Draw()
+	if pl.fxGlider.GetValue() > 0.0 {
 
-	pl.fxBatch.SetTransform(base.Mul4(mgl32.HomogRotate3DZ(math.Pi)))
-	pl.vao.Draw()
+		pl.fxBatch.Begin()
+		pl.fxBatch.SetColor(1, 1, 1, 0.25*pl.Scl*pl.fxGlider.GetValue())
+		pl.vao.Begin()
 
-	pl.vao.End()
-	pl.fxBatch.End()*/
+		if pl.vaoDirty {
+			pl.vao.SetVertexData(pl.vaoD)
+			pl.vaoDirty = false
+		}
+
+		base := mgl32.Ortho(-1920/2, 1920/2, 1080/2, -1080/2, -1, 1).Mul4(mgl32.Scale3D(600, 600, 0)).Mul4(mgl32.HomogRotate3DZ(float32(pl.h * math.Pi / 180.0)))
+
+		pl.fxBatch.SetTransform(base)
+		pl.vao.Draw()
+
+		pl.fxBatch.SetTransform(base.Mul4(mgl32.HomogRotate3DZ(math.Pi)))
+		pl.vao.Draw()
+
+		pl.vao.End()
+		pl.fxBatch.End()
+	}
 
 	if pl.start {
 		settings.Objects.Colors.Update(timMs)
@@ -368,7 +442,7 @@ func (pl *Player) Update() {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES*len(pl.controller.GetCursors()), pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1 := settings.Cursor.Colors.GetColors(settings.DIVIDES*len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -398,7 +472,6 @@ func (pl *Player) Update() {
 		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition * (pl.Scl-1.0)/(settings.Beat.BeatScale*0.4))
 		pl.bloomEffect.Begin()
 	}
-
 
 	if pl.start {
 

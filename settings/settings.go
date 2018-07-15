@@ -178,7 +178,9 @@ type objects struct {
 }
 
 type playfield struct {
-	LeadInTime float64 //5, time to the beginning of music
+	LeadInTime float64 //5
+	LeadInHold float64 //2
+	FadeOutTime float64 //5
 	BackgroundInDim float64 //0, background dim at the start of app
 	BackgroundDim float64 // 0.95, background dim at the beatmap start
 	BackgroundDimBreaks float64 // 0.95, background dim at the breaks
@@ -186,6 +188,9 @@ type playfield struct {
 	BackgroundInBlur float64 //0, background blur at the start of app
 	BackgroundBlur float64 // 0.6, background blur at the beatmap start
 	BackgroundBlurBreaks float64 // 0.6, background blur at the breaks
+	SpectrumInDim float64 //0, background dim at the start of app
+	SpectrumDim float64 // 0.95, background dim at the beatmap start
+	SpectrumDimBreaks float64 // 0.95, background dim at the breaks
 	Scale float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
 	FlashToTheBeat bool //true, background dim varies accoriding to music power
 	UnblurToTheBeat bool //true, background blur varies accoriding to music power
