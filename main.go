@@ -59,8 +59,10 @@ func run() {
 		beatmaps := database.LoadBeatmaps()
 
 		for _, b := range beatmaps {
-			if (*artist == "" || *artist == b.Artist) && (*title == "" || *title == b.Name) && (*difficulty == "" || *difficulty == b.Difficulty) && (*creator == "" || *creator == b.Creator) {//if b.Difficulty == "200BPM t+pazolite_cheatreal GO TO HELL  AR10" {
+			if (*artist == "" || *artist == b.Artist) && (*title == "" || *title == b.Name) && (*difficulty == "" || *difficulty == b.Difficulty) && (*creator == "" || *creator == b.Creator) {
 				beatMap = b
+				beatMap.UpdatePlayStats()
+				database.UpdatePlayStats(beatMap)
 				break
 			}
 		}

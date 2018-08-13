@@ -13,6 +13,7 @@ import (
 	"crypto/md5"
 	"io"
 	"encoding/hex"
+	_ "github.com/mattn/go-sqlite3"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func Init() {
 		panic(err)
 	}
 
-	_, err = dbFile.Exec("CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, pauses TEXT, timingPoints TEXT, md5 TEXT, dateAdded INTEGER, lastPlayed INTEGER)")
+	_, err = dbFile.Exec("CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, pauses TEXT, timingPoints TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER)")
 
 	if err != nil {
 		panic(err)
@@ -103,6 +104,13 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 	return allMaps
 }
 
+func UpdatePlayStats(beatmap *beatmap.BeatMap) {
+	_, err := dbFile.Exec("UPDATE beatmaps SET playCount = ?, lastPlayed = ? WHERE dir = ? AND file = ?", beatmap.PlayCount, beatmap.LastPlayed, beatmap.Dir, beatmap.File)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func removeBeatmap(dir, file string) {
 	dbFile.Exec("DELETE FROM beatmaps WHERE dir = ? AND file = ?", dir, file)
 }
@@ -146,6 +154,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.TimingPoints,
 				&beatmap.MD5,
 				&beatmap.TimeAdded,
+				&beatmap.PlayCount,
 				&beatmap.LastPlayed)
 
 		key := beatmap.Dir + "/" + beatmap.File
@@ -165,7 +174,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	if err == nil {
 		var st *sql.Stmt
-		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
 		if err == nil {
 			for _, bMap := range bMaps {
@@ -194,6 +203,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.TimingPoints,
 					bMap.MD5,
 					bMap.TimeAdded,
+					bMap.PlayCount,
 					bMap.LastPlayed)
 
 				if err1 != nil {

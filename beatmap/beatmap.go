@@ -4,14 +4,15 @@ import (
 	"github.com/wieku/danser/beatmap/objects"
 	"strconv"
 	"strings"
-	)
+	"time"
+)
 
 type BeatMap struct {
 	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags        string
 	SliderMultiplier, StackLeniency, CircleSize, AR, ARms float64
 	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints 								string
 
-	LastModified, TimeAdded, LastPlayed, PreviewTime int64
+	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 
 	Timings    *objects.Timings
 	HitObjects []objects.BaseObject
@@ -85,4 +86,9 @@ func (beatMap *BeatMap) LoadPauses() {
 		line := []string{"2", points[i], points[i+1]}
 		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
 	}
+}
+
+func (beatMap *BeatMap) UpdatePlayStats() {
+	beatMap.PlayCount += 1
+	beatMap.LastPlayed = time.Now().UnixNano() / 1000000
 }
