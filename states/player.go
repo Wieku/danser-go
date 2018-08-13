@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/animation"
+	"os"
 )
 
 type Player struct {
@@ -71,7 +72,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	log.Println(beatMap.Bg)
 	var err error
-	player.Background, err = utils.LoadTexture(beatMap.Bg)
+	player.Background, err = utils.LoadTexture(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Bg)
 	player.Logo, err = utils.LoadTexture("assets/textures/logo-medium.png")
 	log.Println(err)
 	winscl := settings.Graphics.GetAspectRatio()
@@ -160,6 +161,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	for _, p := range beatMap.Pauses {
 		bd := p.GetBasicData()
 
+		if bd.EndTime - bd.StartTime < 1000 {
+			continue
+		}
+
 		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.BackgroundDimBreaks)
 		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.BackgroundBlurBreaks)
 		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.SpectrumDimBreaks)
@@ -173,7 +178,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
 	}
 
-	musicPlayer := audio.NewMusic(beatMap.Audio)
+	musicPlayer := audio.NewMusic(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Audio)
 
 	go func() {
 		player.entry = 1

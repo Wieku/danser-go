@@ -90,3 +90,7 @@ func (tim *Timings) Reset() {
 	copy(tim.queue, tim.points)
 	tim.Current = tim.queue[0]
 }
+
+func (tim *Timings) Log() {
+	log.Println(len(tim.points))
+}

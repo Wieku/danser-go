@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser/utils"
 	"github.com/wieku/danser/build"
 	"github.com/wieku/danser/dance"
+	"github.com/wieku/danser/database"
 )
 
 var player *states.Player
@@ -54,7 +55,9 @@ func run() {
 		player = nil
 		var beatMap *beatmap.BeatMap = nil
 
-		beatmaps := beatmap.LoadBeatmaps()
+		database.Init()
+		beatmaps := database.LoadBeatmaps()
+
 		for _, b := range beatmaps {
 			if (*artist == "" || *artist == b.Artist) && (*title == "" || *title == b.Name) && (*difficulty == "" || *difficulty == b.Difficulty) && (*creator == "" || *creator == b.Creator) {//if b.Difficulty == "200BPM t+pazolite_cheatreal GO TO HELL  AR10" {
 				beatMap = b
@@ -63,7 +66,7 @@ func run() {
 		}
 
 		if beatMap == nil {
-			log.Println("No beatmaps found, closing...")
+			log.Println("Beatmap not found, closing...")
 			os.Exit(0)
 		}
 
@@ -153,8 +156,8 @@ func run() {
 			if win.GetKey(glfw.KeyMinus) == glfw.Press {
 
 				if !pressedM {
-					if settings.DIVIDES>1 {
-						settings.DIVIDES-=1
+					if settings.DIVIDES > 1 {
+						settings.DIVIDES -= 1
 					}
 				}
 
@@ -168,7 +171,7 @@ func run() {
 			if win.GetKey(glfw.KeyEqual) == glfw.Press {
 
 				if !pressedP {
-					settings.DIVIDES+=1
+					settings.DIVIDES += 1
 				}
 
 				pressedP = true

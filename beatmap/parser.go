@@ -7,8 +7,7 @@ import (
 	"strings"
 	"os"
 	"bufio"
-
-	"path/filepath"
+	"github.com/wieku/danser/settings"
 )
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
@@ -28,16 +27,16 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 	case "SampleSet":
 		switch line[1] {
 		case "Normal":
-			beatMap.timings.BaseSet = 1
+			beatMap.Timings.BaseSet = 1
 			break
 		case "Soft":
-			beatMap.timings.BaseSet = 2
+			beatMap.Timings.BaseSet = 2
 			break
 		case "Drum":
-			beatMap.timings.BaseSet = 3
+			beatMap.Timings.BaseSet = 3
 			break
 		}
-		beatMap.timings.LastSet = beatMap.timings.BaseSet
+		beatMap.Timings.LastSet = beatMap.Timings.BaseSet
 		break
 	}
 
@@ -49,8 +48,14 @@ func parseMetadata(line []string, beatMap *BeatMap) {
 	case "Title":
 		beatMap.Name = line[1]
 		break
+	case "TitleUnicode":
+		beatMap.NameUnicode = line[1]
+		break
 	case "Artist":
 		beatMap.Artist = line[1]
+		break
+	case "ArtistUnicode":
+		beatMap.ArtistUnicode = line[1]
 		break
 	case "Creator":
 		beatMap.Creator = line[1]
@@ -58,13 +63,19 @@ func parseMetadata(line []string, beatMap *BeatMap) {
 	case "Version":
 		beatMap.Difficulty = line[1]
 		break
+	case "Source":
+		beatMap.Source = line[1]
+		break
+	case "Tags":
+		beatMap.Tags = line[1]
+		break
 	}
 }
 
 func parseDifficulty(line []string, beatMap *BeatMap) {
 	if line[0] == "SliderMultiplier" {
 		beatMap.SliderMultiplier, _ = strconv.ParseFloat(line[1], 64)
-		beatMap.timings.SliderMult = float64(beatMap.SliderMultiplier)
+		beatMap.Timings.SliderMult = float64(beatMap.SliderMultiplier)
 	}
 	if line[0] == "ApproachRate" {
 		beatMap.AR, _ = strconv.ParseFloat(line[1], 64)
@@ -73,7 +84,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 		beatMap.CircleSize, _ = strconv.ParseFloat(line[1], 64)
 	}
 	if line[0] == "SliderTickRate" {
-		beatMap.timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
+		beatMap.Timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
 	}
 
 }
@@ -83,6 +94,7 @@ func parseEvents(line []string, beatMap *BeatMap) {
 		beatMap.Bg += strings.Replace(line[2], "\"", "", -1)
 	}
 	if line[0] == "2" {
+		beatMap.PausesText += line[1] + "," + line[2]
 		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
 	}
 }
@@ -92,10 +104,10 @@ func parseTimingPoints(line []string, beatMap *BeatMap) {
 	bpm, _ := strconv.ParseFloat(line[1], 64)
 	if len(line) > 3 {
 		sampleset, _ := strconv.ParseInt(line[3], 10, 64)
-		beatMap.timings.LastSet = int(sampleset)
-		beatMap.timings.AddPoint(time, bpm, int(sampleset))
+		beatMap.Timings.LastSet = int(sampleset)
+		beatMap.Timings.AddPoint(time, bpm, int(sampleset))
 	} else {
-		beatMap.timings.AddPoint(time, bpm, beatMap.timings.LastSet)
+		beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet)
 	}
 
 }
@@ -105,10 +117,10 @@ func parseHitObjects(line []string, beatMap *BeatMap) {
 
 	if obj != nil {
 		if o, ok := obj.(*objects.Slider); ok {
-			o.SetTiming(beatMap.timings)
+			o.SetTiming(beatMap.Timings)
 		}
 		if o, ok := obj.(*objects.Circle); ok {
-			o.SetTiming(beatMap.timings)
+			o.SetTiming(beatMap.Timings)
 		}
 		beatMap.HitObjects = append(beatMap.HitObjects, obj)
 	}
@@ -137,10 +149,9 @@ func ParseBeatMap(file *os.File) *BeatMap {
 	scanner := bufio.NewScanner(file)
 
 	beatMap := NewBeatMap()
-	beatMap.Path = file.Name()
-	beatMap.Audio = filepath.Dir(file.Name()) + string(os.PathSeparator)
-	beatMap.Bg = beatMap.Audio
 	var currentSection string
+	counter := 0
+	counter1 := 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -172,25 +183,46 @@ func ParseBeatMap(file *os.File) *BeatMap {
 			break
 		case "Events":
 			if arr := tokenize(line, ","); arr != nil {
+				if arr[0] == "2" {
+					if counter1 > 0 {
+						beatMap.PausesText += ","
+					}
+					counter1++
+				}
+
 				parseEvents(arr, beatMap)
+			}
+			break
+		case "TimingPoints":
+			if arr := tokenize(line, ","); arr != nil {
+				if counter > 0 {
+					beatMap.TimingPoints += "|"
+				}
+				counter++
+
+				beatMap.TimingPoints += line
+				parseTimingPoints(arr, beatMap)
 			}
 			break
 		}
 	}
+
+	file.Seek(0, 0)
 
 	return beatMap
 }
 
 func ParseObjects(beatMap *BeatMap) {
 
-	file, err := os.Open(beatMap.Path)
+	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	defer file.Close()
+
 	if err != nil {
 		panic(err)
 	}
 	scanner := bufio.NewScanner(file)
 
 	var currentSection string
-
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -201,11 +233,6 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 
 		switch currentSection {
-		case "TimingPoints":
-			if arr := tokenize(line, ","); arr != nil {
-				parseTimingPoints(arr, beatMap)
-			}
-			break
 		case "HitObjects":
 			if arr := tokenize(line, ","); arr != nil {
 				parseHitObjects(arr, beatMap)
@@ -227,7 +254,6 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 
 	}
-
 
 	calculateStackLeniency(beatMap)
 }

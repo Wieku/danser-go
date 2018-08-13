@@ -2,32 +2,35 @@ package beatmap
 
 import (
 	"github.com/wieku/danser/beatmap/objects"
-)
+	"strconv"
+	"strings"
+	)
 
 type BeatMap struct {
-	Artist, Name, Difficulty, Creator        string
+	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags        string
 	SliderMultiplier, StackLeniency, CircleSize, AR, ARms float64
-	Path 							string
-	Audio 							string
-	Bg 								string
-	timings                         *objects.Timings
-	HitObjects                      []objects.BaseObject
-	Pauses                      	[]objects.BaseObject
-	Queue                      		[]objects.BaseObject
+	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints 								string
+
+	LastModified, TimeAdded, LastPlayed, PreviewTime int64
+
+	Timings    *objects.Timings
+	HitObjects []objects.BaseObject
+	Pauses     []objects.BaseObject
+	Queue      []objects.BaseObject
 }
 
 func NewBeatMap() *BeatMap {
-	return &BeatMap{timings: objects.NewTimings(), StackLeniency: 0.7}
+	return &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7}
 }
 
 func (b *BeatMap) Reset() {
 	b.Queue = make([]objects.BaseObject, len(b.HitObjects))
 	copy(b.Queue, b.HitObjects)
-	b.timings.Reset()
+	b.Timings.Reset()
 }
 
 func (b *BeatMap) Update(time int64) {
-	b.timings.Update(time)
+	b.Timings.Update(time)
 	if len(b.Queue) > 0 {
 		for i:=0; i < len(b.Queue); i++ {
 			g := b.Queue[i]
@@ -53,4 +56,33 @@ func (beatMap *BeatMap) GetObjectsCopy() []objects.BaseObject {
 	return queue
 }
 
+func (beatMap *BeatMap) LoadTimingPoints() {
 
+	points := strings.Split(beatMap.TimingPoints, "|")
+
+	for _, point := range points {
+		line := strings.Split(point, ",")
+		time, _ := strconv.ParseInt(line[0], 10, 64)
+		bpm, _ := strconv.ParseFloat(line[1], 64)
+		if len(line) > 3 {
+			sampleset, _ := strconv.ParseInt(line[3], 10, 64)
+			beatMap.Timings.LastSet = int(sampleset)
+			beatMap.Timings.AddPoint(time, bpm, int(sampleset))
+		} else {
+			beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet)
+		}
+	}
+}
+
+func (beatMap *BeatMap) LoadPauses() {
+	points := strings.Split(beatMap.PausesText, ",")
+
+	if len(points) < 2 {
+		return
+	}
+
+	for i := 0; i < len(points); i += 2 {
+		line := []string{"2", points[i], points[i+1]}
+		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
+	}
+}
