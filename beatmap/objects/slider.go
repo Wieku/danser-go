@@ -170,7 +170,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 			time2 := self.objData.StartTime+int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
 
 			if r%2 == 1 {
-				time2 = self.objData.StartTime+timings.GetSliderTimeP(self.TPoint, self.pixelLength)-int64(float64(i)*self.TPoint.Bpm/self.Timings.TickRate*(1.0/self.TPoint.GetRatio()))
+				time2 = self.objData.StartTime+timings.GetSliderTimeP(self.TPoint, self.pixelLength)-int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
 			}
 
 			lengthFromEnd -= tickPixLen
@@ -183,6 +183,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 		}
 	}
 
+	sort.Slice(self.TickPoints, func(i, j int) bool {return self.TickPoints[i].time < self.TickPoints[j].time})
 	self.objData.EndTime = self.objData.StartTime + timings.GetSliderTimeP(self.TPoint, self.pixelLength) * self.repeat
 	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
 }
