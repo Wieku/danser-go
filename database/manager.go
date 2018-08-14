@@ -15,9 +15,11 @@ import (
 	"encoding/hex"
 	_ "github.com/mattn/go-sqlite3"
 	"time"
+	"strconv"
 )
 
 var dbFile *sql.DB
+const databaseVersion = 20180814
 
 func Init() {
 	var err error
@@ -27,10 +29,17 @@ func Init() {
 		panic(err)
 	}
 
-	_, err = dbFile.Exec("CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, pauses TEXT, timingPoints TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER)")
+	_, err = dbFile.Exec(`CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, pauses TEXT, timingPoints TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER);
+							CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
+							CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);`)
 
 	if err != nil {
 		panic(err)
+	}
+
+	_, err = dbFile.Exec("REPLACE INTO info (key, value) VALUES ('version', ?)", strconv.FormatInt(databaseVersion, 10))
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -62,19 +71,15 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 					defer file.Close()
 
 					if bMap := beatmap.ParseBeatMap(file); bMap != nil {
-
 						bMap.Dir = filepath.Base(filepath.Dir(path))
 						bMap.File = f.Name()
 						bMap.LastModified = f.ModTime().UnixNano() / 1000000
 						bMap.TimeAdded = time.Now().UnixNano() / 1000000
-						log.Println("New beatmap:", bMap.File)
+						log.Println("Importing:", bMap.File)
 
 						hash := md5.New()
-
 						if _, err := io.Copy(hash, file); err == nil {
 							bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
-							log.Println("Checksum:", bMap.MD5)
-
 							newBeatmaps = append(newBeatmaps, bMap)
 						}
 					}
@@ -89,7 +94,7 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 		return nil
 	})
 
-	log.Println("Found", len(newBeatmaps), "new beatmaps.")
+	log.Println("Imported", len(newBeatmaps), "new beatmaps.")
 
 	updateBeatmaps(newBeatmaps)
 
