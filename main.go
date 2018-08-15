@@ -40,7 +40,7 @@ func run() {
 		flag.Parse()
 
 		if (*artist+*title+*difficulty+*creator) == "" {
-			log.Println("Any beatmap specified, closing...")
+			log.Println("No beatmap specified, closing...")
 			os.Exit(0)
 		}
 
