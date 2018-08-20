@@ -1,4 +1,4 @@
-package render
+package effects
 
 import (
 	"github.com/wieku/glhf"
@@ -148,22 +148,4 @@ func (effect *BlurEffect) EndAndProcess() *glhf.Texture {
 	effect.blurShader.End()
 	gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
 	return effect.fbo1.Texture()
-}
-
-func (effect *BlurEffect) EndAndRender() {
-
-	fbo := effect.EndAndProcess()
-
-	gl.ActiveTexture(gl.TEXTURE0)
-	fbo.Begin()
-
-	fboShader.Begin()
-	fboShader.SetUniformAttr(0, int32(0))
-	fboSlice.Begin()
-	fboSlice.Draw()
-	fboSlice.End()
-	fboShader.End()
-
-	fbo.End()
-
 }

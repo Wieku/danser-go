@@ -1,4 +1,4 @@
-package render
+package effects
 
 import (
 	"github.com/wieku/glhf"

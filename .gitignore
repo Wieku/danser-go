@@ -1,5 +1,5 @@
 .idea/
 screenshots/
 settings.json
-settings-*.json
+settings-*
 danser.db

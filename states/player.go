@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/animation"
 	"os"
+	"github.com/Wieku/danser/render/effects"
 )
 
 type Player struct {
@@ -24,8 +25,8 @@ type Player struct {
 	queue2 []objects.BaseObject
 	processed []objects.BaseObject
 	sliderRenderer *render.SliderRenderer
-	blurEffect *render.BlurEffect
-	bloomEffect *render.BloomEffect
+	blurEffect *effects.BlurEffect
+	bloomEffect *effects.BloomEffect
 	lastTime int64
 	progressMsF float64
 	progressMs int64
@@ -80,7 +81,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	if player.Background != nil {
 		gl.ActiveTexture(gl.TEXTURE31)
 		player.Background.Begin()
-		player.blurEffect = render.NewBlurEffect(player.Background.Width(), player.Background.Height()/*int(settings.Graphics.GetHeight())*/)
+		player.blurEffect = effects.NewBlurEffect(player.Background.Width(), player.Background.Height()/*int(settings.Graphics.GetHeight())*/)
 		player.blurEffect.SetBlur(0.0, 0.0)
 		imScl := float64(player.Background.Width())/float64(player.Background.Height())
 		if imScl < winscl {
@@ -279,7 +280,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.profiler = utils.NewFPSCounter(60, true)
 	player.musicPlayer = musicPlayer
 
-	player.bloomEffect = render.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	return player
 }
