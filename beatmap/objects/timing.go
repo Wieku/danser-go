@@ -24,7 +24,7 @@ type Timings struct {
 }
 
 func NewTimings() *Timings {
-	return &Timings{}
+	return &Timings{BaseSet: 1, LastSet: 1}
 }
 
 func (tim *Timings) AddPoint(time int64, bpm float64, sampleset int) {
