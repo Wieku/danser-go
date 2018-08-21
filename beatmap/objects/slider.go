@@ -52,10 +52,6 @@ func NewSlider(data []string) *Slider {
 	list := strings.Split(data[5], "|")
 	points := []m2.Vector2d{slider.objData.StartPos}
 
-	if list[0] == "C" {
-		return nil
-	}
-
 	for i := 1; i < len(list); i++ {
 		list2 := strings.Split(list[i], ":")
 		x, _ := strconv.ParseFloat(list2[0], 64)

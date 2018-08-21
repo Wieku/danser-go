@@ -3,6 +3,7 @@ package sliders
 import (
 	m2 "github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath/curves"
+	"github.com/wieku/danser/bmath"
 )
 
 type SliderAlgo struct {
@@ -41,6 +42,22 @@ func NewSliderAlgo(typ string, points []m2.Vector2d) SliderAlgo {
 		c := curves.NewCirArc(points[0], points[1], points[2])
 		curveList = append(curveList, c)
 		length += c.GetLength()
+		break
+	case "C":
+
+		if points[0] != points[1] {
+			points = append([]bmath.Vector2d{points[0]}, points...)
+		}
+
+		if points[len(points) - 1] != points[len(points) - 2] {
+			points = append(points, points[len(points) - 1])
+		}
+
+		for i := 0; i < len(points) - 3; i++ {
+			c := curves.NewCatmull(points[i:i+4])
+			curveList = append(curveList, c)
+			length += c.GetLength()
+		}
 		break
 	}
 
