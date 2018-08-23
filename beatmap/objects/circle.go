@@ -16,6 +16,7 @@ type Circle struct {
 	sample int
 	Timings *Timings
 	ownSampleSet int
+	ownAdditionSet int
 }
 
 func NewCircle(data []string) *Circle {
@@ -26,8 +27,11 @@ func NewCircle(data []string) *Circle {
 	circle.objData.EndTime = circle.objData.StartTime
 	circle.objData.EndPos = circle.objData.StartPos
 	if len(data) > 5 {
-		e, _ := strconv.ParseInt(strings.Split(data[5],":")[0], 10, 64)
-		circle.ownSampleSet = int(e)
+		extras := strings.Split(data[5],":")
+		sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
+		additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
+		circle.ownSampleSet = int(sampleSet)
+		circle.ownAdditionSet = int(additionSet)
 	} else {
 		circle.ownSampleSet = 0
 	}
@@ -56,9 +60,9 @@ func (self Circle) GetBasicData() *basicData {
 func (self *Circle) Update(time int64) bool {
 
 	if self.ownSampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.sample)
+		audio.PlaySample(self.Timings.Current.SampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex)
 	} else {
-		audio.PlaySample(self.ownSampleSet, self.sample)
+		audio.PlaySample(self.ownSampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex)
 	}
 
 	return true

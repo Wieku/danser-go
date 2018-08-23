@@ -6,6 +6,7 @@ type TimingPoint struct {
 	Time int64
 	BaseBpm, Bpm float64
 	SampleSet int
+	SampleIndex int
 }
 
 func (t TimingPoint) GetRatio() float64 {
@@ -13,29 +14,29 @@ func (t TimingPoint) GetRatio() float64 {
 }
 
 type Timings struct {
-	points []TimingPoint
-	queue []TimingPoint
-	SliderMult float64
-	Current TimingPoint
+	Points           []TimingPoint
+	queue            []TimingPoint
+	SliderMult       float64
+	Current          TimingPoint
 	fullBPM, partBPM float64
-	BaseSet int
-	LastSet int
-	TickRate float64
+	BaseSet          int
+	LastSet          int
+	TickRate         float64
 }
 
 func NewTimings() *Timings {
 	return &Timings{BaseSet: 1, LastSet: 1}
 }
 
-func (tim *Timings) AddPoint(time int64, bpm float64, sampleset int) {
-	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset}
+func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int) {
+	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex}
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {
 		point.Bpm = tim.fullBPM / ( -100.0 / point.Bpm)
 	}
 	point.BaseBpm = tim.fullBPM
-	tim.points = append(tim.points, point)
+	tim.Points = append(tim.Points, point)
 	tim.queue = append(tim.queue, point)
 }
 
@@ -61,12 +62,12 @@ func clamp(a, min, max int) int {
 }
 
 func (tim *Timings) GetPoint(time int64) TimingPoint {
-	for i, pt := range tim.points {
+	for i, pt := range tim.Points {
 		if time < pt.Time {
-			return tim.points[clamp(i-1, 0, len(tim.points)-1)]
+			return tim.Points[clamp(i-1, 0, len(tim.Points)-1)]
 		}
 	}
-	return tim.points[len(tim.points)-1]
+	return tim.Points[len(tim.Points)-1]
 }
 
 func (tim Timings) GetSliderTimeS(time int64, pixelLength float64) int64 {
@@ -86,11 +87,11 @@ func (tim Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) int64 
 }
 
 func (tim *Timings) Reset() {
-	tim.queue = make([]TimingPoint, len(tim.points))
-	copy(tim.queue, tim.points)
+	tim.queue = make([]TimingPoint, len(tim.Points))
+	copy(tim.queue, tim.Points)
 	tim.Current = tim.queue[0]
 }
 
 func (tim *Timings) Log() {
-	log.Println(len(tim.points))
+	log.Println(len(tim.Points))
 }

@@ -9,7 +9,7 @@ import (
 type SliderAlgo struct {
 	curves []curves.Curve
 	sections []float64
-	Length float64
+	length float64
 }
 
 func NewSliderAlgo(typ string, points []m2.Vector2d) SliderAlgo {
@@ -74,7 +74,7 @@ func NewSliderAlgo(typ string, points []m2.Vector2d) SliderAlgo {
 	return SliderAlgo{curveList, sections, length}
 }
 
-func (sa SliderAlgo) PointAt(t float64) m2.Vector2d {
+func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
 	if len(sa.curves) == 1 {
 		return sa.curves[0].PointAt(t)
 	} else {
@@ -90,3 +90,6 @@ func (sa SliderAlgo) PointAt(t float64) m2.Vector2d {
 	return m2.NewVec2d(512/2,384/2)
 }
 
+func (sa *SliderAlgo) GetLength() float64 {
+	return sa.length
+}

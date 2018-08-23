@@ -121,6 +121,7 @@ func run() {
 		audio.LoadSamples()
 
 		beatmap.ParseObjects(beatMap)
+		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
 
 	})

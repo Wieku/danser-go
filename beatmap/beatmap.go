@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/wieku/danser/audio"
 )
 
 type BeatMap struct {
@@ -67,11 +68,18 @@ func (beatMap *BeatMap) LoadTimingPoints() {
 		bpm, _ := strconv.ParseFloat(line[1], 64)
 		if len(line) > 3 {
 			sampleset, _ := strconv.ParseInt(line[3], 10, 64)
+			sampleindex, _ := strconv.ParseInt(line[4], 10, 64)
 			beatMap.Timings.LastSet = int(sampleset)
-			beatMap.Timings.AddPoint(time, bpm, int(sampleset))
+			beatMap.Timings.AddPoint(time, bpm, int(sampleset), int(sampleindex))
 		} else {
-			beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet)
+			beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet, 1)
 		}
+	}
+}
+
+func (beatMap *BeatMap) LoadCustomSamples() {
+	for _, p := range beatMap.Timings.Points {
+		audio.RegisterBeatmapSample(beatMap.Dir, p.SampleSet, 15, p.SampleIndex)
 	}
 }
 

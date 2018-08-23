@@ -99,7 +99,7 @@ func parseEvents(line []string, beatMap *BeatMap) {
 	}
 }
 
-func parseTimingPoints(line []string, beatMap *BeatMap) {
+/*func parseTimingPoints(line []string, beatMap *BeatMap) {
 	time, _ := strconv.ParseInt(line[0], 10, 64)
 	bpm, _ := strconv.ParseFloat(line[1], 64)
 	if len(line) > 3 {
@@ -110,7 +110,7 @@ func parseTimingPoints(line []string, beatMap *BeatMap) {
 		beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet)
 	}
 
-}
+}*/
 
 func parseHitObjects(line []string, beatMap *BeatMap) {
 	obj := objects.GetObject(line)
@@ -201,11 +201,13 @@ func ParseBeatMap(file *os.File) *BeatMap {
 				counter++
 
 				beatMap.TimingPoints += line
-				parseTimingPoints(arr, beatMap)
+				//parseTimingPoints(arr, beatMap)
 			}
 			break
 		}
 	}
+
+	beatMap.LoadTimingPoints()
 
 	file.Seek(0, 0)
 

@@ -5,7 +5,6 @@ import (
 	m2 "github.com/wieku/danser/bmath"
 	"strconv"
 	"strings"
-	"log"
 	"github.com/wieku/danser/audio"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
@@ -32,13 +31,13 @@ type Slider struct {
 	repeat      int64
 	clicked     bool
 	sampleSets 	[]int
+	additionSets 	[]int
 	samples 	[]int
 	lastT		int64
 	Pos 		m2.Vector2d
 	divides 	int
 	TickPoints []tickPoint
 	lastTick int
-	LasTTI int64
 	End bool
 	vao *glhf.VertexSlice
 }
@@ -67,6 +66,7 @@ func NewSlider(data []string) *Slider {
 
 	slider.samples = make([]int, slider.repeat+1)
 	slider.sampleSets = make([]int, slider.repeat+1)
+	slider.additionSets = make([]int, slider.repeat+1)
 	slider.lastT = 1
 	if len(data) > 8 {
 		subData := strings.Split(data[8], "|")
@@ -79,8 +79,11 @@ func NewSlider(data []string) *Slider {
 	if len(data) > 9 {
 		subData := strings.Split(data[9], "|")
 		for i, v := range subData {
-			f, _ := strconv.ParseInt(strings.Split(v,":")[0], 10, 64)
-			slider.sampleSets[i] = int(f)
+			extras := strings.Split(v,":")
+			sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
+			additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
+			slider.sampleSets[i] = int(sampleSet)
+			slider.additionSets[i] = int(additionSet)
 		}
 	}
 	slider.End = false
@@ -114,7 +117,7 @@ func (self Slider) GetPointAt(time int64) m2.Vector2d {
 
 	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * partLen
 
-	rt := float64(self.pixelLength) / self.multiCurve.Length
+	rt := float64(self.pixelLength) / self.multiCurve.GetLength()
 
 	var pos m2.Vector2d
 	if (times%2) == 1 {
@@ -152,10 +155,16 @@ func (self Slider) endTime() int64 {
 func (self *Slider) SetTiming(timings *Timings) {
 	self.Timings = timings
 	self.TPoint = timings.GetPoint(self.objData.StartTime)
-	if timings.GetSliderTimeS(self.objData.StartTime, self.pixelLength) < 0 {
-		log.Println( self.objData.StartTime, self.pixelLength, "wuuuuuuuuuuuuuut")
-	}
 
+	sliderTime := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
+	self.partLen = float64(sliderTime)
+	self.objData.EndTime = self.objData.StartTime + sliderTime * self.repeat
+	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
+
+	self.calculateFollowPoints()
+}
+
+func (self *Slider) calculateFollowPoints() {
 	tickPixLen := (100.0*self.Timings.SliderMult)/(self.Timings.TickRate*self.TPoint.GetRatio())
 	tickpoints := int(math.Ceil(self.pixelLength/tickPixLen))-1
 
@@ -166,7 +175,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 			time2 := self.objData.StartTime+int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
 
 			if r%2 == 1 {
-				time2 = self.objData.StartTime+timings.GetSliderTimeP(self.TPoint, self.pixelLength)-int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
+				time2 = self.objData.StartTime+self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)-int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
 			}
 
 			lengthFromEnd -= tickPixLen
@@ -175,19 +184,17 @@ func (self *Slider) SetTiming(timings *Timings) {
 				break
 			}
 
-			self.TickPoints = append(self.TickPoints, tickPoint{time2+timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
+			self.TickPoints = append(self.TickPoints, tickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
 		}
 	}
 
 	sort.Slice(self.TickPoints, func(i, j int) bool {return self.TickPoints[i].time < self.TickPoints[j].time})
-	self.objData.EndTime = self.objData.StartTime + timings.GetSliderTimeP(self.TPoint, self.pixelLength) * self.repeat
-	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
 	lod := float64(settings.Objects.SliderPathLOD) / 100.0
 	t0 := (1.0 / lod) / self.pixelLength
-	rt := float64(self.pixelLength) / self.multiCurve.Length
+	rt := float64(self.pixelLength) / self.multiCurve.GetLength()
 	points := make([]m2.Vector2d, int(self.pixelLength*lod)+1)
 	t:= 0.0
 	for i:=0; i <= int(self.pixelLength*lod); i+=1 {
@@ -198,33 +205,23 @@ func (self *Slider) GetCurve() []m2.Vector2d {
 }
 
 func (self *Slider) Update(time int64) bool {
-	//TODO: CLEAN THIS
 	if time < self.endTime() {
-		sliderTime := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
-		pixLen := self.multiCurve.Length
-		self.partLen = float64(sliderTime)
-		self.objData.EndTime = self.objData.StartTime + sliderTime * self.repeat
 		times := int64(math.Min(float64(time - self.objData.StartTime) / self.partLen + 1, float64(self.repeat)))
-
 		ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * self.partLen
 
 		if self.lastT != times {
-			ss := self.sampleSets[times-1]
-			if ss == 0 {
-				ss = self.Timings.Current.SampleSet
-			}
-			audio.PlaySample(ss, self.samples[times-1])
+			self.playSample(self.sampleSets[times-1], self.additionSets[times-1], self.samples[times-1])
 			self.lastT = times
 		}
 
 		for i, p := range self.TickPoints {
 			if p.time < time && self.lastTick < i {
-				audio.PlaySliderTick(self.Timings.Current.SampleSet)
+				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex)
 				self.lastTick = i
 			}
 		}
 
-		rt := float64(self.pixelLength) / pixLen
+		rt := float64(self.pixelLength) / self.multiCurve.GetLength()
 
 		var pos m2.Vector2d
 		if (times%2) == 1 {
@@ -235,26 +232,25 @@ func (self *Slider) Update(time int64) bool {
 		self.Pos = pos.Add(self.objData.StackOffset)
 
 		if !self.clicked {
-			ss := self.sampleSets[0]
-			if ss == 0 {
-				ss = self.Timings.Current.SampleSet
-			}
-			audio.PlaySample(ss, self.samples[0])
+			self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
 			self.clicked = true
 		}
 
 		return false
 	}
 
-	ss := self.sampleSets[self.repeat]
-	if ss == 0 {
-		ss = self.Timings.Current.SampleSet
-	}
-	audio.PlaySample(ss, self.samples[self.repeat])
+	self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
 	self.End = true
 	self.clicked = false
 
 	return true
+}
+
+func (self *Slider) playSample(sampleSet, additionSet, sample int) {
+	if sampleSet == 0 {
+		sampleSet = self.Timings.Current.SampleSet
+	}
+	audio.PlaySample(sampleSet, additionSet, sample, self.Timings.Current.SampleIndex)
 }
 
 func (self *Slider) GetPosition() m2.Vector2d {
@@ -302,12 +298,6 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1
 	} else {
 		colorAlpha = float64(color[3])
 	}
-
-	if self.LasTTI > time {
-		log.Println("WHAAAAAAT")
-	}
-
-	self.LasTTI = time
 
 	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)}, mgl32.Vec4{color1[0], color1[1], color1[2], float32(colorAlpha)})
 

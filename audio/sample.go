@@ -7,6 +7,7 @@ import "C"
 import (
 	"unsafe"
 	"github.com/wieku/danser/settings"
+	"os"
 )
 
 type Sample struct {
@@ -14,6 +15,13 @@ type Sample struct {
 }
 
 func NewSample(path string) *Sample {
+	f, err := os.Open(path)
+
+	if os.IsNotExist(err) {
+		return nil
+	}
+	f.Close()
+
 	player := &Sample{}
 	han := C.BASS_SampleLoad(0, unsafe.Pointer(C.CString(path)), 0, 0, 10, 0)
 	ch1 := C.BASS_SampleGetChannel(han, 0)
@@ -35,7 +43,3 @@ func (wv *Sample) PlayRV(volume float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
-
-//han := C.BASS_SampleLoad(0, unsafe.Pointer(C.CString("assets/sounds/soft-hitnormal.wav")), 0, 0, 1, 0)
-//ch1 := C.BASS_SampleGetChannel(han, 0)
-//C.BASS_ChannelSetPosition(C.DWORD(ch), C.BASS_ChannelSeconds2Bytes(C.DWORD(ch), 220), C.BASS_POS_BYTE)
