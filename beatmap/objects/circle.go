@@ -60,9 +60,9 @@ func (self Circle) GetBasicData() *basicData {
 func (self *Circle) Update(time int64) bool {
 
 	if self.ownSampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex)
+		audio.PlaySample(self.Timings.Current.SampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 	} else {
-		audio.PlaySample(self.ownSampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex)
+		audio.PlaySample(self.ownSampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 	}
 
 	return true

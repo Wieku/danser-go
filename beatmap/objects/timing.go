@@ -7,6 +7,7 @@ type TimingPoint struct {
 	BaseBpm, Bpm float64
 	SampleSet int
 	SampleIndex int
+	SampleVolume float64
 }
 
 func (t TimingPoint) GetRatio() float64 {
@@ -28,8 +29,8 @@ func NewTimings() *Timings {
 	return &Timings{BaseSet: 1, LastSet: 1}
 }
 
-func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int) {
-	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex}
+func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int, samplevolume float64) {
+	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex, SampleVolume: samplevolume}
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {

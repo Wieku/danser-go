@@ -31,29 +31,29 @@ func LoadSamples() {
 	Samples[4][2] = NewSample("assets/sounds/drum-slidertick.wav")
 }
 
-func PlaySample(sampleSet, additionSet, hitsound, index int) {
-	playSample(sampleSet, 0, index)
+func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64) {
+	playSample(sampleSet, 0, index, volume)
 
 	if additionSet == 0 {
 		additionSet = sampleSet
 	}
 
 	if hitsound&2 > 0 {
-		playSample(additionSet, 1, index)
+		playSample(additionSet, 1, index, volume)
 	}
 	if hitsound&4 > 0 {
-		playSample(additionSet, 2, index)
+		playSample(additionSet, 2, index, volume)
 	}
 	if hitsound&8 > 0 {
-		playSample(additionSet, 3, index)
+		playSample(additionSet, 3, index, volume)
 	}
 }
 
-func playSample(sampleSet int, hitsoundIndex, index int) {
+func playSample(sampleSet int, hitsoundIndex, index int, volume float64) {
 	if sample := MapSamples[hitsoundIndex][sampleSet-1][index]; sample != nil {
-		sample.Play()
+		sample.PlayRV(volume)
 	} else {
-		Samples[hitsoundIndex][sampleSet-1].Play()
+		Samples[hitsoundIndex][sampleSet-1].PlayRV(volume)
 	}
 }
 
@@ -101,16 +101,15 @@ func loadSample(dir, sampleSet, hitsound string, sampleSetIndex, hitsoundIndex, 
 
 	path += ".wav"
 
+	if MapSamples[hitsoundIndex][sampleSetIndex-1] == nil {
+		MapSamples[hitsoundIndex][sampleSetIndex-1] = make(map[int]*Sample)
+	}
+
+	if MapSamples[hitsoundIndex][sampleSetIndex-1][index] != nil {
+		return
+	}
+
 	if sample := NewSample(path); sample != nil {
-
-		if MapSamples[hitsoundIndex][sampleSetIndex-1] == nil {
-			MapSamples[hitsoundIndex][sampleSetIndex-1] = make(map[int]*Sample)
-		}
-
-		if MapSamples[hitsoundIndex][sampleSetIndex-1][index] != nil {
-			return
-		}
-
 		log.Println("Loaded:", path)
 		MapSamples[hitsoundIndex][sampleSetIndex-1][index] = sample
 	}

@@ -250,7 +250,7 @@ func (self *Slider) playSample(sampleSet, additionSet, sample int) {
 	if sampleSet == 0 {
 		sampleSet = self.Timings.Current.SampleSet
 	}
-	audio.PlaySample(sampleSet, additionSet, sample, self.Timings.Current.SampleIndex)
+	audio.PlaySample(sampleSet, additionSet, sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 }
 
 func (self *Slider) GetPosition() m2.Vector2d {
