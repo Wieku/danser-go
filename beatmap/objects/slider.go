@@ -341,14 +341,17 @@ func EndSliderOverlay() {
 
 func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 	alpha := 1.0
+	alphaF := 1.0
 	arr := float64(self.objData.StartTime-time) / preempt
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
 	} else if time >= self.objData.EndTime {
 		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
+		alphaF = 1.0-float64(time - self.objData.StartTime)/(preempt/2)
 	} else {
 		alpha = float64(color[3])
+		alphaF = 1.0-float64(time - self.objData.StartTime)/(preempt/2)
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -393,6 +396,15 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 						batch.DrawUnitR(4)
 					}
 				}
+			}
+
+			if time >= self.objData.StartTime && alphaF > 0.0 {
+				batch.SetTranslation(self.objData.StartPos)
+				batch.SetSubScale(1+(1.0-alphaF)*0.5, 1+(1.0-alphaF)*0.5)
+				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alphaF)
+				batch.DrawUnitR(0)
+				batch.SetColor(1, 1, 1, alphaF)
+				batch.DrawUnitR(1)
 			}
 
 			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
