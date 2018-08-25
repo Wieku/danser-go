@@ -26,7 +26,7 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 		break
 	case "SampleSet":
 		switch line[1] {
-		case "Normal":
+		case "Normal", "All":
 			beatMap.Timings.BaseSet = 1
 			break
 		case "Soft":
@@ -99,19 +99,6 @@ func parseEvents(line []string, beatMap *BeatMap) {
 	}
 }
 
-/*func parseTimingPoints(line []string, beatMap *BeatMap) {
-	time, _ := strconv.ParseInt(line[0], 10, 64)
-	bpm, _ := strconv.ParseFloat(line[1], 64)
-	if len(line) > 3 {
-		sampleset, _ := strconv.ParseInt(line[3], 10, 64)
-		beatMap.Timings.LastSet = int(sampleset)
-		beatMap.Timings.AddPoint(time, bpm, int(sampleset))
-	} else {
-		beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet)
-	}
-
-}*/
-
 func parseHitObjects(line []string, beatMap *BeatMap) {
 	obj := objects.GetObject(line)
 
@@ -147,7 +134,6 @@ func getSection(line string) string {
 
 func ParseBeatMap(file *os.File) *BeatMap {
 	scanner := bufio.NewScanner(file)
-
 	beatMap := NewBeatMap()
 	var currentSection string
 	counter := 0
@@ -164,25 +150,24 @@ func ParseBeatMap(file *os.File) *BeatMap {
 
 		switch currentSection {
 		case "General":
-			if arr := tokenize(line, ":"); arr != nil {
+			if arr := tokenize(line, ":"); len(arr) > 1 {
 				if err := parseGeneral(arr, beatMap); err {
-					//log.Println("File is invalid, aborting...")
 					return nil
 				}
 			}
 			break
 		case "Metadata":
-			if arr := tokenize(line, ":"); arr != nil {
+			if arr := tokenize(line, ":"); len(arr) > 1 {
 				parseMetadata(arr, beatMap)
 			}
 			break
 		case "Difficulty":
-			if arr := tokenize(line, ":"); arr != nil {
+			if arr := tokenize(line, ":"); len(arr) > 1 {
 				parseDifficulty(arr, beatMap)
 			}
 			break
 		case "Events":
-			if arr := tokenize(line, ","); arr != nil {
+			if arr := tokenize(line, ","); len(arr) > 1 {
 				if arr[0] == "2" {
 					if counter1 > 0 {
 						beatMap.PausesText += ","
@@ -194,14 +179,13 @@ func ParseBeatMap(file *os.File) *BeatMap {
 			}
 			break
 		case "TimingPoints":
-			if arr := tokenize(line, ","); arr != nil {
+			if arr := tokenize(line, ","); len(arr) > 1 {
 				if counter > 0 {
 					beatMap.TimingPoints += "|"
 				}
 				counter++
 
 				beatMap.TimingPoints += line
-				//parseTimingPoints(arr, beatMap)
 			}
 			break
 		}
@@ -210,6 +194,10 @@ func ParseBeatMap(file *os.File) *BeatMap {
 	beatMap.LoadTimingPoints()
 
 	file.Seek(0, 0)
+
+	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || beatMap.TimingPoints == "" {
+		return nil
+	}
 
 	return beatMap
 }
@@ -243,7 +231,7 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 	}
 
-	sort.Slice(beatMap.HitObjects, func(i, j int) bool {return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime})
+	sort.Slice(beatMap.HitObjects, func(i, j int) bool { return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime })
 
 	num := 0
 

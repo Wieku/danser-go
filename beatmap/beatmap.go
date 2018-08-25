@@ -62,6 +62,10 @@ func (beatMap *BeatMap) LoadTimingPoints() {
 
 	points := strings.Split(beatMap.TimingPoints, "|")
 
+	if len(points) == 1 && points[0] == "" {
+		return
+	}
+
 	for _, point := range points {
 		line := strings.Split(point, ",")
 		time, _ := strconv.ParseInt(line[0], 10, 64)

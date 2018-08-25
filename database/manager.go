@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	//"github.com/wieku/danser/beatmap"
 	"github.com/wieku/danser/settings"
 
 	"github.com/wieku/danser/beatmap"
@@ -19,6 +18,7 @@ import (
 )
 
 var dbFile *sql.DB
+
 const databaseVersion = 20180814
 
 func Init() {
@@ -124,8 +124,8 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	beatmaps := make(map[string]int)
 
-	for i, bMap := range bMaps  {
-		beatmaps[bMap.Dir+"/"+bMap.File] = i+1
+	for i, bMap := range bMaps {
+		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
 	}
 
 	res, _ := dbFile.Query("SELECT * FROM beatmaps")
@@ -134,38 +134,44 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		beatmap := beatmap.NewBeatMap()
 		var mode int
 		res.Scan(
-				&beatmap.Dir,
-				&beatmap.File,
-				&beatmap.LastModified,
-				&beatmap.Name,
-				&beatmap.NameUnicode,
-				&beatmap.Artist,
-				&beatmap.ArtistUnicode,
-				&beatmap.Creator,
-				&beatmap.Difficulty,
-				&beatmap.Source,
-				&beatmap.Tags,
-				&beatmap.CircleSize,
-				&beatmap.AR,
-				&beatmap.Timings.SliderMult,
-				&beatmap.Timings.TickRate,
-				&beatmap.Audio,
-				&beatmap.PreviewTime,
-				&beatmap.Timings.BaseSet,
-				&beatmap.StackLeniency,
-				&mode,
-				&beatmap.Bg,
-				&beatmap.PausesText,
-				&beatmap.TimingPoints,
-				&beatmap.MD5,
-				&beatmap.TimeAdded,
-				&beatmap.PlayCount,
-				&beatmap.LastPlayed)
+			&beatmap.Dir,
+			&beatmap.File,
+			&beatmap.LastModified,
+			&beatmap.Name,
+			&beatmap.NameUnicode,
+			&beatmap.Artist,
+			&beatmap.ArtistUnicode,
+			&beatmap.Creator,
+			&beatmap.Difficulty,
+			&beatmap.Source,
+			&beatmap.Tags,
+			&beatmap.CircleSize,
+			&beatmap.AR,
+			&beatmap.Timings.SliderMult,
+			&beatmap.Timings.TickRate,
+			&beatmap.Audio,
+			&beatmap.PreviewTime,
+			&beatmap.Timings.BaseSet,
+			&beatmap.StackLeniency,
+			&mode,
+			&beatmap.Bg,
+			&beatmap.PausesText,
+			&beatmap.TimingPoints,
+			&beatmap.MD5,
+			&beatmap.TimeAdded,
+			&beatmap.PlayCount,
+			&beatmap.LastPlayed)
+
+		if beatmap.Name+beatmap.Artist+beatmap.Creator == "" || beatmap.TimingPoints == "" {
+			log.Println("Corrupted cached beatmap found. Removing from database:", beatmap.File)
+			removeBeatmap(beatmap.Dir, beatmap.File)
+			continue
+		}
 
 		key := beatmap.Dir + "/" + beatmap.File
 
 		if beatmaps[key] > 0 {
-			bMaps[beatmaps[key] - 1] = beatmap
+			bMaps[beatmaps[key]-1] = beatmap
 			beatmap.LoadPauses()
 			beatmap.LoadTimingPoints()
 		}
