@@ -50,6 +50,10 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64) {
 }
 
 func playSample(sampleSet int, hitsoundIndex, index int, volume float64) {
+	if settings.Audio.IgnoreBeatmapSampleVolume {
+		volume = 1.0
+	}
+
 	if sample := MapSamples[hitsoundIndex][sampleSet-1][index]; sample != nil {
 		sample.PlayRV(volume)
 	} else {
@@ -57,16 +61,12 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64) {
 	}
 }
 
-func PlaySliderTick(sampleSet, index int) {
-	if sample := MapSamples[4][sampleSet-1][index]; sample != nil {
-		sample.Play()
-	} else {
-		Samples[4][sampleSet-1].Play()
-	}
+func PlaySliderTick(sampleSet, index int, volume float64) {
+	playSample(sampleSet, 4, index, volume)
 }
 
 func RegisterBeatmapSample(dir string, sampleSet, hitsound, index int) {
-	if index == 0 {
+	if settings.Audio.IgnoreBeatmapSamples || index == 0 {
 		return
 	}
 

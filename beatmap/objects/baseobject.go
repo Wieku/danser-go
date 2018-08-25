@@ -3,6 +3,7 @@ package objects
 import (
 	om "github.com/wieku/danser/bmath"
 	"strconv"
+	"strings"
 )
 
 type BaseObject interface {
@@ -16,8 +17,13 @@ type basicData struct {
 	StartTime, EndTime int64
 	StackOffset        om.Vector2d
 	StackIndex         int64
-	Number			   int64
-	SliderPoint		   bool
+	Number             int64
+	SliderPoint        bool
+
+	sampleSet    int
+	additionSet  int
+	customIndex  int
+	customVolume float64
 }
 
 func commonParse(data []string) *basicData {
@@ -25,4 +31,19 @@ func commonParse(data []string) *basicData {
 	y, _ := strconv.ParseFloat(data[1], 64)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
 	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1}
+}
+
+func (bData *basicData) parseExtras(data []string, extraIndex int) {
+	if extraIndex < len(data) {
+		extras := strings.Split(data[extraIndex], ":")
+		sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
+		additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
+		index, _ := strconv.ParseInt(extras[2], 10, 64)
+		volume, _ := strconv.ParseInt(extras[3], 10, 64)
+
+		bData.sampleSet = int(sampleSet)
+		bData.additionSet = int(additionSet)
+		bData.customIndex = int(index)
+		bData.customVolume = float64(volume) / 100.0
+	}
 }

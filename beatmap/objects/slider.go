@@ -86,6 +86,9 @@ func NewSlider(data []string) *Slider {
 			slider.additionSets[i] = int(additionSet)
 		}
 	}
+
+	slider.objData.parseExtras(data, 10)
+
 	slider.End = false
 	slider.lastTick = -1
 	return slider
@@ -216,7 +219,7 @@ func (self *Slider) Update(time int64) bool {
 
 		for i, p := range self.TickPoints {
 			if p.time < time && self.lastTick < i {
-				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex)
+				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 				self.lastTick = i
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/audio"
 	"strconv"
-	"strings"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/settings"
@@ -13,10 +12,8 @@ import (
 
 type Circle struct {
 	objData *basicData
-	sample int
+	sample  int
 	Timings *Timings
-	ownSampleSet int
-	ownAdditionSet int
 }
 
 func NewCircle(data []string) *Circle {
@@ -26,15 +23,7 @@ func NewCircle(data []string) *Circle {
 	circle.sample = int(f)
 	circle.objData.EndTime = circle.objData.StartTime
 	circle.objData.EndPos = circle.objData.StartPos
-	if len(data) > 5 {
-		extras := strings.Split(data[5],":")
-		sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
-		additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
-		circle.ownSampleSet = int(sampleSet)
-		circle.ownAdditionSet = int(additionSet)
-	} else {
-		circle.ownSampleSet = 0
-	}
+	circle.objData.parseExtras(data, 5)
 	return circle
 }
 
@@ -43,7 +32,7 @@ func DummyCircle(pos bmath.Vector2d, time int64) *Circle {
 }
 
 func DummyCircleInherit(pos bmath.Vector2d, time int64, inherit bool) *Circle {
-	circle := &Circle{objData:&basicData{}}
+	circle := &Circle{objData: &basicData{}}
 	circle.objData.StartPos = pos
 	circle.objData.EndPos = pos
 	circle.objData.StartTime = time
@@ -59,10 +48,16 @@ func (self Circle) GetBasicData() *basicData {
 
 func (self *Circle) Update(time int64) bool {
 
-	if self.ownSampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+	index := self.objData.customIndex
+
+	if index == 0 {
+		index = self.Timings.Current.SampleIndex
+	}
+
+	if self.objData.sampleSet == 0 {
+		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
 	} else {
-		audio.PlaySample(self.ownSampleSet, self.ownAdditionSet, self.sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
 	}
 
 	return true
@@ -108,9 +103,9 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	arr := float64(self.objData.StartTime-time) / preempt
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
 	} else if time >= self.objData.StartTime {
-		alpha = 1.0-float64(time - self.objData.StartTime)/(preempt/2)
+		alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
 	} else {
 		alpha = float64(color[3])
 	}
@@ -145,4 +140,3 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	}
 	return false
 }
-

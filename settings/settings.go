@@ -74,7 +74,8 @@ type audio struct {
 	MusicVolume float64 //=0.5
 	SampleVolume float64 //=0.5
 	Offset int64
-	EnableBeatmapSampleVolume bool //= false
+	IgnoreBeatmapSamples bool //= false
+	IgnoreBeatmapSampleVolume bool //= false
 }
 
 type beat struct {
