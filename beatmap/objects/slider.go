@@ -251,8 +251,16 @@ func (self *Slider) Update(time int64) bool {
 
 func (self *Slider) playSample(sampleSet, additionSet, sample int) {
 	if sampleSet == 0 {
-		sampleSet = self.Timings.Current.SampleSet
+		sampleSet = self.objData.sampleSet
+		if sampleSet == 0 {
+			sampleSet = self.Timings.Current.SampleSet
+		}
 	}
+
+	if additionSet == 0 {
+		additionSet = self.objData.additionSet
+	}
+
 	audio.PlaySample(sampleSet, additionSet, sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 }
 
