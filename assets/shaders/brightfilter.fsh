@@ -8,7 +8,7 @@ out vec4 color;
 
 void main()
 {
-    vec4 in_color = texture2D(tex, tex_coord);
+    vec4 in_color = texture(tex, tex_coord);
     float brightness = dot(in_color.rgb, vec3(0.2126, 0.7152, 0.0722));
 
     if (brightness > threshold) {

@@ -8,7 +8,7 @@ in vec2 tex_coord;
 out vec4 color;
 void main()
 {
-    vec4 in_color = texture2D(tex, tex_coord);
+    vec4 in_color = texture(tex, tex_coord);
 
 	color = in_color*mix(col_border1, col_border, smoothstep(45.0/512, 60.0/512, tex_coord.x));
 }

@@ -10,6 +10,6 @@ in float index;
 out vec4 color;
 
 void main() {
-    vec4 in_color = texture2D(tex, tex_coord);
+    vec4 in_color = texture(tex, tex_coord);
 	color = in_color * col_tint * vec4(1, 1, 1, 1-smoothstep(points / 3, points, index));
 }

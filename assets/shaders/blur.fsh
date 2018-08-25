@@ -22,7 +22,7 @@ void main() {
 
     float gs = gauss(0, tSigma);
 
-    vec4 inc = texture2D(tex, tex_coord);
+    vec4 inc = texture(tex, tex_coord);
 
     color = inc*gs;
 
@@ -38,8 +38,8 @@ void main() {
 
         vec2 mv = fac * direction / size;
 
-        color += texture2D(tex, tex_coord + mv) * gs;
-        color += texture2D(tex, tex_coord - mv) * gs;
+        color += texture(tex, tex_coord + mv) * gs;
+        color += texture(tex, tex_coord - mv) * gs;
 
         if (i >= kSize) {
             break;
