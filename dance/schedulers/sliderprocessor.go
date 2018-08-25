@@ -14,9 +14,9 @@ func objectPreProcess(hitobject objects.BaseObject, sliderDance bool) ([]objects
 
 func PreprocessQueue(index int, queue []objects.BaseObject, sliderDance bool) []objects.BaseObject {
 	if arr, ok := objectPreProcess(queue[index], sliderDance); ok {
-		if index < len(queue) -1 {
+		if index < len(queue)-1 {
 			queue1 := append(queue[:index], append(arr, queue[index+1:]...)...)
-			sort.Slice(queue1, func(i, j int) bool {return queue1[i].GetBasicData().StartTime < queue1[j].GetBasicData().StartTime})
+			sort.Slice(queue1, func(i, j int) bool { return queue1[i].GetBasicData().StartTime < queue1[j].GetBasicData().StartTime })
 			return queue1
 		} else {
 			return append(queue[:index], arr...)

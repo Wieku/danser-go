@@ -6,7 +6,7 @@ import (
 )
 
 type Bezier struct {
-	points []math2.Vector2d
+	points       []math2.Vector2d
 	ApproxLength float64
 }
 
@@ -14,7 +14,7 @@ func NewBezier(points []math2.Vector2d) Bezier {
 	bz := &Bezier{points: points}
 
 	for i := 1; i <= 250; i++ {
-		bz.ApproxLength += bz.NPointAt(float64(i)/250.0).Dst(bz.NPointAt(float64(i-1)/250.0))
+		bz.ApproxLength += bz.NPointAt(float64(i) / 250.0).Dst(bz.NPointAt(float64(i-1) / 250.0))
 	}
 	return *bz
 }
@@ -23,7 +23,7 @@ func (bz Bezier) NPointAt(t float64) math2.Vector2d {
 	x := 0.0
 	y := 0.0
 	n := len(bz.points) - 1
-	for i:= 0; i <= n; i++ {
+	for i := 0; i <= n; i++ {
 		b := bernstein(int64(i), int64(n), t)
 		x += bz.points[i].X * b
 		y += bz.points[i].Y * b
@@ -45,7 +45,7 @@ func (bz Bezier) PointAt(t float64) math2.Vector2d {
 			return pos
 		}
 		pos = pt
-		c+= 1.0 / float64(len(bz.points)*50 - 1)
+		c += 1.0 / float64(len(bz.points)*50-1)
 	}
 
 	return pos
@@ -72,26 +72,25 @@ func BinomialCoefficient(n, k int64) int64 {
 	k = min(k, n-k)
 	var c int64 = 1
 	var i int64 = 0
-	for  ;i < k; i++ {
+	for ; i < k; i++ {
 		c = c * (n - i) / (i + 1)
 	}
 
 	return c
 }
 
-
 func bernstein(i, n int64, t float64) float64 {
-	return float64(BinomialCoefficient(n, i)) * math.Pow(t, float64(i)) * math.Pow(1.0 - t, float64(n - i))
+	return float64(BinomialCoefficient(n, i)) * math.Pow(t, float64(i)) * math.Pow(1.0-t, float64(n-i))
 }
 
 func (ln Bezier) GetPoints(num int) []math2.Vector2d {
 	t0 := 1 / float64(num)
 
 	points := make([]math2.Vector2d, num)
-	t:= 0.0
-	for i:=0; i < num; i+=1 {
+	t := 0.0
+	for i := 0; i < num; i += 1 {
 		points[i] = ln.PointAt(t)
-		t+=t0
+		t += t0
 	}
 
 	return points

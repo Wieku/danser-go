@@ -9,15 +9,15 @@ import (
 )
 
 type BezierMover struct {
-	pt bmath.Vector2d
-	bz curves.Bezier
+	pt                 bmath.Vector2d
+	bz                 curves.Bezier
 	beginTime, endTime int64
-	previousSpeed float64
-	invert float64
+	previousSpeed      float64
+	invert             float64
 }
 
 func NewBezierMover() MultiPointMover {
-	bm := &BezierMover{invert:1}
+	bm := &BezierMover{invert: 1}
 	bm.pt = bmath.NewVec2d(512/2, 384/2)
 	bm.previousSpeed = -1
 	return bm
@@ -40,7 +40,7 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 	dst := endPos.Dst(startPos)
 
 	if bm.previousSpeed < 0 {
-		bm.previousSpeed = dst / float64(startTime - endTime)
+		bm.previousSpeed = dst / float64(startTime-endTime)
 	}
 
 	s1, ok1 := end.(*objects.Slider)
@@ -58,25 +58,25 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 	} else if ok1 && ok2 {
 		endAngle := s1.GetEndAngle()
 		startAngle := s2.GetStartAngle()
-		bm.pt = bmath.NewVec2dRad(endAngle,  s1.GetPointAt(endTime-10).Dst(endPos) * aggressiveness * sliderAggressiveness / 10).Add(endPos)
-		pt2 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos) * aggressiveness * sliderAggressiveness / 10).Add(startPos)
+		bm.pt = bmath.NewVec2dRad(endAngle, s1.GetPointAt(endTime - 10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt2 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime + 10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []bmath.Vector2d{endPos, bm.pt, pt2, startPos}
 	} else if ok1 {
 		endAngle := s1.GetEndAngle()
-		pt1 := bmath.NewVec2dRad(endAngle,  s1.GetPointAt(endTime-10).Dst(endPos) * aggressiveness * sliderAggressiveness / 10).Add(endPos)
-		bm.pt = bmath.NewVec2dRad(startPos.AngleRV(bm.pt), genScale * aggressiveness).Add(startPos)
+		pt1 := bmath.NewVec2dRad(endAngle, s1.GetPointAt(endTime - 10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		bm.pt = bmath.NewVec2dRad(startPos.AngleRV(bm.pt), genScale*aggressiveness).Add(startPos)
 		points = []bmath.Vector2d{endPos, pt1, bm.pt, startPos}
 	} else if ok2 {
 		startAngle := s2.GetStartAngle()
-		bm.pt = bmath.NewVec2dRad(endPos.AngleRV(bm.pt), genScale * aggressiveness).Add(endPos)
-		pt1 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos) * aggressiveness * sliderAggressiveness / 10).Add(startPos)
+		bm.pt = bmath.NewVec2dRad(endPos.AngleRV(bm.pt), genScale*aggressiveness).Add(endPos)
+		pt1 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime + 10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []bmath.Vector2d{endPos, bm.pt, pt1, startPos}
 	} else {
 		angle := endPos.AngleRV(bm.pt)
 		if math.IsNaN(angle) {
 			angle = 0
 		}
-		bm.pt = bmath.NewVec2dRad(angle, bm.previousSpeed * aggressiveness).Add(endPos)
+		bm.pt = bmath.NewVec2dRad(angle, bm.previousSpeed*aggressiveness).Add(endPos)
 
 		points = []bmath.Vector2d{endPos, bm.pt, startPos}
 	}
@@ -85,11 +85,11 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 
 	bm.endTime = endTime
 	bm.beginTime = startTime
-	bm.previousSpeed = (dst+1.0) / float64(startTime-endTime)
+	bm.previousSpeed = (dst + 1.0) / float64(startTime-endTime)
 }
 
 func (bm *BezierMover) Update(time int64) bmath.Vector2d {
-	return bm.bz.NPointAt(float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime))
+	return bm.bz.NPointAt(float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime))
 }
 
 func (bm *BezierMover) GetEndTime() int64 {

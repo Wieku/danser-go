@@ -53,23 +53,23 @@ func (v Vector2d) printOut() {
 }
 
 func (v Vector2d) Add(v1 Vector2d) Vector2d {
-	return Vector2d{v.X+v1.X, v.Y+v1.Y}
+	return Vector2d{v.X + v1.X, v.Y + v1.Y}
 }
 
 func (v Vector2d) AddS(x, y float64) Vector2d {
-	return Vector2d{v.X+x, v.Y+y}
+	return Vector2d{v.X + x, v.Y + y}
 }
 
 func (v Vector2d) Sub(v1 Vector2d) Vector2d {
-	return Vector2d{v.X-v1.X, v.Y-v1.Y}
+	return Vector2d{v.X - v1.X, v.Y - v1.Y}
 }
 
 func (v Vector2d) Mult(v1 Vector2d) Vector2d {
-	return Vector2d{v.X*v1.X, v.Y*v1.Y}
+	return Vector2d{v.X * v1.X, v.Y * v1.Y}
 }
 
 func (v Vector2d) Mid(v1 Vector2d) Vector2d {
-	return Vector2d{(v.X+v1.X)/2, (v.Y+v1.Y)/2}
+	return Vector2d{(v.X + v1.X) / 2, (v.Y + v1.Y) / 2}
 }
 
 func (v Vector2d) Dot(v1 Vector2d) float64 {
@@ -77,11 +77,11 @@ func (v Vector2d) Dot(v1 Vector2d) float64 {
 }
 
 func (v Vector2d) Dst(v1 Vector2d) float64 {
-	return math.Sqrt(math.Pow(v1.X-v.X,2) + math.Pow(v1.Y-v.Y,2))
+	return math.Sqrt(math.Pow(v1.X-v.X, 2) + math.Pow(v1.Y-v.Y, 2))
 }
 
 func (v Vector2d) DstSq(v1 Vector2d) float64 {
-	return math.Pow(v1.X-v.X,2) + math.Pow(v1.Y-v.Y,2)
+	return math.Pow(v1.X-v.X, 2) + math.Pow(v1.Y-v.Y, 2)
 }
 
 func (v Vector2d) Angle() float64 {
@@ -98,13 +98,13 @@ func (v Vector2d) Nor() Vector2d {
 }
 
 func (v Vector2d) AngleRV(v1 Vector2d) float64 {
-	return math.Atan2(v.Y - v1.Y, v.X - v1.X)
+	return math.Atan2(v.Y-v1.Y, v.X-v1.X)
 }
 
 func (v Vector2d) Rotate(rad float64) Vector2d {
 	cos := math.Cos(rad)
 	sin := math.Sin(rad)
-	return Vector2d{v.X * cos - v.Y * sin, v.X * sin + v.Y * cos}
+	return Vector2d{v.X*cos - v.Y*sin, v.X*sin + v.Y*cos}
 }
 
 func (v Vector2d) Len() float64 {
@@ -112,7 +112,7 @@ func (v Vector2d) Len() float64 {
 }
 
 func (v Vector2d) Scl(mag float64) Vector2d {
-	return Vector2d{v.X*mag, v.Y*mag}
+	return Vector2d{v.X * mag, v.Y * mag}
 }
 
 func (v Vector2d) Copy() Vector2d {

@@ -31,21 +31,19 @@ func SetupSlider() {
 	}
 	var err error
 
-	svert , _ := ioutil.ReadFile("assets/shaders/slider.vsh")
-	sfrag , _ := ioutil.ReadFile("assets/shaders/slider.fsh")
+	svert, _ := ioutil.ReadFile("assets/shaders/slider.vsh")
+	sfrag, _ := ioutil.ReadFile("assets/shaders/slider.fsh")
 	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "tex", Type: glhf.Int}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}}, string(svert), string(sfrag))
 	if err != nil {
 		log.Println(err)
 	}
 
-
-	fvert , _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
-	ffrag , _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
+	fvert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	ffrag, _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
 	fboShader, err = glhf.NewShader(glhf.AttrFormat{
 		{Name: "in_position", Type: glhf.Vec3},
 		{Name: "in_tex_coord", Type: glhf.Vec2},
 	}, glhf.AttrFormat{{Name: "tex", Type: glhf.Int}}, string(fvert), string(ffrag))
-
 
 	if err != nil {
 		log.Println("FboPass: " + err.Error())
@@ -70,7 +68,7 @@ func SetupSlider() {
 
 }
 
-type SliderRenderer struct {}
+type SliderRenderer struct{}
 
 func NewSliderRenderer() *SliderRenderer {
 	return &SliderRenderer{}
@@ -167,7 +165,7 @@ func createCircle(x, y, radius float64, segments int) ([]bmath.Vector2d) {
 
 	points := []bmath.Vector2d{bmath.NewVec2d(x, y)}
 
-	for i:=0; i < segments; i++ {
+	for i := 0; i < segments; i++ {
 		points = append(points, bmath.NewVec2dRad(float64(i)/float64(segments)*2*math.Pi, radius).AddS(x, y))
 	}
 

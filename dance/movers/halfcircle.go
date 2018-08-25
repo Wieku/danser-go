@@ -15,7 +15,7 @@ type HalfCircleMover struct {
 }
 
 func NewHalfCircleMover() MultiPointMover {
-	return &HalfCircleMover{invert:-1}
+	return &HalfCircleMover{invert: -1}
 }
 
 func (bm *HalfCircleMover) Reset() {
@@ -31,7 +31,7 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 	bm.endTime = end.GetBasicData().EndTime
 	bm.startTime = start.GetBasicData().StartTime
 
-	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime- bm.endTime) < settings.Dance.HalfCircle.StreamTrigger {
+	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < settings.Dance.HalfCircle.StreamTrigger {
 		bm.invert = -1 * bm.invert
 	}
 
@@ -41,12 +41,12 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 	}
 
 	point := endPos.Mid(startPos)
-	p := point.Sub(endPos).Rotate(bm.invert*math.Pi/2).Scl(settings.Dance.HalfCircle.RadiusMultiplier).Add(point)
+	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(settings.Dance.HalfCircle.RadiusMultiplier).Add(point)
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
 
 func (bm *HalfCircleMover) Update(time int64) bmath.Vector2d {
-	return bm.ca.PointAt(float64(time - bm.endTime)/float64(bm.startTime- bm.endTime))
+	return bm.ca.PointAt(float64(time-bm.endTime) / float64(bm.startTime-bm.endTime))
 }
 
 func (bm *HalfCircleMover) GetEndTime() int64 {

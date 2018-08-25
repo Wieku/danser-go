@@ -7,14 +7,14 @@ import (
 )
 
 type BloomEffect struct {
-	colFilter *glhf.Shader
+	colFilter     *glhf.Shader
 	combineShader *glhf.Shader
-	fbo *glhf.Frame
+	fbo           *glhf.Frame
 
 	blurEffect *BlurEffect
 
 	blur, threshold, power float64
-	fboSlice *glhf.VertexSlice
+	fboSlice               *glhf.VertexSlice
 }
 
 func NewBloomEffect(width, height int) *BloomEffect {
@@ -30,8 +30,8 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	}
 
 	var err error
-	vert , _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
-	frag , _ := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
+	vert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	frag, _ := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
 	effect.colFilter, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
@@ -43,13 +43,13 @@ func NewBloomEffect(width, height int) *BloomEffect {
 		{Name: "tex2", Type: glhf.Int},
 		{Name: "power", Type: glhf.Float},
 	}
-	frag , _ = ioutil.ReadFile("assets/shaders/combine.fsh")
+	frag, _ = ioutil.ReadFile("assets/shaders/combine.fsh")
 	effect.combineShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic("BloomCombine: " + err.Error())
 	}
-	
+
 	effect.fboSlice = glhf.MakeVertexSlice(effect.colFilter, 6, 6)
 	effect.fboSlice.Begin()
 	effect.fboSlice.SetVertexData([]float32{
@@ -66,7 +66,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	effect.fbo.Texture().Begin()
 	effect.fbo.Texture().SetWrap(glhf.CLAMP_TO_EDGE)
 	effect.fbo.Texture().End()
-	
+
 	effect.threshold = 0.7
 	effect.blur = 0.3
 	effect.power = 1.2
@@ -128,7 +128,6 @@ func (effect *BloomEffect) EndAndRender() {
 
 	gl.ActiveTexture(gl.TEXTURE1)
 	texture.Begin()
-
 
 	effect.fboSlice.Begin()
 	effect.fboSlice.Draw()

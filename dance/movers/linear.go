@@ -8,7 +8,7 @@ import (
 )
 
 type LinearMover struct {
-	bz curves.Bezier
+	bz                 curves.Bezier
 	beginTime, endTime int64
 }
 
@@ -33,9 +33,9 @@ func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm LinearMover) Update(time int64) bmath.Vector2d {
-	t := float64(time - bm.endTime)/float64(bm.beginTime - bm.endTime)
+	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
-	return bm.bz.NPointAt(math.Sin(t*math.Pi/2))
+	return bm.bz.NPointAt(math.Sin(t * math.Pi / 2))
 }
 
 func (bm *LinearMover) GetEndTime() int64 {

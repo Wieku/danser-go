@@ -18,28 +18,28 @@ import (
 
 type tickPoint struct {
 	time int64
-	Pos m2.Vector2d
+	Pos  m2.Vector2d
 }
 
 type Slider struct {
-	objData     *basicData
-	multiCurve  sliders.SliderAlgo
-	Timings     *Timings
-	TPoint     TimingPoint
-	pixelLength float64
-	partLen 	float64
-	repeat      int64
-	clicked     bool
-	sampleSets 	[]int
-	additionSets 	[]int
-	samples 	[]int
-	lastT		int64
-	Pos 		m2.Vector2d
-	divides 	int
-	TickPoints []tickPoint
-	lastTick int
-	End bool
-	vao *glhf.VertexSlice
+	objData      *basicData
+	multiCurve   sliders.SliderAlgo
+	Timings      *Timings
+	TPoint       TimingPoint
+	pixelLength  float64
+	partLen      float64
+	repeat       int64
+	clicked      bool
+	sampleSets   []int
+	additionSets []int
+	samples      []int
+	lastT        int64
+	Pos          m2.Vector2d
+	divides      int
+	TickPoints   []tickPoint
+	lastTick     int
+	End          bool
+	vao          *glhf.VertexSlice
 }
 
 func NewSlider(data []string) *Slider {
@@ -79,7 +79,7 @@ func NewSlider(data []string) *Slider {
 	if len(data) > 9 {
 		subData := strings.Split(data[9], "|")
 		for i, v := range subData {
-			extras := strings.Split(v,":")
+			extras := strings.Split(v, ":")
 			sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
 			additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
 			slider.sampleSets[i] = int(sampleSet)
@@ -103,11 +103,11 @@ func (self Slider) GetHalf() m2.Vector2d {
 }
 
 func (self Slider) GetStartAngle() float64 {
-	return self.GetBasicData().StartPos.AngleRV(self.GetPointAt(self.objData.StartTime+10)) //temporary solution
+	return self.GetBasicData().StartPos.AngleRV(self.GetPointAt(self.objData.StartTime + 10)) //temporary solution
 }
 
 func (self Slider) GetEndAngle() float64 {
-	return self.GetBasicData().EndPos.AngleRV(self.GetPointAt(self.objData.EndTime-10)) //temporary solution
+	return self.GetBasicData().EndPos.AngleRV(self.GetPointAt(self.objData.EndTime - 10)) //temporary solution
 }
 
 func (self Slider) GetPartLen() float64 {
@@ -116,17 +116,17 @@ func (self Slider) GetPartLen() float64 {
 
 func (self Slider) GetPointAt(time int64) m2.Vector2d {
 	partLen := float64(self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength))
-	times := int64(math.Min(float64(time - self.objData.StartTime) / partLen + 1, float64(self.repeat)))
+	times := int64(math.Min(float64(time-self.objData.StartTime)/partLen+1, float64(self.repeat)))
 
-	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * partLen
+	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*partLen
 
 	rt := float64(self.pixelLength) / self.multiCurve.GetLength()
 
 	var pos m2.Vector2d
-	if (times%2) == 1 {
-		pos = self.multiCurve.PointAt(rt*ttime/partLen)
+	if (times % 2) == 1 {
+		pos = self.multiCurve.PointAt(rt * ttime / partLen)
 	} else {
-		pos = self.multiCurve.PointAt((1.0 - ttime/partLen)*rt)
+		pos = self.multiCurve.PointAt((1.0 - ttime/partLen) * rt)
 	}
 
 	return pos.Add(self.objData.StackOffset)
@@ -138,7 +138,7 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 	var circles []BaseObject
 
 	for i := int64(0); i <= self.repeat; i++ {
-		time := self.objData.StartTime + i * partLen
+		time := self.objData.StartTime + i*partLen
 		circles = append(circles, DummyCircleInherit(self.GetPointAt(time), time, true))
 	}
 
@@ -146,13 +146,13 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 		circles = append(circles, DummyCircleInherit(p.Pos, p.time, true))
 	}
 
-	sort.Slice(circles, func(i, j int) bool {return circles[i].GetBasicData().StartTime < circles[j].GetBasicData().StartTime})
+	sort.Slice(circles, func(i, j int) bool { return circles[i].GetBasicData().StartTime < circles[j].GetBasicData().StartTime })
 
 	return circles
 }
 
 func (self Slider) endTime() int64 {
-	return self.objData.StartTime + self.repeat * self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
+	return self.objData.StartTime + self.repeat*self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
 }
 
 func (self *Slider) SetTiming(timings *Timings) {
@@ -161,24 +161,24 @@ func (self *Slider) SetTiming(timings *Timings) {
 
 	sliderTime := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
 	self.partLen = float64(sliderTime)
-	self.objData.EndTime = self.objData.StartTime + sliderTime * self.repeat
+	self.objData.EndTime = self.objData.StartTime + sliderTime*self.repeat
 	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
 
 	self.calculateFollowPoints()
 }
 
 func (self *Slider) calculateFollowPoints() {
-	tickPixLen := (100.0*self.Timings.SliderMult)/(self.Timings.TickRate*self.TPoint.GetRatio())
-	tickpoints := int(math.Ceil(self.pixelLength/tickPixLen))-1
+	tickPixLen := (100.0 * self.Timings.SliderMult) / (self.Timings.TickRate * self.TPoint.GetRatio())
+	tickpoints := int(math.Ceil(self.pixelLength/tickPixLen)) - 1
 
-	for r:=0; r < int(self.repeat); r++ {
+	for r := 0; r < int(self.repeat); r++ {
 		lengthFromEnd := self.pixelLength
-		for i:=1; i <= tickpoints; i++ {
-			time := self.objData.StartTime+int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
-			time2 := self.objData.StartTime+int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
+		for i := 1; i <= tickpoints; i++ {
+			time := self.objData.StartTime + int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
+			time2 := self.objData.StartTime + int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
 
 			if r%2 == 1 {
-				time2 = self.objData.StartTime+self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)-int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
+				time2 = self.objData.StartTime + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength) - int64(float64(i)*self.TPoint.Bpm/(self.Timings.TickRate*self.TPoint.GetRatio()))
 			}
 
 			lengthFromEnd -= tickPixLen
@@ -191,7 +191,7 @@ func (self *Slider) calculateFollowPoints() {
 		}
 	}
 
-	sort.Slice(self.TickPoints, func(i, j int) bool {return self.TickPoints[i].time < self.TickPoints[j].time})
+	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].time < self.TickPoints[j].time })
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
@@ -199,18 +199,18 @@ func (self *Slider) GetCurve() []m2.Vector2d {
 	t0 := (1.0 / lod) / self.pixelLength
 	rt := float64(self.pixelLength) / self.multiCurve.GetLength()
 	points := make([]m2.Vector2d, int(self.pixelLength*lod)+1)
-	t:= 0.0
-	for i:=0; i <= int(self.pixelLength*lod); i+=1 {
-		points[i] = self.multiCurve.PointAt(t*rt)
-		t+=t0
+	t := 0.0
+	for i := 0; i <= int(self.pixelLength*lod); i += 1 {
+		points[i] = self.multiCurve.PointAt(t * rt)
+		t += t0
 	}
 	return points
 }
 
 func (self *Slider) Update(time int64) bool {
 	if time < self.endTime() {
-		times := int64(math.Min(float64(time - self.objData.StartTime) / self.partLen + 1, float64(self.repeat)))
-		ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * self.partLen
+		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
+		ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
 
 		if self.lastT != times {
 			self.playSample(self.sampleSets[times-1], self.additionSets[times-1], self.samples[times-1])
@@ -227,10 +227,10 @@ func (self *Slider) Update(time int64) bool {
 		rt := float64(self.pixelLength) / self.multiCurve.GetLength()
 
 		var pos m2.Vector2d
-		if (times%2) == 1 {
-			pos = self.multiCurve.PointAt(rt*ttime/self.partLen)
+		if (times % 2) == 1 {
+			pos = self.multiCurve.PointAt(rt * ttime / self.partLen)
 		} else {
-			pos = self.multiCurve.PointAt((1.0 - ttime/self.partLen)*rt)
+			pos = self.multiCurve.PointAt((1.0 - ttime/self.partLen) * rt)
 		}
 		self.Pos = pos.Add(self.objData.StackOffset)
 
@@ -266,26 +266,26 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 
 func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
 	in := 0
-	out := int(math.Ceil(self.pixelLength * float64(settings.Objects.SliderPathLOD) / 100.0))+1
+	out := int(math.Ceil(self.pixelLength*float64(settings.Objects.SliderPathLOD)/100.0)) + 1
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha := math.Abs(float64(time - (self.objData.StartTime-int64(preempt))))/(preempt/2)
-		out = int(float64(out)*alpha)
+		alpha := math.Abs(float64(time-(self.objData.StartTime-int64(preempt)))) / (preempt / 2)
+		out = int(float64(out) * alpha)
 	} else if time >= self.objData.StartTime && time <= self.objData.EndTime {
-		times := int64(math.Min(float64(time - self.objData.StartTime) / self.partLen + 1, float64(self.repeat)))
+		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
 		if times >= self.repeat {
-			ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1) * self.partLen
+			ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
 			alpha := 0.0
-			if (times%2) == 1 {
-				alpha = ttime/self.partLen
-				in = int(float64(out)*alpha)
+			if (times % 2) == 1 {
+				alpha = ttime / self.partLen
+				in = int(float64(out) * alpha)
 			} else {
-				alpha = 1.0-ttime/self.partLen
-				out = int(float64(out)*alpha)
+				alpha = 1.0 - ttime/self.partLen
+				out = int(float64(out) * alpha)
 			}
 		}
 	} else if time > self.objData.EndTime {
-		if (self.repeat%2) == 1 {
+		if (self.repeat % 2) == 1 {
 			in = out - 1
 		} else {
 			out = 1
@@ -295,9 +295,9 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1
 	colorAlpha := 1.0
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
-		colorAlpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+		colorAlpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
 	} else if time >= self.objData.EndTime {
-		colorAlpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
+		colorAlpha = 1.0 - float64(time-self.objData.EndTime)/(preempt/4)
 	} else {
 		colorAlpha = float64(color[3])
 	}
@@ -348,13 +348,13 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	arr := float64(self.objData.StartTime-time) / preempt
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha = float64(time - (self.objData.StartTime-int64(preempt)))/(preempt/2)
+		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
 	} else if time >= self.objData.EndTime {
-		alpha = 1.0-float64(time - self.objData.EndTime)/(preempt/4)
-		alphaF = 1.0-float64(time - self.objData.StartTime)/(preempt/2)
+		alpha = 1.0 - float64(time-self.objData.EndTime)/(preempt/4)
+		alphaF = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
 	} else {
 		alpha = float64(color[3])
-		alphaF = 1.0-float64(time - self.objData.StartTime)/(preempt/2)
+		alphaF = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -385,7 +385,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 				for _, p := range self.TickPoints {
 					al := 0.0
 					if p.time > time {
-						al = math.Min(1.0, math.Max( (float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
+						al = math.Min(1.0, math.Max((float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
 					}
 					if al > 0.0 {
 						batch.SetTranslation(p.Pos)

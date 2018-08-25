@@ -5,24 +5,24 @@ type bezier struct {
 }
 
 type flower struct {
-	AngleOffset float64
-	DistanceMult float64
-	StreamTrigger int64
-	StreamAngleOffset float64
-	LongJump int64
-	LongJumpMult float64
+	AngleOffset        float64
+	DistanceMult       float64
+	StreamTrigger      int64
+	StreamAngleOffset  float64
+	LongJump           int64
+	LongJumpMult       float64
 	LongJumpOnEqualPos bool
 }
 
 type circular struct {
 	RadiusMultiplier float64
-	StreamTrigger int64
+	StreamTrigger    int64
 }
 
 type dance struct {
-	SliderDance bool
+	SliderDance    bool
 	TAGSliderDance bool
-	Bezier *bezier
-	Flower *flower
-	HalfCircle *circular
+	Bezier         *bezier
+	Flower         *flower
+	HalfCircle     *circular
 }

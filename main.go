@@ -22,6 +22,7 @@ var player *states.Player
 var pressed = false
 var pressedM = false
 var pressedP = false
+
 func run() {
 	var win *glfw.Window
 
@@ -39,7 +40,7 @@ func run() {
 
 		flag.Parse()
 
-		if (*artist+*title+*difficulty+*creator) == "" {
+		if (*artist + *title + *difficulty + *creator) == "" {
 			log.Println("No beatmap specified, closing...")
 			os.Exit(0)
 		}
@@ -71,7 +72,6 @@ func run() {
 			log.Println("Beatmap not found, closing...")
 			os.Exit(0)
 		}
-
 
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
@@ -108,7 +108,7 @@ func run() {
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
 		glhf.Init()
-		glhf.Clear(0,0,0,1)
+		glhf.Clear(0, 0, 0, 1)
 		win.SwapBuffers()
 		glfw.PollEvents()
 
@@ -132,7 +132,7 @@ func run() {
 			gl.Disable(gl.DITHER)
 			gl.Disable(gl.SCISSOR_TEST)
 			gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
-			gl.ClearColor(0,0,0,1)
+			gl.ClearColor(0, 0, 0, 1)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			if player != nil {

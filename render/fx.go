@@ -26,7 +26,7 @@ func setupFx() {
 }
 
 type FxBatch struct {
-	color mgl32.Vec4
+	color     mgl32.Vec4
 	transform mgl32.Mat4
 }
 
@@ -61,7 +61,6 @@ func (batch *FxBatch) ResetTransform() {
 	batch.transform = mgl32.Ident4()
 	fxshader.SetUniformAttr(1, batch.transform)
 }
-
 
 func (batch *FxBatch) End() {
 	fxshader.End()

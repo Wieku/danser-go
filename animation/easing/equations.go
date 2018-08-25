@@ -13,22 +13,22 @@ func Linear(t float64) float64 {
 }
 
 func BackIn(t float64) float64 {
-	return t * t * ((back_s + 1) * t - back_s)
+	return t * t * ((back_s+1)*t - back_s)
 }
 
 func BackOut(t float64) float64 {
 	t -= 1
-	return t * t * ((back_s + 1) * t + back_s) + 1
+	return t*t*((back_s+1)*t+back_s) + 1
 }
 
 func BackInOut(t float64) float64 {
 	s := back_s * 1.525
 	t *= 2
 	if t < 1 {
-		return 0.5 * (t * t * ((s + 1) * t - s))
+		return 0.5 * (t * t * ((s+1)*t - s))
 	} else {
 		t -= 2
-		return 0.5 * (t * t * ((s + 1) * t + s) + 2)
+		return 0.5 * (t*t*((s+1)*t+s) + 2)
 	}
 }
 
@@ -41,5 +41,5 @@ func SineOut(t float64) float64 {
 }
 
 func SineInOut(t float64) float64 {
-	return -0.5 * (math.Cos(t * math.Pi) - 1)
+	return -0.5 * (math.Cos(t*math.Pi) - 1)
 }

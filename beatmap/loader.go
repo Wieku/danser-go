@@ -39,7 +39,7 @@ func LoadBeatmaps() []*BeatMap {
 		go func() {
 			defer wg.Done()
 			for {
-				path, ok := <- channel
+				path, ok := <-channel
 				if !ok {
 					break
 				}

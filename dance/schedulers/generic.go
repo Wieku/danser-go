@@ -10,8 +10,8 @@ import (
 
 type GenericScheduler struct {
 	cursor *render.Cursor
-	queue []objects.BaseObject
-	mover movers.MultiPointMover
+	queue  []objects.BaseObject
+	mover  movers.MultiPointMover
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
@@ -29,7 +29,7 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *render.Cu
 func (sched *GenericScheduler) Update(time int64) {
 	if len(sched.queue) > 0 {
 		move := true
-		for i:=0; i < len(sched.queue); i++ {
+		for i := 0; i < len(sched.queue); i++ {
 			g := sched.queue[i]
 			if g.GetBasicData().StartTime > time {
 				break
@@ -40,7 +40,7 @@ func (sched *GenericScheduler) Update(time int64) {
 			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
 				sched.cursor.SetPos(g.GetPosition())
 			} else if time > g.GetBasicData().EndTime {
-				if i < len(sched.queue) -1 {
+				if i < len(sched.queue)-1 {
 					sched.queue = append(sched.queue[:i], sched.queue[i+1:]...)
 				} else if i < len(sched.queue) {
 					sched.queue = sched.queue[:i]

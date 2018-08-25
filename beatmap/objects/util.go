@@ -4,7 +4,6 @@ import (
 	"strconv"
 )
 
-
 func GetObject(data []string) BaseObject {
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
 	if (objType & CIRCLE) > 0 {

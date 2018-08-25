@@ -6,7 +6,7 @@ import (
 )
 
 type Catmull struct {
-	points []math2.Vector2d
+	points       []math2.Vector2d
 	ApproxLength float64
 }
 
@@ -19,7 +19,7 @@ func NewCatmull(points []math2.Vector2d) Catmull {
 	cm := &Catmull{points: points}
 
 	for i := 1; i <= 250; i++ {
-		cm.ApproxLength += cm.NPointAt(float64(i)/250.0).Dst(cm.NPointAt(float64(i-1)/250.0))
+		cm.ApproxLength += cm.NPointAt(float64(i) / 250.0).Dst(cm.NPointAt(float64(i-1) / 250.0))
 	}
 
 	return *cm
@@ -33,8 +33,8 @@ func findPoint(vec1, vec2, vec3, vec4 bmath.Vector2d, t float64) bmath.Vector2d 
 	t2 := t * t
 	t3 := t * t2
 
-	return bmath.NewVec2d(0.5 * (2 * vec2.X + (-vec1.X + vec3.X) * t + (2 * vec1.X - 5 * vec2.X + 4 * vec3.X - vec4.X) * t2 + (-vec1.X + 3 * vec2.X - 3 * vec3.X + vec4.X) * t3),
-							0.5 * (2 * vec2.Y + (-vec1.Y + vec3.Y) * t + (2 * vec1.Y - 5 * vec2.Y + 4 * vec3.Y - vec4.Y) * t2 + (-vec1.Y + 3 * vec2.Y - 3 * vec3.Y + vec4.Y) * t3))
+	return bmath.NewVec2d(0.5*(2*vec2.X+(-vec1.X+vec3.X)*t+(2*vec1.X-5*vec2.X+4*vec3.X-vec4.X)*t2+(-vec1.X+3*vec2.X-3*vec3.X+vec4.X)*t3),
+		0.5*(2*vec2.Y+(-vec1.Y+vec3.Y)*t+(2*vec1.Y-5*vec2.Y+4*vec3.Y-vec4.Y)*t2+(-vec1.Y+3*vec2.Y-3*vec3.Y+vec4.Y)*t3))
 }
 
 //It's not a neat solution, but it works
@@ -51,7 +51,7 @@ func (cm Catmull) PointAt(t float64) math2.Vector2d {
 			return pos
 		}
 		pos = pt
-		c+= 1.0 / float64(len(cm.points)*50 - 1)
+		c += 1.0 / float64(len(cm.points)*50-1)
 	}
 
 	return pos
@@ -65,10 +65,10 @@ func (ln Catmull) GetPoints(num int) []math2.Vector2d {
 	t0 := 1 / float64(num)
 
 	points := make([]math2.Vector2d, num)
-	t:= 0.0
-	for i:=0; i < num; i+=1 {
+	t := 0.0
+	for i := 0; i < num; i += 1 {
 		points[i] = ln.PointAt(t)
-		t+=t0
+		t += t0
 	}
 
 	return points

@@ -24,8 +24,8 @@ func setup() {
 		{Name: "model", Type: glhf.Mat4},
 		{Name: "endTrans", Type: glhf.Mat4},
 	}
-	vert , _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
-	frag , _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
+	vert, _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
+	frag, _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
 	var err error
 	shader, err = glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
 
@@ -44,15 +44,15 @@ func setup() {
 		-1, 1, 0, 0, 1,
 	})
 	vao.End()
-	
+
 }
 
 type SpriteBatch struct {
-	color mgl32.Vec4
+	color      mgl32.Vec4
 	Projection mgl32.Mat4
-	position mgl32.Mat4
-	scale mgl32.Mat4
-	transform mgl32.Mat4
+	position   mgl32.Mat4
+	scale      mgl32.Mat4
+	transform  mgl32.Mat4
 }
 
 func NewSpriteBatch() *SpriteBatch {

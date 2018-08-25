@@ -25,7 +25,7 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mg
 		baseHue -= 360.0
 	}
 
-	for i:=0; i < times; i++ {
+	for i := 0; i < times; i++ {
 		hue := baseHue + float64(i)*hueShift
 
 		for hue < 0.0 {
@@ -53,7 +53,7 @@ func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alp
 		baseHue -= 360.0
 	}
 
-	for i:=0; i < times; i++ {
+	for i := 0; i < times; i++ {
 		hue := baseHue + float64(i)*hueShift
 
 		for hue < 0.0 {

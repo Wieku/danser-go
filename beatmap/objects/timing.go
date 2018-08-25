@@ -3,10 +3,10 @@ package objects
 import "log"
 
 type TimingPoint struct {
-	Time int64
+	Time         int64
 	BaseBpm, Bpm float64
-	SampleSet int
-	SampleIndex int
+	SampleSet    int
+	SampleIndex  int
 	SampleVolume float64
 }
 
@@ -34,7 +34,7 @@ func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {
-		point.Bpm = tim.fullBPM / ( -100.0 / point.Bpm)
+		point.Bpm = tim.fullBPM / (-100.0 / point.Bpm)
 	}
 	point.BaseBpm = tim.fullBPM
 	tim.Points = append(tim.Points, point)

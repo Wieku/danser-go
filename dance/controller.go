@@ -34,8 +34,8 @@ func SetMover(name string) {
 }
 
 type GenericController struct {
-	bMap *beatmap.BeatMap
-	cursors []*render.Cursor
+	bMap       *beatmap.BeatMap
+	cursors    []*render.Cursor
 	schedulers []schedulers.Scheduler
 }
 
@@ -65,13 +65,13 @@ func (controller *GenericController) InitCursors() {
 	queue := controller.bMap.GetObjectsCopy()
 
 	if settings.Dance.TAGSliderDance && settings.TAG > 1 {
-		for i:=0; i < len(queue); i++ {
+		for i := 0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}
 	}
 
 	for j, o := range queue {
-		i := j%settings.TAG
+		i := j % settings.TAG
 		objs[i].objs = append(objs[i].objs, o)
 	}
 
@@ -81,7 +81,7 @@ func (controller *GenericController) InitCursors() {
 
 }
 
-func (controller *GenericController) Update (time int64, delta float64) {
+func (controller *GenericController) Update(time int64, delta float64) {
 	for i := range controller.cursors {
 		controller.schedulers[i].Update(time)
 		controller.cursors[i].Update(delta)

@@ -20,10 +20,10 @@ func isSlider(obj objects.BaseObject) bool {
 
 func difficultyRate(diff, min, mid, max float64) float64 {
 	if diff > 5 {
-		 return mid + (max - mid) * (diff - 5) / 5
+		return mid + (max-mid)*(diff-5)/5
 	}
 	if diff < 5 {
-		return mid - (mid - min) * (5-diff) / 5
+		return mid - (mid-min)*(5-diff)/5
 	}
 	return mid
 }
@@ -44,7 +44,7 @@ func calculateStackLeniency(b *BeatMap) {
 	}
 
 	extendedEndIndex := len(hitObjects) - 1
-	for i := len(hitObjects) - 1; i>=0; i-- {
+	for i := len(hitObjects) - 1; i >= 0; i-- {
 		stackBaseIndex := i
 
 		for n := stackBaseIndex + 1; n < len(hitObjects); n++ {
@@ -61,7 +61,7 @@ func calculateStackLeniency(b *BeatMap) {
 
 			stackThreshold := preempt * b.StackLeniency
 
-			if objectN.GetBasicData().StartTime - stackBaseObject.GetBasicData().EndTime > int64(stackThreshold) {
+			if objectN.GetBasicData().StartTime-stackBaseObject.GetBasicData().EndTime > int64(stackThreshold) {
 				break
 			}
 
@@ -73,7 +73,7 @@ func calculateStackLeniency(b *BeatMap) {
 
 		if stackBaseIndex > extendedEndIndex {
 			extendedEndIndex = stackBaseIndex
-			if extendedEndIndex == len(hitObjects) -1 {
+			if extendedEndIndex == len(hitObjects)-1 {
 				break
 			}
 		}
@@ -93,14 +93,14 @@ func calculateStackLeniency(b *BeatMap) {
 		stackThreshold := preempt * b.StackLeniency
 
 		if _, ok := objectI.(*objects.Circle); ok {
-			for n--;n >= 0; n-- {
+			for n--; n >= 0; n-- {
 				objectN := hitObjects[n]
 
 				if isSpinnerBreak(objectN) {
 					continue
 				}
 
-				if objectI.GetBasicData().StartTime - objectN.GetBasicData().EndTime > int64(stackThreshold) {
+				if objectI.GetBasicData().StartTime-objectN.GetBasicData().EndTime > int64(stackThreshold) {
 					break
 				}
 
@@ -122,26 +122,26 @@ func calculateStackLeniency(b *BeatMap) {
 				}
 
 				if objectN.GetBasicData().StartPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
-					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex +1
+					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex + 1
 					objectI = objectN
 				}
 
 			}
 		} else if isSlider(objectI) {
 
-			for n--;n >= 0; n-- {
+			for n--; n >= 0; n-- {
 				objectN := hitObjects[n]
 
 				if isSpinnerBreak(objectN) {
 					continue
 				}
 
-				if objectI.GetBasicData().StartTime - objectN.GetBasicData().StartTime > int64(stackThreshold) {
+				if objectI.GetBasicData().StartTime-objectN.GetBasicData().StartTime > int64(stackThreshold) {
 					break
 				}
 
 				if objectN.GetBasicData().StartPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
-					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex +1
+					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex + 1
 					objectI = objectN
 				}
 
@@ -150,7 +150,7 @@ func calculateStackLeniency(b *BeatMap) {
 
 	}
 
-	scale := (1.0 - 0.7 * (b.CircleSize - 5) / 5) / 2
+	scale := (1.0 - 0.7*(b.CircleSize-5)/5) / 2
 
 	for _, v := range hitObjects {
 		if !isSpinnerBreak(v) {

@@ -9,10 +9,10 @@ import (
 )
 
 type AngleOffsetMover struct {
-	lastAngle float64
-	bz curves.Bezier
+	lastAngle          float64
+	bz                 curves.Bezier
 	startTime, endTime int64
-	invert float64
+	invert             float64
 }
 
 func NewAngleOffsetMover() MultiPointMover {
@@ -27,7 +27,7 @@ func (bm *AngleOffsetMover) Reset() {
 func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 	end := objs[0]
 	start := objs[1]
-	
+
 	endPos := end.GetBasicData().EndPos
 	endTime := end.GetBasicData().EndTime
 	startPos := start.GetBasicData().StartPos
@@ -59,7 +59,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 			}
 
 			if !ok2 {
-				angle := bm.lastAngle - newAngle * bm.invert
+				angle := bm.lastAngle - newAngle*bm.invert
 				pt2 := bmath.NewVec2dRad(angle, scaledDistance).Add(startPos)
 				bm.lastAngle = angle
 				points = []bmath.Vector2d{endPos, pt1, pt2, startPos}
@@ -80,7 +80,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 		points = []bmath.Vector2d{endPos, pt1, pt2, startPos}
 	} else if ok1 {
 		bm.invert = -1 * bm.invert
-		bm.lastAngle = endPos.AngleRV(startPos) - newAngle * bm.invert
+		bm.lastAngle = endPos.AngleRV(startPos) - newAngle*bm.invert
 
 		pt1 := bmath.NewVec2dRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
 		pt2 := bmath.NewVec2dRad(bm.lastAngle, scaledDistance).Add(startPos)
@@ -94,17 +94,17 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 
 		points = []bmath.Vector2d{endPos, pt1, pt2, startPos}
 	} else {
-		if startTime - endTime < settings.Dance.Flower.StreamTrigger {
+		if startTime-endTime < settings.Dance.Flower.StreamTrigger {
 			newAngle = settings.Dance.Flower.StreamAngleOffset * math.Pi / 180.0
 		}
-		angle := endPos.AngleRV(startPos) - newAngle * bm.invert
+		angle := endPos.AngleRV(startPos) - newAngle*bm.invert
 
-		pt1 := bmath.NewVec2dRad(bm.lastAngle + math.Pi, scaledDistance).Add(endPos)
+		pt1 := bmath.NewVec2dRad(bm.lastAngle+math.Pi, scaledDistance).Add(endPos)
 		pt2 := bmath.NewVec2dRad(angle, scaledDistance).Add(startPos)
 
 		bm.lastAngle = angle
 
-		if startTime - endTime < settings.Dance.Flower.StreamTrigger && !(start.GetBasicData().SliderPoint && end.GetBasicData().SliderPoint) {
+		if startTime-endTime < settings.Dance.Flower.StreamTrigger && !(start.GetBasicData().SliderPoint && end.GetBasicData().SliderPoint) {
 			bm.invert = -1 * bm.invert
 		}
 
@@ -117,7 +117,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm *AngleOffsetMover) Update(time int64) bmath.Vector2d {
-	t := float64(time - bm.endTime)/float64(bm.startTime - bm.endTime)
+	t := float64(time-bm.endTime) / float64(bm.startTime-bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
 	return bm.bz.NPointAt(t)
 }

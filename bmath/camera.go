@@ -7,58 +7,58 @@ type Rectangle struct {
 }
 
 type Camera struct {
-	screenRect Rectangle
-	projection mgl32.Mat4
-	view mgl32.Mat4
-	projectionView mgl32.Mat4
+	screenRect        Rectangle
+	projection        mgl32.Mat4
+	view              mgl32.Mat4
+	projectionView    mgl32.Mat4
 	invProjectionView mgl32.Mat4
 
 	viewDirty bool
-	origin Vector2d
-	position Vector2d
-	rotation float64
-	scale Vector2d
+	origin    Vector2d
+	position  Vector2d
+	rotation  float64
+	scale     Vector2d
 
 	rebuildCache bool
-	cache []mgl32.Mat4
+	cache        []mgl32.Mat4
 }
 
 func NewCamera() *Camera {
-	return &Camera{scale:NewVec2d(1, 1)}
+	return &Camera{scale: NewVec2d(1, 1)}
 }
 
 func (camera *Camera) SetViewport(width, height int, yDown bool) {
-	camera.screenRect.MinX = -float64(width)/2
-	camera.screenRect.MaxX = float64(width)/2
+	camera.screenRect.MinX = -float64(width) / 2
+	camera.screenRect.MaxX = float64(width) / 2
 
 	if yDown {
-		camera.screenRect.MinY = float64(height)/2
-		camera.screenRect.MaxY = -float64(height)/2
+		camera.screenRect.MinY = float64(height) / 2
+		camera.screenRect.MaxY = -float64(height) / 2
 	} else {
-		camera.screenRect.MinY = -float64(height)/2
-		camera.screenRect.MaxY = float64(height)/2
+		camera.screenRect.MinY = -float64(height) / 2
+		camera.screenRect.MaxY = float64(height) / 2
 
 	}
-	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY),  float32(camera.screenRect.MaxY), 1, -1)
+	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }
 
 func (camera *Camera) SetOsuViewport(width, height int) {
-	osuAspect := 512.0/384.0
-	screenAspect := float64(width)/float64(height)
+	osuAspect := 512.0 / 384.0
+	screenAspect := float64(width) / float64(height)
 
 	if screenAspect > osuAspect {
 		sh := (384.0 - float64(384.0)*900.0/1080.0) / 2
-		sw := (512.0*screenAspect*900.0/1080.0-512.0)/2
+		sw := (512.0*screenAspect*900.0/1080.0 - 512.0) / 2
 		camera.screenRect.MinX = -sw
-		camera.screenRect.MaxX = 512.0+sw
+		camera.screenRect.MaxX = 512.0 + sw
 
-		camera.screenRect.MinY = 384.0+sh
+		camera.screenRect.MinY = 384.0 + sh
 		camera.screenRect.MaxY = -sh
 	}
 
-	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY),  float32(camera.screenRect.MaxY), 1, -1)
+	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }
@@ -69,7 +69,7 @@ func (camera *Camera) SetViewportF(x, y, width, height int) {
 	camera.screenRect.MinY = float64(y)
 	camera.screenRect.MaxY = float64(height)
 
-	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY),  float32(camera.screenRect.MaxY), 1, -1)
+	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }
@@ -84,7 +84,7 @@ func (camera *Camera) SetPosition(pos Vector2d) {
 }
 
 func (camera *Camera) SetOrigin(pos Vector2d) {
-	camera.origin= pos.Scl(-1)
+	camera.origin = pos.Scl(-1)
 	camera.viewDirty = true
 }
 
@@ -131,7 +131,7 @@ func (camera *Camera) GenRotated(rotations int, rotOffset float64) []mgl32.Mat4 
 		}
 
 		for i := 0; i < rotations; i++ {
-			camera.cache[i] = camera.projection.Mul4(mgl32.HomogRotate3DZ(float32(i)*float32(rotOffset))).Mul4(camera.view)
+			camera.cache[i] = camera.projection.Mul4(mgl32.HomogRotate3DZ(float32(i) * float32(rotOffset))).Mul4(camera.view)
 		}
 		camera.rebuildCache = false
 	}
@@ -143,17 +143,17 @@ func (camera Camera) GetProjectionView() mgl32.Mat4 {
 	return camera.projectionView
 }
 
-func (camera Camera) Unproject(screenPos Vector2d) Vector2d{
+func (camera Camera) Unproject(screenPos Vector2d) Vector2d {
 	//mgl32.Vec4(2*screenPos.X32()/float32(camera.width)-1, 2*screenPos.Y32()/float32(camera.height)-1, 0, 1)
 	return Vector2d{}
 }
 
 func (camera Camera) GetWorldRect() Rectangle {
-	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{-1.0, 1.0, 0.0, 1.0})//.Add(mgl32.Vec4{256, 192, 0, 0})
+	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{-1.0, 1.0, 0.0, 1.0}) //.Add(mgl32.Vec4{256, 192, 0, 0})
 	var rectangle Rectangle
 	rectangle.MinX = float64(res[0])
 	rectangle.MinY = float64(res[1])
-	res = camera.invProjectionView.Mul4x1(mgl32.Vec4{1.0, -1.0, 0.0, 1.0})//.Add(mgl32.Vec4{256, 192, 0, 0})
+	res = camera.invProjectionView.Mul4x1(mgl32.Vec4{1.0, -1.0, 0.0, 1.0}) //.Add(mgl32.Vec4{256, 192, 0, 0})
 	rectangle.MaxX = float64(res[0])
 	rectangle.MaxY = float64(res[1])
 	if rectangle.MinY > rectangle.MaxY {

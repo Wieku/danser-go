@@ -6,8 +6,8 @@ import (
 )
 
 type CirArc struct {
-	pt1, pt2, pt3 math2.Vector2d
-	centre math2.Vector2d
+	pt1, pt2, pt3                  math2.Vector2d
+	centre                         math2.Vector2d
 	startAngle, totalAngle, r, dir float64
 }
 
@@ -24,7 +24,7 @@ func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
 
 	sum := s + t + u
 
-	centre := pt1.Scl(s).Add(pt2.Scl(t)).Add(pt3.Scl(u)).Scl(1/sum)
+	centre := pt1.Scl(s).Add(pt2.Scl(t)).Add(pt3.Scl(u)).Scl(1 / sum)
 
 	dA := pt1.Sub(centre)
 	dC := pt3.Sub(centre)
@@ -45,7 +45,7 @@ func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
 	aToC = math2.NewVec2d(aToC.Y, -aToC.X)
 	if aToC.Dot(pt2.Sub(pt1)) < 0 {
 		dir = -dir
-		totalAngle = 2 * math.Pi - totalAngle
+		totalAngle = 2*math.Pi - totalAngle
 	}
 
 	arc.totalAngle = totalAngle
@@ -58,7 +58,7 @@ func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
 }
 
 func (ln CirArc) PointAt(t float64) math2.Vector2d {
-	return math2.NewVec2dRad(ln.startAngle + ln.dir * t * ln.totalAngle, ln.r).Add(ln.centre)
+	return math2.NewVec2dRad(ln.startAngle+ln.dir*t*ln.totalAngle, ln.r).Add(ln.centre)
 }
 
 func (ln CirArc) GetLength() float64 {
@@ -69,10 +69,10 @@ func (ln CirArc) GetPoints(num int) []math2.Vector2d {
 	t0 := 1 / float64(num)
 
 	points := make([]math2.Vector2d, num)
-	t:= 0.0
-	for i:=0; i < num; i+=1 {
+	t := 0.0
+	for i := 0; i < num; i += 1 {
 		points[i] = ln.PointAt(t)
-		t+=t0
+		t += t0
 	}
 
 	return points

@@ -27,7 +27,7 @@ const (
 	MUSIC_STOPPED = 0
 	MUSIC_PLAYING = 1
 	MUSIC_STALLED = 2
-	MUSIC_PAUSED = 3
+	MUSIC_PAUSED  = 3
 )
 
 type Callback func()
@@ -61,16 +61,16 @@ func unregisterEndCallback(channel C.DWORD, f func()) {
 }
 
 type Music struct {
-	channel C.DWORD
+	channel   C.DWORD
 	fxchannel C.DWORD
-	fft []float32
-	beat float64
-	peak float64
+	fft       []float32
+	beat      float64
+	peak      float64
 }
 
 func NewMusic(path string) *Music {
 	player := &Music{}
-	ch := C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.BASS_ASYNCFILE | /*C.BASS_STREAM_AUTOFREE*/ C.BASS_STREAM_DECODE)
+	ch := C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.BASS_ASYNCFILE| /*C.BASS_STREAM_AUTOFREE*/ C.BASS_STREAM_DECODE)
 	fch := C.BASS_FX_TempoCreate(ch, C.BASS_FX_FREESOURCE)
 	log.Println(ch, fch)
 	player.channel = fch
@@ -134,7 +134,7 @@ func (wv *Music) SetTempo(tempo float64) {
 }
 
 func (wv *Music) GetState() int {
-	 return int(C.BASS_ChannelIsActive(wv.channel))
+	return int(C.BASS_ChannelIsActive(wv.channel))
 }
 
 func (wv *Music) Update() {

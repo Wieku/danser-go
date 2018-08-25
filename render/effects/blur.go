@@ -11,12 +11,12 @@ import (
 
 type BlurEffect struct {
 	blurShader *glhf.Shader
-	fbo1 *glhf.Frame
-	fbo2 *glhf.Frame
+	fbo1       *glhf.Frame
+	fbo2       *glhf.Frame
 	kernelSize mgl32.Vec2
-	sigma mgl32.Vec2
-	size mgl32.Vec2
-	fboSlice *glhf.VertexSlice
+	sigma      mgl32.Vec2
+	size       mgl32.Vec2
+	fboSlice   *glhf.VertexSlice
 }
 
 func NewBlurEffect(width, height int) *BlurEffect {
@@ -35,8 +35,8 @@ func NewBlurEffect(width, height int) *BlurEffect {
 	}
 
 	var err error
-	vert , _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
-	frag , _ := ioutil.ReadFile("assets/shaders/blur.fsh")
+	vert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	frag, _ := ioutil.ReadFile("assets/shaders/blur.fsh")
 	effect.blurShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
@@ -63,14 +63,14 @@ func NewBlurEffect(width, height int) *BlurEffect {
 	effect.fbo2.Texture().Begin()
 	effect.fbo2.Texture().SetWrap(glhf.CLAMP_TO_EDGE)
 	effect.fbo2.Texture().End()
-	effect.kernelSize = mgl32.Vec2{/*2.0*50, 2.0*50*/0, 0}
-	effect.sigma = mgl32.Vec2{/*2.0*50, 2.0*50*/1, 1}
+	effect.kernelSize = mgl32.Vec2{ /*2.0*50, 2.0*50*/ 0, 0}
+	effect.sigma = mgl32.Vec2{ /*2.0*50, 2.0*50*/ 1, 1}
 	effect.size = mgl32.Vec2{float32(width), float32(height)}
 	return effect
 }
 
 func (effect *BlurEffect) SetBlur(blurX, blurY float64) {
-	sigmaX, sigmaY := float32(blurX) * 25, float32(blurY) * 25
+	sigmaX, sigmaY := float32(blurX)*25, float32(blurY)*25
 	kX := kernelSize(sigmaX)
 	if kX == 0 {
 		sigmaX = 1.0
@@ -85,7 +85,7 @@ func (effect *BlurEffect) SetBlur(blurX, blurY float64) {
 
 func gauss(x int, sigma float32) float32 {
 	factor := float32(0.398942)
-	return factor * float32(math.Exp(-0.5 * float64(x*x) / float64(sigma*sigma))) / sigma
+	return factor * float32(math.Exp(-0.5*float64(x*x)/float64(sigma*sigma))) / sigma
 }
 
 func kernelSize(sigma float32) int {
@@ -95,9 +95,9 @@ func kernelSize(sigma float32) int {
 	baseG := gauss(0, sigma) * 0.1
 	max := 200
 
-	for i:= 1; i <= max; i++ {
+	for i := 1; i <= max; i++ {
 		if gauss(i, sigma) < baseG {
-			return i-1
+			return i - 1
 		}
 	}
 	return max
