@@ -3,32 +3,47 @@ package audio
 import (
 	"github.com/wieku/danser/settings"
 	"os"
-	"log"
 	"strconv"
+	"path/filepath"
+	"strings"
+	"unicode"
 )
 
-var Samples [5][3]*Sample
-var MapSamples [5][3]map[int]*Sample
+var Samples [3][5]*Sample
+var MapSamples [3][5]map[int]*Sample
+
+var sets = map[string]int{
+	"normal": 1,
+	"soft":   2,
+	"drum":   3,
+}
+
+var hitsounds = map[string]int{
+	"hitnormal":  1,
+	"hitwhistle": 2,
+	"hitfinish":  3,
+	"hitclap":    4,
+	"slidertick": 5,
+}
 
 func LoadSamples() {
-
 	Samples[0][0] = NewSample("assets/sounds/normal-hitnormal.wav")
-	Samples[1][0] = NewSample("assets/sounds/normal-hitwhistle.wav")
-	Samples[2][0] = NewSample("assets/sounds/normal-hitfinish.wav")
-	Samples[3][0] = NewSample("assets/sounds/normal-hitclap.wav")
-	Samples[4][0] = NewSample("assets/sounds/normal-slidertick.wav")
+	Samples[0][1] = NewSample("assets/sounds/normal-hitwhistle.wav")
+	Samples[0][2] = NewSample("assets/sounds/normal-hitfinish.wav")
+	Samples[0][3] = NewSample("assets/sounds/normal-hitclap.wav")
+	Samples[0][4] = NewSample("assets/sounds/normal-slidertick.wav")
 
-	Samples[0][1] = NewSample("assets/sounds/soft-hitnormal.wav")
+	Samples[1][0] = NewSample("assets/sounds/soft-hitnormal.wav")
 	Samples[1][1] = NewSample("assets/sounds/soft-hitwhistle.wav")
-	Samples[2][1] = NewSample("assets/sounds/soft-hitfinish.wav")
-	Samples[3][1] = NewSample("assets/sounds/soft-hitclap.wav")
-	Samples[4][1] = NewSample("assets/sounds/soft-slidertick.wav")
+	Samples[1][2] = NewSample("assets/sounds/soft-hitfinish.wav")
+	Samples[1][3] = NewSample("assets/sounds/soft-hitclap.wav")
+	Samples[1][4] = NewSample("assets/sounds/soft-slidertick.wav")
 
-	Samples[0][2] = NewSample("assets/sounds/drum-hitnormal.wav")
-	Samples[1][2] = NewSample("assets/sounds/drum-hitwhistle.wav")
+	Samples[2][0] = NewSample("assets/sounds/drum-hitnormal.wav")
+	Samples[2][1] = NewSample("assets/sounds/drum-hitwhistle.wav")
 	Samples[2][2] = NewSample("assets/sounds/drum-hitfinish.wav")
-	Samples[3][2] = NewSample("assets/sounds/drum-hitclap.wav")
-	Samples[4][2] = NewSample("assets/sounds/drum-slidertick.wav")
+	Samples[2][3] = NewSample("assets/sounds/drum-hitclap.wav")
+	Samples[2][4] = NewSample("assets/sounds/drum-slidertick.wav")
 }
 
 func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64) {
@@ -54,10 +69,10 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64) {
 		volume = 1.0
 	}
 
-	if sample := MapSamples[hitsoundIndex][sampleSet-1][index]; sample != nil {
+	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil {
 		sample.PlayRV(volume)
 	} else {
-		Samples[hitsoundIndex][sampleSet-1].PlayRV(volume)
+		Samples[sampleSet-1][hitsoundIndex].PlayRV(volume)
 	}
 }
 
@@ -65,52 +80,61 @@ func PlaySliderTick(sampleSet, index int, volume float64) {
 	playSample(sampleSet, 4, index, volume)
 }
 
-func RegisterBeatmapSample(dir string, sampleSet, hitsound, index int) {
-	if settings.Audio.IgnoreBeatmapSamples || index == 0 {
-		return
+func LoadBeatmapSamples(dir string) {
+	splitBeforeDigit := func(name string) []string {
+		for i, r := range name {
+			if unicode.IsDigit(r) {
+				return []string{name[:i], name[i:]}
+			}
+		}
+		return []string{name}
 	}
 
-	sampleSetText := "normal"
+	fullPath := settings.General.OsuSongsDir + string(os.PathSeparator) + dir
 
-	if sampleSet == 2 {
-		sampleSetText = "soft"
-	} else if sampleSet == 3 {
-		sampleSetText = "drum"
-	}
+	filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+		if !strings.HasSuffix(info.Name(), ".wav") {
+			return nil
+		}
 
-	loadSample(dir, sampleSetText, "hitnormal", sampleSet, 0, index)
-	loadSample(dir, sampleSetText, "slidertick", sampleSet, 4, index)
+		rawName := strings.TrimSuffix(info.Name(), ".wav")
 
-	if hitsound&2 > 0 {
-		loadSample(dir, sampleSetText, "hitwhistle", sampleSet, 1, index)
-	}
-	if hitsound&4 > 0 {
-		loadSample(dir, sampleSetText, "hitfinish", sampleSet, 2, index)
-	}
-	if hitsound&8 > 0 {
-		loadSample(dir, sampleSetText, "hitclap", sampleSet, 3, index)
-	}
-}
+		if separated := strings.Split(rawName, "-"); len(separated) == 2 {
 
-func loadSample(dir, sampleSet, hitsound string, sampleSetIndex, hitsoundIndex, index int) {
-	path := settings.General.OsuSongsDir + string(os.PathSeparator) + dir + string(os.PathSeparator) + sampleSet + "-" + hitsound
+			setID := sets[separated[0]]
 
-	if index > 1 {
-		path += strconv.FormatInt(int64(index), 10)
-	}
+			if setID == 0 {
+				return nil
+			}
 
-	path += ".wav"
+			subSeparated := splitBeforeDigit(separated[1])
 
-	if MapSamples[hitsoundIndex][sampleSetIndex-1] == nil {
-		MapSamples[hitsoundIndex][sampleSetIndex-1] = make(map[int]*Sample)
-	}
+			hitSoundIndex := 1
 
-	if MapSamples[hitsoundIndex][sampleSetIndex-1][index] != nil {
-		return
-	}
+			if len(subSeparated) > 1 {
+				index, err := strconv.ParseInt(subSeparated[1], 10, 32)
 
-	if sample := NewSample(path); sample != nil {
-		log.Println("Loaded:", path)
-		MapSamples[hitsoundIndex][sampleSetIndex-1][index] = sample
-	}
+				if err != nil {
+					return nil
+				}
+
+				hitSoundIndex = int(index)
+			}
+
+			hitSoundID := hitsounds[subSeparated[0]]
+
+			if hitSoundID == 0 {
+				return nil
+			}
+
+			if MapSamples[setID-1][hitSoundID-1] == nil {
+				MapSamples[setID-1][hitSoundID-1] = make(map[int]*Sample)
+			}
+
+			MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = NewSample(path)
+
+		}
+
+		return nil
+	})
 }

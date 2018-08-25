@@ -9,9 +9,9 @@ import (
 )
 
 type BeatMap struct {
-	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags        string
-	SliderMultiplier, StackLeniency, CircleSize, AR, ARms float64
-	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints 								string
+	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags string
+	SliderMultiplier, StackLeniency, CircleSize, AR, ARms                       float64
+	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints                         string
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 
@@ -34,14 +34,14 @@ func (b *BeatMap) Reset() {
 func (b *BeatMap) Update(time int64) {
 	b.Timings.Update(time)
 	if len(b.Queue) > 0 {
-		for i:=0; i < len(b.Queue); i++ {
+		for i := 0; i < len(b.Queue); i++ {
 			g := b.Queue[i]
 			if g.GetBasicData().StartTime > time {
 				break
 			}
 
 			if isDone := g.Update(time); isDone {
-				if i < len(b.Queue) -1 {
+				if i < len(b.Queue)-1 {
 					b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
 				} else if i < len(b.Queue) {
 					b.Queue = b.Queue[:i]
@@ -79,9 +79,7 @@ func (beatMap *BeatMap) LoadTimingPoints() {
 }
 
 func (beatMap *BeatMap) LoadCustomSamples() {
-	for _, p := range beatMap.Timings.Points {
-		audio.RegisterBeatmapSample(beatMap.Dir, p.SampleSet, 15, p.SampleIndex)
-	}
+	audio.LoadBeatmapSamples(beatMap.Dir)
 }
 
 func (beatMap *BeatMap) LoadPauses() {
