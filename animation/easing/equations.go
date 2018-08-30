@@ -2,6 +2,10 @@ package easing
 
 import "math"
 
+var Easings = []func(float64) float64 {
+	Linear,
+}
+
 var back_s = 1.70158
 var elastic_a = 0.0
 var elastic_p = 0.0

@@ -4,6 +4,9 @@ import (
 	"github.com/wieku/danser/bmath"
 	"math"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/Wieku/danser/animation/easing"
+	"strconv"
+	"log"
 )
 
 type Command struct {
@@ -13,6 +16,85 @@ type Command struct {
 	startVal, endVal, val []float64
 	custom                string
 	constant              bool
+}
+
+func NewCommand(data []string) *Command {
+	command := &Command{}
+	command.command = data[0]
+
+	easingID, err := strconv.ParseInt(data[1], 10, 32)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	command.easing = easing.Easings[easingID]
+
+	command.start, err = strconv.ParseInt(data[2], 10, 64)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if data[3] == "" { //if this field is empty, this command will run until the next command of this same type is called or till the end of the last command in object
+		command.end = command.start - 1000
+	} else {
+		command.end, err = strconv.ParseInt(data[3], 10, 64)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	arguments := 0
+
+	switch command.command {
+	case "F", "R", "S", "MX", "MY":
+		arguments = 1
+		break
+	case "M", "V":
+		arguments = 2
+		break
+	case "C":
+		arguments = 3
+		break
+	}
+
+	parameters := data[4:]
+
+	if arguments == 0 {
+		command.custom = parameters[0]
+		return command
+	}
+
+	if arguments < len(parameters) {
+		command.endVal = make([]float64, arguments)
+
+		for i := range command.endVal {
+			var err error
+			command.endVal[i], err = strconv.ParseFloat(parameters[arguments+i], 64)
+
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	} else {
+		command.constant = true
+	}
+
+	command.startVal = make([]float64, arguments)
+	command.val = make([]float64, arguments)
+
+	for i := range command.startVal {
+		var err error
+		command.startVal[i], err = strconv.ParseFloat(parameters[i], 64)
+
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	return command
 }
 
 func (command *Command) Update(time int64) {
@@ -73,3 +155,5 @@ func (command *Command) Apply(obj Object) {
 		break
 	}
 }
+
+//TODO: LOOP and TRIGGER commands
