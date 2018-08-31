@@ -36,8 +36,8 @@ func NewCommand(data []string) *Command {
 		panic(err)
 	}
 
-	if data[3] == "" { //if this field is empty, this command will run until the next command of this same type is called or till the end of the last command in object
-		command.end = command.start - 1000
+	if data[3] == "" {
+		command.end = command.start
 	} else {
 		command.end, err = strconv.ParseInt(data[3], 10, 64)
 
@@ -143,13 +143,13 @@ func (command *Command) Apply(obj Object) {
 	case "P":
 		switch command.custom {
 		case "H":
-			obj.SetHFlip()
+			obj.SetHFlip(true)
 			break
 		case "V":
-			obj.SetVFlip()
+			obj.SetVFlip(true)
 			break
 		case "A":
-			obj.SetAdditive()
+			obj.SetAdditive(true)
 			break
 		}
 		break
