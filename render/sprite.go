@@ -122,7 +122,7 @@ func (batch *SpriteBatch) DrawTexture(vec bmath.Vector2d, texture *glhf.Texture)
 }
 
 func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, rotation float64, color mgl32.Vec4, texture *glhf.Texture) {
-	transf := mgl32.Translate3D(position.X32(), position.Y32(), 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32(), scale.Y32(), 1)).Mul4(mgl32.Translate3D(origin.X32()-float32(texture.Width()/2), origin.Y32()-float32(texture.Height()/2), 0))
+	transf := mgl32.Translate3D(position.X32()-64, position.Y32()-48, 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32()*float32(texture.Width())/2, scale.Y32()*float32(texture.Height())/2, 1)).Mul4(mgl32.Translate3D(-origin.X32(), -origin.Y32(), 0))
 	shader.SetUniformAttr(3, transf)
 	shader.SetUniformAttr(0, color)
 	shader.SetUniformAttr(1, int32(0))

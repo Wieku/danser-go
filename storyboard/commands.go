@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/danser/bmath"
 	"math"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/Wieku/danser/animation/easing"
+	"github.com/wieku/danser/animation/easing"
 	"strconv"
 	"log"
 )
@@ -74,6 +74,10 @@ func NewCommand(data []string) *Command {
 			var err error
 			command.endVal[i], err = strconv.ParseFloat(parameters[arguments+i], 64)
 
+			if command.command == "C" {
+				command.endVal[i] /= 255
+			}
+
 			if err != nil {
 				log.Println(err)
 			}
@@ -88,6 +92,10 @@ func NewCommand(data []string) *Command {
 	for i := range command.startVal {
 		var err error
 		command.startVal[i], err = strconv.ParseFloat(parameters[i], 64)
+
+		if command.command == "C" {
+			command.startVal[i] /= 255
+		}
 
 		if err != nil {
 			log.Println(err)

@@ -2,8 +2,10 @@ package utils
 
 import (
 	"os"
-	"image"
 	_ "image/jpeg"
+	_ "golang.org/x/image/bmp"
+	_ "image/png"
+	"image"
 	"image/draw"
 	"github.com/wieku/glhf"
 	"log"

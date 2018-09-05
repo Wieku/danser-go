@@ -18,6 +18,7 @@ import (
 	"github.com/wieku/danser/animation"
 	"os"
 	"github.com/Wieku/danser/render/effects"
+	"github.com/Wieku/danser/storyboard"
 )
 
 type Player struct {
@@ -53,6 +54,8 @@ type Player struct {
 	vaoDirty       bool
 	rotation       float64
 	profiler       *utils.FPSCounter
+
+	storyboard *storyboard.Storyboard
 
 	camera       *bmath.Camera
 	dimGlider    *animation.Glider
@@ -134,6 +137,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.h, player.s, player.v = 0.0, 1.0, 1.0
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
+
+	player.storyboard = storyboard.NewStoryboard("756794 TheFatRat - Mayday (feat Laura Brehm)\\TheFatRat - Mayday (feat. Laura Brehm) (Voltaeyx).osb")//432822 NOMA - Brain Power Long Version\\NOMA - Brain Power Long Version (Skystar).osb")//"839266 Jeremy Blake - Flex\\Jeremy Blake - Flex (yugecin).osb")
 
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)
@@ -223,6 +228,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.bMap.Update(int64(player.progressMsF))
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
+
+			player.storyboard.Update(int64(player.progressMsF))
 
 			last = player.progressMsF
 
@@ -353,6 +360,8 @@ func (pl *Player) Update() {
 	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
 
+	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+
 	if settings.Playfield.BlurEnable {
 		blurVal = pl.blurGlider.GetValue()
 		if settings.Playfield.UnblurToTheBeat {
@@ -366,7 +375,7 @@ func (pl *Player) Update() {
 
 	pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.ResetTransform()
-	if pl.Background != nil {
+	if pl.Background != nil && pl.storyboard == nil {
 		if settings.Playfield.BlurEnable {
 			pl.blurEffect.SetBlur(blurVal, blurVal)
 		}
@@ -406,9 +415,17 @@ func (pl *Player) Update() {
 
 	pl.batch.End()
 
+	if pl.storyboard != nil {
+		pl.batch.Begin()
+		pl.batch.SetCamera(cameras[0])
+		pl.storyboard.Draw(pl.progressMs, pl.batch)
+		pl.batch.End()
+	}
+
 	if pl.fxGlider.GetValue() > 0.0 {
 
 		pl.fxBatch.Begin()
+		pl.batch.SetCamera(mgl32.Ortho(-1, 1, 1, -1, 1, -1))
 		pl.fxBatch.SetColor(1, 1, 1, 0.25*pl.Scl*pl.fxGlider.GetValue())
 		pl.vao.Begin()
 
@@ -468,7 +485,6 @@ func (pl *Player) Update() {
 		scale2 = 1
 	}
 
-	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
