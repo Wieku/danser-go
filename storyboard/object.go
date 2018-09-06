@@ -151,9 +151,10 @@ func (sprite *Sprite) Update(time int64) {
 }
 
 func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
-	if !sprite.firstupdate {
+	if !sprite.firstupdate || sprite.color.A < 0.01 {
 		return
 	}
+
 	if sprite.additive {
 		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
 	}
