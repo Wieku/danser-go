@@ -105,16 +105,23 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 }
 
 func (storyboard *Storyboard) Update(time int64) {
+
+	added := false
+
 	for i := 0; i < len(storyboard.BackgroundSprites); i++ {
 		c := storyboard.BackgroundSprites[i]
 		if c.GetStartTime() <= time {
 			storyboard.BackgroundProcessed = append(storyboard.BackgroundProcessed, c)
-			sort.Slice(storyboard.BackgroundProcessed, func(i, j int) bool {
-				return storyboard.BackgroundProcessed[i].GetZIndex() < storyboard.BackgroundProcessed[j].GetZIndex()
-			})
+			added = true
 			storyboard.BackgroundSprites = append(storyboard.BackgroundSprites[:i], storyboard.BackgroundSprites[i+1:]...)
 			i--
 		}
+	}
+
+	if added {
+		sort.Slice(storyboard.BackgroundProcessed, func(i, j int) bool {
+			return storyboard.BackgroundProcessed[i].GetZIndex() < storyboard.BackgroundProcessed[j].GetZIndex()
+		})
 	}
 
 	for i := 0; i < len(storyboard.BackgroundProcessed); i++ {
@@ -127,16 +134,22 @@ func (storyboard *Storyboard) Update(time int64) {
 		}
 	}
 
+	added = false
+
 	for i := 0; i < len(storyboard.ForegroundSprites); i++ {
 		c := storyboard.ForegroundSprites[i]
 		if c.GetStartTime() <= time {
 			storyboard.ForegroundProcessed = append(storyboard.ForegroundProcessed, c)
-			sort.Slice(storyboard.ForegroundProcessed, func(i, j int) bool {
-				return storyboard.ForegroundProcessed[i].GetZIndex() < storyboard.ForegroundProcessed[j].GetZIndex()
-			})
+			added = true
 			storyboard.ForegroundSprites = append(storyboard.ForegroundSprites[:i], storyboard.ForegroundSprites[i+1:]...)
 			i--
 		}
+	}
+
+	if added {
+		sort.Slice(storyboard.ForegroundProcessed, func(i, j int) bool {
+			return storyboard.ForegroundProcessed[i].GetZIndex() < storyboard.ForegroundProcessed[j].GetZIndex()
+		})
 	}
 
 	for i := 0; i < len(storyboard.ForegroundProcessed); i++ {

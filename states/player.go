@@ -229,7 +229,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.bMap.Update(int64(player.progressMsF))
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
 
-			player.storyboard.Update(int64(player.progressMsF))
+			if player.storyboard != nil {
+				player.storyboard.Update(int64(player.progressMsF))
+			}
 
 			last = player.progressMsF
 
