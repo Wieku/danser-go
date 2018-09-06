@@ -19,6 +19,7 @@ type Object interface {
 	Draw(time int64, batch *render.SpriteBatch)
 	GetStartTime() int64
 	GetEndTime() int64
+	GetZIndex() int64
 
 	GetPosition() bmath.Vector2d
 	SetPosition(vec bmath.Vector2d)
@@ -42,19 +43,19 @@ type Object interface {
 }
 
 type Sprite struct {
-	texture                *glhf.Texture
-	transform              *Transformations
-	loopQueue              []*Loop
-	loopProcessed          []*Loop
-	startTime, endTime     int64
-	position               bmath.Vector2d
-	origin                 bmath.Vector2d
-	scale                  bmath.Vector2d
-	rotation               float64
-	color                  color
-	dirty                  bool
-	hflip, vflip, additive bool
-	firstupdate            bool
+	texture                    *glhf.Texture
+	transform                  *Transformations
+	loopQueue                  []*Loop
+	loopProcessed              []*Loop
+	startTime, endTime, zIndex int64
+	position                   bmath.Vector2d
+	origin                     bmath.Vector2d
+	scale                      bmath.Vector2d
+	rotation                   float64
+	color                      color
+	dirty                      bool
+	hflip, vflip, additive     bool
+	firstupdate                bool
 }
 
 func cutWhites(text string) (string, int) {
@@ -67,8 +68,8 @@ func cutWhites(text string) (string, int) {
 	return text, 0
 }
 
-func NewSprite(texture *glhf.Texture, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
-	sprite := &Sprite{texture: texture, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
+func NewSprite(texture *glhf.Texture, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
+	sprite := &Sprite{texture: texture, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
 	sprite.transform = NewTransformations(sprite)
 
 	var currentLoop *Loop = nil
@@ -230,4 +231,8 @@ func (sprite *Sprite) GetStartTime() int64 {
 
 func (sprite *Sprite) GetEndTime() int64 {
 	return sprite.endTime
+}
+
+func (sprite *Sprite) GetZIndex() int64 {
+	return sprite.zIndex
 }

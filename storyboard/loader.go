@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser/utils"
 	"path/filepath"
 	"github.com/wieku/danser/settings"
+	"sort"
 )
 
 type Storyboard struct {
@@ -20,11 +21,12 @@ type Storyboard struct {
 	BackgroundProcessed []*Sprite
 	ForegroundSprites   []*Sprite
 	ForegroundProcessed []*Sprite
+	zIndex              int64
 }
 
 func NewStoryboard(path string) *Storyboard {
 	path = settings.General.OsuSongsDir + string(os.PathSeparator) + path
-	storyboard := &Storyboard{}
+	storyboard := &Storyboard{zIndex:-1}
 
 	storyboard.textures = make(map[string]*glhf.Texture)
 
@@ -88,7 +90,9 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		storyboard.textures[image] = texture
 	}
 
-	sprite := NewSprite(texture, pos, origin, commands)
+	storyboard.zIndex++
+
+	sprite := NewSprite(texture, storyboard.zIndex, pos, origin, commands)
 
 	switch spl[1] {
 	case "0", "Background":
@@ -105,6 +109,9 @@ func (storyboard *Storyboard) Update(time int64) {
 		c := storyboard.BackgroundSprites[i]
 		if c.GetStartTime() <= time {
 			storyboard.BackgroundProcessed = append(storyboard.BackgroundProcessed, c)
+			sort.Slice(storyboard.BackgroundProcessed, func(i, j int) bool {
+				return storyboard.BackgroundProcessed[i].GetZIndex() < storyboard.BackgroundProcessed[j].GetZIndex()
+			})
 			storyboard.BackgroundSprites = append(storyboard.BackgroundSprites[:i], storyboard.BackgroundSprites[i+1:]...)
 			i--
 		}
@@ -124,6 +131,9 @@ func (storyboard *Storyboard) Update(time int64) {
 		c := storyboard.ForegroundSprites[i]
 		if c.GetStartTime() <= time {
 			storyboard.ForegroundProcessed = append(storyboard.ForegroundProcessed, c)
+			sort.Slice(storyboard.ForegroundProcessed, func(i, j int) bool {
+				return storyboard.ForegroundProcessed[i].GetZIndex() < storyboard.ForegroundProcessed[j].GetZIndex()
+			})
 			storyboard.ForegroundSprites = append(storyboard.ForegroundSprites[:i], storyboard.ForegroundSprites[i+1:]...)
 			i--
 		}
