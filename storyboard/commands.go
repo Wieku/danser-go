@@ -164,4 +164,14 @@ func (command *Command) Apply(obj Object) {
 	}
 }
 
+func (command *Command) Init(obj Object) {
+
+	if command.command == "P" {
+		return
+	}
+
+	copy(command.val, command.startVal)
+	command.Apply(obj)
+}
+
 //TODO: LOOP and TRIGGER commands

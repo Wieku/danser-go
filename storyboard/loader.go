@@ -103,7 +103,7 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 func (storyboard *Storyboard) Update(time int64) {
 	for i := 0; i < len(storyboard.BackgroundSprites); i++ {
 		c := storyboard.BackgroundSprites[i]
-		if c.GetTransform().startTime <= time {
+		if c.GetStartTime() <= time {
 			storyboard.BackgroundProcessed = append(storyboard.BackgroundProcessed, c)
 			storyboard.BackgroundSprites = append(storyboard.BackgroundSprites[:i], storyboard.BackgroundSprites[i+1:]...)
 			i--
@@ -114,7 +114,7 @@ func (storyboard *Storyboard) Update(time int64) {
 		c := storyboard.BackgroundProcessed[i]
 		c.Update(time)
 
-		if time >= c.transform.endTime {
+		if time >= c.GetEndTime() {
 			storyboard.BackgroundProcessed = append(storyboard.BackgroundProcessed[:i], storyboard.BackgroundProcessed[i+1:]...)
 			i--
 		}
@@ -122,7 +122,7 @@ func (storyboard *Storyboard) Update(time int64) {
 
 	for i := 0; i < len(storyboard.ForegroundSprites); i++ {
 		c := storyboard.ForegroundSprites[i]
-		if c.GetTransform().startTime <= time {
+		if c.GetStartTime() <= time {
 			storyboard.ForegroundProcessed = append(storyboard.ForegroundProcessed, c)
 			storyboard.ForegroundSprites = append(storyboard.ForegroundSprites[:i], storyboard.ForegroundSprites[i+1:]...)
 			i--
@@ -133,7 +133,7 @@ func (storyboard *Storyboard) Update(time int64) {
 		c := storyboard.ForegroundProcessed[i]
 		c.Update(time)
 
-		if time >= c.transform.endTime {
+		if time >= c.GetEndTime() {
 			storyboard.ForegroundProcessed = append(storyboard.ForegroundProcessed[:i], storyboard.ForegroundProcessed[i+1:]...)
 			i--
 		}

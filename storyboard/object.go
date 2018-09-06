@@ -3,89 +3,22 @@ package storyboard
 import (
 	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/mathgl/mgl32"
-	"sort"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/glhf"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"unicode"
 	"strings"
-	"math"
 )
 
 type color struct {
 	R, G, B, A float64
 }
 
-type Transformations struct {
-	object             Object
-	queue              []*Command
-	processed          []*Command
-	startTime, endTime int64
-}
-
-func NewTransformations(obj Object) *Transformations {
-	return &Transformations{object: obj, startTime: math.MaxInt64, endTime: math.MinInt64}
-}
-
-func (trans *Transformations) Add(command *Command) {
-
-	if command.command != "P" {
-		exists := false
-
-		for _, e := range trans.queue {
-			if e.command == command.command && e.start < command.start {
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			command.Update(command.start)
-			command.Apply(trans.object)
-		}
-	}
-
-	trans.queue = append(trans.queue, command)
-	sort.Slice(trans.queue, func(i, j int) bool {
-		return trans.queue[i].start < trans.queue[j].start
-	})
-
-	if command.start < trans.startTime {
-		trans.startTime = command.start
-	}
-
-	if command.end > trans.endTime {
-		trans.endTime = command.end
-	}
-}
-
-func (trans *Transformations) Update(time int64) {
-	for i := 0; i < len(trans.queue); i++ {
-		c := trans.queue[i]
-		if c.start <= time {
-			trans.processed = append(trans.processed, c)
-			trans.queue = append(trans.queue[:i], trans.queue[i+1:]...)
-			i--
-		}
-	}
-
-	for i := 0; i < len(trans.processed); i++ {
-		c := trans.processed[i]
-		c.Update(time)
-		c.Apply(trans.object)
-
-		if time > c.end {
-			trans.processed = append(trans.processed[:i], trans.processed[i+1:]...)
-			i--
-		}
-	}
-
-}
-
 type Object interface {
 	Update(time int64)
 	Draw(time int64, batch *render.SpriteBatch)
-	GetTransform() *Transformations
+	GetStartTime() int64
+	GetEndTime() int64
 
 	GetPosition() bmath.Vector2d
 	SetPosition(vec bmath.Vector2d)
@@ -111,6 +44,9 @@ type Object interface {
 type Sprite struct {
 	texture                *glhf.Texture
 	transform              *Transformations
+	loopQueue              []*Loop
+	loopProcessed          []*Loop
+	startTime, endTime     int64
 	position               bmath.Vector2d
 	origin                 bmath.Vector2d
 	scale                  bmath.Vector2d
@@ -135,12 +71,54 @@ func NewSprite(texture *glhf.Texture, position bmath.Vector2d, origin bmath.Vect
 	sprite := &Sprite{texture: texture, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
 	sprite.transform = NewTransformations(sprite)
 
+	var currentLoop *Loop = nil
+	loopDepth := -1
+
 	for _, subCommand := range subCommands {
 		command := strings.Split(subCommand, ",")
 		var removed int
 		command[0], removed = cutWhites(command[0])
-		if removed == 1 && command[0] != "L" && command[0] != "T" {
-			sprite.transform.Add(NewCommand(command))
+
+		if command[0] == "T" {
+			continue
+		}
+
+		if removed == 1 {
+			if currentLoop != nil {
+				sprite.loopQueue = append(sprite.loopQueue, currentLoop)
+				loopDepth = -1
+			}
+			if command[0] != "L" {
+				sprite.transform.Add(NewCommand(command))
+			}
+		}
+
+		if command[0] == "L" {
+
+			currentLoop = NewLoop(command, sprite)
+
+			loopDepth = removed + 1
+
+		} else if removed == loopDepth {
+			currentLoop.Add(NewCommand(command))
+		}
+	}
+
+	if currentLoop != nil {
+		sprite.loopQueue = append(sprite.loopQueue, currentLoop)
+		loopDepth = -1
+	}
+
+	sprite.startTime = sprite.transform.startTime
+	sprite.endTime = sprite.transform.endTime
+
+	for _, loop := range sprite.loopQueue {
+		if loop.start < sprite.startTime {
+			sprite.startTime = loop.start
+		}
+
+		if loop.end > sprite.endTime {
+			sprite.endTime = loop.end
 		}
 	}
 
@@ -149,6 +127,26 @@ func NewSprite(texture *glhf.Texture, position bmath.Vector2d, origin bmath.Vect
 
 func (sprite *Sprite) Update(time int64) {
 	sprite.transform.Update(time)
+
+	for i := 0; i < len(sprite.loopQueue); i++ {
+		c := sprite.loopQueue[i]
+		if c.start <= time {
+			sprite.loopProcessed = append(sprite.loopProcessed, c)
+			sprite.loopQueue = append(sprite.loopQueue[:i], sprite.loopQueue[i+1:]...)
+			i--
+		}
+	}
+
+	for i := 0; i < len(sprite.loopProcessed); i++ {
+		c := sprite.loopProcessed[i]
+		c.Update(time)
+
+		if time > c.end {
+			sprite.loopProcessed = append(sprite.loopProcessed[:i], sprite.loopProcessed[i+1:]...)
+			i--
+		}
+	}
+
 	sprite.firstupdate = true
 }
 
@@ -225,6 +223,10 @@ func (sprite *Sprite) SetAdditive(on bool) {
 	sprite.dirty = true
 }
 
-func (sprite *Sprite) GetTransform() *Transformations {
-	return sprite.transform
+func (sprite *Sprite) GetStartTime() int64 {
+	return sprite.startTime
+}
+
+func (sprite *Sprite) GetEndTime() int64 {
+	return sprite.endTime
 }
