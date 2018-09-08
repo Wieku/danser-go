@@ -138,7 +138,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
-	player.storyboard = storyboard.NewStoryboard("432822 NOMA - Brain Power Long Version\\NOMA - Brain Power Long Version (Skystar).osb")//"756794 TheFatRat - Mayday (feat Laura Brehm)\\TheFatRat - Mayday (feat. Laura Brehm) (Voltaeyx).osb")//432822 NOMA - Brain Power Long Version\\NOMA - Brain Power Long Version (Skystar).osb")//"839266 Jeremy Blake - Flex\\Jeremy Blake - Flex (yugecin).osb")
+	player.storyboard = storyboard.NewStoryboard(player.bMap)
+
+	if player.storyboard == nil {
+		log.Println("Storyboard not found!")
+	}
 
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)
@@ -486,7 +490,6 @@ func (pl *Player) Update() {
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
 	}
-
 
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)

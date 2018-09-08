@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"github.com/wieku/danser/settings"
 	"sort"
+	"github.com/wieku/danser/beatmap"
 )
 
 type Storyboard struct {
@@ -24,13 +25,26 @@ type Storyboard struct {
 	zIndex              int64
 }
 
-func NewStoryboard(path string) *Storyboard {
-	path = settings.General.OsuSongsDir + string(os.PathSeparator) + path
-	storyboard := &Storyboard{zIndex:-1}
+func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
+
+	fullPath := ""
+
+	filepath.Walk(settings.General.OsuSongsDir+string(os.PathSeparator)+beatMap.Dir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(info.Name(), ".osb") {
+			fullPath = path
+		}
+		return nil
+	})
+
+	if fullPath == "" {
+		return nil
+	}
+
+	storyboard := &Storyboard{zIndex: -1}
 
 	storyboard.textures = make(map[string]*glhf.Texture)
 
-	file, err := os.Open(path)
+	file, err := os.Open(fullPath)
 
 	if err != nil {
 		log.Println(err)
@@ -48,7 +62,7 @@ func NewStoryboard(path string) *Storyboard {
 		if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") {
 
 			if currentSprite != "" {
-				storyboard.loadSprite(path, currentSprite, commands)
+				storyboard.loadSprite(fullPath, currentSprite, commands)
 			}
 
 			currentSprite = line
@@ -58,7 +72,7 @@ func NewStoryboard(path string) *Storyboard {
 		}
 	}
 
-	storyboard.loadSprite(path, currentSprite, commands)
+	storyboard.loadSprite(fullPath, currentSprite, commands)
 
 	return storyboard
 }
