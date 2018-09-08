@@ -127,11 +127,11 @@ func QuintEaseInOut(t float64) float64 {
 /*  Sine
 -----------------------------------------------*/
 func SineEaseIn(t float64) float64 {
-	return math.Sin((t-1)*math.Pi*2) + 1
+	return math.Sin((t-1)*math.Pi/2) + 1
 }
 
 func SineEaseOut(t float64) float64 {
-	return math.Sin(t * math.Pi * 2)
+	return math.Sin(t * math.Pi / 2)
 }
 
 func SineEaseInOut(t float64) float64 {
