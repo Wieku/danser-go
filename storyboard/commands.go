@@ -64,6 +64,7 @@ func NewCommand(data []string) *Command {
 
 	if arguments == 0 {
 		command.custom = parameters[0]
+		command.val = make([]float64, 1)
 		return command
 	}
 
@@ -108,6 +109,11 @@ func NewCommand(data []string) *Command {
 func (command *Command) Update(time int64) {
 
 	if command.command == "P" {
+		if time >= command.start && time <= command.end {
+			command.val[0] = 1
+		} else {
+			command.val[0] = 0
+		}
 		return
 	}
 
@@ -151,13 +157,13 @@ func (command *Command) Apply(obj Object) {
 	case "P":
 		switch command.custom {
 		case "H":
-			obj.SetHFlip(true)
+			obj.SetHFlip(command.val[0] == 1)
 			break
 		case "V":
-			obj.SetVFlip(true)
+			obj.SetVFlip(command.val[0] == 1)
 			break
 		case "A":
-			obj.SetAdditive(true)
+			obj.SetAdditive(command.val[0] == 1)
 			break
 		}
 		break

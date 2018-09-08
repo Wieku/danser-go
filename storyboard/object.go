@@ -51,10 +51,11 @@ type Sprite struct {
 	position                   bmath.Vector2d
 	origin                     bmath.Vector2d
 	scale                      bmath.Vector2d
+	flip                      bmath.Vector2d
 	rotation                   float64
 	color                      color
 	dirty                      bool
-	hflip, vflip, additive     bool
+	additive     bool
 	firstupdate                bool
 }
 
@@ -69,7 +70,7 @@ func cutWhites(text string) (string, int) {
 }
 
 func NewSprite(texture *glhf.Texture, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
-	sprite := &Sprite{texture: texture, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
+	sprite := &Sprite{texture: texture, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
 	sprite.transform = NewTransformations(sprite)
 
 	var currentLoop *Loop = nil
@@ -160,7 +161,7 @@ func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
 		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.texture)
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.texture)
 
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
@@ -211,12 +212,20 @@ func (sprite *Sprite) SetAlpha(alpha float64) {
 }
 
 func (sprite *Sprite) SetHFlip(on bool) {
-	sprite.hflip = on
+	j := 1.0
+	if on {
+		j = -1
+	}
+	sprite.flip.X = j
 	sprite.dirty = true
 }
 
 func (sprite *Sprite) SetVFlip(on bool) {
-	sprite.vflip = on
+	j := 1.0
+	if on {
+		j = -1
+	}
+	sprite.flip.Y = j
 	sprite.dirty = true
 }
 

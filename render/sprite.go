@@ -135,8 +135,8 @@ func (batch *SpriteBatch) bind(texture *glhf.Texture) {
 	batch.texture = texture
 }
 
-func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, rotation float64, color mgl32.Vec4, texture *glhf.Texture) {
-	transf := mgl32.Translate3D(position.X32()-64, position.Y32()-48, 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32()*float32(texture.Width())/2, scale.Y32()*float32(texture.Height())/2, 1)).Mul4(mgl32.Translate3D(-origin.X32(), -origin.Y32(), 0))
+func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, texture *glhf.Texture) {
+	transf := mgl32.Translate3D(position.X32()-64, position.Y32()-48, 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32()*float32(texture.Width())/2, scale.Y32()*float32(texture.Height())/2, 1)).Mul4(mgl32.Translate3D(-origin.X32(), -origin.Y32(), 0)).Mul4(mgl32.Scale3D(flip.X32(), flip.Y32(), 1))
 	shader.SetUniformAttr(3, transf)
 	shader.SetUniformAttr(0, color)
 	shader.SetUniformAttr(1, int32(0))
