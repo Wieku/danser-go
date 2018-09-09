@@ -25,6 +25,14 @@ type Storyboard struct {
 	zIndex              int64
 }
 
+func getSection(line string) string {
+	line = strings.TrimSpace(line)
+	if strings.HasPrefix(line, "[") {
+		return strings.TrimRight(strings.TrimLeft(line, "["), "]")
+	}
+	return ""
+}
+
 func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	fullPath := ""
@@ -53,22 +61,51 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	scanner := bufio.NewScanner(file)
 
+	var currentSection string
 	var currentSprite string
 	var commands []string
+
+	variables := make(map[string]string)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+		if strings.HasPrefix(line, "//") || strings.TrimSpace(line) == "" {
+			continue
+		}
 
-			if currentSprite != "" {
-				storyboard.loadSprite(fullPath, currentSprite, commands)
+		section := getSection(line)
+		if section != "" {
+			currentSection = section
+			continue
+		}
+
+		switch currentSection {
+		case "256", "Variables":
+			split := strings.Split(line, "=")
+			variables[split[0]] = split[1]
+			break
+		case "32", "Events":
+			if strings.ContainsRune(line, '$') {
+				for k, v := range variables {
+					if strings.Contains(line, k) {
+						line = strings.Replace(line, k, v, -1)
+					}
+				}
 			}
 
-			currentSprite = line
-			commands = make([]string, 0)
-		} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
-			commands = append(commands, line)
+			if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+
+				if currentSprite != "" {
+					storyboard.loadSprite(fullPath, currentSprite, commands)
+				}
+
+				currentSprite = line
+				commands = make([]string, 0)
+			} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
+				commands = append(commands, line)
+			}
+			break
 		}
 	}
 
