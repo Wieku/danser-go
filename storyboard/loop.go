@@ -2,7 +2,6 @@ package storyboard
 
 import (
 	"strconv"
-	"log"
 )
 
 type Loop struct {
@@ -26,10 +25,6 @@ func (loop *Loop) Update(time int64) {
 	sTime := int64(0)
 	if time-loop.start > loop.transformations.endTime {
 		sTime = loop.transformations.startTime
-	}
-
-	if (loop.transformations.endTime - sTime) == 0 {
-		log.Println(loop.transformations.startTime, )
 	}
 
 	local := (time - loop.start - sTime) % (loop.transformations.endTime - sTime)

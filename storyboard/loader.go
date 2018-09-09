@@ -59,7 +59,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") {
+		if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
 
 			if currentSprite != "" {
 				storyboard.loadSprite(fullPath, currentSprite, commands)
@@ -93,20 +93,31 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		image += ".png"
 	}
 
-	var texture *glhf.Texture
+	textures := make([]*glhf.Texture, 0)
+	frameDelay := 0.0
+	loopForever := true
 
-	if texture = storyboard.textures[image]; texture == nil {
-		var err error
-		texture, err = utils.LoadTextureU(filepath.Dir(path) + string(os.PathSeparator) + image)
-		if err != nil {
-			log.Println(err)
+	if spl[0] == "Animation" || spl[0] == "6" {
+		frames, _ := strconv.ParseInt(spl[6], 10, 32)
+		frameDelay, _ = strconv.ParseFloat(spl[7], 64)
+
+		if len(spl) > 8 && spl[8] == "LoopOnce" {
+			loopForever = false
 		}
-		storyboard.textures[image] = texture
+		extension := filepath.Ext(image)
+		baseFile := strings.TrimSuffix(image, extension)
+
+		for i := 0; i < int(frames); i++ {
+			textures = append(textures, storyboard.getTexture(filepath.Dir(path), baseFile+strconv.Itoa(i)+extension))
+		}
+
+	} else {
+		textures = append(textures, storyboard.getTexture(filepath.Dir(path), image))
 	}
 
 	storyboard.zIndex++
 
-	sprite := NewSprite(texture, storyboard.zIndex, pos, origin, commands)
+	sprite := NewSprite(textures, frameDelay, loopForever, storyboard.zIndex, pos, origin, commands)
 
 	switch spl[1] {
 	case "0", "Background":
@@ -116,6 +127,21 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		storyboard.ForegroundSprites = append(storyboard.ForegroundSprites, sprite)
 		break
 	}
+}
+
+func (storyboard *Storyboard) getTexture(path, image string) *glhf.Texture {
+	var texture *glhf.Texture
+
+	if texture = storyboard.textures[image]; texture == nil {
+		var err error
+		texture, err = utils.LoadTextureU(path + string(os.PathSeparator) + image)
+		if err != nil {
+			log.Println(err)
+		}
+		storyboard.textures[image] = texture
+	}
+
+	return texture
 }
 
 func (storyboard *Storyboard) Update(time int64) {

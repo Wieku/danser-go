@@ -8,6 +8,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"unicode"
 	"strings"
+	"math"
 )
 
 type color struct {
@@ -43,7 +44,10 @@ type Object interface {
 }
 
 type Sprite struct {
-	texture                    *glhf.Texture
+	texture                    []*glhf.Texture
+	frameDelay                 float64
+	loopForever                bool
+	currentFrame               int
 	transform                  *Transformations
 	loopQueue                  []*Loop
 	loopProcessed              []*Loop
@@ -69,8 +73,8 @@ func cutWhites(text string) (string, int) {
 	return text, 0
 }
 
-func NewSprite(texture *glhf.Texture, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
-	sprite := &Sprite{texture: texture, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
+func NewSprite(texture []*glhf.Texture, frameDelay float64, loopForever bool, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
+	sprite := &Sprite{texture: texture, frameDelay: frameDelay, loopForever: loopForever, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
 	sprite.transform = NewTransformations(sprite)
 
 	var currentLoop *Loop = nil
@@ -130,6 +134,20 @@ func NewSprite(texture *glhf.Texture, zIndex int64, position bmath.Vector2d, ori
 }
 
 func (sprite *Sprite) Update(time int64) {
+	sprite.currentFrame = 0
+
+	if len(sprite.texture) > 1 {
+		frame := int(math.Floor(float64(time-sprite.startTime) / sprite.frameDelay))
+		if !sprite.loopForever {
+			if frame >= len(sprite.texture) {
+				frame = len(sprite.texture) - 1
+			}
+			sprite.currentFrame = frame
+		} else {
+			sprite.currentFrame = frame % len(sprite.texture)
+		}
+	}
+
 	sprite.transform.Update(time)
 
 	for i := 0; i < len(sprite.loopQueue); i++ {
@@ -163,7 +181,7 @@ func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
 		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.texture)
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.texture[sprite.currentFrame])
 
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
