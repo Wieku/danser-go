@@ -39,14 +39,6 @@ func (trans *Transformations) Add(command *Command) {
 	trans.commands = append(trans.commands, command)
 	trans.queue = append(trans.queue, command)
 
-	sort.Slice(trans.queue, func(i, j int) bool {
-		return trans.queue[i].start < trans.queue[j].start
-	})
-
-	sort.Slice(trans.commands, func(i, j int) bool {
-		return trans.commands[i].start < trans.commands[j].start
-	})
-
 	if command.start < trans.startTime {
 		trans.startTime = command.start
 	}
@@ -54,6 +46,16 @@ func (trans *Transformations) Add(command *Command) {
 	if command.end > trans.endTime {
 		trans.endTime = command.end
 	}
+}
+
+func (trans *Transformations) Finalize() {
+	sort.Slice(trans.queue, func(i, j int) bool {
+		return trans.queue[i].start < trans.queue[j].start
+	})
+
+	sort.Slice(trans.commands, func(i, j int) bool {
+		return trans.commands[i].start < trans.commands[j].start
+	})
 }
 
 func (trans *Transformations) Update(time int64) {

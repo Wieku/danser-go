@@ -51,11 +51,11 @@ type Sprite struct {
 	position                   bmath.Vector2d
 	origin                     bmath.Vector2d
 	scale                      bmath.Vector2d
-	flip                      bmath.Vector2d
+	flip                       bmath.Vector2d
 	rotation                   float64
 	color                      color
 	dirty                      bool
-	additive     bool
+	additive                   bool
 	firstupdate                bool
 }
 
@@ -110,6 +110,8 @@ func NewSprite(texture *glhf.Texture, zIndex int64, position bmath.Vector2d, ori
 		sprite.loopQueue = append(sprite.loopQueue, currentLoop)
 		loopDepth = -1
 	}
+
+	sprite.transform.Finalize()
 
 	sprite.startTime = sprite.transform.startTime
 	sprite.endTime = sprite.transform.endTime

@@ -10,12 +10,15 @@ import (
 )
 
 type Command struct {
-	start, end            int64
-	command               string
-	easing                func(float64) float64
-	startVal, endVal, val []float64
-	custom                string
-	constant              bool
+	start, end  int64
+	command     string
+	easing      func(float64) float64
+	val         []float64
+	numSections int64
+	sectionTime int64
+	sections    [][]float64
+	custom      string
+	constant    bool
 }
 
 func NewCommand(data []string) *Command {
@@ -68,39 +71,37 @@ func NewCommand(data []string) *Command {
 		return command
 	}
 
-	if arguments < len(parameters) {
-		command.endVal = make([]float64, arguments)
+	numSections := len(parameters) / arguments
+	command.numSections = int64(numSections) - 1
+	command.sectionTime = command.end - command.start
 
-		for i := range command.endVal {
+	if command.numSections > 1 {
+		command.end = command.start + command.sectionTime*command.numSections
+	}
+
+	command.sections = make([][]float64, numSections)
+	command.val = make([]float64, arguments)
+
+	for i := 0; i < numSections; i++ {
+		command.sections[i] = make([]float64, arguments)
+		for j := 0; j < arguments; j++ {
 			var err error
-			command.endVal[i], err = strconv.ParseFloat(parameters[arguments+i], 64)
+			command.sections[i][j], err = strconv.ParseFloat(parameters[arguments*i+j], 64)
 
 			if command.command == "C" {
-				command.endVal[i] /= 255
+				command.sections[i][j] /= 255
 			}
 
 			if err != nil {
 				log.Println(err)
 			}
 		}
-	} else {
-		command.constant = true
 	}
 
-	command.startVal = make([]float64, arguments)
-	command.val = make([]float64, arguments)
+	copy(command.val, command.sections[0])
 
-	for i := range command.startVal {
-		var err error
-		command.startVal[i], err = strconv.ParseFloat(parameters[i], 64)
-
-		if command.command == "C" {
-			command.startVal[i] /= 255
-		}
-
-		if err != nil {
-			log.Println(err)
-		}
+	if numSections == 1 {
+		command.constant = true
 	}
 
 	return command
@@ -118,12 +119,23 @@ func (command *Command) Update(time int64) {
 	}
 
 	if command.constant {
-		copy(command.val, command.startVal)
+		copy(command.val, command.sections[0])
 	} else {
-		t := command.easing(math.Min(math.Max(float64(time-command.start)/float64(command.end-command.start), 0), 1))
+
+		section := int64(0)
+
+		if command.sectionTime > 0 {
+			section = (time - command.start) / command.sectionTime
+		}
+
+		if section >= command.numSections {
+			section = command.numSections - 1
+		}
+
+		t := command.easing(math.Min(math.Max(float64((time-command.start)-section*command.sectionTime)/float64(command.sectionTime), 0), 1))
 
 		for i := range command.val {
-			command.val[i] = command.startVal[i] + t*(command.endVal[i]-command.startVal[i])
+			command.val[i] = command.sections[section][i] + t*(command.sections[section+1][i]-command.sections[section][i])
 		}
 	}
 }
@@ -176,8 +188,8 @@ func (command *Command) Init(obj Object) {
 		return
 	}
 
-	copy(command.val, command.startVal)
+	copy(command.val, command.sections[0])
 	command.Apply(obj)
 }
 
-//TODO: LOOP and TRIGGER commands
+//TODO: TRIGGER command
