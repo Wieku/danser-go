@@ -138,10 +138,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
-	player.storyboard = storyboard.NewStoryboard(player.bMap)
+	if settings.Playfield.StoryboardEnabled {
+		player.storyboard = storyboard.NewStoryboard(player.bMap)
 
-	if player.storyboard == nil {
-		log.Println("Storyboard not found!")
+		if player.storyboard == nil {
+			log.Println("Storyboard not found!")
+		}
 	}
 
 	player.dimGlider = animation.NewGlider(0.0)

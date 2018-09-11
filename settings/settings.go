@@ -223,6 +223,7 @@ type playfield struct {
 	SpectrumInDim        float64 //0, background dim at the start of app
 	SpectrumDim          float64 // 0.95, background dim at the beatmap start
 	SpectrumDimBreaks    float64 // 0.95, background dim at the breaks
+	StoryboardEnabled    bool
 	Scale                float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
 	FlashToTheBeat       bool    //true, background dim varies accoriding to music power
 	UnblurToTheBeat      bool    //true, background blur varies accoriding to music power
