@@ -12,17 +12,17 @@ import (
 	"github.com/wieku/danser/utils"
 	"path/filepath"
 	"github.com/wieku/danser/settings"
-	"sort"
 	"github.com/wieku/danser/beatmap"
 )
 
 type Storyboard struct {
-	textures            map[string]*glhf.Texture
-	BackgroundSprites   []*Sprite
-	BackgroundProcessed []*Sprite
-	ForegroundSprites   []*Sprite
-	ForegroundProcessed []*Sprite
-	zIndex              int64
+	textures   map[string]*glhf.Texture
+	background *StoryboardLayer
+	pass       *StoryboardLayer
+	foreground *StoryboardLayer
+	zIndex     int64
+	bgFile     string
+	bgFileUsed bool
 }
 
 func getSection(line string) string {
@@ -48,7 +48,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		return nil
 	}
 
-	storyboard := &Storyboard{zIndex: -1}
+	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer()}
 
 	storyboard.textures = make(map[string]*glhf.Texture)
 
@@ -111,6 +111,16 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard.loadSprite(fullPath, currentSprite, commands)
 
+	storyboard.background.FinishLoading()
+	storyboard.pass.FinishLoading()
+	storyboard.foreground.FinishLoading()
+
+	for k := range storyboard.textures {
+		if k == beatMap.Bg {
+			storyboard.bgFileUsed = true
+		}
+	}
+
 	return storyboard
 }
 
@@ -158,10 +168,13 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 
 	switch spl[1] {
 	case "0", "Background":
-		storyboard.BackgroundSprites = append(storyboard.BackgroundSprites, sprite)
+		storyboard.background.Add(sprite)
+		break
+	case "2", "Pass":
+		storyboard.pass.Add(sprite)
 		break
 	case "3", "Foreground":
-		storyboard.ForegroundSprites = append(storyboard.ForegroundSprites, sprite)
+		storyboard.foreground.Add(sprite)
 		break
 	}
 }
@@ -182,71 +195,17 @@ func (storyboard *Storyboard) getTexture(path, image string) *glhf.Texture {
 }
 
 func (storyboard *Storyboard) Update(time int64) {
-
-	added := false
-
-	for i := 0; i < len(storyboard.BackgroundSprites); i++ {
-		c := storyboard.BackgroundSprites[i]
-		if c.GetStartTime() <= time {
-			storyboard.BackgroundProcessed = append(storyboard.BackgroundProcessed, c)
-			added = true
-			storyboard.BackgroundSprites = append(storyboard.BackgroundSprites[:i], storyboard.BackgroundSprites[i+1:]...)
-			i--
-		}
-	}
-
-	if added {
-		sort.Slice(storyboard.BackgroundProcessed, func(i, j int) bool {
-			return storyboard.BackgroundProcessed[i].GetZIndex() < storyboard.BackgroundProcessed[j].GetZIndex()
-		})
-	}
-
-	for i := 0; i < len(storyboard.BackgroundProcessed); i++ {
-		c := storyboard.BackgroundProcessed[i]
-		c.Update(time)
-
-		if time >= c.GetEndTime() {
-			storyboard.BackgroundProcessed = append(storyboard.BackgroundProcessed[:i], storyboard.BackgroundProcessed[i+1:]...)
-			i--
-		}
-	}
-
-	added = false
-
-	for i := 0; i < len(storyboard.ForegroundSprites); i++ {
-		c := storyboard.ForegroundSprites[i]
-		if c.GetStartTime() <= time {
-			storyboard.ForegroundProcessed = append(storyboard.ForegroundProcessed, c)
-			added = true
-			storyboard.ForegroundSprites = append(storyboard.ForegroundSprites[:i], storyboard.ForegroundSprites[i+1:]...)
-			i--
-		}
-	}
-
-	if added {
-		sort.Slice(storyboard.ForegroundProcessed, func(i, j int) bool {
-			return storyboard.ForegroundProcessed[i].GetZIndex() < storyboard.ForegroundProcessed[j].GetZIndex()
-		})
-	}
-
-	for i := 0; i < len(storyboard.ForegroundProcessed); i++ {
-		c := storyboard.ForegroundProcessed[i]
-		c.Update(time)
-
-		if time >= c.GetEndTime() {
-			storyboard.ForegroundProcessed = append(storyboard.ForegroundProcessed[:i], storyboard.ForegroundProcessed[i+1:]...)
-			i--
-		}
-	}
+	storyboard.background.Update(time)
+	storyboard.pass.Update(time)
+	storyboard.foreground.Update(time)
 }
 
 func (storyboard *Storyboard) Draw(time int64, batch *render.SpriteBatch) {
+	storyboard.background.Draw(time, batch)
+	storyboard.pass.Draw(time, batch)
+	storyboard.foreground.Draw(time, batch)
+}
 
-	for _, s := range storyboard.BackgroundProcessed {
-		s.Draw(time, batch)
-	}
-
-	for _, s := range storyboard.ForegroundProcessed {
-		s.Draw(time, batch)
-	}
+func (storyboard *Storyboard) BGFileUsed() bool {
+	return storyboard.bgFileUsed
 }

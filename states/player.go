@@ -309,7 +309,7 @@ func (pl *Player) Update() {
 
 	if pl.start {
 
-		if timMs > 5000.0/(fps) {
+		if fps > 58 && timMs > 17 {
 			log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
 		}
 
@@ -381,7 +381,7 @@ func (pl *Player) Update() {
 
 	pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.ResetTransform()
-	if pl.Background != nil && pl.storyboard == nil {
+	if pl.Background != nil && (pl.storyboard == nil || !pl.storyboard.BGFileUsed()) {
 		if settings.Playfield.BlurEnable {
 			pl.blurEffect.SetBlur(blurVal, blurVal)
 		}
