@@ -49,6 +49,10 @@ func NewCommand(data []string) *Command {
 		}
 	}
 
+	if command.end < command.start {
+		command.end = command.start
+	}
+
 	arguments := 0
 
 	switch command.command {
@@ -110,11 +114,16 @@ func NewCommand(data []string) *Command {
 func (command *Command) Update(time int64) {
 
 	if command.command == "P" {
-		if time >= command.start && time <= command.end {
-			command.val[0] = 1
+		if command.start != command.end {
+			if time >= command.start && time <= command.end {
+				command.val[0] = 1
+			} else {
+				command.val[0] = 0
+			}
 		} else {
-			command.val[0] = 0
+			command.val[0] = 1
 		}
+
 		return
 	}
 

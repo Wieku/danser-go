@@ -155,7 +155,10 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		baseFile := strings.TrimSuffix(image, extension)
 
 		for i := 0; i < int(frames); i++ {
-			textures = append(textures, storyboard.getTexture(filepath.Dir(path), baseFile+strconv.Itoa(i)+extension))
+			texture := storyboard.getTexture(filepath.Dir(path), baseFile+strconv.Itoa(i)+extension)
+			if texture != nil {
+				textures = append(textures, texture)
+			}
 		}
 
 	} else {

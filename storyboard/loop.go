@@ -18,7 +18,7 @@ func NewLoop(data []string, object Object) *Loop {
 
 func (loop *Loop) Add(command *Command) {
 	loop.transformations.Add(command)
-	loop.end = loop.start + loop.repeats*loop.transformations.endTime
+	loop.end = loop.start + loop.transformations.startTime + loop.repeats*(loop.transformations.endTime-loop.transformations.startTime)
 }
 
 func (loop *Loop) Update(time int64) {
