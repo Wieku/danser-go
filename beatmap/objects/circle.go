@@ -121,19 +121,21 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	}
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-	batch.DrawUnitR(0)
+	batch.DrawUnit(0)
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		batch.SetColor(1, 1, 1, alpha)
-		batch.DrawUnitR(1)
+		batch.DrawUnit(1)
 
 		if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
 			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 			batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
-			batch.DrawUnitR(2)
+			batch.DrawUnit(2)
 		}
 
 	}
+
+	batch.SetSubScale(1, 1)
 
 	if time >= self.objData.StartTime+int64(preempt/2) {
 		return true

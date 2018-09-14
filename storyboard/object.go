@@ -5,7 +5,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/glhf"
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"unicode"
 	"strings"
 	"math"
@@ -177,13 +176,7 @@ func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
 		return
 	}
 
-	if sprite.additive {
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
-	}
-
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.texture[sprite.currentFrame])
-
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.additive, sprite.texture[sprite.currentFrame])
 }
 
 func (sprite *Sprite) GetPosition() bmath.Vector2d {

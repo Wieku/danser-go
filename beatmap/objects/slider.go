@@ -376,14 +376,14 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)
 
-			batch.DrawUnitR(0)
+			batch.DrawUnit(0)
 			batch.SetColor(1, 1, 1, alpha)
-			batch.DrawUnitR(1)
+			batch.DrawUnit(1)
 
 			if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
 				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 				batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
-				batch.DrawUnitR(3)
+				batch.DrawUnit(3)
 			}
 
 		} else {
@@ -404,7 +404,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
 						}
 
-						batch.DrawUnitR(4)
+						batch.DrawUnit(4)
 					}
 				}
 			}
@@ -413,30 +413,32 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 				batch.SetTranslation(self.objData.StartPos)
 				batch.SetSubScale(1+(1.0-alphaF)*0.5, 1+(1.0-alphaF)*0.5)
 				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alphaF)
-				batch.DrawUnitR(0)
+				batch.DrawUnit(0)
 				batch.SetColor(1, 1, 1, alphaF)
-				batch.DrawUnitR(1)
+				batch.DrawUnit(1)
 			}
 
 			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 			batch.SetSubScale(1.0, 1.0)
 			batch.SetTranslation(self.Pos)
-			batch.DrawUnitR(2)
+			batch.DrawUnit(2)
 		}
 	} else {
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)
-			batch.DrawUnitR(0)
+			batch.DrawUnit(0)
 		} else if time < self.objData.EndTime {
 			batch.SetTranslation(self.Pos)
 
 			if settings.Objects.ForceSliderBallTexture {
-				batch.DrawUnitR(2)
+				batch.DrawUnit(2)
 			} else {
-				batch.DrawUnitR(0)
+				batch.DrawUnit(0)
 			}
 		}
 	}
+
+	batch.SetSubScale(1, 1)
 
 	if time >= self.objData.EndTime+int64(preempt/4) {
 		return true

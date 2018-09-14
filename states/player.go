@@ -397,14 +397,15 @@ func (pl *Player) Update() {
 			pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 		}
 
-		pl.batch.DrawUnit(bmath.NewVec2d(0, 0), 31)
+		pl.batch.DrawUnit(31)
+		pl.batch.Flush()
 
 		pl.batch.SetColor(1, 1, 1, bgAlpha)
 
 		if settings.Playfield.BlurEnable {
 			texture := pl.blurEffect.EndAndProcess()
 			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
-			pl.batch.DrawUnscaled(bmath.NewVec2d(0, 0), texture)
+			pl.batch.DrawUnscaled(texture)
 
 		}
 
@@ -415,10 +416,10 @@ func (pl *Player) Update() {
 		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 		scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width())) / 4
 		pl.batch.SetScale(scl, scl)
-		pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
+		pl.batch.DrawTexture(pl.Logo)
 		pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
 		pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
-		pl.batch.DrawTexture(bmath.NewVec2d(0, 0), pl.Logo)
+		pl.batch.DrawTexture(pl.Logo)
 	}
 
 	pl.batch.End()
@@ -544,6 +545,7 @@ func (pl *Player) Update() {
 
 		}
 
+		pl.batch.Flush()
 		objects.EndSliderOverlay()
 		objects.BeginCircleRender()
 
@@ -562,9 +564,10 @@ func (pl *Player) Update() {
 			}
 		}
 
-		objects.EndCircleRender()
+
 		pl.batch.SetScale(1, 1)
 		pl.batch.End()
+		objects.EndCircleRender()
 	}
 
 	for _, g := range pl.controller.GetCursors() {

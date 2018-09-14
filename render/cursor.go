@@ -249,13 +249,13 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	batch.Begin()
 
-	batch.SetTranslation(bmath.NewVec2d(0, 0))
+	batch.SetTranslation(cursor.RendPos)
 	batch.SetScale(siz*scale, siz*scale)
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), float64(color[3]))
-	batch.DrawUnit(cursor.RendPos, 0)
+	batch.DrawUnit(0)
 	batch.SetColor(1, 1, 1, math.Sqrt(float64(color[3])))
-	batch.DrawUnit(cursor.RendPos, 2)
+	batch.DrawUnit(2)
 
 	batch.End()
 

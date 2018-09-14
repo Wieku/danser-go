@@ -2,13 +2,18 @@
 
 in vec3 in_position;
 in vec2 in_tex_coord;
+in vec4 in_color;
+in float in_additive;
 
 uniform mat4 proj;
-uniform mat4 model;
 
+out vec4 col_tint;
 out vec2 tex_coord;
+out float additive;
 void main()
 {
-    gl_Position = proj * (model * vec4(in_position, 1));
+    gl_Position = proj * vec4(in_position, 1);
     tex_coord = in_tex_coord;
+    col_tint = in_color;
+    additive = in_additive;
 }
