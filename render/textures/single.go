@@ -67,6 +67,10 @@ func (texture *TextureSingle) Bind(loc uint) {
 	texture.store.Bind(loc)
 }
 
+func (texture *TextureSingle) GetLocation() uint {
+	return texture.store.binding
+}
+
 func (texture *TextureSingle) Dispose() {
 	mainthread.CallNonBlock(func() {
 		texture.store.Dispose()

@@ -24,6 +24,7 @@ type Texture interface {
 	GetLayers() int32
 	SetFiltering(min, mag Filter)
 	Bind(loc uint)
+	GetLocation() uint
 	Dispose()
 }
 
@@ -35,6 +36,7 @@ type TextureRegion struct {
 
 type textureStore struct {
 	id                             uint32
+	binding                        uint
 	layers, width, height, mipmaps int32
 }
 
@@ -64,6 +66,7 @@ func newStore(layerNum, width, height, mipmaps int) *textureStore {
 }
 
 func (store *textureStore) Bind(loc uint) {
+	store.binding = loc
 	gl.ActiveTexture(gl.TEXTURE0 + uint32(loc))
 	gl.BindTexture(gl.TEXTURE_2D_ARRAY, store.id)
 }
