@@ -1,4 +1,4 @@
-package textures
+package texture
 
 import (
 	"image"
@@ -15,7 +15,7 @@ type TextureSingle struct {
 func NewTextureSingle(width, height, mipmaps int) *TextureSingle {
 	texture := new(TextureSingle)
 	texture.store = newStore(1, width, height, mipmaps)
-	texture.defRegion = TextureRegion{0, 1, 0, 1, int32(width), int32(height), 0}
+	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(width), int32(height), 0}
 
 	runtime.SetFinalizer(texture, texture.Dispose)
 

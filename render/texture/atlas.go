@@ -1,4 +1,4 @@
-package textures
+package texture
 
 import (
 	"github.com/faiface/mainthread"
@@ -38,7 +38,7 @@ func NewTextureAtlas(size, mipmaps int) *TextureAtlas {
 	}
 
 	texture.store = newStore(1, size, size, mipmaps)
-	texture.defRegion = TextureRegion{0, 1, 0, 1, int32(size), int32(size), 0}
+	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(size), int32(size), 0}
 	texture.padding = 1 << uint(texture.store.mipmaps)
 
 	runtime.SetFinalizer(texture, texture.Dispose)
@@ -92,11 +92,9 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 			gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(smallest.x), int32(smallest.y), int32(layer), int32(width), int32(height), 1, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(data))
 			gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
 
-			region := TextureRegion{Layer: int32(layer)}
+			region := TextureRegion{texture: texture, Width: int32(width), Height: int32(height), Layer: int32(layer)}
 			region.U1 = (float32(smallest.x) + 0.5) / float32(texture.store.width)
 			region.V1 = (float32(smallest.y) + 0.5) / float32(texture.store.height)
-			region.Width = int32(width)
-			region.Height = int32(height)
 			region.U2 = region.U1 + float32(width-1)/float32(texture.store.width)
 			region.V2 = region.V1 + float32(height-1)/float32(texture.store.height)
 			texture.subTextures[name] = &region

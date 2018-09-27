@@ -1,4 +1,4 @@
-package textures
+package texture
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -29,6 +29,7 @@ type Texture interface {
 }
 
 type TextureRegion struct {
+	texture Texture
 	U1, U2, V1, V2 float32
 	Width, Height  int32
 	Layer          int32
