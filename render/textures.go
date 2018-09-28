@@ -1,30 +1,34 @@
 package render
 
 import (
-	"github.com/wieku/glhf"
 	"github.com/wieku/danser/utils"
+	"github.com/Wieku/danser/render/texture"
 )
 
-var Circle *glhf.Texture
-var ApproachCircle *glhf.Texture
-var CircleFull *glhf.Texture
-var CircleOverlay *glhf.Texture
-var SliderGradient *glhf.Texture
-var SliderTick *glhf.Texture
-var SliderBall *glhf.Texture
-var CursorTex *glhf.Texture
-var CursorTop *glhf.Texture
-var CursorTrail *glhf.Texture
+var Atlas *texture.TextureAtlas
+
+var Circle *texture.TextureRegion
+var ApproachCircle *texture.TextureRegion
+var CircleFull *texture.TextureRegion
+var CircleOverlay *texture.TextureRegion
+var SliderGradient *texture.TextureSingle
+var SliderTick *texture.TextureRegion
+var SliderBall *texture.TextureRegion
+var CursorTex *texture.TextureRegion
+var CursorTop *texture.TextureRegion
+var CursorTrail *texture.TextureSingle
 
 func LoadTextures() {
-	Circle, _ = utils.LoadTexture("assets/textures/hitcircle.png")
-	ApproachCircle, _ = utils.LoadTexture("assets/textures/approachcircle.png")
-	CircleFull, _ = utils.LoadTexture("assets/textures/hitcircle-full.png")
-	CircleOverlay, _ = utils.LoadTexture("assets/textures/hitcircleoverlay.png")
+	Atlas = texture.NewTextureAtlas(8192, 4)
+	Atlas.Bind(16)
+	Circle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle.png")
+	ApproachCircle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/approachcircle.png")
+	CircleFull, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle-full.png")
+	CircleOverlay, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircleoverlay.png")
+	SliderTick, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderscorepoint.png")
+	SliderBall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderball.png")
+	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
+	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
 	SliderGradient, _ = utils.LoadTexture("assets/textures/slidergradient.png")
-	SliderTick, _ = utils.LoadTexture("assets/textures/sliderscorepoint.png")
-	SliderBall, _ = utils.LoadTexture("assets/textures/sliderball.png")
-	CursorTex, _ = utils.LoadTexture("assets/textures/cursor.png")
-	CursorTop, _ = utils.LoadTexture("assets/textures/cursor-top.png")
-	CursorTrail, _ = utils.LoadTextureU("assets/textures/cursortrail.png")
+	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
 }

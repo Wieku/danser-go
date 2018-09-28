@@ -30,7 +30,6 @@ func (layer *StoryboardLayer) FinishLoading() {
 }
 
 func (layer *StoryboardLayer) Update(time int64) {
-	added := false
 	toRemove := 0
 
 	for i := 0; i < len(layer.spriteQueue); i++ {
@@ -39,19 +38,15 @@ func (layer *StoryboardLayer) Update(time int64) {
 			break
 		}
 
-		layer.spriteProcessed = append(layer.spriteProcessed, c)
-		added = true
 		toRemove++
 	}
 
-	if added {
+	if toRemove > 0 {
+		layer.spriteProcessed = append(layer.spriteProcessed, layer.spriteQueue[:toRemove]...)
+		layer.spriteQueue = layer.spriteQueue[toRemove:]
 		sort.Slice(layer.spriteProcessed, func(i, j int) bool {
 			return layer.spriteProcessed[i].GetZIndex() < layer.spriteProcessed[j].GetZIndex()
 		})
-	}
-
-	if toRemove > 0 {
-		layer.spriteQueue = layer.spriteQueue[toRemove:]
 	}
 
 	layer.mutex.Lock()
@@ -76,7 +71,9 @@ func (layer *StoryboardLayer) Draw(time int64, batch *render.SpriteBatch) {
 	layer.mutex.Lock()
 
 	for i := 0; i < layer.visibleObjects; i++ {
-		layer.drawArray[i].Draw(time, batch)
+		if layer.drawArray[i] != nil {
+			layer.drawArray[i].Draw(time, batch)
+		}
 	}
 
 	layer.mutex.Unlock()

@@ -1,10 +1,10 @@
 #version 330
 
 in vec4 col_tint;
-in vec2 tex_coord;
+in vec3 tex_coord;
 in float additive;
 
-uniform sampler2D tex;
+uniform sampler2DArray tex;
 
 out vec4 color;
 

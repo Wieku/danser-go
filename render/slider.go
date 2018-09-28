@@ -89,7 +89,7 @@ func (sr *SliderRenderer) Begin() {
 	sliderShader.Begin()
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	SliderGradient.Begin()
+	SliderGradient.Bind(0)
 	sliderShader.SetUniformAttr(1, int32(0))
 	sliderShader.SetUniformAttr(2, cam)
 }
@@ -109,7 +109,6 @@ func (sr *SliderRenderer) SetScale(scale float64) {
 
 func (sr *SliderRenderer) EndAndRender() {
 
-	SliderGradient.End()
 	sliderShader.End()
 	fbo.End()
 	gl.Disable(gl.DEPTH_TEST)

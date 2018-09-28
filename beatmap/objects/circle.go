@@ -7,7 +7,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/settings"
-	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
 type Circle struct {
@@ -71,32 +70,6 @@ func (self *Circle) GetPosition() bmath.Vector2d {
 	return self.objData.StartPos
 }
 
-func BeginCircleRender() {
-	gl.ActiveTexture(gl.TEXTURE0)
-	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		render.CircleFull.Begin()
-	} else {
-		render.Circle.Begin()
-	}
-
-	gl.ActiveTexture(gl.TEXTURE1)
-	render.CircleOverlay.Begin()
-
-	gl.ActiveTexture(gl.TEXTURE2)
-	render.ApproachCircle.Begin()
-}
-
-func EndCircleRender() {
-	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		render.CircleFull.End()
-	} else {
-		render.Circle.End()
-	}
-
-	render.CircleOverlay.End()
-	render.ApproachCircle.End()
-}
-
 func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 
 	alpha := 1.0
@@ -121,16 +94,20 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	}
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-	batch.DrawUnit(0)
+	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
+		batch.DrawUnit(*render.CircleFull)
+	} else {
+		batch.DrawUnit(*render.Circle)
+	}
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		batch.SetColor(1, 1, 1, alpha)
-		batch.DrawUnit(1)
+		batch.DrawUnit(*render.CircleOverlay)
 
 		if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
 			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 			batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
-			batch.DrawUnit(2)
+			batch.DrawUnit(*render.ApproachCircle)
 		}
 
 	}

@@ -189,7 +189,7 @@ func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) []mgl32.
 }
 
 type objects struct {
-	MandalaTexturesTrigger                 int     //5, minimum value of cursors needed to use more translucent textures
+	MandalaTexturesTrigger                 int     //5, minimum value of cursors needed to use more translucent texture
 	MandalaTexturesAlpha                   float64 //0.3
 	ForceSliderBallTexture                 bool    //true, if this is disabled, mandala texture will be used for slider ball
 	DrawApproachCircles                    bool    //true

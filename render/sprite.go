@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"io/ioutil"
+	"github.com/Wieku/danser/render/texture"
 )
 
 const batchSize = 2000
@@ -15,7 +16,7 @@ var shader *glhf.Shader = nil
 func setup() {
 	circleVertexFormat := glhf.AttrFormat{
 		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec2},
+		{Name: "in_tex_coord", Type: glhf.Vec3},
 		{Name: "in_color", Type: glhf.Vec4},
 		{Name: "in_additive", Type: glhf.Float},
 	}
@@ -44,8 +45,7 @@ type SpriteBatch struct {
 	subscale   bmath.Vector2d
 
 	transform mgl32.Mat4
-	texture   *glhf.Texture
-	unit      int
+	texture   texture.Texture
 
 	data        []float32
 	vao         *glhf.VertexSlice
@@ -65,8 +65,7 @@ func NewSpriteBatch() *SpriteBatch {
 		bmath.NewVec2d(1, 1),
 		mgl32.Ident4(),
 		nil,
-		-1,
-		make([]float32, batchSize*6*10),
+		make([]float32, batchSize*6*11),
 		glhf.MakeVertexSlice(shader, batchSize*6, batchSize*6),
 		0}
 }
@@ -75,49 +74,47 @@ func (batch *SpriteBatch) Begin() {
 	shader.Begin()
 	shader.SetUniformAttr(0, batch.Projection)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	if batch.texture != nil && batch.texture.GetLocation() == 0 {
+		batch.texture.Bind(0)
+	}
 }
 
-func (batch *SpriteBatch) bind(texture *glhf.Texture) {
+func (batch *SpriteBatch) bind(texture texture.Texture) {
 	if batch.texture != nil {
-		if batch.texture.ID() == texture.ID() {
+		if batch.texture.GetID() == texture.GetID() {
 			return
 		}
 		batch.Flush()
-		batch.texture.End()
 	}
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	texture.Begin()
+	if texture.GetLocation() == 0 {
+		texture.Bind(0)
+	}
 	batch.texture = texture
-	batch.unit = 0
-	shader.SetUniformAttr(1, int32(0))
+	shader.SetUniformAttr(1, int32(texture.GetLocation()))
 }
 
-func (batch *SpriteBatch) DrawUnit(unit int) {
+func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0).Mul4(mgl32.Scale3D(batch.scale.X32()*batch.subscale.X32(), batch.scale.Y32()*batch.subscale.Y32(), 0))
-	batch.DrawUnitSep(transf, batch.color, unit)
+	batch.DrawUnitSep(transf, batch.color, texture)
 }
 
-func (batch *SpriteBatch) DrawUnitSep(transform mgl32.Mat4, color mgl32.Vec4, unit int) {
+func (batch *SpriteBatch) DrawUnitSep(transform mgl32.Mat4, color mgl32.Vec4, texture texture.TextureRegion) {
 
-	if batch.unit != unit {
-		batch.Flush()
-		batch.unit = unit
-		shader.SetUniformAttr(1, int32(unit))
-	}
+	batch.bind(texture.Texture)
 
 	vec00 := transform.Mul4x1(mgl32.Vec4{-1, -1, 0, 1})
 	vec10 := transform.Mul4x1(mgl32.Vec4{1, -1, 0, 1})
 	vec11 := transform.Mul4x1(mgl32.Vec4{1, 1, 0, 1})
 	vec01 := transform.Mul4x1(mgl32.Vec4{-1, 1, 0, 1})
 
-	batch.addVertex(vec00.Vec3(), mgl32.Vec2{0, 0}, color)
-	batch.addVertex(vec10.Vec3(), mgl32.Vec2{1, 0}, color)
-	batch.addVertex(vec11.Vec3(), mgl32.Vec2{1, 1}, color)
+	batch.addVertex(vec00.Vec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec10.Vec3(), mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec11.Vec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
 
-	batch.addVertex(vec11.Vec3(), mgl32.Vec2{1, 1}, color)
-	batch.addVertex(vec01.Vec3(), mgl32.Vec2{0, 1}, color)
-	batch.addVertex(vec00.Vec3(), mgl32.Vec2{0, 0}, color)
+	batch.addVertex(vec11.Vec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
+	batch.addVertex(vec01.Vec3(), mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
+	batch.addVertex(vec00.Vec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
 
 	if batch.currentSize >= len(batch.data)-1 {
 		batch.Flush()
@@ -130,7 +127,7 @@ func (batch *SpriteBatch) Flush() {
 		return
 	}
 
-	subVao := batch.vao.Slice(0, batch.currentSize/10)
+	subVao := batch.vao.Slice(0, batch.currentSize/11)
 	subVao.Begin()
 	subVao.SetVertexData(batch.data[:batch.currentSize])
 	subVao.Draw()
@@ -138,24 +135,18 @@ func (batch *SpriteBatch) Flush() {
 	batch.currentSize = 0
 }
 
-func (batch *SpriteBatch) addVertex(vx mgl32.Vec3, texCoord mgl32.Vec2, color mgl32.Vec4) {
+func (batch *SpriteBatch) addVertex(vx mgl32.Vec3, texCoord mgl32.Vec3, color mgl32.Vec4) {
 	add := 0
 	if batch.additive {
 		add = 1
 	}
-	fillArray(batch.data, batch.currentSize, vx.X(), vx.Y(), vx.Z(), texCoord.X(), texCoord.Y(), color.X(), color.Y(), color.Z(), color.W(), float32(add))
-	batch.currentSize += 10
+	fillArray(batch.data, batch.currentSize, vx.X(), vx.Y(), vx.Z(), texCoord.X(), texCoord.Y(), texCoord.Z(), color.X(), color.Y(), color.Z(), color.W(), float32(add))
+	batch.currentSize += 11
 }
 
 func (batch *SpriteBatch) End() {
 	batch.Flush()
 	shader.End()
-	if batch.texture != nil {
-		batch.texture.End()
-		batch.texture = nil
-	}
-	batch.unit = -1
-
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
 
@@ -189,25 +180,25 @@ func (batch *SpriteBatch) SetAdditive(additive bool) {
 	batch.additive = additive
 }
 
-func (batch *SpriteBatch) DrawTexture(texture *glhf.Texture) {
-	batch.bind(texture)
-	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0).Mul4(mgl32.Scale3D(batch.scale.X32()*batch.subscale.X32()*float32(texture.Width())/2, batch.scale.Y32()*batch.subscale.Y32()*float32(texture.Width())/2, 0))
-	batch.DrawUnitSep(transf, batch.color, 0)
+func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
+	batch.bind(texture.Texture)
+	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0).Mul4(mgl32.Scale3D(batch.scale.X32()*batch.subscale.X32()*float32(texture.Width)/2, batch.scale.Y32()*batch.subscale.Y32()*float32(texture.Height)/2, 0))
+	batch.DrawUnitSep(transf, batch.color, texture)
 }
 
-func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture *glhf.Texture) {
-	transf := mgl32.Translate3D(position.X32()-64, position.Y32()-48, 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32()*float32(texture.Width())/2, scale.Y32()*float32(texture.Height())/2, 1)).Mul4(mgl32.Translate3D(-origin.X32(), -origin.Y32(), 0)).Mul4(mgl32.Scale3D(flip.X32(), flip.Y32(), 1))
+func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
+	transf := mgl32.Translate3D(position.X32()-64, position.Y32()-48, 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32()*float32(texture.Width)/2, scale.Y32()*float32(texture.Height)/2, 1)).Mul4(mgl32.Translate3D(-origin.X32(), -origin.Y32(), 0)).Mul4(mgl32.Scale3D(flip.X32(), flip.Y32(), 1))
 
-	batch.bind(texture)
+	batch.bind(texture.Texture)
 	batch.SetAdditive(additive)
-	batch.DrawUnitSep(transf, color, 0)
+	batch.DrawUnitSep(transf, color, texture)
 	batch.SetAdditive(false)
 }
 
-func (batch *SpriteBatch) DrawUnscaled(texture *glhf.Texture) {
-	batch.bind(texture)
+func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
+	batch.bind(texture.Texture)
 	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0)
-	batch.DrawUnitSep(transf, batch.color, 0)
+	batch.DrawUnitSep(transf, batch.color, texture)
 }
 
 /*func (batch *SpriteBatch) DrawUnitR(unit int) {

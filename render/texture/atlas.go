@@ -41,14 +41,19 @@ func NewTextureAtlas(size, mipmaps int) *TextureAtlas {
 	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(size), int32(size), 0}
 	texture.padding = 1 << uint(texture.store.mipmaps)
 
-	runtime.SetFinalizer(texture, texture.Dispose)
+	runtime.SetFinalizer(texture, (*TextureAtlas).Dispose)
 
 	return texture
 }
 
 func (texture *TextureAtlas) AddTexture(name string, width, height int, data []uint8) *TextureRegion {
+	texture.Bind(texture.store.binding)
 	if len(data) != width*height*4 {
 		panic("Wrong number of pixels given!")
+	}
+
+	if int(texture.GetWidth()) < width || int(texture.GetHeight()) < height {
+		log.Panicf("Texture is too big! Atlas size: %dx%d, texture size: %dx%d", texture.GetWidth(), texture.GetHeight(), width, height)
 	}
 
 	imBounds := rectangle{0, 0, width + texture.padding, height + texture.padding}
@@ -92,7 +97,7 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 			gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(smallest.x), int32(smallest.y), int32(layer), int32(width), int32(height), 1, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(data))
 			gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
 
-			region := TextureRegion{texture: texture, Width: int32(width), Height: int32(height), Layer: int32(layer)}
+			region := TextureRegion{Texture: texture, Width: int32(width), Height: int32(height), Layer: int32(layer)}
 			region.U1 = (float32(smallest.x) + 0.5) / float32(texture.store.width)
 			region.V1 = (float32(smallest.y) + 0.5) / float32(texture.store.height)
 			region.U2 = region.U1 + float32(width-1)/float32(texture.store.width)

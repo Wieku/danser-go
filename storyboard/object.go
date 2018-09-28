@@ -4,10 +4,10 @@ import (
 	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
-	"github.com/wieku/glhf"
 	"unicode"
 	"strings"
 	"math"
+	"github.com/Wieku/danser/render/texture"
 )
 
 type color struct {
@@ -43,7 +43,7 @@ type Object interface {
 }
 
 type Sprite struct {
-	texture                    []*glhf.Texture
+	texture                    []*texture.TextureRegion
 	frameDelay                 float64
 	loopForever                bool
 	currentFrame               int
@@ -72,7 +72,7 @@ func cutWhites(text string) (string, int) {
 	return text, 0
 }
 
-func NewSprite(texture []*glhf.Texture, frameDelay float64, loopForever bool, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
+func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever bool, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
 	sprite := &Sprite{texture: texture, frameDelay: frameDelay, loopForever: loopForever, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
 	sprite.transform = NewTransformations(sprite)
 
@@ -176,7 +176,7 @@ func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
 		return
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.additive, sprite.texture[sprite.currentFrame])
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.additive, *sprite.texture[sprite.currentFrame])
 }
 
 func (sprite *Sprite) GetPosition() bmath.Vector2d {

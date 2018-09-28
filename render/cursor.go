@@ -187,18 +187,10 @@ func (cursor *Cursor) UpdateRenderer() {
 }
 
 func BeginCursorRender() {
-	gl.ActiveTexture(gl.TEXTURE0)
-	CursorTex.Begin()
-	gl.ActiveTexture(gl.TEXTURE1)
-	CursorTrail.Begin()
-	gl.ActiveTexture(gl.TEXTURE2)
-	CursorTop.Begin()
+	CursorTrail.Bind(1)
 }
 
 func EndCursorRender() {
-	CursorTop.End()
-	CursorTrail.End()
-	CursorTex.End()
 }
 
 func (cursor *Cursor) Draw(scale float64, batch *SpriteBatch, color mgl32.Vec4) {
@@ -253,9 +245,9 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	batch.SetScale(siz*scale, siz*scale)
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), float64(color[3]))
-	batch.DrawUnit(0)
+	batch.DrawUnit(*CursorTex)
 	batch.SetColor(1, 1, 1, math.Sqrt(float64(color[3])))
-	batch.DrawUnit(2)
+	batch.DrawUnit(*CursorTop)
 
 	batch.End()
 

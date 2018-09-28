@@ -7,8 +7,8 @@ import (
 	_ "image/png"
 	"image"
 	"image/draw"
-	"github.com/wieku/glhf"
 	"log"
+	"github.com/Wieku/danser/render/texture"
 )
 
 func LoadImage(path string) (*image.NRGBA, error) {
@@ -29,7 +29,7 @@ func LoadImage(path string) (*image.NRGBA, error) {
 	return nrgba, nil
 }
 
-func LoadTexture(path string) (*glhf.Texture, error) {
+/*func LoadTexture(path string) (*texture.Texture, error) {
 	img, err := LoadImage(path)
 	if err == nil {
 		tex := glhf.NewTexture(
@@ -47,9 +47,28 @@ func LoadTexture(path string) (*glhf.Texture, error) {
 		return tex, nil
 	}
 	return nil, err
+}*/
+
+func LoadTexture(path string) (*texture.TextureSingle, error) {
+	img, err := LoadImage(path)
+	if err == nil {
+		tex := texture.LoadTextureSingle(img, 4)
+
+		return tex, nil
+	}
+	return nil, err
 }
 
-func LoadTextureU(path string) (*glhf.Texture, error) {
+func LoadTextureToAtlas(atlas *texture.TextureAtlas, path string) (*texture.TextureRegion, error) {
+	img, err := LoadImage(path)
+	if err == nil {
+		return atlas.AddTexture(path, img.Bounds().Dx(), img.Bounds().Dy(), img.Pix), nil
+	}
+	log.Println(err)
+	return nil, err
+}
+
+/*func LoadTextureU(path string) (*glhf.Texture, error) {
 	img, err := LoadImage(path)
 	if err == nil {
 		tex := glhf.NewTexture(
@@ -67,4 +86,4 @@ func LoadTextureU(path string) (*glhf.Texture, error) {
 		return tex, nil
 	}
 	return nil, err
-}
+}*/

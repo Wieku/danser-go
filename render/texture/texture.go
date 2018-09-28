@@ -29,7 +29,7 @@ type Texture interface {
 }
 
 type TextureRegion struct {
-	texture Texture
+	Texture        Texture
 	U1, U2, V1, V2 float32
 	Width, Height  int32
 	Layer          int32

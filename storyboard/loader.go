@@ -6,17 +6,18 @@ import (
 	"os"
 	"log"
 	"strings"
-	"github.com/wieku/glhf"
 	"strconv"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/utils"
 	"path/filepath"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/beatmap"
+	"github.com/Wieku/danser/render/texture"
 )
 
 type Storyboard struct {
-	textures   map[string]*glhf.Texture
+	textures   map[string]*texture.TextureRegion
+	atlas      *texture.TextureAtlas
 	background *StoryboardLayer
 	pass       *StoryboardLayer
 	foreground *StoryboardLayer
@@ -48,9 +49,9 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		return nil
 	}
 
-	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer()}
-
-	storyboard.textures = make(map[string]*glhf.Texture)
+	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer(), atlas: texture.NewTextureAtlas(8192, 4)}
+	storyboard.atlas.Bind(17)
+	storyboard.textures = make(map[string]*texture.TextureRegion)
 
 	file, err := os.Open(fullPath)
 
@@ -140,7 +141,7 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		image += ".png"
 	}
 
-	textures := make([]*glhf.Texture, 0)
+	textures := make([]*texture.TextureRegion, 0)
 	frameDelay := 0.0
 	loopForever := true
 
@@ -182,16 +183,18 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 	}
 }
 
-func (storyboard *Storyboard) getTexture(path, image string) *glhf.Texture {
-	var texture *glhf.Texture
+func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureRegion {
+	var texture *texture.TextureRegion
 
 	if texture = storyboard.textures[image]; texture == nil {
-		var err error
-		texture, err = utils.LoadTextureU(path + string(os.PathSeparator) + image)
+		nrgba, err := utils.LoadImage(path + string(os.PathSeparator) + image)
+
 		if err != nil {
 			log.Println(err)
+		} else {
+			texture = storyboard.atlas.AddTexture(image, nrgba.Bounds().Dx(), nrgba.Bounds().Dy(), nrgba.Pix)
+			storyboard.textures[image] = texture
 		}
-		storyboard.textures[image] = texture
 	}
 
 	return texture

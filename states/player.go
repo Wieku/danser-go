@@ -19,6 +19,7 @@ import (
 	"os"
 	"github.com/Wieku/danser/render/effects"
 	"github.com/Wieku/danser/storyboard"
+	"github.com/Wieku/danser/render/texture"
 )
 
 type Player struct {
@@ -35,8 +36,8 @@ type Player struct {
 	controller     dance.Controller
 	circles        []*objects.Circle
 	sliders        []*objects.Slider
-	Background     *glhf.Texture
-	Logo           *glhf.Texture
+	Background     *texture.TextureRegion
+	Logo           *texture.TextureRegion
 	BgScl          bmath.Vector2d
 	Scl            float64
 	SclA           float64
@@ -75,18 +76,26 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.SetupSlider()
 
 	log.Println(beatMap.Bg)
+
 	var err error
-	player.Background, err = utils.LoadTexture(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Bg)
-	player.Logo, err = utils.LoadTexture("assets/textures/logo-medium.png")
-	log.Println(err)
+	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Bg)
+	log.Println("bghwewaeaw", player.Background)
+	if err != nil {
+		log.Println(err)
+	}
+
+	player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
+
+	if err != nil {
+		log.Println(err)
+	}
+
 	winscl := settings.Graphics.GetAspectRatio()
 
 	if player.Background != nil {
-		gl.ActiveTexture(gl.TEXTURE31)
-		player.Background.Begin()
-		player.blurEffect = effects.NewBlurEffect(player.Background.Width(), player.Background.Height() /*int(settings.Graphics.GetHeight())*/)
+		player.blurEffect = effects.NewBlurEffect(int(player.Background.Width), int(player.Background.Height))
 		player.blurEffect.SetBlur(0.0, 0.0)
-		imScl := float64(player.Background.Width()) / float64(player.Background.Height())
+		imScl := float64(player.Background.Width) / float64(player.Background.Height)
 		if imScl < winscl {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
 		} else {
@@ -397,39 +406,38 @@ func (pl *Player) Update() {
 			pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 		}
 
-		pl.batch.DrawUnit(31)
+		pl.batch.DrawUnit(*pl.Background)
 		pl.batch.Flush()
 
 		pl.batch.SetColor(1, 1, 1, bgAlpha)
 
 		if settings.Playfield.BlurEnable {
-			texture := pl.blurEffect.EndAndProcess()
+			//texture := pl.blurEffect.EndAndProcess()
 			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
-			pl.batch.DrawUnscaled(texture)
+			//pl.batch.DrawUnscaled(texture)
 
 		}
 
 	}
 
+	if pl.storyboard != nil {
+		pl.batch.SetCamera(cameras[0])
+		pl.storyboard.Draw(pl.progressMs, pl.batch)
+		pl.batch.Flush()
+	}
+
 	if pl.fxGlider.GetValue() > 0.0 {
 		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
 		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-		scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width())) / 4
+		scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width)) / 4
 		pl.batch.SetScale(scl, scl)
-		pl.batch.DrawTexture(pl.Logo)
+		pl.batch.DrawTexture(*pl.Logo)
 		pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
 		pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
-		pl.batch.DrawTexture(pl.Logo)
+		pl.batch.DrawTexture(*pl.Logo)
 	}
 
 	pl.batch.End()
-
-	if pl.storyboard != nil {
-		pl.batch.Begin()
-		pl.batch.SetCamera(cameras[0])
-		pl.storyboard.Draw(pl.progressMs, pl.batch)
-		pl.batch.End()
-	}
 
 	if pl.fxGlider.GetValue() > 0.0 {
 
@@ -528,7 +536,7 @@ func (pl *Player) Update() {
 
 		pl.batch.Begin()
 		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
-		objects.BeginSliderOverlay()
+
 		for j := 0; j < settings.DIVIDES; j++ {
 
 			pl.batch.SetCamera(cameras[j])
@@ -546,8 +554,6 @@ func (pl *Player) Update() {
 		}
 
 		pl.batch.Flush()
-		objects.EndSliderOverlay()
-		objects.BeginCircleRender()
 
 		for j := 0; j < settings.DIVIDES; j++ {
 
@@ -567,7 +573,6 @@ func (pl *Player) Update() {
 
 		pl.batch.SetScale(1, 1)
 		pl.batch.End()
-		objects.EndCircleRender()
 	}
 
 	for _, g := range pl.controller.GetCursors() {
