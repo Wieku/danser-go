@@ -2,7 +2,7 @@ package render
 
 import (
 	"github.com/wieku/danser/utils"
-	"github.com/Wieku/danser/render/texture"
+	"github.com/wieku/danser/render/texture"
 )
 
 var Atlas *texture.TextureAtlas

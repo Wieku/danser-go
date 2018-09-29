@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"strings"
 	"math"
-	"github.com/Wieku/danser/render/texture"
+	"github.com/wieku/danser/render/texture"
 )
 
 type color struct {

@@ -6,37 +6,13 @@ import (
 	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"io/ioutil"
-	"github.com/Wieku/danser/render/texture"
+	"github.com/wieku/danser/render/texture"
 )
 
 const batchSize = 2000
 
-var shader *glhf.Shader = nil
-
-func setup() {
-	circleVertexFormat := glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec3},
-		{Name: "in_color", Type: glhf.Vec4},
-		{Name: "in_additive", Type: glhf.Float},
-	}
-
-	circleUniformFormat := glhf.AttrFormat{
-		{Name: "proj", Type: glhf.Mat4},
-		{Name: "tex", Type: glhf.Int},
-	}
-	vert, _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
-	frag, _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
-	var err error
-	shader, err = glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
-
-	if err != nil {
-		panic("Sprite: " + err.Error())
-	}
-
-}
-
 type SpriteBatch struct {
+	shader *glhf.Shader
 	additive   bool
 	color      mgl32.Vec4
 	Projection mgl32.Mat4
@@ -52,11 +28,35 @@ type SpriteBatch struct {
 	currentSize int
 }
 
-func NewSpriteBatch() *SpriteBatch {
-	if shader == nil {
-		setup()
+func NewSpriteBatch(sdfShader bool) *SpriteBatch {
+	circleVertexFormat := glhf.AttrFormat{
+		{Name: "in_position", Type: glhf.Vec3},
+		{Name: "in_tex_coord", Type: glhf.Vec3},
+		{Name: "in_color", Type: glhf.Vec4},
+		{Name: "in_additive", Type: glhf.Float},
 	}
+
+	circleUniformFormat := glhf.AttrFormat{
+		{Name: "proj", Type: glhf.Mat4},
+		{Name: "tex", Type: glhf.Int},
+	}
+	vert, _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
+	var frag []byte
+	if sdfShader {
+		frag, _ = ioutil.ReadFile("assets/shaders/sdf.fsh")
+	} else {
+		frag, _ = ioutil.ReadFile("assets/shaders/sprite.fsh")
+	}
+
+	var err error
+	shader, err := glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
+
+	if err != nil {
+		panic("Sprite: " + err.Error())
+	}
+
 	return &SpriteBatch{
+		shader,
 		false,
 		mgl32.Vec4{1, 1, 1, 1},
 		mgl32.Ident4(),
@@ -71,8 +71,8 @@ func NewSpriteBatch() *SpriteBatch {
 }
 
 func (batch *SpriteBatch) Begin() {
-	shader.Begin()
-	shader.SetUniformAttr(0, batch.Projection)
+	batch.shader.Begin()
+	batch.shader.SetUniformAttr(0, batch.Projection)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	if batch.texture != nil && batch.texture.GetLocation() == 0 {
 		batch.texture.Bind(0)
@@ -91,7 +91,7 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 		texture.Bind(0)
 	}
 	batch.texture = texture
-	shader.SetUniformAttr(1, int32(texture.GetLocation()))
+	batch.shader.SetUniformAttr(1, int32(texture.GetLocation()))
 }
 
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
@@ -146,7 +146,7 @@ func (batch *SpriteBatch) addVertex(vx mgl32.Vec3, texCoord mgl32.Vec3, color mg
 
 func (batch *SpriteBatch) End() {
 	batch.Flush()
-	shader.End()
+	batch.shader.End()
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
 
@@ -219,5 +219,5 @@ func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
 func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
 	batch.Flush()
 	batch.Projection = camera
-	shader.SetUniformAttr(0, batch.Projection)
+	batch.shader.SetUniformAttr(0, batch.Projection)
 }

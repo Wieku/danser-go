@@ -17,12 +17,15 @@ import (
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/animation"
 	"os"
-	"github.com/Wieku/danser/render/effects"
-	"github.com/Wieku/danser/storyboard"
-	"github.com/Wieku/danser/render/texture"
+	"github.com/wieku/danser/render/effects"
+	"github.com/wieku/danser/storyboard"
+	"github.com/wieku/danser/render/texture"
+	"github.com/Wieku/danser/render/font"
+	"fmt"
 )
 
 type Player struct {
+	font *font.Font
 	bMap           *beatmap.BeatMap
 	queue2         []objects.BaseObject
 	processed      []objects.BaseObject
@@ -55,20 +58,28 @@ type Player struct {
 	vaoDirty       bool
 	rotation       float64
 	profiler       *utils.FPSCounter
+	profilerU       *utils.FPSCounter
 
 	storyboard *storyboard.Storyboard
 
 	camera       *bmath.Camera
+	scamera       *bmath.Camera
 	dimGlider    *animation.Glider
 	blurGlider   *animation.Glider
 	fxGlider     *animation.Glider
 	cursorGlider *animation.Glider
+	counter float64
+	fpsC float64
+	fpsU float64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := &Player{}
 	render.LoadTextures()
-	player.batch = render.NewSpriteBatch()
+	player.batch = render.NewSpriteBatch(false)
+	file, _ := os.Open("assets/fonts/Roboto-Regular.ttf")
+	defer file.Close()
+	player.font = font.NewFont(file)
 	player.bMap = beatMap
 	log.Println(beatMap.Name + " " + beatMap.Difficulty)
 	player.CS = (1.0 - 0.7*(beatMap.CircleSize-5)/5) / 2 * settings.Objects.CSMult
@@ -115,11 +126,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		scl = (settings.Graphics.GetWidthF() * 900.0 / 1080.0) / float64(512) * settings.Playfield.Scale
 	}
 
-	player.camera = &bmath.Camera{}
+	player.camera = bmath.NewCamera()
 	player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
 	player.camera.SetOrigin(bmath.NewVec2d(512.0/2, 384.0/2))
 	player.camera.SetScale(bmath.NewVec2d(scl, scl))
 	player.camera.Update()
+
+	player.scamera = bmath.NewCamera()
+	player.scamera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
+	player.scamera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
+	player.scamera.Update()
 
 	render.Camera = player.camera
 
@@ -234,10 +250,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.fxBatch = render.NewFxBatch()
 	player.vao = player.fxBatch.CreateVao(2 * 3 * (256 + 128))
+	player.profilerU = utils.NewFPSCounter(60, false)
 	go func() {
 		var last = musicPlayer.GetPosition()
-
+		var lastT = utils.GetNanoTime()
 		for {
+
+			currtime := utils.GetNanoTime()
+
+			player.profilerU.PutSample(1000.0/(float64(currtime-lastT)/1000000.0))
+
+			lastT = currtime
 
 			player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
 
@@ -300,7 +323,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(15 * time.Millisecond)
 		}
 	}()
-	player.profiler = utils.NewFPSCounter(60, true)
+	player.profiler = utils.NewFPSCounter(60, false)
 	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
@@ -438,6 +461,18 @@ func (pl *Player) Update() {
 	}
 
 	pl.batch.End()
+
+	pl.counter += timMs
+
+	if pl.counter >= 1000.0/60 {
+		pl.fpsC = pl.profiler.GetFPS()
+		pl.fpsU = pl.profilerU.GetFPS()
+		pl.counter -= 1000.0/60
+	}
+
+	pl.font.Draw(0, 28, pl.scamera.GetProjectionView(), 14, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+	pl.font.Draw(0, 14, pl.scamera.GetProjectionView(), 14, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+	pl.font.Draw(0, 0, pl.scamera.GetProjectionView(), 14, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
 
 	if pl.fxGlider.GetValue() > 0.0 {
 

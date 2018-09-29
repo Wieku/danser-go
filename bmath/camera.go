@@ -37,9 +37,14 @@ func (camera *Camera) SetViewport(width, height int, yDown bool) {
 	} else {
 		camera.screenRect.MinY = -float64(height) / 2
 		camera.screenRect.MaxY = float64(height) / 2
-
 	}
-	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
+
+	if yDown {
+		camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
+	} else {
+		camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), -1, 1)
+	}
+
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }

@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/beatmap"
-	"github.com/Wieku/danser/render/texture"
+	"github.com/wieku/danser/render/texture"
 )
 
 type Storyboard struct {
