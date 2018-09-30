@@ -28,6 +28,8 @@ func SetMover(name string) {
 		Mover = movers.NewHalfCircleMover
 	} else if name == "linear" {
 		Mover = movers.NewLinearMover
+	} else if name == "axis" {
+		Mover = movers.NewAxisMover
 	} else {
 		Mover = movers.NewAngleOffsetMover
 	}
