@@ -4,12 +4,13 @@ import (
 	"github.com/wieku/glhf"
 	"io/ioutil"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser/render/framebuffer"
 )
 
 type BloomEffect struct {
 	colFilter     *glhf.Shader
 	combineShader *glhf.Shader
-	fbo           *glhf.Frame
+	fbo           *framebuffer.Framebuffer
 
 	blurEffect *BlurEffect
 
@@ -62,10 +63,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	})
 	effect.fboSlice.End()
 
-	effect.fbo = glhf.NewFrame(width, height, true, false)
-	effect.fbo.Texture().Begin()
-	effect.fbo.Texture().SetWrap(glhf.CLAMP_TO_EDGE)
-	effect.fbo.Texture().End()
+	effect.fbo = framebuffer.NewFrame(width, height, true, false)
 
 	effect.threshold = 0.7
 	effect.blur = 0.3
@@ -98,19 +96,17 @@ func (effect *BloomEffect) EndAndRender() {
 	effect.fbo.End()
 
 	effect.blurEffect.Begin()
+	glhf.Clear(0, 0, 0, 0)
 
 	effect.colFilter.Begin()
 	effect.colFilter.SetUniformAttr(0, int32(0))
 	effect.colFilter.SetUniformAttr(1, float32(effect.threshold))
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	effect.fbo.Texture().Begin()
+	effect.fbo.Texture().Bind(0)
 
 	effect.fboSlice.Begin()
 	effect.fboSlice.Draw()
 	effect.fboSlice.End()
-
-	effect.fbo.Texture().End()
 
 	effect.colFilter.End()
 
@@ -123,18 +119,13 @@ func (effect *BloomEffect) EndAndRender() {
 	effect.combineShader.SetUniformAttr(1, int32(1))
 	effect.combineShader.SetUniformAttr(2, float32(effect.power))
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	effect.fbo.Texture().Begin()
+	effect.fbo.Texture().Bind(0)
 
-	gl.ActiveTexture(gl.TEXTURE1)
-	texture.Begin()
+	texture.Bind(1)
 
 	effect.fboSlice.Begin()
 	effect.fboSlice.Draw()
 	effect.fboSlice.End()
-
-	texture.End()
-	effect.fbo.Texture().End()
 
 	effect.combineShader.End()
 

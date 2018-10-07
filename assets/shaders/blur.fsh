@@ -2,7 +2,7 @@
 
 #define INVSQ2PI 0.398942
 
-uniform sampler2D tex;
+uniform sampler2DArray tex;
 
 uniform vec2 kernelSize;
 uniform vec2 direction;
@@ -22,7 +22,7 @@ void main() {
 
     float gs = gauss(0, tSigma);
 
-    vec4 inc = texture(tex, tex_coord);
+    vec4 inc = texture(tex, vec3(tex_coord, 0));
 
     color = inc*gs;
 
@@ -38,8 +38,8 @@ void main() {
 
         vec2 mv = fac * direction / size;
 
-        color += texture(tex, tex_coord + mv) * gs;
-        color += texture(tex, tex_coord - mv) * gs;
+        color += texture(tex, vec3(tex_coord + mv, 0)) * gs;
+        color += texture(tex, vec3(tex_coord - mv, 0)) * gs;
 
         if (i >= kSize) {
             break;

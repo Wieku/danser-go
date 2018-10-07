@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser/settings"
 	"io/ioutil"
 	"github.com/wieku/danser/utils"
+	"github.com/wieku/danser/render/framebuffer"
 )
 
 var sliderShader *glhf.Shader = nil
@@ -18,7 +19,7 @@ var fboShader *glhf.Shader
 var fboSlice *glhf.VertexSlice
 var sliderVertexFormat glhf.AttrFormat
 var cam mgl32.Mat4
-var fbo *glhf.Frame
+var fbo *framebuffer.Framebuffer
 var fboUnit int32
 var CS float64
 
@@ -49,9 +50,8 @@ func SetupSlider() {
 		log.Println("FboPass: " + err.Error())
 	}
 
-	fbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)
-	gl.ActiveTexture(gl.TEXTURE29)
-	fbo.Texture().Begin()
+	fbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)
+	fbo.Texture().Bind(29)
 	fboUnit = 29
 
 	fboSlice = glhf.MakeVertexSlice(fboShader, 6, 6)

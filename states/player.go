@@ -25,7 +25,7 @@ import (
 )
 
 type Player struct {
-	font *font.Font
+	font           *font.Font
 	bMap           *beatmap.BeatMap
 	queue2         []objects.BaseObject
 	processed      []objects.BaseObject
@@ -45,7 +45,7 @@ type Player struct {
 	Scl            float64
 	SclA           float64
 	CS             float64
-	h, s, v        float64
+	fxRotation     float64
 	fadeOut        float64
 	fadeIn         float64
 	entry          float64
@@ -58,21 +58,21 @@ type Player struct {
 	vaoDirty       bool
 	rotation       float64
 	profiler       *utils.FPSCounter
-	profilerU       *utils.FPSCounter
+	profilerU      *utils.FPSCounter
 
 	storyboard *storyboard.Storyboard
 
-	camera       *bmath.Camera
-	scamera       *bmath.Camera
-	dimGlider    *animation.Glider
-	blurGlider   *animation.Glider
-	fxGlider     *animation.Glider
-	cursorGlider *animation.Glider
-	counter float64
-	fpsC float64
-	fpsU float64
+	camera         *bmath.Camera
+	scamera        *bmath.Camera
+	dimGlider      *animation.Glider
+	blurGlider     *animation.Glider
+	fxGlider       *animation.Glider
+	cursorGlider   *animation.Glider
+	counter        float64
+	fpsC           float64
+	fpsU           float64
 	storyboardLoad float64
-	mapFullName string
+	mapFullName    string
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -90,7 +90,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	log.Println(beatMap.Bg)
 
 	var err error
-	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Bg)
+	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, settings.General.OsuSongsDir+string(os.PathSeparator)+beatMap.Dir+string(os.PathSeparator)+beatMap.Bg)
 	if err != nil {
 		log.Println(err)
 	}
@@ -103,9 +103,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	winscl := settings.Graphics.GetAspectRatio()
 
+	player.blurEffect = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+	player.blurEffect.SetBlur(0.0, 0.0)
+
 	if player.Background != nil {
-		player.blurEffect = effects.NewBlurEffect(int(player.Background.Width), int(player.Background.Height))
-		player.blurEffect.SetBlur(0.0, 0.0)
 		imScl := float64(player.Background.Width) / float64(player.Background.Height)
 		if imScl < winscl {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
@@ -159,7 +160,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	log.Println(beatMap.Audio)
 
 	player.Scl = 1
-	player.h, player.s, player.v = 0.0, 1.0, 1.0
+	player.fxRotation = 0.0
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
@@ -258,7 +259,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			currtime := utils.GetNanoTime()
 
-			player.profilerU.PutSample(1000.0/(float64(currtime-lastT)/1000000.0))
+			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
 
 			lastT = currtime
 
@@ -378,9 +379,9 @@ func (pl *Player) Update() {
 		}
 	}
 
-	pl.h += timMs / 125
-	if pl.h >= 360.0 {
-		pl.h -= 360.0
+	pl.fxRotation += timMs / 125
+	if pl.fxRotation >= 360.0 {
+		pl.fxRotation -= 360.0
 	}
 
 	if len(pl.bMap.Queue) == 0 {
@@ -395,8 +396,7 @@ func (pl *Player) Update() {
 
 	render.CS = pl.CS
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	pl.batch.Begin()
-	pl.batch.SetCamera(mgl32.Ortho(-1, 1, 1, -1, 1, -1))
+
 	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
 
@@ -413,41 +413,49 @@ func (pl *Player) Update() {
 		bgAlpha *= pl.Scl
 	}
 
+	pl.batch.Begin()
+
 	pl.batch.SetColor(1, 1, 1, 1)
 	pl.batch.ResetTransform()
-	if pl.Background != nil && (pl.storyboard == nil || !pl.storyboard.BGFileUsed()) {
+	pl.batch.SetAdditive(false)
+	if pl.Background != nil || pl.storyboard != nil {
 		if settings.Playfield.BlurEnable {
 			pl.blurEffect.SetBlur(blurVal, blurVal)
-		}
-
-		pl.batch.SetScale(1, 1)
-
-		if settings.Playfield.BlurEnable {
 			pl.blurEffect.Begin()
-		} else {
-			pl.batch.SetColor(1, 1, 1, bgAlpha)
-			pl.batch.SetScale(pl.BgScl.X, pl.BgScl.Y)
 		}
 
-		pl.batch.DrawUnit(*pl.Background)
-		pl.batch.Flush()
+		if pl.Background != nil && (pl.storyboard == nil || !pl.storyboard.BGFileUsed()) {
+			pl.batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
+			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
+			if !settings.Playfield.BlurEnable {
+				pl.batch.SetColor(1, 1, 1, bgAlpha)
+			}
+			pl.batch.DrawUnit(*pl.Background)
+		}
 
-		pl.batch.SetColor(1, 1, 1, bgAlpha)
+		if pl.storyboard != nil {
+			pl.batch.SetScale(1, 1)
+			if !settings.Playfield.BlurEnable {
+				pl.batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+			}
+			pl.batch.SetCamera(cameras[0])
+			pl.storyboard.Draw(pl.progressMs, pl.batch)
+			pl.batch.Flush()
+		}
 
 		if settings.Playfield.BlurEnable {
-			//texture := pl.blurEffect.EndAndProcess()
-			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
-			//pl.batch.DrawUnscaled(texture)
+			pl.batch.End()
 
+			texture := pl.blurEffect.EndAndProcess()
+			pl.batch.Begin()
+			pl.batch.SetColor(1, 1, 1, bgAlpha)
+			pl.batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
+			pl.batch.DrawUnscaled(texture.GetRegion())
 		}
 
 	}
 
-	if pl.storyboard != nil {
-		pl.batch.SetCamera(cameras[0])
-		pl.storyboard.Draw(pl.progressMs, pl.batch)
-		pl.batch.Flush()
-	}
+	pl.batch.Flush()
 
 	if pl.fxGlider.GetValue() > 0.0 {
 		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
@@ -467,7 +475,7 @@ func (pl *Player) Update() {
 	if pl.counter >= 1000.0/60 {
 		pl.fpsC = pl.profiler.GetFPS()
 		pl.fpsU = pl.profilerU.GetFPS()
-		pl.counter -= 1000.0/60
+		pl.counter -= 1000.0 / 60
 		if pl.storyboard != nil {
 			pl.storyboardLoad = pl.storyboard.GetLoad()
 		}
@@ -484,24 +492,24 @@ func (pl *Player) Update() {
 				shift = 16
 			}
 
-			pl.font.Draw(pl.batch,0, 4+settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
-			pl.font.Draw(pl.batch,0, 4+shift+16*4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
-			pl.font.Draw(pl.batch,0, 4+shift+16*3, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
-			pl.font.Draw(pl.batch,0, 4+shift+16*2, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+			pl.font.Draw(pl.batch, 0, 4+settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
+			pl.font.Draw(pl.batch, 0, 4+shift+16*4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, 4+shift+16*3, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+			pl.font.Draw(pl.batch, 0, 4+shift+16*2, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
 
 			time := int(pl.musicPlayer.GetPosition())
 			totalTime := int(pl.musicPlayer.GetLength())
-			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime/1000)
+			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
 
-			pl.font.Draw(pl.batch,0, 4+shift+16, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
+			pl.font.Draw(pl.batch, 0, 4+shift+16, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
 
-			pl.font.Draw(pl.batch,0, 4+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.sliders)+len(pl.circles), settings.DIVIDES, len(pl.bMap.HitObjects)))
+			pl.font.Draw(pl.batch, 0, 4+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.sliders)+len(pl.circles), settings.DIVIDES, len(pl.bMap.HitObjects)))
 
 			if pl.storyboard != nil {
-				pl.font.Draw(pl.batch,0, 4, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
+				pl.font.Draw(pl.batch, 0, 4, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
 			}
 		} else {
-			pl.font.Draw(pl.batch,0, 4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, 4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
 		}
 
 		pl.batch.End()
@@ -519,7 +527,7 @@ func (pl *Player) Update() {
 			pl.vaoDirty = false
 		}
 
-		base := mgl32.Ortho(-1920/2, 1920/2, 1080/2, -1080/2, -1, 1).Mul4(mgl32.Scale3D(600, 600, 0)).Mul4(mgl32.HomogRotate3DZ(float32(pl.h * math.Pi / 180.0)))
+		base := mgl32.Ortho(-1920/2, 1920/2, 1080/2, -1080/2, -1, 1).Mul4(mgl32.Scale3D(600, 600, 0)).Mul4(mgl32.HomogRotate3DZ(float32(pl.fxRotation * math.Pi / 180.0)))
 
 		pl.fxBatch.SetTransform(base)
 		pl.vao.Draw()
@@ -637,7 +645,6 @@ func (pl *Player) Update() {
 				}
 			}
 		}
-
 
 		pl.batch.SetScale(1, 1)
 		pl.batch.End()

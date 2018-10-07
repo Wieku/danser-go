@@ -10,10 +10,11 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
 	"io/ioutil"
+	"github.com/wieku/danser/render/framebuffer"
 )
 
 var cursorShader *glhf.Shader = nil
-var cursorFbo *glhf.Frame = nil
+var cursorFbo *framebuffer.Framebuffer = nil
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
 
@@ -44,9 +45,8 @@ func initCursor() {
 		panic("Cursor: " + err.Error())
 	}
 
-	cursorFbo = glhf.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
-	gl.ActiveTexture(gl.TEXTURE30)
-	cursorFbo.Texture().Begin()
+	cursorFbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
+	cursorFbo.Texture().Bind(30)
 	osuRect = Camera.GetWorldRect()
 }
 

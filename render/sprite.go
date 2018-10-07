@@ -186,7 +186,7 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, f
 
 	batch.bind(texture.Texture)
 	batch.SetAdditive(additive)
-	batch.DrawUnitSep(transf, color, texture)
+	batch.DrawUnitSep(transf, mgl32.Vec4{color.X()*batch.color.X(), color.Y()*batch.color.Y(), color.Z()*batch.color.Z(), color.W()*batch.color.W()}, texture)
 	batch.SetAdditive(false)
 }
 

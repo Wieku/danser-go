@@ -7,12 +7,14 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"math"
 	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser/render/framebuffer"
 )
 
 type BlurEffect struct {
 	blurShader *glhf.Shader
-	fbo1       *glhf.Frame
-	fbo2       *glhf.Frame
+	fbo1       *framebuffer.Framebuffer
+	fbo2       *framebuffer.Framebuffer
 	kernelSize mgl32.Vec2
 	sigma      mgl32.Vec2
 	size       mgl32.Vec2
@@ -55,14 +57,8 @@ func NewBlurEffect(width, height int) *BlurEffect {
 	})
 	effect.fboSlice.End()
 
-	effect.fbo1 = glhf.NewFrame(width, height, true, false)
-	effect.fbo1.Texture().Begin()
-	effect.fbo1.Texture().SetWrap(glhf.CLAMP_TO_EDGE)
-	effect.fbo1.Texture().End()
-	effect.fbo2 = glhf.NewFrame(width, height, true, false)
-	effect.fbo2.Texture().Begin()
-	effect.fbo2.Texture().SetWrap(glhf.CLAMP_TO_EDGE)
-	effect.fbo2.Texture().End()
+	effect.fbo1 = framebuffer.NewFrame(width, height, true, false)
+	effect.fbo2 = framebuffer.NewFrame(width, height, true, false)
 	effect.kernelSize = mgl32.Vec2{ /*2.0*50, 2.0*50*/ 0, 0}
 	effect.sigma = mgl32.Vec2{ /*2.0*50, 2.0*50*/ 1, 1}
 	effect.size = mgl32.Vec2{float32(width), float32(height)}
@@ -105,11 +101,11 @@ func kernelSize(sigma float32) int {
 
 func (effect *BlurEffect) Begin() {
 	effect.fbo1.Begin()
-	glhf.Clear(0, 0, 0, 0)
-	gl.Viewport(0, 0, int32(effect.fbo1.Texture().Width()), int32(effect.fbo1.Texture().Height()))
+	glhf.Clear(0, 0, 0, 1)
+	gl.Viewport(0, 0, int32(effect.fbo1.Texture().GetWidth()), int32(effect.fbo1.Texture().GetHeight()))
 }
 
-func (effect *BlurEffect) EndAndProcess() *glhf.Texture {
+func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo1.End()
 
 	effect.blurShader.Begin()
@@ -124,24 +120,20 @@ func (effect *BlurEffect) EndAndProcess() *glhf.Texture {
 	effect.fbo2.Begin()
 	glhf.Clear(0, 0, 0, 0)
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	effect.fbo1.Texture().Begin()
+	effect.fbo1.Texture().Bind(0)
 
 	effect.fboSlice.Draw()
 
-	effect.fbo1.Texture().End()
 	effect.fbo2.End()
 
 	effect.fbo1.Begin()
 	glhf.Clear(0, 0, 0, 0)
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	effect.fbo2.Texture().Begin()
+	effect.fbo2.Texture().Bind(0)
 
 	effect.blurShader.SetUniformAttr(2, mgl32.Vec2{0, 1})
 	effect.fboSlice.Draw()
 
-	effect.fbo2.Texture().End()
 	effect.fbo1.End()
 
 	effect.fboSlice.End()
