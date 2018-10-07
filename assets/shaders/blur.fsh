@@ -31,7 +31,7 @@ void main() {
     int kSize = int(length(kernelSize*direction));
 
     for (int i = 2; i < 200; i+=2) {
-        float fac = float(i) - 0.5f;
+        float fac = float(i) - 0.5;
 
         gs = gauss(i, tSigma)*2.0;
         totalGauss += 2.0*gs;
