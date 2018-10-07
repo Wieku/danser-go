@@ -10,6 +10,11 @@ import (
 	"github.com/wieku/danser/render/texture"
 )
 
+const (
+	storyboardArea = 640.0 * 480.0
+	maxLoad        = 1.3328125 //480*480*(16/9)/(640*480)
+)
+
 type color struct {
 	R, G, B, A float64
 }
@@ -17,6 +22,7 @@ type color struct {
 type Object interface {
 	Update(time int64)
 	Draw(time int64, batch *render.SpriteBatch)
+	GetLoad() float64
 	GetStartTime() int64
 	GetEndTime() int64
 	GetZIndex() int64
@@ -176,7 +182,11 @@ func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
 		return
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale, sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(sprite.color.A)}, sprite.additive, *sprite.texture[sprite.currentFrame])
+	alpha := sprite.color.A
+	if alpha > 1 {
+		alpha -= math.Ceil(sprite.color.A) - 1
+	}
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs(), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame])
 }
 
 func (sprite *Sprite) GetPosition() bmath.Vector2d {
@@ -257,4 +267,11 @@ func (sprite *Sprite) GetEndTime() int64 {
 
 func (sprite *Sprite) GetZIndex() int64 {
 	return sprite.zIndex
+}
+
+func (sprite *Sprite) GetLoad() float64 {
+	if sprite.color.A >= 0.01 {
+		return math.Min((float64(sprite.texture[0].Width)*sprite.scale.X*float64(sprite.texture[0].Height)*sprite.scale.Y)/storyboardArea, maxLoad)
+	}
+	return 0
 }

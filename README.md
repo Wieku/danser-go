@@ -54,6 +54,8 @@ danser <arguments>
 * `-speed=1.5` - music speed. Value of 1.5 equals to osu!'s DoubleTime
 * `-mover=flower` - cursor mover. Movers available now: linear, bezier, flower (default), circular.
 * `-settings=1` - if number given is bigger than 0 (e.g. 1) then app will try to load `settings-1.json` instead of `settings.json`
+* `-fps` - shows fps in the lower-left corner 
+* `-debug` - shows more info during the map
 
 Example:
 ```bash

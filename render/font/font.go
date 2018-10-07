@@ -12,27 +12,33 @@ import (
 	"image/draw"
 	"log"
 	"github.com/wieku/danser/render/texture"
-	"math"
-	"image/color"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/bmath"
 )
 
+var fonts map[string]*Font
+
+func init() {
+	fonts = make(map[string]*Font)
+}
+
+func GetFont(name string) *Font {
+	return fonts[name]
+}
+
 type glyphData struct {
-	region texture.TextureRegion
+	region                      texture.TextureRegion
 	advance, bearingX, bearingY float64
 }
 
 type Font struct {
-	face font2.Face
-	atlas *texture.TextureAtlas
-	glyphs []*glyphData
-	min, max rune
-	padding int
-	renderer *render.SpriteBatch
+	face        font2.Face
+	atlas       *texture.TextureAtlas
+	glyphs      []*glyphData
+	min, max    rune
+	initialSize float64
 }
 
-func NewFont(reader io.Reader) *Font {
+func LoadFont(reader io.Reader) *Font {
 	data, err := ioutil.ReadAll(reader)
 
 	if err != nil {
@@ -48,21 +54,20 @@ func NewFont(reader io.Reader) *Font {
 	font := new(Font)
 	font.min = rune(32)
 	font.max = rune(127)
-	font.padding = 12
+	font.initialSize = 64.0
 	font.glyphs = make([]*glyphData, font.max-font.min+1)
 
 	font.atlas = texture.NewTextureAtlas(4096, 4)
 
 	font.atlas.Bind(20)
 
-	fc := truetype.NewFace(ttf, &truetype.Options{Size: 128, DPI: 72, Hinting: font2.HintingFull})
+	fc := truetype.NewFace(ttf, &truetype.Options{Size: font.initialSize, DPI: 72, Hinting: font2.HintingFull})
 	font.face = fc
 	context := freetype.NewContext()
 	context.SetFont(ttf)
-	context.SetFontSize(float64(128))
+	context.SetFontSize(font.initialSize)
 	context.SetDPI(72)
 	context.SetHinting(font2.HintingFull)
-
 
 	for i := font.min; i <= font.max; i++ {
 
@@ -91,23 +96,18 @@ func NewFont(reader io.Reader) *Font {
 		gAscent := int(-gBnd.Min.Y) >> 6
 		//gdescent := int(gBnd.Max.Y) >> 6
 
-		//set w,h and adv, bearing V and bearing H in char
-		advance := float64(gAdv)/64
-		bearingV := float64(gBnd.Max.Y)/64
-		bearingH := float64(gBnd.Min.X)/64
-
 		fg, bg := image.White, image.Transparent
-		rect := image.Rect(0, 0, int(gw)+2*font.padding, int(gh)+2*font.padding)
+		rect := image.Rect(0, 0, int(gw), int(gh))
 		rgba := image.NewNRGBA(rect)
 		draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
 
-		context.SetClip(rgba.Bounds())
+		context.SetClip(rect)
 		context.SetDst(rgba)
 		context.SetSrc(fg)
 
 		px := 0 - (int(gBnd.Min.X) >> 6)
 		py := (gAscent)
-		pt := freetype.Pt(px+font.padding, py+font.padding)
+		pt := freetype.Pt(px, py)
 
 		// Draw the text from mask to image
 		_, err = context.DrawString(string(i), pt)
@@ -116,21 +116,33 @@ func NewFont(reader io.Reader) *Font {
 			continue
 		}
 
-		region := font.atlas.AddTexture(string(i), rgba.Bounds().Dx(),rgba.Bounds().Dy(), font.toSDF(*rgba).Pix)
+		//res := font.toSDF(rgba)
+
+		newPix := make([]uint8, len(rgba.Pix))
+		height := rgba.Bounds().Dy()
+
+		for i := 0; i < height; i++ {
+			copy(newPix[i*rgba.Stride:(i+1)*rgba.Stride], rgba.Pix[(height-1-i)*rgba.Stride:(height-i)*rgba.Stride])
+		}
+
+		region := font.atlas.AddTexture(string(i), rgba.Bounds().Dx(), rgba.Bounds().Dy(), newPix)
+
+		//set w,h and adv, bearing V and bearing H in char
+		advance := float64(gAdv) / 64
+		bearingV := float64(gBnd.Max.Y) / 64
+		bearingH := float64(gBnd.Min.X) / 64
 		font.glyphs[i-font.min] = &glyphData{*region, advance, bearingH, bearingV}
 	}
 
-	font.renderer = render.NewSpriteBatch(true)
-
+	log.Println(ttf.Name(truetype.NameIDFontFullName), "loaded!")
+	fonts[ttf.Name(truetype.NameIDFontFullName)] = font
 	return font
 }
 
-func (font *Font) Draw(x, y float64, proj mgl32.Mat4, size float64, text string) {
-	font.renderer.Begin()
-	font.renderer.SetCamera(proj)
+func (font *Font) Draw(renderer *render.SpriteBatch, x, y float64, size float64, text string) {
 	xpad := x
 
-	scale := size/128.0
+	scale := size / font.initialSize
 
 	for i, c := range text {
 		char := font.glyphs[c-font.min]
@@ -141,77 +153,13 @@ func (font *Font) Draw(x, y float64, proj mgl32.Mat4, size float64, text string)
 		kerning := 0.0
 
 		if i > 0 {
-			kerning = float64(font.face.Kern(rune(text[i-1]), c))/64
+			kerning = float64(font.face.Kern(rune(text[i-1]), c)) / 64
 		}
 
-		font.renderer.SetScale(scale, scale)
-		font.renderer.SetTranslation(bmath.NewVec2d(xpad+(-float64(font.padding)+char.bearingX-kerning+float64(char.region.Width-2*int32(font.padding))/2)*scale, y+(float64(char.region.Height-2*int32(font.padding))/2-char.bearingY)*scale))// y-(float64(char.region.Height-2*int32(font.padding))-char.bearingY)))
-		font.renderer.DrawTexture(char.region)
-		xpad += scale*(char.advance-kerning)
+		renderer.SetScale(scale, scale)
+		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale, y+(float64(char.region.Height)/2-char.bearingY)*scale))
+		renderer.DrawTexture(char.region)
+		xpad += scale * (char.advance - kerning)
 
 	}
-
-	font.renderer.End()
-}
-
-func min(a, b int) int {
-	if a > b {
-		return b
-	}
-	return a
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func (font *Font) toSDF(nrgba image.NRGBA) image.NRGBA {
-	bitmap := make([][]bool, nrgba.Bounds().Dx())
-	dst := image.NewNRGBA(nrgba.Rect)
-	for x:=0; x < nrgba.Bounds().Dx(); x++ {
-		bitmap[x] = make([]bool, nrgba.Bounds().Dy())
-		for y:=0; y < nrgba.Bounds().Dy(); y++ {
-			if nrgba.NRGBAAt(x, y).A > 127 {
-				bitmap[x][y] = true
-			} else {
-				bitmap[x][y] = false
-			}
-		}
-	}
-
-	spread := float64(font.padding)
-
-	for x:=0; x < nrgba.Bounds().Dx(); x++ {
-		for y:=0; y < nrgba.Bounds().Dy(); y++ {
-			iSpread := int(math.Floor(spread))
-			nearest := iSpread*iSpread
-			for dx:= max(0, x - iSpread); dx < min(nrgba.Bounds().Dx()-1, x + iSpread); dx++ {
-				for dy:= max(0, y - iSpread); dy < min(nrgba.Bounds().Dy()-1, y + iSpread); dy++ {
-					if bitmap[x][y] == bitmap[dx][dy] {
-						continue
-					}
-
-					dst := (dx-x)*(dx-x) + (dy-y)*(dy-y)
-					if dst < nearest {
-						nearest = dst
-					}
-				}
-			}
-
-			dsf := 0.5 * math.Sqrt(float64(nearest))/spread
-
-			if !bitmap[x][y] {
-				dsf *= -1
-			}
-
-			dsf += 0.5
-
-			dst.Set(x, nrgba.Bounds().Dy()-y-1, color.NRGBA{255, 255, 255, uint8(dsf*255)})
-		}
-	}
-
-	return *dst
 }

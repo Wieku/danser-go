@@ -11,6 +11,7 @@ type StoryboardLayer struct {
 	spriteProcessed []Object
 	drawArray       []Object
 	visibleObjects  int
+	allSprites		int
 	mutex           *sync.Mutex
 }
 
@@ -26,6 +27,7 @@ func (layer *StoryboardLayer) FinishLoading() {
 	sort.Slice(layer.spriteQueue, func(i, j int) bool {
 		return layer.spriteQueue[i].GetStartTime() < layer.spriteQueue[j].GetStartTime()
 	})
+	layer.allSprites = len(layer.spriteQueue)
 	layer.drawArray = make([]Object, len(layer.spriteQueue))
 }
 
@@ -65,6 +67,15 @@ func (layer *StoryboardLayer) Update(time int64) {
 	copy(layer.drawArray, layer.spriteProcessed)
 
 	layer.mutex.Unlock()
+}
+
+func (layer *StoryboardLayer) GetLoad() (sum float64){
+	for i := 0; i < layer.visibleObjects; i++ {
+		if layer.drawArray[i] != nil {
+			sum += layer.drawArray[i].GetLoad()
+		}
+	}
+	return
 }
 
 func (layer *StoryboardLayer) Draw(time int64, batch *render.SpriteBatch) {

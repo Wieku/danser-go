@@ -110,7 +110,9 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		}
 	}
 
-	storyboard.loadSprite(fullPath, currentSprite, commands)
+	if currentSprite != "" {
+		storyboard.loadSprite(fullPath, currentSprite, commands)
+	}
 
 	storyboard.background.FinishLoading()
 	storyboard.pass.FinishLoading()
@@ -163,23 +165,28 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		}
 
 	} else {
-		textures = append(textures, storyboard.getTexture(filepath.Dir(path), image))
+		texture := storyboard.getTexture(filepath.Dir(path), image)
+		if texture != nil {
+			textures = append(textures, texture)
+		}
 	}
 
 	storyboard.zIndex++
 
-	sprite := NewSprite(textures, frameDelay, loopForever, storyboard.zIndex, pos, origin, commands)
+	if len(textures) != 0 {
+		sprite := NewSprite(textures, frameDelay, loopForever, storyboard.zIndex, pos, origin, commands)
 
-	switch spl[1] {
-	case "0", "Background":
-		storyboard.background.Add(sprite)
-		break
-	case "2", "Pass":
-		storyboard.pass.Add(sprite)
-		break
-	case "3", "Foreground":
-		storyboard.foreground.Add(sprite)
-		break
+		switch spl[1] {
+		case "0", "Background":
+			storyboard.background.Add(sprite)
+			break
+		case "2", "Pass":
+			storyboard.pass.Add(sprite)
+			break
+		case "3", "Foreground":
+			storyboard.foreground.Add(sprite)
+			break
+		}
 	}
 }
 
@@ -210,6 +217,22 @@ func (storyboard *Storyboard) Draw(time int64, batch *render.SpriteBatch) {
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
 	storyboard.foreground.Draw(time, batch)
+}
+
+func (storyboard *Storyboard) GetProcessedSprites() int {
+	return storyboard.background.visibleObjects + storyboard.pass.visibleObjects + storyboard.foreground.visibleObjects
+}
+
+func (storyboard *Storyboard) GetQueueSprites() int {
+	return len(storyboard.background.spriteQueue) + len(storyboard.pass.spriteQueue) + len(storyboard.foreground.spriteQueue)
+}
+
+func (storyboard *Storyboard) GetTotalSprites() int {
+	return storyboard.background.allSprites + storyboard.pass.allSprites + storyboard.foreground.allSprites
+}
+
+func (storyboard *Storyboard) GetLoad() float64 {
+	return storyboard.background.GetLoad() + storyboard.pass.GetLoad() + storyboard.foreground.GetLoad()
 }
 
 func (storyboard *Storyboard) BGFileUsed() bool {

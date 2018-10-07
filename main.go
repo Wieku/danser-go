@@ -16,6 +16,9 @@ import (
 	"github.com/wieku/danser/build"
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/database"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/render/font"
 )
 
 var player *states.Player
@@ -37,6 +40,8 @@ func run() {
 		tag := flag.Int("tag", 1, "")
 		speed := flag.Float64("speed", 1.0, "")
 		mover := flag.String("mover", "flower", "")
+		debug := flag.Bool("debug", false, "")
+		fps := flag.Bool("fps", false, "")
 
 		flag.Parse()
 
@@ -45,6 +50,8 @@ func run() {
 			os.Exit(0)
 		}
 
+		settings.DEBUG = *debug
+		settings.FPS = *fps
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
 		settings.SPEED = *speed
@@ -109,6 +116,23 @@ func run() {
 		log.Println("GLFW initialized!")
 		glhf.Init()
 		glhf.Clear(0, 0, 0, 1)
+
+		batch := render.NewSpriteBatch()
+		batch.Begin()
+		batch.SetColor(1, 1, 1, 1)
+		camera := bmath.NewCamera()
+		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
+		camera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
+		camera.Update()
+		batch.SetCamera(camera.GetProjectionView())
+
+		file, _ := os.Open("assets/fonts/Roboto-Regular.ttf")
+		font := font.LoadFont(file)
+		file.Close()
+
+		font.Draw(batch, 0, 10, 32, "Loading...")
+
+		batch.End()
 		win.SwapBuffers()
 		glfw.PollEvents()
 

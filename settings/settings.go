@@ -260,6 +260,8 @@ var Objects *objects
 var Playfield *playfield
 var Dance *dance
 
+var DEBUG = false
+var FPS = false
 var DIVIDES = 2
 var SPEED = 1.0
 var TAG = 1

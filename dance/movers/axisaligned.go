@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser/beatmap/objects"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath/sliders"
+	"log"
 )
 
 type AxisMover struct {
@@ -29,7 +30,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 
 	var midP bmath.Vector2d
 
-	if math.Abs(startPos.Sub(endPos).X) > math.Abs(startPos.Sub(endPos).X) {
+	if math.Abs(startPos.Sub(endPos).X) < math.Abs(startPos.Sub(endPos).X) {
 		midP = bmath.NewVec2d(endPos.X, startPos.Y)
 	} else {
 		midP = bmath.NewVec2d(startPos.X, endPos.Y)
@@ -42,8 +43,13 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 
 func (bm AxisMover) Update(time int64) bmath.Vector2d {
 	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
-	t = math.Max(0.0, math.Min(1.0, t))
-	return bm.bz.PointAt(math.Sin(t * math.Pi / 2))
+	tr := math.Max(0.0, math.Min(1.0, math.Sin(t * math.Pi / 2)))
+	p := bm.bz.PointAt(tr)
+
+	if p.X == 0 && p.Y == 0 {
+		log.Println("EEEEEEEEEEEERRRRRRRRRRRRRRRR")
+	}
+	return p
 }
 
 func (bm *AxisMover) GetEndTime() int64 {

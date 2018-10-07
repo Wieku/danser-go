@@ -20,7 +20,7 @@ import (
 	"github.com/wieku/danser/render/effects"
 	"github.com/wieku/danser/storyboard"
 	"github.com/wieku/danser/render/texture"
-	"github.com/Wieku/danser/render/font"
+	"github.com/wieku/danser/render/font"
 	"fmt"
 )
 
@@ -71,16 +71,17 @@ type Player struct {
 	counter float64
 	fpsC float64
 	fpsU float64
+	storyboardLoad float64
+	mapFullName string
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := &Player{}
 	render.LoadTextures()
-	player.batch = render.NewSpriteBatch(false)
-	file, _ := os.Open("assets/fonts/Roboto-Regular.ttf")
-	defer file.Close()
-	player.font = font.NewFont(file)
+	player.batch = render.NewSpriteBatch()
+	player.font = font.GetFont("Roboto")
 	player.bMap = beatMap
+	player.mapFullName = beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]"
 	log.Println(beatMap.Name + " " + beatMap.Difficulty)
 	player.CS = (1.0 - 0.7*(beatMap.CircleSize-5)/5) / 2 * settings.Objects.CSMult
 	render.CS = player.CS
@@ -90,7 +91,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	var err error
 	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Bg)
-	log.Println("bghwewaeaw", player.Background)
 	if err != nil {
 		log.Println(err)
 	}
@@ -468,11 +468,44 @@ func (pl *Player) Update() {
 		pl.fpsC = pl.profiler.GetFPS()
 		pl.fpsU = pl.profilerU.GetFPS()
 		pl.counter -= 1000.0/60
+		if pl.storyboard != nil {
+			pl.storyboardLoad = pl.storyboard.GetLoad()
+		}
 	}
 
-	pl.font.Draw(0, 28, pl.scamera.GetProjectionView(), 14, fmt.Sprintf("%0.2f FPS", pl.fpsC))
-	pl.font.Draw(0, 14, pl.scamera.GetProjectionView(), 14, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
-	pl.font.Draw(0, 0, pl.scamera.GetProjectionView(), 14, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+	if settings.DEBUG || settings.FPS {
+		pl.batch.Begin()
+		pl.batch.SetColor(1, 1, 1, 1)
+		pl.batch.SetCamera(pl.scamera.GetProjectionView())
+
+		if settings.DEBUG {
+			shift := 0.0
+			if pl.storyboard != nil {
+				shift = 16
+			}
+
+			pl.font.Draw(pl.batch,0, 4+settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
+			pl.font.Draw(pl.batch,0, 4+shift+16*4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch,0, 4+shift+16*3, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+			pl.font.Draw(pl.batch,0, 4+shift+16*2, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+
+			time := int(pl.musicPlayer.GetPosition())
+			totalTime := int(pl.musicPlayer.GetLength())
+			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime/1000)
+
+			pl.font.Draw(pl.batch,0, 4+shift+16, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
+
+			pl.font.Draw(pl.batch,0, 4+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.sliders)+len(pl.circles), settings.DIVIDES, len(pl.bMap.HitObjects)))
+
+			if pl.storyboard != nil {
+				pl.font.Draw(pl.batch,0, 4, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
+			}
+		} else {
+			pl.font.Draw(pl.batch,0, 4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+		}
+
+		pl.batch.End()
+	}
 
 	if pl.fxGlider.GetValue() > 0.0 {
 

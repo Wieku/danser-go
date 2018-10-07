@@ -28,7 +28,7 @@ type SpriteBatch struct {
 	currentSize int
 }
 
-func NewSpriteBatch(sdfShader bool) *SpriteBatch {
+func NewSpriteBatch() *SpriteBatch {
 	circleVertexFormat := glhf.AttrFormat{
 		{Name: "in_position", Type: glhf.Vec3},
 		{Name: "in_tex_coord", Type: glhf.Vec3},
@@ -41,12 +41,7 @@ func NewSpriteBatch(sdfShader bool) *SpriteBatch {
 		{Name: "tex", Type: glhf.Int},
 	}
 	vert, _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
-	var frag []byte
-	if sdfShader {
-		frag, _ = ioutil.ReadFile("assets/shaders/sdf.fsh")
-	} else {
-		frag, _ = ioutil.ReadFile("assets/shaders/sprite.fsh")
-	}
+	frag, _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
 
 	var err error
 	shader, err := glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
