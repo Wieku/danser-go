@@ -28,5 +28,9 @@ func (loop *Loop) Update(time int64) {
 	}
 
 	local := (time - loop.start - sTime) % (loop.transformations.endTime - sTime)
+	if time >= loop.end {
+		local = loop.transformations.endTime - sTime
+	}
+
 	loop.transformations.Update(sTime + local)
 }
