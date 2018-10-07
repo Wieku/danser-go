@@ -4,242 +4,263 @@ import "math"
 
 var Easings = []func(float64) float64{
 	Linear,
-	QuadEaseOut,
-	QuadEaseIn,
-	QuadEaseIn,
-	QuadEaseOut,
-	QuadEaseInOut,
-	CubicEaseIn,
-	CubicEaseOut,
-	CubicEaseInOut,
-	QuartEaseIn,
-	QuartEaseOut,
-	QuartEaseInOut,
-	QuintEaseIn,
-	QuintEaseOut,
-	QuintEaseInOut,
-	SineEaseIn,
-	SineEaseOut,
-	SineEaseInOut,
-	ExpoEaseIn,
-	ExpoEaseOut,
-	ExpoEaseInOut,
-	CircularEaseIn,
-	CircularEaseOut,
-	CircularEaseInOut,
-	ElasticEaseIn,
-	ElasticEaseOut,
-	ElasticEaseHalfOut,
-	ElasticEaseQuartOut,
-	ElasticEaseInOut,
-	BackEaseIn,
-	BackEaseOut,
-	BackEaseInOut,
-	BounceEaseIn,
-	BounceEaseOut,
-	BounceEaseInOut,
+	OutQuad,
+	InQuad,
+	InQuad,
+	OutQuad,
+	InOutQuad,
+	InCubic,
+	OutCubic,
+	InOutCubic,
+	InQuart,
+	OutQuart,
+	InOutQuart,
+	InQuint,
+	OutQuint,
+	InOutQuint,
+	InSine,
+	OutSine,
+	InOutSine,
+	InExpo,
+	OutExpo,
+	InOutExpo,
+	InCirc,
+	OutCirc,
+	InOutCirc,
+	InElastic,
+	OutElastic,
+	OutHalfElastic,
+	OutQuartElastic,
+	InOutElastic,
+	InBack,
+	OutBack,
+	InOutBack,
+	InBounce,
+	OutBounce,
+	InOutBounce,
 }
 
-/*  Linear
------------------------------------------------*/
+/* ========================
+	Using equations from: https://github.com/fogleman/ease/blob/master/ease.go
+   ========================*/
+
 func Linear(t float64) float64 {
 	return t
 }
 
-/*  Quad
------------------------------------------------*/
-func QuadEaseIn(t float64) float64 {
+func InQuad(t float64) float64 {
 	return t * t
 }
 
-func QuadEaseOut(t float64) float64 {
-	return -(t * (t - 2))
+func OutQuad(t float64) float64 {
+	return -t * (t - 2)
 }
 
-func QuadEaseInOut(t float64) float64 {
+func InOutQuad(t float64) float64 {
 	if t < 0.5 {
 		return 2 * t * t
 	} else {
-		return (-2 * t * t) + (4 * t) - 1
+		t = 2*t - 1
+		return -0.5 * (t*(t-2) - 1)
 	}
 }
 
-/*  Cubic
------------------------------------------------*/
-func CubicEaseIn(t float64) float64 {
+func InCubic(t float64) float64 {
 	return t * t * t
 }
 
-func CubicEaseOut(t float64) float64 {
-	f := (t - 1)
-	return f*f*f + 1
+func OutCubic(t float64) float64 {
+	t -= 1
+	return t*t*t + 1
 }
 
-func CubicEaseInOut(t float64) float64 {
-	if t < 0.5 {
-		return 4 * t * t * t
+func InOutCubic(t float64) float64 {
+	t *= 2
+	if t < 1 {
+		return 0.5 * t * t * t
 	} else {
-		f := ((2 * t) - 2)
-		return 0.5*f*f*f + 1
+		t -= 2
+		return 0.5 * (t*t*t + 2)
 	}
 }
 
-/*  Quart
------------------------------------------------*/
-func QuartEaseIn(t float64) float64 {
+func InQuart(t float64) float64 {
 	return t * t * t * t
 }
 
-func QuartEaseOut(t float64) float64 {
-	f := (t - 1)
-	return f*f*f*(1-t) + 1
+func OutQuart(t float64) float64 {
+	t -= 1
+	return -(t*t*t*t - 1)
 }
 
-func QuartEaseInOut(t float64) float64 {
-	if t < 0.5 {
-		return 8 * t * t * t * t
+func InOutQuart(t float64) float64 {
+	t *= 2
+	if t < 1 {
+		return 0.5 * t * t * t * t
 	} else {
-		f := (t - 1)
-		return -8*f*f*f*f + 1
+		t -= 2
+		return -0.5 * (t*t*t*t - 2)
 	}
 }
 
-/*  Quint
------------------------------------------------*/
-func QuintEaseIn(t float64) float64 {
+func InQuint(t float64) float64 {
 	return t * t * t * t * t
 }
 
-func QuintEaseOut(t float64) float64 {
-	f := (t - 1)
-	return f*f*f*f*f + 1
+func OutQuint(t float64) float64 {
+	t -= 1
+	return t*t*t*t*t + 1
 }
 
-func QuintEaseInOut(t float64) float64 {
-	if t < 0.5 {
-		return 16 * t * t * t * t * t
+func InOutQuint(t float64) float64 {
+	t *= 2
+	if t < 1 {
+		return 0.5 * t * t * t * t * t
 	} else {
-		f := ((2 * t) - 2)
-		return 0.5*f*f*f*f*f + 1
+		t -= 2
+		return 0.5 * (t*t*t*t*t + 2)
 	}
 }
 
-/*  Sine
------------------------------------------------*/
-func SineEaseIn(t float64) float64 {
-	return math.Sin((t-1)*math.Pi/2) + 1
+func InSine(t float64) float64 {
+	return -1*math.Cos(t*math.Pi/2) + 1
 }
 
-func SineEaseOut(t float64) float64 {
+func OutSine(t float64) float64 {
 	return math.Sin(t * math.Pi / 2)
 }
 
-func SineEaseInOut(t float64) float64 {
-	return 0.5 * (1 - math.Cos(t*math.Pi))
+func InOutSine(t float64) float64 {
+	return -0.5 * (math.Cos(math.Pi*t) - 1)
 }
 
-/*  Circle
------------------------------------------------*/
-func CircularEaseIn(t float64) float64 {
-	return 1 - math.Sqrt(1-(t*t))
-}
-
-func CircularEaseOut(t float64) float64 {
-	return math.Sqrt((2 - t) * t)
-}
-
-func CircularEaseInOut(t float64) float64 {
-	if t < 0.5 {
-		return 0.5 * (1 - math.Sqrt(1-4*(t*t)))
-	} else {
-		return 0.5 * (math.Sqrt(-((2 * t) - 3)*((2*t)-1)) + 1)
-	}
-}
-
-/*  Expo
------------------------------------------------*/
-func ExpoEaseIn(t float64) float64 {
-	if t == 0.0 {
-		return t
+func InExpo(t float64) float64 {
+	if t == 0 {
+		return 0
 	} else {
 		return math.Pow(2, 10*(t-1))
 	}
 }
 
-func ExpoEaseOut(t float64) float64 {
-	if t == 1.0 {
-		return t
+func OutExpo(t float64) float64 {
+	if t == 1 {
+		return 1
 	} else {
 		return 1 - math.Pow(2, -10*t)
 	}
 }
 
-func ExpoEaseInOut(t float64) float64 {
-	if t == 0.0 || t == 1.0 {
-		return t
-	}
-
-	if t < 0.5 {
-		return 0.5 * math.Pow(2, (20*t)-10)
+func InOutExpo(t float64) float64 {
+	if t == 0 {
+		return 0
+	} else if t == 1 {
+		return 1
 	} else {
-		return -0.5*math.Pow(2, (-20*t)+10) + 1
+		if t < 0.5 {
+			return 0.5 * math.Pow(2, (20*t)-10)
+		} else {
+			return 1 - 0.5*math.Pow(2, (-20*t)+10)
+		}
 	}
 }
 
-/*  Elastic
------------------------------------------------*/
-func ElasticEaseIn(t float64) float64 {
-	return math.Sin(13*math.Pi*2*t) * math.Pow(2, 10*(t-1))
+func InCirc(t float64) float64 {
+	return -1 * (math.Sqrt(1-t*t) - 1)
 }
 
-func ElasticEaseOut(t float64) float64 {
-	return math.Sin(-13*math.Pi*2*(t+1))*math.Pow(2, -10*t) + 1
+func OutCirc(t float64) float64 {
+	t -= 1
+	return math.Sqrt(1 - (t * t))
 }
 
-func ElasticEaseHalfOut(t float64) float64 {
-	return math.Sin(-13*math.Pi*2*(t*0.5+1))*math.Pow(2, -10*t) + 1
-}
-
-func ElasticEaseQuartOut(t float64) float64 {
-	return math.Sin(-13*math.Pi*2*(t*0.25+1))*math.Pow(2, -10*t) + 1
-}
-
-func ElasticEaseInOut(t float64) float64 {
-	if t < 0.5 {
-		return 0.5 * math.Sin(13*math.Pi*2*(2*t)) * math.Pow(2, 10*((2*t)-1))
+func InOutCirc(t float64) float64 {
+	t *= 2
+	if t < 1 {
+		return -0.5 * (math.Sqrt(1-t*t) - 1)
 	} else {
-		return 0.5 * (math.Sin(-13*math.Pi*2*((2*t-1)+1))*math.Pow(2, -10*(2*t-1)) + 2)
+		t = t - 2
+		return 0.5 * (math.Sqrt(1-t*t) + 1)
 	}
 }
 
-/*  Back
------------------------------------------------*/
-func BackEaseIn(t float64) float64 {
-	return t*t*t - t*math.Sin(t*math.Pi)
+func InElastic(t float64) float64 {
+	return InElasticFunction(0.5)(t)
 }
 
-func BackEaseOut(t float64) float64 {
-	f := (1 - t)
-	return 1 - (f*f*f - f*math.Sin(f*math.Pi))
+func OutElastic(t float64) float64 {
+	return OutElasticFunction(0.5, 1)(t)
 }
 
-func BackEaseInOut(t float64) float64 {
-	if t < 0.5 {
-		f := 2 * t
-		return 0.5 * (f*f*f - f*math.Sin(f*math.Pi))
+func OutHalfElastic(t float64) float64 {
+	return OutElasticFunction(0.5, 0.5)(t)
+}
+
+func OutQuartElastic(t float64) float64 {
+	return OutElasticFunction(0.5, 0.25)(t)
+}
+
+func InOutElastic(t float64) float64 {
+	return InOutElasticFunction(0.5)(t)
+}
+
+func InElasticFunction(period float64) (func(float64) float64) {
+	p := period
+	return func(t float64) float64 {
+		t -= 1
+		return -1 * (math.Pow(2, 10*t) * math.Sin((t-p/4)*(2*math.Pi)/p))
+	}
+}
+
+func OutElasticFunction(period, mod float64) (func(float64) float64) {
+	p := period
+	return func(t float64) float64 {
+		return math.Pow(2, -10*t)*math.Sin((mod*t-p/4)*(2*math.Pi/p)) + 1
+	}
+}
+
+func InOutElasticFunction(period float64) (func(float64) float64) {
+	p := period
+	return func(t float64) float64 {
+		t *= 2
+		if t < 1 {
+			t -= 1
+			return -0.5 * (math.Pow(2, 10*t) * math.Sin((t-p/4)*2*math.Pi/p))
+		} else {
+			t -= 1
+			return math.Pow(2, -10*t)*math.Sin((t-p/4)*2*math.Pi/p)*0.5 + 1
+		}
+	}
+}
+
+func InBack(t float64) float64 {
+	s := 1.70158
+	return t * t * ((s+1)*t - s)
+}
+
+func OutBack(t float64) float64 {
+	s := 1.70158
+	t -= 1
+	return t*t*((s+1)*t+s) + 1
+}
+
+func InOutBack(t float64) float64 {
+	s := 1.70158
+	t *= 2
+	if t < 1 {
+		s *= 1.525
+		return 0.5 * (t * t * ((s+1)*t - s))
 	} else {
-		f := (1 - (2*t - 1))
-		return 0.5*(1-(f*f*f-f*math.Sin(f*math.Pi))) + 0.5
+		t -= 2
+		s *= 1.525
+		return 0.5 * (t*t*((s+1)*t+s) + 2)
 	}
 }
 
-/*  Bounce
------------------------------------------------*/
-func BounceEaseIn(t float64) float64 {
-	return 1 - BounceEaseOut(1-t)
+func InBounce(t float64) float64 {
+	return 1 - OutBounce(1-t)
 }
 
-func BounceEaseOut(t float64) float64 {
+func OutBounce(t float64) float64 {
 	if t < 4/11.0 {
 		return (121 * t * t) / 16.0
 	} else if t < 8/11.0 {
@@ -251,10 +272,34 @@ func BounceEaseOut(t float64) float64 {
 	}
 }
 
-func BounceEaseInOut(t float64) float64 {
+func InOutBounce(t float64) float64 {
 	if t < 0.5 {
-		return 0.5 * BounceEaseIn(t*2)
+		return InBounce(2*t) * 0.5
 	} else {
-		return 0.5*BounceEaseOut(t*2-1) + 0.5
+		return OutBounce(2*t-1)*0.5 + 0.5
+	}
+}
+
+func InSquare(t float64) float64 {
+	if t < 1 {
+		return 0
+	} else {
+		return 1
+	}
+}
+
+func OutSquare(t float64) float64 {
+	if t > 0 {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func InOutSquare(t float64) float64 {
+	if t < 0.5 {
+		return 0
+	} else {
+		return 1
 	}
 }
