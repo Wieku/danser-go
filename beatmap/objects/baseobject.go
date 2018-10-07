@@ -39,11 +39,16 @@ func (bData *basicData) parseExtras(data []string, extraIndex int) {
 		sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
 		additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
 		index, _ := strconv.ParseInt(extras[2], 10, 64)
-		volume, _ := strconv.ParseInt(extras[3], 10, 64)
+		if len(extras) > 3 {
+			volume, _ := strconv.ParseInt(extras[3], 10, 64)
+			bData.customVolume = float64(volume) / 100.0
+		} else {
+			bData.customVolume = 0
+		}
+
 
 		bData.sampleSet = int(sampleSet)
 		bData.additionSet = int(additionSet)
 		bData.customIndex = int(index)
-		bData.customVolume = float64(volume) / 100.0
 	}
 }
