@@ -5,6 +5,7 @@ type bezier struct {
 }
 
 type flower struct {
+	UseNewStyle        bool
 	AngleOffset        float64
 	DistanceMult       float64
 	StreamTrigger      int64

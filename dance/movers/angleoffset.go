@@ -10,6 +10,7 @@ import (
 
 type AngleOffsetMover struct {
 	lastAngle          float64
+	lastPoint          bmath.Vector2d
 	bz                 curves.Bezier
 	startTime, endTime int64
 	invert             float64
@@ -22,6 +23,7 @@ func NewAngleOffsetMover() MultiPointMover {
 func (bm *AngleOffsetMover) Reset() {
 	bm.lastAngle = 0
 	bm.invert = 1
+	bm.lastPoint = bmath.NewVec2d(0, 0)
 }
 
 func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
@@ -94,9 +96,15 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 
 		points = []bmath.Vector2d{endPos, pt1, pt2, startPos}
 	} else {
-		if startTime-endTime < settings.Dance.Flower.StreamTrigger {
+		if settings.Dance.Flower.UseNewStyle {
+			if bmath.AngleBetween(endPos, bm.lastPoint, startPos) >= settings.Dance.Flower.AngleOffset*math.Pi/180.0 {
+				bm.invert = -1 * bm.invert
+				newAngle = settings.Dance.Flower.StreamAngleOffset * math.Pi / 180.0
+			}
+		} else if startTime-endTime < settings.Dance.Flower.StreamTrigger {
 			newAngle = settings.Dance.Flower.StreamAngleOffset * math.Pi / 180.0
 		}
+
 		angle := endPos.AngleRV(startPos) - newAngle*bm.invert
 
 		pt1 := bmath.NewVec2dRad(bm.lastAngle+math.Pi, scaledDistance).Add(endPos)
@@ -104,7 +112,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 
 		bm.lastAngle = angle
 
-		if startTime-endTime < settings.Dance.Flower.StreamTrigger && !(start.GetBasicData().SliderPoint && end.GetBasicData().SliderPoint) {
+		if !settings.Dance.Flower.UseNewStyle && startTime-endTime < settings.Dance.Flower.StreamTrigger && !(start.GetBasicData().SliderPoint && end.GetBasicData().SliderPoint) {
 			bm.invert = -1 * bm.invert
 		}
 
@@ -114,6 +122,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 	bm.bz = curves.NewBezier(points)
 	bm.endTime = endTime
 	bm.startTime = startTime
+	bm.lastPoint = endPos
 }
 
 func (bm *AngleOffsetMover) Update(time int64) bmath.Vector2d {
