@@ -7,7 +7,7 @@ import (
 	"log"
 	"github.com/faiface/mainthread"
 	"github.com/wieku/glhf"
-	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/wieku/danser/states"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"os"
@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/render/font"
+	"image"
 )
 
 var player *states.Player
@@ -113,6 +114,11 @@ func run() {
 		}
 
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+		icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
+		icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
+		icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")
+		icon4, _ := utils.LoadImage("assets/textures/dansercoin16.png")
+		win.SetIcon([]image.Image{icon, icon2, icon3, icon4})
 
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
