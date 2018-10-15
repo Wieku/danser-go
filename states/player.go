@@ -95,6 +95,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
+	if settings.Playfield.StoryboardEnabled {
+		player.storyboard = storyboard.NewStoryboard(player.bMap)
+
+		if player.storyboard == nil {
+			log.Println("Storyboard not found!")
+		}
+	}
+
 	player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
 
 	if err != nil {
@@ -108,7 +116,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	if player.Background != nil {
 		imScl := float64(player.Background.Width) / float64(player.Background.Height)
-		if imScl < winscl {
+
+		condition := imScl < winscl
+
+		if player.storyboard != nil && !player.storyboard.IsWideScreen() {
+			condition = !condition
+		}
+
+		if condition {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
 		} else {
 			log.Println(winscl / imScl)
@@ -163,14 +178,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fxRotation = 0.0
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
-
-	if settings.Playfield.StoryboardEnabled {
-		player.storyboard = storyboard.NewStoryboard(player.bMap)
-
-		if player.storyboard == nil {
-			log.Println("Storyboard not found!")
-		}
-	}
 
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)

@@ -25,6 +25,7 @@ type Storyboard struct {
 	zIndex     int64
 	bgFile     string
 	bgFileUsed bool
+	widescreen bool
 }
 
 func getSection(line string) string {
@@ -73,6 +74,11 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 			}
 
 			switch currentSection {
+			case "General":
+				split := strings.Split(line, ":")
+				if strings.TrimSpace(split[0]) == "WidescreenStoryboard" && strings.TrimSpace(split[1]) == "1" {
+					storyboard.widescreen = true
+				}
 			case "256", "Variables":
 				split := strings.Split(line, "=")
 				variables[split[0]] = split[1]
@@ -238,4 +244,8 @@ func (storyboard *Storyboard) GetLoad() float64 {
 
 func (storyboard *Storyboard) BGFileUsed() bool {
 	return storyboard.bgFileUsed
+}
+
+func (storyboard *Storyboard) IsWideScreen() bool {
+	return storyboard.widescreen
 }
