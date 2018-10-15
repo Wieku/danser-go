@@ -1,6 +1,8 @@
 package bmath
 
-import "github.com/go-gl/mathgl/mgl32"
+import (
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 type Rectangle struct {
 	MinX, MinY, MaxX, MaxY float64
@@ -149,16 +151,16 @@ func (camera Camera) GetProjectionView() mgl32.Mat4 {
 }
 
 func (camera Camera) Unproject(screenPos Vector2d) Vector2d {
-	//mgl32.Vec4(2*screenPos.X32()/float32(camera.width)-1, 2*screenPos.Y32()/float32(camera.height)-1, 0, 1)
-	return Vector2d{}
+	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{float32((screenPos.X+camera.screenRect.MinX)/camera.screenRect.MaxX), -float32((screenPos.Y+camera.screenRect.MaxY)/camera.screenRect.MinY), 0.0, 1.0})
+	return NewVec2d(float64(res[0]), float64(res[1]))
 }
 
 func (camera Camera) GetWorldRect() Rectangle {
-	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{-1.0, 1.0, 0.0, 1.0}) //.Add(mgl32.Vec4{256, 192, 0, 0})
+	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{-1.0, 1.0, 0.0, 1.0})
 	var rectangle Rectangle
 	rectangle.MinX = float64(res[0])
 	rectangle.MinY = float64(res[1])
-	res = camera.invProjectionView.Mul4x1(mgl32.Vec4{1.0, -1.0, 0.0, 1.0}) //.Add(mgl32.Vec4{256, 192, 0, 0})
+	res = camera.invProjectionView.Mul4x1(mgl32.Vec4{1.0, -1.0, 0.0, 1.0})
 	rectangle.MaxX = float64(res[0])
 	rectangle.MaxY = float64(res[1])
 	if rectangle.MinY > rectangle.MaxY {

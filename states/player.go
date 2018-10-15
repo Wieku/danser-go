@@ -150,11 +150,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(player.queue2, player.bMap.Queue)
 
-	for _, o := range player.queue2 {
+	/*for _, o := range player.queue2 {
 		if s, ok := o.(*objects.Slider); ok {
 			s.InitCurve(player.sliderRenderer)
 		}
-	}
+	}*/
 	player.start = false
 	player.mus = false
 	log.Println(beatMap.Audio)
@@ -332,7 +332,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	return player
 }
 
-func (pl *Player) Update() {
+func (pl *Player) Show() {
+
+}
+
+func (pl *Player) Draw(delta float64) {
 	if pl.lastTime < 0 {
 		pl.lastTime = utils.GetNanoTime()
 	}
@@ -362,17 +366,23 @@ func (pl *Player) Update() {
 
 	if len(pl.queue2) > 0 {
 		for i := 0; i < len(pl.queue2); i++ {
-			if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.ARms) <= pl.progressMs {
-
+			if p := pl.queue2[i]; p.GetBasicData().StartTime-15000 <= pl.progressMs {
 				if s, ok := p.(*objects.Slider); ok {
-					pl.sliders = append(pl.sliders, s)
-				}
-				if s, ok := p.(*objects.Circle); ok {
-					pl.circles = append(pl.circles, s)
+					s.InitCurve(pl.sliderRenderer)
 				}
 
-				pl.queue2 = pl.queue2[1:]
-				i--
+				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.ARms) <= pl.progressMs {
+
+					if s, ok := p.(*objects.Slider); ok {
+						pl.sliders = append(pl.sliders, s)
+					}
+					if s, ok := p.(*objects.Circle); ok {
+						pl.circles = append(pl.circles, s)
+					}
+
+					pl.queue2 = pl.queue2[1:]
+					i--
+				}
 			} else {
 				break
 			}
@@ -479,40 +489,6 @@ func (pl *Player) Update() {
 		if pl.storyboard != nil {
 			pl.storyboardLoad = pl.storyboard.GetLoad()
 		}
-	}
-
-	if settings.DEBUG || settings.FPS {
-		pl.batch.Begin()
-		pl.batch.SetColor(1, 1, 1, 1)
-		pl.batch.SetCamera(pl.scamera.GetProjectionView())
-
-		if settings.DEBUG {
-			shift := 0.0
-			if pl.storyboard != nil {
-				shift = 16
-			}
-
-			pl.font.Draw(pl.batch, 0, 4+settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
-			pl.font.Draw(pl.batch, 0, 4+shift+16*4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
-			pl.font.Draw(pl.batch, 0, 4+shift+16*3, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
-			pl.font.Draw(pl.batch, 0, 4+shift+16*2, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
-
-			time := int(pl.musicPlayer.GetPosition())
-			totalTime := int(pl.musicPlayer.GetLength())
-			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
-
-			pl.font.Draw(pl.batch, 0, 4+shift+16, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-
-			pl.font.Draw(pl.batch, 0, 4+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.sliders)+len(pl.circles), settings.DIVIDES, len(pl.bMap.HitObjects)))
-
-			if pl.storyboard != nil {
-				pl.font.Draw(pl.batch, 0, 4, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
-			}
-		} else {
-			pl.font.Draw(pl.batch, 0, 4, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
-		}
-
-		pl.batch.End()
 	}
 
 	if pl.fxGlider.GetValue() > 0.0 {
@@ -675,6 +651,39 @@ func (pl *Player) Update() {
 
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.EndAndRender()
+	}
+
+	if settings.DEBUG || settings.FPS {
+		pl.batch.Begin()
+		pl.batch.SetColor(1, 1, 1, 1)
+		pl.batch.SetCamera(pl.scamera.GetProjectionView())
+
+		padDown := 4.0
+		shift := 16.0
+
+		if settings.DEBUG {
+			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
+			pl.font.Draw(pl.batch, 0, padDown+shift*5, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift*4, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift*3, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+
+			time := int(pl.musicPlayer.GetPosition())
+			totalTime := int(pl.musicPlayer.GetLength())
+			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
+
+			pl.font.Draw(pl.batch, 0, padDown+shift*2, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
+			pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.sliders)+len(pl.circles), settings.DIVIDES, len(pl.bMap.HitObjects)))
+
+			if pl.storyboard != nil {
+				pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
+			} else {
+				pl.font.Draw(pl.batch, 0, padDown, 16, "No storyboard")
+			}
+		} else {
+			pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+		}
+
+		pl.batch.End()
 	}
 
 }

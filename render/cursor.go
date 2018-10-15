@@ -108,6 +108,10 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 	cr.Position = tmp
 }
 
+func (cr *Cursor) SetScreenPos(pt bmath.Vector2d) {
+	cr.SetPos(Camera.Unproject(pt))
+}
+
 func (cr *Cursor) Update(tim float64) {
 	points := cr.Position.Dst(cr.LastPos)
 	density := 1.0 / settings.Cursor.TrailDensity

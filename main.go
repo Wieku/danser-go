@@ -160,7 +160,7 @@ func run() {
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			if player != nil {
-				player.Update()
+				player.Draw(0)
 			}
 
 			if win.GetKey(glfw.KeyEscape) == glfw.Press {
@@ -215,5 +215,6 @@ func run() {
 }
 
 func main() {
+	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
 }

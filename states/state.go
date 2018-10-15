@@ -1,6 +1,8 @@
 package states
 
-type IState interface {
-	Draw()
+type State interface {
+	Show()
+	Hide()
+	Draw(delta float64)
 	Dispose()
 }

@@ -13,6 +13,9 @@ import (
 	"math"
 	"github.com/wieku/danser/utils"
 	"sort"
+	"github.com/wieku/danser/bmath"
+	"github.com/faiface/mainthread"
+	"runtime"
 )
 
 type tickPoint struct {
@@ -39,6 +42,8 @@ type Slider struct {
 	lastTick     int
 	End          bool
 	vao          *glhf.VertexSlice
+	created bool
+	discreteCurve []bmath.Vector2d
 }
 
 func NewSlider(data []string) *Slider {
@@ -164,6 +169,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
 
 	self.calculateFollowPoints()
+	self.discreteCurve = self.GetCurve()
 }
 
 func (self *Slider) calculateFollowPoints() {
@@ -268,12 +274,22 @@ func (self *Slider) GetPosition() m2.Vector2d {
 }
 
 func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
-	self.vao, self.divides = renderer.GetShape(self.GetCurve())
+	if !self.created {
+		self.created = true
+		go func() {
+			var data []float32
+			data, self.divides = renderer.GetShape(self.discreteCurve)
+			mainthread.CallNonBlock(func() {
+				self.vao = renderer.UploadMesh(data)
+				runtime.KeepAlive(data)
+			})
+		}()
+	}
 }
 
 func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
 	in := 0
-	out := int(math.Ceil(self.pixelLength*float64(settings.Objects.SliderPathLOD)/100.0)) + 1
+	out := len(self.discreteCurve)
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha := math.Abs(float64(time-(self.objData.StartTime-int64(preempt)))) / (preempt / 2)
@@ -408,6 +424,7 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	batch.SetSubScale(1, 1)
 
 	if time >= self.objData.EndTime+int64(preempt/4) {
+		self.vao.Delete()
 		return true
 	}
 	return false
