@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/beatmap"
 	"github.com/wieku/danser/render/texture"
+	"fmt"
 )
 
 type Storyboard struct {
@@ -35,83 +36,83 @@ func getSection(line string) string {
 }
 
 func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
-
-	fullPath := ""
-
-	filepath.Walk(settings.General.OsuSongsDir+string(os.PathSeparator)+beatMap.Dir, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(info.Name(), ".osb") {
-			fullPath = path
-		}
-		return nil
-	})
-
-	if fullPath == "" {
-		return nil
-	}
+	path := filepath.Join(settings.General.OsuSongsDir, beatMap.Dir)
+	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", beatMap.Artist, beatMap.Name, beatMap.Creator))}
 
 	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer(), atlas: texture.NewTextureAtlas(8192, 4)}
 	storyboard.atlas.Bind(17)
 	storyboard.textures = make(map[string]*texture.TextureRegion)
-
-	file, err := os.Open(fullPath)
-
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-
-	scanner := bufio.NewScanner(file)
 
 	var currentSection string
 	var currentSprite string
 	var commands []string
 
 	variables := make(map[string]string)
+	counter := 0
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for _, fS := range files {
+		file, err := os.Open(fS)
 
-		if strings.HasPrefix(line, "//") || strings.TrimSpace(line) == "" {
+		if err != nil {
+			log.Println(err)
 			continue
 		}
+		scanner := bufio.NewScanner(file)
 
-		section := getSection(line)
-		if section != "" {
-			currentSection = section
-			continue
-		}
+		for scanner.Scan() {
+			line := scanner.Text()
 
-		switch currentSection {
-		case "256", "Variables":
-			split := strings.Split(line, "=")
-			variables[split[0]] = split[1]
-			break
-		case "32", "Events":
-			if strings.ContainsRune(line, '$') {
-				for k, v := range variables {
-					if strings.Contains(line, k) {
-						line = strings.Replace(line, k, v, -1)
+			if strings.HasPrefix(line, "//") || strings.TrimSpace(line) == "" {
+				continue
+			}
+
+			section := getSection(line)
+			if section != "" {
+				currentSection = section
+				continue
+			}
+
+			switch currentSection {
+			case "256", "Variables":
+				split := strings.Split(line, "=")
+				variables[split[0]] = split[1]
+				break
+			case "32", "Events":
+				if strings.ContainsRune(line, '$') {
+					for k, v := range variables {
+						if strings.Contains(line, k) {
+							line = strings.Replace(line, k, v, -1)
+						}
 					}
 				}
-			}
 
-			if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+				if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
 
-				if currentSprite != "" {
-					storyboard.loadSprite(fullPath, currentSprite, commands)
+					if currentSprite != "" {
+						counter++
+						storyboard.loadSprite(path, currentSprite, commands)
+					}
+
+					currentSprite = line
+					commands = make([]string, 0)
+				} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
+					commands = append(commands, line)
 				}
-
-				currentSprite = line
-				commands = make([]string, 0)
-			} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
-				commands = append(commands, line)
+				break
 			}
-			break
 		}
+
+		if currentSprite != "" {
+			counter++
+			storyboard.loadSprite(path, currentSprite, commands)
+		}
+
+		file.Close()
 	}
 
-	if currentSprite != "" {
-		storyboard.loadSprite(fullPath, currentSprite, commands)
+	if counter == 0 {
+		storyboard.atlas.Dispose()
+		return nil
 	}
 
 	storyboard.background.FinishLoading()
@@ -158,14 +159,14 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		baseFile := strings.TrimSuffix(image, extension)
 
 		for i := 0; i < int(frames); i++ {
-			texture := storyboard.getTexture(filepath.Dir(path), baseFile+strconv.Itoa(i)+extension)
+			texture := storyboard.getTexture(path, baseFile+strconv.Itoa(i)+extension)
 			if texture != nil {
 				textures = append(textures, texture)
 			}
 		}
 
 	} else {
-		texture := storyboard.getTexture(filepath.Dir(path), image)
+		texture := storyboard.getTexture(path, image)
 		if texture != nil {
 			textures = append(textures, texture)
 		}
