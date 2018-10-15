@@ -402,7 +402,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	if len(pl.bMap.Queue) == 0 {
-		pl.fadeOut -= timMs / 7500
+		pl.fadeOut -= timMs / (settings.Playfield.FadeOutTime*1000)
 		pl.fadeOut = math.Max(0.0, pl.fadeOut)
 		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
 		pl.dimGlider.UpdateD(timMs)
