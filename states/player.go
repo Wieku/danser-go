@@ -670,7 +670,7 @@ func (pl *Player) Draw(delta float64) {
 
 		if settings.DEBUG {
 			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
-			pl.font.Draw(pl.batch, 0, padDown+shift*5, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift*5, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
 			pl.font.Draw(pl.batch, 0, padDown+shift*4, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
 			pl.font.Draw(pl.batch, 0, padDown+shift*3, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
 
@@ -687,7 +687,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.font.Draw(pl.batch, 0, padDown, 16, "No storyboard")
 			}
 		} else {
-			pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%0.2f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
 		}
 
 		pl.batch.End()
