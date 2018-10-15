@@ -16,12 +16,12 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/animation"
-	"os"
 	"github.com/wieku/danser/render/effects"
 	"github.com/wieku/danser/storyboard"
 	"github.com/wieku/danser/render/texture"
 	"github.com/wieku/danser/render/font"
 	"fmt"
+	"path/filepath"
 )
 
 type Player struct {
@@ -76,21 +76,22 @@ type Player struct {
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
-	player := &Player{}
+	player := new(Player)
 	render.LoadTextures()
+	render.SetupSlider()
 	player.batch = render.NewSpriteBatch()
+	player.sliderRenderer = render.NewSliderRenderer()
 	player.font = font.GetFont("Roboto")
+
 	player.bMap = beatMap
-	player.mapFullName = beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]"
-	log.Println(beatMap.Name + " " + beatMap.Difficulty)
+	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
+	log.Println("Playing:", player.mapFullName)
+
 	player.CS = (1.0 - 0.7*(beatMap.CircleSize-5)/5) / 2 * settings.Objects.CSMult
 	render.CS = player.CS
-	render.SetupSlider()
-
-	log.Println(beatMap.Bg)
 
 	var err error
-	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, settings.General.OsuSongsDir+string(os.PathSeparator)+beatMap.Dir+string(os.PathSeparator)+beatMap.Bg)
+	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 	if err != nil {
 		log.Println(err)
 	}
@@ -112,13 +113,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	winscl := settings.Graphics.GetAspectRatio()
 
 	player.blurEffect = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-	player.blurEffect.SetBlur(0.0, 0.0)
 
 	if player.Background != nil {
 		imScl := float64(player.Background.Width) / float64(player.Background.Height)
 
 		condition := imScl < winscl
-
 		if player.storyboard != nil && !player.storyboard.IsWideScreen() {
 			condition = !condition
 		}
@@ -126,12 +125,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		if condition {
 			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
 		} else {
-			log.Println(winscl / imScl)
 			player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
 		}
 	}
-
-	player.sliderRenderer = render.NewSliderRenderer()
 
 	scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / float64(384) * settings.Playfield.Scale
 
@@ -165,14 +161,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 	copy(player.queue2, player.bMap.Queue)
 
-	/*for _, o := range player.queue2 {
-		if s, ok := o.(*objects.Slider); ok {
-			s.InitCurve(player.sliderRenderer)
-		}
-	}*/
-	player.start = false
-	player.mus = false
-	log.Println(beatMap.Audio)
+	log.Println("Music:", beatMap.Audio)
 
 	player.Scl = 1
 	player.fxRotation = 0.0
@@ -222,7 +211,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
 	}
 
-	musicPlayer := audio.NewMusic(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.Audio)
+	musicPlayer := audio.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 
 	go func() {
 		player.entry = 1
@@ -254,6 +243,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.start = true
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
+		musicPlayer.SetPitch(settings.PITCH)
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -402,7 +392,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	if len(pl.bMap.Queue) == 0 {
-		pl.fadeOut -= timMs / (settings.Playfield.FadeOutTime*1000)
+		pl.fadeOut -= timMs / (settings.Playfield.FadeOutTime * 1000)
 		pl.fadeOut = math.Max(0.0, pl.fadeOut)
 		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
 		pl.dimGlider.UpdateD(timMs)

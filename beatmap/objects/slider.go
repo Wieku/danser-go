@@ -327,10 +327,12 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1
 
 	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)}, mgl32.Vec4{color1[0], color1[1], color1[2], float32(colorAlpha)})
 
-	subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
-	subVao.BeginDraw()
-	subVao.Draw()
-	subVao.EndDraw()
+	if self.vao != nil {
+		subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
+		subVao.BeginDraw()
+		subVao.Draw()
+		subVao.EndDraw()
+	}
 }
 
 func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
@@ -424,7 +426,9 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 	batch.SetSubScale(1, 1)
 
 	if time >= self.objData.EndTime+int64(preempt/4) {
-		self.vao.Delete()
+		if self.vao != nil {
+			self.vao.Delete()
+		}
 		return true
 	}
 	return false

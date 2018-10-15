@@ -59,8 +59,7 @@ func NewBlurEffect(width, height int) *BlurEffect {
 
 	effect.fbo1 = framebuffer.NewFrame(width, height, true, false)
 	effect.fbo2 = framebuffer.NewFrame(width, height, true, false)
-	effect.kernelSize = mgl32.Vec2{ /*2.0*50, 2.0*50*/ 0, 0}
-	effect.sigma = mgl32.Vec2{ /*2.0*50, 2.0*50*/ 1, 1}
+	effect.SetBlur(0, 0)
 	effect.size = mgl32.Vec2{float32(width), float32(height)}
 	return effect
 }

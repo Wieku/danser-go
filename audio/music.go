@@ -20,7 +20,6 @@ import (
 	//"log"
 	"math"
 	"github.com/wieku/danser/settings"
-	"log"
 )
 
 const (
@@ -61,20 +60,16 @@ func unregisterEndCallback(channel C.DWORD, f func()) {
 }
 
 type Music struct {
-	channel   C.DWORD
-	fxchannel C.DWORD
-	fft       []float32
-	beat      float64
-	peak      float64
+	channel C.DWORD
+	fft     []float32
+	beat    float64
+	peak    float64
 }
 
 func NewMusic(path string) *Music {
-	player := &Music{}
-	ch := C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.BASS_ASYNCFILE| /*C.BASS_STREAM_AUTOFREE*/ C.BASS_STREAM_DECODE)
-	fch := C.BASS_FX_TempoCreate(ch, C.BASS_FX_FREESOURCE)
-	log.Println(ch, fch)
-	player.channel = fch
-	player.fxchannel = fch
+	player := new(Music)
+	channel := C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE)
+	player.channel = C.BASS_FX_TempoCreate(channel, C.BASS_FX_FREESOURCE)
 	player.fft = make([]float32, 512)
 	return player
 }
@@ -130,7 +125,11 @@ func (wv *Music) GetPosition() float64 {
 }
 
 func (wv *Music) SetTempo(tempo float64) {
-	C.BASS_ChannelSetAttribute(C.DWORD(wv.fxchannel), C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
+	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
+}
+
+func (wv *Music) SetPitch(tempo float64) {
+	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*12))
 }
 
 func (wv *Music) GetState() int {
