@@ -4,6 +4,7 @@ danser is a visualiser for osu! maps written in Go.
 Application is in dev phase so only few things work. But if you want to test it, you should follow steps at the end of this readme.
 
 ## Dance examples
+* [REOL - YoiYoi Kokon [Yoi] - Dance comparison](https://youtu.be/QZ6-MaWWyA8)
 * [Omoi - Chiisana Koi no Uta (Synth Rock Cover) [Kroytz's EX EX] - TAG2 Mirror Collage](https://youtu.be/Vo0Pbpu113Y)
 * [Sex Whales & Fraxo - Dead To Me (feat. Lox Chatterbox) [extrad1881 (ar 10)] Mirror Collage](https://youtu.be/KCHqrVGdXrk)
 * [Halozy - Genryuu Kaiko [Higan Torrent] Mirror Collage](https://youtu.be/HCVIBQh4ljI)
