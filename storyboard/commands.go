@@ -31,7 +31,7 @@ func NewCommand(data []string) *Command {
 		log.Println(err)
 	}
 
-	command.easing = easing.Easings[easingID]
+	command.easing = easing.GetEasing(easingID)
 
 	command.start, err = strconv.ParseInt(data[2], 10, 64)
 

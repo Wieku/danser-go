@@ -1,8 +1,10 @@
 package easing
 
-import "math"
+import (
+	"math"
+)
 
-var Easings = []func(float64) float64{
+var easings = []func(float64) float64{
 	Linear,
 	OutQuad,
 	InQuad,
@@ -38,6 +40,13 @@ var Easings = []func(float64) float64{
 	InBounce,
 	OutBounce,
 	InOutBounce,
+}
+
+func GetEasing(easingID int64) func(float64) float64 {
+	if easingID < 0 || easingID >= int64(len(easings)) {
+		easingID = 0
+	}
+	return easings[easingID]
 }
 
 /* ========================
