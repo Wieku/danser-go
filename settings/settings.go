@@ -199,6 +199,8 @@ type objects struct {
 	ScaleToTheBeat                         bool    //true, objects size is changing with music peak amplitude
 	SliderLOD                              int64   //30, number of triangles in a circle
 	SliderPathLOD                          int64   //50, int(pixelLength*(PathLOD/100)) => number of slider path points
+	SliderSnakeIn                          bool
+	SliderSnakeOut                         bool
 	DrawFollowPoints                       bool    //true
 	WhiteFollowPoints                      bool    //true
 	FollowPointColorOffset                 float64 //0.0, hue offset of the followpoint

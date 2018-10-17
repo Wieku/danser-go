@@ -294,26 +294,30 @@ func (self *Slider) DrawBody(time int64, preempt float64, color mgl32.Vec4, colo
 	out := len(self.discreteCurve)
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha := math.Abs(float64(time-(self.objData.StartTime-int64(preempt)))) / (preempt / 2)
-		out = int(float64(out) * alpha)
-	} else if time >= self.objData.StartTime && time <= self.objData.EndTime {
-		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
-		if times >= self.repeat {
-			ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
-			alpha := 0.0
-			if (times % 2) == 1 {
-				alpha = ttime / self.partLen
-				in = int(float64(out) * alpha)
-			} else {
-				alpha = 1.0 - ttime/self.partLen
-				out = int(float64(out) * alpha)
-			}
+		if settings.Objects.SliderSnakeIn {
+			alpha := math.Abs(float64(time-(self.objData.StartTime-int64(preempt)))) / (preempt / 2)
+			out = int(float64(out) * alpha)
 		}
-	} else if time > self.objData.EndTime {
-		if (self.repeat % 2) == 1 {
-			in = out - 1
-		} else {
-			out = 1
+	} else if settings.Objects.SliderSnakeOut {
+		if time >= self.objData.StartTime && time <= self.objData.EndTime {
+			times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
+			if times >= self.repeat {
+				ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
+				alpha := 0.0
+				if (times % 2) == 1 {
+					alpha = ttime / self.partLen
+					in = int(float64(out) * alpha)
+				} else {
+					alpha = 1.0 - ttime/self.partLen
+					out = int(float64(out) * alpha)
+				}
+			}
+		} else if time > self.objData.EndTime {
+			if (self.repeat % 2) == 1 {
+				in = out - 1
+			} else {
+				out = 1
+			}
 		}
 	}
 
