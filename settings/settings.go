@@ -201,6 +201,7 @@ type objects struct {
 	SliderPathLOD                          int64   //50, int(pixelLength*(PathLOD/100)) => number of slider path points
 	SliderSnakeIn                          bool
 	SliderSnakeOut                         bool
+	SliderMerge                            bool
 	DrawFollowPoints                       bool    //true
 	WhiteFollowPoints                      bool    //true
 	FollowPointColorOffset                 float64 //0.0, hue offset of the followpoint

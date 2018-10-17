@@ -39,26 +39,26 @@ type Player struct {
 	controller     dance.Controller
 	//circles        []*objects.Circle
 	//sliders        []*objects.Slider
-	Background     *texture.TextureRegion
-	Logo           *texture.TextureRegion
-	BgScl          bmath.Vector2d
-	Scl            float64
-	SclA           float64
-	CS             float64
-	fxRotation     float64
-	fadeOut        float64
-	fadeIn         float64
-	entry          float64
-	start          bool
-	mus            bool
-	musicPlayer    *audio.Music
-	fxBatch        *render.FxBatch
-	vao            *glhf.VertexSlice
-	vaoD           []float32
-	vaoDirty       bool
-	rotation       float64
-	profiler       *utils.FPSCounter
-	profilerU      *utils.FPSCounter
+	Background  *texture.TextureRegion
+	Logo        *texture.TextureRegion
+	BgScl       bmath.Vector2d
+	Scl         float64
+	SclA        float64
+	CS          float64
+	fxRotation  float64
+	fadeOut     float64
+	fadeIn      float64
+	entry       float64
+	start       bool
+	mus         bool
+	musicPlayer *audio.Music
+	fxBatch     *render.FxBatch
+	vao         *glhf.VertexSlice
+	vaoD        []float32
+	vaoDirty    bool
+	rotation    float64
+	profiler    *utils.FPSCounter
+	profilerU   *utils.FPSCounter
 
 	storyboard *storyboard.Storyboard
 
@@ -372,13 +372,6 @@ func (pl *Player) Draw(delta float64) {
 
 					pl.processed = append(pl.processed, p.(objects.Renderable))
 
-					/*if s, ok := p.(*objects.Slider); ok {
-						pl.sliders = append(pl.sliders, s)
-					}
-					if s, ok := p.(*objects.Circle); ok {
-						pl.circles = append(pl.circles, s)
-					}*/
-
 					pl.queue2 = pl.queue2[1:]
 					i--
 				}
@@ -562,24 +555,26 @@ func (pl *Player) Draw(delta float64) {
 
 	if pl.start {
 
-		pl.sliderRenderer.Begin()
+		if settings.Objects.SliderMerge {
+			pl.sliderRenderer.Begin()
 
-		for j := 0; j < settings.DIVIDES; j++ {
-			pl.sliderRenderer.SetCamera(cameras[j])
-			ind := j - 1
-			if ind < 0 {
-				ind = settings.DIVIDES - 1
-			}
+			for j := 0; j < settings.DIVIDES; j++ {
+				pl.sliderRenderer.SetCamera(cameras[j])
+				ind := j - 1
+				if ind < 0 {
+					ind = settings.DIVIDES - 1
+				}
 
-			for i := 0; i < len(pl.processed); i++ {
-				if s, ok := pl.processed[i].(*objects.Slider); ok {
-					pl.sliderRenderer.SetScale(scale1)
-					s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+				for i := len(pl.processed) - 1; i >= 0; i-- {
+					if s, ok := pl.processed[i].(*objects.Slider); ok {
+						pl.sliderRenderer.SetScale(scale1)
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+					}
 				}
 			}
-		}
 
-		pl.sliderRenderer.EndAndRender()
+			pl.sliderRenderer.EndAndRender()
+		}
 
 		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
@@ -591,11 +586,26 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
 
 		for j := 0; j < settings.DIVIDES; j++ {
-
+			if !settings.Objects.SliderMerge {
+				pl.sliderRenderer.SetCamera(cameras[j])
+			}
 			pl.batch.SetCamera(cameras[j])
+			ind := j - 1
+			if ind < 0 {
+				ind = settings.DIVIDES - 1
+			}
 
 			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
 				if i < len(pl.processed) {
+					if !settings.Objects.SliderMerge {
+						if s, ok := pl.processed[i].(*objects.Slider); ok {
+							pl.batch.Flush()
+							pl.sliderRenderer.Begin()
+							pl.sliderRenderer.SetScale(scale1)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+							pl.sliderRenderer.EndAndRender()
+						}
+					}
 					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
@@ -613,7 +623,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-						pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
 				}
 			}
 		}
