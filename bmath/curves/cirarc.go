@@ -9,7 +9,7 @@ type CirArc struct {
 	pt1, pt2, pt3                  math2.Vector2d
 	centre                         math2.Vector2d
 	startAngle, totalAngle, r, dir float64
-	Unstable bool
+	Unstable                       bool
 }
 
 func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
@@ -72,6 +72,14 @@ func (ln CirArc) PointAt(t float64) math2.Vector2d {
 
 func (ln CirArc) GetLength() float64 {
 	return ln.r * ln.totalAngle
+}
+
+func (ln CirArc) GetStartAngle() float64 {
+	return ln.pt1.AngleRV(ln.PointAt(1.0 / ln.GetLength()))
+}
+
+func (ln CirArc) GetEndAngle() float64 {
+	return ln.pt3.AngleRV(ln.PointAt((ln.GetLength() - 1.0) / ln.GetLength()))
 }
 
 func (ln CirArc) GetPoints(num int) []math2.Vector2d {

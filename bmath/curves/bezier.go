@@ -64,6 +64,14 @@ func (bz Bezier) GetLength() float64 {
 	return bz.ApproxLength
 }
 
+func (bz Bezier) GetStartAngle() float64 {
+	return bz.points[0].AngleRV(bz.NPointAt(1.0/bz.ApproxLength))
+}
+
+func (bz Bezier) GetEndAngle() float64 {
+	return bz.points[len(bz.points)-1].AngleRV(bz.NPointAt((bz.ApproxLength-1)/bz.ApproxLength))
+}
+
 func min(a, b int64) int64 {
 	if a < b {
 		return a

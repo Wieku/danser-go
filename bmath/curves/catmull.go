@@ -66,6 +66,14 @@ func (cm Catmull) GetLength() float64 {
 	return cm.ApproxLength
 }
 
+func (cm Catmull) GetStartAngle() float64 {
+	return cm.points[0].AngleRV(cm.NPointAt(1.0/cm.ApproxLength))
+}
+
+func (cm Catmull) GetEndAngle() float64 {
+	return cm.points[len(cm.points)-1].AngleRV(cm.NPointAt((cm.ApproxLength-1)/cm.ApproxLength))
+}
+
 func (ln Catmull) GetPoints(num int) []math2.Vector2d {
 	t0 := 1 / float64(num-1)
 
