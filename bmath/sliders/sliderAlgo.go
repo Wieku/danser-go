@@ -41,7 +41,16 @@ func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) Slid
 		lastIndex := 0
 		for i, p := range points {
 			if (i == len(points)-1 && p != points[i-1]) || (i < len(points)-1 && points[i+1] == p) {
-				c := curves.NewBezier(points[lastIndex : i+1])
+				pts := points[lastIndex : i+1]
+				var c curves.Curve
+				if len(pts) > 2 {
+					c = curves.NewBezier(pts)
+				} else if len(pts) == 1 {
+					c = curves.NewLinear(pts[0], pts[0])
+				} else {
+					c = curves.NewLinear(pts[0], pts[1])
+				}
+
 				curveList = append(curveList, c)
 				length += c.GetLength()
 				lastIndex = i + 1
