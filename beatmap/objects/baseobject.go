@@ -4,12 +4,19 @@ import (
 	om "github.com/wieku/danser/bmath"
 	"strconv"
 	"strings"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser/render"
 )
 
 type BaseObject interface {
 	GetBasicData() *basicData
 	Update(time int64) bool
 	GetPosition() om.Vector2d
+}
+
+type Renderable interface {
+	Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool
+	DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch)
 }
 
 type basicData struct {

@@ -28,7 +28,7 @@ type Player struct {
 	font           *font.Font
 	bMap           *beatmap.BeatMap
 	queue2         []objects.BaseObject
-	processed      []objects.BaseObject
+	processed      []objects.Renderable
 	sliderRenderer *render.SliderRenderer
 	blurEffect     *effects.BlurEffect
 	bloomEffect    *effects.BloomEffect
@@ -37,8 +37,8 @@ type Player struct {
 	progressMs     int64
 	batch          *render.SpriteBatch
 	controller     dance.Controller
-	circles        []*objects.Circle
-	sliders        []*objects.Slider
+	//circles        []*objects.Circle
+	//sliders        []*objects.Slider
 	Background     *texture.TextureRegion
 	Logo           *texture.TextureRegion
 	BgScl          bmath.Vector2d
@@ -370,12 +370,14 @@ func (pl *Player) Draw(delta float64) {
 
 				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.ARms) <= pl.progressMs {
 
-					if s, ok := p.(*objects.Slider); ok {
+					pl.processed = append(pl.processed, p.(objects.Renderable))
+
+					/*if s, ok := p.(*objects.Slider); ok {
 						pl.sliders = append(pl.sliders, s)
 					}
 					if s, ok := p.(*objects.Circle); ok {
 						pl.circles = append(pl.circles, s)
-					}
+					}*/
 
 					pl.queue2 = pl.queue2[1:]
 					i--
@@ -569,9 +571,11 @@ func (pl *Player) Draw(delta float64) {
 				ind = settings.DIVIDES - 1
 			}
 
-			for i := 0; i < len(pl.sliders); i++ {
-				pl.sliderRenderer.SetScale(scale1)
-				pl.sliders[i].Render(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+			for i := 0; i < len(pl.processed); i++ {
+				if s, ok := pl.processed[i].(*objects.Slider); ok {
+					pl.sliderRenderer.SetScale(scale1)
+					s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+				}
 			}
 		}
 
@@ -590,31 +594,26 @@ func (pl *Player) Draw(delta float64) {
 
 			pl.batch.SetCamera(cameras[j])
 
-			for i := len(pl.sliders) - 1; i >= 0 && len(pl.sliders) > 0; i-- {
-				if i < len(pl.sliders) {
-					res := pl.sliders[i].RenderOverlay(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
+				if i < len(pl.processed) {
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
 					if res {
-						pl.sliders = append(pl.sliders[:i], pl.sliders[(i + 1):]...)
+						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
 					}
 				}
 			}
-
 		}
 
-		pl.batch.Flush()
+		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
+			pl.batch.Flush()
 
-		for j := 0; j < settings.DIVIDES; j++ {
+			for j := 0; j < settings.DIVIDES; j++ {
 
-			pl.batch.SetCamera(cameras[j])
+				pl.batch.SetCamera(cameras[j])
 
-			for i := len(pl.circles) - 1; i >= 0 && len(pl.circles) > 0; i-- {
-				if i < len(pl.circles) {
-					res := pl.circles[i].Render(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
-					if res {
-						pl.circles = append(pl.circles[:i], pl.circles[(i + 1):]...)
-						i++
-					}
+				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
+						pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
 				}
 			}
 		}
@@ -669,7 +668,7 @@ func (pl *Player) Draw(delta float64) {
 			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
 
 			pl.font.Draw(pl.batch, 0, padDown+shift*2, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.sliders)+len(pl.circles), settings.DIVIDES, len(pl.bMap.HitObjects)))
+			pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
 
 			if pl.storyboard != nil {
 				pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))

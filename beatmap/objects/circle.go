@@ -70,10 +70,9 @@ func (self *Circle) GetPosition() bmath.Vector2d {
 	return self.objData.StartPos
 }
 
-func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 
 	alpha := 1.0
-	arr := float64(self.objData.StartTime-time) / preempt
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
@@ -103,13 +102,6 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		batch.SetColor(1, 1, 1, alpha)
 		batch.DrawUnit(*render.CircleOverlay)
-
-		if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
-			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-			batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
-			batch.DrawUnit(*render.ApproachCircle)
-		}
-
 	}
 
 	batch.SetSubScale(1, 1)
@@ -118,4 +110,28 @@ func (self *Circle) Render(time int64, preempt float64, color mgl32.Vec4, batch 
 		return true
 	}
 	return false
+}
+
+func (self *Circle) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+
+	alpha := 1.0
+	arr := float64(self.objData.StartTime-time) / preempt
+
+	if time < self.objData.StartTime-int64(preempt)/2 {
+		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
+	} else if time >= self.objData.StartTime {
+		alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
+	} else {
+		alpha = float64(color[3])
+	}
+
+	batch.SetTranslation(self.objData.StartPos)
+
+	if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
+		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+		batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
+		batch.DrawUnit(*render.ApproachCircle)
+	}
+
+	batch.SetSubScale(1, 1)
 }

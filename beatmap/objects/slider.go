@@ -281,7 +281,7 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 	}
 }
 
-func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
+func (self *Slider) DrawBody(time int64, preempt float64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
 	in := 0
 	out := len(self.discreteCurve)
 
@@ -329,10 +329,9 @@ func (self *Slider) Render(time int64, preempt float64, color mgl32.Vec4, color1
 	}
 }
 
-func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 	alpha := 1.0
 	alphaF := 1.0
-	arr := float64(self.objData.StartTime-time) / preempt
 
 	if time < self.objData.StartTime-int64(preempt)/2 {
 		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
@@ -358,12 +357,6 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 			batch.DrawUnit(*render.Circle)
 			batch.SetColor(1, 1, 1, alpha)
 			batch.DrawUnit(*render.CircleOverlay)
-
-			if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
-				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-				batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
-				batch.DrawUnit(*render.ApproachCircle)
-			}
 
 		} else {
 			if settings.Objects.DrawFollowPoints && time < self.objData.EndTime {
@@ -426,4 +419,28 @@ func (self *Slider) RenderOverlay(time int64, preempt float64, color mgl32.Vec4,
 		return true
 	}
 	return false
+}
+
+func (self *Slider) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+
+	alpha := 1.0
+	arr := float64(self.objData.StartTime-time) / preempt
+
+	if time < self.objData.StartTime-int64(preempt)/2 {
+		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
+	} else if time >= self.objData.StartTime {
+		alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
+	} else {
+		alpha = float64(color[3])
+	}
+
+	batch.SetTranslation(self.objData.StartPos)
+
+	if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
+		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+		batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
+		batch.DrawUnit(*render.ApproachCircle)
+	}
+
+	batch.SetSubScale(1, 1)
 }
