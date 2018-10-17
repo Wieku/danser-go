@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser/beatmap/objects"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath/sliders"
-	"log"
 )
 
 type AxisMover struct {
@@ -36,7 +35,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 		midP = bmath.NewVec2d(startPos.X, endPos.Y)
 	}
 
-	bm.bz = sliders.NewSliderAlgo("L", []bmath.Vector2d{endPos, midP, startPos})
+	bm.bz = sliders.NewSliderAlgo("L", []bmath.Vector2d{endPos, midP, startPos}, endPos.Dst(midP)+midP.Dst(startPos))
 	bm.endTime = endTime
 	bm.beginTime = startTime
 }
@@ -44,12 +43,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 func (bm AxisMover) Update(time int64) bmath.Vector2d {
 	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
 	tr := math.Max(0.0, math.Min(1.0, math.Sin(t * math.Pi / 2)))
-	p := bm.bz.PointAt(tr)
-
-	if p.X == 0 && p.Y == 0 {
-		log.Println("EEEEEEEEEEEERRRRRRRRRRRRRRRR")
-	}
-	return p
+	return bm.bz.PointAt(tr)
 }
 
 func (bm *AxisMover) GetEndTime() int64 {

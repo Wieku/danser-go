@@ -3,6 +3,7 @@ package curves
 import (
 	math2 "github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath"
+	"math"
 )
 
 type Catmull struct {
@@ -18,8 +19,12 @@ func NewCatmull(points []math2.Vector2d) Catmull {
 
 	cm := &Catmull{points: points}
 
-	for i := 1; i <= 250; i++ {
-		cm.ApproxLength += cm.NPointAt(float64(i) / 250.0).Dst(cm.NPointAt(float64(i-1) / 250.0))
+	pointLength := points[1].Dst(points[2])
+
+	pointLength = math.Ceil(pointLength)
+
+	for i := 1; i <= int(pointLength); i++ {
+		cm.ApproxLength += cm.NPointAt(float64(i) / pointLength).Dst(cm.NPointAt(float64(i-1) / pointLength))
 	}
 
 	return *cm
@@ -51,7 +56,7 @@ func (cm Catmull) PointAt(t float64) math2.Vector2d {
 			return pos
 		}
 		pos = pt
-		c += 1.0 / float64(len(cm.points)*50-1)
+		c += 1.0 / float64(cm.ApproxLength*2-1)
 	}
 
 	return pos
@@ -62,7 +67,7 @@ func (cm Catmull) GetLength() float64 {
 }
 
 func (ln Catmull) GetPoints(num int) []math2.Vector2d {
-	t0 := 1 / float64(num)
+	t0 := 1 / float64(num-1)
 
 	points := make([]math2.Vector2d, num)
 	t := 0.0

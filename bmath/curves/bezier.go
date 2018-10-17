@@ -8,14 +8,23 @@ import (
 type Bezier struct {
 	points       []math2.Vector2d
 	ApproxLength float64
+	lengthCalculated bool
 }
 
 func NewBezier(points []math2.Vector2d) Bezier {
 	bz := &Bezier{points: points}
 
-	for i := 1; i <= 250; i++ {
-		bz.ApproxLength += bz.NPointAt(float64(i) / 250.0).Dst(bz.NPointAt(float64(i-1) / 250.0))
+	pointLength := 0.0
+	for i:=1; i < len(points); i++ {
+		pointLength += points[i].Dst(points[i-1])
 	}
+
+	pointLength = math.Ceil(pointLength)
+
+	for i := 1; i <= int(pointLength); i++ {
+		bz.ApproxLength += bz.NPointAt(float64(i) / pointLength).Dst(bz.NPointAt(float64(i-1) / pointLength))
+	}
+
 	return *bz
 }
 
@@ -45,7 +54,7 @@ func (bz Bezier) PointAt(t float64) math2.Vector2d {
 			return pos
 		}
 		pos = pt
-		c += 1.0 / float64(len(bz.points)*50-1)
+		c += 1.0 / float64(bz.ApproxLength*2-1)
 	}
 
 	return pos
@@ -83,8 +92,12 @@ func bernstein(i, n int64, t float64) float64 {
 	return float64(BinomialCoefficient(n, i)) * math.Pow(t, float64(i)) * math.Pow(1.0-t, float64(n-i))
 }
 
+func calcLength() {
+
+}
+
 func (ln Bezier) GetPoints(num int) []math2.Vector2d {
-	t0 := 1 / float64(num)
+	t0 := 1 / float64(num-1)
 
 	points := make([]math2.Vector2d, num)
 	t := 0.0

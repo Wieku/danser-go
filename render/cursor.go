@@ -113,6 +113,7 @@ func (cr *Cursor) SetScreenPos(pt bmath.Vector2d) {
 }
 
 func (cr *Cursor) Update(tim float64) {
+	tim = math.Abs(tim)
 	points := cr.Position.Dst(cr.LastPos)
 	density := 1.0 / settings.Cursor.TrailDensity
 

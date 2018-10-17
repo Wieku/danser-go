@@ -24,25 +24,25 @@ type tickPoint struct {
 }
 
 type Slider struct {
-	objData      *basicData
-	multiCurve   sliders.SliderAlgo
-	Timings      *Timings
-	TPoint       TimingPoint
-	pixelLength  float64
-	partLen      float64
-	repeat       int64
-	clicked      bool
-	sampleSets   []int
-	additionSets []int
-	samples      []int
-	lastT        int64
-	Pos          m2.Vector2d
-	divides      int
-	TickPoints   []tickPoint
-	lastTick     int
-	End          bool
-	vao          *glhf.VertexSlice
-	created bool
+	objData       *basicData
+	multiCurve    sliders.SliderAlgo
+	Timings       *Timings
+	TPoint        TimingPoint
+	pixelLength   float64
+	partLen       float64
+	repeat        int64
+	clicked       bool
+	sampleSets    []int
+	additionSets  []int
+	samples       []int
+	lastT         int64
+	Pos           m2.Vector2d
+	divides       int
+	TickPoints    []tickPoint
+	lastTick      int
+	End           bool
+	vao           *glhf.VertexSlice
+	created       bool
 	discreteCurve []bmath.Vector2d
 }
 
@@ -62,7 +62,7 @@ func NewSlider(data []string) *Slider {
 		points = append(points, m2.NewVec2d(x, y))
 	}
 
-	slider.multiCurve = sliders.NewSliderAlgo(list[0], points)
+	slider.multiCurve = sliders.NewSliderAlgo(list[0], points, slider.pixelLength)
 
 	slider.objData.EndTime = slider.objData.StartTime
 	slider.objData.EndPos = slider.objData.StartPos
@@ -119,18 +119,15 @@ func (self Slider) GetPartLen() float64 {
 }
 
 func (self Slider) GetPointAt(time int64) m2.Vector2d {
-	partLen := float64(self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength))
-	times := int64(math.Min(float64(time-self.objData.StartTime)/partLen+1, float64(self.repeat)))
+	times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
 
-	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*partLen
-
-	rt := float64(self.pixelLength) / self.multiCurve.GetLength()
+	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
 
 	var pos m2.Vector2d
 	if (times % 2) == 1 {
-		pos = self.multiCurve.PointAt(rt * ttime / partLen)
+		pos = self.multiCurve.PointAt(ttime / self.partLen)
 	} else {
-		pos = self.multiCurve.PointAt((1.0 - ttime/partLen) * rt)
+		pos = self.multiCurve.PointAt(1.0 - ttime/self.partLen)
 	}
 
 	return pos.Add(self.objData.StackOffset)
@@ -200,13 +197,12 @@ func (self *Slider) calculateFollowPoints() {
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
-	lod := float64(settings.Objects.SliderPathLOD) / 100.0
-	t0 := (1.0 / lod) / self.pixelLength
-	rt := float64(self.pixelLength) / self.multiCurve.GetLength()
-	points := make([]m2.Vector2d, int(self.pixelLength*lod)+1)
+	lod := math.Ceil(self.pixelLength * float64(settings.Objects.SliderPathLOD) / 100.0)
+	t0 := 1.0 / lod
+	points := make([]m2.Vector2d, int(lod)+1)
 	t := 0.0
-	for i := 0; i <= int(self.pixelLength*lod); i += 1 {
-		points[i] = self.multiCurve.PointAt(t * rt)
+	for i := 0; i <= int(lod); i += 1 {
+		points[i] = self.multiCurve.PointAt(t)
 		t += t0
 	}
 	return points
@@ -229,13 +225,11 @@ func (self *Slider) Update(time int64) bool {
 			}
 		}
 
-		rt := float64(self.pixelLength) / self.multiCurve.GetLength()
-
 		var pos m2.Vector2d
 		if (times % 2) == 1 {
-			pos = self.multiCurve.PointAt(rt * ttime / self.partLen)
+			pos = self.multiCurve.PointAt(ttime / self.partLen)
 		} else {
-			pos = self.multiCurve.PointAt((1.0 - ttime/self.partLen) * rt)
+			pos = self.multiCurve.PointAt(1.0 - ttime/self.partLen)
 		}
 		self.Pos = pos.Add(self.objData.StackOffset)
 

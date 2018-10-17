@@ -9,6 +9,7 @@ type CirArc struct {
 	pt1, pt2, pt3                  math2.Vector2d
 	centre                         math2.Vector2d
 	startAngle, totalAngle, r, dir float64
+	Unstable bool
 }
 
 func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
@@ -18,11 +19,19 @@ func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
 	bSq := pt1.DstSq(pt3)
 	cSq := pt1.DstSq(pt2)
 
+	if math.Abs(aSq) < 0.001 || math.Abs(bSq) < 0.001 || math.Abs(cSq) < 0.001 {
+		arc.Unstable = true
+	}
+
 	s := aSq * (bSq + cSq - aSq)
 	t := bSq * (aSq + cSq - bSq)
 	u := cSq * (aSq + bSq - cSq)
 
 	sum := s + t + u
+
+	if math.Abs(sum) < 0.001 {
+		arc.Unstable = true
+	}
 
 	centre := pt1.Scl(s).Add(pt2.Scl(t)).Add(pt3.Scl(u)).Scl(1 / sum)
 
@@ -66,7 +75,7 @@ func (ln CirArc) GetLength() float64 {
 }
 
 func (ln CirArc) GetPoints(num int) []math2.Vector2d {
-	t0 := 1 / float64(num)
+	t0 := 1 / float64(num-1)
 
 	points := make([]math2.Vector2d, num)
 	t := 0.0
