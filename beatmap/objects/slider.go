@@ -241,6 +241,14 @@ func (self *Slider) Update(time int64) bool {
 		return false
 	}
 
+	var pos m2.Vector2d
+	if (self.repeat % 2) == 1 {
+		pos = self.multiCurve.PointAt(1.0)
+	} else {
+		pos = self.multiCurve.PointAt(0.0)
+	}
+	self.Pos = pos.Add(self.objData.StackOffset)
+
 	self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
 	self.End = true
 	self.clicked = false
