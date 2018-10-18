@@ -576,13 +576,14 @@ func (pl *Player) Draw(delta float64) {
 			pl.sliderRenderer.EndAndRender()
 		}
 
+		pl.batch.Begin()
+
 		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+			pl.batch.SetAdditive(true)
 		} else {
-			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+			pl.batch.SetAdditive(false)
 		}
 
-		pl.batch.Begin()
 		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
 
 		for j := 0; j < settings.DIVIDES; j++ {
@@ -638,6 +639,7 @@ func (pl *Player) Draw(delta float64) {
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	gl.BlendEquation(gl.FUNC_ADD)
+	pl.batch.SetAdditive(true)
 	render.BeginCursorRender()
 	for j := 0; j < settings.DIVIDES; j++ {
 
@@ -654,7 +656,7 @@ func (pl *Player) Draw(delta float64) {
 
 	}
 	render.EndCursorRender()
-
+	pl.batch.SetAdditive(false)
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.EndAndRender()
 	}
