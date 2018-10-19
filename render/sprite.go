@@ -90,26 +90,27 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 }
 
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
-	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0).Mul4(mgl32.Scale3D(batch.scale.X32()*batch.subscale.X32(), batch.scale.Y32()*batch.subscale.Y32(), 0))
-	batch.DrawUnitSep(transf, batch.color, texture)
+	newScale := batch.scale.Mult(batch.subscale)
+
+	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Add(batch.position)
+	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Add(batch.position)
+	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Add(batch.position)
+	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Add(batch.position)
+
+	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
 
-func (batch *SpriteBatch) DrawUnitSep(transform mgl32.Mat4, color mgl32.Vec4, texture texture.TextureRegion) {
+func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d, color mgl32.Vec4, texture texture.TextureRegion) {
 
 	batch.bind(texture.Texture)
 
-	vec00 := transform.Mul4x1(mgl32.Vec4{-1, -1, 0, 1})
-	vec10 := transform.Mul4x1(mgl32.Vec4{1, -1, 0, 1})
-	vec11 := transform.Mul4x1(mgl32.Vec4{1, 1, 0, 1})
-	vec01 := transform.Mul4x1(mgl32.Vec4{-1, 1, 0, 1})
+	batch.addVertex(vec00.AsVec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec10.AsVec3(), mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
 
-	batch.addVertex(vec00.Vec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
-	batch.addVertex(vec10.Vec3(), mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
-	batch.addVertex(vec11.Vec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
-
-	batch.addVertex(vec11.Vec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
-	batch.addVertex(vec01.Vec3(), mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
-	batch.addVertex(vec00.Vec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
+	batch.addVertex(vec01.AsVec3(), mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
+	batch.addVertex(vec00.AsVec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
 
 	if batch.currentSize >= len(batch.data)-1 {
 		batch.Flush()
@@ -176,24 +177,37 @@ func (batch *SpriteBatch) SetAdditive(additive bool) {
 }
 
 func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
-	batch.bind(texture.Texture)
-	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0).Mul4(mgl32.Scale3D(batch.scale.X32()*batch.subscale.X32()*float32(texture.Width)/2, batch.scale.Y32()*batch.subscale.Y32()*float32(texture.Height)/2, 0))
-	batch.DrawUnitSep(transf, batch.color, texture)
+	newScale := bmath.NewVec2d(batch.scale.X*batch.subscale.X*float64(texture.Width)/2, batch.scale.Y*batch.subscale.Y*float64(texture.Height)/2)
+
+	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Add(batch.position)
+	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Add(batch.position)
+	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Add(batch.position)
+	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Add(batch.position)
+
+	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
 
 func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
-	transf := mgl32.Translate3D(position.X32()-64, position.Y32()-48, 0).Mul4(mgl32.HomogRotate3DZ(float32(rotation))).Mul4(mgl32.Scale3D(scale.X32()*float32(texture.Width)/2, scale.Y32()*float32(texture.Height)/2, 1)).Mul4(mgl32.Translate3D(-origin.X32(), -origin.Y32(), 0)).Mul4(mgl32.Scale3D(flip.X32(), flip.Y32(), 1))
+	newScale := bmath.NewVec2d(scale.X*float64(texture.Width)/2, scale.Y*float64(texture.Height)/2)
+	newPosition := bmath.NewVec2d(position.X-64, position.Y-48)
 
-	batch.bind(texture.Texture)
+	vec00 := bmath.NewVec2d(-1, -1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
+	vec10 := bmath.NewVec2d(1, -1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
+	vec11 := bmath.NewVec2d(1, 1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
+	vec01 := bmath.NewVec2d(-1, 1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
+
 	batch.SetAdditive(additive)
-	batch.DrawUnitSep(transf, mgl32.Vec4{color.X()*batch.color.X(), color.Y()*batch.color.Y(), color.Z()*batch.color.Z(), color.W()*batch.color.W()}, texture)
+	batch.DrawUnitSep(vec00, vec10, vec11, vec01, mgl32.Vec4{color.X()*batch.color.X(), color.Y()*batch.color.Y(), color.Z()*batch.color.Z(), color.W()*batch.color.W()}, texture)
 	batch.SetAdditive(false)
 }
 
 func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
-	batch.bind(texture.Texture)
-	transf := mgl32.Translate3D(batch.position.X32(), batch.position.Y32(), 0)
-	batch.DrawUnitSep(transf, batch.color, texture)
+	vec00 := bmath.NewVec2d(-1, -1).Add(batch.position)
+	vec10 := bmath.NewVec2d(1, -1).Add(batch.position)
+	vec11 := bmath.NewVec2d(1, 1).Add(batch.position)
+	vec01 := bmath.NewVec2d(-1, 1).Add(batch.position)
+
+	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
 
 /*func (batch *SpriteBatch) DrawUnitR(unit int) {
