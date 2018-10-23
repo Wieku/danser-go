@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/render/batches"
 )
 
 type Circle struct {
@@ -70,7 +71,7 @@ func (self *Circle) GetPosition() bmath.Vector2d {
 	return self.objData.StartPos
 }
 
-func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 
 	alpha := 1.0
 
@@ -85,7 +86,8 @@ func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 	batch.SetTranslation(self.objData.StartPos)
 
 	if time >= self.objData.StartTime {
-		batch.SetSubScale(1+(1.0-alpha)*0.5, 1+(1.0-alpha)*0.5)
+		subScale := 1+(1.0-alpha)*0.5
+		batch.SetSubScale(subScale, subScale)
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -102,6 +104,10 @@ func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		batch.SetColor(1, 1, 1, alpha)
 		batch.DrawUnit(*render.CircleOverlay)
+		if time < self.objData.StartTime {
+			render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+			batch.SetTranslation(self.objData.StartPos)
+		}
 	}
 
 	batch.SetSubScale(1, 1)
@@ -112,7 +118,7 @@ func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 	return false
 }
 
-func (self *Circle) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+func (self *Circle) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) {
 
 	alpha := 1.0
 	arr := float64(self.objData.StartTime-time) / preempt

@@ -42,7 +42,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 
 func (bm AxisMover) Update(time int64) bmath.Vector2d {
 	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
-	tr := math.Max(0.0, math.Min(1.0, math.Sin(t * math.Pi / 2)))
+	tr := math.Max(0.0, math.Min(1.0, math.Sin(t*math.Pi/2)))
 	return bm.bz.PointAt(tr)
 }
 

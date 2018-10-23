@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser/utils"
 	"io/ioutil"
 	"github.com/wieku/danser/render/framebuffer"
+	"github.com/wieku/danser/render/batches"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -198,11 +199,11 @@ func BeginCursorRender() {
 func EndCursorRender() {
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *SpriteBatch, color mgl32.Vec4) {
+func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4) {
 	cursor.DrawM(scale, batch, color, color)
 }
 
-func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4) {
+func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4) {
 	gl.Disable(gl.DEPTH_TEST)
 
 	cursorFbo.Begin()

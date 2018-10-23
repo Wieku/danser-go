@@ -57,7 +57,7 @@ func newStore(layerNum, width, height, mipmaps int) *textureStore {
 	store.Bind(0)
 	gl.TexStorage3D(gl.TEXTURE_2D_ARRAY, store.mipmaps, gl.RGBA8, store.width, store.height, store.layers)
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_BASE_LEVEL, 0)
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAX_LEVEL, store.mipmaps - 1)
+	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAX_LEVEL, store.mipmaps-1)
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 

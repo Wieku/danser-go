@@ -1,7 +1,6 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser/render"
 	"bufio"
 	"os"
 	"log"
@@ -14,6 +13,7 @@ import (
 	"github.com/wieku/danser/beatmap"
 	"github.com/wieku/danser/render/texture"
 	"fmt"
+	"github.com/wieku/danser/render/batches"
 )
 
 type Storyboard struct {
@@ -225,7 +225,7 @@ func (storyboard *Storyboard) Update(time int64) {
 	storyboard.foreground.Update(time)
 }
 
-func (storyboard *Storyboard) Draw(time int64, batch *render.SpriteBatch) {
+func (storyboard *Storyboard) Draw(time int64, batch *batches.SpriteBatch) {
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
 	storyboard.foreground.Draw(time, batch)

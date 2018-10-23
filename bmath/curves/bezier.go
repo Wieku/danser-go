@@ -6,8 +6,8 @@ import (
 )
 
 type Bezier struct {
-	points       []math2.Vector2d
-	ApproxLength float64
+	points           []math2.Vector2d
+	ApproxLength     float64
 	lengthCalculated bool
 }
 
@@ -15,7 +15,7 @@ func NewBezier(points []math2.Vector2d) Bezier {
 	bz := &Bezier{points: points}
 
 	pointLength := 0.0
-	for i:=1; i < len(points); i++ {
+	for i := 1; i < len(points); i++ {
 		pointLength += points[i].Dst(points[i-1])
 	}
 
@@ -65,11 +65,11 @@ func (bz Bezier) GetLength() float64 {
 }
 
 func (bz Bezier) GetStartAngle() float64 {
-	return bz.points[0].AngleRV(bz.NPointAt(1.0/bz.ApproxLength))
+	return bz.points[0].AngleRV(bz.NPointAt(1.0 / bz.ApproxLength))
 }
 
 func (bz Bezier) GetEndAngle() float64 {
-	return bz.points[len(bz.points)-1].AngleRV(bz.NPointAt((bz.ApproxLength-1)/bz.ApproxLength))
+	return bz.points[len(bz.points)-1].AngleRV(bz.NPointAt((bz.ApproxLength - 1) / bz.ApproxLength))
 }
 
 func min(a, b int64) int64 {

@@ -11,11 +11,12 @@ import (
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/glhf"
 	"math"
-	"github.com/wieku/danser/utils"
 	"sort"
 	"github.com/wieku/danser/bmath"
 	"github.com/faiface/mainthread"
 	"runtime"
+	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/utils"
 )
 
 type tickPoint struct {
@@ -341,7 +342,7 @@ func (self *Slider) DrawBody(time int64, preempt float64, color mgl32.Vec4, colo
 	}
 }
 
-func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 	alpha := 1.0
 	alphaF := 1.0
 
@@ -369,26 +370,30 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 			batch.DrawUnit(*render.Circle)
 			batch.SetColor(1, 1, 1, alpha)
 			batch.DrawUnit(*render.CircleOverlay)
+			render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+			batch.SetTranslation(self.objData.StartPos)
 
 		} else {
-			if settings.Objects.DrawFollowPoints && time < self.objData.EndTime {
-				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
+			if time < self.objData.EndTime {
+				if settings.Objects.DrawFollowPoints {
+					shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
 
-				for _, p := range self.TickPoints {
-					al := 0.0
-					if p.time > time {
-						al = math.Min(1.0, math.Max((float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
-					}
-					if al > 0.0 {
-						batch.SetTranslation(p.Pos)
-						batch.SetSubScale(1.0/5, 1.0/5)
-						if settings.Objects.WhiteFollowPoints {
-							batch.SetColor(1, 1, 1, alpha*al)
-						} else {
-							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
+					for _, p := range self.TickPoints {
+						al := 0.0
+						if p.time > time {
+							al = math.Min(1.0, math.Max((float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
 						}
+						if al > 0.0 {
+							batch.SetTranslation(p.Pos)
+							batch.SetSubScale(1.0/5, 1.0/5)
+							if settings.Objects.WhiteFollowPoints {
+								batch.SetColor(1, 1, 1, alpha*al)
+							} else {
+								batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
+							}
 
-						batch.DrawUnit(*render.SliderTick)
+							batch.DrawUnit(*render.SliderTick)
+						}
 					}
 				}
 			}
@@ -433,7 +438,7 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 	return false
 }
 
-func (self *Slider) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+func (self *Slider) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) {
 
 	alpha := 1.0
 	arr := float64(self.objData.StartTime-time) / preempt

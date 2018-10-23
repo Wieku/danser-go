@@ -10,9 +10,9 @@ import (
 
 // Framebuffer is a fixed resolution texture that you can draw on.
 type Framebuffer struct {
-	obj uint32
+	obj  uint32
 	last int32
-	tex *texture.TextureSingle
+	tex  *texture.TextureSingle
 }
 
 // NewFrame creates a new fully transparent Framebuffer with given dimensions in pixels.

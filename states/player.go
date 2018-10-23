@@ -22,6 +22,7 @@ import (
 	"github.com/wieku/danser/render/font"
 	"fmt"
 	"path/filepath"
+	"github.com/wieku/danser/render/batches"
 )
 
 type Player struct {
@@ -35,7 +36,7 @@ type Player struct {
 	lastTime       int64
 	progressMsF    float64
 	progressMs     int64
-	batch          *render.SpriteBatch
+	batch          *batches.SpriteBatch
 	controller     dance.Controller
 	//circles        []*objects.Circle
 	//sliders        []*objects.Slider
@@ -79,7 +80,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
 	render.LoadTextures()
 	render.SetupSlider()
-	player.batch = render.NewSpriteBatch()
+	player.batch = batches.NewSpriteBatch()
 	player.sliderRenderer = render.NewSliderRenderer()
 	player.font = font.GetFont("Roboto")
 
@@ -664,6 +665,7 @@ func (pl *Player) Draw(delta float64) {
 	if settings.DEBUG || settings.FPS {
 		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, 1)
+		pl.batch.SetScale(1, 1)
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
 		padDown := 4.0

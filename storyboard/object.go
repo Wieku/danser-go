@@ -3,11 +3,11 @@ package storyboard
 import (
 	"github.com/wieku/danser/bmath"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
 	"unicode"
 	"strings"
 	"math"
 	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser/render/batches"
 )
 
 const (
@@ -21,7 +21,7 @@ type color struct {
 
 type Object interface {
 	Update(time int64)
-	Draw(time int64, batch *render.SpriteBatch)
+	Draw(time int64, batch *batches.SpriteBatch)
 	GetLoad() float64
 	GetStartTime() int64
 	GetEndTime() int64
@@ -177,7 +177,7 @@ func (sprite *Sprite) Update(time int64) {
 	sprite.firstupdate = true
 }
 
-func (sprite *Sprite) Draw(time int64, batch *render.SpriteBatch) {
+func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
 	if !sprite.firstupdate || sprite.color.A < 0.01 {
 		return
 	}

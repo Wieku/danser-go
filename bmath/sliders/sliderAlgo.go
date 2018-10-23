@@ -11,7 +11,7 @@ type SliderAlgo struct {
 	curves   []curves.Curve
 	sections []float64
 	length   float64
-	scale float64
+	scale    float64
 }
 
 func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) SliderAlgo {
@@ -78,7 +78,7 @@ func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) Slid
 	scale := -1.0
 
 	if length > desiredLength {
-		scale = desiredLength/length
+		scale = desiredLength / length
 	} else if desiredLength > length {
 		last := curveList[len(curveList)-1]
 		p2 := last.PointAt(1)
@@ -103,7 +103,7 @@ func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) Slid
 
 func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
 	if sa.scale > -0.5 {
-		t*=sa.scale
+		t *= sa.scale
 	}
 	if len(sa.curves) == 1 {
 		return sa.curves[0].PointAt(t)
@@ -122,7 +122,7 @@ func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
 
 func (sa *SliderAlgo) GetLength() float64 {
 	if sa.scale > -0.5 {
-		return sa.length*sa.scale
+		return sa.length * sa.scale
 	}
 	return sa.length
 }

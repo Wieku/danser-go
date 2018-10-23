@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/render/batches"
 )
 
 type BaseObject interface {
@@ -15,8 +15,8 @@ type BaseObject interface {
 }
 
 type Renderable interface {
-	Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool
-	DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch)
+	Draw(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) bool
+	DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch)
 }
 
 type basicData struct {
@@ -26,6 +26,9 @@ type basicData struct {
 	StackIndex         int64
 	Number             int64
 	SliderPoint        bool
+	NewCombo           bool
+	ComboNumber        int64
+	ComboSet           int64
 
 	sampleSet    int
 	additionSet  int
@@ -37,7 +40,8 @@ func commonParse(data []string) *basicData {
 	x, _ := strconv.ParseFloat(data[0], 64)
 	y, _ := strconv.ParseFloat(data[1], 64)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
-	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1}
+	objType, _ := strconv.ParseInt(data[3], 10, 64)
+	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1, NewCombo: (objType&4)==4}
 }
 
 func (bData *basicData) parseExtras(data []string, extraIndex int) {
@@ -52,7 +56,6 @@ func (bData *basicData) parseExtras(data []string, extraIndex int) {
 		} else {
 			bData.customVolume = 0
 		}
-
 
 		bData.sampleSet = int(sampleSet)
 		bData.additionSet = int(additionSet)

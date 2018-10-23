@@ -16,10 +16,10 @@ import (
 	"github.com/wieku/danser/build"
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/database"
-	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/render/font"
 	"image"
+	"github.com/wieku/danser/render/batches"
 )
 
 var player *states.Player
@@ -125,7 +125,7 @@ func run() {
 		glhf.Init()
 		glhf.Clear(0, 0, 0, 1)
 
-		batch := render.NewSpriteBatch()
+		batch := batches.NewSpriteBatch()
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
 		camera := bmath.NewCamera()

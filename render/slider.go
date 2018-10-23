@@ -88,7 +88,6 @@ func (sr *SliderRenderer) Begin() {
 
 	sliderShader.Begin()
 
-	gl.ActiveTexture(gl.TEXTURE0)
 	SliderGradient.Bind(0)
 	sliderShader.SetUniformAttr(1, int32(0))
 	sliderShader.SetUniformAttr(2, cam)

@@ -1,7 +1,6 @@
 package font
 
 import (
-	"github.com/wieku/danser/render"
 	"io"
 	"github.com/golang/freetype/truetype"
 	"io/ioutil"
@@ -13,6 +12,7 @@ import (
 	"log"
 	"github.com/wieku/danser/render/texture"
 	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/render/batches"
 )
 
 var fonts map[string]*Font
@@ -31,11 +31,12 @@ type glyphData struct {
 }
 
 type Font struct {
-	face        font2.Face
 	atlas       *texture.TextureAtlas
 	glyphs      []*glyphData
 	min, max    rune
 	initialSize float64
+	lineDist    float64
+	kernTable   map[rune]map[rune]float64
 }
 
 func LoadFont(reader io.Reader) *Font {
@@ -46,7 +47,6 @@ func LoadFont(reader io.Reader) *Font {
 	}
 
 	ttf, err := truetype.Parse(data)
-
 	if err != nil {
 		panic("Error reading font: " + err.Error())
 	}
@@ -56,13 +56,28 @@ func LoadFont(reader io.Reader) *Font {
 	font.max = rune(127)
 	font.initialSize = 64.0
 	font.glyphs = make([]*glyphData, font.max-font.min+1)
-
+	font.kernTable = make(map[rune]map[rune]float64)
 	font.atlas = texture.NewTextureAtlas(4096, 4)
 
 	font.atlas.Bind(20)
 
 	fc := truetype.NewFace(ttf, &truetype.Options{Size: font.initialSize, DPI: 72, Hinting: font2.HintingFull})
-	font.face = fc
+
+	for i := font.min; i <= font.max; i++ {
+		for j := i; j <= font.max; j++ {
+			if font.kernTable[i] == nil {
+				font.kernTable[i] = make(map[rune]float64)
+			}
+
+			if font.kernTable[j] == nil {
+				font.kernTable[j] = make(map[rune]float64)
+			}
+
+			font.kernTable[i][j] = float64(fc.Kern(i, j)) / 64
+			font.kernTable[j][i] = float64(fc.Kern(j, i)) / 64
+		}
+	}
+
 	context := freetype.NewContext()
 	context.SetFont(ttf)
 	context.SetFontSize(font.initialSize)
@@ -139,7 +154,7 @@ func LoadFont(reader io.Reader) *Font {
 	return font
 }
 
-func (font *Font) Draw(renderer *render.SpriteBatch, x, y float64, size float64, text string) {
+func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
 	xpad := x
 
 	scale := size / font.initialSize
@@ -152,14 +167,34 @@ func (font *Font) Draw(renderer *render.SpriteBatch, x, y float64, size float64,
 
 		kerning := 0.0
 
-		if i > 0 {
-			kerning = float64(font.face.Kern(rune(text[i-1]), c)) / 64
+		if i > 0 && font.kernTable != nil {
+			kerning = font.kernTable[rune(text[i-1])][c]
 		}
 
-		renderer.SetScale(scale, scale)
-		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale, y+(float64(char.region.Height)/2-char.bearingY)*scale))
+		renderer.SetSubScale(scale, scale)
+		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
 		renderer.DrawTexture(char.region)
-		xpad += scale * (char.advance - kerning)
+		xpad += scale * renderer.GetScale().X * (char.advance - kerning)
 
 	}
+}
+
+func (font *Font) DrawCentered(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
+	scale := size / font.initialSize
+	xpad := 0.0
+	for i, c := range text {
+		char := font.glyphs[c-font.min]
+		if char == nil {
+			continue
+		}
+
+		kerning := 0.0
+		if i > 0 && font.kernTable != nil {
+			kerning = font.kernTable[rune(text[i-1])][c]
+		}
+
+		xpad += scale * renderer.GetScale().X * (char.advance - kerning)
+	}
+
+	font.Draw(renderer, x-(xpad)/2, y, size, text)
 }
