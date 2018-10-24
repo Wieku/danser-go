@@ -8,12 +8,15 @@ import (
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/animation"
 )
 
 type Circle struct {
-	objData *basicData
-	sample  int
-	Timings *Timings
+	objData      *basicData
+	sample       int
+	Timings      *Timings
+	fadeApproach *animation.Glider
+	fadeCircle   *animation.Glider
 }
 
 func NewCircle(data []string) *Circle {
@@ -24,6 +27,8 @@ func NewCircle(data []string) *Circle {
 	circle.objData.EndTime = circle.objData.StartTime
 	circle.objData.EndPos = circle.objData.StartPos
 	circle.objData.parseExtras(data, 5)
+	circle.fadeCircle = animation.NewGlider(1)
+	circle.fadeApproach = animation.NewGlider(1)
 	return circle
 }
 
@@ -67,26 +72,27 @@ func (self *Circle) SetTiming(timings *Timings) {
 	self.Timings = timings
 }
 
+func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
+	self.fadeCircle = animation.NewGlider(0)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+fadeIn, 0)
+
+	self.fadeApproach = animation.NewGlider(1)
+	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)
+}
+
 func (self *Circle) GetPosition() bmath.Vector2d {
 	return self.objData.StartPos
 }
 
-func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
-
-	alpha := 1.0
-
-	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
-	} else if time >= self.objData.StartTime {
-		alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
-	} else {
-		alpha = float64(color[3])
-	}
+func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
+	self.fadeCircle.Update(float64(time))
+	alpha := self.fadeCircle.GetValue()
 
 	batch.SetTranslation(self.objData.StartPos)
 
 	if time >= self.objData.StartTime {
-		subScale := 1+(1.0-alpha)*0.5
+		subScale := 1 + (1.0-alpha)*0.5
 		batch.SetSubScale(subScale, subScale)
 	}
 
@@ -112,24 +118,16 @@ func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *b
 
 	batch.SetSubScale(1, 1)
 
-	if time >= self.objData.StartTime+int64(preempt/2) {
+	if time >= self.objData.StartTime && self.fadeCircle.GetValue() <= 0.001 {
 		return true
 	}
 	return false
 }
 
-func (self *Circle) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-
-	alpha := 1.0
-	arr := float64(self.objData.StartTime-time) / preempt
-
-	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
-	} else if time >= self.objData.StartTime {
-		alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
-	} else {
-		alpha = float64(color[3])
-	}
+func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+	self.fadeApproach.Update(float64(time))
+	arr := self.fadeApproach.GetValue()
+	alpha := self.fadeCircle.GetValue()
 
 	batch.SetTranslation(self.objData.StartPos)
 

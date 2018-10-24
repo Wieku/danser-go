@@ -20,8 +20,16 @@ func NewPause(data []string) *Pause {
 	return pause
 }
 
-func (self Pause) GetBasicData() *basicData {
+func (self *Pause) GetBasicData() *basicData {
 	return self.objData
+}
+
+func (self *Pause) SetTiming(timings *Timings) {
+
+}
+
+func (self *Pause) SetDifficulty(preempt, fadeIn float64) {
+
 }
 
 func (self *Pause) Update(time int64) bool {

@@ -10,7 +10,7 @@ import (
 
 type BeatMap struct {
 	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags string
-	SliderMultiplier, StackLeniency, CircleSize, AR, ARms                       float64
+	SliderMultiplier, StackLeniency, CircleSize, AR, Preempt, FadeIn            float64
 	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints                         string
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
@@ -29,6 +29,9 @@ func (b *BeatMap) Reset() {
 	b.Queue = make([]objects.BaseObject, len(b.HitObjects))
 	copy(b.Queue, b.HitObjects)
 	b.Timings.Reset()
+	for _, o := range b.HitObjects {
+		o.SetDifficulty(b.Preempt, b.FadeIn)
+	}
 }
 
 func (b *BeatMap) Update(time int64) {

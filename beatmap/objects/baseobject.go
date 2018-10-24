@@ -11,12 +11,14 @@ import (
 type BaseObject interface {
 	GetBasicData() *basicData
 	Update(time int64) bool
+	SetTiming(timings *Timings)
+	SetDifficulty(preempt, fadeIn float64)
 	GetPosition() om.Vector2d
 }
 
 type Renderable interface {
-	Draw(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch) bool
-	DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *batches.SpriteBatch)
+	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool
+	DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
 }
 
 type basicData struct {
@@ -41,7 +43,7 @@ func commonParse(data []string) *basicData {
 	y, _ := strconv.ParseFloat(data[1], 64)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
-	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1, NewCombo: (objType&4)==4}
+	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1, NewCombo: (objType & 4) == 4}
 }
 
 func (bData *basicData) parseExtras(data []string, extraIndex int) {

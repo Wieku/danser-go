@@ -32,7 +32,8 @@ func calculateStackLeniency(b *BeatMap) {
 	stack_distance := 3.0
 
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
-	b.ARms = preempt
+	b.Preempt = preempt
+	b.FadeIn = difficultyRate(b.AR, 1200, 800, 300)
 	hitObjects := b.HitObjects
 
 	if !settings.Objects.StackEnabled {

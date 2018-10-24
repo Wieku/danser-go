@@ -369,7 +369,7 @@ func (pl *Player) Draw(delta float64) {
 					s.InitCurve(pl.sliderRenderer)
 				}
 
-				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.ARms) <= pl.progressMs {
+				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.Preempt) <= pl.progressMs {
 
 					pl.processed = append(pl.processed, p.(objects.Renderable))
 
@@ -569,7 +569,7 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer)
 					}
 				}
 			}
@@ -604,11 +604,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer)
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					res := pl.processed[i].Draw(pl.progressMs, colors[j], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
@@ -625,7 +625,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, colors[j], pl.batch)
 				}
 			}
 		}
