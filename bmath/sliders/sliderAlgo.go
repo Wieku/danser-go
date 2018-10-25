@@ -4,7 +4,6 @@ import (
 	m2 "github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath/curves"
 	"github.com/wieku/danser/bmath"
-	"math"
 )
 
 type SliderAlgo struct {
@@ -17,7 +16,7 @@ type SliderAlgo struct {
 func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) SliderAlgo {
 	var curveList []curves.Curve
 
-	var length float64 = 0.0
+	length := 0.0
 	if len(points) < 3 {
 		typ = "L"
 	}
@@ -82,7 +81,7 @@ func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) Slid
 	} else if desiredLength > length {
 		last := curveList[len(curveList)-1]
 		p2 := last.PointAt(1)
-		p3 := bmath.NewVec2dRad(last.GetEndAngle()+math.Pi, desiredLength-length).Add(p2)
+		p3 := bmath.NewVec2dRad(last.GetEndAngle(), desiredLength-length).Add(p2)
 		c := curves.NewLinear(p2, p3)
 		curveList = append(curveList, c)
 		length += c.GetLength()
