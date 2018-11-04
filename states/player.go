@@ -17,12 +17,12 @@ import (
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/animation"
 	"github.com/wieku/danser/render/effects"
-	"github.com/wieku/danser/storyboard"
 	"github.com/wieku/danser/render/texture"
 	"github.com/wieku/danser/render/font"
 	"fmt"
 	"path/filepath"
 	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/states/components"
 )
 
 type Player struct {
@@ -31,37 +31,32 @@ type Player struct {
 	queue2         []objects.BaseObject
 	processed      []objects.Renderable
 	sliderRenderer *render.SliderRenderer
-	blurEffect     *effects.BlurEffect
 	bloomEffect    *effects.BloomEffect
 	lastTime       int64
 	progressMsF    float64
 	progressMs     int64
 	batch          *batches.SpriteBatch
 	controller     dance.Controller
-	//circles        []*objects.Circle
-	//sliders        []*objects.Slider
-	Background  *texture.TextureRegion
-	Logo        *texture.TextureRegion
-	BgScl       bmath.Vector2d
-	Scl         float64
-	SclA        float64
-	CS          float64
-	fxRotation  float64
-	fadeOut     float64
-	fadeIn      float64
-	entry       float64
-	start       bool
-	mus         bool
-	musicPlayer *audio.Music
-	fxBatch     *render.FxBatch
-	vao         *glhf.VertexSlice
-	vaoD        []float32
-	vaoDirty    bool
-	rotation    float64
-	profiler    *utils.FPSCounter
-	profilerU   *utils.FPSCounter
-
-	storyboard *storyboard.Storyboard
+	background     *components.Background
+	Logo           *texture.TextureRegion
+	BgScl          bmath.Vector2d
+	Scl            float64
+	SclA           float64
+	CS             float64
+	fxRotation     float64
+	fadeOut        float64
+	fadeIn         float64
+	entry          float64
+	start          bool
+	mus            bool
+	musicPlayer    *audio.Music
+	fxBatch        *render.FxBatch
+	vao            *glhf.VertexSlice
+	vaoD           []float32
+	vaoDirty       bool
+	rotation       float64
+	profiler       *utils.FPSCounter
+	profilerU      *utils.FPSCounter
 
 	camera         *bmath.Camera
 	scamera        *bmath.Camera
@@ -92,18 +87,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.CS = player.CS
 
 	var err error
-	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
-	if err != nil {
-		log.Println(err)
-	}
-
-	if settings.Playfield.StoryboardEnabled {
-		player.storyboard = storyboard.NewStoryboard(player.bMap)
-
-		if player.storyboard == nil {
-			log.Println("Storyboard not found!")
-		}
-	}
 
 	player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
 
@@ -111,24 +94,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	winscl := settings.Graphics.GetAspectRatio()
-
-	player.blurEffect = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-
-	if player.Background != nil {
-		imScl := float64(player.Background.Width) / float64(player.Background.Height)
-
-		condition := imScl < winscl
-		if player.storyboard != nil && !player.storyboard.IsWideScreen() {
-			condition = !condition
-		}
-
-		if condition {
-			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
-		} else {
-			player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
-		}
-	}
+	player.background = components.NewBackground(beatMap)
 
 	scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / float64(384) * settings.Playfield.Scale
 
@@ -266,9 +232,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.bMap.Update(int64(player.progressMsF))
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
 
-			if player.storyboard != nil {
-				player.storyboard.Update(int64(player.progressMsF))
-			}
+			player.background.Update(int64(player.progressMsF))
 
 			last = player.progressMsF
 
@@ -416,49 +380,9 @@ func (pl *Player) Draw(delta float64) {
 		bgAlpha *= pl.Scl
 	}
 
+	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras[0])
+
 	pl.batch.Begin()
-
-	pl.batch.SetColor(1, 1, 1, 1)
-	pl.batch.ResetTransform()
-	pl.batch.SetAdditive(false)
-	if pl.Background != nil || pl.storyboard != nil {
-		if settings.Playfield.BlurEnable {
-			pl.blurEffect.SetBlur(blurVal, blurVal)
-			pl.blurEffect.Begin()
-		}
-
-		if pl.Background != nil && (pl.storyboard == nil || !pl.storyboard.BGFileUsed()) {
-			pl.batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
-			pl.batch.SetScale(pl.BgScl.X, -pl.BgScl.Y)
-			if !settings.Playfield.BlurEnable {
-				pl.batch.SetColor(1, 1, 1, bgAlpha)
-			}
-			pl.batch.DrawUnit(*pl.Background)
-		}
-
-		if pl.storyboard != nil {
-			pl.batch.SetScale(1, 1)
-			if !settings.Playfield.BlurEnable {
-				pl.batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
-			}
-			pl.batch.SetCamera(cameras[0])
-			pl.storyboard.Draw(pl.progressMs, pl.batch)
-			pl.batch.Flush()
-		}
-
-		if settings.Playfield.BlurEnable {
-			pl.batch.End()
-
-			texture := pl.blurEffect.EndAndProcess()
-			pl.batch.Begin()
-			pl.batch.SetColor(1, 1, 1, bgAlpha)
-			pl.batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
-			pl.batch.DrawUnscaled(texture.GetRegion())
-		}
-
-	}
-
-	pl.batch.Flush()
 
 	if pl.fxGlider.GetValue() > 0.0 {
 		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
@@ -479,8 +403,8 @@ func (pl *Player) Draw(delta float64) {
 		pl.fpsC = pl.profiler.GetFPS()
 		pl.fpsU = pl.profilerU.GetFPS()
 		pl.counter -= 1000.0 / 60
-		if pl.storyboard != nil {
-			pl.storyboardLoad = pl.storyboard.GetLoad()
+		if pl.background.GetStoryboard() != nil {
+			pl.storyboardLoad = pl.background.GetStoryboard().GetLoad()
 		}
 	}
 
@@ -684,8 +608,8 @@ func (pl *Player) Draw(delta float64) {
 			pl.font.Draw(pl.batch, 0, padDown+shift*2, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
 			pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
 
-			if pl.storyboard != nil {
-				pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
+			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
+				pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", storyboard.GetProcessedSprites(), pl.storyboardLoad, storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
 			} else {
 				pl.font.Draw(pl.batch, 0, padDown, 16, "No storyboard")
 			}
