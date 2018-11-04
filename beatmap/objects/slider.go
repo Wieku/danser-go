@@ -17,11 +17,24 @@ import (
 	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/utils"
 	"github.com/wieku/danser/animation"
+	"github.com/wieku/danser/animation/easing"
 )
 
 type tickPoint struct {
 	time int64
 	Pos  bmath.Vector2d
+}
+
+type reversePoint struct {
+	fade  *animation.Glider
+	pulse *animation.Glider
+}
+
+func newReverse() (point *reversePoint) {
+	point = &reversePoint{animation.NewGlider(0), animation.NewGlider(1)}
+	point.fade.SetEasing(easing.OutQuad)
+	point.pulse.SetEasing(easing.OutQuad)
+	return
 }
 
 type Slider struct {
@@ -51,6 +64,7 @@ type Slider struct {
 	fade                 *animation.Glider
 	fadeApproach         *animation.Glider
 	fadeCircle           *animation.Glider
+	reversePoints        [2][]*reversePoint
 }
 
 func NewSlider(data []string) *Slider {
@@ -218,7 +232,7 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 	}
 	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
-	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+fadeIn, 0)
+	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+fadeIn/3, 0)
 
 	self.fadeCircle = animation.NewGlider(0)
 	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
@@ -226,6 +240,45 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 
 	self.fadeApproach = animation.NewGlider(1)
 	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)
+
+	for i := int64(2); i < self.repeat; i += 2 {
+		arrow := newReverse()
+
+		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
+		end := float64(self.objData.StartTime) + float64(i)*self.partLen
+
+		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
+		arrow.fade.AddEvent(end, end+300, 0)
+
+		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
+		for j := start; j < end; j += 300 {
+			arrow.pulse.AddEvent(j-0.1, j-0.1, 1.3*2)
+			arrow.pulse.AddEvent(j, j+math.Min(300, end-j), 1)
+		}
+
+		self.reversePoints[0] = append(self.reversePoints[0], arrow)
+	}
+
+	for i := int64(1); i < self.repeat; i += 2 {
+		arrow := newReverse()
+
+		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
+		end := float64(self.objData.StartTime) + float64(i)*self.partLen
+		if i == 1 {
+			start -= fadeIn
+		}
+
+		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
+		arrow.fade.AddEvent(end, end+300, 0)
+
+		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
+		for subTime := start; subTime < end; subTime += 300 {
+			arrow.pulse.AddEventS(subTime, subTime+math.Min(300, end-subTime), 1.3, 1)
+		}
+
+		self.reversePoints[1] = append(self.reversePoints[1], arrow)
+	}
+
 }
 
 func (self *Slider) GetCurve() []bmath.Vector2d {
@@ -339,6 +392,14 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 	self.fade.Update(float64(time))
 	self.fadeCircle.Update(float64(time))
+
+	for i := 0; i < 2; i++ {
+		for j := 0; j < len(self.reversePoints[i]); j++ {
+			self.reversePoints[i][j].pulse.Update(float64(time))
+			self.reversePoints[i][j].fade.Update(float64(time))
+		}
+	}
+
 	alpha := self.fade.GetValue()
 	alphaF := self.fadeCircle.GetValue()
 
@@ -350,6 +411,37 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 
+		for i := 0; i < 2; i++ {
+			for _, p := range self.reversePoints[i] {
+				if p.fade.GetValue() >= 0.001 {
+					if i == 1 {
+
+						out := int(self.sliderSnakeIn.GetValue() * float64(len(self.discreteCurve)-1))
+						batch.SetTranslation(self.discreteCurve[out])
+						if out == 0 {
+							batch.SetRotation(self.startAngle)
+						} else if out == len(self.discreteCurve)-1 {
+							batch.SetRotation(self.endAngle + math.Pi)
+						} else {
+							batch.SetRotation(self.discreteCurve[out-1].AngleRV(self.discreteCurve[out]))
+						}
+
+					} else {
+						batch.SetTranslation(self.discreteCurve[0])
+						batch.SetRotation(self.startAngle + math.Pi)
+					}
+					batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
+					batch.SetColor(1, 1, 1, alpha*self.sliderSnakeIn.GetValue()*p.fade.GetValue())
+					batch.DrawUnit(*render.SliderReverse)
+				}
+			}
+		}
+
+		batch.SetTranslation(self.objData.StartPos)
+		batch.SetSubScale(1, 1)
+		batch.SetRotation(0)
+		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)
 
@@ -358,40 +450,9 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 			batch.DrawUnit(*render.CircleOverlay)
 			render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
 			batch.SetSubScale(1, 1)
-			/*if self.repeat > 1 {
-				batch.SetTranslation(self.discreteCurve[len(self.discreteCurve)-1])
-				batch.SetRotation(self.endAngle + math.Pi)
-				batch.DrawUnit(*render.SliderReverse)
-				batch.SetRotation(0)
-			}
-
-			batch.SetTranslation(self.objData.StartPos)*/
 
 		} else {
 			if time < self.objData.EndTime {
-				/*times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
-
-				batch.SetColor(1, 1, 1, alpha)
-				acv := func(rp int64) {
-					if rp%2 == 0 {
-						batch.SetTranslation(self.discreteCurve[len(self.discreteCurve)-1])
-						batch.SetRotation(self.endAngle + math.Pi)
-					} else {
-						batch.SetTranslation(self.discreteCurve[0])
-						batch.SetRotation(self.startAngle + math.Pi)
-					}
-					batch.DrawUnit(*render.SliderReverse)
-				}
-
-				if times < self.repeat {
-					acv(self.repeat)
-				}
-
-				if times < self.repeat-1 {
-					acv(self.repeat - 1)
-				}
-
-				batch.SetRotation(0)*/
 
 				if settings.Objects.DrawFollowPoints {
 					shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
