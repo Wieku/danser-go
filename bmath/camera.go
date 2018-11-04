@@ -2,6 +2,7 @@ package bmath
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser/settings"
 )
 
 type Rectangle struct {
@@ -51,21 +52,18 @@ func (camera *Camera) SetViewport(width, height int, yDown bool) {
 	camera.viewDirty = true
 }
 
-func (camera *Camera) SetOsuViewport(width, height int) {
-	osuAspect := 512.0 / 384.0
-	screenAspect := float64(width) / float64(height)
+func (camera *Camera) SetOsuViewport(width, height int, scale float64) {
+	scl := (float64(height) * 900.0 / 1080.0) / 384.0 * scale
 
-	if screenAspect > osuAspect {
-		sh := (384.0 - float64(384.0)*900.0/1080.0) / 2
-		sw := (512.0*screenAspect*900.0/1080.0 - 512.0) / 2
-		camera.screenRect.MinX = -sw
-		camera.screenRect.MaxX = 512.0 + sw
-
-		camera.screenRect.MinY = 384.0 + sh
-		camera.screenRect.MaxY = -sh
+	if 512.0/384.0 > float64(width)/float64(height) {
+		scl = (float64(width) * 900.0 / 1080.0) / 512.0 * scale
 	}
 
-	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
+	camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
+	camera.SetOrigin(NewVec2d(512.0/2, 384.0/2))
+	camera.SetScale(NewVec2d(scl, scl))
+	camera.Update()
+
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }

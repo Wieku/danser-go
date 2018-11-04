@@ -96,19 +96,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.background = components.NewBackground(beatMap)
 
-	scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / float64(384) * settings.Playfield.Scale
-
-	osuAspect := 512.0 / 384.0
-	screenAspect := settings.Graphics.GetWidthF() / settings.Graphics.GetHeightF()
-
-	if osuAspect > screenAspect {
-		scl = (settings.Graphics.GetWidthF() * 900.0 / 1080.0) / float64(512) * settings.Playfield.Scale
-	}
-
 	player.camera = bmath.NewCamera()
-	player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
-	player.camera.SetOrigin(bmath.NewVec2d(512.0/2, 384.0/2))
-	player.camera.SetScale(bmath.NewVec2d(scl, scl))
+	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
 	player.camera.Update()
 
 	player.scamera = bmath.NewCamera()
@@ -382,9 +371,9 @@ func (pl *Player) Draw(delta float64) {
 
 	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras[0])
 
-	pl.batch.Begin()
 
 	if pl.fxGlider.GetValue() > 0.0 {
+		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
 		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 		scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width)) / 4
@@ -393,9 +382,8 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
 		pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
 		pl.batch.DrawTexture(*pl.Logo)
+		pl.batch.End()
 	}
-
-	pl.batch.End()
 
 	pl.counter += timMs
 
