@@ -252,7 +252,7 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 
 		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
 		for j := start; j < end; j += 300 {
-			arrow.pulse.AddEvent(j-0.1, j-0.1, 1.3*2)
+			arrow.pulse.AddEvent(j-0.1, j-0.1, 1.3)
 			arrow.pulse.AddEvent(j, j+math.Min(300, end-j), 1)
 		}
 

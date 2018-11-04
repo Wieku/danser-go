@@ -16,6 +16,7 @@ type Glider struct {
 	time, value, startValue float64
 	current                 event
 	easing                  func(float64) float64
+	dirty bool
 }
 
 func NewGlider(value float64) *Glider {
@@ -28,15 +29,19 @@ func (glider *Glider) SetEasing(easing func(float64) float64) {
 
 func (glider *Glider) AddEvent(startTime, endTime, targetValue float64) {
 	glider.eventqueue = append(glider.eventqueue, event{startTime, endTime, targetValue, false, 0})
-	sort.Slice(glider.eventqueue, func(i, j int) bool { return glider.eventqueue[i].startTime < glider.eventqueue[j].startTime })
+	glider.dirty = true
 }
 
 func (glider *Glider) AddEventS(startTime, endTime, startValue, targetValue float64) {
 	glider.eventqueue = append(glider.eventqueue, event{startTime, endTime, targetValue, true, startValue})
-	sort.Slice(glider.eventqueue, func(i, j int) bool { return glider.eventqueue[i].startTime < glider.eventqueue[j].startTime })
+	glider.dirty = true
 }
 
 func (glider *Glider) Update(time float64) {
+	if glider.dirty {
+		sort.Slice(glider.eventqueue, func(i, j int) bool { return glider.eventqueue[i].startTime < glider.eventqueue[j].startTime })
+		glider.dirty = false
+	}
 	glider.time = time
 	if len(glider.eventqueue) > 0 {
 		if e := glider.eventqueue[0]; e.startTime <= time {
