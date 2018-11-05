@@ -578,6 +578,31 @@ func (pl *Player) Draw(delta float64) {
 		pl.bloomEffect.EndAndRender()
 	}
 
+	if controller, ok := pl.controller.(*dance.ReplayController); ok {
+		pl.batch.Begin()
+		pl.batch.SetScale(1, 1)
+		pl.batch.SetCamera(pl.scamera.GetProjectionView())
+
+		rpls := controller.GetReplays()
+
+		scl := settings.Graphics.GetHeightF() / (2*float64(len(rpls)))
+
+		for i, r := range rpls {
+			pl.batch.SetColorM(colors1[i])
+			for j:=0; j < 4; j++ {
+				if controller.GetClick(i, j) {
+					pl.batch.SetSubScale(scl/2, scl/2)
+					pl.batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl, settings.Graphics.GetHeightF()-(float64(i)+0.5+(float64(i)/float64(len(rpls))))*scl))
+					pl.batch.DrawUnit(render.Pixel.GetRegion())
+				}
+			}
+			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()-(float64(i)+1.0 +(float64(i)/float64(len(rpls))))*scl, scl, r.Username)
+		}
+
+		pl.batch.End()
+	}
+
+
 	if settings.DEBUG || settings.FPS {
 		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, 1)
