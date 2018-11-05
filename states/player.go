@@ -108,8 +108,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.Camera = player.camera
 
 	player.bMap.Reset()
+	if settings.KNOCKOUT != "" {
+		player.controller = dance.NewReplayController(settings.KNOCKOUT)
+	} else {
+		player.controller = dance.NewGenericController()
+	}
 
-	player.controller = dance.NewGenericController()
 	player.controller.SetBeatMap(player.bMap)
 	player.controller.InitCursors()
 
@@ -437,7 +441,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.GetColors(settings.DIVIDES, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
+	colors1 := settings.Cursor.GetColors(settings.DIVIDES, /*settings.TAG*/len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
