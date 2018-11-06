@@ -5,12 +5,25 @@ import (
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/animation"
 	"github.com/Mempler/rplpa"
-	"io/ioutil"
 	"github.com/wieku/danser/bmath"
-	"path/filepath"
+	"github.com/thehowl/go-osuapi"
+	"github.com/wieku/danser/settings"
+	"log"
+	"io/ioutil"
 	"os"
-	"sort"
+	"time"
+	"path/filepath"
+	"strings"
+	"net/url"
+	"strconv"
+	"net/http"
 )
+
+type RpData struct {
+	UserID int
+	Time time.Time
+	Data []byte
+}
 
 type subControl struct {
 	xGlider  *animation.Glider
@@ -23,7 +36,7 @@ type subControl struct {
 
 type ReplayController struct {
 	bMap        *beatmap.BeatMap
-	replays     []*rplpa.Replay
+	replays     []/**rplpa.Replay*/string
 	cursors     []*render.Cursor
 	controllers []*subControl
 }
@@ -31,7 +44,7 @@ type ReplayController struct {
 func NewReplayController(opath string) Controller {
 	controller := new(ReplayController)
 
-	filepath.Walk(opath, func(path string, info os.FileInfo, err error) error {
+	/*filepath.Walk(opath, func(path string, info os.FileInfo, err error) error {
 		data, _ := ioutil.ReadFile(path)
 		replay, _ := rplpa.ParseReplay(data)
 		controller.replays = append(controller.replays, replay)
@@ -77,12 +90,102 @@ func NewReplayController(opath string) Controller {
 			lastTime += frame.Time
 		}
 		controller.controllers = append(controller.controllers, control)
-	}
+	}*/
 
 	return controller
 }
 
+func getReplay(scoreID int64) ([]byte, error) {
+	vals := url.Values{}
+	vals.Add("c", strconv.FormatInt(scoreID, 10))
+	vals.Add("m", "0")
+	vals.Add("u", strings.Split(settings.KNOCKOUT, ":")[0])
+	vals.Add("h", strings.Split(settings.KNOCKOUT, ":")[1])
+	request, err := http.NewRequest(http.MethodGet, "https://osu.ppy.sh/web/osu-getreplay.php?"+vals.Encode(), nil)
+	//log.Println(request)
+	if err != nil {
+		return nil, err
+	}
+	client := new(http.Client)
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadAll(response.Body)
+}
+
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
+	replayDir := filepath.Join("replays",beatMap.MD5)
+	os.Mkdir(replayDir, os.ModeDir)
+
+	client := osuapi.NewClient(strings.Split(settings.KNOCKOUT,":")[2])
+	beatMapO, _ := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
+
+	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit:50})
+
+	for _, score := range scores {
+		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
+		file, err := os.Open(fileName)
+		file.Close()
+
+		if os.IsNotExist(err) {
+
+			data, err := getReplay(score.ScoreID)
+			if err != nil {
+				panic(err)
+			} else {
+				log.Println("Downloaded replay for:", score.Username)
+			}
+
+			ioutil.WriteFile(fileName, data, 666)
+
+		}
+
+		control := new(subControl)
+		control.xGlider = animation.NewGlider(0)
+		control.yGlider = animation.NewGlider(0)
+		control.k1Glider = animation.NewGlider(0)
+		control.k2Glider = animation.NewGlider(0)
+		control.m1Glider = animation.NewGlider(0)
+		control.m2Glider = animation.NewGlider(0)
+		lastTime := int64(0)
+
+		data, err := ioutil.ReadFile(fileName)
+		if err != nil {
+			panic(err)
+		}
+		replay, _ := rplpa.ParseCompressed(data)
+		for _, frame := range replay {
+			control.xGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MosueX))
+			if strings.Contains(score.Mods.String(), "HR") {
+				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(384-frame.MouseY))
+			} else {
+				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MouseY))
+			}
+
+			press := frame.KeyPressed
+
+			translate := func(k bool) float64 {
+				if k {
+					return 1.0
+				} else {
+					return 0.0
+				}
+			}
+
+			control.k1Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.Key1), translate(press.Key1))
+			control.k2Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.Key2), translate(press.Key2))
+			control.m1Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
+			control.m2Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
+
+			lastTime += frame.Time
+		}
+
+		controller.replays = append(controller.replays, score.Username)
+		controller.controllers = append(controller.controllers, control)
+	}
+
 	controller.bMap = beatMap
 }
 
@@ -110,7 +213,7 @@ func (controller *ReplayController) GetCursors() []*render.Cursor {
 	return controller.cursors
 }
 
-func (controller *ReplayController) GetReplays() []*rplpa.Replay {
+func (controller *ReplayController) GetReplays() []/**rplpa.Replay*/string {
 	return controller.replays
 }
 

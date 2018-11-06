@@ -147,7 +147,7 @@ func createMesh(curve []bmath.Vector2d) []float32 {
 	num := 0
 	iter := 0
 	for _, v := range curve {
-		tab := createCircle(v.X, v.Y, 64*CS, int(settings.Objects.SliderLOD))
+		tab := createCircle(v.X, v.Y, CS, int(settings.Objects.SliderLOD))
 		for j := range tab {
 			if j >= 2 {
 				p1, p2, p3 := tab[j-1], tab[j], tab[0]

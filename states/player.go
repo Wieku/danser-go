@@ -83,7 +83,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	player.CS = (1.0 - 0.7*(beatMap.CircleSize-5)/5) / 2 * settings.Objects.CSMult
+	player.CS = 32* (1.0 - 0.7*(beatMap.CircleSize-5)/5) * settings.Objects.CSMult
 	render.CS = player.CS
 
 	var err error
@@ -501,7 +501,7 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.SetAdditive(false)
 		}
 
-		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
+		pl.batch.SetScale(render.CS*scale1, render.CS*scale1)
 
 		for j := 0; j < settings.DIVIDES; j++ {
 			if !settings.Objects.SliderMerge {
@@ -585,7 +585,7 @@ func (pl *Player) Draw(delta float64) {
 
 		rpls := controller.GetReplays()
 
-		scl := settings.Graphics.GetHeightF() / (2*float64(len(rpls)))
+		scl := settings.Graphics.GetHeightF() / (/*4**/51/*/3*/)
 
 		for i, r := range rpls {
 			pl.batch.SetColorM(colors1[i])
@@ -596,7 +596,7 @@ func (pl *Player) Draw(delta float64) {
 					pl.batch.DrawUnit(render.Pixel.GetRegion())
 				}
 			}
-			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()-(float64(i)+1.0 +(float64(i)/float64(len(rpls))))*scl, scl, r.Username)
+			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()-(float64(i)+1.0 +(float64(i)/float64(len(rpls))))*scl, scl, r)
 		}
 
 		pl.batch.End()
