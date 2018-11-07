@@ -44,15 +44,22 @@ func (glider *Glider) Update(time float64) {
 	}
 	glider.time = time
 	if len(glider.eventqueue) > 0 {
-		if e := glider.eventqueue[0]; e.startTime <= time {
-			glider.current = e
-			glider.eventqueue = glider.eventqueue[1:]
-			if e.hasStartValue {
-				glider.startValue = e.startValue
-			} else {
-				glider.startValue = glider.value
+		for i:=0; i < len(glider.eventqueue); i++ {
+			if e := glider.eventqueue[i]; e.startTime <= time && (e.endTime >= time || len(glider.eventqueue)==1 || e.startTime==e.endTime) {
+				glider.current = e
+				if e.hasStartValue {
+					glider.startValue = e.startValue
+				} else if i > 0 {
+					glider.startValue = glider.eventqueue[i-1].targetValue
+				} else {
+					glider.startValue = glider.value
+				}
+				glider.eventqueue = glider.eventqueue[i+1:]
+			} else if e.startTime > time {
+				break
 			}
 		}
+
 	}
 
 	if time < glider.current.endTime {
