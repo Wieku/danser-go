@@ -179,7 +179,7 @@ func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64
 	}
 }
 
-func (font *Font) DrawCentered(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
+func (font *Font) GetWidth(size float64, text string) float64 {
 	scale := size / font.initialSize
 	xpad := 0.0
 	for i, c := range text {
@@ -193,8 +193,12 @@ func (font *Font) DrawCentered(renderer *batches.SpriteBatch, x, y float64, size
 			kerning = font.kernTable[rune(text[i-1])][c]
 		}
 
-		xpad += scale * renderer.GetScale().X * (char.advance - kerning)
+		xpad += scale * (char.advance - kerning)
 	}
+	return xpad
+}
 
+func (font *Font) DrawCentered(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
+	xpad := font.GetWidth(size, text) * renderer.GetScale().X
 	font.Draw(renderer, x-(xpad)/2, y, size, text)
 }
