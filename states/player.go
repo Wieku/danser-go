@@ -64,14 +64,14 @@ type Player struct {
 	blurGlider     *animation.Glider
 	fxGlider       *animation.Glider
 	cursorGlider   *animation.Glider
-	playersGlider   *animation.Glider
+	playersGlider  *animation.Glider
 	counter        float64
 	fpsC           float64
 	fpsU           float64
 	storyboardLoad float64
 	mapFullName    string
-	Epi *texture.TextureRegion
-	epiGlider   *animation.Glider
+	Epi            *texture.TextureRegion
+	epiGlider      *animation.Glider
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -86,7 +86,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	player.CS = 32* (1.0 - 0.7*(beatMap.CircleSize-5)/5) * settings.Objects.CSMult
+	player.CS = 32 * (1.0 - 0.7*(beatMap.CircleSize-5)/5) * settings.Objects.CSMult
 	render.CS = player.CS
 
 	var err error
@@ -188,9 +188,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.entry = 1
 		time.Sleep(time.Duration(settings.Playfield.LeadInTime * float64(time.Second)))
 
-
 		for i := 0; i <= 300; i++ {
-			player.epiGlider.Update(float64(i*10))
+			player.epiGlider.Update(float64(i * 10))
 			time.Sleep(10 * time.Millisecond)
 		}
 
@@ -397,7 +396,6 @@ func (pl *Player) Draw(delta float64) {
 
 	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras[0])
 
-
 	if pl.fxGlider.GetValue() > 0.0 || pl.epiGlider.GetValue() > 0 {
 		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
@@ -473,7 +471,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.GetColors(settings.DIVIDES, /*settings.TAG*/len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors1 := settings.Cursor.GetColors(settings.DIVIDES, /*settings.TAG*/ len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -607,7 +605,6 @@ func (pl *Player) Draw(delta float64) {
 	render.EndCursorRender()
 	pl.batch.SetAdditive(false)
 
-
 	if controller, ok := pl.controller.(*dance.ReplayController); ok {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
@@ -615,22 +612,22 @@ func (pl *Player) Draw(delta float64) {
 
 		rpls := controller.GetReplays()
 
-		scl := settings.Graphics.GetHeightF()*0.9 / (/*4**/31/*/3*/)
+		scl := settings.Graphics.GetHeightF() * 0.9 / ( /*4**/ 31 /*/3*/)
 
 		for i, r := range rpls {
 			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())
-			for j:=0; j < 4; j++ {
+			for j := 0; j < 4; j++ {
 				if controller.GetClick(i, j) {
 					pl.batch.SetSubScale(scl*0.9/2, scl*0.9/2)
 					pl.batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+0.5+(float64(i)/float64(len(rpls))))*scl-scl*0.1))
 					pl.batch.DrawUnit(render.Pixel.GetRegion())
 				}
 			}
-			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0 +(float64(i)/float64(len(rpls))))*scl, scl, r.Name)
+			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, r.Name)
 			if r.Mods != "" {
 				width := pl.font.GetWidth(scl, r.Name)
 				pl.batch.SetColor(1, 1, 1, pl.playersGlider.GetValue())
-				pl.font.Draw(pl.batch, 4*scl+width, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0 +(float64(i)/float64(len(rpls))))*scl, scl*0.8, "+"+r.Mods)
+				pl.font.Draw(pl.batch, 4*scl+width, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl*0.8, "+"+r.Mods)
 			}
 		}
 

@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"strconv"
 	"net/http"
-	"github.com/wieku/danser/dance/schedulers"
 )
 
 type RpData struct {
@@ -38,7 +37,6 @@ type ReplayController struct {
 	replays     []RpData
 	cursors     []*render.Cursor
 	controllers []*subControl
-	scheduler 	schedulers.Scheduler
 }
 
 func NewReplayController() Controller {
@@ -67,13 +65,13 @@ func getReplay(scoreID int64) ([]byte, error) {
 
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	os.Mkdir("replays", os.ModeDir)
-	replayDir := filepath.Join("replays",beatMap.MD5)
+	replayDir := filepath.Join("replays", beatMap.MD5)
 	os.Mkdir(replayDir, os.ModeDir)
 
-	client := osuapi.NewClient(strings.Split(settings.KNOCKOUT,":")[2])
+	client := osuapi.NewClient(strings.Split(settings.KNOCKOUT, ":")[2])
 	beatMapO, _ := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
 
-	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit:50})
+	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 50})
 
 	for _, score := range scores {
 
