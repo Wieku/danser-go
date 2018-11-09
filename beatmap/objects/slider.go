@@ -287,7 +287,7 @@ func (self *Slider) GetCurve() []bmath.Vector2d {
 	points := make([]bmath.Vector2d, int(lod)+1)
 	t := 0.0
 	for i := 0; i <= int(lod); i += 1 {
-		points[i] = self.multiCurve.PointAt(t)
+		points[i] = self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
 		t += t0
 	}
 	return points
