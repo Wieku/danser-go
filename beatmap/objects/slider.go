@@ -526,7 +526,7 @@ func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *batches.Sp
 
 	if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-		batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
+		batch.SetSubScale(1.0+arr*4, 1.0+arr*4)
 		batch.DrawUnit(*render.ApproachCircle)
 	}
 

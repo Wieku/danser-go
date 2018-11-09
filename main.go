@@ -105,6 +105,10 @@ func run() {
 			win, err = glfw.CreateWindow(mWidth, mHeight, "danser", monitor, nil)
 		} else {
 			if settings.Graphics.Fullscreen {
+				glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
+				glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
+				glfw.WindowHint(glfw.BlueBits, monitor.GetVideoMode().BlueBits)
+				glfw.WindowHint(glfw.RefreshRate, monitor.GetVideoMode().RefreshRate)
 				win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
 			} else {
 				win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
@@ -136,7 +140,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		file, _ := os.Open("assets/fonts/Roboto-Regular.ttf")
+		file, _ := os.Open("assets/fonts/Orbitron-Regular.ttf")//Roboto-Regular
 		font := font.LoadFont(file)
 		file.Close()
 

@@ -59,11 +59,14 @@ func (self *Circle) Update(time int64) bool {
 		index = self.Timings.Current.SampleIndex
 	}
 
-	if self.objData.sampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
-	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+	if time < 2000+self.objData.EndTime {
+		if self.objData.sampleSet == 0 {
+			audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+		} else {
+			audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+		}
 	}
+
 
 	return true
 }
@@ -133,7 +136,7 @@ func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.Sp
 
 	if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-		batch.SetSubScale(1.0+arr*2, 1.0+arr*2)
+		batch.SetSubScale(1.0+arr*4, 1.0+arr*4)
 		batch.DrawUnit(*render.ApproachCircle)
 	}
 

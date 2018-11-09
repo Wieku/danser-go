@@ -11,18 +11,17 @@ import (
 	"log"
 	"io/ioutil"
 	"os"
-	"time"
 	"path/filepath"
 	"strings"
 	"net/url"
 	"strconv"
 	"net/http"
+	"github.com/wieku/danser/dance/schedulers"
 )
 
 type RpData struct {
-	UserID int
-	Time time.Time
-	Data []byte
+	Name string
+	Mods string
 }
 
 type subControl struct {
@@ -36,63 +35,14 @@ type subControl struct {
 
 type ReplayController struct {
 	bMap        *beatmap.BeatMap
-	replays     []/**rplpa.Replay*/string
+	replays     []RpData
 	cursors     []*render.Cursor
 	controllers []*subControl
+	scheduler 	schedulers.Scheduler
 }
 
-func NewReplayController(opath string) Controller {
-	controller := new(ReplayController)
-
-	/*filepath.Walk(opath, func(path string, info os.FileInfo, err error) error {
-		data, _ := ioutil.ReadFile(path)
-		replay, _ := rplpa.ParseReplay(data)
-		controller.replays = append(controller.replays, replay)
-		return nil
-	})
-
-	sort.Slice(controller.replays, func(i, j int) bool {
-		return controller.replays[i].Score > controller.replays[j].Score
-	})
-
-	for _, replay := range controller.replays {
-		control := new(subControl)
-		control.xGlider = animation.NewGlider(0)
-		control.yGlider = animation.NewGlider(0)
-		control.k1Glider = animation.NewGlider(0)
-		control.k2Glider = animation.NewGlider(0)
-		control.m1Glider = animation.NewGlider(0)
-		control.m2Glider = animation.NewGlider(0)
-		lastTime := int64(0)
-		for _, frame := range replay.ReplayData {
-			control.xGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MosueX))
-			if replay.Mods&16 > 0 {
-				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(384-frame.MouseY))
-			} else {
-				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MouseY))
-			}
-
-			press := frame.KeyPressed
-
-			translate := func(k bool) float64 {
-				if k {
-					return 1.0
-				} else {
-					return 0.0
-				}
-			}
-
-			control.k1Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.Key1), translate(press.Key1))
-			control.k2Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.Key2), translate(press.Key2))
-			control.m1Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
-			control.m2Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
-
-			lastTime += frame.Time
-		}
-		controller.controllers = append(controller.controllers, control)
-	}*/
-
-	return controller
+func NewReplayController() Controller {
+	return new(ReplayController)
 }
 
 func getReplay(scoreID int64) ([]byte, error) {
@@ -116,6 +66,7 @@ func getReplay(scoreID int64) ([]byte, error) {
 }
 
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
+	os.Mkdir("replays", os.ModeDir)
 	replayDir := filepath.Join("replays",beatMap.MD5)
 	os.Mkdir(replayDir, os.ModeDir)
 
@@ -125,12 +76,12 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit:50})
 
 	for _, score := range scores {
+
 		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
 		file, err := os.Open(fileName)
 		file.Close()
 
 		if os.IsNotExist(err) {
-
 			data, err := getReplay(score.ScoreID)
 			if err != nil {
 				panic(err)
@@ -138,8 +89,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 				log.Println("Downloaded replay for:", score.Username)
 			}
 
-			ioutil.WriteFile(fileName, data, 666)
-
+			ioutil.WriteFile(fileName, data, 644)
 		}
 
 		control := new(subControl)
@@ -155,6 +105,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		if err != nil {
 			panic(err)
 		}
+
 		replay, _ := rplpa.ParseCompressed(data)
 		for _, frame := range replay {
 			control.xGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MosueX))
@@ -182,7 +133,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		controller.replays = append(controller.replays, score.Username)
+		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1)})
 		controller.controllers = append(controller.controllers, control)
 	}
 
@@ -193,7 +144,6 @@ func (controller *ReplayController) InitCursors() {
 	for range controller.controllers {
 		controller.cursors = append(controller.cursors, render.NewCursor())
 	}
-
 }
 
 func (controller *ReplayController) Update(time int64, delta float64) {
@@ -213,7 +163,7 @@ func (controller *ReplayController) GetCursors() []*render.Cursor {
 	return controller.cursors
 }
 
-func (controller *ReplayController) GetReplays() []/**rplpa.Replay*/string {
+func (controller *ReplayController) GetReplays() []RpData {
 	return controller.replays
 }
 

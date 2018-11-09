@@ -136,6 +136,8 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		}
 	}
 
+	log.Println("Storyboard loaded")
+
 	return storyboard
 }
 

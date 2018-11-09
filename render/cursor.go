@@ -207,7 +207,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	gl.Disable(gl.DEPTH_TEST)
 
 	cursorFbo.Begin()
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
