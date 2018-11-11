@@ -112,11 +112,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.Camera = player.camera
 
 	player.bMap.Reset()
-	if settings.KNOCKOUT != "" {
+	/*if settings.KNOCKOUT != "" {
 		player.controller = dance.NewReplayController()
 	} else {
 		player.controller = dance.NewGenericController()
-	}
+	}*/
+
+	player.controller = dance.NewPlayerController()
 
 	player.controller.SetBeatMap(player.bMap)
 	player.controller.InitCursors()

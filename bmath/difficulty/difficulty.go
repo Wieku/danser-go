@@ -4,8 +4,8 @@ import "math"
 
 type Difficulty struct {
 	hpDrain, cs, od, ar float64
-	preempt, fadeIn     float64
-	circleRadius        float64
+	Preempt, FadeIn     float64
+	CircleRadius        float64
 	Mods                Modifier
 	Hit50               int64
 	Hit100              int64
@@ -39,9 +39,9 @@ func (diff *Difficulty) calculate() {
 		hpDrain /= 2
 	}
 
-	diff.circleRadius = 32 * (1.0 - 0.7*(cs-5)/5)
-	diff.preempt = difficultyRate(ar, 1800, 1200, 450)
-	diff.fadeIn = difficultyRate(ar, 1200, 800, 300)
+	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5)
+	diff.Preempt = difficultyRate(ar, 1800, 1200, 450)
+	diff.FadeIn = difficultyRate(ar, 1200, 800, 300)
 	diff.Hit50 = int64(150 + 50 * (5 - od) / 5)
 	diff.Hit100	= int64(100 + 40 * (5 - od) / 5)
 	diff.Hit300	 = int64(50 + 30 * (5 - od) / 5)

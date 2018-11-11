@@ -55,10 +55,11 @@ type Cursor struct {
 	Points        []bmath.Vector2d
 	removeCounter float64
 
-	Position bmath.Vector2d
-	LastPos  bmath.Vector2d
-	VaoPos   bmath.Vector2d
-	RendPos  bmath.Vector2d
+	LeftButton, RightButton bool
+	Position                bmath.Vector2d
+	LastPos                 bmath.Vector2d
+	VaoPos                  bmath.Vector2d
+	RendPos                 bmath.Vector2d
 
 	vertices []float32
 	vaoSize  int

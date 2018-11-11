@@ -1,0 +1,170 @@
+package osu
+
+import (
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/beatmap"
+	"math"
+	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/bmath/difficulty"
+	"log"
+	"fmt"
+)
+
+type HitResult int64
+
+var HitResults = struct {
+	Ignore,
+	Miss,
+	Hit50,
+	Hit100,
+	Hit300,
+	Slider10,
+	Slider30 HitResult
+}{-1, 0, 50, 100, 300, 10, 30}
+
+type buttonState struct {
+	Left, Right bool
+}
+
+type hitobject interface {
+	Init(ruleset *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer)
+	Update(time int64) bool
+	GetFadeTime() int64
+}
+
+type difficultyPlayer struct {
+	cursor *render.Cursor
+	diff *difficulty.Difficulty
+	cursorLock int64
+}
+
+type subSet struct {
+	player *difficultyPlayer
+	rawScore int64
+	score int64
+	combo int64
+	modMultiplier float64
+}
+
+type OsuRuleSet struct {
+	beatMap *beatmap.BeatMap
+	cursors map[*render.Cursor]*subSet
+	scoreMultiplier float64
+	numObjects int64
+
+	queue []hitobject
+	processed []hitobject
+}
+
+func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
+	ruleset := new(OsuRuleSet)
+	ruleset.beatMap = beatMap
+
+	diffPoints := int64(beatMap.HPDrainRate+beatMap.OverallDifficulty+beatMap.CircleSize)
+
+	if diffPoints < 6 {
+		ruleset.scoreMultiplier = 2
+	} else if diffPoints < 13 {
+		ruleset.scoreMultiplier = 3
+	} else if diffPoints < 18 {
+		ruleset.scoreMultiplier = 4
+	} else if diffPoints < 25 {
+		ruleset.scoreMultiplier = 5
+	} else {
+		ruleset.scoreMultiplier = 6
+	}
+
+	ruleset.cursors = make(map[*render.Cursor]*subSet)
+	
+	var diffPlayers []*difficultyPlayer
+	
+	for i, cursor := range cursors {
+		diff := difficulty.NewDifficulty(beatMap.HPDrainRate, beatMap.CircleSize, beatMap.OverallDifficulty, beatMap.AR)
+		diff.SetMods(mods[i])
+		
+		player := &difficultyPlayer{cursor, diff, -1}
+		diffPlayers = append(diffPlayers, player)
+		ruleset.cursors[cursor] = &subSet{player, 0, 0, 0,mods[i].GetScoreMultiplier()}
+	}
+	
+	for _, obj := range beatMap.HitObjects {
+		if circle, ok := obj.(*objects.Circle); ok {
+			rCircle := new(Circle)
+			rCircle.Init(ruleset, circle, diffPlayers)
+			ruleset.queue = append(ruleset.queue, rCircle)
+		}
+	}
+	
+	return ruleset
+}
+
+func (set *OsuRuleSet) Update(time int64) {
+	if len(set.queue) > 0 {
+		for i := 0; i < len(set.queue); i++ {
+			g := set.queue[i]
+			if g.GetFadeTime() > time {
+				break
+			}
+
+			set.processed = append(set.processed, g)
+
+			if i < len(set.queue)-1 {
+				set.queue = append(set.queue[:i], set.queue[i+1:]...)
+			} else if i < len(set.queue) {
+				set.queue = set.queue[:i]
+			}
+
+			i--
+		}
+	}
+
+	if len(set.processed) > 0 {
+		for i := 0; i < len(set.processed); i++ {
+			g := set.processed[i]
+
+			if isDone := g.Update(time); isDone {
+				if i < len(set.processed)-1 {
+					set.processed = append(set.processed[:i], set.processed[i+1:]...)
+				} else if i < len(set.processed) {
+					set.processed = set.processed[:i]
+				}
+				i--
+			}
+		}
+	}
+	
+}
+
+func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float64, result HitResult, raw, breaksCombo bool) {
+	if result == HitResults.Ignore {
+		if breaksCombo {
+			set.cursors[cursor].combo = 0
+		}
+		return
+	}
+
+	subSet := set.cursors[cursor]
+
+	combo := math.Max(float64(subSet.combo-1), 0.0)
+
+	if raw {
+		subSet.score += int64(result)
+	} else {
+		subSet.score += int64(result) + int64(float64(result)*combo*set.scoreMultiplier*subSet.modMultiplier/25.0)
+	}
+
+	if result == HitResults.Hit50 || result == HitResults.Hit100 || result == HitResults.Hit300 {
+		subSet.rawScore += int64(result)
+		set.numObjects++
+	}
+
+	if breaksCombo || result == HitResults.Miss {
+		subSet.combo = 0
+	} else {
+		subSet.combo++
+	}
+
+	log.Println("Got:", result, "Combo:", subSet.combo, "Score:", subSet.score, "Acc:", fmt.Sprintf("%0.2f", 100*float64(subSet.rawScore) / float64(set.numObjects*300)))
+}
+
+
