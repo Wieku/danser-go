@@ -9,9 +9,31 @@ import (
 )
 
 type BeatMap struct {
-	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags string
-	SliderMultiplier, StackLeniency, CircleSize, AR, Preempt, FadeIn            float64
-	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints                         string
+	Artist,
+	ArtistUnicode,
+	Name,
+	NameUnicode,
+	Difficulty,
+	Creator,
+	Source,
+	Tags string
+
+	SliderMultiplier,
+	StackLeniency,
+	CircleSize,
+	AR,
+	Preempt,
+	FadeIn,
+	OverallDifficulty,
+	HPDrainRate float64
+
+	Dir,
+	File,
+	Audio,
+	Bg,
+	MD5,
+	PausesText,
+	TimingPoints string
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 

@@ -1,15 +1,6 @@
 package beatmap
 
-import (
-	"sync"
-	"os"
-	"log"
-	"path/filepath"
-	"strings"
-	"github.com/wieku/danser/settings"
-)
-
-func LoadBeatmaps() []*BeatMap {
+/*func LoadBeatmaps() []*BeatMap {
 	searchDir := settings.General.OsuSongsDir
 
 	log.Println("Loading beatmaps...")
@@ -65,4 +56,4 @@ func LoadBeatmaps() []*BeatMap {
 		beatmaps = append(beatmaps, beatmap)
 	}
 	return beatmaps
-}
+}*/

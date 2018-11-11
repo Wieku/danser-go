@@ -612,7 +612,7 @@ func (pl *Player) Draw(delta float64) {
 
 		rpls := controller.GetReplays()
 
-		scl := settings.Graphics.GetHeightF() * 0.9 / ( /*4**/ 31 /*/3*/)
+		scl := settings.Graphics.GetHeightF() * 0.9 / ( /*4**/ 51 /*/3*/)
 
 		for i, r := range rpls {
 			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())

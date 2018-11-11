@@ -8,36 +8,30 @@ import (
 	"os"
 	"bufio"
 	"github.com/wieku/danser/settings"
+	"errors"
+	"path/filepath"
 )
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
-
 	switch line[0] {
 	case "Mode":
 		if line[1] != "0" {
 			return true
 		}
-		break
 	case "StackLeniency":
 		beatMap.StackLeniency, _ = strconv.ParseFloat(line[1], 64)
-		break
 	case "AudioFilename":
 		beatMap.Audio += line[1]
-		break
 	case "SampleSet":
 		switch line[1] {
 		case "Normal", "All":
 			beatMap.Timings.BaseSet = 1
-			break
 		case "Soft":
 			beatMap.Timings.BaseSet = 2
-			break
 		case "Drum":
 			beatMap.Timings.BaseSet = 3
-			break
 		}
 		beatMap.Timings.LastSet = beatMap.Timings.BaseSet
-		break
 	}
 
 	return false
@@ -47,46 +41,39 @@ func parseMetadata(line []string, beatMap *BeatMap) {
 	switch line[0] {
 	case "Title":
 		beatMap.Name = line[1]
-		break
 	case "TitleUnicode":
 		beatMap.NameUnicode = line[1]
-		break
 	case "Artist":
 		beatMap.Artist = line[1]
-		break
 	case "ArtistUnicode":
 		beatMap.ArtistUnicode = line[1]
-		break
 	case "Creator":
 		beatMap.Creator = line[1]
-		break
 	case "Version":
 		beatMap.Difficulty = line[1]
-		break
 	case "Source":
 		beatMap.Source = line[1]
-		break
 	case "Tags":
 		beatMap.Tags = line[1]
-		break
 	}
 }
 
 func parseDifficulty(line []string, beatMap *BeatMap) {
-	if line[0] == "SliderMultiplier" {
+	switch line[0] {
+	case "SliderMultiplier":
 		beatMap.SliderMultiplier, _ = strconv.ParseFloat(line[1], 64)
 		beatMap.Timings.SliderMult = float64(beatMap.SliderMultiplier)
-	}
-	if line[0] == "ApproachRate" {
+	case "ApproachRate":
 		beatMap.AR, _ = strconv.ParseFloat(line[1], 64)
-	}
-	if line[0] == "CircleSize" {
+	case "CircleSize":
 		beatMap.CircleSize, _ = strconv.ParseFloat(line[1], 64)
-	}
-	if line[0] == "SliderTickRate" {
+	case "SliderTickRate":
 		beatMap.Timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
+	case "HPDrainRate":
+		beatMap.HPDrainRate, _ = strconv.ParseFloat(line[1], 64)
+	case "OverallDifficulty":
+		beatMap.OverallDifficulty, _ = strconv.ParseFloat(line[1], 64)
 	}
-
 }
 
 func parseEvents(line []string, beatMap *BeatMap) {
@@ -132,9 +119,15 @@ func getSection(line string) string {
 	return ""
 }
 
-func ParseBeatMap(file *os.File) *BeatMap {
+func ParseBeatMap(beatMap *BeatMap) error {
+	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	defer file.Close()
+
+	if err != nil {
+		panic(err)
+	}
 	scanner := bufio.NewScanner(file)
-	beatMap := NewBeatMap()
+
 	var currentSection string
 	counter := 0
 	counter1 := 0
@@ -152,20 +145,17 @@ func ParseBeatMap(file *os.File) *BeatMap {
 		case "General":
 			if arr := tokenize(line, ":"); len(arr) > 1 {
 				if err := parseGeneral(arr, beatMap); err {
-					return nil
+					return errors.New("wrong mode")
 				}
 			}
-			break
 		case "Metadata":
 			if arr := tokenize(line, ":"); len(arr) > 1 {
 				parseMetadata(arr, beatMap)
 			}
-			break
 		case "Difficulty":
 			if arr := tokenize(line, ":"); len(arr) > 1 {
 				parseDifficulty(arr, beatMap)
 			}
-			break
 		case "Events":
 			if arr := tokenize(line, ","); len(arr) > 1 {
 				if arr[0] == "2" {
@@ -177,7 +167,6 @@ func ParseBeatMap(file *os.File) *BeatMap {
 
 				parseEvents(arr, beatMap)
 			}
-			break
 		case "TimingPoints":
 			if arr := tokenize(line, ","); len(arr) > 1 {
 				if counter > 0 {
@@ -187,7 +176,6 @@ func ParseBeatMap(file *os.File) *BeatMap {
 
 				beatMap.TimingPoints += line
 			}
-			break
 		}
 	}
 
@@ -196,6 +184,21 @@ func ParseBeatMap(file *os.File) *BeatMap {
 	file.Seek(0, 0)
 
 	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || beatMap.TimingPoints == "" {
+		return errors.New("corrupted file")
+	}
+
+	return nil
+}
+
+func ParseBeatMapFile(file *os.File) *BeatMap {
+	beatMap := NewBeatMap()
+	beatMap.Dir = filepath.Base(filepath.Dir(file.Name()))
+	f, _ := file.Stat()
+	beatMap.File = f.Name()
+
+	err := ParseBeatMap(beatMap)
+
+	if err != nil {
 		return nil
 	}
 
