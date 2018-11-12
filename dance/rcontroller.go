@@ -24,6 +24,8 @@ type RpData struct {
 	Name string
 	Mods string
 	ModsV difficulty.Modifier
+	Accuracy float64
+	Combo int64
 }
 
 type subControl struct {
@@ -138,9 +140,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1), difficulty.Modifier(score.Mods)})
+		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1), difficulty.Modifier(score.Mods), 100, 0})
 		controller.controllers = append(controller.controllers, control)
-		break
+		//break
 	}
 
 	controller.bMap = beatMap
@@ -170,6 +172,12 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 	}
 
 	controller.ruleset.Update(time)
+
+	for i := range controller.controllers {
+		accuracy, combo := controller.ruleset.GetResults(controller.cursors[i])
+		controller.replays[i].Accuracy = accuracy
+		controller.replays[i].Combo = combo
+	}
 }
 
 func (controller *ReplayController) GetCursors() []*render.Cursor {

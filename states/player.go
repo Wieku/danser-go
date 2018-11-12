@@ -625,11 +625,18 @@ func (pl *Player) Draw(delta float64) {
 					pl.batch.DrawUnit(render.Pixel.GetRegion())
 				}
 			}
-			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, r.Name)
+			pl.batch.SetColor(1, 1, 1, pl.playersGlider.GetValue())
+
+			accuracy := fmt.Sprintf("%0.2f%%", r.Accuracy)
+			nWidth := pl.font.GetWidth(scl, accuracy)
+			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, accuracy)
+
+			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())
+			pl.font.Draw(pl.batch, 4*scl+nWidth, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, r.Name)
 			if r.Mods != "" {
 				width := pl.font.GetWidth(scl, r.Name)
 				pl.batch.SetColor(1, 1, 1, pl.playersGlider.GetValue())
-				pl.font.Draw(pl.batch, 4*scl+width, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl*0.8, "+"+r.Mods)
+				pl.font.Draw(pl.batch, 4*scl+width+nWidth, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl*0.8, "+"+r.Mods)
 			}
 		}
 

@@ -6,8 +6,6 @@ import (
 	"math"
 	"github.com/wieku/danser/beatmap/objects"
 	"github.com/wieku/danser/bmath/difficulty"
-	"log"
-	"fmt"
 )
 
 type HitResult int64
@@ -48,16 +46,17 @@ type difficultyPlayer struct {
 type subSet struct {
 	player        *difficultyPlayer
 	rawScore      int64
+	accuracy      float64
 	score         int64
 	combo         int64
 	modMultiplier float64
+	numObjects      int64
 }
 
 type OsuRuleSet struct {
 	beatMap         *beatmap.BeatMap
 	cursors         map[*render.Cursor]*subSet
 	scoreMultiplier float64
-	numObjects      int64
 
 	queue     []hitobject
 	processed []hitobject
@@ -68,7 +67,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 	ruleset.beatMap = beatMap
 
 	drainTime := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime - beatMap.HitObjects[0].GetBasicData().StartTime
-	ruleset.scoreMultiplier = math.Round((beatMap.HPDrainRate+beatMap.OverallDifficulty+beatMap.CircleSize+math.Max(math.Min(float64(len(beatMap.HitObjects))/float64(drainTime)*8, 16), 0)) / 38 * 5)
+	ruleset.scoreMultiplier = math.Round((beatMap.HPDrainRate + beatMap.OverallDifficulty + beatMap.CircleSize + math.Max(math.Min(float64(len(beatMap.HitObjects))/float64(drainTime)*8, 16), 0)) / 38 * 5)
 	//diffPoints := int64(beatMap.HPDrainRate+beatMap.OverallDifficulty+beatMap.CircleSize)
 
 	/*if diffPoints < 6 {
@@ -93,7 +92,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 
 		player := &difficultyPlayer{cursor, diff, -1}
 		diffPlayers = append(diffPlayers, player)
-		ruleset.cursors[cursor] = &subSet{player, 0, 0, 0, mods[i].GetScoreMultiplier()}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, mods[i].GetScoreMultiplier(), 0}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -169,7 +168,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 
 	if result == HitResults.Hit50 || result == HitResults.Hit100 || result == HitResults.Hit300 {
 		subSet.rawScore += int64(result)
-		set.numObjects++
+		subSet.numObjects++
 	}
 
 	if comboResult == ComboResults.Reset || result == HitResults.Miss {
@@ -178,5 +177,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 		subSet.combo++
 	}
 
-	log.Println("Got:", result, "Combo:", subSet.combo, "Score:", subSet.score, "Acc:", fmt.Sprintf("%0.2f", 100*float64(subSet.rawScore)/float64(set.numObjects*300)))
+	subSet.accuracy = 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)
+	//log.Println("Got:", result, "Combo:", subSet.combo, "Score:", subSet.score, "Acc:", fmt.Sprintf("%0.2f", 100*float64(subSet.rawScore)/float64(set.numObjects*300)))
+}
+
+func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64) {
+	subSet := set.cursors[cursor]
+	return subSet.accuracy, subSet.combo
 }

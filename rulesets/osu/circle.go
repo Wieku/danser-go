@@ -3,7 +3,6 @@ package osu
 import (
 	"github.com/wieku/danser/beatmap/objects"
 	"math"
-	"log"
 )
 
 type objstate struct {
@@ -42,7 +41,6 @@ func (circle *Circle) Update(time int64) bool {
 				hit := HitResults.Miss
 
 				relative := int64(math.Abs(float64(time-circle.hitCircle.GetBasicData().EndTime)))
-				log.Println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", relative, player.diff.Hit300)
 				if relative < player.diff.Hit300 {
 					hit = HitResults.Hit300
 				} else if relative < player.diff.Hit100 {
