@@ -6,15 +6,15 @@ import (
 )
 
 type objstate struct {
-	buttons buttonState
+	buttons  buttonState
 	finished bool
 }
 
 type Circle struct {
-	ruleSet *OsuRuleSet
-	hitCircle *objects.Circle
-	players []*difficultyPlayer
-	state []objstate
+	ruleSet           *OsuRuleSet
+	hitCircle         *objects.Circle
+	players           []*difficultyPlayer
+	state             []objstate
 	fadeStartRelative float64
 }
 
@@ -24,44 +24,56 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 	circle.players = players
 	circle.state = make([]objstate, len(players))
 
+	circle.fadeStartRelative = 1000000
 	for _, player := range circle.players {
 		circle.fadeStartRelative = math.Min(circle.fadeStartRelative, player.diff.Preempt)
 	}
 }
 
 func (circle *Circle) Update(time int64) bool {
-	numFinished := 0
+	unfinished := 0
 	for i, player := range circle.players {
-
 		state := &circle.state[i]
 
-		if !state.finished && (player.cursorLock == -1 || player.cursorLock == circle.hitCircle.GetBasicData().Number) {
+		if !state.finished {
+			unfinished++
 
-			if ((!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)) && player.cursor.Position.Dst(circle.hitCircle.GetPosition()) <= player.diff.CircleRadius {
-				hit := HitResults.Miss
+			if player.cursorLock == -1 {
+				state.buttons.Left = player.cursor.LeftButton
+				state.buttons.Right = player.cursor.RightButton
+			}
 
-				relative := int64(math.Abs(float64(time-circle.hitCircle.GetBasicData().EndTime)))
-				if relative < player.diff.Hit300 {
-					hit = HitResults.Hit300
-				} else if relative < player.diff.Hit100 {
-					hit = HitResults.Hit100
-				} else if relative < player.diff.Hit50 {
-					hit = HitResults.Hit50
-				} else if relative < int64(player.diff.Preempt-player.diff.FadeIn) {
-					hit = HitResults.Ignore
-				}
+			if player.cursorLock == -1 || player.cursorLock == circle.hitCircle.GetBasicData().Number {
+				clicked := (!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)
 
-				if hit != HitResults.Ignore {
-					combo := ComboResults.Increase
-					if hit == HitResults.Miss {
-						combo = ComboResults.Reset
+				if clicked && player.cursor.Position.Dst(circle.hitCircle.GetPosition()) <= player.diff.CircleRadius {
+					hit := HitResults.Miss
+
+					relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))
+					if relative < player.diff.Hit300 {
+						hit = HitResults.Hit300
+					} else if relative < player.diff.Hit100 {
+						hit = HitResults.Hit100
+					} else if relative < player.diff.Hit50 {
+						hit = HitResults.Hit50
+					} else if relative > int64(player.diff.Preempt-player.diff.FadeIn) {
+						hit = HitResults.Ignore
 					}
-					circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
 
-					player.cursorLock = -1
-					state.finished = true
-					continue
+					if hit != HitResults.Ignore {
+						combo := ComboResults.Increase
+						if hit == HitResults.Miss {
+							combo = ComboResults.Reset
+						}
+						circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
+
+						player.cursorLock = -1
+						state.finished = true
+						continue
+					}
 				}
+
+				player.cursorLock = circle.hitCircle.GetBasicData().Number
 			}
 
 			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
@@ -71,16 +83,15 @@ func (circle *Circle) Update(time int64) bool {
 				continue
 			}
 
-			state.buttons.Left = player.cursor.LeftButton
-			state.buttons.Right = player.cursor.RightButton
-
-			player.cursorLock = circle.hitCircle.GetBasicData().Number
-			numFinished++
+			if player.cursorLock == circle.hitCircle.GetBasicData().Number {
+				state.buttons.Left = player.cursor.LeftButton
+				state.buttons.Right = player.cursor.RightButton
+			}
 		}
 
 	}
 
-	return numFinished == 0
+	return unfinished == 0
 }
 
 func (circle *Circle) GetFadeTime() int64 {
