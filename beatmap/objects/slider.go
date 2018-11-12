@@ -20,8 +20,8 @@ import (
 	"github.com/wieku/danser/animation/easing"
 )
 
-type tickPoint struct {
-	time int64
+type TickPoint struct {
+	Time int64
 	Pos  bmath.Vector2d
 }
 
@@ -52,7 +52,8 @@ type Slider struct {
 	lastT                int64
 	Pos                  bmath.Vector2d
 	divides              int
-	TickPoints           []tickPoint
+	TickPoints           []TickPoint
+	TickReverse          []TickPoint
 	lastTick             int
 	End                  bool
 	vao                  *glhf.VertexSlice
@@ -170,7 +171,7 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 	}
 
 	for _, p := range self.TickPoints {
-		circles = append(circles, DummyCircleInherit(p.Pos, p.time, true))
+		circles = append(circles, DummyCircleInherit(p.Pos, p.Time, true))
 	}
 
 	sort.Slice(circles, func(i, j int) bool { return circles[i].GetBasicData().StartTime < circles[j].GetBasicData().StartTime })
@@ -213,11 +214,15 @@ func (self *Slider) calculateFollowPoints() {
 				break
 			}
 
-			self.TickPoints = append(self.TickPoints, tickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
+			self.TickPoints = append(self.TickPoints, TickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
 		}
-	}
 
-	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].time < self.TickPoints[j].time })
+		time := self.objData.StartTime + int64(float64(r)*self.partLen)
+		self.TickReverse = append(self.TickReverse, TickPoint{time, self.GetPointAt(time)})
+	}
+	self.TickReverse = append(self.TickReverse, TickPoint{self.objData.EndTime, self.GetPointAt(self.objData.EndTime)})
+
+	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].Time < self.TickPoints[j].Time })
 }
 
 func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
@@ -303,7 +308,7 @@ func (self *Slider) Update(time int64) bool {
 		}
 
 		for i, p := range self.TickPoints {
-			if p.time < time && self.lastTick < i {
+			if p.Time < time && self.lastTick < i {
 				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 				self.lastTick = i
 			}
@@ -459,8 +464,8 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 					for _, p := range self.TickPoints {
 						al := 0.0
-						if p.time > time {
-							al = math.Min(1.0, math.Max((float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
+						if p.Time > time {
+							al = math.Min(1.0, math.Max((float64(time)-(float64(p.Time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
 						}
 						if al > 0.0 {
 							batch.SetTranslation(p.Pos)

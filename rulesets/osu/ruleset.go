@@ -11,6 +11,7 @@ import (
 )
 
 type HitResult int64
+type ComboResult int64
 
 var HitResults = struct {
 	Ignore,
@@ -21,6 +22,12 @@ var HitResults = struct {
 	Slider10,
 	Slider30 HitResult
 }{-1, 0, 50, 100, 300, 10, 30}
+
+var ComboResults = struct {
+	Reset,
+	Hold,
+	Increase ComboResult
+}{0, 1, 2}
 
 type buttonState struct {
 	Left, Right bool
@@ -33,26 +40,26 @@ type hitobject interface {
 }
 
 type difficultyPlayer struct {
-	cursor *render.Cursor
-	diff *difficulty.Difficulty
+	cursor     *render.Cursor
+	diff       *difficulty.Difficulty
 	cursorLock int64
 }
 
 type subSet struct {
-	player *difficultyPlayer
-	rawScore int64
-	score int64
-	combo int64
+	player        *difficultyPlayer
+	rawScore      int64
+	score         int64
+	combo         int64
 	modMultiplier float64
 }
 
 type OsuRuleSet struct {
-	beatMap *beatmap.BeatMap
-	cursors map[*render.Cursor]*subSet
+	beatMap         *beatmap.BeatMap
+	cursors         map[*render.Cursor]*subSet
 	scoreMultiplier float64
-	numObjects int64
+	numObjects      int64
 
-	queue []hitobject
+	queue     []hitobject
 	processed []hitobject
 }
 
@@ -60,9 +67,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
 
-	diffPoints := int64(beatMap.HPDrainRate+beatMap.OverallDifficulty+beatMap.CircleSize)
+	drainTime := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime - beatMap.HitObjects[0].GetBasicData().StartTime
+	ruleset.scoreMultiplier = math.Round((beatMap.HPDrainRate+beatMap.OverallDifficulty+beatMap.CircleSize+math.Max(math.Min(float64(len(beatMap.HitObjects))/float64(drainTime)*8, 16), 0)) / 38 * 5)
+	//diffPoints := int64(beatMap.HPDrainRate+beatMap.OverallDifficulty+beatMap.CircleSize)
 
-	if diffPoints < 6 {
+	/*if diffPoints < 6 {
 		ruleset.scoreMultiplier = 2
 	} else if diffPoints < 13 {
 		ruleset.scoreMultiplier = 3
@@ -72,29 +81,34 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 		ruleset.scoreMultiplier = 5
 	} else {
 		ruleset.scoreMultiplier = 6
-	}
+	}*/
 
 	ruleset.cursors = make(map[*render.Cursor]*subSet)
-	
+
 	var diffPlayers []*difficultyPlayer
-	
+
 	for i, cursor := range cursors {
 		diff := difficulty.NewDifficulty(beatMap.HPDrainRate, beatMap.CircleSize, beatMap.OverallDifficulty, beatMap.AR)
 		diff.SetMods(mods[i])
-		
+
 		player := &difficultyPlayer{cursor, diff, -1}
 		diffPlayers = append(diffPlayers, player)
-		ruleset.cursors[cursor] = &subSet{player, 0, 0, 0,mods[i].GetScoreMultiplier()}
+		ruleset.cursors[cursor] = &subSet{player, 0, 0, 0, mods[i].GetScoreMultiplier()}
 	}
-	
+
 	for _, obj := range beatMap.HitObjects {
 		if circle, ok := obj.(*objects.Circle); ok {
 			rCircle := new(Circle)
 			rCircle.Init(ruleset, circle, diffPlayers)
 			ruleset.queue = append(ruleset.queue, rCircle)
 		}
+		if slider, ok := obj.(*objects.Slider); ok {
+			rSlider := new(Slider)
+			rSlider.Init(ruleset, slider, diffPlayers)
+			ruleset.queue = append(ruleset.queue, rSlider)
+		}
 	}
-	
+
 	return ruleset
 }
 
@@ -132,12 +146,12 @@ func (set *OsuRuleSet) Update(time int64) {
 			}
 		}
 	}
-	
+
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float64, result HitResult, raw, breaksCombo bool) {
+func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float64, result HitResult, raw bool, comboResult ComboResult) {
 	if result == HitResults.Ignore {
-		if breaksCombo {
+		if comboResult == ComboResults.Reset {
 			set.cursors[cursor].combo = 0
 		}
 		return
@@ -158,13 +172,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 		set.numObjects++
 	}
 
-	if breaksCombo || result == HitResults.Miss {
+	if comboResult == ComboResults.Reset || result == HitResults.Miss {
 		subSet.combo = 0
-	} else {
+	} else if comboResult == ComboResults.Increase {
 		subSet.combo++
 	}
 
-	log.Println("Got:", result, "Combo:", subSet.combo, "Score:", subSet.score, "Acc:", fmt.Sprintf("%0.2f", 100*float64(subSet.rawScore) / float64(set.numObjects*300)))
+	log.Println("Got:", result, "Combo:", subSet.combo, "Score:", subSet.score, "Acc:", fmt.Sprintf("%0.2f", 100*float64(subSet.rawScore)/float64(set.numObjects*300)))
 }
-
-

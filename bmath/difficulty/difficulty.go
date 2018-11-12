@@ -28,7 +28,7 @@ func (diff *Difficulty) calculate() {
 	if diff.Mods&HardRock > 0 {
 		ar = math.Min(ar*1.4, 10)
 		cs *= 1.3
-		od *= 1.4
+		od = math.Min(od*1.4, 10)
 		hpDrain *= 1.4
 	}
 

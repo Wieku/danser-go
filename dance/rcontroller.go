@@ -16,11 +16,14 @@ import (
 	"net/url"
 	"strconv"
 	"net/http"
+	"github.com/wieku/danser/rulesets/osu"
+	"github.com/wieku/danser/bmath/difficulty"
 )
 
 type RpData struct {
 	Name string
 	Mods string
+	ModsV difficulty.Modifier
 }
 
 type subControl struct {
@@ -37,6 +40,7 @@ type ReplayController struct {
 	replays     []RpData
 	cursors     []*render.Cursor
 	controllers []*subControl
+	ruleset     *osu.OsuRuleSet
 }
 
 func NewReplayController() Controller {
@@ -106,6 +110,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		replay, _ := rplpa.ParseCompressed(data)
 		for _, frame := range replay {
+			if frame.Time == -12345 {
+				continue
+			}
 			control.xGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MosueX))
 			if strings.Contains(score.Mods.String(), "HR") {
 				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(384-frame.MouseY))
@@ -131,17 +138,21 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1)})
+		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1), difficulty.Modifier(score.Mods)})
 		controller.controllers = append(controller.controllers, control)
+		break
 	}
 
 	controller.bMap = beatMap
 }
 
 func (controller *ReplayController) InitCursors() {
-	for range controller.controllers {
+	var modifiers []difficulty.Modifier
+	for i := range controller.controllers {
 		controller.cursors = append(controller.cursors, render.NewCursor())
+		modifiers = append(modifiers, controller.replays[i].ModsV)
 	}
+	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, modifiers)
 }
 
 func (controller *ReplayController) Update(time int64, delta float64) {
@@ -153,8 +164,12 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 		c.m1Glider.Update(float64(time))
 		c.m2Glider.Update(float64(time))
 		controller.cursors[i].SetPos(bmath.NewVec2d(c.xGlider.GetValue(), c.yGlider.GetValue()))
+		controller.cursors[i].LeftButton = controller.GetClick(i, 0) || controller.GetClick(i, 2)
+		controller.cursors[i].RightButton = controller.GetClick(i, 1) || controller.GetClick(i, 3)
 		controller.cursors[i].Update(delta)
 	}
+
+	controller.ruleset.Update(time)
 }
 
 func (controller *ReplayController) GetCursors() []*render.Cursor {
