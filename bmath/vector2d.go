@@ -64,6 +64,10 @@ func (v Vector2d) Sub(v1 Vector2d) Vector2d {
 	return Vector2d{v.X - v1.X, v.Y - v1.Y}
 }
 
+func (v Vector2d) SubS(x, y float64) Vector2d {
+	return Vector2d{v.X - x, v.Y - y}
+}
+
 func (v Vector2d) Mult(v1 Vector2d) Vector2d {
 	return Vector2d{v.X * v1.X, v.Y * v1.Y}
 }
