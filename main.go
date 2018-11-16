@@ -140,7 +140,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		file, _ := os.Open("assets/fonts/Orbitron-Regular.ttf")//Roboto-Regular
+		file, _ := os.Open("assets/fonts/Roboto-Bold.ttf")
 		font := font.LoadFont(file)
 		file.Close()
 

@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/states/components"
+	"strconv"
 )
 
 type Player struct {
@@ -80,7 +81,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.SetupSlider()
 	player.batch = batches.NewSpriteBatch()
 	player.sliderRenderer = render.NewSliderRenderer()
-	player.font = font.GetFont("Orbitron-Light")
+	player.font = font.GetFont("Roboto Bold")
 
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
@@ -224,7 +225,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-		//musicPlayer.SetPosition(290)
+		//musicPlayer.SetPosition(182)
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -616,6 +617,15 @@ func (pl *Player) Draw(delta float64) {
 
 		scl := settings.Graphics.GetHeightF() * 0.9 / ( /*4**/ 51 /*/3*/)
 
+		highest := int64(0)
+		for _, r := range rpls {
+			if r.Combo > highest {
+				highest = r.Combo
+			}
+		}
+
+		cL := strconv.FormatInt(highest, 10)
+
 		for i, r := range rpls {
 			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())
 			for j := 0; j < 4; j++ {
@@ -627,9 +637,10 @@ func (pl *Player) Draw(delta float64) {
 			}
 			pl.batch.SetColor(1, 1, 1, pl.playersGlider.GetValue())
 
-			accuracy := fmt.Sprintf("%0.2f%%", r.Accuracy)
-			nWidth := pl.font.GetWidth(scl, accuracy)
-			pl.font.Draw(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, accuracy)
+			accuracy := fmt.Sprintf("%6.2f%% %"+strconv.Itoa(len(cL))+"dx", r.Accuracy, r.Combo)
+			accuracy1 := "100.00% "+cL+"x "
+			nWidth := pl.font.GetWidthMonospaced(scl, accuracy1)
+			pl.font.DrawMonospaced(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, accuracy)
 
 			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())
 			pl.font.Draw(pl.batch, 4*scl+nWidth, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, r.Name)
