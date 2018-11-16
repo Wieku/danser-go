@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser/render/texture"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/render/batches"
+	"math"
 )
 
 var fonts map[string]*Font
@@ -37,6 +38,7 @@ type Font struct {
 	initialSize float64
 	lineDist    float64
 	kernTable   map[rune]map[rune]float64
+	biggest float64
 }
 
 func LoadFont(reader io.Reader) *Font {
@@ -144,6 +146,7 @@ func LoadFont(reader io.Reader) *Font {
 
 		//set w,h and adv, bearing V and bearing H in char
 		advance := float64(gAdv) / 64
+		font.biggest = math.Max(font.biggest, float64(advance))
 		bearingV := float64(gBnd.Max.Y) / 64
 		bearingH := float64(gBnd.Min.X) / 64
 		font.glyphs[i-font.min] = &glyphData{*region, advance, bearingH, bearingV}
@@ -179,6 +182,31 @@ func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64
 	}
 }
 
+func (font *Font) DrawMonospaced(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
+	xpad := x
+
+	scale := size / font.initialSize
+
+	for _, c := range text {
+		char := font.glyphs[c-font.min]
+		if char == nil {
+			continue
+		}
+
+		renderer.SetSubScale(scale, scale)
+		if c=='.' {
+			renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+			renderer.DrawTexture(char.region)
+			xpad += scale * renderer.GetScale().X * (char.advance)
+		} else {
+			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(char.bearingX+float64(char.advance))/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+			renderer.DrawTexture(char.region)
+			xpad += scale * renderer.GetScale().X * font.biggest
+		}
+
+	}
+}
+
 func (font *Font) GetWidth(size float64, text string) float64 {
 	scale := size / font.initialSize
 	xpad := 0.0
@@ -194,6 +222,25 @@ func (font *Font) GetWidth(size float64, text string) float64 {
 		}
 
 		xpad += scale * (char.advance - kerning)
+	}
+	return xpad
+}
+
+func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
+	scale := size / font.initialSize
+	xpad := 0.0
+	for _, c := range text {
+		char := font.glyphs[c-font.min]
+		if char == nil {
+			continue
+		}
+
+		if c=='.' {
+			xpad += scale * char.advance
+		}  else {
+			xpad += scale * font.biggest
+		}
+
 	}
 	return xpad
 }
