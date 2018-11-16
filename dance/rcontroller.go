@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/animation"
 	"github.com/Mempler/rplpa"
-	"github.com/wieku/danser/bmath"
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser/settings"
 	"log"
@@ -18,6 +17,8 @@ import (
 	"net/http"
 	"github.com/wieku/danser/rulesets/osu"
 	"github.com/wieku/danser/bmath/difficulty"
+	"math"
+	"github.com/wieku/danser/bmath"
 )
 
 type RpData struct {
@@ -43,6 +44,7 @@ type ReplayController struct {
 	cursors     []*render.Cursor
 	controllers []*subControl
 	ruleset     *osu.OsuRuleSet
+	lastTime int64
 }
 
 func NewReplayController() Controller {
@@ -56,7 +58,7 @@ func getReplay(scoreID int64) ([]byte, error) {
 	vals.Add("u", strings.Split(settings.KNOCKOUT, ":")[0])
 	vals.Add("h", strings.Split(settings.KNOCKOUT, ":")[1])
 	request, err := http.NewRequest(http.MethodGet, "https://osu.ppy.sh/web/osu-getreplay.php?"+vals.Encode(), nil)
-	//log.Println(request)
+
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +82,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 50})
 
 	for _, score := range scores {
-
+		//if score.Username != /*"itsamemarioo"*//*"nathan on osu"*//*"ThePooN"*//*"Kosmonautas"*/ {
+		//	continue
+		//}
 		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
 		file, err := os.Open(fileName)
 		file.Close()
@@ -98,12 +102,21 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		control := new(subControl)
 		control.xGlider = animation.NewGlider(0)
+		control.xGlider.SetSorting(false)
 		control.yGlider = animation.NewGlider(0)
+		control.yGlider.SetSorting(false)
 		control.k1Glider = animation.NewGlider(0)
+		control.k1Glider.SetSorting(false)
 		control.k2Glider = animation.NewGlider(0)
+		control.k2Glider.SetSorting(false)
 		control.m1Glider = animation.NewGlider(0)
+		control.m1Glider.SetSorting(false)
 		control.m2Glider = animation.NewGlider(0)
+		control.m2Glider.SetSorting(false)
+
 		lastTime := int64(0)
+		lastX := 0.0
+		lastY := 0.0
 
 		data, err := ioutil.ReadFile(fileName)
 		if err != nil {
@@ -115,12 +128,16 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			if frame.Time == -12345 {
 				continue
 			}
-			control.xGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MosueX))
+
+			time1 := float64(lastTime)
+			time2 := math.Max(time1, float64(lastTime+frame.Time))
+			mY := float64(frame.MouseY)
 			if strings.Contains(score.Mods.String(), "HR") {
-				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(384-frame.MouseY))
-			} else {
-				control.yGlider.AddEvent(float64(lastTime), float64(lastTime+frame.Time), float64(frame.MouseY))
+				mY = 384-mY
 			}
+
+			control.xGlider.AddEventS(time1, time2, lastX, float64(frame.MosueX))
+			control.yGlider.AddEventS(time1, time2, lastY, mY)
 
 			press := frame.KeyPressed
 
@@ -132,17 +149,18 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 				}
 			}
 
-			control.k1Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.Key1), translate(press.Key1))
-			control.k2Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.Key2), translate(press.Key2))
-			control.m1Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
-			control.m2Glider.AddEventS(float64(lastTime+frame.Time), float64(lastTime+frame.Time), translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
+			control.k1Glider.AddEventS(time2, time2, translate(press.Key1), translate(press.Key1))
+			control.k2Glider.AddEventS(time2, time2, translate(press.Key2), translate(press.Key2))
+			control.m1Glider.AddEventS(time2, time2, translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
+			control.m2Glider.AddEventS(time2, time2, translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
 
+			lastX = float64(frame.MosueX)
+			lastY = mY
 			lastTime += frame.Time
 		}
 
 		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1), difficulty.Modifier(score.Mods), 100, 0})
 		controller.controllers = append(controller.controllers, control)
-		//break
 	}
 
 	controller.bMap = beatMap
@@ -158,26 +176,30 @@ func (controller *ReplayController) InitCursors() {
 }
 
 func (controller *ReplayController) Update(time int64, delta float64) {
-	for i, c := range controller.controllers {
-		c.xGlider.Update(float64(time))
-		c.yGlider.Update(float64(time))
-		c.k1Glider.Update(float64(time))
-		c.k2Glider.Update(float64(time))
-		c.m1Glider.Update(float64(time))
-		c.m2Glider.Update(float64(time))
-		controller.cursors[i].SetPos(bmath.NewVec2d(c.xGlider.GetValue(), c.yGlider.GetValue()))
-		controller.cursors[i].LeftButton = controller.GetClick(i, 0) || controller.GetClick(i, 2)
-		controller.cursors[i].RightButton = controller.GetClick(i, 1) || controller.GetClick(i, 3)
-		controller.cursors[i].Update(delta)
+	
+	for nTime:=controller.lastTime; nTime < time; nTime++ {
+		for i, c := range controller.controllers {
+			c.xGlider.Update(float64(nTime))
+			c.yGlider.Update(float64(nTime))
+			c.k1Glider.Update(float64(nTime))
+			c.k2Glider.Update(float64(nTime))
+			c.m1Glider.Update(float64(nTime))
+			c.m2Glider.Update(float64(nTime))
+			controller.cursors[i].SetPos(bmath.NewVec2d(c.xGlider.GetValue(), c.yGlider.GetValue()))
+			controller.cursors[i].LeftButton = controller.GetClick(i, 0) || controller.GetClick(i, 2)
+			controller.cursors[i].RightButton = controller.GetClick(i, 1) || controller.GetClick(i, 3)
+		}
+
+		controller.ruleset.Update(nTime)
 	}
 
-	controller.ruleset.Update(time)
-
 	for i := range controller.controllers {
+		controller.cursors[i].Update(delta)
 		accuracy, combo := controller.ruleset.GetResults(controller.cursors[i])
 		controller.replays[i].Accuracy = accuracy
 		controller.replays[i].Combo = combo
 	}
+	controller.lastTime = time
 }
 
 func (controller *ReplayController) GetCursors() []*render.Cursor {
