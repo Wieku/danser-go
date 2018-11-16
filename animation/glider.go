@@ -7,8 +7,8 @@ import (
 
 type event struct {
 	startTime, endTime, targetValue float64
-	hasStartValue bool
-	startValue float64
+	hasStartValue                   bool
+	startValue                      float64
 }
 
 type Glider struct {
@@ -16,11 +16,16 @@ type Glider struct {
 	time, value, startValue float64
 	current                 event
 	easing                  func(float64) float64
-	dirty bool
+	sorting                 bool
+	dirty                   bool
 }
 
 func NewGlider(value float64) *Glider {
-	return &Glider{value: value, startValue: value, current: event{-1, 0, value, false, 0}, easing: easing.Linear}
+	return &Glider{value: value, startValue: value, current: event{-1, 0, value, false, 0}, easing: easing.Linear, sorting: true}
+}
+
+func (glider *Glider) SetSorting(sorting bool) {
+	glider.sorting = sorting
 }
 
 func (glider *Glider) SetEasing(easing func(float64) float64) {
@@ -38,22 +43,24 @@ func (glider *Glider) AddEventS(startTime, endTime, startValue, targetValue floa
 }
 
 func (glider *Glider) Update(time float64) {
-	if glider.dirty {
+	if glider.dirty && glider.sorting {
 		sort.Slice(glider.eventqueue, func(i, j int) bool { return glider.eventqueue[i].startTime < glider.eventqueue[j].startTime })
 		glider.dirty = false
 	}
 	glider.time = time
 	if len(glider.eventqueue) > 0 {
-		for i:=0; i < len(glider.eventqueue); i++ {
-			if e := glider.eventqueue[i]; e.startTime <= time && (e.endTime >= time || len(glider.eventqueue)==1 || e.startTime==e.endTime) {
-				glider.current = e
+		for i := 0; i < len(glider.eventqueue); i++ {
+			if e := glider.eventqueue[i]; (e.startTime <= time && (e.endTime >= time || len(glider.eventqueue) == 1 || e.startTime == e.endTime)) || (i < len(glider.eventqueue)-1 && time > e.endTime && glider.eventqueue[i+1].startTime > time) {
 				if e.hasStartValue {
 					glider.startValue = e.startValue
 				} else if i > 0 {
 					glider.startValue = glider.eventqueue[i-1].targetValue
+				} else if glider.current.endTime <= e.startTime {
+					glider.startValue = glider.current.targetValue
 				} else {
 					glider.startValue = glider.value
 				}
+				glider.current = e
 				glider.eventqueue = glider.eventqueue[i+1:]
 			} else if e.startTime > time {
 				break
