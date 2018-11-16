@@ -20,6 +20,8 @@ import (
 	"github.com/wieku/danser/animation/easing"
 )
 
+const followBaseScale = 2.14
+
 type TickPoint struct {
 	Time int64
 	Pos  bmath.Vector2d
@@ -54,6 +56,7 @@ type Slider struct {
 	divides              int
 	TickPoints           []TickPoint
 	TickReverse          []TickPoint
+	ScorePoints          []TickPoint
 	lastTick             int
 	End                  bool
 	vao                  *glhf.VertexSlice
@@ -65,6 +68,8 @@ type Slider struct {
 	fade                 *animation.Glider
 	fadeApproach         *animation.Glider
 	fadeCircle           *animation.Glider
+	fadeFollow           *animation.Glider
+	scaleFollow          *animation.Glider
 	reversePoints        [2][]*reversePoint
 }
 
@@ -214,15 +219,20 @@ func (self *Slider) calculateFollowPoints() {
 				break
 			}
 
-			self.TickPoints = append(self.TickPoints, TickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
+			point := TickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)}
+			self.TickPoints = append(self.TickPoints, point)
+			self.ScorePoints = append(self.ScorePoints, point)
 		}
 
 		time := self.objData.StartTime + int64(float64(r)*self.partLen)
-		self.TickReverse = append(self.TickReverse, TickPoint{time, self.GetPointAt(time)})
+		point := TickPoint{time, self.GetPointAt(time)}
+		self.TickReverse = append(self.TickReverse, point)
+		self.ScorePoints = append(self.ScorePoints, point)
 	}
 	self.TickReverse = append(self.TickReverse, TickPoint{self.objData.EndTime, self.GetPointAt(self.objData.EndTime)})
 
 	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].Time < self.TickPoints[j].Time })
+	sort.Slice(self.ScorePoints, func(i, j int) bool { return self.ScorePoints[i].Time < self.ScorePoints[j].Time })
 }
 
 func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
@@ -282,6 +292,30 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 		}
 
 		self.reversePoints[1] = append(self.reversePoints[1], arrow)
+	}
+
+	self.fadeFollow = animation.NewGlider(0)
+	self.scaleFollow = animation.NewGlider(0)
+
+	self.fadeFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+60), float64(self.objData.EndTime)), 0, 1)
+	self.fadeFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0)
+
+	self.scaleFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+180), float64(self.objData.EndTime)), 0.5*followBaseScale, 1*followBaseScale)
+	self.scaleFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1*followBaseScale, 0.8*followBaseScale)
+
+	for j, p := range self.ScorePoints {
+		if j < 1 || j > len(self.ScorePoints)-2 {
+			continue
+		}
+
+		fade := 200.0
+		delay := fade
+		if len(self.ScorePoints) > 2 {
+			delay = math.Min(fade, float64(p.Time-self.ScorePoints[j-1].Time))
+			ratio := delay/fade
+			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1 - ratio * 0.1)*followBaseScale)
+		}
+
 	}
 
 }
@@ -397,6 +431,8 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 	self.fade.Update(float64(time))
 	self.fadeCircle.Update(float64(time))
+	self.fadeFollow.Update(float64(time))
+	self.scaleFollow.Update(float64(time))
 
 	for i := 0; i < 2; i++ {
 		for j := 0; j < len(self.reversePoints[i]); j++ {
@@ -496,6 +532,12 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 			batch.SetTranslation(self.Pos)
 			batch.DrawUnit(*render.SliderBall)
 		}
+
+		batch.SetTranslation(self.Pos)
+		batch.SetSubScale(self.scaleFollow.GetValue(), self.scaleFollow.GetValue())
+		batch.SetColor(1, 1, 1, self.fadeFollow.GetValue())
+		batch.DrawUnit(*render.SliderFollow)
+
 	} else {
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)

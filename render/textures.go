@@ -16,6 +16,7 @@ var SliderGradient *texture.TextureSingle
 var SliderTick *texture.TextureRegion
 var SliderBall *texture.TextureRegion
 var SliderReverse *texture.TextureRegion
+var SliderFollow *texture.TextureRegion
 var CursorTex *texture.TextureRegion
 var CursorTop *texture.TextureRegion
 var SpinnerMiddle *texture.TextureRegion
@@ -35,6 +36,7 @@ func LoadTextures() {
 	SliderTick, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderscorepoint.png")
 	SliderBall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderball.png")
 	SliderReverse, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/reversearrow.png")
+	SliderFollow, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderfollowcircle.png")
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
 	SpinnerMiddle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner/spinner-middle.png")
