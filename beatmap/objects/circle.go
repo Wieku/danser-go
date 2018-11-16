@@ -97,6 +97,8 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	if time >= self.objData.StartTime {
 		subScale := 1 + (1.0-alpha)*0.5
 		batch.SetSubScale(subScale, subScale)
+	} else {
+		batch.SetSubScale(1, 1)
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
