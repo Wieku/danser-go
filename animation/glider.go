@@ -88,6 +88,10 @@ func (glider *Glider) SetValue(value float64) {
 	glider.startValue = value
 }
 
+func (glider *Glider) Reset() {
+	glider.eventqueue = make([]event, 0)
+}
+
 func (glider *Glider) GetValue() float64 {
 	return glider.value
 }

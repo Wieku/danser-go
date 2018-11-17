@@ -11,22 +11,27 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render/font"
 	"github.com/wieku/danser/animation"
+	"github.com/wieku/danser/rulesets/osu"
 )
 
 type knockoutPlayer struct {
-	fade *animation.Glider
-	slide *animation.Glider
-	height *animation.Glider
+	fade      *animation.Glider
+	slide     *animation.Glider
+	height    *animation.Glider
 	lastCombo int64
 	hasBroken bool
+
+	lastHit  osu.HitResult
+	fadeHit  *animation.Glider
+	scaleHit *animation.Glider
 }
 
 type KnockoutOverlay struct {
 	controller *dance.ReplayController
-	font *font.Font
-	players map[string]*knockoutPlayer
-	names map[*render.Cursor]string
-	lastTime int64
+	font       *font.Font
+	players    map[string]*knockoutPlayer
+	names      map[*render.Cursor]string
+	lastTime   int64
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -38,23 +43,36 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, false}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0)}
 	}
+	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, result osu.HitResult) {
+		if result == osu.HitResults.Hit300 {
+			return
+		}
+		player := overlay.players[overlay.names[cursor]]
+		player.fadeHit.Reset()
+		player.fadeHit.AddEventS(float64(time), float64(time+300), 0.5, 1)
+		player.fadeHit.AddEventS(float64(time+600), float64(time+900), 1, 0)
+		player.scaleHit.AddEventS(float64(time), float64(time+300), 0.5, 1)
+		player.lastHit = result
+	})
 	return overlay
 }
 
 func (overlay *KnockoutOverlay) Update(time int64) {
 
-	for sTime:=overlay.lastTime; sTime <= time; sTime++ {
+	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
 		for _, r := range overlay.controller.GetReplays() {
 			player := overlay.players[r.Name]
-			if r.Combo < player.lastCombo {
+			if r.Combo < player.lastCombo && !player.hasBroken {
 				player.fade.AddEvent(float64(sTime), float64(sTime+3000), 0)
 				player.height.AddEvent(float64(sTime+2500), float64(sTime+3000), 0)
 				player.hasBroken = true
 			}
 			player.height.Update(float64(sTime))
 			player.fade.Update(float64(sTime))
+			player.fadeHit.Update(float64(sTime))
+			player.scaleHit.Update(float64(sTime))
 			player.lastCombo = r.Combo
 		}
 	}
@@ -78,7 +96,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 		}
 	}
 
-	yHeight := settings.Graphics.GetHeightF() - (settings.Graphics.GetHeightF() - cumulativeHeight)/2
+	yHeight := settings.Graphics.GetHeightF() - (settings.Graphics.GetHeightF()-cumulativeHeight)/2
 
 	cL := strconv.FormatInt(highest, 10)
 
@@ -86,12 +104,12 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 		player := overlay.players[r.Name]
 		batch.SetColor(float64(colors[i].X()), float64(colors[i].Y()), float64(colors[i].Z()), alpha*player.fade.GetValue())
 
-		subY := yHeight-player.height.GetValue()/2/*+margin*10*/
+		subY := yHeight - player.height.GetValue()/2 /*+margin*10*/
 
 		for j := 0; j < 4; j++ {
 			if controller.GetClick(i, j) {
 				batch.SetSubScale(scl*0.9/2, scl*0.9/2)
-				batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl, /*yHeight*/subY))
+				batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl, /*yHeight*/ subY))
 				batch.DrawUnit(render.Pixel.GetRegion())
 			}
 		}
@@ -99,29 +117,41 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 
 		accuracy := fmt.Sprintf("%6.2f%% %"+strconv.Itoa(len(cL))+"dx", r.Accuracy, r.Combo)
-		accuracy1 := "100.00% "+cL+"x "
+		accuracy1 := "100.00% " + cL + "x "
 		nWidth := overlay.font.GetWidthMonospaced(scl, accuracy1)
 
 		overlay.font.DrawMonospaced(batch, 3*scl, subY-scl*0.8/2, scl, accuracy)
 
 		batch.SetSubScale(scl*0.9/2, -scl*0.9/2)
-		batch.SetTranslation(bmath.NewVec2d(3*scl+nWidth, /*subY+scl/2*/subY))
+		batch.SetTranslation(bmath.NewVec2d(3*scl+nWidth, /*subY+scl/2*/ subY))
 		batch.DrawUnit(*render.GradeTexture[int64(r.Grade)])
 
 		batch.SetColor(float64(colors[i].X()), float64(colors[i].Y()), float64(colors[i].Z()), alpha*player.fade.GetValue())
 		overlay.font.Draw(batch, 4*scl+nWidth, subY-scl*0.8/2, scl, r.Name)
+		width := overlay.font.GetWidth(scl, r.Name)
 		if r.Mods != "" {
-			width := overlay.font.GetWidth(scl, r.Name)
 			batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 			overlay.font.Draw(batch, 4*scl+width+nWidth, subY-scl*0.8/2, scl*0.8, "+"+r.Mods)
+			width += overlay.font.GetWidth(scl*0.8, "+"+r.Mods)
 		}
 
-		yHeight-=player.height.GetValue()
+		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue()*player.fadeHit.GetValue())
+		batch.SetSubScale(scl*0.9/2*player.scaleHit.GetValue(), -scl*0.9/2*player.scaleHit.GetValue())
+		batch.SetTranslation(bmath.NewVec2d(4*scl+width+nWidth+scl*0.5, /*subY+scl/2*/ subY))
+
+		switch player.lastHit {
+		case osu.HitResults.Hit100:
+			batch.DrawUnit(*render.Hit100)
+		case osu.HitResults.Hit50:
+			batch.DrawUnit(*render.Hit50)
+		case osu.HitResults.Miss:
+			batch.DrawUnit(*render.Hit0)
+		}
+
+		yHeight -= player.height.GetValue()
 	}
 }
 
 func (overlay *KnockoutOverlay) IsBroken(cursor *render.Cursor) bool {
 	return overlay.players[overlay.names[cursor]].hasBroken
 }
-
-

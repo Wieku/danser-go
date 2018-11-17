@@ -106,6 +106,7 @@ func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBat
 
 	batch.DrawUnit(*render.SpinnerAC)
 
+	batch.SetSubScale(1, 1)
 	batch.SetRotation(0)
 	batch.SetScale(scale.X, scale.Y)
 

@@ -217,6 +217,10 @@ func (controller *ReplayController) GetReplays() []RpData {
 	return controller.replays
 }
 
+func (controller *ReplayController) GetRuleset() *osu.OsuRuleSet {
+	return controller.ruleset
+}
+
 func (controller *ReplayController) GetClick(player, key int) bool {
 	switch key {
 	case 0:
