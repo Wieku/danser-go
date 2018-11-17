@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/states/components"
-	"strconv"
 )
 
 type Player struct {
@@ -73,6 +72,7 @@ type Player struct {
 	mapFullName    string
 	Epi            *texture.TextureRegion
 	epiGlider      *animation.Glider
+	overlay 		*components.KnockoutOverlay
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -114,15 +114,21 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.bMap.Reset()
 	if settings.KNOCKOUT != "" {
-		player.controller = dance.NewReplayController()
+		controller := dance.NewReplayController()
+		player.controller = controller
+		player.controller.SetBeatMap(player.bMap)
+		player.controller.InitCursors()
+		player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
 	} else {
 		player.controller = dance.NewGenericController()
+		player.controller.SetBeatMap(player.bMap)
+		player.controller.InitCursors()
 	}
 
 	//player.controller = dance.NewPlayerController()
 
-	player.controller.SetBeatMap(player.bMap)
-	player.controller.InitCursors()
+	//player.controller.SetBeatMap(player.bMap)
+	/*player.controller.InitCursors()*/
 
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -225,7 +231,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-		//musicPlayer.SetPosition(182)
+		//musicPlayer.SetPosition(65)
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -246,6 +252,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.bMap.Update(int64(player.progressMsF))
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
+			player.overlay.Update(int64(player.progressMsF))
 
 			player.background.Update(int64(player.progressMsF))
 
@@ -596,6 +603,10 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetCamera(cameras[j])
 
 		for i, g := range pl.controller.GetCursors() {
+			if pl.overlay != nil && pl.overlay.IsBroken(g) {
+				continue
+			}
+
 			ind := j*len(pl.controller.GetCursors()) + i - 1
 			if ind < 0 {
 				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
@@ -608,48 +619,12 @@ func (pl *Player) Draw(delta float64) {
 	render.EndCursorRender()
 	pl.batch.SetAdditive(false)
 
-	if controller, ok := pl.controller.(*dance.ReplayController); ok {
+	if pl.overlay != nil {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
-		rpls := controller.GetReplays()
-
-		scl := settings.Graphics.GetHeightF() * 0.9 / ( /*4**/ 51 /*/3*/)
-
-		highest := int64(0)
-		for _, r := range rpls {
-			if r.Combo > highest {
-				highest = r.Combo
-			}
-		}
-
-		cL := strconv.FormatInt(highest, 10)
-
-		for i, r := range rpls {
-			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())
-			for j := 0; j < 4; j++ {
-				if controller.GetClick(i, j) {
-					pl.batch.SetSubScale(scl*0.9/2, scl*0.9/2)
-					pl.batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+0.5+(float64(i)/float64(len(rpls))))*scl-scl*0.1))
-					pl.batch.DrawUnit(render.Pixel.GetRegion())
-				}
-			}
-			pl.batch.SetColor(1, 1, 1, pl.playersGlider.GetValue())
-
-			accuracy := fmt.Sprintf("%6.2f%% %"+strconv.Itoa(len(cL))+"dx", r.Accuracy, r.Combo)
-			accuracy1 := "100.00% "+cL+"x "
-			nWidth := pl.font.GetWidthMonospaced(scl, accuracy1)
-			pl.font.DrawMonospaced(pl.batch, 4*scl, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, accuracy)
-
-			pl.batch.SetColor(float64(colors1[i].X()), float64(colors1[i].Y()), float64(colors1[i].Z()), pl.playersGlider.GetValue())
-			pl.font.Draw(pl.batch, 4*scl+nWidth, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl, r.Name)
-			if r.Mods != "" {
-				width := pl.font.GetWidth(scl, r.Name)
-				pl.batch.SetColor(1, 1, 1, pl.playersGlider.GetValue())
-				pl.font.Draw(pl.batch, 4*scl+width+nWidth, settings.Graphics.GetHeightF()*0.95-(float64(i)+1.0+(float64(i)/float64(len(rpls))))*scl, scl*0.8, "+"+r.Mods)
-			}
-		}
+		pl.overlay.DrawHUD(pl.batch, colors1, pl.playersGlider.GetValue())
 
 		pl.batch.End()
 	}

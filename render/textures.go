@@ -26,22 +26,49 @@ var CursorTrail *texture.TextureSingle
 var Pixel *texture.TextureSingle
 var Combo *font.Font
 
+var RankingD *texture.TextureRegion
+var RankingC *texture.TextureRegion
+var RankingB *texture.TextureRegion
+var RankingA *texture.TextureRegion
+var RankingS *texture.TextureRegion
+var RankingSH *texture.TextureRegion
+var RankingSS *texture.TextureRegion
+var RankingSSH *texture.TextureRegion
+
+var GradeTexture map[int64]*texture.TextureRegion
+
 func LoadTextures() {
 	Atlas = texture.NewTextureAtlas(8192, 4)
 	Atlas.Bind(16)
+
 	Circle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle.png")
 	ApproachCircle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/approachcircle.png")
 	CircleFull, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle-full.png")
 	CircleOverlay, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircleoverlay.png")
+
 	SliderTick, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderscorepoint.png")
 	SliderBall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderball.png")
 	SliderReverse, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/reversearrow.png")
 	SliderFollow, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderfollowcircle.png")
+
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
+
 	SpinnerMiddle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner/spinner-middle.png")
 	SpinnerMiddle2, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner/spinner-middle2.png")
 	SpinnerAC, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner/spinner-approachcircle.png")
+
+	RankingD, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-d-small.png")
+	RankingC, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-c-small.png")
+	RankingB, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-b-small.png")
+	RankingA, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-a-small.png")
+	RankingS, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-s-small.png")
+	RankingSH, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-sh-small.png")
+	RankingSS, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-x-small.png")
+	RankingSSH, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/grades/ranking-xh-small.png")
+
+	GradeTexture = map[int64]*texture.TextureRegion{0: RankingD, 1: RankingC, 2: RankingB, 3: RankingA, 4: RankingS, 5: RankingSH, 6: RankingSS, 7: RankingSSH}
+
 	SliderGradient, _ = utils.LoadTexture("assets/textures/slidergradient.png")
 	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
 	Pixel = texture.NewTextureSingle(1, 1, 0)

@@ -13,7 +13,6 @@ import (
 	"github.com/wieku/danser/render/texture"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/render/batches"
-	"math"
 )
 
 var fonts map[string]*Font
@@ -146,12 +145,12 @@ func LoadFont(reader io.Reader) *Font {
 
 		//set w,h and adv, bearing V and bearing H in char
 		advance := float64(gAdv) / 64
-		font.biggest = math.Max(font.biggest, float64(advance))
+		/*font.biggest = math.Max(font.biggest, float64(advance))*/
 		bearingV := float64(gBnd.Max.Y) / 64
 		bearingH := float64(gBnd.Min.X) / 64
 		font.glyphs[i-font.min] = &glyphData{*region, advance, bearingH, bearingV}
 	}
-
+	font.biggest = font.glyphs['W'].advance
 	log.Println(ttf.Name(truetype.NameIDFontFullName), "loaded!")
 	fonts[ttf.Name(truetype.NameIDFontFullName)] = font
 	return font

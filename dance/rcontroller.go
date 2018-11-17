@@ -27,6 +27,7 @@ type RpData struct {
 	ModsV difficulty.Modifier
 	Accuracy float64
 	Combo int64
+	Grade osu.Grade
 }
 
 type subControl struct {
@@ -79,9 +80,12 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	client := osuapi.NewClient(strings.Split(settings.KNOCKOUT, ":")[2])
 	beatMapO, _ := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
 
-	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 50})
-
+	scores, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 100})
+	counter := 0
 	for _, score := range scores {
+		if score.Mods&osuapi.ModHalfTime > 0 || counter >= 50 {
+			continue
+		}
 		//if score.Username != /*"itsamemarioo"*//*"nathan on osu"*//*"ThePooN"*//*"Kosmonautas"*/ {
 		//	continue
 		//}
@@ -159,8 +163,10 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1), difficulty.Modifier(score.Mods), 100, 0})
+		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(score.Mods.String(), "NV", "", -1), difficulty.Modifier(score.Mods), 100, 0, 0})
 		controller.controllers = append(controller.controllers, control)
+
+		counter++
 	}
 
 	controller.bMap = beatMap
@@ -195,9 +201,10 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 	for i := range controller.controllers {
 		controller.cursors[i].Update(delta)
-		accuracy, combo := controller.ruleset.GetResults(controller.cursors[i])
+		accuracy, combo, grade := controller.ruleset.GetResults(controller.cursors[i])
 		controller.replays[i].Accuracy = accuracy
 		controller.replays[i].Combo = combo
+		controller.replays[i].Grade = grade
 	}
 	controller.lastTime = time
 }

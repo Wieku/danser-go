@@ -9,6 +9,19 @@ import (
 	"sort"
 )
 
+type Grade int64
+
+const (
+	D = iota
+	C
+	B
+	A
+	S
+	SH
+	SS
+	SSH
+)
+
 type HitResult int64
 type ComboResult int64
 
@@ -53,6 +66,7 @@ type subSet struct {
 	maxCombo	int64
 	modMultiplier float64
 	numObjects      int64
+	grade Grade
 	hits map[HitResult]int64
 }
 
@@ -87,7 +101,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 
 		player := &difficultyPlayer{cursor, diff, -1}
 		diffPlayers = append(diffPlayers, player)
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, make(map[HitResult]int64)}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, SS, make(map[HitResult]int64)}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -187,10 +201,34 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 		subSet.accuracy = 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)
 	}
 
+	ratio := float64(subSet.hits[HitResults.Hit300])/float64(subSet.numObjects)
+
+	if subSet.hits[HitResults.Hit300] == subSet.numObjects {
+		if subSet.player.diff.Mods & (difficulty.Hidden | difficulty.Flashlight) > 0 {
+			subSet.grade = SSH
+		} else {
+			subSet.grade = SS
+		}
+	} else if ratio > 0.9 && float64(subSet.hits[HitResults.Hit50])/float64(subSet.numObjects) < 0.01 && subSet.hits[HitResults.Miss]==0 {
+		if subSet.player.diff.Mods & (difficulty.Hidden | difficulty.Flashlight) > 0 {
+			subSet.grade = SH
+		} else {
+			subSet.grade = S
+		}
+	} else if ratio > 0.8 && subSet.hits[HitResults.Miss]==0 || ratio > 0.9 {
+		subSet.grade = A
+	} else if ratio > 0.7 && subSet.hits[HitResults.Miss]==0 || ratio > 0.8 {
+		subSet.grade = B
+	} else if ratio > 0.6 {
+		subSet.grade = C
+	} else {
+		subSet.grade = D
+	}
+
 	//log.Println("Got:", fmt.Sprintf("%3d", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d",subSet.maxCombo), "Score:", fmt.Sprintf("%9d",subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits)
 }
 
-func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64) {
+func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, Grade) {
 	subSet := set.cursors[cursor]
-	return subSet.accuracy, subSet.combo
+	return subSet.accuracy, subSet.combo, subSet.grade
 }
