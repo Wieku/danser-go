@@ -622,6 +622,7 @@ func (pl *Player) Draw(delta float64) {
 	if pl.overlay != nil {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
+		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
 		pl.overlay.DrawHUD(pl.batch, colors1, pl.playersGlider.GetValue())

@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser/render/font"
 	"github.com/wieku/danser/animation"
 	"github.com/wieku/danser/rulesets/osu"
+	"github.com/wieku/danser/animation/easing"
 )
 
 type knockoutPlayer struct {
@@ -24,6 +25,10 @@ type knockoutPlayer struct {
 	lastHit  osu.HitResult
 	fadeHit  *animation.Glider
 	scaleHit *animation.Glider
+
+	deathFade  *animation.Glider
+	deathSlide *animation.Glider
+	deathX float64
 }
 
 type KnockoutOverlay struct {
@@ -43,7 +48,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0)}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), 0}
 	}
 	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, result osu.HitResult) {
 		if result == osu.HitResults.Hit300 {
@@ -62,21 +67,52 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 func (overlay *KnockoutOverlay) Update(time int64) {
 
 	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
-		for _, r := range overlay.controller.GetReplays() {
+		for i, r := range overlay.controller.GetReplays() {
 			player := overlay.players[r.Name]
 			if r.Combo < player.lastCombo && !player.hasBroken {
 				player.fade.AddEvent(float64(sTime), float64(sTime+3000), 0)
 				player.height.AddEvent(float64(sTime+2500), float64(sTime+3000), 0)
 				player.hasBroken = true
+
+				cursorPos := overlay.controller.GetCursors()[i].Position
+				player.deathX = float64(cursorPos.X)
+				player.deathSlide.SetEasing(easing.OutCirc)
+				player.deathSlide.AddEventS(float64(time), float64(time+3000), cursorPos.Y, cursorPos.Y+100)
+				player.deathFade.AddEventS(float64(time), float64(time+200), 0, 1)
+				player.deathFade.AddEventS(float64(time+2800), float64(time+3000), 1, 0)
 			}
 			player.height.Update(float64(sTime))
 			player.fade.Update(float64(sTime))
 			player.fadeHit.Update(float64(sTime))
 			player.scaleHit.Update(float64(sTime))
+			player.deathFade.Update(float64(sTime))
+			player.deathSlide.Update(float64(sTime))
 			player.lastCombo = r.Combo
 		}
 	}
 	overlay.lastTime = time
+}
+
+func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+	scl := settings.Graphics.GetHeightF() * 0.9 / ( /*4**/ 51 /*/3*/)
+	batch.SetScale(1, -1)
+	for i, r := range overlay.controller.GetReplays() {
+		player := overlay.players[r.Name]
+		if player.deathFade.GetValue() >= 0.01 {
+
+			batch.SetColor(float64(colors[i].X()), float64(colors[i].Y()), float64(colors[i].Z()), alpha*player.deathFade.GetValue())
+			width := overlay.font.GetWidth(scl*384.0/512.0, r.Name)
+			overlay.font.Draw(batch, player.deathX-width/2, player.deathSlide.GetValue(), scl*384.0/512.0, r.Name)
+
+
+			batch.SetColor(1, 1, 1, alpha*player.deathFade.GetValue())
+			batch.SetSubScale(scl/2*384.0/512.0, scl/2*384.0/512.0)
+			batch.SetTranslation(bmath.NewVec2d(player.deathX+width/2+scl*0.5*384.0/512.0, player.deathSlide.GetValue()-scl*0.5*384.0/512.0))
+			batch.DrawUnit(*render.Hit0)
+		}
+
+	}
+	batch.SetScale(1, 1)
 }
 
 func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
