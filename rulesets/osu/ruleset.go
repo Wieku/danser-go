@@ -32,8 +32,9 @@ var HitResults = struct {
 	Hit100,
 	Hit300,
 	Slider10,
-	Slider30 HitResult
-}{-1, 0, 50, 100, 300, 10, 30}
+	Slider30,
+	SliderMiss HitResult
+}{-1, 0, 50, 100, 300, 10, 30, -2}
 
 var ComboResults = struct {
 	Reset,
@@ -77,7 +78,7 @@ type OsuRuleSet struct {
 
 	queue     []hitobject
 	processed []hitobject
-	listener func(cursor *render.Cursor, time int64, result HitResult)
+	listener func(cursor *render.Cursor, time int64, result HitResult, comboResult ComboResult)
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -164,9 +165,6 @@ func (set *OsuRuleSet) Update(time int64) {
 
 func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float64, result HitResult, raw bool, comboResult ComboResult) {
 	if result == HitResults.Ignore {
-		if comboResult == ComboResults.Reset {
-			set.cursors[cursor].combo = 0
-		}
 		return
 	}
 
@@ -174,17 +172,19 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 
 	combo := math.Max(float64(subSet.combo-1), 0.0)
 
-	if raw {
-		subSet.score += int64(result)
-	} else {
-		subSet.score += int64(result) + int64(float64(result)*combo*set.scoreMultiplier*subSet.modMultiplier/25.0)
+	if result != HitResults.SliderMiss {
+		if raw {
+			subSet.score += int64(result)
+		} else {
+			subSet.score += int64(result) + int64(float64(result)*combo*set.scoreMultiplier*subSet.modMultiplier/25.0)
+		}
 	}
+
 
 	if result == HitResults.Hit50 || result == HitResults.Hit100 || result == HitResults.Hit300 || result == HitResults.Miss {
 		subSet.rawScore += int64(result)
 		subSet.hits[result]++
 		subSet.numObjects++
-		set.listener(cursor, time, result)
 	}
 
 	if comboResult == ComboResults.Reset || result == HitResults.Miss {
@@ -227,14 +227,16 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 		subSet.grade = D
 	}
 
+	set.listener(cursor, time, result, comboResult)
+
 	//log.Println("Got:", fmt.Sprintf("%3d", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d",subSet.maxCombo), "Score:", fmt.Sprintf("%9d",subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits)
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, result HitResult)) {
+func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, result HitResult, comboResult ComboResult)) {
 	set.listener = listener
 }
 
 func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, Grade) {
 	subSet := set.cursors[cursor]
-	return subSet.accuracy, subSet.combo, subSet.grade
+	return subSet.accuracy, subSet.maxCombo, subSet.grade
 }

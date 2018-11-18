@@ -9,11 +9,13 @@ import (
 )
 
 type objstateS struct {
-	buttons  buttonState
-	finished bool
-	points   []tickpoint
-	scored   int64
+	buttons    buttonState
+	finished   bool
+	points     []tickpoint
+	scored     int64
+	missed     int64
 	slideStart int64
+	sliding    bool
 }
 
 type tickpoint struct {
@@ -43,7 +45,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 
 	for i, player := range slider.players {
 		slider.fadeStartRelative = math.Min(slider.fadeStartRelative, player.diff.Preempt)
-		time := int64(math.Max(float64(slider.hitSlider.GetBasicData().StartTime)+float64(slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime)/2, float64(slider.hitSlider.GetBasicData().EndTime-36))) //slider ends 36ms before the real end for scoring
+		time := int64(math.Max(float64(slider.hitSlider.GetBasicData().StartTime)+float64((slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime)/2), float64(slider.hitSlider.GetBasicData().EndTime-36))) //slider ends 36ms before the real end for scoring
 		slider.state[i] = new(objstateS)
 
 		for g, point := range rSlider.TickReverse {
@@ -59,7 +61,6 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 		}
 
 		sort.Slice(slider.state[i].points, func(g, h int) bool { return slider.state[i].points[g].time < slider.state[i].points[h].time })
-		//log.Println(slider.state[i].points)
 	}
 
 }
@@ -67,12 +68,14 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 func (slider *Slider) Update(time int64) bool {
 	numFinished1 := 0
 
+	sliderPosition := slider.hitSlider.GetPointAt(time)
+
 	for i, player := range slider.players {
 		state := slider.state[i]
 
 		yOffset := 0.0
 		if player.diff.Mods&difficulty.HardRock > 0 {
-			yOffset = slider.hitSlider.GetBasicData().StackOffset.Y*2
+			yOffset = slider.hitSlider.GetBasicData().StackOffset.Y * 2
 		}
 
 		if !state.finished {
@@ -86,9 +89,8 @@ func (slider *Slider) Update(time int64) bool {
 			if player.cursorLock == -1 || player.cursorLock == slider.hitSlider.GetBasicData().Number {
 				clicked := (!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)
 
-				//log.Println("Huh", time, int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime))), player.diff.Hit50, clicked, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos), player.diff.CircleRadius)
 				if clicked && player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(0, yOffset)) <= player.diff.CircleRadius {
-					hit := HitResults.Miss
+					hit := HitResults.SliderMiss
 					combo := ComboResults.Reset
 
 					relative := int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime)))
@@ -97,14 +99,14 @@ func (slider *Slider) Update(time int64) bool {
 						hit = HitResults.Slider30
 						state.scored++
 						combo = ComboResults.Increase
-						//log.Println("Huh", relative, player.diff.Hit50)
 					} else if relative > int64(player.diff.Preempt-player.diff.FadeIn) {
 						hit = HitResults.Ignore
+						combo = ComboResults.Hold
 					}
 
 					if hit != HitResults.Ignore {
-						if hit == HitResults.Miss {
-							hit = HitResults.Ignore
+						if hit == HitResults.SliderMiss {
+							state.missed++
 						}
 						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
@@ -118,8 +120,9 @@ func (slider *Slider) Update(time int64) bool {
 			}
 
 			if time > slider.hitSlider.GetBasicData().StartTime+player.diff.Hit50 {
-				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.Ignore, true, ComboResults.Reset)
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, ComboResults.Reset)
 				player.cursorLock = -1
+				state.missed++
 				state.finished = true
 				continue
 			}
@@ -134,14 +137,23 @@ func (slider *Slider) Update(time int64) bool {
 			continue
 		}
 
+		radiusNeeded := player.diff.CircleRadius
+
+		if state.sliding {
+			radiusNeeded *= 2.4
+		}
+
+		allowable := (player.cursor.LeftButton || player.cursor.RightButton) && player.cursor.Position.Dst(sliderPosition.SubS(0, yOffset)) <= radiusNeeded
+
+		if allowable && !state.sliding {
+			state.sliding = true
+			state.slideStart = time
+		}
+
 		numFinished := 0
-		//log.Println("hell?")
+
 		for j, point := range state.points {
-			/*if slider.hitSlider.GetBasicData().Number == 728 && j>0 {
-				log.Println(time, player.cursorLock, player.cursor.LeftButton, player.cursor.RightButton, state.buttons.Left, state.buttons.Right, player.cursor.Position,player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time)), point.point, slider.hitSlider.GetBasicData().StartPos, slider.hitSlider.GetPartLen(), slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime, float64(slider.hitSlider.GetBasicData().StartTime)+float64(slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime)/2, float64(slider.hitSlider.GetBasicData().EndTime-36), j, player.diff.CircleRadius, player.diff.CircleRadius*2.4, player.diff.Hit300, player.diff.Hit100, player.diff.Hit50)
-			}*/
-			//log.Println(time, slider.lastTime, point.time)
-			if point.time < slider.lastTime {
+			if point.time <= slider.lastTime {
 				continue
 			}
 			if numFinished > 0 {
@@ -149,22 +161,18 @@ func (slider *Slider) Update(time int64) bool {
 			}
 			numFinished++
 
-			//log.Println(point.scoreGiven)
-			if j > 0 && time > point.time {
-					//log.Println(point.scoreGiven)
-					//log.Println(time, slider.lastTime, point, slider.hitSlider.GetBasicData().EndTime)
-					if (player.cursor.LeftButton || player.cursor.RightButton) && player.cursor.Position.Dst(/*point.point*/slider.hitSlider.GetPointAt(time).SubS(0, yOffset)) <= player.diff.CircleRadius*2.4 {
-						//log.Println(time, point.time, slider.hitSlider.GetBasicData().Number, player.cursor.LeftButton, player.cursor.RightButton, state.buttons.Left, state.buttons.Right, player.cursor.Position.Dst(point.point), player.diff.CircleRadius*2.4)
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
-						slider.state[i].scored++
-					} else {
-						combo := ComboResults.Reset
-						if j == len(state.points)-1 {
-							combo = ComboResults.Hold
-						}
-						//log.Println(player.cursor.Position.Dst(point.point) <= player.diff.CircleRadius*2.4, state.buttons.Left || state.buttons.Right, player.cursor.LeftButton || player.cursor.RightButton)
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.Ignore, true, combo)
+			if j > 0 && time >= point.time {
+				if allowable && state.slideStart <= point.time {
+					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
+					state.scored++
+				} else {
+					combo := ComboResults.Reset
+					if j == len(state.points)-1 {
+						combo = ComboResults.Hold
 					}
+					state.missed++
+					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
+				}
 
 				if j == len(state.points)-1 && time >= point.time {
 					rate := float64(slider.state[i].scored) / float64(len(state.points))
@@ -183,15 +191,18 @@ func (slider *Slider) Update(time int64) bool {
 						if hit == HitResults.Miss {
 							combo = ComboResults.Reset
 						}
-						//log.Println("Sending miss?")
 						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
 
-						//player.cursorLock = -1
 						state.finished = true
 					}
 				}
 			}
 		}
+
+		if !allowable && state.sliding && state.scored+state.missed < int64(len(state.points)) {
+			state.sliding = false
+		}
+
 		if numFinished > 0 {
 			numFinished1++
 		}

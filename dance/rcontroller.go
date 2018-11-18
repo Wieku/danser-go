@@ -221,6 +221,10 @@ func (controller *ReplayController) GetRuleset() *osu.OsuRuleSet {
 	return controller.ruleset
 }
 
+func (controller *ReplayController) GetBeatMap() *beatmap.BeatMap {
+	return controller.bMap
+}
+
 func (controller *ReplayController) GetClick(player, key int) bool {
 	switch key {
 	case 0:
