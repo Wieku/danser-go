@@ -66,7 +66,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 }
 
 func (slider *Slider) Update(time int64) bool {
-	numFinished1 := 0
+	numFinishedTotal := 0
 
 	sliderPosition := slider.hitSlider.GetPointAt(time)
 
@@ -77,12 +77,12 @@ func (slider *Slider) Update(time int64) bool {
 		yOffset := 0.0
 		if player.diff.Mods&difficulty.HardRock > 0 {
 			data := slider.hitSlider.GetBasicData()
-			xOffset = data.StackOffset.X + float64(data.StackIndex) * player.diff.CircleRadius/(10)
-			yOffset = data.StackOffset.Y - float64(data.StackIndex) * player.diff.CircleRadius/(10)
+			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
+			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 		}
 
 		if !state.finished {
-			numFinished1++
+			numFinishedTotal++
 
 			if player.cursorLock == -1 {
 				state.buttons.Left = player.cursor.LeftButton
@@ -105,12 +105,11 @@ func (slider *Slider) Update(time int64) bool {
 					} else if relative > int64(player.diff.Preempt-player.diff.FadeIn) {
 						hit = HitResults.Ignore
 						combo = ComboResults.Hold
+					} else {
+						state.missed++
 					}
 
 					if hit != HitResults.Ignore {
-						if hit == HitResults.SliderMiss {
-							state.missed++
-						}
 						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
 						player.cursorLock = -1
@@ -153,16 +152,17 @@ func (slider *Slider) Update(time int64) bool {
 			state.slideStart = time
 		}
 
-		numFinished := 0
-
 		for j, point := range state.points {
-			if point.time <= slider.lastTime {
+			//We want to catch up with ticks overlapped by slider start hit window
+			if int64(j) < state.scored+state.missed {
 				continue
 			}
-			if numFinished > 0 {
+
+			numFinishedTotal++
+
+			if point.time > time {
 				break
 			}
-			numFinished++
 
 			if j > 0 && time >= point.time {
 				if allowable && state.slideStart <= point.time {
@@ -178,7 +178,7 @@ func (slider *Slider) Update(time int64) bool {
 				}
 
 				if j == len(state.points)-1 && time >= point.time {
-					rate := float64(slider.state[i].scored) / float64(len(state.points))
+					rate := float64(state.scored) / float64(len(state.points))
 					hit := HitResults.Miss
 
 					if rate == 1.0 {
@@ -206,16 +206,13 @@ func (slider *Slider) Update(time int64) bool {
 			state.sliding = false
 		}
 
-		if numFinished > 0 {
-			numFinished1++
-		}
 		state.buttons.Left = player.cursor.LeftButton
 		state.buttons.Right = player.cursor.RightButton
 	}
 
 	slider.lastTime = time
 
-	return numFinished1 == 0
+	return numFinishedTotal == 0
 }
 
 func (slider *Slider) GetFadeTime() int64 {
