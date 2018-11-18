@@ -73,9 +73,12 @@ func (slider *Slider) Update(time int64) bool {
 	for i, player := range slider.players {
 		state := slider.state[i]
 
+		xOffset := 0.0
 		yOffset := 0.0
 		if player.diff.Mods&difficulty.HardRock > 0 {
-			yOffset = slider.hitSlider.GetBasicData().StackOffset.Y * 2
+			data := slider.hitSlider.GetBasicData()
+			xOffset = data.StackOffset.X + float64(data.StackIndex) * player.diff.CircleRadius/(10)
+			yOffset = data.StackOffset.Y - float64(data.StackIndex) * player.diff.CircleRadius/(10)
 		}
 
 		if !state.finished {
@@ -89,7 +92,7 @@ func (slider *Slider) Update(time int64) bool {
 			if player.cursorLock == -1 || player.cursorLock == slider.hitSlider.GetBasicData().Number {
 				clicked := (!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)
 
-				if clicked && player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(0, yOffset)) <= player.diff.CircleRadius {
+				if clicked && player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius {
 					hit := HitResults.SliderMiss
 					combo := ComboResults.Reset
 
@@ -143,7 +146,7 @@ func (slider *Slider) Update(time int64) bool {
 			radiusNeeded *= 2.4
 		}
 
-		allowable := (player.cursor.LeftButton || player.cursor.RightButton) && player.cursor.Position.Dst(sliderPosition.SubS(0, yOffset)) <= radiusNeeded
+		allowable := (player.cursor.LeftButton || player.cursor.RightButton) && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= radiusNeeded
 
 		if allowable && !state.sliding {
 			state.sliding = true
