@@ -52,6 +52,16 @@ func (diff *Difficulty) SetMods(mods Modifier) {
 	diff.calculate()
 }
 
+func (diff *Difficulty) GetModifiedTime(time int64) int64 {
+	if diff.Mods&DoubleTime > 0 {
+		return int64(float64(time)/1.5)
+	} else if diff.Mods&HalfTime > 0{
+		return int64(float64(time)/0.75)
+	} else {
+		return time
+	}
+}
+
 func difficultyRate(diff, min, mid, max float64) float64 {
 	if diff > 5 {
 		return mid + (max-mid)*(diff-5)/5
