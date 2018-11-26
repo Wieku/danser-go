@@ -56,6 +56,9 @@ type Cursor struct {
 	removeCounter float64
 
 	LeftButton, RightButton bool
+	IsReplayFrame           bool  // TODO: temporary hacky solution for spinners
+	LastFrameTime           int64 //
+	CurrentFrameTime        int64 //
 	Position                bmath.Vector2d
 	LastPos                 bmath.Vector2d
 	VaoPos                  bmath.Vector2d

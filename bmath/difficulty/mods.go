@@ -2,9 +2,9 @@ package difficulty
 
 type Modifier int64
 
-const None = Modifier(0)
 const (
-	NoFail = Modifier(1 << iota)
+	None   = Modifier(iota)
+	NoFail = Modifier(1 << (iota - uint(1)))
 	Easy
 	TouchDevice
 	Hidden
@@ -68,7 +68,7 @@ func (modifier Modifier) GetScoreMultiplier() float64 {
 		multiplier *= 1.12
 	}
 
-	if (modifier&Relax | modifier&Relax2) > 0{
+	if (modifier&Relax | modifier&Relax2) > 0 {
 		multiplier = 0
 	}
 

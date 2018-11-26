@@ -10,6 +10,7 @@ type Difficulty struct {
 	Hit50               int64
 	Hit100              int64
 	Hit300              int64
+	SpinnerRatio        float64
 }
 
 func NewDifficulty(hpDrain, cs, od, ar float64) *Difficulty {
@@ -40,11 +41,12 @@ func (diff *Difficulty) calculate() {
 	}
 
 	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5)
-	diff.Preempt = difficultyRate(ar, 1800, 1200, 450)
-	diff.FadeIn = difficultyRate(ar, 1200, 800, 300)
-	diff.Hit50 = int64(150 + 50 * (5 - od) / 5)
-	diff.Hit100	= int64(100 + 40 * (5 - od) / 5)
-	diff.Hit300	 = int64(50 + 30 * (5 - od) / 5)
+	diff.Preempt = DifficultyRate(ar, 1800, 1200, 450)
+	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
+	diff.Hit50 = int64(150 + 50*(5-od)/5)
+	diff.Hit100 = int64(100 + 40*(5-od)/5)
+	diff.Hit300 = int64(50 + 30*(5-od)/5)
+	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
 }
 
 func (diff *Difficulty) SetMods(mods Modifier) {
@@ -52,17 +54,17 @@ func (diff *Difficulty) SetMods(mods Modifier) {
 	diff.calculate()
 }
 
-func (diff *Difficulty) GetModifiedTime(time int64) int64 {
+func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	if diff.Mods&DoubleTime > 0 {
-		return int64(float64(time)/1.5)
-	} else if diff.Mods&HalfTime > 0{
-		return int64(float64(time)/0.75)
+		return float64(time) / 1.5
+	} else if diff.Mods&HalfTime > 0 {
+		return float64(time) / 0.75
 	} else {
-		return time
+		return float64(time)
 	}
 }
 
-func difficultyRate(diff, min, mid, max float64) float64 {
+func DifficultyRate(diff, min, mid, max float64) float64 {
 	if diff > 5 {
 		return mid + (max-mid)*(diff-5)/5
 	}
