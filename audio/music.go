@@ -19,7 +19,7 @@ import (
 	"unsafe"
 	//"log"
 	"math"
-	"github.com/wieku/danser/settings"
+	"danser/settings"
 )
 
 const (

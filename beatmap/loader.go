@@ -6,7 +6,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
-	"github.com/wieku/danser/settings"
+	"danser/settings"
 )
 
 func LoadBeatmaps() []*BeatMap {

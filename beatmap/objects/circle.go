@@ -1,12 +1,12 @@
 package objects
 
 import (
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/audio"
-	"strconv"
+	"danser/audio"
+	"danser/bmath"
+	"danser/render"
+	"danser/settings"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/settings"
+	"strconv"
 )
 
 type Circle struct {

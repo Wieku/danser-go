@@ -1,25 +1,25 @@
 package main
 
 import (
-	"github.com/wieku/danser/audio"
-	"github.com/wieku/danser/beatmap"
+	"danser/audio"
+	"danser/beatmap"
+	"danser/bmath"
+	"danser/build"
+	"danser/dance"
+	"danser/database"
+	"danser/render"
+	"danser/render/font"
+	"danser/settings"
+	"danser/states"
+	"danser/utils"
 	"flag"
-	"log"
 	"github.com/faiface/mainthread"
-	"github.com/wieku/glhf"
-	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/wieku/danser/states"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"os"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/utils"
-	"github.com/wieku/danser/build"
-	"github.com/wieku/danser/dance"
-	"github.com/wieku/danser/database"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/render/font"
+	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/wieku/glhf"
 	"image"
+	"log"
+	"os"
 )
 
 var player *states.Player
@@ -33,15 +33,15 @@ func run() {
 	mainthread.Call(func() {
 
 		artist := flag.String("artist", "", "")
-		title := flag.String("title", "", "")
-		difficulty := flag.String("difficulty", "", "")
+		title := flag.String("title", "Ascension to Heaven", "")
+		difficulty := flag.String("difficulty", "Final Moment", "")
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
-		cursors := flag.Int("cursors", 2, "")
+		cursors := flag.Int("cursors", 1, "")
 		tag := flag.Int("tag", 1, "")
 		speed := flag.Float64("speed", 1.0, "")
 		pitch := flag.Float64("pitch", 1.0, "")
-		mover := flag.String("mover", "flower", "")
+		mover := flag.String("mover", "linear", "")
 		debug := flag.Bool("debug", false, "")
 		fps := flag.Bool("fps", false, "")
 
@@ -225,4 +225,8 @@ func run() {
 func main() {
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
+	//r := replay.ExtractReplay("replay-osu_807074_2644463955.osr")
+	//for k := 0; k < 10; k++ {
+	//	log.Println(*r.ReplayData[k])
+	//}
 }

@@ -1,18 +1,18 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser/render"
+	"danser/render"
 	"bufio"
 	"os"
 	"log"
 	"strings"
 	"strconv"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/utils"
+	"danser/bmath"
+	"danser/utils"
 	"path/filepath"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/render/texture"
+	"danser/settings"
+	"danser/beatmap"
+	"danser/render/texture"
 	"fmt"
 )
 

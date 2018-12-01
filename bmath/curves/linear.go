@@ -1,6 +1,6 @@
 package curves
 
-import math2 "github.com/wieku/danser/bmath"
+import math2 "danser/bmath"
 
 type Linear struct {
 	point1, point2 math2.Vector2d

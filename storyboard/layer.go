@@ -3,7 +3,7 @@ package storyboard
 import (
 	"sort"
 	"sync"
-	"github.com/wieku/danser/render"
+	"danser/render"
 )
 
 type StoryboardLayer struct {

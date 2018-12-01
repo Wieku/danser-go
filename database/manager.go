@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/wieku/danser/settings"
+	"danser/settings"
 
-	"github.com/wieku/danser/beatmap"
+	"danser/beatmap"
 	"crypto/md5"
 	"io"
 	"encoding/hex"

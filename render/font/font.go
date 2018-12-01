@@ -1,7 +1,7 @@
 package font
 
 import (
-	"github.com/wieku/danser/render"
+	"danser/render"
 	"io"
 	"github.com/golang/freetype/truetype"
 	"io/ioutil"
@@ -11,8 +11,8 @@ import (
 	"image"
 	"image/draw"
 	"log"
-	"github.com/wieku/danser/render/texture"
-	"github.com/wieku/danser/bmath"
+	"danser/render/texture"
+	"danser/bmath"
 )
 
 var fonts map[string]*Font

@@ -1,11 +1,11 @@
 package movers
 
 import (
+	"danser/beatmap/objects"
+	"danser/bmath"
+	"danser/bmath/curves"
+	"danser/settings"
 	"math"
-	"github.com/wieku/danser/bmath/curves"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/bmath"
 )
 
 type HalfCircleMover struct {

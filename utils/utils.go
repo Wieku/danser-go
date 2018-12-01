@@ -8,7 +8,7 @@ import (
 	"image"
 	"image/draw"
 	"log"
-	"github.com/wieku/danser/render/texture"
+	"danser/render/texture"
 )
 
 func LoadImage(path string) (*image.NRGBA, error) {

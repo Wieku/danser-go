@@ -1,0 +1,159 @@
+{
+	"Version": "v1",
+	"General": {
+		"OsuSongsDir": "F:\\osu!\\Song\\"
+	},
+	"Graphics": {
+		"Width": 1920,
+		"Height": 1080,
+		"WindowWidth": 1280,
+		"WindowHeight": 720,
+		"Fullscreen": false,
+		"VSync": false,
+		"FPSCap": 1000,
+		"MSAA": 16
+	},
+	"Audio": {
+		"GeneralVolume": 0.5,
+		"MusicVolume": 0.5,
+		"SampleVolume": 0.5,
+		"Offset": 0,
+		"IgnoreBeatmapSamples": false,
+		"IgnoreBeatmapSampleVolume": false
+	},
+	"Beat": {
+		"BeatScale": 1.2
+	},
+	"Cursor": {
+		"Colors": {
+			"EnableRainbow": false,
+			"RainbowSpeed": 8,
+			"BaseColor": {
+				"Hue": 0,
+				"Saturation": 1,
+				"Value": 1
+			},
+			"EnableCustomHueOffset": false,
+			"HueOffset": 0,
+			"FlashToTheBeat": false,
+			"FlashAmplitude": 0
+		},
+		"EnableCustomTagColorOffset": true,
+		"TagColorOffset": -36,
+		"EnableTrailGlow": true,
+		"EnableCustomTrailGlowOffset": true,
+		"TrailGlowOffset": -36,
+		"ScaleToCS": false,
+		"CursorSize": 16,
+		"ScaleToTheBeat": false,
+		"ShowCursorsOnBreaks": true,
+		"BounceOnEdges": false,
+		"TrailEndScale": 0.4,
+		"TrailDensity": 0.5,
+		"TrailMaxLength": 2000,
+		"TrailRemoveSpeed": 1,
+		"GlowEndScale": 0.4,
+		"InnerLengthMult": 0.9
+	},
+	"Objects": {
+		"MandalaTexturesTrigger": 5,
+		"MandalaTexturesAlpha": 0.3,
+		"ForceSliderBallTexture": true,
+		"DrawApproachCircles": true,
+		"Colors": {
+			"EnableRainbow": false,
+			"RainbowSpeed": 8,
+			"BaseColor": {
+				"Hue": 0,
+				"Saturation": 1,
+				"Value": 1
+			},
+			"EnableCustomHueOffset": false,
+			"HueOffset": 0,
+			"FlashToTheBeat": false,
+			"FlashAmplitude": 100
+		},
+		"ObjectsSize": -1,
+		"CSMult": 1.1,
+		"ScaleToTheBeat": false,
+		"SliderLOD": 30,
+		"SliderPathLOD": 50,
+		"SliderSnakeIn": true,
+		"SliderSnakeOut": true,
+		"SliderMerge": true,
+		"DrawFollowPoints": true,
+		"WhiteFollowPoints": true,
+		"FollowPointColorOffset": 0,
+		"EnableCustomSliderBorderColor": false,
+		"CustomSliderBorderColor": {
+			"EnableRainbow": false,
+			"RainbowSpeed": 8,
+			"BaseColor": {
+				"Hue": 0,
+				"Saturation": 0,
+				"Value": 1
+			},
+			"EnableCustomHueOffset": false,
+			"HueOffset": 0,
+			"FlashToTheBeat": false,
+			"FlashAmplitude": 100
+		},
+		"EnableCustomSliderBorderGradientOffset": true,
+		"SliderBorderGradientOffset": 18,
+		"StackEnabled": true
+	},
+	"Playfield": {
+		"LeadInTime": 5,
+		"LeadInHold": 2,
+		"FadeOutTime": 5,
+		"BackgroundInDim": 0,
+		"BackgroundDim": 0.7,
+		"BackgroundDimBreaks": 0.1,
+		"BlurEnable": true,
+		"BackgroundInBlur": 0,
+		"BackgroundBlur": 0.6,
+		"BackgroundBlurBreaks": 0.6,
+		"SpectrumInDim": 0,
+		"SpectrumDim": 1,
+		"SpectrumDimBreaks": 0,
+		"StoryboardEnabled": false,
+		"Scale": 1,
+		"FlashToTheBeat": true,
+		"UnblurToTheBeat": true,
+		"UnblurFill": 0.8,
+		"KiaiFactor": 1.1,
+		"BaseRotation": 0,
+		"RotationEnabled": false,
+		"RotationSpeed": 2,
+		"BloomEnabled": true,
+		"BloomToTheBeat": true,
+		"BloomBeatAddition": 0.3,
+		"Bloom": {
+			"Threshold": 0,
+			"Blur": 0.6,
+			"Power": 0.7
+		}
+	},
+	"Dance": {
+		"SliderDance": false,
+		"TAGSliderDance": false,
+		"Bezier": {
+			"Aggressiveness": 60,
+			"SliderAggressiveness": 3
+		},
+		"Flower": {
+			"UseNewStyle": true,
+			"AngleOffset": 90,
+			"DistanceMult": 0.666,
+			"StreamTrigger": 130,
+			"StreamAngleOffset": 90,
+			"LongJump": -1,
+			"LongJumpMult": 0.7,
+			"LongJumpOnEqualPos": false
+		},
+		"HalfCircle": {
+			"RadiusMultiplier": 1,
+			"StreamTrigger": 130
+		}
+	}
+}

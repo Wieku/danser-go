@@ -2,10 +2,10 @@ package movers
 
 import (
 	"math"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/bmath/curves"
+	"danser/beatmap/objects"
+	"danser/settings"
+	"danser/bmath"
+	"danser/bmath/curves"
 )
 
 type BezierMover struct {

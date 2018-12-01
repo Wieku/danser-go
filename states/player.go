@@ -1,28 +1,31 @@
 package states
 
 import (
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/render"
-	"time"
-	"log"
+	"danser/animation"
+	"danser/audio"
+	"danser/beatmap"
+	"danser/beatmap/objects"
+	"danser/bmath"
+	"danser/dance"
+	"danser/render"
+	"danser/render/effects"
+	"danser/render/font"
+	"danser/render/texture"
+	"danser/replay"
+	"danser/settings"
+	"danser/storyboard"
+	"danser/utils"
+	"fmt"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/glhf"
+	"log"
 	"math"
-	"github.com/wieku/danser/audio"
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser/utils"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/dance"
-	"github.com/wieku/danser/animation"
-	"github.com/wieku/danser/render/effects"
-	"github.com/wieku/danser/storyboard"
-	"github.com/wieku/danser/render/texture"
-	"github.com/wieku/danser/render/font"
-	"fmt"
 	"path/filepath"
+	"time"
 )
+
+var num int = 4
 
 type Player struct {
 	font           *font.Font
@@ -36,7 +39,7 @@ type Player struct {
 	progressMsF    float64
 	progressMs     int64
 	batch          *render.SpriteBatch
-	controller     dance.Controller
+	controller     [4]dance.Controller
 	//circles        []*objects.Circle
 	//sliders        []*objects.Slider
 	Background  *texture.TextureRegion
@@ -84,6 +87,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.font = font.GetFont("Roboto")
 
 	player.bMap = beatMap
+
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
@@ -96,13 +100,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	if settings.Playfield.StoryboardEnabled {
-		player.storyboard = storyboard.NewStoryboard(player.bMap)
-
-		if player.storyboard == nil {
-			log.Println("Storyboard not found!")
-		}
-	}
+	//if settings.Playfield.StoryboardEnabled {
+	//	player.storyboard = storyboard.NewStoryboard(player.bMap)
+	//
+	//	if player.storyboard == nil {
+	//		log.Println("Storyboard not found!")
+	//	}
+	//}
 
 	player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
 
@@ -153,9 +157,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.bMap.Reset()
 
-	player.controller = dance.NewGenericController()
-	player.controller.SetBeatMap(player.bMap)
-	player.controller.InitCursors()
+	for k := 0; k < num; k++ {
+		player.controller[k] = dance.NewReplayController()
+		player.controller[k].SetBeatMap(player.bMap)
+		player.controller[k].InitCursors()
+	}
 
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -249,35 +255,107 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fxBatch = render.NewFxBatch()
 	player.vao = player.fxBatch.CreateVao(2 * 3 * (256 + 128))
 	player.profilerU = utils.NewFPSCounter(60, false)
-	go func() {
-		var last = musicPlayer.GetPosition()
-		var lastT = utils.GetNanoTime()
-		for {
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 更新时间和坐标函数
+	//go func() {
+	//	var last = musicPlayer.GetPosition()
+	//	var lastT = utils.GetNanoTime()
+	//	for {
+	//
+	//		currtime := utils.GetNanoTime()
+	//
+	//		player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
+	//
+	//		lastT = currtime
+	//
+	//		player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+	//
+	//		player.bMap.Update(int64(player.progressMsF))
+	//		player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
+	//
+	//		if player.storyboard != nil {
+	//			player.storyboard.Update(int64(player.progressMsF))
+	//		}
+	//
+	//		last = player.progressMsF
+	//
+	//		if player.start && len(player.bMap.Queue) > 0 {
+	//			player.dimGlider.Update(player.progressMsF)
+	//			player.blurGlider.Update(player.progressMsF)
+	//			player.fxGlider.Update(player.progressMsF)
+	//			player.cursorGlider.Update(player.progressMsF)
+	//		}
+	//
+	//		time.Sleep(time.Millisecond)
+	//	}
+	//}()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			currtime := utils.GetNanoTime()
 
-			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 重写更新时间和坐标函数
 
-			lastT = currtime
+	replays := [4]string{"replay-osu_807074_2644463955.osr", "replay-osu_807074_2432526116.osr", "replay-osu_807074_2565268626.osr", "replay-osu_807074_2636245277.osr"}
+	for k := 0; k < num; k++ {
+		go func(k int) {
+			// 获取replay信息
+			r := replay.ExtractReplay(replays[k])
+			index := 3
 
-			player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+			// 开始时间
+			r1 := *r.ReplayData[1]
+			r2 := *r.ReplayData[2]
+			start := r1.Time + r2.Time
 
-			player.bMap.Update(int64(player.progressMsF))
-			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
+			var last= musicPlayer.GetPosition()
+			for {
+				// 获取第index个replay数据
+				rdata := *r.ReplayData[index]
+				offset := rdata.Time
+				posX := rdata.MosueX
+				posY := rdata.MouseY
 
-			if player.storyboard != nil {
-				player.storyboard.Update(int64(player.progressMsF))
+				// 如果offset=-12345，结束
+				if offset == -12345 {
+					continue
+				}
+
+				if index == 3 {
+					offset += start
+				}
+
+				progressMsF := musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+
+				//真实的offset
+				true_offset := progressMsF - last
+
+				// 如果真实offset大于等于读到的offset，更新
+				if true_offset >= float64(offset) {
+					player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(posY)))
+
+					// 修正last
+					last += float64(offset)
+
+					index++
+				}
+
+				time.Sleep(time.Millisecond)
 			}
+		}(k)
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			last = player.progressMsF
-
+	// 独立绘图
+	go func() {
+		for {
+			player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+			player.bMap.Update(int64(player.progressMsF))
 			if player.start && len(player.bMap.Queue) > 0 {
 				player.dimGlider.Update(player.progressMsF)
 				player.blurGlider.Update(player.progressMsF)
 				player.fxGlider.Update(player.progressMsF)
 				player.cursorGlider.Update(player.progressMsF)
 			}
-
 			time.Sleep(time.Millisecond)
 		}
 	}()
@@ -341,13 +419,13 @@ func (pl *Player) Draw(delta float64) {
 	timMs := float64(tim-pl.lastTime) / 1000000.0
 
 	pl.profiler.PutSample(1000.0 / timMs)
-	fps := pl.profiler.GetFPS()
+	//fps := pl.profiler.GetFPS()
 
 	if pl.start {
 
-		if fps > 58 && timMs > 17 {
-			log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
-		}
+		//if fps > 58 && timMs > 17 {
+		//	log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
+		//}
 
 		pl.progressMs = int64(pl.progressMsF)
 
@@ -435,15 +513,15 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.DrawUnit(*pl.Background)
 		}
 
-		if pl.storyboard != nil {
-			pl.batch.SetScale(1, 1)
-			if !settings.Playfield.BlurEnable {
-				pl.batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
-			}
-			pl.batch.SetCamera(cameras[0])
-			pl.storyboard.Draw(pl.progressMs, pl.batch)
-			pl.batch.Flush()
-		}
+		//if pl.storyboard != nil {
+		//	pl.batch.SetScale(1, 1)
+		//	if !settings.Playfield.BlurEnable {
+		//		pl.batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+		//	}
+		//	pl.batch.SetCamera(cameras[0])
+		//	pl.storyboard.Draw(pl.progressMs, pl.batch)
+		//	pl.batch.Flush()
+		//}
 
 		if settings.Playfield.BlurEnable {
 			pl.batch.End()
@@ -523,12 +601,12 @@ func (pl *Player) Draw(delta float64) {
 		}
 	}
 
-	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.GetColors(settings.DIVIDES, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
+	colors := settings.Objects.Colors.GetColors(num + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1 := settings.Cursor.GetColors(num + 1, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
-		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(num + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
 	}
 
 	scale1 := pl.Scl
@@ -568,7 +646,7 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[num], colors2[num - 1], pl.sliderRenderer)
 					}
 				}
 			}
@@ -603,11 +681,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[j], colors2[ind], pl.sliderRenderer)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[num], colors2[num - 1], pl.sliderRenderer)
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[num], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
@@ -624,7 +702,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[j], pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[num], pl.batch)
 				}
 			}
 		}
@@ -633,29 +711,35 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.End()
 	}
 
-	for _, g := range pl.controller.GetCursors() {
-		g.UpdateRenderer()
-	}
-
-	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-	gl.BlendEquation(gl.FUNC_ADD)
-	pl.batch.SetAdditive(true)
-	render.BeginCursorRender()
-	for j := 0; j < settings.DIVIDES; j++ {
-
-		pl.batch.SetCamera(cameras[j])
-
-		for i, g := range pl.controller.GetCursors() {
-			ind := j*len(pl.controller.GetCursors()) + i - 1
-			if ind < 0 {
-				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
-			}
-
-			g.DrawM(scale2, pl.batch, colors1[j*len(pl.controller.GetCursors())+i], colors1[ind])
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 多个光标渲染
+	for k := 0; k < num; k++ {
+		for _, g := range pl.controller[k].GetCursors() {
+			g.UpdateRenderer()
 		}
 
+		gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+		gl.BlendEquation(gl.FUNC_ADD)
+		pl.batch.SetAdditive(true)
+		render.BeginCursorRender()
+		for j := 0; j < settings.DIVIDES; j++ {
+
+			pl.batch.SetCamera(cameras[j])
+
+			for i, g := range pl.controller[k].GetCursors() {
+				ind := k*len(pl.controller[k].GetCursors()) + i - 1
+				if ind < 0 {
+					ind = settings.DIVIDES*len(pl.controller[k].GetCursors()) - 1
+				}
+
+				g.DrawM(scale2, pl.batch, colors1[k*len(pl.controller[k].GetCursors())+i], colors1[ind])
+			}
+
+		}
+		render.EndCursorRender()
 	}
-	render.EndCursorRender()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	pl.batch.SetAdditive(false)
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.EndAndRender()

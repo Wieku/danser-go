@@ -7,7 +7,7 @@ import "C"
 
 import (
 	"unsafe"
-	"github.com/wieku/danser/settings"
+	"danser/settings"
 	"os"
 )
 

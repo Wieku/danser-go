@@ -1,13 +1,13 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser/bmath"
+	"danser/bmath"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
+	"danser/render"
 	"unicode"
 	"strings"
 	"math"
-	"github.com/wieku/danser/render/texture"
+	"danser/render/texture"
 )
 
 const (

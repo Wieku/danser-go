@@ -1,8 +1,8 @@
 package movers
 
 import (
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath"
+	"danser/beatmap/objects"
+	"danser/bmath"
 )
 
 type MultiPointMover interface {

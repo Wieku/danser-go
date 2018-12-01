@@ -2,12 +2,12 @@ package beatmap
 
 import (
 	"sort"
-	"github.com/wieku/danser/beatmap/objects"
+	"danser/beatmap/objects"
 	"strconv"
 	"strings"
 	"os"
 	"bufio"
-	"github.com/wieku/danser/settings"
+	"danser/settings"
 )
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {

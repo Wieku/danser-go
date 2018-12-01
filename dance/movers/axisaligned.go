@@ -2,9 +2,9 @@ package movers
 
 import (
 	"math"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/bmath/sliders"
+	"danser/beatmap/objects"
+	"danser/bmath"
+	"danser/bmath/sliders"
 )
 
 type AxisMover struct {

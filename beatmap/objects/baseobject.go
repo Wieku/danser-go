@@ -1,11 +1,11 @@
 package objects
 
 import (
-	om "github.com/wieku/danser/bmath"
+	om "danser/bmath"
 	"strconv"
 	"strings"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
+	"danser/render"
 )
 
 type BaseObject interface {

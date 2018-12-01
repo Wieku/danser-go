@@ -2,7 +2,7 @@ package settings
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/utils"
+	"danser/utils"
 )
 
 const SETTINGSVERSION = "v1"

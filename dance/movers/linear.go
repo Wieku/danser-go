@@ -2,10 +2,13 @@ package movers
 
 import (
 	"math"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath/curves"
-	"github.com/wieku/danser/bmath"
+	"danser/beatmap/objects"
+	"danser/bmath/curves"
+	"danser/bmath"
 )
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// 直线移动，auto
 
 type LinearMover struct {
 	bz                 curves.Bezier

@@ -1,9 +1,9 @@
 package sliders
 
 import (
-	m2 "github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/bmath/curves"
-	"github.com/wieku/danser/bmath"
+	m2 "danser/bmath"
+	"danser/bmath/curves"
+	"danser/bmath"
 	"math"
 )
 

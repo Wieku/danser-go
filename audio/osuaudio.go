@@ -1,7 +1,7 @@
 package audio
 
 import (
-	"github.com/wieku/danser/settings"
+	"danser/settings"
 	"os"
 	"strconv"
 	"path/filepath"

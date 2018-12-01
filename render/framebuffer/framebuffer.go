@@ -5,7 +5,7 @@ import (
 
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser/render/texture"
+	"danser/render/texture"
 )
 
 // Framebuffer is a fixed resolution texture that you can draw on.

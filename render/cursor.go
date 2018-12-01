@@ -1,16 +1,16 @@
 package render
 
 import (
-	"github.com/wieku/danser/bmath"
-	"github.com/go-gl/mathgl/mgl32"
+	"danser/bmath"
+	"danser/render/framebuffer"
+	"danser/settings"
+	"danser/utils"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"math"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/glhf"
-	"sync"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/utils"
 	"io/ioutil"
-	"github.com/wieku/danser/render/framebuffer"
+	"math"
+	"sync"
 )
 
 var cursorShader *glhf.Shader = nil
@@ -77,6 +77,8 @@ func NewCursor() *Cursor {
 	return &Cursor{LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// 设置光标位置
 func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 	tmp := pt
 
@@ -107,6 +109,7 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 
 	cr.Position = tmp
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func (cr *Cursor) SetScreenPos(pt bmath.Vector2d) {
 	cr.SetPos(Camera.Unproject(pt))
@@ -210,9 +213,10 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-	cursorShader.Begin()
 
 	siz := settings.Cursor.CursorSize
+
+	cursorShader.Begin()
 
 	if settings.Cursor.EnableCustomTrailGlowOffset {
 		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
@@ -224,14 +228,18 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	cursor.subVao.BeginDraw()
 
 	innerLengthMult := float32(1.0)
-	if settings.Cursor.EnableTrailGlow {
-		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
-		cursorShader.SetUniformAttr(0, color2)
-		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
-		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
 
-		cursor.subVao.Draw()
-	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 自定义拖尾宽度？
+	//if settings.Cursor.EnableTrailGlow {
+	//	innerLengthMult = float32(settings.Cursor.InnerLengthMult)
+	//	cursorShader.SetUniformAttr(0, color2)
+	//	cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
+	//	cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
+	//
+	//	cursor.subVao.Draw()
+	//}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	cursorShader.SetUniformAttr(0, color)
 	cursorShader.SetUniformAttr(4, float32(siz*(12.0/18)*scale))
@@ -244,6 +252,8 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 
 	cursorShader.End()
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 光标圆圈高亮
 	batch.Begin()
 
 	batch.SetTranslation(cursor.RendPos)
@@ -255,6 +265,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *SpriteBatch, color mgl32.Vec4,
 	batch.DrawUnit(*CursorTop)
 
 	batch.End()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	cursorFbo.End()
 

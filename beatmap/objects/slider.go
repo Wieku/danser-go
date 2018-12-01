@@ -1,21 +1,21 @@
 package objects
 
 import (
-	"github.com/wieku/danser/bmath/sliders"
-	m2 "github.com/wieku/danser/bmath"
-	"strconv"
-	"strings"
-	"github.com/wieku/danser/audio"
+	"danser/audio"
+	"danser/bmath"
+	m2 "danser/bmath"
+	"danser/bmath/sliders"
+	"danser/render"
+	"danser/settings"
+	"danser/utils"
+	"github.com/faiface/mainthread"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/settings"
 	"github.com/wieku/glhf"
 	"math"
-	"github.com/wieku/danser/utils"
-	"sort"
-	"github.com/wieku/danser/bmath"
-	"github.com/faiface/mainthread"
 	"runtime"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 type tickPoint struct {
@@ -214,7 +214,7 @@ func (self *Slider) Update(time int64) bool {
 		ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
 
 		if self.lastT != times {
-			self.playSample(self.sampleSets[times-1], self.additionSets[times-1], self.samples[times-1])
+			//self.playSample(self.sampleSets[times-1], self.additionSets[times-1], self.samples[times-1])
 			self.lastT = times
 		}
 
@@ -234,7 +234,7 @@ func (self *Slider) Update(time int64) bool {
 		self.Pos = pos.Add(self.objData.StackOffset)
 
 		if !self.clicked {
-			self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
+			//self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
 			self.clicked = true
 		}
 
@@ -249,7 +249,7 @@ func (self *Slider) Update(time int64) bool {
 	}
 	self.Pos = pos.Add(self.objData.StackOffset)
 
-	self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
+	//self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
 	self.End = true
 	self.clicked = false
 
