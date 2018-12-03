@@ -74,7 +74,7 @@
 			"FlashAmplitude": 100
 		},
 		"ObjectsSize": -1,
-		"CSMult": 1.1,
+		"CSMult": 1,
 		"ScaleToTheBeat": false,
 		"SliderLOD": 30,
 		"SliderPathLOD": 50,
@@ -126,7 +126,7 @@
 		"RotationEnabled": false,
 		"RotationSpeed": 2,
 		"BloomEnabled": true,
-		"BloomToTheBeat": true,
+		"BloomToTheBeat": false,
 		"BloomBeatAddition": 0.3,
 		"Bloom": {
 			"Threshold": 0,

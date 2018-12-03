@@ -234,7 +234,7 @@ func (self *Slider) Update(time int64) bool {
 		self.Pos = pos.Add(self.objData.StackOffset)
 
 		if !self.clicked {
-			//self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
+			self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
 			self.clicked = true
 		}
 

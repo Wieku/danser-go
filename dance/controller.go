@@ -8,6 +8,7 @@ import (
 	"danser/dance/schedulers"
 	"danser/render"
 	"danser/settings"
+	"github.com/Mempler/rplpa"
 	"strings"
 )
 
@@ -22,6 +23,17 @@ type Controller interface {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	GetCursors() []*render.Cursor
+
+	SetPlayername(playername string)
+	GetPlayname() string
+
+	SetPresskey(presskey rplpa.KeyPressed)
+	GetPresskey() rplpa.KeyPressed
+
+	SetIsHD(isHD bool)
+	GetIsHD() bool
+	SetIsHR(isHR bool)
+	GetIsHR() bool
 }
 
 var Mover = movers.NewAngleOffsetMover
@@ -116,6 +128,10 @@ type ReplayController struct {
 	bMap       *beatmap.BeatMap
 	cursors    []*render.Cursor
 	schedulers []schedulers.Scheduler
+	playername  string
+	presskey    rplpa.KeyPressed
+	isHD        bool
+	isHR        bool
 }
 
 func NewReplayController() Controller {
@@ -172,4 +188,36 @@ func (controller *ReplayController) Update(time int64, delta float64, position b
 
 func (controller *ReplayController) GetCursors() []*render.Cursor {
 	return controller.cursors
+}
+
+func (controller *ReplayController) SetPlayername(playername string) {
+	controller.playername = playername
+}
+
+func (controller *ReplayController) GetPlayname() string {
+	return controller.playername
+}
+
+func (controller *ReplayController) SetPresskey(presskey rplpa.KeyPressed) {
+	controller.presskey = presskey
+}
+
+func (controller *ReplayController) GetPresskey() rplpa.KeyPressed {
+	return controller.presskey
+}
+
+func (controller *ReplayController) SetIsHD(isHD bool) {
+	controller.isHD = isHD
+}
+
+func (controller *ReplayController) GetIsHD() bool {
+	return controller.isHD
+}
+
+func (controller *ReplayController) SetIsHR(isHR bool) {
+	controller.isHR = isHR
+}
+
+func (controller *ReplayController) GetIsHR() bool {
+	return controller.isHR
 }

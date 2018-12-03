@@ -33,8 +33,8 @@ func run() {
 	mainthread.Call(func() {
 
 		artist := flag.String("artist", "", "")
-		title := flag.String("title", "Ascension to Heaven", "")
-		difficulty := flag.String("difficulty", "Final Moment", "")
+		title := flag.String("title", "deltaMAX", "")
+		difficulty := flag.String("difficulty", "Challenge", "")
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 1, "")
@@ -134,7 +134,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		file, _ := os.Open("assets/fonts/Roboto-Regular.ttf")
+		file, _ := os.Open("assets/fonts/Roboto-Bold.ttf")
 		font := font.LoadFont(file)
 		file.Close()
 
@@ -225,8 +225,12 @@ func run() {
 func main() {
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
-	//r := replay.ExtractReplay("replay-osu_807074_2644463955.osr")
-	//for k := 0; k < 10; k++ {
-	//	log.Println(*r.ReplayData[k])
+
+	//r := replay.ExtractReplay("replay-osu_807074_2432526116.osr")
+	//for k := 0; k < 40; k++ {
+	//	log.Println(*r.ReplayData[k].KeyPressed)
 	//}
+
+	//files, _ := replay.GetOsrFiles()
+	//log.Println(files)
 }

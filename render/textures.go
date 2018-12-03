@@ -17,6 +17,7 @@ var SliderBall *texture.TextureRegion
 var CursorTex *texture.TextureRegion
 var CursorTop *texture.TextureRegion
 var CursorTrail *texture.TextureSingle
+var PressKey *texture.TextureRegion
 
 func LoadTextures() {
 	Atlas = texture.NewTextureAtlas(8192, 4)
@@ -31,4 +32,5 @@ func LoadTextures() {
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
 	SliderGradient, _ = utils.LoadTexture("assets/textures/slidergradient.png")
 	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
+	PressKey, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/presskey.png")
 }

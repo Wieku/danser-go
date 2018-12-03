@@ -84,7 +84,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.SetupSlider()
 	player.batch = render.NewSpriteBatch()
 	player.sliderRenderer = render.NewSliderRenderer()
-	player.font = font.GetFont("Roboto")
+	player.font = font.GetFont("Roboto Bold")
 
 	player.bMap = beatMap
 
@@ -295,12 +295,23 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 重写更新时间和坐标函数
 
-	replays := [4]string{"replay-osu_807074_2644463955.osr", "replay-osu_807074_2432526116.osr", "replay-osu_807074_2565268626.osr", "replay-osu_807074_2636245277.osr"}
+	replays, err := replay.GetOsrFiles()
+	if err != nil {
+		panic(err)
+	}
 	for k := 0; k < num; k++ {
 		go func(k int) {
 			// 获取replay信息
 			r := replay.ExtractReplay(replays[k])
 			index := 3
+
+			// 设置player名
+			player.controller[k].SetPlayername(r.Username)
+
+			// 判断HD和HR
+			mods := r.Mods
+			player.controller[k].SetIsHD(mods&8 > 0)
+			player.controller[k].SetIsHR(mods&16 > 0)
 
 			// 开始时间
 			r1 := *r.ReplayData[1]
@@ -314,10 +325,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				offset := rdata.Time
 				posX := rdata.MosueX
 				posY := rdata.MouseY
+				PressKey := *rdata.KeyPressed
 
 				// 如果offset=-12345，结束
 				if offset == -12345 {
-					continue
+					time.Sleep(1000 * time.Second)
 				}
 
 				if index == 3 {
@@ -331,7 +343,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 				// 如果真实offset大于等于读到的offset，更新
 				if true_offset >= float64(offset) {
-					player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(posY)))
+					// 如果是HR，上下翻转
+					if player.controller[k].GetIsHR(){
+						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(384 - posY)))
+					}else {
+						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(posY)))
+					}
+
+					player.controller[k].SetPresskey(PressKey)
 
 					// 修正last
 					last += float64(offset)
@@ -710,6 +729,77 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetScale(1, 1)
 		pl.batch.End()
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 渲染player名
+	pl.batch.Begin()
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	for k := 0; k < num; k++ {
+		pl.batch.SetAdditive(true)
+		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		// 渲染HDHR
+		if pl.controller[k].GetIsHR() && pl.controller[k].GetIsHD() {
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname() + " +HDHR")
+		}else if pl.controller[k].GetIsHR(){
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname() + " +HR")
+		}else if pl.controller[k].GetIsHD(){
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname() + " +HD")
+		}else {
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
+		}
+
+
+	}
+	pl.batch.End()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 渲染按键
+	pl.batch.Begin()
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	for k := 0; k < num; k++ {
+		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		playerkey := pl.controller[k].GetPresskey()
+		if playerkey.Key1 {
+			pl.batch.SetTranslation(bmath.NewVec2d(22, float64(676 - 18 * k)))
+			pl.batch.SetScale(10, 10)
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.batch.DrawUnit(*render.PressKey)
+		} else {
+			pl.batch.SetTranslation(bmath.NewVec2d(22, float64(676 - 18 * k)))
+			pl.batch.SetScale(10, 10)
+			pl.batch.SetColor(1, 1, 1, 0)
+			pl.batch.DrawUnit(*render.PressKey)
+		}
+		if playerkey.Key2 {
+			pl.batch.SetTranslation(bmath.NewVec2d(42, float64(676 - 18 * k)))
+			pl.batch.SetScale(10, 10)
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.batch.DrawUnit(*render.PressKey)
+		} else {
+			pl.batch.SetTranslation(bmath.NewVec2d(42, float64(676 - 18 * k)))
+			pl.batch.SetScale(10, 10)
+			pl.batch.SetColor(1, 1, 1, 0)
+			pl.batch.DrawUnit(*render.PressKey)
+		}
+		if playerkey.LeftClick && !playerkey.Key1 {
+			pl.batch.SetTranslation(bmath.NewVec2d(62, float64(676 - 18 * k)))
+			pl.batch.SetScale(10, 10)
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			pl.batch.DrawUnit(*render.PressKey)
+		} else {
+			pl.batch.SetTranslation(bmath.NewVec2d(62, float64(676 - 18 * k)))
+			pl.batch.SetScale(10, 10)
+			pl.batch.SetColor(1, 1, 1, 0)
+			pl.batch.DrawUnit(*render.PressKey)
+		}
+	}
+	pl.batch.End()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 多个光标渲染
