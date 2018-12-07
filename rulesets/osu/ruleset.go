@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"fmt"
 	"log"
+	"github.com/wieku/danser/bmath"
 )
 
 type Grade int64
@@ -94,7 +95,7 @@ type OsuRuleSet struct {
 
 	queue     []hitobject
 	processed []hitobject
-	listener  func(cursor *render.Cursor, time int64, result HitResult, comboResult ComboResult)
+	listener  func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult)
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -191,7 +192,7 @@ func (set *OsuRuleSet) Update(time int64) {
 
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float64, result HitResult, raw bool, comboResult ComboResult) {
+func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int64, x, y float64, result HitResult, raw bool, comboResult ComboResult) {
 	if result == HitResults.Ignore {
 		return
 	}
@@ -261,14 +262,16 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, x, y float6
 		subSet.grade = D
 	}
 
-	set.listener(cursor, time, result, comboResult)
+	if set.listener != nil {
+		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult)
+	}
 
 	if len(set.cursors) == 1 {
 		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits)
 	}
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, result HitResult, comboResult ComboResult)) {
+func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult)) {
 	set.listener = listener
 }
 

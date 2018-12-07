@@ -131,9 +131,9 @@ func (spinner *Spinner) Update(time int64) bool {
 						state.scoringRotationCount++
 
 						if state.scoringRotationCount > state.requirement+3 && (state.scoringRotationCount-(state.requirement+3))%2 == 0 {
-							spinner.ruleSet.SendResult(time, player.cursor, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerBonus, true, ComboResults.Hold)
+							spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerBonus, true, ComboResults.Hold)
 						} else if state.scoringRotationCount > 1 && state.scoringRotationCount%2 == 0 {
-							spinner.ruleSet.SendResult(time, player.cursor, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerScore, true, ComboResults.Hold)
+							spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerScore, true, ComboResults.Hold)
 						} else if state.scoringRotationCount > 1 {
 							//hp inpact in the future
 						}
@@ -162,7 +162,7 @@ func (spinner *Spinner) Update(time int64) bool {
 					combo = ComboResults.Increase
 				}
 
-				spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)
+				spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)
 
 				player.cursorLock = -1
 				state.finished = true

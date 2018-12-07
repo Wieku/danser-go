@@ -110,7 +110,7 @@ func (slider *Slider) Update(time int64) bool {
 					}
 
 					if hit != HitResults.Ignore {
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
+						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
 						player.cursorLock = -1
 						state.finished = true
@@ -122,7 +122,7 @@ func (slider *Slider) Update(time int64) bool {
 			}
 
 			if time > slider.hitSlider.GetBasicData().StartTime+player.diff.Hit50 {
-				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, ComboResults.Reset)
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, ComboResults.Reset)
 				player.cursorLock = -1
 				state.missed++
 				state.finished = true
@@ -166,7 +166,7 @@ func (slider *Slider) Update(time int64) bool {
 
 			if j > 0 && time >= point.time {
 				if allowable && state.slideStart <= point.time {
-					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
+					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
 					state.scored++
 				} else {
 					combo := ComboResults.Reset
@@ -174,7 +174,7 @@ func (slider *Slider) Update(time int64) bool {
 						combo = ComboResults.Hold
 					}
 					state.missed++
-					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
+					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
 				}
 
 				if j == len(state.points)-1 && time >= point.time {
@@ -194,7 +194,7 @@ func (slider *Slider) Update(time int64) bool {
 						if hit == HitResults.Miss {
 							combo = ComboResults.Reset
 						}
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
+						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
 
 						state.finished = true
 					}

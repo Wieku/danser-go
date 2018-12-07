@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser/animation"
 	"github.com/wieku/danser/rulesets/osu"
 	"github.com/wieku/danser/animation/easing"
+	"math/rand"
 )
 
 type knockoutPlayer struct {
@@ -37,6 +38,8 @@ type KnockoutOverlay struct {
 	players    map[string]*knockoutPlayer
 	names      map[*render.Cursor]string
 	lastTime   int64
+	//deaths     map[int64]int64
+	generator *rand.Rand
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -45,12 +48,14 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	overlay.font = font.GetFont("Roboto Bold")
 	overlay.players = make(map[string]*knockoutPlayer)
 	overlay.names = make(map[*render.Cursor]string)
+	overlay.generator = rand.New(rand.NewSource(replayController.GetBeatMap().TimeAdded))
+	//overlay.deaths = make(map[int64]int64)
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
 		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), 0}
 	}
-	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, result osu.HitResult, comboResult osu.ComboResult) {
+	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult) {
 		if result == osu.HitResults.Hit300 {
 			return
 		}
@@ -73,10 +78,11 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			player.height.AddEvent(float64(time+2500), float64(time+3000), 0)
 
 			//Show "bubble" in the fail position
-			cursorPos := cursor.Position
-			player.deathX = float64(cursorPos.X)
+			deathShift := (overlay.generator.Float64() - 0.5) * 30
+			player.deathX = float64(position.X) + deathShift
 			player.deathSlide.SetEasing(easing.OutQuad)
-			player.deathSlide.AddEventS(float64(time), float64(time+2000), cursorPos.Y, cursorPos.Y+100)
+			baseY := position.Y + deathShift
+			player.deathSlide.AddEventS(float64(time), float64(time+2000), baseY, baseY+50)
 			player.deathFade.AddEventS(float64(time), float64(time+200), 0, 1)
 			player.deathFade.AddEventS(float64(time+1800), float64(time+2000), 1, 0)
 
@@ -90,7 +96,6 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 }
 
 func (overlay *KnockoutOverlay) Update(time int64) {
-
 	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
 		for _, r := range overlay.controller.GetReplays() {
 			player := overlay.players[r.Name]
@@ -107,19 +112,20 @@ func (overlay *KnockoutOverlay) Update(time int64) {
 }
 
 func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
-	scl := settings.Graphics.GetHeightF() * 0.9 / (51)
+	scl := /*settings.Graphics.GetHeightF() * 0.9*(900.0/1080.0)*/ 384.0*(1080.0/900.0*0.9) / (51)
 	batch.SetScale(1, -1)
+	rescale := /*384.0/512.0 * (1080.0/settings.Graphics.GetHeightF())*/ 1.0
 	for i, r := range overlay.controller.GetReplays() {
 		player := overlay.players[r.Name]
 		if player.deathFade.GetValue() >= 0.01 {
 
 			batch.SetColor(float64(colors[i].X()), float64(colors[i].Y()), float64(colors[i].Z()), alpha*player.deathFade.GetValue())
-			width := overlay.font.GetWidth(scl*384.0/512.0, r.Name)
-			overlay.font.Draw(batch, player.deathX-width/2, player.deathSlide.GetValue(), scl*384.0/512.0, r.Name)
+			width := overlay.font.GetWidth(scl*rescale, r.Name)
+			overlay.font.Draw(batch, player.deathX-width/2, player.deathSlide.GetValue(), scl*rescale, r.Name)
 
 			batch.SetColor(1, 1, 1, alpha*player.deathFade.GetValue())
-			batch.SetSubScale(scl/2*384.0/512.0, scl/2*384.0/512.0)
-			batch.SetTranslation(bmath.NewVec2d(player.deathX+width/2+scl*0.5*384.0/512.0, player.deathSlide.GetValue()-scl*0.5*384.0/512.0))
+			batch.SetSubScale(scl/2*rescale, scl/2*rescale)
+			batch.SetTranslation(bmath.NewVec2d(player.deathX+width/2+scl*0.5*rescale, player.deathSlide.GetValue()-scl*0.5*rescale))
 			batch.DrawUnit(*render.Hit0)
 		}
 

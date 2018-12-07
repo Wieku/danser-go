@@ -125,10 +125,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller.InitCursors()
 	}
 
-	//player.controller = dance.NewPlayerController()
+	/*player.controller = dance.NewPlayerController()
 
-	//player.controller.SetBeatMap(player.bMap)
-	/*player.controller.InitCursors()*/
+	player.controller.SetBeatMap(player.bMap)
+	player.controller.InitCursors()*/
 
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -231,7 +231,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-		//musicPlayer.SetPosition(65)
+		//musicPlayer.SetPosition(240)
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -252,7 +252,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.bMap.Update(int64(player.progressMsF))
 			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
-			player.overlay.Update(int64(player.progressMsF))
+			if player.overlay != nil {
+				player.overlay.Update(int64(player.progressMsF))
+			}
 
 			player.background.Update(int64(player.progressMsF))
 
@@ -333,7 +335,7 @@ func (pl *Player) Draw(delta float64) {
 
 	if pl.start {
 
-		if fps > 58 && timMs > 17 {
+		if fps > 58 && timMs > 18 {
 			log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
 		}
 
@@ -640,29 +642,30 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetScale(1, 1)
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
-		padDown := 4.0
-		shift := 16.0
+		padDown := 4.0*(settings.Graphics.GetHeightF()/1080.0)
+		shift := 16.0*(settings.Graphics.GetHeightF()/1080.0)
+		size := 16.0*(settings.Graphics.GetHeightF()/1080.0)
 
 		if settings.DEBUG {
-			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
-			pl.font.Draw(pl.batch, 0, padDown+shift*5, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
-			pl.font.Draw(pl.batch, 0, padDown+shift*4, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
-			pl.font.Draw(pl.batch, 0, padDown+shift*3, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, pl.mapFullName)
+			pl.font.Draw(pl.batch, 0, padDown+shift*5, size, fmt.Sprintf("%0.0f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift*4, size, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift*3, size, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
 
 			time := int(pl.musicPlayer.GetPosition())
 			totalTime := int(pl.musicPlayer.GetLength())
 			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
 
-			pl.font.Draw(pl.batch, 0, padDown+shift*2, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
+			pl.font.Draw(pl.batch, 0, padDown+shift*2, size, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
+			pl.font.Draw(pl.batch, 0, padDown+shift, size, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
 
 			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
-				pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", storyboard.GetProcessedSprites(), pl.storyboardLoad, storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
+				pl.font.Draw(pl.batch, 0, padDown, size, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", storyboard.GetProcessedSprites(), pl.storyboardLoad, storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
 			} else {
-				pl.font.Draw(pl.batch, 0, padDown, 16, "No storyboard")
+				pl.font.Draw(pl.batch, 0, padDown, size, "No storyboard")
 			}
 		} else {
-			pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown, size, fmt.Sprintf("%0.0f FPS", pl.fpsC))
 		}
 
 		pl.batch.End()

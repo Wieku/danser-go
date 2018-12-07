@@ -75,7 +75,7 @@ func (circle *Circle) Update(time int64) bool {
 							combo = ComboResults.Reset
 						}
 
-						circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
+						circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
 
 						player.cursorLock = -1
 						state.finished = true
@@ -87,7 +87,7 @@ func (circle *Circle) Update(time int64) bool {
 			}
 
 			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
-				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
+				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
 				player.cursorLock = -1
 				state.finished = true
 				continue

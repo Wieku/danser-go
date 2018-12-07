@@ -8,6 +8,8 @@ import (
 	"github.com/wieku/danser/render/texture"
 )
 
+var bindHistory []int32
+
 // Framebuffer is a fixed resolution texture that you can draw on.
 type Framebuffer struct {
 	obj  uint32
@@ -56,12 +58,16 @@ func (f *Framebuffer) ID() uint32 {
 // Begin binds the Framebuffer. All draw operations will target this Framebuffer until End is called.
 func (f *Framebuffer) Begin() {
 	gl.GetIntegerv(gl.FRAMEBUFFER_BINDING, &f.last)
+	bindHistory = append(bindHistory, f.last)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.obj)
 }
 
 // End unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
 func (f *Framebuffer) End() {
-	gl.BindFramebuffer(gl.FRAMEBUFFER, uint32(f.last))
+	//log.Println(uint32(f.last))
+	lst := bindHistory[len(bindHistory)-1]
+	bindHistory = bindHistory[:len(bindHistory)-1]
+	gl.BindFramebuffer(gl.FRAMEBUFFER, uint32(lst))
 }
 
 // Texture returns the Framebuffer's underlying Texture that the Framebuffer draws on.

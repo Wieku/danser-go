@@ -27,6 +27,7 @@ type SpriteBatch struct {
 	data        []float32
 	vao         *glhf.VertexSlice
 	currentSize int
+	drawing     bool
 }
 
 func NewSpriteBatch() *SpriteBatch {
@@ -64,10 +65,15 @@ func NewSpriteBatch() *SpriteBatch {
 		nil,
 		make([]float32, batchSize*6*11),
 		glhf.MakeVertexSlice(shader, batchSize*6, batchSize*6),
-		0}
+		0,
+		false}
 }
 
 func (batch *SpriteBatch) Begin() {
+	if batch.drawing {
+		panic("Batching is already began")
+	}
+	batch.drawing = true
 	batch.shader.Begin()
 	batch.shader.SetUniformAttr(0, batch.Projection)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
@@ -149,6 +155,10 @@ func fillArray(dst []float32, index int, values ... float32) {
 }
 
 func (batch *SpriteBatch) End() {
+	if !batch.drawing {
+		panic("Batching is already ended")
+	}
+	batch.drawing = false
 	batch.Flush()
 	batch.shader.End()
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -247,7 +257,12 @@ func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
 }*/
 
 func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
-	batch.Flush()
+	if batch.drawing {
+		batch.Flush()
+	}
+
 	batch.Projection = camera
-	batch.shader.SetUniformAttr(0, batch.Projection)
+	if batch.drawing {
+		batch.shader.SetUniformAttr(0, batch.Projection)
+	}
 }
