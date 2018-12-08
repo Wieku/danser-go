@@ -214,7 +214,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 	for i := range controller.controllers {
 		controller.cursors[i].Update(delta)
-		accuracy, combo, grade := controller.ruleset.GetResults(controller.cursors[i])
+		accuracy, combo, _, grade := controller.ruleset.GetResults(controller.cursors[i])
 		controller.replays[i].Accuracy = accuracy
 		controller.replays[i].Combo = combo
 		controller.replays[i].Grade = grade

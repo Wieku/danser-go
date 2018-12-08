@@ -44,6 +44,10 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 	controller.cursors[0].Update(delta)
 }
 
+func (controller *PlayerController) GetRuleset() *osu.OsuRuleSet {
+	return controller.ruleset
+}
+
 func (controller *PlayerController) GetCursors() []*render.Cursor {
 	return controller.cursors
 }

@@ -72,7 +72,7 @@ type Player struct {
 	mapFullName    string
 	Epi            *texture.TextureRegion
 	epiGlider      *animation.Glider
-	overlay 		*components.KnockoutOverlay
+	overlay 		components.Overlay
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -118,6 +118,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
+		player.overlay = components.NewScoreOverlay(player.controller.(*dance.PlayerController).GetRuleset(), player.controller.GetCursors()[0])
 	} else if settings.KNOCKOUT != "" {
 		controller := dance.NewReplayController()
 		player.controller = controller

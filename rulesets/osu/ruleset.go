@@ -275,7 +275,7 @@ func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int
 	set.listener = listener
 }
 
-func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, Grade) {
+func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, int64, Grade) {
 	subSet := set.cursors[cursor]
-	return subSet.accuracy, subSet.maxCombo, subSet.grade
+	return subSet.accuracy, subSet.maxCombo, subSet.score, subSet.grade
 }
