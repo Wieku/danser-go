@@ -265,6 +265,7 @@ var Dance *dance
 
 var DEBUG = false
 var FPS = false
+var PLAY = false
 var KNOCKOUT = ""
 var DIVIDES = 2
 var SPEED = 1.0

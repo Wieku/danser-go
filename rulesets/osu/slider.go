@@ -22,6 +22,7 @@ type tickpoint struct {
 	time       int64
 	point      bmath.Vector2d
 	scoreGiven HitResult
+	edgeNum 	int
 }
 
 type Slider struct {
@@ -48,16 +49,18 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 		time := int64(math.Max(float64(slider.hitSlider.GetBasicData().StartTime)+float64((slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime)/2), float64(slider.hitSlider.GetBasicData().EndTime-36))) //slider ends 36ms before the real end for scoring
 		slider.state[i] = new(objstateS)
 
+		edgeNumber := 0
 		for g, point := range rSlider.TickReverse {
 			if g < len(rSlider.TickReverse)-1 {
-				slider.state[i].points = append(slider.state[i].points, tickpoint{point.Time, point.Pos, HitResults.Slider30})
+				slider.state[i].points = append(slider.state[i].points, tickpoint{point.Time, point.Pos, HitResults.Slider30, edgeNumber})
+				edgeNumber++
 			}
 		}
 
-		slider.state[i].points = append(slider.state[i].points, tickpoint{time, slider.hitSlider.GetPointAt(time), HitResults.Slider30})
+		slider.state[i].points = append(slider.state[i].points, tickpoint{time, slider.hitSlider.GetPointAt(time), HitResults.Slider30, edgeNumber})
 
 		for _, point := range rSlider.TickPoints {
-			slider.state[i].points = append(slider.state[i].points, tickpoint{point.Time, point.Pos, HitResults.Slider10})
+			slider.state[i].points = append(slider.state[i].points, tickpoint{point.Time, point.Pos, HitResults.Slider10, -1})
 		}
 
 		sort.Slice(slider.state[i].points, func(g, h int) bool { return slider.state[i].points[g].time < slider.state[i].points[h].time })
@@ -80,6 +83,10 @@ func (slider *Slider) Update(time int64) bool {
 			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
 			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 		}
+
+		/*if !player.cursor.IsReplayFrame {
+			continue
+		}*/
 
 		if !state.finished {
 			numFinishedTotal++
@@ -110,6 +117,9 @@ func (slider *Slider) Update(time int64) bool {
 					}
 
 					if hit != HitResults.Ignore {
+						if hit != HitResults.SliderMiss && len(slider.players) == 1 {
+							slider.hitSlider.PlayEdgeSample(0)
+						}
 						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
 						player.cursorLock = -1
@@ -166,6 +176,13 @@ func (slider *Slider) Update(time int64) bool {
 
 			if j > 0 && time >= point.time {
 				if allowable && state.slideStart <= point.time {
+					if len(slider.players) == 1 {
+						if point.edgeNum == -1 {
+							slider.hitSlider.PlayTick()
+						} else {
+							slider.hitSlider.PlayEdgeSample(point.edgeNum)
+						}
+					}
 					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
 					state.scored++
 				} else {

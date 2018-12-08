@@ -334,7 +334,7 @@ func (self *Slider) GetCurve() []bmath.Vector2d {
 
 func (self *Slider) Update(time int64) bool {
 	if time < self.objData.EndTime {
-		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
+		/*times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
 
 		if self.lastT != times {
 			self.playSample(self.sampleSets[times-1], self.additionSets[times-1], self.samples[times-1])
@@ -346,25 +346,33 @@ func (self *Slider) Update(time int64) bool {
 				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 				self.lastTick = i
 			}
-		}
+		}*/
 
 		self.Pos = self.GetPointAt(time)
 
-		if !self.clicked {
+		/*if !self.clicked {
 			self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
 			self.clicked = true
-		}
+		}*/
 
 		return false
 	}
 
 	self.Pos = self.GetPointAt(self.objData.EndTime)
 
-	self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
+	//self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
 	self.End = true
-	self.clicked = false
+	//self.clicked = false
 
 	return true
+}
+
+func (self *Slider) PlayEdgeSample(index int) {
+	self.playSample(self.sampleSets[index], self.additionSets[index], self.samples[index])
+}
+
+func (self *Slider) PlayTick() {
+	audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 }
 
 func (self *Slider) playSample(sampleSet, additionSet, sample int) {

@@ -113,7 +113,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.Camera = player.camera
 
 	player.bMap.Reset()
-	if settings.KNOCKOUT != "" {
+	if settings.PLAY {
+		player.controller = dance.NewPlayerController()
+
+		player.controller.SetBeatMap(player.bMap)
+		player.controller.InitCursors()
+	} else if settings.KNOCKOUT != "" {
 		controller := dance.NewReplayController()
 		player.controller = controller
 		player.controller.SetBeatMap(player.bMap)
@@ -124,11 +129,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
 	}
-
-	/*player.controller = dance.NewPlayerController()
-
-	player.controller.SetBeatMap(player.bMap)
-	player.controller.InitCursors()*/
 
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -231,7 +231,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-		//musicPlayer.SetPosition(240)
+		//musicPlayer.SetPosition(295)
 	}()
 
 	player.fxBatch = render.NewFxBatch()

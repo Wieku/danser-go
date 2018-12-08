@@ -45,6 +45,7 @@ func run() {
 		mover := flag.String("mover", "flower", "")
 		debug := flag.Bool("debug", false, "")
 		fps := flag.Bool("fps", false, "")
+		play := flag.Bool("play", false, "")
 
 		flag.Parse()
 
@@ -56,6 +57,7 @@ func run() {
 		settings.DEBUG = *debug
 		settings.FPS = *fps
 		settings.KNOCKOUT = *knockout
+		settings.PLAY = *play
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
 		settings.SPEED = *speed

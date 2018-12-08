@@ -73,6 +73,10 @@ func (circle *Circle) Update(time int64) bool {
 						combo := ComboResults.Increase
 						if hit == HitResults.Miss {
 							combo = ComboResults.Reset
+						} else {
+							if len(circle.players) == 1 {
+								circle.hitCircle.PlaySound()
+							}
 						}
 
 						circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
@@ -99,6 +103,10 @@ func (circle *Circle) Update(time int64) bool {
 			}
 		}
 
+	}
+
+	if len(circle.players) > 1 && time == circle.hitCircle.GetBasicData().StartTime {
+		circle.hitCircle.PlaySound()
 	}
 
 	return unfinished == 0

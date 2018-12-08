@@ -53,7 +53,7 @@ func (self Circle) GetBasicData() *basicData {
 
 func (self *Circle) Update(time int64) bool {
 
-	index := self.objData.customIndex
+	/*index := self.objData.customIndex
 
 	if index == 0 {
 		index = self.Timings.Current.SampleIndex
@@ -65,10 +65,27 @@ func (self *Circle) Update(time int64) bool {
 		} else {
 			audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
 		}
-	}
+	}*/
 
 
 	return true
+}
+
+
+func (self *Circle) PlaySound() {
+	index := self.objData.customIndex
+
+	if index == 0 {
+		index = self.Timings.Current.SampleIndex
+	}
+
+	//if time < 2000+self.objData.EndTime {
+		if self.objData.sampleSet == 0 {
+			audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+		} else {
+			audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+		}
+	//}
 }
 
 func (self *Circle) SetTiming(timings *Timings) {
