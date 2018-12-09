@@ -236,4 +236,5 @@ func main() {
 	//log.Println(files)
 
 	hitjudge.ParseHits("F:/osu!/Song/368060 xi - Ascension to Heaven/xi - Ascension to Heaven (Kroytz) [Final Moment].osu", "replays/idke.osr")
+	//log.Println(bmath.Vector2d{261.3333,361.3333}.Dst(bmath.Vector2d{303,368}))
 }

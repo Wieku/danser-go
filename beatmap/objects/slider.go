@@ -19,7 +19,7 @@ import (
 )
 
 type tickPoint struct {
-	time int64
+	Time int64
 	Pos  m2.Vector2d
 }
 
@@ -44,6 +44,10 @@ type Slider struct {
 	vao           *glhf.VertexSlice
 	created       bool
 	discreteCurve []bmath.Vector2d
+
+	//加入tail真正的judge点
+	TailJudgePoint  bmath.Vector2d
+	TailJudgeOffset int64
 }
 
 func NewSlider(data []string) *Slider {
@@ -144,7 +148,7 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 	}
 
 	for _, p := range self.TickPoints {
-		circles = append(circles, DummyCircleInherit(p.Pos, p.time, true))
+		circles = append(circles, DummyCircleInherit(p.Pos, p.Time, true))
 	}
 
 	sort.Slice(circles, func(i, j int) bool { return circles[i].GetBasicData().StartTime < circles[j].GetBasicData().StartTime })
@@ -166,6 +170,8 @@ func (self *Slider) SetTiming(timings *Timings) {
 	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
 
 	self.calculateFollowPoints()
+	// 计算滑条尾判定点
+	self.calculateTailJudgePoint()
 	self.discreteCurve = self.GetCurve()
 }
 
@@ -193,7 +199,21 @@ func (self *Slider) calculateFollowPoints() {
 		}
 	}
 
-	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].time < self.TickPoints[j].time })
+	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].Time < self.TickPoints[j].Time })
+}
+
+// 计算真正的TailJudge参数
+func (self *Slider) calculateTailJudgePoint() {
+	// 计算滑条持续时间
+	slidersuration := self.GetBasicData().EndTime - self.GetBasicData().StartTime
+	if slidersuration < 72 {
+		self.TailJudgeOffset = 18
+	}else {
+		self.TailJudgeOffset = 36
+	}
+	// 计算实际判定点
+	time := self.objData.EndTime - self.TailJudgeOffset
+	self.TailJudgePoint = self.GetPointAt(time)
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
@@ -219,7 +239,7 @@ func (self *Slider) Update(time int64) bool {
 		}
 
 		for i, p := range self.TickPoints {
-			if p.time < time && self.lastTick < i {
+			if p.Time < time && self.lastTick < i {
 				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
 				self.lastTick = i
 			}
@@ -376,8 +396,8 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 
 				for _, p := range self.TickPoints {
 					al := 0.0
-					if p.time > time {
-						al = math.Min(1.0, math.Max((float64(time)-(float64(p.time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
+					if p.Time > time {
+						al = math.Min(1.0, math.Max((float64(time)-(float64(p.Time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
 					}
 					if al > 0.0 {
 						batch.SetTranslation(p.Pos)
