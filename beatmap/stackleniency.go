@@ -33,6 +33,11 @@ func calculateStackLeniency(b *BeatMap) {
 
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
 	b.ARms = preempt
+	// 加入OD
+	b.OD300 = 79 - ( b.OD * 6 ) + 0.5
+	b.OD100 = 139 - ( b.OD * 8 ) + 0.5
+	b.OD50 = 199 - ( b.OD * 10 ) + 0.5
+	b.ODMiss = 229 - ( b.OD * 11 ) + 0.5
 	hitObjects := b.HitObjects
 
 	if !settings.Objects.StackEnabled {

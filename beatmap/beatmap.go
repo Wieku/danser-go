@@ -10,8 +10,9 @@ import (
 
 type BeatMap struct {
 	Artist, ArtistUnicode, Name, NameUnicode, Difficulty, Creator, Source, Tags string
-	SliderMultiplier, StackLeniency, CircleSize, AR, ARms                       float64
-	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints                         string
+	// 加入OD
+	SliderMultiplier, StackLeniency, CircleSize, AR, ARms, OD, OD300, OD100, OD50, ODMiss           float64
+	Dir, File, Audio, Bg, MD5, PausesText, TimingPoints                         			string
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 

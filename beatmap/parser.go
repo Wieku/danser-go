@@ -1,13 +1,13 @@
 package beatmap
 
 import (
-	"sort"
+	"bufio"
 	"danser/beatmap/objects"
+	"danser/settings"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
-	"os"
-	"bufio"
-	"danser/settings"
 )
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
@@ -79,6 +79,10 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	}
 	if line[0] == "ApproachRate" {
 		beatMap.AR, _ = strconv.ParseFloat(line[1], 64)
+	}
+	// 加入OD
+	if line[0] == "OverallDifficulty" {
+		beatMap.OD, _ = strconv.ParseFloat(line[1], 64)
 	}
 	if line[0] == "CircleSize" {
 		beatMap.CircleSize, _ = strconv.ParseFloat(line[1], 64)
@@ -205,6 +209,52 @@ func ParseBeatMap(file *os.File) *BeatMap {
 func ParseObjects(beatMap *BeatMap) {
 
 	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	defer file.Close()
+
+	if err != nil {
+		panic(err)
+	}
+	scanner := bufio.NewScanner(file)
+
+	var currentSection string
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		section := getSection(line)
+		if section != "" {
+			currentSection = section
+			continue
+		}
+
+		switch currentSection {
+		case "HitObjects":
+			if arr := tokenize(line, ","); arr != nil {
+				parseHitObjects(arr, beatMap)
+			}
+			break
+		}
+	}
+
+	sort.Slice(beatMap.HitObjects, func(i, j int) bool { return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime })
+
+	num := 0
+
+	for _, o := range beatMap.HitObjects {
+		_, ok := o.(*objects.Pause)
+
+		if !ok {
+			o.GetBasicData().Number = int64(num)
+			num++
+		}
+
+	}
+
+	calculateStackLeniency(beatMap)
+}
+
+func ParseObjectsbyPath(beatMap *BeatMap, filename string) {
+
+	file, err := os.Open(filename)
 	defer file.Close()
 
 	if err != nil {

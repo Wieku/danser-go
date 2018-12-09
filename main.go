@@ -7,6 +7,7 @@ import (
 	"danser/build"
 	"danser/dance"
 	"danser/database"
+	"danser/hitjudge"
 	"danser/render"
 	"danser/render/font"
 	"danser/settings"
@@ -223,8 +224,8 @@ func run() {
 }
 
 func main() {
-	mainthread.CallQueueCap = 100000
-	mainthread.Run(run)
+	//mainthread.CallQueueCap = 100000
+	//mainthread.Run(run)
 
 	//r := replay.ExtractReplay("replay-osu_807074_2432526116.osr")
 	//for k := 0; k < 40; k++ {
@@ -233,4 +234,6 @@ func main() {
 
 	//files, _ := replay.GetOsrFiles()
 	//log.Println(files)
+
+	hitjudge.ParseHits("F:/osu!/Song/368060 xi - Ascension to Heaven/xi - Ascension to Heaven (Kroytz) [Final Moment].osu", "replays/idke.osr")
 }
