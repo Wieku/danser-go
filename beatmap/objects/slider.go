@@ -204,12 +204,13 @@ func (self *Slider) calculateFollowPoints() {
 
 // 计算真正的TailJudge参数
 func (self *Slider) calculateTailJudgePoint() {
+	legacytailoffset := int64(36)
 	// 计算滑条持续时间
 	slidersuration := self.GetBasicData().EndTime - self.GetBasicData().StartTime
-	if slidersuration < 72 {
-		self.TailJudgeOffset = 18
+	if slidersuration < legacytailoffset * 2  {
+		self.TailJudgeOffset = int64(slidersuration/2)
 	}else {
-		self.TailJudgeOffset = 36
+		self.TailJudgeOffset = legacytailoffset
 	}
 	// 计算实际判定点
 	time := self.objData.EndTime - self.TailJudgeOffset

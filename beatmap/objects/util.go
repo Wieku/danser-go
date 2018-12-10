@@ -15,6 +15,8 @@ func GetObject(data []string) BaseObject {
 		} else {
 			return sl
 		}
+	} else if (objType & SPINNNER) > 0 {
+		return NewSpinner(data)
 	}
 	return nil
 }
@@ -22,4 +24,5 @@ func GetObject(data []string) BaseObject {
 const (
 	CIRCLE int64 = 1
 	SLIDER int64 = 2
+	SPINNNER int64 = 8
 )

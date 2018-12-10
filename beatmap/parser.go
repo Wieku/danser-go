@@ -113,6 +113,9 @@ func parseHitObjects(line []string, beatMap *BeatMap) {
 		if o, ok := obj.(*objects.Circle); ok {
 			o.SetTiming(beatMap.Timings)
 		}
+		if o, ok := obj.(*objects.Spinner); ok {
+			o.SetTiming(beatMap.Timings)
+		}
 		beatMap.HitObjects = append(beatMap.HitObjects, obj)
 	}
 }

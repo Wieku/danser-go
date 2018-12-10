@@ -4,6 +4,7 @@ import (
 	"danser/beatmap/objects"
 	"danser/bmath"
 	"danser/settings"
+	"math"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
@@ -28,16 +29,21 @@ func difficultyRate(diff, min, mid, max float64) float64 {
 	return mid
 }
 
+// OD规范为带0.5的向下取整小数
+func adjustOD(OD float64) float64 {
+	return math.Floor( OD + 0.5 ) - 0.5
+}
+
 func calculateStackLeniency(b *BeatMap) {
 	stack_distance := 3.0
 
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
 	b.ARms = preempt
 	// 加入OD
-	b.OD300 = 79 - ( b.OD * 6 ) + 0.5
-	b.OD100 = 139 - ( b.OD * 8 ) + 0.5
-	b.OD50 = 199 - ( b.OD * 10 ) + 0.5
-	b.ODMiss = 229 - ( b.OD * 11 ) + 0.5
+	b.OD300 = adjustOD(79 - ( b.OD * 6 ) + 0.5)
+	b.OD100 = adjustOD(139 - ( b.OD * 8 ) + 0.5)
+	b.OD50 = adjustOD(199 - ( b.OD * 10 ) + 0.5)
+	b.ODMiss = adjustOD(229 - ( b.OD * 11 ) + 0.5)
 	hitObjects := b.HitObjects
 
 	if !settings.Objects.StackEnabled {
