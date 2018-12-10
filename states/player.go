@@ -593,6 +593,13 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.End()
 	}
 
+	if pl.overlay != nil && pl.overlay.NormalBeforeCursor() {
+		pl.batch.Begin()
+		pl.batch.SetScale(1, 1)
+		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
+		pl.batch.End()
+	}
+
 	for _, g := range pl.controller.GetCursors() {
 		g.UpdateRenderer()
 	}
@@ -625,7 +632,10 @@ func (pl *Player) Draw(delta float64) {
 	if pl.overlay != nil {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
-		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
+		if !pl.overlay.NormalBeforeCursor() {
+			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
+		}
+
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
 		pl.overlay.DrawHUD(pl.batch, colors1, pl.playersGlider.GetValue())

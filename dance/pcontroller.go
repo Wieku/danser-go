@@ -4,9 +4,9 @@ import (
 	"github.com/wieku/danser/beatmap"
 	"github.com/wieku/danser/render"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/rulesets/osu"
 	"github.com/wieku/danser/bmath/difficulty"
+	"github.com/wieku/danser/bmath"
 )
 
 type PlayerController struct {
@@ -14,6 +14,8 @@ type PlayerController struct {
 	cursors []*render.Cursor
 	window  *glfw.Window
 	ruleset *osu.OsuRuleSet
+	lastTime int64
+	counter int64
 }
 
 func NewPlayerController() Controller {
@@ -33,11 +35,25 @@ func (controller *PlayerController) InitCursors() {
 func (controller *PlayerController) Update(time int64, delta float64) {
 
 	if controller.window != nil {
+		glfw.PollEvents()
 		x, y := controller.window.GetCursorPos()
 		controller.cursors[0].SetScreenPos(bmath.NewVec2d(x, y))
 		controller.cursors[0].LeftButton = controller.window.GetKey(glfw.KeyZ) == glfw.Press
 		controller.cursors[0].RightButton = controller.window.GetKey(glfw.KeyX) == glfw.Press
 	}
+
+	controller.counter += time-controller.lastTime
+
+	if controller.counter >= 12 {
+		controller.cursors[0].LastFrameTime = time-12
+		controller.cursors[0].CurrentFrameTime = time
+		controller.cursors[0].IsReplayFrame = true
+		controller.counter-=12
+	} else {
+		controller.cursors[0].IsReplayFrame = false
+	}
+
+	controller.lastTime = time
 
 	controller.ruleset.Update(time)
 

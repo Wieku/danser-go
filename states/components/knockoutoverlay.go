@@ -209,3 +209,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 func (overlay *KnockoutOverlay) IsBroken(cursor *render.Cursor) bool {
 	return overlay.players[overlay.names[cursor]].hasBroken
 }
+
+func (overlay *KnockoutOverlay) NormalBeforeCursor() bool {
+	return true
+}

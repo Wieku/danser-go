@@ -168,15 +168,13 @@ func (slider *Slider) Update(time int64) bool {
 				continue
 			}
 
-			numFinishedTotal++
-
 			if point.time > time {
 				break
 			}
 
 			if j > 0 && time >= point.time {
 				if allowable && state.slideStart <= point.time {
-					if len(slider.players) == 1 {
+					if len(slider.players) == 1 && j < len(state.points)-1 {
 						if point.edgeNum == -1 {
 							slider.hitSlider.PlayTick()
 						} else {
@@ -194,29 +192,37 @@ func (slider *Slider) Update(time int64) bool {
 					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
 				}
 
-				if j == len(state.points)-1 && time >= point.time {
-					rate := float64(state.scored) / float64(len(state.points))
-					hit := HitResults.Miss
-
-					if rate == 1.0 {
-						hit = HitResults.Hit300
-					} else if rate >= 0.5 {
-						hit = HitResults.Hit100
-					} else if rate > 0 {
-						hit = HitResults.Hit50
-					}
-
-					if hit != HitResults.Ignore {
-						combo := ComboResults.Hold
-						if hit == HitResults.Miss {
-							combo = ComboResults.Reset
-						}
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
-
-						state.finished = true
-					}
-				}
 			}
+
+		}
+
+		if time >= slider.hitSlider.GetBasicData().EndTime {
+			rate := float64(state.scored) / float64(len(state.points))
+			hit := HitResults.Miss
+
+			if rate > 0 {
+				slider.hitSlider.PlayEdgeSample(len(slider.hitSlider.TickReverse)-1)
+			}
+
+			if rate == 1.0 {
+				hit = HitResults.Hit300
+			} else if rate >= 0.5 {
+				hit = HitResults.Hit100
+			} else if rate > 0 {
+				hit = HitResults.Hit50
+			}
+
+			if hit != HitResults.Ignore {
+				combo := ComboResults.Hold
+				if hit == HitResults.Miss {
+					combo = ComboResults.Reset
+				}
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
+
+				state.finished = true
+			}
+		} else {
+			numFinishedTotal++
 		}
 
 		if !allowable && state.sliding && state.scored+state.missed < int64(len(state.points)) {
