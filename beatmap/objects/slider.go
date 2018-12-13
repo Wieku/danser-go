@@ -1,23 +1,23 @@
 package objects
 
 import (
-	"github.com/wieku/danser/bmath/sliders"
-	"github.com/wieku/danser/bmath"
-	"strconv"
-	"strings"
-	"github.com/wieku/danser/audio"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/glhf"
-	"math"
-	"sort"
 	"github.com/faiface/mainthread"
-	"runtime"
-	"github.com/wieku/danser/render/batches"
-	"github.com/wieku/danser/utils"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/animation"
 	"github.com/wieku/danser/animation/easing"
+	"github.com/wieku/danser/audio"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/bmath/sliders"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/utils"
+	"github.com/wieku/glhf"
+	"math"
+	"runtime"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 const followBaseScale = 2.14
@@ -312,8 +312,8 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 		delay := fade
 		if len(self.ScorePoints) > 2 {
 			delay = math.Min(fade, float64(p.Time-self.ScorePoints[j-1].Time))
-			ratio := delay/fade
-			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1 - ratio * 0.1)*followBaseScale)
+			ratio := delay / fade
+			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1-ratio*0.1)*followBaseScale)
 		}
 
 	}
@@ -368,7 +368,7 @@ func (self *Slider) Update(time int64) bool {
 }
 
 func (self *Slider) PlayEdgeSample(index int) {
-	self.playSample(self.sampleSets[index], self.additionSets[index], self.samples[index])
+	self.playSampleT(self.sampleSets[index], self.additionSets[index], self.samples[index], self.Timings.GetPoint(self.objData.StartTime+int64(float64(index)*self.partLen)))
 }
 
 func (self *Slider) PlayTick() {
@@ -376,10 +376,14 @@ func (self *Slider) PlayTick() {
 }
 
 func (self *Slider) playSample(sampleSet, additionSet, sample int) {
+	self.playSampleT(sampleSet, additionSet, sampleSet, self.Timings.Current)
+}
+
+func (self *Slider) playSampleT(sampleSet, additionSet, sample int, point TimingPoint) {
 	if sampleSet == 0 {
 		sampleSet = self.objData.sampleSet
 		if sampleSet == 0 {
-			sampleSet = self.Timings.Current.SampleSet
+			sampleSet = point.SampleSet
 		}
 	}
 
@@ -387,7 +391,7 @@ func (self *Slider) playSample(sampleSet, additionSet, sample int) {
 		additionSet = self.objData.additionSet
 	}
 
-	audio.PlaySample(sampleSet, additionSet, sample, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+	audio.PlaySample(sampleSet, additionSet, sample, point.SampleIndex, point.SampleVolume)
 }
 
 func (self *Slider) GetPosition() bmath.Vector2d {

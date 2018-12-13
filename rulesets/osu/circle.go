@@ -19,7 +19,7 @@ type Circle struct {
 	fadeStartRelative float64
 }
 
-func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
+func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer, perfectAnimation bool) {
 	circle.ruleSet = ruleSet
 	circle.hitCircle = object.(*objects.Circle)
 	circle.players = players

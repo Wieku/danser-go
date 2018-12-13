@@ -32,7 +32,7 @@ type Spinner struct {
 
 var spinners = 0
 
-func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
+func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer, perfectAnimation bool) {
 	spinner.ruleSet = ruleSet
 	spinner.hitSpinner = object.(*objects.Spinner)
 	spinner.players = players
