@@ -7,7 +7,6 @@ import (
 	"danser/build"
 	"danser/dance"
 	"danser/database"
-	"danser/hitjudge"
 	"danser/render"
 	"danser/render/font"
 	"danser/settings"
@@ -34,8 +33,8 @@ func run() {
 	mainthread.Call(func() {
 
 		artist := flag.String("artist", "", "")
-		title := flag.String("title", "deltaMAX", "")
-		difficulty := flag.String("difficulty", "Challenge", "")
+		title := flag.String("title", "Snow Drive(01.23)", "")
+		difficulty := flag.String("difficulty", "Arigatou", "")
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 1, "")
@@ -224,8 +223,8 @@ func run() {
 }
 
 func main() {
-	//mainthread.CallQueueCap = 100000
-	//mainthread.Run(run)
+	mainthread.CallQueueCap = 100000
+	mainthread.Run(run)
 
 	//r := replay.ExtractReplay("replay-osu_807074_2432526116.osr")
 	//for k := 0; k < 40; k++ {
@@ -235,6 +234,6 @@ func main() {
 	//files, _ := replay.GetOsrFiles()
 	//log.Println(files)
 
-	hitjudge.ParseHits("F:/osu!/Song/368060 xi - Ascension to Heaven/xi - Ascension to Heaven (Kroytz) [Final Moment].osu", "replays/rafis.osr")
+	//hitjudge.ParseHits("G:/osu!/Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu", "replays/01-AxewB.osr")
 	//log.Println(bmath.Vector2d{261.3333,361.3333}.Dst(bmath.Vector2d{303,368}))
 }

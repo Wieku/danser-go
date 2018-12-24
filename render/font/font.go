@@ -163,3 +163,29 @@ func (font *Font) Draw(renderer *render.SpriteBatch, x, y float64, size float64,
 
 	}
 }
+
+func (font *Font) DrawAndGetLastPosition(renderer *render.SpriteBatch, x, y float64, size float64, text string) float64 {
+	xpad := x
+
+	scale := size / font.initialSize
+
+	for i, c := range text {
+		char := font.glyphs[c-font.min]
+		if char == nil {
+			continue
+		}
+
+		kerning := 0.0
+
+		if i > 0 {
+			kerning = float64(font.face.Kern(rune(text[i-1]), c)) / 64
+		}
+
+		renderer.SetScale(scale, scale)
+		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale, y+(float64(char.region.Height)/2-char.bearingY)*scale))
+		renderer.DrawTexture(char.region)
+		xpad += scale * (char.advance - kerning)
+
+	}
+	return xpad
+}

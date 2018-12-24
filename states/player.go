@@ -7,6 +7,7 @@ import (
 	"danser/beatmap/objects"
 	"danser/bmath"
 	"danser/dance"
+	"danser/hitjudge"
 	"danser/render"
 	"danser/render/effects"
 	"danser/render/font"
@@ -293,12 +294,26 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 重写更新时间和坐标函数
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 读取replay
 	replays, err := replay.GetOsrFiles()
 	if err != nil {
 		panic(err)
 	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 解析每个replay的判定
+	for k := 0; k < num; k++ {
+		log.Println("解析第", k+1, "个replay")
+		player.controller[k].SetHitResult(hitjudge.ParseHits("G:/osu!/Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu", replays[k]))
+		log.Println("解析第", k+1, "个replay完成")
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 重写更新时间和坐标函数
 	for k := 0; k < num; k++ {
 		go func(k int) {
 			// 获取replay信息
@@ -731,28 +746,28 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 文字的公用X轴
+	lastPos := 0.0
 	// 渲染player名
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < num; k++ {
 		pl.batch.SetAdditive(true)
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		// 渲染player名
+		pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+		lastPos = pl.font.DrawAndGetLastPosition(pl.batch, 118, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
 		// 渲染HDHR
 		if pl.controller[k].GetIsHR() && pl.controller[k].GetIsHD() {
-			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname() + " +HDHR")
+			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
+			pl.font.Draw(pl.batch, lastPos + 10, float64(670 - 18 * k), 14, "+HDHR")
 		}else if pl.controller[k].GetIsHR(){
-			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname() + " +HR")
+			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
+			pl.font.Draw(pl.batch, lastPos + 10, float64(670 - 18 * k), 14, "+HR")
 		}else if pl.controller[k].GetIsHD(){
-			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname() + " +HD")
-		}else {
-			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			pl.font.Draw(pl.batch, 78, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
+			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
+			pl.font.Draw(pl.batch, lastPos + 10, float64(670 - 18 * k), 14, "+HD")
 		}
-
-
 	}
 	pl.batch.End()
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -796,6 +811,40 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.SetScale(10, 10)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
+		}
+	}
+	pl.batch.End()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 渲染300,100,50，miss
+	pl.batch.Begin()
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	for k := 0; k < num; k++ {
+		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出他
+		if pl.progressMs > pl.controller[k].GetHitResult()[0].JugdeTime{
+			judge := ""
+			switch pl.controller[k].GetHitResult()[0].Result {
+			case hitjudge.Hit300:
+				//judge = "300"
+				judge = ""
+				break
+			case hitjudge.Hit100:
+				judge = "100"
+				break
+			case hitjudge.Hit50:
+				judge = "50"
+				break
+			case hitjudge.HitMiss:
+				judge = "Miss"
+				break
+			}
+			pl.batch.SetColor(1, 1, 1, 1)
+			pl.font.Draw(pl.batch, 78, float64(670-18*k), 14, judge)
+			// 渲染时间结束，弹出
+			if pl.progressMs > pl.controller[k].GetHitResult()[0].JugdeTime + 180 {
+				pl.controller[k].SetHitResult(pl.controller[k].GetHitResult()[1:])
+			}
 		}
 	}
 	pl.batch.End()

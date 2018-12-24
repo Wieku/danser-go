@@ -5,8 +5,6 @@ import (
 	"danser/beatmap/objects"
 	"danser/bmath"
 	"danser/replay"
-	"danser/settings"
-	"flag"
 	"github.com/Mempler/rplpa"
 	"log"
 	"os"
@@ -35,10 +33,7 @@ func ParseReplay(name string) *rplpa.Replay {
 	return replay.ExtractReplay(name)
 }
 
-func ParseHits(mapname string, replayname string){
-	settingsVersion := flag.Int("settings", 0, "")
-	settings.LoadSettings(*settingsVersion)
-
+func ParseHits(mapname string, replayname string) []ObjectResult {
 	// 加载map
 	b := ParseMap(mapname)
 	convert_CS := 32 * (1 - 0.7 * (b.CircleSize - 5) / 5)
@@ -51,11 +46,14 @@ func ParseHits(mapname string, replayname string){
 	count50 := 0
 	countMiss := 0
 
+	// 结果数组
+	result := []ObjectResult{}
+
 	// 依次处理HitObject
 	keyindex := 3
 	time := r[1].Time + r[2].Time
 	for k := 0; k < len(b.HitObjects); k++ {
-	//for k := 0; k < 2104; k++ {
+	//for k := 0; k < 1164; k++ {
 		log.Println("Object", k+1)
 		obj :=  b.HitObjects[k]
 		if obj != nil {
@@ -72,7 +70,13 @@ func ParseHits(mapname string, replayname string){
 				CS_scale := 2.4
 				// 寻找最近的Key
 				//log.Println("Slider head find", r[keyindex].Time, time, o.GetBasicData().StartTime, o.GetBasicData().StartPos)
-				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, b.ODMiss, b.OD50, convert_CS)
+				ticktime := 0.0
+				if len(o.TickPoints) != 0 {
+					ticktime = float64(o.TickPoints[0].Time)
+				}else{
+					ticktime = float64(o.GetBasicData().EndTime - o.TailJudgeOffset)
+				}
+				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, b.ODMiss, b.OD50, convert_CS, true, ticktime)
 				if isfind {
 					// 如果找到，判断hit结果，设置下一个index+1
 					keyhitresult := judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, b.ODMiss, b.OD300, b.OD100, b.OD50)
@@ -169,14 +173,17 @@ func ParseHits(mapname string, replayname string){
 				}else {
 					log.Println("Slider no breaks")
 				}
+				result = append(result, ObjectResult{o.GetBasicData().EndTime - o.TailJudgeOffset, sliderhitresult, isBreak})
 			}
 			// note
 			if o, ok := obj.(*objects.Circle); ok {
 				// 寻找最近的Key
-				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, b.ODMiss, b.OD50, convert_CS)
+				keyhitresult := HitMiss
+				isBreak := true
+				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, b.ODMiss, b.OD50, convert_CS, false, 0)
 				if isfind {
 					// 如果找到，判断hit结果，设置下一个index+1
-					keyhitresult := judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, b.ODMiss, b.OD300, b.OD100, b.OD50)
+					keyhitresult = judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, b.ODMiss, b.OD300, b.OD100, b.OD50)
 					switch keyhitresult {
 					case Hit300:
 						log.Println("Circle count as 300")
@@ -207,11 +214,16 @@ func ParseHits(mapname string, replayname string){
 					keyindex = nearestindex
 					time = lasttime
 				}
+				if keyhitresult != HitMiss {
+					isBreak = false
+				}
+				result = append(result, ObjectResult{o.GetBasicData().StartTime, keyhitresult, isBreak})
 			}
 			// 转盘
 			if o, ok := obj.(*objects.Spinner); ok {
 				log.Println("Spinner! skip!", o.GetBasicData())
 				count300 += 1
+				result = append(result, ObjectResult{o.GetBasicData().StartTime, Hit300, false})
 			}
 		}
 	}
@@ -220,6 +232,8 @@ func ParseHits(mapname string, replayname string){
 	log.Println("Count 100:", count100)
 	log.Println("Count 50:", count50)
 	log.Println("Count Miss:", countMiss)
+
+	return result
 }
 
 // 定位Key放下的位置
@@ -281,12 +295,12 @@ func isPressChanged(p1 rplpa.KeyPressed, p2 rplpa.KeyPressed) bool {
 }
 
 // 寻找最近的击中的Key
-func findNearestKey(start int, starttime int64, r []*rplpa.ReplayData, requirehittime int64, requirepos bmath.Vector2d, ODMiss float64, OD50 float64, CS float64) (bool, int, int64) {
+func findNearestKey(start int, starttime int64, r []*rplpa.ReplayData, requirehittime int64, requirepos bmath.Vector2d, ODMiss float64, OD50 float64, CS float64, isNextTick bool, ticktime float64) (bool, int, int64) {
 	index := start
 	time := starttime
 	for {
 		hit := r[index]
-		//log.Println("Find move", hit.Time + time, requirehittime, isInCircle(hit, requirepos, CS), isPressed(hit), bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos, bmath.Vector2d.Dst(bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos), CS)
+		//log.Println("Find move", hit.Time + time, requirehittime, isInCircle(hit, requirepos, CS), isPressed(hit), bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos, bmath.Vector2d.Dst(bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos), ODMiss, OD50, CS)
 		//if hit.Time + time > 8300 {
 		//	os.Exit(2)
 		//}
@@ -316,18 +330,26 @@ func findNearestKey(start int, starttime int64, r []*rplpa.ReplayData, requirehi
 					// 如果在最后时间之后按下，没效果，等于没找到，返回这个Key的时间点
 					// 最后时间为最后能按出50的时间
 					//log.Println("Hit too late", realhittime, requirehittime)
+					// （tick、滑条尾）返回上一个生效点
+					if isNextTick {
+						index, time = findFirstAfterLastHit(ticktime, r)
+						time -= r[index].Time
+						//log.Println("Return to last tick point", r[index].Time, time)
+					}
 					return false, index, time
 				}else {
 					// 如果最后时间前按下，没效果，此键位失去对下一个非tick的object（note、滑条头）的效果，寻找下一个按键放下的地方
 					//log.Println("Tap out is no use!")
-					tmpindex := index
 					index, time = findRelease(index, realhittime, r)
 					time -= r[index].Time
-					// 如果这个时间大于最后时间，则用最后时间重新定位tick生效位置
+					// （tick、滑条尾）如果这个时间大于最后时间，则用最后时间重新定位tick生效位置
 					if float64(time) > float64(requirehittime) + OD50 {
-						lastcanhittime := float64(requirehittime) + OD50
-						index, time = findFirstAfterLastHit(tmpindex, realhittime, lastcanhittime, r)
-						time -= r[index].Time
+						if isNextTick {
+							index, time = findFirstAfterLastHit(ticktime, r)
+							time -= r[index].Time
+							//log.Println("Return to last tick point", r[index].Time, time)
+						}
+						return false, index, time
 					}
 					continue
 				}
@@ -448,15 +470,16 @@ func judgeSlider(requirehits int, realhits int) HitResult {
 }
 
 // 通过最后时间找第一个tick生效位置
-func findFirstAfterLastHit(start int, starttime int64, lasthittime float64, r []*rplpa.ReplayData) (int, int64) {
-	index := start
-	time := starttime
+func findFirstAfterLastHit(ticktime float64, r []*rplpa.ReplayData) (int, int64) {
+	index := 3
+	time := r[1].Time + r[2].Time
 	for {
-		index++
 		time += r[index].Time
-		if float64(time) > lasthittime {
-			//log.Println("Find FirstAfterLastHit in", r[index].Time, time, lasthittime)
-			return index, time
+		if float64(time) > ticktime {
+			//log.Println("Find FirstbeforeTick before", r[index].Time, time, ticktime)
+			time -= r[index].Time
+			return index - 1, time
 		}
+		index++
 	}
 }

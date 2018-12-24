@@ -6,6 +6,7 @@ import (
 	"danser/bmath"
 	"danser/dance/movers"
 	"danser/dance/schedulers"
+	"danser/hitjudge"
 	"danser/render"
 	"danser/settings"
 	"github.com/Mempler/rplpa"
@@ -34,6 +35,9 @@ type Controller interface {
 	GetIsHD() bool
 	SetIsHR(isHR bool)
 	GetIsHR() bool
+
+	SetHitResult(result []hitjudge.ObjectResult)
+	GetHitResult() []hitjudge.ObjectResult
 }
 
 var Mover = movers.NewAngleOffsetMover
@@ -132,6 +136,7 @@ type ReplayController struct {
 	presskey    rplpa.KeyPressed
 	isHD        bool
 	isHR        bool
+	hitresult   []hitjudge.ObjectResult
 }
 
 func NewReplayController() Controller {
@@ -220,4 +225,12 @@ func (controller *ReplayController) SetIsHR(isHR bool) {
 
 func (controller *ReplayController) GetIsHR() bool {
 	return controller.isHR
+}
+
+func (controller *ReplayController) SetHitResult(result []hitjudge.ObjectResult) {
+	controller.hitresult = result
+}
+
+func (controller *ReplayController) GetHitResult() []hitjudge.ObjectResult{
+	return controller.hitresult
 }
