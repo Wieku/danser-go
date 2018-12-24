@@ -13,6 +13,7 @@ import (
 	"danser/render/font"
 	"danser/render/texture"
 	"danser/replay"
+	"danser/score"
 	"danser/settings"
 	"danser/storyboard"
 	"danser/utils"
@@ -26,7 +27,7 @@ import (
 	"time"
 )
 
-var num int = 4
+const num int = 4
 
 type Player struct {
 	font           *font.Font
@@ -40,7 +41,7 @@ type Player struct {
 	progressMsF    float64
 	progressMs     int64
 	batch          *render.SpriteBatch
-	controller     [4]dance.Controller
+	controller     [num]dance.Controller
 	//circles        []*objects.Circle
 	//sliders        []*objects.Slider
 	Background  *texture.TextureRegion
@@ -308,6 +309,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	for k := 0; k < num; k++ {
 		log.Println("解析第", k+1, "个replay")
 		player.controller[k].SetHitResult(hitjudge.ParseHits("G:/osu!/Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu", replays[k]))
+		// 设置计算数组、初始化acc和rank
+		player.controller[k].SetHits([]int64{})
+		player.controller[k].SetAcc(100.0)
+		player.controller[k].SetRank("SS")
 		log.Println("解析第", k+1, "个replay完成")
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -746,33 +751,6 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 文字的公用X轴
-	lastPos := 0.0
-	// 渲染player名
-	pl.batch.Begin()
-	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	for k := 0; k < num; k++ {
-		pl.batch.SetAdditive(true)
-		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
-		// 渲染player名
-		pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-		lastPos = pl.font.DrawAndGetLastPosition(pl.batch, 118, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
-		// 渲染HDHR
-		if pl.controller[k].GetIsHR() && pl.controller[k].GetIsHD() {
-			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			pl.font.Draw(pl.batch, lastPos + 10, float64(670 - 18 * k), 14, "+HDHR")
-		}else if pl.controller[k].GetIsHR(){
-			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			pl.font.Draw(pl.batch, lastPos + 10, float64(670 - 18 * k), 14, "+HR")
-		}else if pl.controller[k].GetIsHD(){
-			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			pl.font.Draw(pl.batch, lastPos + 10, float64(670 - 18 * k), 14, "+HD")
-		}
-	}
-	pl.batch.End()
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 渲染按键
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
@@ -817,10 +795,41 @@ func (pl *Player) Draw(delta float64) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 渲染300,100,50，miss
+	// 文字的公用X轴
+	var lastPos [num]float64
+	for k := 0; k < num; k++ {
+		lastPos[k] = 0.0
+	}
+	// 渲染player名
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < num; k++ {
+		pl.batch.SetAdditive(true)
+		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		// 渲染player名
+		pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, 158, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
+		// 渲染HDHR
+		if pl.controller[k].GetIsHR() && pl.controller[k].GetIsHD() {
+			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + 10, float64(670 - 18 * k), 14, "+HDHR")
+		}else if pl.controller[k].GetIsHR(){
+			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + 10, float64(670 - 18 * k), 14, "+HR")
+		}else if pl.controller[k].GetIsHD(){
+			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + 10, float64(670 - 18 * k), 14, "+HD")
+		}
+	}
+	pl.batch.End()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 渲染300、100、50、miss、acc、rank
+	pl.batch.Begin()
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	for k := 0; k < num; k++ {
+		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
 		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出他
 		if pl.progressMs > pl.controller[k].GetHitResult()[0].JugdeTime{
 			judge := ""
@@ -840,12 +849,55 @@ func (pl *Player) Draw(delta float64) {
 				break
 			}
 			pl.batch.SetColor(1, 1, 1, 1)
-			pl.font.Draw(pl.batch, 78, float64(670-18*k), 14, judge)
+			pl.font.Draw(pl.batch, lastPos[k]+10, float64(670-18*k), 14, judge)
 			// 渲染时间结束，弹出
 			if pl.progressMs > pl.controller[k].GetHitResult()[0].JugdeTime + 180 {
+				// 装入计算数组并计算acc和rank
+				switch pl.controller[k].GetHitResult()[0].Result {
+				case hitjudge.Hit300:
+					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 300))
+					break
+				case hitjudge.Hit100:
+					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 100))
+					break
+				case hitjudge.Hit50:
+					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 50))
+					break
+				case hitjudge.HitMiss:
+					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 0))
+					break
+				}
+				pl.controller[k].SetAcc(score.CalculateAccuracy(pl.controller[k].GetHits()))
+				switch score.CalculateRank(pl.controller[k].GetHits()) {
+				case score.SS:
+					pl.controller[k].SetRank("SS")
+					break
+				case score.S:
+					pl.controller[k].SetRank("S")
+					break
+				case score.A:
+					pl.controller[k].SetRank("A")
+					break
+				case score.B:
+					pl.controller[k].SetRank("B")
+					break
+				case score.C:
+					pl.controller[k].SetRank("C")
+					break
+				case score.D:
+					pl.controller[k].SetRank("D")
+					break
+				}
+				// 弹出
 				pl.controller[k].SetHitResult(pl.controller[k].GetHitResult()[1:])
 			}
 		}
+		// 渲染acc
+		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
+		pl.font.Draw(pl.batch, 78, float64(670-18*k), 14, 	fmt.Sprintf("%.2f", pl.controller[k].GetAcc()) + "%")
+		// 渲染rank
+		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
+		pl.font.Draw(pl.batch, 138, float64(670-18*k), 14, pl.controller[k].GetRank())
 	}
 	pl.batch.End()
 	/////////////////////////////////////////////////////////////////////////////////////////////////////

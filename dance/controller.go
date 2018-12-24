@@ -38,6 +38,15 @@ type Controller interface {
 
 	SetHitResult(result []hitjudge.ObjectResult)
 	GetHitResult() []hitjudge.ObjectResult
+
+	SetHits(result []int64)
+	GetHits() []int64
+
+	SetAcc(result float64)
+	GetAcc() float64
+
+	SetRank(result string)
+	GetRank() string
 }
 
 var Mover = movers.NewAngleOffsetMover
@@ -137,6 +146,9 @@ type ReplayController struct {
 	isHD        bool
 	isHR        bool
 	hitresult   []hitjudge.ObjectResult
+	hits		[]int64
+	acc  		float64
+	rank 		string
 }
 
 func NewReplayController() Controller {
@@ -233,4 +245,28 @@ func (controller *ReplayController) SetHitResult(result []hitjudge.ObjectResult)
 
 func (controller *ReplayController) GetHitResult() []hitjudge.ObjectResult{
 	return controller.hitresult
+}
+
+func (controller *ReplayController) SetHits(result []int64) {
+	controller.hits = result
+}
+
+func (controller *ReplayController) GetHits() []int64{
+	return controller.hits
+}
+
+func (controller *ReplayController) SetAcc(result float64) {
+	controller.acc = result
+}
+
+func (controller *ReplayController) GetAcc() float64{
+	return controller.acc
+}
+
+func (controller *ReplayController) SetRank(result string) {
+	controller.rank = result
+}
+
+func (controller *ReplayController) GetRank() string{
+	return controller.rank
 }
