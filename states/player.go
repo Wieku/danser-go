@@ -27,7 +27,9 @@ import (
 	"time"
 )
 
-const num int = 4
+const num int = 10
+
+const EnableBreakandQuit bool = true
 
 type Player struct {
 	font           *font.Font
@@ -312,7 +314,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		// 设置计算数组、初始化acc和rank
 		player.controller[k].SetHits([]int64{})
 		player.controller[k].SetAcc(100.0)
-		player.controller[k].SetRank("SS")
+		player.controller[k].SetRank(*render.RankX)
+		// 设置初始显示
+		player.controller[k].SetIsShow(true)
 		log.Println("解析第", k+1, "个replay完成")
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -756,6 +760,9 @@ func (pl *Player) Draw(delta float64) {
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < num; k++ {
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		if EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
+			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / 2000))
+		}
 		playerkey := pl.controller[k].GetPresskey()
 		if playerkey.Key1 {
 			pl.batch.SetTranslation(bmath.NewVec2d(22, float64(676 - 18 * k)))
@@ -806,6 +813,9 @@ func (pl *Player) Draw(delta float64) {
 	for k := 0; k < num; k++ {
 		pl.batch.SetAdditive(true)
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		if EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
+			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / 2000))
+		}
 		// 渲染player名
 		pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, 158, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
@@ -830,74 +840,95 @@ func (pl *Player) Draw(delta float64) {
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < num; k++ {
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		// 如果设置不显示，开始降低透明度
+		if EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
+			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / 2000))
+			// 显示断连者名字
+			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), 14, pl.controller[k].GetPlayname())
+		}
 		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出他
-		if pl.progressMs > pl.controller[k].GetHitResult()[0].JugdeTime{
-			judge := ""
-			switch pl.controller[k].GetHitResult()[0].Result {
-			case hitjudge.Hit300:
-				//judge = "300"
-				judge = ""
-				break
-			case hitjudge.Hit100:
-				judge = "100"
-				break
-			case hitjudge.Hit50:
-				judge = "50"
-				break
-			case hitjudge.HitMiss:
-				judge = "Miss"
-				break
-			}
-			pl.batch.SetColor(1, 1, 1, 1)
-			pl.font.Draw(pl.batch, lastPos[k]+10, float64(670-18*k), 14, judge)
-			// 渲染时间结束，弹出
-			if pl.progressMs > pl.controller[k].GetHitResult()[0].JugdeTime + 180 {
-				// 装入计算数组并计算acc和rank
+		if len(pl.controller[k].GetHitResult()) != 0 {
+			if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime {
+				judge := *render.Hit300
+				pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
 				switch pl.controller[k].GetHitResult()[0].Result {
 				case hitjudge.Hit300:
-					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 300))
+					pl.batch.SetColor(1, 1, 1, 0)
 					break
 				case hitjudge.Hit100:
-					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 100))
+					judge = *render.Hit100
 					break
 				case hitjudge.Hit50:
-					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 50))
+					judge = *render.Hit50
 					break
 				case hitjudge.HitMiss:
-					pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 0))
+					judge = *render.Hit0
 					break
 				}
-				pl.controller[k].SetAcc(score.CalculateAccuracy(pl.controller[k].GetHits()))
-				switch score.CalculateRank(pl.controller[k].GetHits()) {
-				case score.SS:
-					pl.controller[k].SetRank("SS")
-					break
-				case score.S:
-					pl.controller[k].SetRank("S")
-					break
-				case score.A:
-					pl.controller[k].SetRank("A")
-					break
-				case score.B:
-					pl.controller[k].SetRank("B")
-					break
-				case score.C:
-					pl.controller[k].SetRank("C")
-					break
-				case score.D:
-					pl.controller[k].SetRank("D")
-					break
+				if pl.controller[k].GetHitResult()[0].IsBreak {
+					// 断连后设置不显示
+					if pl.controller[k].GetIsShow() {
+						pl.controller[k].SetIsShow(false)
+						// 保存消失时间、消失位置
+						pl.controller[k].SetDishowTime(pl.progressMsF)
+						pl.controller[k].SetDishowPos(pl.controller[k].GetHitResult()[0].JudgePos)
+					}
 				}
-				// 弹出
-				pl.controller[k].SetHitResult(pl.controller[k].GetHitResult()[1:])
+				pl.batch.SetTranslation(bmath.NewVec2d(lastPos[k]+14, float64(674-18*k)))
+				pl.batch.SetScale(22, 8)
+				pl.batch.DrawUnit(judge)
+				// 渲染时间结束，弹出
+				if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime+200 {
+					// 装入计算数组并计算acc和rank
+					switch pl.controller[k].GetHitResult()[0].Result {
+					case hitjudge.Hit300:
+						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 300))
+						break
+					case hitjudge.Hit100:
+						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 100))
+						break
+					case hitjudge.Hit50:
+						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 50))
+						break
+					case hitjudge.HitMiss:
+						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 0))
+						break
+					}
+					pl.controller[k].SetAcc(score.CalculateAccuracy(pl.controller[k].GetHits()))
+					switch score.CalculateRank(pl.controller[k].GetHits()) {
+					case score.SS:
+						pl.controller[k].SetRank(*render.RankX)
+						break
+					case score.S:
+						pl.controller[k].SetRank(*render.RankS)
+						break
+					case score.A:
+						pl.controller[k].SetRank(*render.RankA)
+						break
+					case score.B:
+						pl.controller[k].SetRank(*render.RankB)
+						break
+					case score.C:
+						pl.controller[k].SetRank(*render.RankC)
+						break
+					case score.D:
+						pl.controller[k].SetRank(*render.RankD)
+						break
+					}
+					// 弹出
+					pl.controller[k].SetHitResult(pl.controller[k].GetHitResult()[1:])
+				}
 			}
 		}
 		// 渲染acc
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
 		pl.font.Draw(pl.batch, 78, float64(670-18*k), 14, 	fmt.Sprintf("%.2f", pl.controller[k].GetAcc()) + "%")
 		// 渲染rank
+		pl.batch.SetTranslation(bmath.NewVec2d(145, float64(674-18*k)))
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
-		pl.font.Draw(pl.batch, 138, float64(670-18*k), 14, pl.controller[k].GetRank())
+		pl.batch.SetScale(8, 8)
+		pl.batch.DrawUnit(pl.controller[k].GetRank())
 	}
 	pl.batch.End()
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -905,29 +936,31 @@ func (pl *Player) Draw(delta float64) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 多个光标渲染
 	for k := 0; k < num; k++ {
-		for _, g := range pl.controller[k].GetCursors() {
-			g.UpdateRenderer()
-		}
-
-		gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-		gl.BlendEquation(gl.FUNC_ADD)
-		pl.batch.SetAdditive(true)
-		render.BeginCursorRender()
-		for j := 0; j < settings.DIVIDES; j++ {
-
-			pl.batch.SetCamera(cameras[j])
-
-			for i, g := range pl.controller[k].GetCursors() {
-				ind := k*len(pl.controller[k].GetCursors()) + i - 1
-				if ind < 0 {
-					ind = settings.DIVIDES*len(pl.controller[k].GetCursors()) - 1
-				}
-
-				g.DrawM(scale2, pl.batch, colors1[k*len(pl.controller[k].GetCursors())+i], colors1[ind])
+		if !(EnableBreakandQuit && (!pl.controller[k].GetIsShow())) {
+			for _, g := range pl.controller[k].GetCursors() {
+				g.UpdateRenderer()
 			}
 
+			gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+			gl.BlendEquation(gl.FUNC_ADD)
+			pl.batch.SetAdditive(true)
+			render.BeginCursorRender()
+			for j := 0; j < settings.DIVIDES; j++ {
+
+				pl.batch.SetCamera(cameras[j])
+
+				for i, g := range pl.controller[k].GetCursors() {
+					ind := k*len(pl.controller[k].GetCursors()) + i - 1
+					if ind < 0 {
+						ind = settings.DIVIDES*len(pl.controller[k].GetCursors()) - 1
+					}
+
+					g.DrawM(scale2, pl.batch, colors1[k*len(pl.controller[k].GetCursors())+i], colors1[ind])
+				}
+
+			}
+			render.EndCursorRender()
 		}
-		render.EndCursorRender()
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 

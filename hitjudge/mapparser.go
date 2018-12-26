@@ -54,7 +54,7 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 	time := r[1].Time + r[2].Time
 	for k := 0; k < len(b.HitObjects); k++ {
 	//for k := 0; k < 1164; k++ {
-		log.Println("Object", k+1)
+		//log.Println("Object", k+1)
 		obj :=  b.HitObjects[k]
 		if obj != nil {
 			// 滑条
@@ -148,32 +148,32 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 				sliderhitresult := judgeSlider(requirehits, realhits)
 				switch sliderhitresult {
 				case Hit300:
-					log.Println("Slider count as 300", requirehits, realhits)
+					//log.Println("Slider count as 300", requirehits, realhits)
 					count300 += 1
 					realhits += 1
 					break
 				case Hit100:
-					log.Println("Slider count as 100", requirehits, realhits)
+					//log.Println("Slider count as 100", requirehits, realhits)
 					count100 += 1
 					realhits += 1
 					break
 				case Hit50:
-					log.Println("Slider count as 50", requirehits, realhits)
+					//log.Println("Slider count as 50", requirehits, realhits)
 					count50 += 1
 					realhits += 1
 					break
 				case HitMiss:
-					log.Println("Slider count as Miss", requirehits, realhits)
+					//log.Println("Slider count as Miss", requirehits, realhits)
 					countMiss += 1
 					isBreak = true
 					break
 				}
 				if isBreak {
-					log.Println("Slider breaks")
+					//log.Println("Slider breaks")
 				}else {
-					log.Println("Slider no breaks")
+					//log.Println("Slider no breaks")
 				}
-				result = append(result, ObjectResult{o.GetBasicData().EndTime - o.TailJudgeOffset, sliderhitresult, isBreak})
+				result = append(result, ObjectResult{o.GetBasicData().StartPos, o.GetBasicData().EndTime - o.TailJudgeOffset, sliderhitresult, isBreak})
 			}
 			// note
 			if o, ok := obj.(*objects.Circle); ok {
@@ -186,19 +186,19 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					keyhitresult = judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, b.ODMiss, b.OD300, b.OD100, b.OD50)
 					switch keyhitresult {
 					case Hit300:
-						log.Println("Circle count as 300")
+						//log.Println("Circle count as 300")
 						count300 += 1
 						break
 					case Hit100:
-						log.Println("Circle count as 100")
+						//log.Println("Circle count as 100")
 						count100 += 1
 						break
 					case Hit50:
-						log.Println("Circle count as 50")
+						//log.Println("Circle count as 50")
 						count50 += 1
 						break
 					case HitMiss:
-						log.Println("Circle count as Miss")
+						//log.Println("Circle count as Miss")
 						countMiss += 1
 						break
 					}
@@ -209,7 +209,7 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					time -= r[keyindex].Time
 				}else {
 					// 如果没找到，输出miss，设置下一个index
-					log.Println("Circle count as Miss")
+					//log.Println("Circle count as Miss")
 					countMiss += 1
 					keyindex = nearestindex
 					time = lasttime
@@ -217,13 +217,13 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 				if keyhitresult != HitMiss {
 					isBreak = false
 				}
-				result = append(result, ObjectResult{o.GetBasicData().StartTime, keyhitresult, isBreak})
+				result = append(result, ObjectResult{o.GetBasicData().StartPos, o.GetBasicData().StartTime, keyhitresult, isBreak})
 			}
 			// 转盘
 			if o, ok := obj.(*objects.Spinner); ok {
-				log.Println("Spinner! skip!", o.GetBasicData())
+				//log.Println("Spinner! skip!", o.GetBasicData())
 				count300 += 1
-				result = append(result, ObjectResult{o.GetBasicData().StartTime, Hit300, false})
+				result = append(result, ObjectResult{o.GetBasicData().StartPos, o.GetBasicData().StartTime, Hit300, false})
 			}
 		}
 	}

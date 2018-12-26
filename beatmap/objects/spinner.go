@@ -2,6 +2,8 @@ package objects
 
 import (
 	"danser/bmath"
+	"danser/render"
+	"github.com/go-gl/mathgl/mgl32"
 	"strconv"
 )
 
@@ -34,4 +36,32 @@ func (self *Spinner) GetPosition() bmath.Vector2d {
 
 func (self *Spinner) Update(time int64) bool {
 	return true
+}
+
+func (self *Spinner) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
+
+	alpha := 1.0
+
+	if time < self.objData.StartTime + int64(preempt/2) {
+		return false
+	} else {
+		alpha = float64(color[3])
+	}
+
+	batch.SetTranslation(self.objData.StartPos)
+
+	batch.SetScale(10, 10)
+	batch.SetColor(1, 1, 1, alpha)
+	batch.DrawUnit(*render.Spinner)
+
+	batch.SetSubScale(1, 1)
+
+	if time >= self.objData.EndTime+int64(preempt/4) {
+		return true
+	}
+	return false
+}
+
+func (self *Spinner) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+
 }

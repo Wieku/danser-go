@@ -122,3 +122,11 @@ func (v Vector2d) Abs() Vector2d {
 func (v Vector2d) Copy() Vector2d {
 	return Vector2d{v.X, v.Y}
 }
+
+func GetX(v Vector2d) float64 {
+	return v.X
+}
+
+func GetY(v Vector2d) float64 {
+	return v.Y
+}

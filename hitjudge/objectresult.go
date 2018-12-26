@@ -1,7 +1,10 @@
 package hitjudge
 
+import "danser/bmath"
+
 type ObjectResult struct {
-	JugdeTime	int64
-	Result     	HitResult
-	IsBreak		bool
+	JudgePos  bmath.Vector2d
+	JudgeTime int64
+	Result    HitResult
+	IsBreak   bool
 }

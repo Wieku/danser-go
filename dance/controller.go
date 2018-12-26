@@ -8,8 +8,10 @@ import (
 	"danser/dance/schedulers"
 	"danser/hitjudge"
 	"danser/render"
+	"danser/render/texture"
 	"danser/settings"
 	"github.com/Mempler/rplpa"
+	"math/rand"
 	"strings"
 )
 
@@ -45,8 +47,17 @@ type Controller interface {
 	SetAcc(result float64)
 	GetAcc() float64
 
-	SetRank(result string)
-	GetRank() string
+	SetRank(result texture.TextureRegion)
+	GetRank() texture.TextureRegion
+
+	SetIsShow(isShow bool)
+	GetIsShow() bool
+
+	SetDishowTime(time float64)
+	GetDishowTime() float64
+
+	SetDishowPos(pos bmath.Vector2d)
+	GetDishowPos() bmath.Vector2d
 }
 
 var Mover = movers.NewAngleOffsetMover
@@ -148,7 +159,10 @@ type ReplayController struct {
 	hitresult   []hitjudge.ObjectResult
 	hits		[]int64
 	acc  		float64
-	rank 		string
+	rank 		texture.TextureRegion
+	isShow		bool
+	dishowtime	float64
+	dishowpos	bmath.Vector2d
 }
 
 func NewReplayController() Controller {
@@ -263,10 +277,40 @@ func (controller *ReplayController) GetAcc() float64{
 	return controller.acc
 }
 
-func (controller *ReplayController) SetRank(result string) {
+func (controller *ReplayController) SetRank(result texture.TextureRegion) {
 	controller.rank = result
 }
 
-func (controller *ReplayController) GetRank() string{
+func (controller *ReplayController) GetRank() texture.TextureRegion{
 	return controller.rank
+}
+
+func (controller *ReplayController) SetIsShow(isShow bool) {
+	controller.isShow = isShow
+}
+
+func (controller *ReplayController) GetIsShow() bool {
+	return controller.isShow
+}
+
+func (controller *ReplayController) SetDishowTime(time float64) {
+	controller.dishowtime = time
+}
+
+func (controller *ReplayController) GetDishowTime() float64{
+	return controller.dishowtime
+}
+
+func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d) {
+	// 随机一个偏移
+	maxoffset := 128 * render.CS
+	offsetX := rand.Float64() * maxoffset - maxoffset/2
+	offsetY := rand.Float64() * maxoffset - maxoffset/2
+	x := pos.X * 1.875 + 160
+	y := 720 - pos.Y * 1.875
+	controller.dishowpos = bmath.Vector2d{x + offsetX, y + offsetY}
+}
+
+func (controller *ReplayController) GetDishowPos() bmath.Vector2d{
+	return controller.dishowpos
 }
