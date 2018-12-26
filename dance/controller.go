@@ -303,11 +303,17 @@ func (controller *ReplayController) GetDishowTime() float64{
 
 func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d) {
 	// 随机一个偏移
-	maxoffset := 128 * render.CS
+	maxoffset := float64(settings.General.RandomOffsetMult) * render.CS
 	offsetX := rand.Float64() * maxoffset - maxoffset/2
 	offsetY := rand.Float64() * maxoffset - maxoffset/2
-	x := pos.X * 1.875 + 160
-	y := 720 - pos.Y * 1.875
+	mult := float64(settings.Graphics.WindowHeight) / 384
+	x := pos.X * mult + float64(settings.Graphics.WindowWidth) / 8
+	y := float64(settings.Graphics.WindowHeight) - pos.Y * mult
+	if settings.Graphics.Fullscreen {
+		mult = float64(settings.Graphics.Height) / 384
+		x = pos.X * mult + float64(settings.Graphics.Width) / 8
+		y = float64(settings.Graphics.Height) - pos.Y * mult
+	}
 	controller.dishowpos = bmath.Vector2d{x + offsetX, y + offsetY}
 }
 

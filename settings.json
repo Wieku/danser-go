@@ -1,7 +1,15 @@
 {
 	"Version": "v1",
 	"General": {
-		"OsuSongsDir": "G:\\osu!\\Song\\"
+		"OsuSongsDir": "Song\\",
+		"Players": 50,
+		"EnableBreakandQuit": true,
+		"PlayerFadeTime": 2000,
+		"HitFadeTime": 200,
+		"RandomOffsetMult": 128,
+		"BaseSize": 6,
+		"BaseX": 14,
+		"BaseY": 698
 	},
 	"Graphics": {
 		"Width": 1920,

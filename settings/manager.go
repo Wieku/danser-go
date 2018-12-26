@@ -11,7 +11,15 @@ var fileName string
 
 func initDefaults() {
 	Version = SETTINGSVERSION
-	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator)}
+	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator),
+						4,
+						true,
+						2000,
+						200,
+						128,
+						8,
+						22,
+						676}
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, 0, false, false}
 	Beat = &beat{1.2}

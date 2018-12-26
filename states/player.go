@@ -27,10 +27,6 @@ import (
 	"time"
 )
 
-const num int = 10
-
-const EnableBreakandQuit bool = true
-
 type Player struct {
 	font           *font.Font
 	bMap           *beatmap.BeatMap
@@ -43,7 +39,7 @@ type Player struct {
 	progressMsF    float64
 	progressMs     int64
 	batch          *render.SpriteBatch
-	controller     [num]dance.Controller
+	controller     []dance.Controller
 	//circles        []*objects.Circle
 	//sliders        []*objects.Slider
 	Background  *texture.TextureRegion
@@ -161,7 +157,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.bMap.Reset()
 
-	for k := 0; k < num; k++ {
+	// 控制初始化
+	player.controller = make([]dance.Controller, settings.General.Players)
+	for k := 0; k < settings.General.Players; k++ {
 		player.controller[k] = dance.NewReplayController()
 		player.controller[k].SetBeatMap(player.bMap)
 		player.controller[k].InitCursors()
@@ -308,9 +306,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 解析每个replay的判定
-	for k := 0; k < num; k++ {
+	for k := 0; k < settings.General.Players; k++ {
 		log.Println("解析第", k+1, "个replay")
-		player.controller[k].SetHitResult(hitjudge.ParseHits("G:/osu!/Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu", replays[k]))
+		player.controller[k].SetHitResult(hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k]))
 		// 设置计算数组、初始化acc和rank
 		player.controller[k].SetHits([]int64{})
 		player.controller[k].SetAcc(100.0)
@@ -323,7 +321,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 重写更新时间和坐标函数
-	for k := 0; k < num; k++ {
+	for k := 0; k < settings.General.Players; k++ {
 		go func(k int) {
 			// 获取replay信息
 			r := replay.ExtractReplay(replays[k])
@@ -644,12 +642,12 @@ func (pl *Player) Draw(delta float64) {
 		}
 	}
 
-	colors := settings.Objects.Colors.GetColors(num + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.GetColors(num + 1, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
+	colors := settings.Objects.Colors.GetColors(settings.General.Players + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1 := settings.Cursor.GetColors(settings.General.Players + 1, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
-		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(num + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
+		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.General.Players + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
 	}
 
 	scale1 := pl.Scl
@@ -689,7 +687,7 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[num], colors2[num - 1], pl.sliderRenderer)
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
 					}
 				}
 			}
@@ -724,11 +722,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[num], colors2[num - 1], pl.sliderRenderer)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[num], pl.batch)
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
@@ -745,7 +743,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[num], pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
 				}
 			}
 		}
@@ -755,45 +753,64 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算大小偏移位置常量
+	var fontsize = 1.75 * settings.General.BaseSize
+	var keysize = 1.25 * settings.General.BaseSize
+	var modoffset =  1.25 * settings.General.BaseSize
+	var lineoffset = 2.25 * settings.General.BaseSize
+	var hitoffset = 1.75 * settings.General.BaseSize
+	var key1baseX = settings.General.BaseX
+	var key2baseX = key1baseX + 2 * keysize
+	var key3baseX = key2baseX + 2 * keysize
+	var accbaseX = key3baseX + 2 * settings.General.BaseSize
+	var rankbaseX = accbaseX + 8.375 * settings.General.BaseSize
+	var playerbaseX = rankbaseX + 1.625 * settings.General.BaseSize
+	var keybaseY = settings.General.BaseY
+	var fontbaseY = settings.General.BaseY - 0.75 * settings.General.BaseSize
+	var rankbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
+	var hitbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 渲染按键
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	for k := 0; k < num; k++ {
+	for k := 0; k < settings.General.Players; k++ {
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
-		if EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
-			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / 2000))
+		if settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
+			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 		}
 		playerkey := pl.controller[k].GetPresskey()
 		if playerkey.Key1 {
-			pl.batch.SetTranslation(bmath.NewVec2d(22, float64(676 - 18 * k)))
-			pl.batch.SetScale(10, 10)
+			pl.batch.SetTranslation(bmath.NewVec2d(key1baseX, keybaseY - lineoffset * float64(k)))
+			pl.batch.SetScale(keysize, keysize)
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 			pl.batch.DrawUnit(*render.PressKey)
 		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(22, float64(676 - 18 * k)))
-			pl.batch.SetScale(10, 10)
+			pl.batch.SetTranslation(bmath.NewVec2d(key1baseX, keybaseY - lineoffset * float64(k)))
+			pl.batch.SetScale(keysize, keysize)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
 		if playerkey.Key2 {
-			pl.batch.SetTranslation(bmath.NewVec2d(42, float64(676 - 18 * k)))
-			pl.batch.SetScale(10, 10)
+			pl.batch.SetTranslation(bmath.NewVec2d(key2baseX, keybaseY - lineoffset * float64(k)))
+			pl.batch.SetScale(keysize, keysize)
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 			pl.batch.DrawUnit(*render.PressKey)
 		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(42, float64(676 - 18 * k)))
-			pl.batch.SetScale(10, 10)
+			pl.batch.SetTranslation(bmath.NewVec2d(key2baseX, keybaseY - lineoffset * float64(k)))
+			pl.batch.SetScale(keysize, keysize)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
 		if playerkey.LeftClick && !playerkey.Key1 {
-			pl.batch.SetTranslation(bmath.NewVec2d(62, float64(676 - 18 * k)))
-			pl.batch.SetScale(10, 10)
+			pl.batch.SetTranslation(bmath.NewVec2d(key3baseX, keybaseY - lineoffset * float64(k)))
+			pl.batch.SetScale(keysize, keysize)
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 			pl.batch.DrawUnit(*render.PressKey)
 		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(62, float64(676 - 18 * k)))
-			pl.batch.SetScale(10, 10)
+			pl.batch.SetTranslation(bmath.NewVec2d(key3baseX, keybaseY - lineoffset * float64(k)))
+			pl.batch.SetScale(keysize, keysize)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
@@ -803,32 +820,33 @@ func (pl *Player) Draw(delta float64) {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 文字的公用X轴
-	var lastPos [num]float64
-	for k := 0; k < num; k++ {
+	var lastPos []float64
+	lastPos = make([]float64, settings.General.Players)
+	for k := 0; k < settings.General.Players; k++ {
 		lastPos[k] = 0.0
 	}
 	// 渲染player名
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	for k := 0; k < num; k++ {
+	for k := 0; k < settings.General.Players; k++ {
 		pl.batch.SetAdditive(true)
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
-		if EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
-			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / 2000))
+		if settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
+			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 		}
 		// 渲染player名
 		pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, 158, float64(670 - 18 * k), 14, pl.controller[k].GetPlayname())
+		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, playerbaseX, fontbaseY - lineoffset * float64(k), fontsize, pl.controller[k].GetPlayname())
 		// 渲染HDHR
 		if pl.controller[k].GetIsHR() && pl.controller[k].GetIsHD() {
 			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + 10, float64(670 - 18 * k), 14, "+HDHR")
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + modoffset, fontbaseY - lineoffset * float64(k), fontsize, "+HDHR")
 		}else if pl.controller[k].GetIsHR(){
 			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + 10, float64(670 - 18 * k), 14, "+HR")
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + modoffset, fontbaseY - lineoffset * float64(k), fontsize, "+HR")
 		}else if pl.controller[k].GetIsHD(){
 			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + 10, float64(670 - 18 * k), 14, "+HD")
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + modoffset, fontbaseY - lineoffset * float64(k), fontsize, "+HD")
 		}
 	}
 	pl.batch.End()
@@ -838,16 +856,16 @@ func (pl *Player) Draw(delta float64) {
 	// 渲染300、100、50、miss、acc、rank
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	for k := 0; k < num; k++ {
+	for k := 0; k < settings.General.Players; k++ {
 		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
 		// 如果设置不显示，开始降低透明度
-		if EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
-			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / 2000))
+		if settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
+			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 			// 显示断连者名字
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), 14, pl.controller[k].GetPlayname())
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), fontsize, pl.controller[k].GetPlayname())
 		}
-		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出他
+		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出
 		if len(pl.controller[k].GetHitResult()) != 0 {
 			if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime {
 				judge := *render.Hit300
@@ -875,11 +893,11 @@ func (pl *Player) Draw(delta float64) {
 						pl.controller[k].SetDishowPos(pl.controller[k].GetHitResult()[0].JudgePos)
 					}
 				}
-				pl.batch.SetTranslation(bmath.NewVec2d(lastPos[k]+14, float64(674-18*k)))
-				pl.batch.SetScale(22, 8)
+				pl.batch.SetTranslation(bmath.NewVec2d(lastPos[k] + hitoffset, hitbaseY - lineoffset * float64(k)))
+				pl.batch.SetScale(2.75 * settings.General.BaseSize, settings.General.BaseSize)
 				pl.batch.DrawUnit(judge)
 				// 渲染时间结束，弹出
-				if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime+200 {
+				if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime + settings.General.HitFadeTime {
 					// 装入计算数组并计算acc和rank
 					switch pl.controller[k].GetHitResult()[0].Result {
 					case hitjudge.Hit300:
@@ -923,11 +941,11 @@ func (pl *Player) Draw(delta float64) {
 		}
 		// 渲染acc
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
-		pl.font.Draw(pl.batch, 78, float64(670-18*k), 14, 	fmt.Sprintf("%.2f", pl.controller[k].GetAcc()) + "%")
+		pl.font.Draw(pl.batch, accbaseX, fontbaseY - lineoffset * float64(k), fontsize, fmt.Sprintf("%.2f", pl.controller[k].GetAcc()) + "%")
 		// 渲染rank
-		pl.batch.SetTranslation(bmath.NewVec2d(145, float64(674-18*k)))
+		pl.batch.SetTranslation(bmath.NewVec2d(rankbaseX, rankbaseY - lineoffset * float64(k)))
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
-		pl.batch.SetScale(8, 8)
+		pl.batch.SetScale(settings.General.BaseSize, settings.General.BaseSize)
 		pl.batch.DrawUnit(pl.controller[k].GetRank())
 	}
 	pl.batch.End()
@@ -935,29 +953,24 @@ func (pl *Player) Draw(delta float64) {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 多个光标渲染
-	for k := 0; k < num; k++ {
-		if !(EnableBreakandQuit && (!pl.controller[k].GetIsShow())) {
+	for k := 0; k < settings.General.Players; k++ {
+		if !(settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow())) {
 			for _, g := range pl.controller[k].GetCursors() {
 				g.UpdateRenderer()
 			}
-
 			gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 			gl.BlendEquation(gl.FUNC_ADD)
 			pl.batch.SetAdditive(true)
 			render.BeginCursorRender()
 			for j := 0; j < settings.DIVIDES; j++ {
-
 				pl.batch.SetCamera(cameras[j])
-
 				for i, g := range pl.controller[k].GetCursors() {
 					ind := k*len(pl.controller[k].GetCursors()) + i - 1
 					if ind < 0 {
 						ind = settings.DIVIDES*len(pl.controller[k].GetCursors()) - 1
 					}
-
 					g.DrawM(scale2, pl.batch, colors1[k*len(pl.controller[k].GetCursors())+i], colors1[ind])
 				}
-
 			}
 			render.EndCursorRender()
 		}

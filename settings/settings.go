@@ -1,14 +1,22 @@
 package settings
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"danser/utils"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 const SETTINGSVERSION = "v1"
 
 type general struct {
-	OsuSongsDir string //localappdata
+	OsuSongsDir 		string //localappdata
+	Players				int
+	EnableBreakandQuit 	bool
+	PlayerFadeTime		float64
+	HitFadeTime			int64
+	RandomOffsetMult	int
+	BaseSize			float64
+	BaseX				float64
+	BaseY				float64
 }
 
 type graphics struct {
