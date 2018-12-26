@@ -7,6 +7,7 @@ import (
 	"danser/replay"
 	"github.com/Mempler/rplpa"
 	"log"
+	"math"
 	"os"
 )
 
@@ -36,9 +37,25 @@ func ParseReplay(name string) *rplpa.Replay {
 func ParseHits(mapname string, replayname string) []ObjectResult {
 	// 加载map
 	b := ParseMap(mapname)
+	OD300 := b.OD300
+	OD100 := b.OD100
+	OD50 := b.OD50
+	ODMiss := b.ODMiss
 	convert_CS := 32 * (1 - 0.7 * (b.CircleSize - 5) / 5)
 	// 加载replay
-	r := ParseReplay(replayname).ReplayData
+	pr := ParseReplay(replayname)
+	r := pr.ReplayData
+
+	// 如果replay是HR，改变OD和CS，并上下翻转replay的Y坐标
+	if pr.Mods&16 > 0 {
+		newOD := math.Min(1.4 * b.OD, 10)
+		OD300 = beatmap.AdjustOD(79 - ( newOD * 6 ) + 0.5)
+		OD100 = beatmap.AdjustOD(139 - ( newOD * 8 ) + 0.5)
+		OD50 = beatmap.AdjustOD(199 - ( newOD * 10 ) + 0.5)
+		ODMiss = beatmap.AdjustOD(229 - ( newOD * 11 ) + 0.5)
+		convert_CS = 32 * (1 - 0.7 * (math.Min(1.3 * b.CircleSize, 10) - 5) / 5)
+		makeReplayHR(r)
+	}
 
 	// 计数
 	count300 := 0
@@ -76,10 +93,10 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 				}else{
 					ticktime = float64(o.GetBasicData().EndTime - o.TailJudgeOffset)
 				}
-				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, b.ODMiss, b.OD50, convert_CS, true, ticktime)
+				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, ODMiss, OD50, convert_CS, true, ticktime)
 				if isfind {
 					// 如果找到，判断hit结果，设置下一个index+1
-					keyhitresult := judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, b.ODMiss, b.OD300, b.OD100, b.OD50)
+					keyhitresult := judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, ODMiss, OD300, OD100, OD50)
 					switch keyhitresult {
 					case Hit300:
 						//log.Println("Slider head", o.GetBasicData().StartPos, o.GetBasicData().StartTime, "300")
@@ -180,10 +197,10 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 				// 寻找最近的Key
 				keyhitresult := HitMiss
 				isBreak := true
-				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, b.ODMiss, b.OD50, convert_CS, false, 0)
+				isfind, nearestindex, lasttime := findNearestKey(keyindex, time, r, o.GetBasicData().StartTime, o.GetBasicData().StartPos, ODMiss, OD50, convert_CS, false, 0)
 				if isfind {
 					// 如果找到，判断hit结果，设置下一个index+1
-					keyhitresult = judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, b.ODMiss, b.OD300, b.OD100, b.OD50)
+					keyhitresult = judgeHitResult(nearestindex, lasttime, r, o.GetBasicData().StartTime, ODMiss, OD300, OD100, OD50)
 					switch keyhitresult {
 					case Hit300:
 						//log.Println("Circle count as 300")
@@ -481,5 +498,12 @@ func findFirstAfterLastHit(ticktime float64, r []*rplpa.ReplayData) (int, int64)
 			return index - 1, time
 		}
 		index++
+	}
+}
+
+// HR上下翻转replay
+func makeReplayHR(r []*rplpa.ReplayData){
+	for k := 0; k < len(r); k++ {
+		r[k].MouseY = 384 - r[k].MouseY
 	}
 }

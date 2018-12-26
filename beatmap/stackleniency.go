@@ -30,7 +30,7 @@ func difficultyRate(diff, min, mid, max float64) float64 {
 }
 
 // OD规范为带0.5的向下取整小数
-func adjustOD(OD float64) float64 {
+func AdjustOD(OD float64) float64 {
 	return math.Floor( OD + 0.5 ) - 0.5
 }
 
@@ -40,10 +40,10 @@ func calculateStackLeniency(b *BeatMap) {
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
 	b.ARms = preempt
 	// 加入OD
-	b.OD300 = adjustOD(79 - ( b.OD * 6 ) + 0.5)
-	b.OD100 = adjustOD(139 - ( b.OD * 8 ) + 0.5)
-	b.OD50 = adjustOD(199 - ( b.OD * 10 ) + 0.5)
-	b.ODMiss = adjustOD(229 - ( b.OD * 11 ) + 0.5)
+	b.OD300 = AdjustOD(79 - ( b.OD * 6 ) + 0.5)
+	b.OD100 = AdjustOD(139 - ( b.OD * 8 ) + 0.5)
+	b.OD50 = AdjustOD(199 - ( b.OD * 10 ) + 0.5)
+	b.ODMiss = AdjustOD(229 - ( b.OD * 11 ) + 0.5)
 	hitObjects := b.HitObjects
 
 	if !settings.Objects.StackEnabled {
