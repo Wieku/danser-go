@@ -1,5 +1,7 @@
 package states
 
+//region 无关0
+
 import (
 	"danser/animation"
 	"danser/audio"
@@ -78,7 +80,10 @@ type Player struct {
 	mapFullName    string
 }
 
+//endregion
+
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
+	//region 无关1
 	player := new(Player)
 	render.LoadTextures()
 	render.SetupSlider()
@@ -294,17 +299,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	//endregion
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	//region replay处理
+
 	// 读取replay
 	replays, err := replay.GetOsrFiles()
 	if err != nil {
 		panic(err)
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 解析每个replay的判定
 	for k := 0; k < settings.General.Players; k++ {
 		log.Println("解析第", k+1, "个replay")
@@ -317,10 +320,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller[k].SetIsShow(true)
 		log.Println("解析第", k+1, "个replay完成")
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 重写更新时间和坐标函数
+	//endregion
+
+	//region 重写更新时间和坐标函数
+
 	for k := 0; k < settings.General.Players; k++ {
 		go func(k int) {
 			// 获取replay信息
@@ -384,9 +388,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			}
 		}(k)
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	// 独立绘图
+	//endregion
+
+	//region 独立绘图
+
 	go func() {
 		for {
 			player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
@@ -400,6 +406,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(time.Millisecond)
 		}
 	}()
+
+	//endregion
+
+	//region 无关2
 
 	go func() {
 		vertices := make([]float32, (256+128)*3*3*2)
@@ -446,6 +456,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	return player
+
+	//endregion
 }
 
 func (pl *Player) Show() {
@@ -453,6 +465,9 @@ func (pl *Player) Show() {
 }
 
 func (pl *Player) Draw(delta float64) {
+
+	//region 无关3
+
 	if pl.lastTime < 0 {
 		pl.lastTime = utils.GetNanoTime()
 	}
@@ -672,88 +687,9 @@ func (pl *Player) Draw(delta float64) {
 		pl.bloomEffect.Begin()
 	}
 
-	if pl.start {
+	//endregion
 
-		if settings.Objects.SliderMerge {
-			pl.sliderRenderer.Begin()
-
-			for j := 0; j < settings.DIVIDES; j++ {
-				pl.sliderRenderer.SetCamera(cameras[j])
-				ind := j - 1
-				if ind < 0 {
-					ind = settings.DIVIDES - 1
-				}
-
-				for i := len(pl.processed) - 1; i >= 0; i-- {
-					if s, ok := pl.processed[i].(*objects.Slider); ok {
-						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
-					}
-				}
-			}
-
-			pl.sliderRenderer.EndAndRender()
-		}
-
-		pl.batch.Begin()
-
-		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-			pl.batch.SetAdditive(true)
-		} else {
-			pl.batch.SetAdditive(false)
-		}
-
-		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
-
-		for j := 0; j < settings.DIVIDES; j++ {
-			if !settings.Objects.SliderMerge {
-				pl.sliderRenderer.SetCamera(cameras[j])
-			}
-			pl.batch.SetCamera(cameras[j])
-			ind := j - 1
-			if ind < 0 {
-				ind = settings.DIVIDES - 1
-			}
-
-			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-				if i < len(pl.processed) {
-					if !settings.Objects.SliderMerge {
-						if s, ok := pl.processed[i].(*objects.Slider); ok {
-							pl.batch.Flush()
-							pl.sliderRenderer.Begin()
-							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
-							pl.sliderRenderer.EndAndRender()
-						}
-					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
-					if res {
-						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
-						i++
-					}
-				}
-			}
-		}
-
-		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
-			pl.batch.Flush()
-
-			for j := 0; j < settings.DIVIDES; j++ {
-
-				pl.batch.SetCamera(cameras[j])
-
-				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
-				}
-			}
-		}
-
-		pl.batch.SetScale(1, 1)
-		pl.batch.End()
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 计算大小偏移位置常量
+	//region 计算大小偏移位置常量
 	var fontsize = 1.75 * settings.General.BaseSize
 	var keysize = 1.25 * settings.General.BaseSize
 	var modoffset =  1.25 * settings.General.BaseSize
@@ -769,10 +705,10 @@ func (pl *Player) Draw(delta float64) {
 	var fontbaseY = settings.General.BaseY - 0.75 * settings.General.BaseSize
 	var rankbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
 	var hitbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 渲染按键
+	//endregion
+
+	//region 渲染按键
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < settings.General.Players; k++ {
@@ -816,9 +752,11 @@ func (pl *Player) Draw(delta float64) {
 		}
 	}
 	pl.batch.End()
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	//endregion
+
+	//region 渲染文字
+
 	// 文字的公用X轴
 	var lastPos []float64
 	lastPos = make([]float64, settings.General.Players)
@@ -850,10 +788,11 @@ func (pl *Player) Draw(delta float64) {
 		}
 	}
 	pl.batch.End()
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 渲染300、100、50、miss、acc、rank
+	//endregion
+
+	//region 渲染300、100、50、miss、acc、rank
+
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < settings.General.Players; k++ {
@@ -863,7 +802,7 @@ func (pl *Player) Draw(delta float64) {
 			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 			// 显示断连者名字
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), fontsize, pl.controller[k].GetPlayname())
+			pl.font.Draw(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), fontsize, pl.controller[k].GetPlayname())
 		}
 		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出
 		if len(pl.controller[k].GetHitResult()) != 0 {
@@ -949,10 +888,11 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.DrawUnit(pl.controller[k].GetRank())
 	}
 	pl.batch.End()
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 多个光标渲染
+	//endregion
+
+	//region 多个光标渲染
+
 	for k := 0; k < settings.General.Players; k++ {
 		if !(settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow())) {
 			for _, g := range pl.controller[k].GetCursors() {
@@ -975,7 +915,90 @@ func (pl *Player) Draw(delta float64) {
 			render.EndCursorRender()
 		}
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//endregion
+
+	//region 无关4
+
+	if pl.start {
+
+		if settings.Objects.SliderMerge {
+			pl.sliderRenderer.Begin()
+
+			for j := 0; j < settings.DIVIDES; j++ {
+				pl.sliderRenderer.SetCamera(cameras[j])
+				ind := j - 1
+				if ind < 0 {
+					ind = settings.DIVIDES - 1
+				}
+
+				for i := len(pl.processed) - 1; i >= 0; i-- {
+					if s, ok := pl.processed[i].(*objects.Slider); ok {
+						pl.sliderRenderer.SetScale(scale1)
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
+					}
+				}
+			}
+
+			pl.sliderRenderer.EndAndRender()
+		}
+
+		pl.batch.Begin()
+
+		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
+			pl.batch.SetAdditive(true)
+		} else {
+			pl.batch.SetAdditive(false)
+		}
+
+		pl.batch.SetScale(64*render.CS*scale1, 64*render.CS*scale1)
+
+		for j := 0; j < settings.DIVIDES; j++ {
+			if !settings.Objects.SliderMerge {
+				pl.sliderRenderer.SetCamera(cameras[j])
+			}
+			pl.batch.SetCamera(cameras[j])
+			ind := j - 1
+			if ind < 0 {
+				ind = settings.DIVIDES - 1
+			}
+
+			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
+				if i < len(pl.processed) {
+					if !settings.Objects.SliderMerge {
+						if s, ok := pl.processed[i].(*objects.Slider); ok {
+							pl.batch.Flush()
+							pl.sliderRenderer.Begin()
+							pl.sliderRenderer.SetScale(scale1)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
+							pl.sliderRenderer.EndAndRender()
+						}
+					}
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
+					if res {
+						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
+						i++
+					}
+				}
+			}
+		}
+
+		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
+			pl.batch.Flush()
+
+			for j := 0; j < settings.DIVIDES; j++ {
+
+				pl.batch.SetCamera(cameras[j])
+
+				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
+				}
+			}
+		}
+
+		pl.batch.SetScale(1, 1)
+		pl.batch.End()
+	}
 
 	pl.batch.SetAdditive(false)
 	if settings.Playfield.BloomEnabled {
@@ -1014,5 +1037,7 @@ func (pl *Player) Draw(delta float64) {
 
 		pl.batch.End()
 	}
+
+	//endregion
 
 }

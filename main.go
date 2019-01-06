@@ -33,8 +33,10 @@ func run() {
 	mainthread.Call(func() {
 
 		artist := flag.String("artist", "", "")
-		title := flag.String("title", "Snow Drive(01.23)", "")
-		difficulty := flag.String("difficulty", "Arigatou", "")
+		//title := flag.String("title", "Snow Drive(01.23)", "")
+		//difficulty := flag.String("difficulty", "Arigatou", "")
+		title := flag.String("title", "Sidetracked Day", "")
+		difficulty := flag.String("difficulty", "THREE DIMENSIONS", "")
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 1, "")

@@ -112,6 +112,10 @@ func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 	return false
 }
 
+func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
+
+}
+
 func (self *Circle) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
 
 	alpha := 1.0

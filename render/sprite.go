@@ -19,6 +19,7 @@ type SpriteBatch struct {
 	position   bmath.Vector2d
 	scale      bmath.Vector2d
 	subscale   bmath.Vector2d
+	rotation   float64
 
 	transform mgl32.Mat4
 	texture   texture.Texture
@@ -58,6 +59,7 @@ func NewSpriteBatch() *SpriteBatch {
 		bmath.NewVec2d(0, 0),
 		bmath.NewVec2d(1, 1),
 		bmath.NewVec2d(1, 1),
+		0,
 		mgl32.Ident4(),
 		nil,
 		make([]float32, batchSize*6*11),
@@ -92,10 +94,10 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 	newScale := batch.scale.Mult(batch.subscale)
 
-	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Add(batch.position)
-	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Add(batch.position)
-	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Add(batch.position)
-	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Add(batch.position)
+	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
 
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
@@ -158,6 +160,10 @@ func (batch *SpriteBatch) SetTranslation(vec bmath.Vector2d) {
 	batch.position = vec
 }
 
+func (batch *SpriteBatch) SetRotation(rad float64) {
+	batch.rotation = rad
+}
+
 func (batch *SpriteBatch) SetScale(scaleX, scaleY float64) {
 	batch.scale = bmath.NewVec2d(scaleX, scaleY)
 }
@@ -170,6 +176,7 @@ func (batch *SpriteBatch) ResetTransform() {
 	batch.scale = bmath.NewVec2d(1, 1)
 	batch.subscale = bmath.NewVec2d(1, 1)
 	batch.position = bmath.NewVec2d(0, 0)
+	batch.rotation = 0
 }
 
 func (batch *SpriteBatch) SetAdditive(additive bool) {
@@ -179,10 +186,10 @@ func (batch *SpriteBatch) SetAdditive(additive bool) {
 func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 	newScale := bmath.NewVec2d(batch.scale.X*batch.subscale.X*float64(texture.Width)/2, batch.scale.Y*batch.subscale.Y*float64(texture.Height)/2)
 
-	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Add(batch.position)
-	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Add(batch.position)
-	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Add(batch.position)
-	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Add(batch.position)
+	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
 
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }

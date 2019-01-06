@@ -39,6 +39,7 @@ func calculateStackLeniency(b *BeatMap) {
 
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
 	b.ARms = preempt
+	b.FadeIn = difficultyRate(b.AR, 1200, 800, 300)
 	// 加入OD
 	b.OD300 = AdjustOD(79 - ( b.OD * 6 ) + 0.5)
 	b.OD100 = AdjustOD(139 - ( b.OD * 8 ) + 0.5)

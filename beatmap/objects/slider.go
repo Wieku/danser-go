@@ -1,6 +1,8 @@
 package objects
 
 import (
+	"danser/animation"
+	"danser/animation/easing"
 	"danser/audio"
 	"danser/bmath"
 	m2 "danser/bmath"
@@ -23,6 +25,18 @@ type tickPoint struct {
 	Pos  m2.Vector2d
 }
 
+type reversePoint struct {
+	fade  *animation.Glider
+	pulse *animation.Glider
+}
+
+func newReverse() (point *reversePoint) {
+	point = &reversePoint{animation.NewGlider(0), animation.NewGlider(1)}
+	point.fade.SetEasing(easing.OutQuad)
+	point.pulse.SetEasing(easing.OutQuad)
+	return
+}
+
 type Slider struct {
 	objData       *basicData
 	multiCurve    sliders.SliderAlgo
@@ -39,11 +53,15 @@ type Slider struct {
 	Pos           m2.Vector2d
 	divides       int
 	TickPoints    []tickPoint
+	TickReverse   []tickPoint
+	ScorePoints   []tickPoint
 	lastTick      int
 	End           bool
 	vao           *glhf.VertexSlice
 	created       bool
 	discreteCurve []bmath.Vector2d
+	reversePoints [2][]*reversePoint
+	startAngle, endAngle float64
 
 	//加入tail真正的judge点
 	TailJudgePoint  bmath.Vector2d
@@ -173,6 +191,8 @@ func (self *Slider) SetTiming(timings *Timings) {
 	// 计算滑条尾判定点
 	self.calculateTailJudgePoint()
 	self.discreteCurve = self.GetCurve()
+	self.startAngle = self.GetStartAngle()
+	self.endAngle = self.discreteCurve[len(self.discreteCurve)-1].AngleRV(self.discreteCurve[len(self.discreteCurve)-2])
 }
 
 func (self *Slider) calculateFollowPoints() {
@@ -195,11 +215,61 @@ func (self *Slider) calculateFollowPoints() {
 				break
 			}
 
-			self.TickPoints = append(self.TickPoints, tickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)})
+			point := tickPoint{time2 + self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)*int64(r), self.GetPointAt(time)}
+			self.TickPoints = append(self.TickPoints, point)
+			self.ScorePoints = append(self.ScorePoints, point)
 		}
+
+		time := self.objData.StartTime + int64(float64(r)*self.partLen)
+		point := tickPoint{time, self.GetPointAt(time)}
+		self.TickReverse = append(self.TickReverse, point)
+		self.ScorePoints = append(self.ScorePoints, point)
 	}
+	self.TickReverse = append(self.TickReverse, tickPoint{self.objData.EndTime, self.GetPointAt(self.objData.EndTime)})
 
 	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].Time < self.TickPoints[j].Time })
+	sort.Slice(self.ScorePoints, func(i, j int) bool { return self.ScorePoints[i].Time < self.ScorePoints[j].Time })
+}
+
+func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
+	for i := int64(2); i < self.repeat; i += 2 {
+		arrow := newReverse()
+
+		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
+		end := float64(self.objData.StartTime) + float64(i)*self.partLen
+
+		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
+		arrow.fade.AddEvent(end, end+300, 0)
+
+		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
+		for j := start; j < end; j += 300 {
+			arrow.pulse.AddEvent(j-0.1, j-0.1, 1.3)
+			arrow.pulse.AddEvent(j, j+math.Min(300, end-j), 1)
+		}
+
+		self.reversePoints[0] = append(self.reversePoints[0], arrow)
+	}
+
+	for i := int64(1); i < self.repeat; i += 2 {
+		arrow := newReverse()
+
+		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
+		end := float64(self.objData.StartTime) + float64(i)*self.partLen
+		if i == 1 {
+			start -= fadeIn
+		}
+
+		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
+		arrow.fade.AddEvent(end, end+300, 0)
+
+		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
+		for subTime := start; subTime < end; subTime += 300 {
+			arrow.pulse.AddEventS(subTime, subTime+math.Min(300, end-subTime), 1.3, 1)
+		}
+
+		self.reversePoints[1] = append(self.reversePoints[1], arrow)
+	}
+
 }
 
 // 计算真正的TailJudge参数
@@ -383,6 +453,49 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
+
+		for i := 0; i < 2; i++ {
+			for k, p := range self.reversePoints[i] {
+				if p.fade.GetValue() >= 0 {
+					if i == 1 {
+						out := len(self.discreteCurve)-1
+						batch.SetTranslation(self.discreteCurve[out])
+						if out == 0 {
+							batch.SetRotation(self.startAngle)
+						} else if out == len(self.discreteCurve)-1 {
+							batch.SetRotation(self.endAngle + math.Pi)
+						} else {
+							batch.SetRotation(self.discreteCurve[out-1].AngleRV(self.discreteCurve[out]))
+						}
+
+					} else {
+						batch.SetTranslation(self.discreteCurve[0])
+						batch.SetRotation(self.startAngle + math.Pi)
+					}
+					batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
+					mult := 1.0
+					num := k*2 + i
+					if i == 0 {
+						num += 2
+					}
+					fadetime := int64(float64(self.TickReverse[num].Time - self.TickReverse[num-1].Time) / 4.5)
+					if time >= self.TickReverse[num].Time {
+						mult = 0.0
+					} else if time >= self.TickReverse[num-1].Time + fadetime{
+						mult = 1.0
+					} else {
+						mult = float64((time - self.TickReverse[num-1].Time)) / float64(fadetime)
+					}
+					batch.SetColor(1, 1, 1, alpha * mult)
+					batch.DrawUnit(*render.SliderReverse)
+				}
+			}
+		}
+
+		batch.SetTranslation(self.objData.StartPos)
+		batch.SetSubScale(1, 1)
+		batch.SetRotation(0)
+		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos)

@@ -17,6 +17,7 @@ type general struct {
 	BaseSize			float64
 	BaseX				float64
 	BaseY				float64
+	SpinnerMult			float64
 }
 
 type graphics struct {

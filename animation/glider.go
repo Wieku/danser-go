@@ -2,11 +2,12 @@ package animation
 
 import (
 	"danser/animation/easing"
-	"sort"
 )
 
 type event struct {
 	startTime, endTime, targetValue float64
+	hasStartValue                   bool
+	startValue                      float64
 }
 
 type Glider struct {
@@ -17,7 +18,7 @@ type Glider struct {
 }
 
 func NewGlider(value float64) *Glider {
-	return &Glider{value: value, startValue: value, current: event{-1, 0, value}, easing: easing.Linear}
+	return &Glider{value: value, startValue: value, current: event{-1, 0, value, false, 0}, easing: easing.Linear}
 }
 
 func (glider *Glider) SetEasing(easing func(float64) float64) {
@@ -25,8 +26,11 @@ func (glider *Glider) SetEasing(easing func(float64) float64) {
 }
 
 func (glider *Glider) AddEvent(startTime, endTime, targetValue float64) {
-	glider.eventqueue = append(glider.eventqueue, event{startTime, endTime, targetValue})
-	sort.Slice(glider.eventqueue, func(i, j int) bool { return glider.eventqueue[i].startTime < glider.eventqueue[j].startTime })
+	glider.eventqueue = append(glider.eventqueue, event{startTime, endTime, targetValue, false, 0})
+}
+
+func (glider *Glider) AddEventS(startTime, endTime, startValue, targetValue float64) {
+	glider.eventqueue = append(glider.eventqueue, event{startTime, endTime, targetValue, true, startValue})
 }
 
 func (glider *Glider) Update(time float64) {

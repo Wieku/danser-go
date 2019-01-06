@@ -3,6 +3,7 @@ package objects
 import (
 	"danser/bmath"
 	"danser/render"
+	"danser/settings"
 	"github.com/go-gl/mathgl/mgl32"
 	"strconv"
 )
@@ -42,9 +43,11 @@ func (self *Spinner) Draw(time int64, preempt float64, color mgl32.Vec4, batch *
 
 	alpha := 1.0
 
-	if time < self.objData.StartTime + int64(preempt/2) {
+	if time < self.objData.StartTime {
 		return false
-	} else {
+	} else if time < self.objData.StartTime + int64(preempt){
+		alpha = float64(color[3]) / preempt
+	}else {
 		alpha = float64(color[3])
 	}
 
@@ -62,6 +65,31 @@ func (self *Spinner) Draw(time int64, preempt float64, color mgl32.Vec4, batch *
 	return false
 }
 
-func (self *Spinner) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 
+}
+
+func (self *Spinner) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
+	alpha := 1.0
+	// 计算AR
+	fake_preempt := float64(self.objData.StartTime - self.objData.EndTime) / settings.General.SpinnerMult
+	arr := float64(self.objData.EndTime-time) / fake_preempt
+
+	if time < self.objData.StartTime {
+		alpha = 0
+	} else if time < self.objData.StartTime + int64(preempt){
+		alpha = float64(color[3]) / preempt
+	}else {
+		alpha = float64(color[3])
+	}
+
+	batch.SetTranslation(self.objData.StartPos)
+
+	if time <= self.objData.EndTime {
+		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+		batch.SetSubScale(arr*2, arr*2)
+		batch.DrawUnit(*render.ApproachCircle)
+	}
+
+	batch.SetSubScale(0, 0)
 }

@@ -24,6 +24,10 @@ func (self Pause) GetBasicData() *basicData {
 	return self.objData
 }
 
+func (self *Pause) SetDifficulty(preempt, fadeIn float64) {
+
+}
+
 func (self *Pause) Update(time int64) bool {
 	return time >= self.objData.EndTime
 }

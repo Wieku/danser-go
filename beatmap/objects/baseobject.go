@@ -12,6 +12,7 @@ type BaseObject interface {
 	GetBasicData() *basicData
 	Update(time int64) bool
 	GetPosition() om.Vector2d
+	SetDifficulty(preempt, fadeIn float64)
 }
 
 type Renderable interface {
