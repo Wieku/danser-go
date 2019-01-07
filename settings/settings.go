@@ -18,6 +18,7 @@ type general struct {
 	BaseX				float64
 	BaseY				float64
 	SpinnerMult			float64
+	ReverseFadeMult		float64
 }
 
 type graphics struct {

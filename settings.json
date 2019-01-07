@@ -10,7 +10,8 @@
 		"BaseSize": 6,
 		"BaseX": 14,
 		"BaseY": 698,
-		"SpinnerMult": 12
+		"SpinnerMult": 12,
+		"ReverseFadeMult": 4.5
 	},
 	"Graphics": {
 		"Width": 1920,
