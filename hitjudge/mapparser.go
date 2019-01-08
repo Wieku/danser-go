@@ -70,7 +70,7 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 	keyindex := 3
 	time := r[1].Time + r[2].Time
 	for k := 0; k < len(b.HitObjects); k++ {
-	//for k := 0; k < 1164; k++ {
+	//for k := 0; k < 1108; k++ {
 		//log.Println("Object", k+1)
 		obj :=  b.HitObjects[k]
 		if obj != nil {
@@ -317,7 +317,7 @@ func findNearestKey(start int, starttime int64, r []*rplpa.ReplayData, requirehi
 	time := starttime
 	for {
 		hit := r[index]
-		//log.Println("Find move", hit.Time + time, requirehittime, isInCircle(hit, requirepos, CS), isPressed(hit), bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos, bmath.Vector2d.Dst(bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos), ODMiss, OD50, CS)
+		//log.Println("Find move", hit.Time + time, requirehittime, isInCircle(hit, requirepos, CS), isPressed(hit), bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos, bmath.Vector2d.Dst(bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY)), requirepos), ODMiss, OD50, CS + 0.05)
 		//if hit.Time + time > 8300 {
 		//	os.Exit(2)
 		//}
@@ -385,7 +385,8 @@ func isPressed(hit *rplpa.ReplayData) bool {
 
 func isInCircle(hit *rplpa.ReplayData, requirepos bmath.Vector2d, CS float64) bool {
 	realpos := bmath.NewVec2d(float64(hit.MosueX), float64(hit.MouseY))
-	return bmath.Vector2d.Dst(realpos, requirepos) <= CS
+	// 加入少量误差
+	return bmath.Vector2d.Dst(realpos, requirepos) <= (CS + 0.05)
 }
 
 // 是否超过object的最后时间点
@@ -428,8 +429,8 @@ func isHit300(realhittime int64, requirehittime int64, OD300 float64) bool {
 
 // 判断tick是否被击中并按下
 func isTickHit(start int, starttime int64, r []*rplpa.ReplayData, requirehittime int64, requirepos bmath.Vector2d, CS float64) (bool, int, int64) {
-	index := start
-	time := starttime
+	index := start - 1
+	time := starttime - r[index].Time
 	for {
 		//寻找正好的一点或者区间
 		//log.Println("Judge index", index)

@@ -7,6 +7,7 @@ import (
 	"danser/build"
 	"danser/dance"
 	"danser/database"
+	"danser/hitjudge"
 	"danser/render"
 	"danser/render/font"
 	"danser/settings"
@@ -84,6 +85,13 @@ func run() {
 			log.Println("Beatmap not found, closing...")
 			os.Exit(0)
 		}
+
+		//hitjudge.ParseHits("Song/567324 BABYMETAL - Road of Resistance/BABYMETAL - Road of Resistance (Kroytz) [Crimson Rebellion].osu",
+		//					"replays/05-ThePooN.osr")
+		//os.Exit(1)
+		hitjudge.ParseHits("Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu",
+			"replays-01/36-Topoi.osr")
+		os.Exit(1)
 
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
@@ -236,6 +244,5 @@ func main() {
 	//files, _ := replay.GetOsrFiles()
 	//log.Println(files)
 
-	//hitjudge.ParseHits("G:/osu!/Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu", "replays/01-AxewB.osr")
-	//log.Println(bmath.Vector2d{261.3333,361.3333}.Dst(bmath.Vector2d{303,368}))
+	//log.Println(bmath.Vector2d{291.6093043265869, 320.52429609268916}.Dst(bmath.Vector2d{233.3333,278.2222}))
 }

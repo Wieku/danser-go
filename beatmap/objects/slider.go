@@ -278,7 +278,7 @@ func (self *Slider) calculateTailJudgePoint() {
 	// 计算滑条持续时间
 	slidersuration := self.GetBasicData().EndTime - self.GetBasicData().StartTime
 	if slidersuration < legacytailoffset * 2  {
-		self.TailJudgeOffset = int64(slidersuration/2)
+		self.TailJudgeOffset = int64((slidersuration+1)/2)
 	}else {
 		self.TailJudgeOffset = legacytailoffset
 	}
