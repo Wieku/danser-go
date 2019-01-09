@@ -5,7 +5,9 @@ import (
 	"danser/beatmap/objects"
 	"danser/bmath"
 	"danser/replay"
+	"danser/score"
 	"github.com/Mempler/rplpa"
+	"github.com/flesnuk/oppai5"
 	"log"
 	"math"
 	"os"
@@ -34,7 +36,7 @@ func ParseReplay(name string) *rplpa.Replay {
 	return replay.ExtractReplay(name)
 }
 
-func ParseHits(mapname string, replayname string) []ObjectResult {
+func ParseHits(mapname string, replayname string) ([]ObjectResult, []TotalResult) {
 	// 加载map
 	b := ParseMap(mapname)
 	OD300 := b.OD300
@@ -65,12 +67,19 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 
 	// 结果数组
 	result := []ObjectResult{}
+	// 总体结果数组
+	totalresult := []TotalResult{}
+	// 判定数组
+	totalhits := []int64{}
+	// maxcombo
+	maxcombo := 0
+	nowcombo := 0
 
 	// 依次处理HitObject
 	keyindex := 3
 	time := r[1].Time + r[2].Time
 	for k := 0; k < len(b.HitObjects); k++ {
-	//for k := 0; k < 1108; k++ {
+	//for k := 0; k < 2; k++ {
 		//log.Println("Object", k+1)
 		obj :=  b.HitObjects[k]
 		if obj != nil {
@@ -101,19 +110,23 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					case Hit300:
 						//log.Println("Slider head", o.GetBasicData().StartPos, o.GetBasicData().StartTime, "300")
 						realhits += 1
+						nowcombo += 1
 						break
 					case Hit100:
 						//log.Println("Slider head", o.GetBasicData().StartPos, o.GetBasicData().StartTime, "100")
 						realhits += 1
+						nowcombo += 1
 						break
 					case Hit50:
 						//log.Println("Slider head", o.GetBasicData().StartPos, o.GetBasicData().StartTime, "50")
 						realhits += 1
+						nowcombo += 1
 						break
 					case HitMiss:
 						//log.Println("Slider head", o.GetBasicData().StartPos, o.GetBasicData().StartTime, "Miss")
 						CS_scale = 1
 						isBreak = true
+						nowcombo = 0
 						break
 					}
 					keyindex = nearestindex + 1
@@ -124,11 +137,13 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					//log.Println("Slider head no found", o.GetBasicData().StartPos, o.GetBasicData().StartTime, "Miss", r[keyindex].Time, lasttime)
 					CS_scale = 1
 					isBreak = true
+					nowcombo = 0
 					keyindex = nearestindex
 					time = lasttime
 				}
+				maxcombo = int(math.Max(float64(maxcombo), float64(nowcombo)))
 				// 判断ticks
-				for _, t := range o.TickPoints {
+				for _, t := range o.ScorePoints {
 					requirehits += 1
 					isHit, nextindex, nexttime := isTickHit(keyindex, time, r, t.Time, t.Pos, CS_scale * convert_CS)
 					keyindex = nextindex
@@ -137,11 +152,14 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 						//log.Println("Tick", i+1, "hit", t.Time, t.Pos)
 						CS_scale = 2.4
 						realhits += 1
+						nowcombo += 1
 					}else {
 						//log.Println("Tick", i+1, "not hit", t.Time, t.Pos)
 						CS_scale = 1
 						isBreak = true
+						nowcombo = 0
 					}
+					maxcombo = int(math.Max(float64(maxcombo), float64(nowcombo)))
 				}
 				// 判断滑条尾
 				requirehits += 1
@@ -151,6 +169,7 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 				if isHit {
 					//log.Println("Slider tail hit", o.GetBasicData().EndTime, o.GetBasicData().EndPos)
 					realhits += 1
+					nowcombo += 1
 					// 寻找状态改变后的时间点
 					//log.Println("Start find slider release", r[nextindex].Time, nexttime+ r[nextindex].Time)
 					keyindex, time = findRelease(nextindex, nexttime + r[nextindex].Time, r)
@@ -161,27 +180,32 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					keyindex, time = findRelease(nextindex, nexttime + r[nextindex].Time, r)
 					time -= r[keyindex].Time
 				}
+				maxcombo = int(math.Max(float64(maxcombo), float64(nowcombo)))
 				// 滑条总体情况
 				sliderhitresult := judgeSlider(requirehits, realhits)
 				switch sliderhitresult {
 				case Hit300:
 					//log.Println("Slider count as 300", requirehits, realhits)
 					count300 += 1
+					totalhits = append(totalhits, 300)
 					realhits += 1
 					break
 				case Hit100:
 					//log.Println("Slider count as 100", requirehits, realhits)
 					count100 += 1
+					totalhits = append(totalhits, 100)
 					realhits += 1
 					break
 				case Hit50:
 					//log.Println("Slider count as 50", requirehits, realhits)
 					count50 += 1
+					totalhits = append(totalhits, 50)
 					realhits += 1
 					break
 				case HitMiss:
 					//log.Println("Slider count as Miss", requirehits, realhits)
 					countMiss += 1
+					totalhits = append(totalhits, 0)
 					isBreak = true
 					break
 				}
@@ -205,18 +229,26 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					case Hit300:
 						//log.Println("Circle count as 300")
 						count300 += 1
+						nowcombo += 1
+						totalhits = append(totalhits, 300)
 						break
 					case Hit100:
 						//log.Println("Circle count as 100")
 						count100 += 1
+						nowcombo += 1
+						totalhits = append(totalhits, 100)
 						break
 					case Hit50:
 						//log.Println("Circle count as 50")
 						count50 += 1
+						nowcombo += 1
+						totalhits = append(totalhits, 50)
 						break
 					case HitMiss:
 						//log.Println("Circle count as Miss")
 						countMiss += 1
+						nowcombo = 0
+						totalhits = append(totalhits, 0)
 						break
 					}
 					time = lasttime + r[nearestindex].Time
@@ -228,29 +260,49 @@ func ParseHits(mapname string, replayname string) []ObjectResult {
 					// 如果没找到，输出miss，设置下一个index
 					//log.Println("Circle count as Miss")
 					countMiss += 1
+					nowcombo = 0
 					keyindex = nearestindex
 					time = lasttime
 				}
 				if keyhitresult != HitMiss {
 					isBreak = false
 				}
+				maxcombo = int(math.Max(float64(maxcombo), float64(nowcombo)))
 				result = append(result, ObjectResult{o.GetBasicData().StartPos, o.GetBasicData().StartTime, keyhitresult, isBreak})
 			}
 			// 转盘
 			if o, ok := obj.(*objects.Spinner); ok {
 				//log.Println("Spinner! skip!", o.GetBasicData())
 				count300 += 1
+				nowcombo += 1
+				totalhits = append(totalhits, 300)
+				maxcombo = int(math.Max(float64(maxcombo), float64(nowcombo)))
 				result = append(result, ObjectResult{o.GetBasicData().StartPos, o.GetBasicData().StartTime, Hit300, false})
 			}
 		}
+		tmptotalresult := TotalResult{	uint16(count300),
+										uint16(count100),
+										uint16(count50),
+										uint16(countMiss),
+										uint16(maxcombo),
+										pr.Mods,
+										score.CalculateAccuracy(totalhits),
+										score.CalculateRank(totalhits),
+										oppai.PPv2{}}
+		tmptotalresult.PP = calculatePP(mapname, tmptotalresult)
+		totalresult = append(totalresult, tmptotalresult)
+		//log.Println("Now Max Combo:", maxcombo)
+		//log.Println("Acc:", score.CalculateAccuracy(totalhits))
 	}
 
 	log.Println("Count 300:", count300)
 	log.Println("Count 100:", count100)
 	log.Println("Count 50:", count50)
 	log.Println("Count Miss:", countMiss)
+	log.Println("Max Combo:", maxcombo)
+	log.Println("Acc:", totalresult[len(totalresult)-1].Acc)
 
-	return result
+	return result, totalresult
 }
 
 // 定位Key放下的位置
@@ -507,4 +559,22 @@ func makeReplayHR(r []*rplpa.ReplayData){
 	for k := 0; k < len(r); k++ {
 		r[k].MouseY = 384 - r[k].MouseY
 	}
+}
+
+// oppai载入map
+func loadMap(filename string) *oppai.Map {
+	f, _ := os.Open(filename)
+	return oppai.Parse(f)
+}
+
+// oppai计算pp
+func calculatePP(filename string, result TotalResult) oppai.PPv2 {
+	return oppai.PPInfo(loadMap(filename), &oppai.Parameters{
+		Combo:  result.Combo,
+		Mods:   result.Mods,
+		N300:   result.N300,
+		N100:   result.N100,
+		N50:    result.N50,
+		Misses: result.Misses,
+	}).PP
 }

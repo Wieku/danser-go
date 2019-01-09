@@ -12,12 +12,19 @@ type SliderAlgo struct {
 	sections []float64
 	length   float64
 	scale float64
+	typ string
+	startPos bmath.Vector2d
+	endPos bmath.Vector2d
 }
 
 func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) SliderAlgo {
+	// 另外保存开始点和结束点
+	startPos := points[0]
+	endPos := points[len(points)-1]
+
 	var curveList []curves.Curve
 
-	var length float64 = 0.0
+	var length = 0.0
 	if len(points) < 3 {
 		typ = "L"
 	}
@@ -98,7 +105,11 @@ func NewSliderAlgo(typ string, points []m2.Vector2d, desiredLength float64) Slid
 		}
 	}
 
-	return SliderAlgo{curveList, sections, length, scale}
+	if typ == "P" {
+
+	}
+
+	return SliderAlgo{curveList, sections, length, scale, typ,startPos, endPos}
 }
 
 func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
@@ -116,7 +127,6 @@ func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
 			}
 		}
 	}
-
 	return m2.NewVec2d(512/2, 384/2)
 }
 

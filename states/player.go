@@ -311,11 +311,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	// 解析每个replay的判定
 	for k := 0; k < settings.General.Players; k++ {
 		log.Println("解析第", k+1, "个replay")
-		player.controller[k].SetHitResult(hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k]))
-		// 设置计算数组、初始化acc和rank
-		player.controller[k].SetHits([]int64{})
+		result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k])
+		player.controller[k].SetHitResult(result)
+		player.controller[k].SetTotalResult(totalresult)
+		// 设置计算数组、初始化acc、rank和pp
 		player.controller[k].SetAcc(100.0)
 		player.controller[k].SetRank(*render.RankX)
+		player.controller[k].SetPP(0.0)
 		// 设置初始显示
 		player.controller[k].SetIsShow(true)
 		log.Println("解析第", k+1, "个replay完成")
@@ -700,7 +702,8 @@ func (pl *Player) Draw(delta float64) {
 	var key3baseX = key2baseX + 2 * keysize
 	var accbaseX = key3baseX + 2 * settings.General.BaseSize
 	var rankbaseX = accbaseX + 8.375 * settings.General.BaseSize
-	var playerbaseX = rankbaseX + 1.625 * settings.General.BaseSize
+	var ppbaseX = rankbaseX + 1.625 * settings.General.BaseSize
+	var playerbaseX = ppbaseX + 8.75 * settings.General.BaseSize
 	var keybaseY = settings.General.BaseY
 	var fontbaseY = settings.General.BaseY - 0.75 * settings.General.BaseSize
 	var rankbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
@@ -791,7 +794,7 @@ func (pl *Player) Draw(delta float64) {
 
 	//endregion
 
-	//region 渲染300、100、50、miss、acc、rank
+	//region 渲染300、100、50、miss、acc、rank、pp
 
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
@@ -837,23 +840,10 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.DrawUnit(judge)
 				// 渲染时间结束，弹出
 				if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime + settings.General.HitFadeTime {
-					// 装入计算数组并计算acc和rank
-					switch pl.controller[k].GetHitResult()[0].Result {
-					case hitjudge.Hit300:
-						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 300))
-						break
-					case hitjudge.Hit100:
-						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 100))
-						break
-					case hitjudge.Hit50:
-						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 50))
-						break
-					case hitjudge.HitMiss:
-						pl.controller[k].SetHits(append(pl.controller[k].GetHits(), 0))
-						break
-					}
-					pl.controller[k].SetAcc(score.CalculateAccuracy(pl.controller[k].GetHits()))
-					switch score.CalculateRank(pl.controller[k].GetHits()) {
+					// 设置acc、rank和pp
+					pl.controller[k].SetAcc(pl.controller[k].GetTotalResult()[k].Acc)
+					pl.controller[k].SetPP(pl.controller[k].GetTotalResult()[k].PP.Total)
+					switch pl.controller[k].GetTotalResult()[k].Rank {
 					case score.SS:
 						pl.controller[k].SetRank(*render.RankX)
 						break
@@ -875,6 +865,7 @@ func (pl *Player) Draw(delta float64) {
 					}
 					// 弹出
 					pl.controller[k].SetHitResult(pl.controller[k].GetHitResult()[1:])
+					pl.controller[k].SetTotalResult(pl.controller[k].GetTotalResult()[1:])
 				}
 			}
 		}
@@ -886,6 +877,9 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
 		pl.batch.SetScale(settings.General.BaseSize, settings.General.BaseSize)
 		pl.batch.DrawUnit(pl.controller[k].GetRank())
+		// 渲染pp
+		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
+		pl.font.Draw(pl.batch, ppbaseX, fontbaseY - lineoffset * float64(k), fontsize, fmt.Sprintf("%.2f", pl.controller[k].GetPP()) + " pp")
 	}
 	pl.batch.End()
 

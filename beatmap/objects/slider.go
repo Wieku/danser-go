@@ -54,6 +54,7 @@ type Slider struct {
 	divides       int
 	TickPoints    []tickPoint
 	TickReverse   []tickPoint
+	TickReverseTrue   []tickPoint
 	ScorePoints   []tickPoint
 	lastTick      int
 	End           bool
@@ -62,6 +63,9 @@ type Slider struct {
 	discreteCurve []bmath.Vector2d
 	reversePoints [2][]*reversePoint
 	startAngle, endAngle float64
+	typ			  string
+	// 曲线的真正终点
+	curveEndPos     m2.Vector2d
 
 	//加入tail真正的judge点
 	TailJudgePoint  bmath.Vector2d
@@ -85,6 +89,8 @@ func NewSlider(data []string) *Slider {
 	}
 
 	slider.multiCurve = sliders.NewSliderAlgo(list[0], points, slider.pixelLength)
+
+	slider.typ = list[0]
 
 	slider.objData.EndTime = slider.objData.StartTime
 	slider.objData.EndPos = slider.objData.StartPos
@@ -117,6 +123,9 @@ func NewSlider(data []string) *Slider {
 
 	slider.End = false
 	slider.lastTick = -1
+
+	slider.curveEndPos = points[len(points) - 1]
+
 	return slider
 }
 
@@ -192,7 +201,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 	self.calculateTailJudgePoint()
 	self.discreteCurve = self.GetCurve()
 	self.startAngle = self.GetStartAngle()
-	self.endAngle = self.discreteCurve[len(self.discreteCurve)-1].AngleRV(self.discreteCurve[len(self.discreteCurve)-2])
+	self.endAngle = self.curveEndPos.AngleRV(self.discreteCurve[len(self.discreteCurve)-1])
 }
 
 func (self *Slider) calculateFollowPoints() {
@@ -223,9 +232,14 @@ func (self *Slider) calculateFollowPoints() {
 		time := self.objData.StartTime + int64(float64(r)*self.partLen)
 		point := tickPoint{time, self.GetPointAt(time)}
 		self.TickReverse = append(self.TickReverse, point)
-		self.ScorePoints = append(self.ScorePoints, point)
+		//// 去掉第一个点（滑条头）
+		if r != 0 {
+			self.TickReverseTrue = append(self.TickReverseTrue, point)
+			self.ScorePoints = append(self.ScorePoints, point)
+		}
 	}
 	self.TickReverse = append(self.TickReverse, tickPoint{self.objData.EndTime, self.GetPointAt(self.objData.EndTime)})
+	self.TickReverseTrue = append(self.TickReverseTrue, tickPoint{self.objData.EndTime, self.GetPointAt(self.objData.EndTime)})
 
 	sort.Slice(self.TickPoints, func(i, j int) bool { return self.TickPoints[i].Time < self.TickPoints[j].Time })
 	sort.Slice(self.ScorePoints, func(i, j int) bool { return self.ScorePoints[i].Time < self.ScorePoints[j].Time })
@@ -467,24 +481,23 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 						} else {
 							batch.SetRotation(self.discreteCurve[out-1].AngleRV(self.discreteCurve[out]))
 						}
-
 					} else {
 						batch.SetTranslation(self.discreteCurve[0])
 						batch.SetRotation(self.startAngle + math.Pi)
 					}
 					batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
 					mult := 1.0
-					num := k*2 + i
+					num := k*2
 					if i == 0 {
-						num += 2
+						num += 1
 					}
-					fadetime := int64(float64(self.TickReverse[num].Time - self.TickReverse[num-1].Time) / 4.5)
-					if time >= self.TickReverse[num].Time {
+					fadetime := int64(float64(self.TickReverseTrue[num].Time - self.TickReverse[num].Time) / 4.5)
+					if time >= self.TickReverseTrue[num].Time {
 						mult = 0.0
-					} else if time >= self.TickReverse[num-1].Time + fadetime{
+					} else if time >= self.TickReverse[num].Time + fadetime{
 						mult = 1.0
 					} else {
-						mult = float64((time - self.TickReverse[num-1].Time)) / float64(fadetime)
+						mult = float64((time - self.TickReverse[num].Time)) / float64(fadetime)
 					}
 					batch.SetColor(1, 1, 1, alpha * mult)
 					batch.DrawUnit(*render.SliderReverse)

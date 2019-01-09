@@ -41,11 +41,14 @@ type Controller interface {
 	SetHitResult(result []hitjudge.ObjectResult)
 	GetHitResult() []hitjudge.ObjectResult
 
-	SetHits(result []int64)
-	GetHits() []int64
+	SetTotalResult(result []hitjudge.TotalResult)
+	GetTotalResult() []hitjudge.TotalResult
 
 	SetAcc(result float64)
 	GetAcc() float64
+
+	SetPP(result float64)
+	GetPP() float64
 
 	SetRank(result texture.TextureRegion)
 	GetRank() texture.TextureRegion
@@ -157,12 +160,13 @@ type ReplayController struct {
 	isHD        bool
 	isHR        bool
 	hitresult   []hitjudge.ObjectResult
-	hits		[]int64
+	totalresult []hitjudge.TotalResult
 	acc  		float64
 	rank 		texture.TextureRegion
 	isShow		bool
 	dishowtime	float64
 	dishowpos	bmath.Vector2d
+	pp			float64
 }
 
 func NewReplayController() Controller {
@@ -261,12 +265,12 @@ func (controller *ReplayController) GetHitResult() []hitjudge.ObjectResult{
 	return controller.hitresult
 }
 
-func (controller *ReplayController) SetHits(result []int64) {
-	controller.hits = result
+func (controller *ReplayController) SetTotalResult(result []hitjudge.TotalResult) {
+	controller.totalresult = result
 }
 
-func (controller *ReplayController) GetHits() []int64{
-	return controller.hits
+func (controller *ReplayController) GetTotalResult() []hitjudge.TotalResult{
+	return controller.totalresult
 }
 
 func (controller *ReplayController) SetAcc(result float64) {
@@ -275,6 +279,14 @@ func (controller *ReplayController) SetAcc(result float64) {
 
 func (controller *ReplayController) GetAcc() float64{
 	return controller.acc
+}
+
+func (controller *ReplayController) SetPP(result float64) {
+	controller.pp = result
+}
+
+func (controller *ReplayController) GetPP() float64{
+	return controller.pp
 }
 
 func (controller *ReplayController) SetRank(result texture.TextureRegion) {

@@ -7,7 +7,6 @@ import (
 	"danser/build"
 	"danser/dance"
 	"danser/database"
-	"danser/hitjudge"
 	"danser/render"
 	"danser/render/font"
 	"danser/settings"
@@ -36,8 +35,8 @@ func run() {
 		artist := flag.String("artist", "", "")
 		//title := flag.String("title", "Snow Drive(01.23)", "")
 		//difficulty := flag.String("difficulty", "Arigatou", "")
-		title := flag.String("title", "The Big Black", "")
-		difficulty := flag.String("difficulty", "WHO'S AFRAID OF THE BIG BLACK", "")
+		title := flag.String("title", "Road of Resistance", "")
+		difficulty := flag.String("difficulty", "Crimson Rebellion", "")
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 1, "")
@@ -89,9 +88,9 @@ func run() {
 		//hitjudge.ParseHits("Song/567324 BABYMETAL - Road of Resistance/BABYMETAL - Road of Resistance (Kroytz) [Crimson Rebellion].osu",
 		//					"replays/05-ThePooN.osr")
 		//os.Exit(1)
-		hitjudge.ParseHits("Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu",
-			"replays-01/36-Topoi.osr")
-		os.Exit(1)
+		//hitjudge.ParseHits("Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu",
+		//	"replays-01/36-Topoi.osr")
+		//os.Exit(1)
 
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
