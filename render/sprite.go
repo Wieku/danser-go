@@ -102,6 +102,15 @@ func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
 
+func (batch *SpriteBatch) DrawUnitS(texture texture.TextureRegion, scaleS bmath.Vector2d) {
+	vec00 := bmath.NewVec2d(-1, -1).Mult(scaleS).Rotate(batch.rotation).Add(batch.position)
+	vec10 := bmath.NewVec2d(1, -1).Mult(scaleS).Rotate(batch.rotation).Add(batch.position)
+	vec11 := bmath.NewVec2d(1, 1).Mult(scaleS).Rotate(batch.rotation).Add(batch.position)
+	vec01 := bmath.NewVec2d(-1, 1).Mult(scaleS).Rotate(batch.rotation).Add(batch.position)
+
+	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
+}
+
 func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d, color mgl32.Vec4, texture texture.TextureRegion) {
 
 	batch.bind(texture.Texture)

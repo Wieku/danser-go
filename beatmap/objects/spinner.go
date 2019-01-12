@@ -40,12 +40,13 @@ func (self *Spinner) Update(time int64) bool {
 }
 
 func (self *Spinner) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
-
 	alpha := 1.0
+	//提前显示转盘
+	truestarttime := self.objData.StartTime - settings.General.SpinnerMinusTime
 
-	if time < self.objData.StartTime {
+	if time < truestarttime {
 		return false
-	} else if time < self.objData.StartTime + int64(preempt){
+	} else if time < truestarttime + int64(preempt){
 		alpha = float64(color[3]) / preempt
 	}else {
 		alpha = float64(color[3])
@@ -53,9 +54,8 @@ func (self *Spinner) Draw(time int64, preempt float64, color mgl32.Vec4, batch *
 
 	batch.SetTranslation(self.objData.StartPos)
 
-	batch.SetScale(10, 10)
 	batch.SetColor(1, 1, 1, alpha)
-	batch.DrawUnit(*render.Spinner)
+	batch.DrawUnitS(*render.Spinner, bmath.Vector2d{10, 10})
 
 	batch.SetSubScale(1, 1)
 
@@ -71,13 +71,15 @@ func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 
 func (self *Spinner) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
 	alpha := 1.0
+	//提前显示转盘
+	truestarttime := self.objData.StartTime - settings.General.SpinnerMinusTime
 	// 计算AR
-	fake_preempt := float64(self.objData.StartTime - self.objData.EndTime) / settings.General.SpinnerMult
-	arr := float64(self.objData.EndTime-time) / fake_preempt
+	fake_preempt := float64(self.objData.EndTime - truestarttime) / settings.General.SpinnerMult
+	arr := float64(self.objData.EndTime - time) / fake_preempt
 
-	if time < self.objData.StartTime {
+	if time < truestarttime {
 		alpha = 0
-	} else if time < self.objData.StartTime + int64(preempt){
+	} else if time < truestarttime + int64(preempt){
 		alpha = float64(color[3]) / preempt
 	}else {
 		alpha = float64(color[3])
@@ -87,9 +89,6 @@ func (self *Spinner) DrawApproach(time int64, preempt float64, color mgl32.Vec4,
 
 	if time <= self.objData.EndTime {
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-		batch.SetSubScale(arr*2, arr*2)
-		batch.DrawUnit(*render.ApproachCircle)
+		batch.DrawUnitS(*render.ApproachCircle, bmath.Vector2d{arr, arr})
 	}
-
-	batch.SetSubScale(0, 0)
 }

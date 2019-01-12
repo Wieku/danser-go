@@ -78,6 +78,28 @@ type Player struct {
 	fpsU           float64
 	storyboardLoad float64
 	mapFullName    string
+
+	// 偏移位置参数
+	fontsize		float64
+	missfontsize	float64
+	misssize		float64
+	keysize 		float64
+	modoffset		float64
+	missoffsetX		float64
+	missoffsetY		float64
+	lineoffset		float64
+	hitoffset		float64
+	key1baseX		float64
+	key2baseX		float64
+	key3baseX		float64
+	accbaseX		float64
+	rankbaseX		float64
+	ppbaseX			float64
+	playerbaseX		float64
+	keybaseY		float64
+	fontbaseY		float64
+	rankbaseY		float64
+	hitbaseY		float64
 }
 
 //endregion
@@ -113,7 +135,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	//	}
 	//}
 
-	player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
+	//player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
 
 	if err != nil {
 		log.Println(err)
@@ -226,6 +248,61 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	musicPlayer := audio.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 
+	//endregion
+
+	//region 计算大小偏移位置常量
+
+	player.fontsize = 1.75 * settings.General.BaseSize
+	player.missfontsize = 1.8 * player.fontsize
+	player.misssize = 2.7 * settings.General.BaseSize
+	player.keysize = 1.25 * settings.General.BaseSize
+	player.modoffset =  1.25 * settings.General.BaseSize
+	player.missoffsetX =  3.625 * settings.General.BaseSize
+	player.missoffsetY =  1.125 * settings.General.BaseSize
+	player.lineoffset = 2.25 * settings.General.BaseSize
+	player.hitoffset = 1.75 * settings.General.BaseSize
+	player.key1baseX = settings.General.BaseX
+	player.key2baseX = player.key1baseX + 2 * player.keysize
+	player.key3baseX = player.key2baseX + 2 * player.keysize
+	player.accbaseX = player.key3baseX + 2 * settings.General.BaseSize
+	player.rankbaseX = player.accbaseX + 8.375 * settings.General.BaseSize
+	player.ppbaseX = player.rankbaseX + 1.625 * settings.General.BaseSize
+	player.playerbaseX = player.ppbaseX + 8.75 * settings.General.BaseSize
+	player.keybaseY = settings.General.BaseY
+	player.fontbaseY = settings.General.BaseY - 0.75 * settings.General.BaseSize
+	player.rankbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
+	player.hitbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
+
+	//endregion
+
+	//region replay处理
+
+	// 读取replay
+	replays, err := replay.GetOsrFiles()
+	if err != nil {
+		panic(err)
+	}
+	// 解析每个replay的判定
+	t := time.Now()
+	for k := 0; k < settings.General.Players; k++ {
+		t1 := time.Now()
+		log.Println("解析第", k+1, "个replay")
+		result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k])
+		player.controller[k].SetHitResult(result)
+		player.controller[k].SetTotalResult(totalresult)
+		// 设置计算数组、初始化acc、rank和pp
+		player.controller[k].SetAcc(100.0)
+		player.controller[k].SetRank(*render.RankX)
+		player.controller[k].SetPP(0.0)
+		// 设置初始显示
+		player.controller[k].SetIsShow(true)
+		log.Println("解析第", k+1, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+	}
+
+	//endregion
+
+	//region 音乐？
+
 	go func() {
 		player.entry = 1
 		time.Sleep(time.Duration(settings.Playfield.LeadInTime * float64(time.Second)))
@@ -262,66 +339,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fxBatch = render.NewFxBatch()
 	player.vao = player.fxBatch.CreateVao(2 * 3 * (256 + 128))
 	player.profilerU = utils.NewFPSCounter(60, false)
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 更新时间和坐标函数
-	//go func() {
-	//	var last = musicPlayer.GetPosition()
-	//	var lastT = utils.GetNanoTime()
-	//	for {
-	//
-	//		currtime := utils.GetNanoTime()
-	//
-	//		player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
-	//
-	//		lastT = currtime
-	//
-	//		player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
-	//
-	//		player.bMap.Update(int64(player.progressMsF))
-	//		player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
-	//
-	//		if player.storyboard != nil {
-	//			player.storyboard.Update(int64(player.progressMsF))
-	//		}
-	//
-	//		last = player.progressMsF
-	//
-	//		if player.start && len(player.bMap.Queue) > 0 {
-	//			player.dimGlider.Update(player.progressMsF)
-	//			player.blurGlider.Update(player.progressMsF)
-	//			player.fxGlider.Update(player.progressMsF)
-	//			player.cursorGlider.Update(player.progressMsF)
-	//		}
-	//
-	//		time.Sleep(time.Millisecond)
-	//	}
-	//}()
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-	//endregion
-
-	//region replay处理
-
-	// 读取replay
-	replays, err := replay.GetOsrFiles()
-	if err != nil {
-		panic(err)
-	}
-	// 解析每个replay的判定
-	for k := 0; k < settings.General.Players; k++ {
-		log.Println("解析第", k+1, "个replay")
-		result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k])
-		player.controller[k].SetHitResult(result)
-		player.controller[k].SetTotalResult(totalresult)
-		// 设置计算数组、初始化acc、rank和pp
-		player.controller[k].SetAcc(100.0)
-		player.controller[k].SetRank(*render.RankX)
-		player.controller[k].SetPP(0.0)
-		// 设置初始显示
-		player.controller[k].SetIsShow(true)
-		log.Println("解析第", k+1, "个replay完成")
-	}
 
 	//endregion
 
@@ -336,10 +353,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			// 设置player名
 			player.controller[k].SetPlayername(r.Username)
 
-			// 判断HD和HR
+			// 判断mod
 			mods := r.Mods
 			player.controller[k].SetIsHD(mods&8 > 0)
 			player.controller[k].SetIsHR(mods&16 > 0)
+			player.controller[k].SetIsEZ(mods&2 > 0)
 
 			// 开始时间
 			r1 := *r.ReplayData[1]
@@ -522,13 +540,14 @@ func (pl *Player) Draw(delta float64) {
 		pl.fxRotation -= 360.0
 	}
 
+	// 结束标志
 	if len(pl.bMap.Queue) == 0 {
 		pl.fadeOut -= timMs / (settings.Playfield.FadeOutTime * 1000)
 		pl.fadeOut = math.Max(0.0, pl.fadeOut)
 		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
 		pl.dimGlider.UpdateD(timMs)
 		pl.blurGlider.UpdateD(timMs)
-		pl.fxGlider.UpdateD(timMs)
+		//pl.fxGlider.UpdateD(timMs)
 		pl.cursorGlider.UpdateD(timMs)
 	}
 
@@ -547,9 +566,9 @@ func (pl *Player) Draw(delta float64) {
 		}
 	}
 
-	if settings.Playfield.FlashToTheBeat {
-		bgAlpha *= pl.Scl
-	}
+	//if settings.Playfield.FlashToTheBeat {
+	//	bgAlpha *= pl.Scl
+	//}
 
 	pl.batch.Begin()
 
@@ -595,18 +614,18 @@ func (pl *Player) Draw(delta float64) {
 
 	pl.batch.Flush()
 
-	if pl.fxGlider.GetValue() > 0.0 {
-		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
-		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-		scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width)) / 4
-		pl.batch.SetScale(scl, scl)
-		pl.batch.DrawTexture(*pl.Logo)
-		pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
-		pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
-		pl.batch.DrawTexture(*pl.Logo)
-	}
-
-	pl.batch.End()
+	//if pl.fxGlider.GetValue() > 0.0 {
+	//	pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
+	//	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+	//	scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width)) / 4
+	//	pl.batch.SetScale(scl, scl)
+	//	pl.batch.DrawTexture(*pl.Logo)
+	//	pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
+	//	pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
+	//	pl.batch.DrawTexture(*pl.Logo)
+	//}
+	//
+	//pl.batch.End()
 
 	pl.counter += timMs
 
@@ -614,34 +633,34 @@ func (pl *Player) Draw(delta float64) {
 		pl.fpsC = pl.profiler.GetFPS()
 		pl.fpsU = pl.profilerU.GetFPS()
 		pl.counter -= 1000.0 / 60
-		if pl.storyboard != nil {
-			pl.storyboardLoad = pl.storyboard.GetLoad()
-		}
+		//if pl.storyboard != nil {
+		//	pl.storyboardLoad = pl.storyboard.GetLoad()
+		//}
 	}
 
-	if pl.fxGlider.GetValue() > 0.0 {
-
-		pl.fxBatch.Begin()
-		pl.batch.SetCamera(mgl32.Ortho(-1, 1, 1, -1, 1, -1))
-		pl.fxBatch.SetColor(1, 1, 1, 0.25*pl.Scl*pl.fxGlider.GetValue())
-		pl.vao.Begin()
-
-		if pl.vaoDirty {
-			pl.vao.SetVertexData(pl.vaoD)
-			pl.vaoDirty = false
-		}
-
-		base := mgl32.Ortho(-1920/2, 1920/2, 1080/2, -1080/2, -1, 1).Mul4(mgl32.Scale3D(600, 600, 0)).Mul4(mgl32.HomogRotate3DZ(float32(pl.fxRotation * math.Pi / 180.0)))
-
-		pl.fxBatch.SetTransform(base)
-		pl.vao.Draw()
-
-		pl.fxBatch.SetTransform(base.Mul4(mgl32.HomogRotate3DZ(math.Pi)))
-		pl.vao.Draw()
-
-		pl.vao.End()
-		pl.fxBatch.End()
-	}
+	//if pl.fxGlider.GetValue() > 0.0 {
+	//
+	//	pl.fxBatch.Begin()
+	//	pl.batch.SetCamera(mgl32.Ortho(-1, 1, 1, -1, 1, -1))
+	//	pl.fxBatch.SetColor(1, 1, 1, 0.25*pl.Scl*pl.fxGlider.GetValue())
+	//	pl.vao.Begin()
+	//
+	//	if pl.vaoDirty {
+	//		pl.vao.SetVertexData(pl.vaoD)
+	//		pl.vaoDirty = false
+	//	}
+	//
+	//	base := mgl32.Ortho(-1920/2, 1920/2, 1080/2, -1080/2, -1, 1).Mul4(mgl32.Scale3D(600, 600, 0)).Mul4(mgl32.HomogRotate3DZ(float32(pl.fxRotation * math.Pi / 180.0)))
+	//
+	//	pl.fxBatch.SetTransform(base)
+	//	pl.vao.Draw()
+	//
+	//	pl.fxBatch.SetTransform(base.Mul4(mgl32.HomogRotate3DZ(math.Pi)))
+	//	pl.vao.Draw()
+	//
+	//	pl.vao.End()
+	//	pl.fxBatch.End()
+	//}
 
 	if pl.start {
 		settings.Objects.Colors.Update(timMs)
@@ -659,13 +678,7 @@ func (pl *Player) Draw(delta float64) {
 		}
 	}
 
-	colors := settings.Objects.Colors.GetColors(settings.General.Players + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
 	colors1 := settings.Cursor.GetColors(settings.General.Players + 1, settings.TAG, pl.Scl, pl.cursorGlider.GetValue())
-	colors2 := colors
-
-	if settings.Objects.EnableCustomSliderBorderColor {
-		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.General.Players + 1, pl.Scl, pl.fadeOut*pl.fadeIn)
-	}
 
 	scale1 := pl.Scl
 	scale2 := pl.Scl
@@ -691,26 +704,6 @@ func (pl *Player) Draw(delta float64) {
 
 	//endregion
 
-	//region 计算大小偏移位置常量
-	var fontsize = 1.75 * settings.General.BaseSize
-	var keysize = 1.25 * settings.General.BaseSize
-	var modoffset =  1.25 * settings.General.BaseSize
-	var lineoffset = 2.25 * settings.General.BaseSize
-	var hitoffset = 1.75 * settings.General.BaseSize
-	var key1baseX = settings.General.BaseX
-	var key2baseX = key1baseX + 2 * keysize
-	var key3baseX = key2baseX + 2 * keysize
-	var accbaseX = key3baseX + 2 * settings.General.BaseSize
-	var rankbaseX = accbaseX + 8.375 * settings.General.BaseSize
-	var ppbaseX = rankbaseX + 1.625 * settings.General.BaseSize
-	var playerbaseX = ppbaseX + 8.75 * settings.General.BaseSize
-	var keybaseY = settings.General.BaseY
-	var fontbaseY = settings.General.BaseY - 0.75 * settings.General.BaseSize
-	var rankbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
-	var hitbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
-
-	//endregion
-
 	//region 渲染按键
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
@@ -721,35 +714,35 @@ func (pl *Player) Draw(delta float64) {
 		}
 		playerkey := pl.controller[k].GetPresskey()
 		if playerkey.Key1 {
-			pl.batch.SetTranslation(bmath.NewVec2d(key1baseX, keybaseY - lineoffset * float64(k)))
-			pl.batch.SetScale(keysize, keysize)
+			pl.batch.SetTranslation(bmath.NewVec2d(pl.key1baseX, pl.keybaseY - pl.lineoffset * float64(k)))
+			pl.batch.SetScale(pl.keysize, pl.keysize)
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 			pl.batch.DrawUnit(*render.PressKey)
 		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(key1baseX, keybaseY - lineoffset * float64(k)))
-			pl.batch.SetScale(keysize, keysize)
+			pl.batch.SetTranslation(bmath.NewVec2d(pl.key1baseX, pl.keybaseY - pl.lineoffset * float64(k)))
+			pl.batch.SetScale(pl.keysize, pl.keysize)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
 		if playerkey.Key2 {
-			pl.batch.SetTranslation(bmath.NewVec2d(key2baseX, keybaseY - lineoffset * float64(k)))
-			pl.batch.SetScale(keysize, keysize)
+			pl.batch.SetTranslation(bmath.NewVec2d(pl.key2baseX, pl.keybaseY - pl.lineoffset * float64(k)))
+			pl.batch.SetScale(pl.keysize, pl.keysize)
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 			pl.batch.DrawUnit(*render.PressKey)
 		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(key2baseX, keybaseY - lineoffset * float64(k)))
-			pl.batch.SetScale(keysize, keysize)
+			pl.batch.SetTranslation(bmath.NewVec2d(pl.key2baseX, pl.keybaseY - pl.lineoffset * float64(k)))
+			pl.batch.SetScale(pl.keysize, pl.keysize)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
 		if playerkey.LeftClick && !playerkey.Key1 {
-			pl.batch.SetTranslation(bmath.NewVec2d(key3baseX, keybaseY - lineoffset * float64(k)))
-			pl.batch.SetScale(keysize, keysize)
+			pl.batch.SetTranslation(bmath.NewVec2d(pl.key3baseX, pl.keybaseY - pl.lineoffset * float64(k)))
+			pl.batch.SetScale(pl.keysize, pl.keysize)
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
 			pl.batch.DrawUnit(*render.PressKey)
 		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(key3baseX, keybaseY - lineoffset * float64(k)))
-			pl.batch.SetScale(keysize, keysize)
+			pl.batch.SetTranslation(bmath.NewVec2d(pl.key3baseX, pl.keybaseY - pl.lineoffset * float64(k)))
+			pl.batch.SetScale(pl.keysize, pl.keysize)
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
@@ -777,17 +770,21 @@ func (pl *Player) Draw(delta float64) {
 		}
 		// 渲染player名
 		pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, playerbaseX, fontbaseY - lineoffset * float64(k), fontsize, pl.controller[k].GetPlayname())
-		// 渲染HDHR
-		if pl.controller[k].GetIsHR() && pl.controller[k].GetIsHD() {
-			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + modoffset, fontbaseY - lineoffset * float64(k), fontsize, "+HDHR")
-		}else if pl.controller[k].GetIsHR(){
-			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + modoffset, fontbaseY - lineoffset * float64(k), fontsize, "+HR")
-		}else if pl.controller[k].GetIsHD(){
-			pl.batch.SetColor(1, 1, 1,  float64(namecolor[3]))
-			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k] + modoffset, fontbaseY - lineoffset * float64(k), fontsize, "+HD")
+		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, pl.playerbaseX, pl.fontbaseY - pl.lineoffset * float64(k), pl.fontsize, pl.controller[k].GetPlayname())
+		// 渲染mod
+		mods := "+"
+		if pl.controller[k].GetIsHR(){
+			mods += "HR"
+		}
+		if pl.controller[k].GetIsHD(){
+			mods += "HD"
+		}
+		if pl.controller[k].GetIsEZ(){
+			mods += "EZ"
+		}
+		if mods != "+" {
+			pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
+			lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, lastPos[k]+pl.modoffset, pl.fontbaseY-pl.lineoffset*float64(k), pl.fontsize, mods)
 		}
 	}
 	pl.batch.End()
@@ -795,6 +792,10 @@ func (pl *Player) Draw(delta float64) {
 	//endregion
 
 	//region 渲染300、100、50、miss、acc、rank、pp
+
+	// 断连文字的公用X轴
+	var lastmissPos []float64
+	lastmissPos = make([]float64, settings.General.Players)
 
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
@@ -805,7 +806,12 @@ func (pl *Player) Draw(delta float64) {
 			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 			// 显示断连者名字
 			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			pl.font.Draw(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), fontsize, pl.controller[k].GetPlayname())
+			lastmissPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, bmath.GetX(pl.controller[k].GetDishowPos()), bmath.GetY(pl.controller[k].GetDishowPos()), pl.missfontsize, pl.controller[k].GetPlayname())
+			// 显示miss
+			pl.batch.SetTranslation(bmath.NewVec2d(lastmissPos[k] + pl.missoffsetX, bmath.GetY(pl.controller[k].GetDishowPos()) + pl.missoffsetY))
+			pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
+			pl.batch.SetScale(2.75 * pl.misssize, pl.misssize)
+			pl.batch.DrawUnit(*render.Hit0)
 		}
 		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出
 		if len(pl.controller[k].GetHitResult()) != 0 {
@@ -835,15 +841,15 @@ func (pl *Player) Draw(delta float64) {
 						pl.controller[k].SetDishowPos(pl.controller[k].GetHitResult()[0].JudgePos)
 					}
 				}
-				pl.batch.SetTranslation(bmath.NewVec2d(lastPos[k] + hitoffset, hitbaseY - lineoffset * float64(k)))
+				pl.batch.SetTranslation(bmath.NewVec2d(lastPos[k] + pl.hitoffset, pl.hitbaseY - pl.lineoffset * float64(k)))
 				pl.batch.SetScale(2.75 * settings.General.BaseSize, settings.General.BaseSize)
 				pl.batch.DrawUnit(judge)
 				// 渲染时间结束，弹出
 				if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime + settings.General.HitFadeTime {
 					// 设置acc、rank和pp
-					pl.controller[k].SetAcc(pl.controller[k].GetTotalResult()[k].Acc)
-					pl.controller[k].SetPP(pl.controller[k].GetTotalResult()[k].PP.Total)
-					switch pl.controller[k].GetTotalResult()[k].Rank {
+					pl.controller[k].SetAcc(pl.controller[k].GetTotalResult()[0].Acc)
+					pl.controller[k].SetPP(pl.controller[k].GetTotalResult()[0].PP.Total)
+					switch pl.controller[k].GetTotalResult()[0].Rank {
 					case score.SS:
 						pl.controller[k].SetRank(*render.RankX)
 						break
@@ -871,15 +877,15 @@ func (pl *Player) Draw(delta float64) {
 		}
 		// 渲染acc
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
-		pl.font.Draw(pl.batch, accbaseX, fontbaseY - lineoffset * float64(k), fontsize, fmt.Sprintf("%.2f", pl.controller[k].GetAcc()) + "%")
+		pl.font.Draw(pl.batch, pl.accbaseX, pl.fontbaseY - pl.lineoffset * float64(k), pl.fontsize, fmt.Sprintf("%.2f", pl.controller[k].GetAcc()) + "%")
 		// 渲染rank
-		pl.batch.SetTranslation(bmath.NewVec2d(rankbaseX, rankbaseY - lineoffset * float64(k)))
+		pl.batch.SetTranslation(bmath.NewVec2d(pl.rankbaseX, pl.rankbaseY - pl.lineoffset * float64(k)))
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
 		pl.batch.SetScale(settings.General.BaseSize, settings.General.BaseSize)
 		pl.batch.DrawUnit(pl.controller[k].GetRank())
 		// 渲染pp
 		pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
-		pl.font.Draw(pl.batch, ppbaseX, fontbaseY - lineoffset * float64(k), fontsize, fmt.Sprintf("%.2f", pl.controller[k].GetPP()) + " pp")
+		pl.font.Draw(pl.batch, pl.ppbaseX, pl.fontbaseY - pl.lineoffset * float64(k), pl.fontsize, fmt.Sprintf("%.2f", pl.controller[k].GetPP()) + " pp")
 	}
 	pl.batch.End()
 
@@ -929,7 +935,7 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, mgl32.Vec4{1, 1, 1, 1}, pl.sliderRenderer)
 					}
 				}
 			}
@@ -964,11 +970,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors2[settings.General.Players], colors2[settings.General.Players - 1], pl.sliderRenderer)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, mgl32.Vec4{1, 1, 1, 1}, pl.sliderRenderer)
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
@@ -985,7 +991,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors[settings.General.Players], pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, pl.batch)
 				}
 			}
 		}

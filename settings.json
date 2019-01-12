@@ -2,16 +2,17 @@
 	"Version": "v1",
 	"General": {
 		"OsuSongsDir": "Song\\",
-		"Players": 1,
+		"Players": 50,
 		"EnableBreakandQuit": true,
 		"PlayerFadeTime": 2000,
 		"HitFadeTime": 200,
-		"RandomOffsetMult": 128,
+		"RandomOffsetMult": 168,
 		"BaseSize": 6,
 		"BaseX": 14,
 		"BaseY": 698,
-		"SpinnerMult": 12,
-		"ReverseFadeMult": 4.5
+		"SpinnerMult": 240,
+		"ReverseFadeMult": 4.5,
+		"SpinnerMinusTime": 1000
 	},
 	"Graphics": {
 		"Width": 1920,
@@ -115,7 +116,7 @@
 	"Playfield": {
 		"LeadInTime": 5,
 		"LeadInHold": 2,
-		"FadeOutTime": 5,
+		"FadeOutTime": 15,
 		"BackgroundInDim": 0,
 		"BackgroundDim": 0.7,
 		"BackgroundDimBreaks": 0.1,

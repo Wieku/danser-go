@@ -59,6 +59,16 @@ func ParseHits(mapname string, replayname string) ([]ObjectResult, []TotalResult
 		makeReplayHR(r)
 	}
 
+	// 如果replay是EZ，改变OD和CS
+	if pr.Mods&2 > 0 {
+		newOD := b.OD / 2
+		OD300 = beatmap.AdjustOD(79 - ( newOD * 6 ) + 0.5)
+		OD100 = beatmap.AdjustOD(139 - ( newOD * 8 ) + 0.5)
+		OD50 = beatmap.AdjustOD(199 - ( newOD * 10 ) + 0.5)
+		ODMiss = beatmap.AdjustOD(229 - ( newOD * 11 ) + 0.5)
+		convert_CS = 32 * (1 - 0.7 * (math.Min(b.CircleSize / 2, 10) - 5) / 5)
+	}
+
 	// 计数
 	count300 := 0
 	count100 := 0
@@ -289,7 +299,8 @@ func ParseHits(mapname string, replayname string) ([]ObjectResult, []TotalResult
 										score.CalculateAccuracy(totalhits),
 										score.CalculateRank(totalhits),
 										oppai.PPv2{}}
-		tmptotalresult.PP = calculatePP(mapname, tmptotalresult)
+		//tmptotalresult.PP = calculatePP(mapname, tmptotalresult)
+		tmptotalresult.PP = calculatePPbyNum(mapname, tmptotalresult, k+1)
 		totalresult = append(totalresult, tmptotalresult)
 		//log.Println("Now Max Combo:", maxcombo)
 		//log.Println("Acc:", score.CalculateAccuracy(totalhits))
@@ -567,9 +578,33 @@ func loadMap(filename string) *oppai.Map {
 	return oppai.Parse(f)
 }
 
+// 部分载入map
+func loadMapbyNum(filename string, objnum int) *oppai.Map {
+	f, _ := os.Open(filename)
+	return oppai.ParsebyNum(f, objnum)
+}
+
 // oppai计算pp
 func calculatePP(filename string, result TotalResult) oppai.PPv2 {
+	//amap := loadMap(filename)
+	//diff := (&oppai.DiffCalc{}).CalcMapWithMods(*amap, int(result.Mods))
+	//log.Println(diff.Beatmap.MaxCombo, result.Combo, diff.Total)
 	return oppai.PPInfo(loadMap(filename), &oppai.Parameters{
+		Combo:  result.Combo,
+		Mods:   result.Mods,
+		N300:   result.N300,
+		N100:   result.N100,
+		N50:    result.N50,
+		Misses: result.Misses,
+	}).PP
+}
+
+// 计算部分的pp
+func calculatePPbyNum(filename string, result TotalResult, objnum int) oppai.PPv2 {
+	//amap := loadMapbyNum(filename, objnum)
+	//diff := (&oppai.DiffCalc{}).CalcMapWithMods(*amap, int(result.Mods))
+	//log.Println(diff.Beatmap.MaxCombo, result.Combo, diff.Total)
+	return oppai.PPInfo(loadMapbyNum(filename, objnum), &oppai.Parameters{
 		Combo:  result.Combo,
 		Mods:   result.Mods,
 		N300:   result.N300,

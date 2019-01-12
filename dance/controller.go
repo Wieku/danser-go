@@ -37,6 +37,8 @@ type Controller interface {
 	GetIsHD() bool
 	SetIsHR(isHR bool)
 	GetIsHR() bool
+	SetIsEZ(isEZ bool)
+	GetIsEZ() bool
 
 	SetHitResult(result []hitjudge.ObjectResult)
 	GetHitResult() []hitjudge.ObjectResult
@@ -159,6 +161,7 @@ type ReplayController struct {
 	presskey    rplpa.KeyPressed
 	isHD        bool
 	isHR        bool
+	isEZ        bool
 	hitresult   []hitjudge.ObjectResult
 	totalresult []hitjudge.TotalResult
 	acc  		float64
@@ -255,6 +258,14 @@ func (controller *ReplayController) SetIsHR(isHR bool) {
 
 func (controller *ReplayController) GetIsHR() bool {
 	return controller.isHR
+}
+
+func (controller *ReplayController) SetIsEZ(isEZ bool) {
+	controller.isEZ = isEZ
+}
+
+func (controller *ReplayController) GetIsEZ() bool {
+	return controller.isEZ
 }
 
 func (controller *ReplayController) SetHitResult(result []hitjudge.ObjectResult) {
