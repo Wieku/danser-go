@@ -8,7 +8,7 @@ import (
 const SETTINGSVERSION = "v1"
 
 type general struct {
-	OsuSongsDir 		string //localappdata
+	OsuSongsDir 		string
 	Players				int
 	EnableBreakandQuit 	bool
 	PlayerFadeTime		float64
@@ -20,6 +20,14 @@ type general struct {
 	SpinnerMult			float64
 	ReverseFadeMult		float64
 	SpinnerMinusTime	int64
+	SaveResultCache 	bool
+	ReadResultCache 	bool
+	ReplayDir 			string
+	CacheDir 			string
+	MissMult			float64
+	CursorColorNum		int
+	Title	 			string
+	Difficulty	 		string
 }
 
 type graphics struct {

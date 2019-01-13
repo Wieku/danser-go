@@ -35,8 +35,8 @@ func run() {
 		artist := flag.String("artist", "", "")
 		//title := flag.String("title", "Snow Drive(01.23)", "")
 		//difficulty := flag.String("difficulty", "Arigatou", "")
-		title := flag.String("title", "Road of Resistance", "")
-		difficulty := flag.String("difficulty", "Crimson Rebellion", "")
+		//title := flag.String("title", "Road of Resistance", "")
+		//difficulty := flag.String("difficulty", "Crimson Rebellion", "")
 		creator := flag.String("creator", "", "")
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 1, "")
@@ -49,10 +49,6 @@ func run() {
 
 		flag.Parse()
 
-		if (*artist + *title + *difficulty + *creator) == "" {
-			log.Println("No beatmap specified, closing...")
-			os.Exit(0)
-		}
 
 		settings.DEBUG = *debug
 		settings.FPS = *fps
@@ -67,6 +63,15 @@ func run() {
 
 		player = nil
 		var beatMap *beatmap.BeatMap = nil
+
+		// 从设置重新载入map
+		title := flag.String("title", settings.General.Title, "")
+		difficulty := flag.String("difficulty", settings.General.Difficulty, "")
+
+		if (*artist + *title + *difficulty + *creator) == "" {
+			log.Println("No beatmap specified, closing...")
+			os.Exit(0)
+		}
 
 		database.Init()
 		beatmaps := database.LoadBeatmaps()
@@ -109,7 +114,7 @@ func run() {
 			log.Println(mWidth, mHeight)
 			settings.Graphics.Width, settings.Graphics.Height = int64(mWidth), int64(mHeight)
 			settings.Save()
-			win, err = glfw.CreateWindow(mWidth, mHeight, "danser", monitor, nil)
+			win, err = glfw.CreateWindow(mWidth, mHeight, "osu vs player", monitor, nil)
 		} else {
 			if settings.Graphics.Fullscreen {
 				win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
@@ -122,7 +127,7 @@ func run() {
 			panic(err)
 		}
 
-		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+		win.SetTitle("osu vs player " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 		icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
 		icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
 		icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")

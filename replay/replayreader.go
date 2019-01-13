@@ -1,14 +1,13 @@
 package replay
 
 import (
+	"danser/settings"
 	"io/ioutil"
 	"strings"
 )
 
-var replaydictionary string = "replays/"
-
 func GetOsrFiles() (files []string, err error) {
-	dir, err := ioutil.ReadDir(replaydictionary)
+	dir, err := ioutil.ReadDir(settings.General.ReplayDir)
 	if err != nil {
 		return nil, err
 	}
@@ -16,7 +15,7 @@ func GetOsrFiles() (files []string, err error) {
 	for _, fi := range dir {
 		ok := strings.HasSuffix(fi.Name(), ".osr")
 		if ok {
-			files = append(files, replaydictionary+fi.Name())
+			files = append(files, settings.General.ReplayDir+fi.Name())
 		}
 	}
 

@@ -15,6 +15,7 @@ import (
 	"danser/render/font"
 	"danser/render/texture"
 	"danser/replay"
+	"danser/resultcache"
 	"danser/score"
 	"danser/settings"
 	"danser/storyboard"
@@ -253,12 +254,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	//region 计算大小偏移位置常量
 
 	player.fontsize = 1.75 * settings.General.BaseSize
-	player.missfontsize = 1.8 * player.fontsize
-	player.misssize = 2.7 * settings.General.BaseSize
+	player.missfontsize = settings.General.MissMult * player.fontsize
+	player.misssize = 1.5 * settings.General.MissMult * settings.General.BaseSize
 	player.keysize = 1.25 * settings.General.BaseSize
 	player.modoffset =  1.25 * settings.General.BaseSize
-	player.missoffsetX =  3.625 * settings.General.BaseSize
-	player.missoffsetY =  1.125 * settings.General.BaseSize
+	player.missoffsetX =  2 * settings.General.MissMult * settings.General.BaseSize
+	player.missoffsetY =  0.6 * settings.General.MissMult * settings.General.BaseSize
 	player.lineoffset = 2.25 * settings.General.BaseSize
 	player.hitoffset = 1.75 * settings.General.BaseSize
 	player.key1baseX = settings.General.BaseX
@@ -284,19 +285,43 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 	// 解析每个replay的判定
 	t := time.Now()
-	for k := 0; k < settings.General.Players; k++ {
-		t1 := time.Now()
-		log.Println("解析第", k+1, "个replay")
-		result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k])
-		player.controller[k].SetHitResult(result)
-		player.controller[k].SetTotalResult(totalresult)
-		// 设置计算数组、初始化acc、rank和pp
-		player.controller[k].SetAcc(100.0)
-		player.controller[k].SetRank(*render.RankX)
-		player.controller[k].SetPP(0.0)
-		// 设置初始显示
-		player.controller[k].SetIsShow(true)
-		log.Println("解析第", k+1, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+	if settings.General.ReadResultCache {
+		log.Println("本次选择读取缓存replay结果")
+		for k := 0; k < settings.General.Players; k++ {
+			t1 := time.Now()
+			log.Println("读取第", k+1, "个replay缓存")
+			result, totalresult := resultcache.ReadResult(k+1)
+			player.controller[k].SetHitResult(result)
+			player.controller[k].SetTotalResult(totalresult)
+			// 设置计算数组、初始化acc、rank和pp
+			player.controller[k].SetAcc(100.0)
+			player.controller[k].SetRank(*render.RankX)
+			player.controller[k].SetPP(0.0)
+			// 设置初始显示
+			player.controller[k].SetIsShow(true)
+			log.Println("读取第", k+1, "个replay缓存完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+		}
+	}else {
+		log.Println("本次选择读取解析replay")
+		for k := 0; k < settings.General.Players; k++ {
+			t1 := time.Now()
+			log.Println("解析第", k+1, "个replay")
+			result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k])
+			player.controller[k].SetHitResult(result)
+			player.controller[k].SetTotalResult(totalresult)
+			// 设置计算数组、初始化acc、rank和pp
+			player.controller[k].SetAcc(100.0)
+			player.controller[k].SetRank(*render.RankX)
+			player.controller[k].SetPP(0.0)
+			// 设置初始显示
+			player.controller[k].SetIsShow(true)
+			// 保存结果缓存
+			if settings.General.SaveResultCache {
+				resultcache.SaveResult(result, totalresult, k+1)
+				log.Println("已保存第", k+1, "个replay的结果缓存")
+			}
+			log.Println("解析第", k+1, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+		}
 	}
 
 	//endregion
@@ -935,7 +960,7 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, mgl32.Vec4{1, 1, 1, 1}, pl.sliderRenderer)
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], colors1[settings.General.CursorColorNum-1], pl.sliderRenderer)
 					}
 				}
 			}
@@ -970,11 +995,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, mgl32.Vec4{1, 1, 1, 1}, pl.sliderRenderer)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], colors1[settings.General.CursorColorNum-1], pl.sliderRenderer)
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, pl.batch)
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
@@ -991,7 +1016,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, mgl32.Vec4{1, 1, 1, 1}, pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], pl.batch)
 				}
 			}
 		}
@@ -1005,38 +1030,38 @@ func (pl *Player) Draw(delta float64) {
 		pl.bloomEffect.EndAndRender()
 	}
 
-	if settings.DEBUG || settings.FPS {
-		pl.batch.Begin()
-		pl.batch.SetColor(1, 1, 1, 1)
-		pl.batch.SetCamera(pl.scamera.GetProjectionView())
-
-		padDown := 4.0
-		shift := 16.0
-
-		if settings.DEBUG {
-			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
-			pl.font.Draw(pl.batch, 0, padDown+shift*5, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
-			pl.font.Draw(pl.batch, 0, padDown+shift*4, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
-			pl.font.Draw(pl.batch, 0, padDown+shift*3, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
-
-			time := int(pl.musicPlayer.GetPosition())
-			totalTime := int(pl.musicPlayer.GetLength())
-			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
-
-			pl.font.Draw(pl.batch, 0, padDown+shift*2, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
-
-			if pl.storyboard != nil {
-				pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
-			} else {
-				pl.font.Draw(pl.batch, 0, padDown, 16, "No storyboard")
-			}
-		} else {
-			pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
-		}
-
-		pl.batch.End()
-	}
+	//if settings.DEBUG || settings.FPS {
+	//	pl.batch.Begin()
+	//	pl.batch.SetColor(1, 1, 1, 1)
+	//	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	//
+	//	padDown := 4.0
+	//	shift := 16.0
+	//
+	//	if settings.DEBUG {
+	//		pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-24, 24, pl.mapFullName)
+	//		pl.font.Draw(pl.batch, 0, padDown+shift*5, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
+	//		pl.font.Draw(pl.batch, 0, padDown+shift*4, 16, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+	//		pl.font.Draw(pl.batch, 0, padDown+shift*3, 16, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+	//
+	//		time := int(pl.musicPlayer.GetPosition())
+	//		totalTime := int(pl.musicPlayer.GetLength())
+	//		mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
+	//
+	//		pl.font.Draw(pl.batch, 0, padDown+shift*2, 16, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
+	//		pl.font.Draw(pl.batch, 0, padDown+shift, 16, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
+	//
+	//		if pl.storyboard != nil {
+	//			pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", pl.storyboard.GetProcessedSprites(), pl.storyboardLoad, pl.storyboard.GetQueueSprites(), pl.storyboard.GetTotalSprites()))
+	//		} else {
+	//			pl.font.Draw(pl.batch, 0, padDown, 16, "No storyboard")
+	//		}
+	//	} else {
+	//		pl.font.Draw(pl.batch, 0, padDown, 16, fmt.Sprintf("%0.0f FPS", pl.fpsC))
+	//	}
+	//
+	//	pl.batch.End()
+	//}
 
 	//endregion
 

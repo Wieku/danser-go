@@ -499,7 +499,7 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 					} else {
 						mult = float64((time - self.TickReverse[num].Time)) / float64(fadetime)
 					}
-					batch.SetColor(1, 1, 1, alpha * mult)
+					batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha * mult)
 					batch.DrawUnit(*render.SliderReverse)
 				}
 			}

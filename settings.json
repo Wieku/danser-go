@@ -1,7 +1,7 @@
 {
 	"Version": "v1",
 	"General": {
-		"OsuSongsDir": "Song\\",
+		"OsuSongsDir": "song\\",
 		"Players": 50,
 		"EnableBreakandQuit": true,
 		"PlayerFadeTime": 2000,
@@ -12,7 +12,15 @@
 		"BaseY": 698,
 		"SpinnerMult": 240,
 		"ReverseFadeMult": 4.5,
-		"SpinnerMinusTime": 1000
+		"SpinnerMinusTime": 1000,
+		"SaveResultCache": true,
+		"ReadResultCache": true,
+		"ReplayDir": "replays\\",
+		"CacheDir": "cache\\",
+		"MissMult": 1.8,
+		"CursorColorNum": 25,
+		"Title": "Road of Resistance",
+		"Difficulty": "Crimson Rebellion"
 	},
 	"Graphics": {
 		"Width": 1920,
