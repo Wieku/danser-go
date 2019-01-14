@@ -28,6 +28,7 @@ type general struct {
 	CursorColorNum		int
 	Title	 			string
 	Difficulty	 		string
+	CursorColorSkipNum	int
 }
 
 type graphics struct {

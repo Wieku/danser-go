@@ -28,4 +28,4 @@ song/
 screenshots/
 replays*/
 cache/
-main.exe
+*.exe

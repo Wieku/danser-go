@@ -733,7 +733,8 @@ func (pl *Player) Draw(delta float64) {
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < settings.General.Players; k++ {
-		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		colornum := (settings.General.CursorColorSkipNum*k*len(pl.controller[k].GetCursors())) % settings.General.Players
+		namecolor := colors1[colornum]
 		if settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
 			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 		}
@@ -789,7 +790,8 @@ func (pl *Player) Draw(delta float64) {
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < settings.General.Players; k++ {
 		pl.batch.SetAdditive(true)
-		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		colornum := (settings.General.CursorColorSkipNum*k*len(pl.controller[k].GetCursors())) % settings.General.Players
+		namecolor := colors1[colornum]
 		if settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
 			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
 		}
@@ -825,7 +827,8 @@ func (pl *Player) Draw(delta float64) {
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
 	for k := 0; k < settings.General.Players; k++ {
-		namecolor := colors1[k*len(pl.controller[k].GetCursors())]
+		colornum := (settings.General.CursorColorSkipNum*k*len(pl.controller[k].GetCursors())) % settings.General.Players
+		namecolor := colors1[colornum]
 		// 如果设置不显示，开始降低透明度
 		if settings.General.EnableBreakandQuit && (!pl.controller[k].GetIsShow()) {
 			namecolor[3] = float32(math.Max(0.0, float64(namecolor[3]) - (pl.progressMsF - pl.controller[k].GetDishowTime()) / settings.General.PlayerFadeTime))
@@ -934,7 +937,8 @@ func (pl *Player) Draw(delta float64) {
 					if ind < 0 {
 						ind = settings.DIVIDES*len(pl.controller[k].GetCursors()) - 1
 					}
-					g.DrawM(scale2, pl.batch, colors1[k*len(pl.controller[k].GetCursors())+i], colors1[ind])
+					colornum := (settings.General.CursorColorSkipNum*k*len(pl.controller[k].GetCursors())) % settings.General.Players
+					g.DrawM(scale2, pl.batch, colors1[colornum], colors1[ind])
 				}
 			}
 			render.EndCursorRender()

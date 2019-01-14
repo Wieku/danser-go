@@ -20,7 +20,8 @@
 		"MissMult": 1.8,
 		"CursorColorNum": 25,
 		"Title": "Road of Resistance",
-		"Difficulty": "Crimson Rebellion"
+		"Difficulty": "Crimson Rebellion",
+		"CursorColorSkipNum": 13
 	},
 	"Graphics": {
 		"Width": 1920,
@@ -63,12 +64,12 @@
 		"EnableCustomTrailGlowOffset": true,
 		"TrailGlowOffset": -36,
 		"ScaleToCS": false,
-		"CursorSize": 16,
+		"CursorSize": 10.5,
 		"ScaleToTheBeat": false,
 		"ShowCursorsOnBreaks": true,
 		"BounceOnEdges": false,
 		"TrailEndScale": 0.4,
-		"TrailDensity": 0.5,
+		"TrailDensity": 1,
 		"TrailMaxLength": 2000,
 		"TrailRemoveSpeed": 1,
 		"GlowEndScale": 0.4,
