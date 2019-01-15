@@ -33,12 +33,8 @@ type Controller interface {
 	SetPresskey(presskey rplpa.KeyPressed)
 	GetPresskey() rplpa.KeyPressed
 
-	SetIsHD(isHD bool)
-	GetIsHD() bool
-	SetIsHR(isHR bool)
-	GetIsHR() bool
-	SetIsEZ(isEZ bool)
-	GetIsEZ() bool
+	SetMods(mods int)
+	GetMods() int
 
 	SetHitResult(result []hitjudge.ObjectResult)
 	GetHitResult() []hitjudge.ObjectResult
@@ -159,9 +155,7 @@ type ReplayController struct {
 	schedulers []schedulers.Scheduler
 	playername  string
 	presskey    rplpa.KeyPressed
-	isHD        bool
-	isHR        bool
-	isEZ        bool
+	mods		int
 	hitresult   []hitjudge.ObjectResult
 	totalresult []hitjudge.TotalResult
 	acc  		float64
@@ -244,28 +238,12 @@ func (controller *ReplayController) GetPresskey() rplpa.KeyPressed {
 	return controller.presskey
 }
 
-func (controller *ReplayController) SetIsHD(isHD bool) {
-	controller.isHD = isHD
+func (controller *ReplayController) SetMods(mods int) {
+	controller.mods = mods
 }
 
-func (controller *ReplayController) GetIsHD() bool {
-	return controller.isHD
-}
-
-func (controller *ReplayController) SetIsHR(isHR bool) {
-	controller.isHR = isHR
-}
-
-func (controller *ReplayController) GetIsHR() bool {
-	return controller.isHR
-}
-
-func (controller *ReplayController) SetIsEZ(isEZ bool) {
-	controller.isEZ = isEZ
-}
-
-func (controller *ReplayController) GetIsEZ() bool {
-	return controller.isEZ
+func (controller *ReplayController) GetMods() int {
+	return controller.mods
 }
 
 func (controller *ReplayController) SetHitResult(result []hitjudge.ObjectResult) {

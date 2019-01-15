@@ -90,11 +90,12 @@ func run() {
 			os.Exit(0)
 		}
 
-		//hitjudge.ParseHits("Song/567324 BABYMETAL - Road of Resistance/BABYMETAL - Road of Resistance (Kroytz) [Crimson Rebellion].osu",
-		//					"replays/05-ThePooN.osr")
-		//os.Exit(1)
-		//hitjudge.ParseHits("Song/478405 Omoi - Snow Drive(0123)/Omoi - Snow Drive(01.23) (Kroytz) [Arigatou].osu",
-		//	"replays-01/36-Topoi.osr")
+		//r := replay.ExtractReplay("replays/22-OskaRRRitoS.osr")
+		//for k := 0; k < 40; k++ {
+		//	log.Println(*r.ReplayData[k])
+		//}
+		//hitjudge.ParseHits("Song/336414 Wagakki Band - Tengaku/Wagakki Band - Tengaku (Shiro) [Uncompressed Fury of a Raging Japanese God].osu",
+		//	"replays/22-OskaRRRitoS.osr")
 		//os.Exit(1)
 
 		glfw.Init()
@@ -127,7 +128,7 @@ func run() {
 			panic(err)
 		}
 
-		win.SetTitle("osu vs player " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+		win.SetTitle("osu vs player " + build.VERSION + " by " + build.OWNER + " on " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 		icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
 		icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
 		icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")

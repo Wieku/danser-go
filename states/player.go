@@ -101,6 +101,14 @@ type Player struct {
 	fontbaseY		float64
 	rankbaseY		float64
 	hitbaseY		float64
+
+	recordbaseX		float64
+	recordbaseY		float64
+	recordbasesize	float64
+	recordtimeoffsetY	float64
+
+	// 色彩参数
+	objectcolorIndex	int
 }
 
 //endregion
@@ -251,7 +259,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	//endregion
 
-	//region 计算大小偏移位置常量
+	//region 计算大小偏移位置常量、色彩常量
 
 	player.fontsize = 1.75 * settings.General.BaseSize
 	player.missfontsize = settings.General.MissMult * player.fontsize
@@ -273,6 +281,18 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fontbaseY = settings.General.BaseY - 0.75 * settings.General.BaseSize
 	player.rankbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
 	player.hitbaseY = settings.General.BaseY - 0.25 * settings.General.BaseSize
+
+	player.recordbaseX = settings.General.RecordBaseX
+	player.recordbaseY = settings.General.RecordBaseY
+	player.recordbasesize = settings.General.RecordBaseSize
+	player.recordtimeoffsetY = 1.25 * player.recordbasesize
+
+	// 超过色彩上限使用最后一个（未使用）的颜色来渲染object
+	if settings.General.CursorColorNum > settings.General.Players + 1 {
+		player.objectcolorIndex = settings.General.Players
+	}else {
+		player.objectcolorIndex = settings.General.CursorColorNum - 1
+	}
 
 	//endregion
 
@@ -380,9 +400,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			// 判断mod
 			mods := r.Mods
-			player.controller[k].SetIsHD(mods&8 > 0)
-			player.controller[k].SetIsHR(mods&16 > 0)
-			player.controller[k].SetIsEZ(mods&2 > 0)
+			player.controller[k].SetMods(int(mods))
 
 			// 开始时间
 			r1 := *r.ReplayData[1]
@@ -415,7 +433,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				// 如果真实offset大于等于读到的offset，更新
 				if true_offset >= float64(offset) {
 					// 如果是HR，上下翻转
-					if player.controller[k].GetIsHR(){
+					if (player.controller[k].GetMods()&16 > 0){
 						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(384 - posY)))
 					}else {
 						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(posY)))
@@ -800,14 +818,39 @@ func (pl *Player) Draw(delta float64) {
 		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, pl.playerbaseX, pl.fontbaseY - pl.lineoffset * float64(k), pl.fontsize, pl.controller[k].GetPlayname())
 		// 渲染mod
 		mods := "+"
-		if pl.controller[k].GetIsHR(){
-			mods += "HR"
+		if (pl.controller[k].GetMods()&1 > 0){
+			mods += "NF"
 		}
-		if pl.controller[k].GetIsHD(){
+		if (pl.controller[k].GetMods()&2 > 0){
+			mods += "EZ"
+		}
+		if (pl.controller[k].GetMods()&4 > 0){
+			mods += "TD"
+		}
+		if (pl.controller[k].GetMods()&8 > 0){
 			mods += "HD"
 		}
-		if pl.controller[k].GetIsEZ(){
-			mods += "EZ"
+		if (pl.controller[k].GetMods()&16 > 0){
+			mods += "HR"
+		}
+		if (pl.controller[k].GetMods()&16384 > 0){
+			mods += "PF"
+		}else if (pl.controller[k].GetMods()&32 > 0){
+			mods += "SD"
+		}
+		if (pl.controller[k].GetMods()&512 > 0){
+			mods += "NC"
+		}else if (pl.controller[k].GetMods()&64 > 0){
+			mods += "DT"
+		}
+		if (pl.controller[k].GetMods()&256 > 0){
+			mods += "HT"
+		}
+		if (pl.controller[k].GetMods()&1024 > 0){
+			mods += "FL"
+		}
+		if (pl.controller[k].GetMods()&4096 > 0){
+			mods += "SO"
 		}
 		if mods != "+" {
 			pl.batch.SetColor(1, 1, 1, float64(namecolor[3]))
@@ -947,6 +990,16 @@ func (pl *Player) Draw(delta float64) {
 
 	//endregion
 
+	//region 渲染录制信息
+
+	pl.batch.Begin()
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY, pl.recordbasesize, "Recorded by " + settings.General.Recorder)
+	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY - pl.recordtimeoffsetY, pl.recordbasesize, "Recorded on " + settings.General.RecordTime)
+	pl.batch.End()
+
+	//endregion
+
 	//region 无关4
 
 	if pl.start {
@@ -964,7 +1017,8 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], colors1[settings.General.CursorColorNum-1], pl.sliderRenderer)
+
+						s.DrawBody(pl.progressMs, pl.bMap.ARms, colors1[pl.objectcolorIndex], colors1[pl.objectcolorIndex], pl.sliderRenderer)
 					}
 				}
 			}
@@ -999,11 +1053,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], colors1[settings.General.CursorColorNum-1], pl.sliderRenderer)
+							s.DrawBody(pl.progressMs, pl.bMap.ARms, colors1[pl.objectcolorIndex], colors1[pl.objectcolorIndex], pl.sliderRenderer)
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
-					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], pl.batch)
+					res := pl.processed[i].Draw(pl.progressMs, pl.bMap.ARms, colors1[pl.objectcolorIndex], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
 						i++
@@ -1020,7 +1074,7 @@ func (pl *Player) Draw(delta float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors1[settings.General.CursorColorNum-1], pl.batch)
+					pl.processed[i].DrawApproach(pl.progressMs, pl.bMap.ARms, colors1[pl.objectcolorIndex], pl.batch)
 				}
 			}
 		}

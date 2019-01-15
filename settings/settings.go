@@ -29,6 +29,11 @@ type general struct {
 	Title	 			string
 	Difficulty	 		string
 	CursorColorSkipNum	int
+	Recorder			string
+	RecordTime			string
+	RecordBaseX			float64
+	RecordBaseY			float64
+	RecordBaseSize		float64
 }
 
 type graphics struct {

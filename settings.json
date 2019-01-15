@@ -17,11 +17,16 @@
 		"ReadResultCache": true,
 		"ReplayDir": "replays\\",
 		"CacheDir": "cache\\",
-		"MissMult": 1.8,
+		"MissMult": 1.5,
 		"CursorColorNum": 25,
-		"Title": "Road of Resistance",
-		"Difficulty": "Crimson Rebellion",
-		"CursorColorSkipNum": 13
+		"Title": "Tengaku",
+		"Difficulty": "Uncompressed Fury of a Raging Japanese God",
+		"CursorColorSkipNum": 13,
+		"Recorder": "wasupandceacar",
+		"RecordTime": "2019.1.16",
+		"RecordBaseX": 1019,
+		"RecordBaseY": 35,
+		"RecordBaseSize": 18
 	},
 	"Graphics": {
 		"Width": 1920,
