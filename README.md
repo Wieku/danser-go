@@ -30,28 +30,28 @@ osu-vs-player 用于同屏回放多个 osu replay，并实时显示replay信息�
 
 目前本项目加入的参数全部在 ```General``` 之下，其中一些稳定的参数含义如下：
 
-- OsuSongsDir - 地图的目录
-- Players - 同屏 replay 的个数
-- HitFadeTime - 每个 object 判定后显示的时间
-- BaseSize - 左侧信息的基准大小（相当于一个标准单位，各种基准具体效果请自己尝试）
-- BaseX - 左侧信息的基准 X 坐标
-- BaseY - 左侧信息的基准 Y 坐标
-- SpinnerMult - 转盘大小参数
-- ReverseFadeMult - 滑条总体时间与滑条折返开始显示时间之比
-- SpinnerMinusTime - 转盘提前显示时间
-- SaveResultCache - 是否缓存 replay 分析结果（acc、评级、pp等）。因为如果不修改判定逻辑，replay 每次分析结果应该一样，而分析大量 replay 需要一定时间（数分钟），所以可以事先保存 replay 的分析结果然后直接读取（几秒），从而更有效率地测试总体效果
-- ReadResultCache - 是否读取 replay 分析结果缓存。这个开启时将不会重新缓存 replay 分析结果
-- ReplayDir - replay 的目录
-- CacheDir - replay 分析结果缓存的目录
-- CursorColorNum - object（note、滑条、转盘）的颜色索引 X，为第 X 个 replay 光标的颜色
-- Title - 地图名
-- Difficulty - 难度名
-- CursorColorSkipNum - 光标颜色跳选参数。设为0时，无跳选，光标会颜色依次渐变，可能会造成区分度过低。自行调整以获得最佳效果
-- Recorder - 右下角录制信息的录制人
-- RecordTime - 右下角录制信息的录制时间
-- RecordBaseX - 右下角录制信息的基准 X 坐标
-- RecordBaseY - 右下角录制信息的基准 Y 坐标
-- RecordBaseSize - 右下角录制信息的基准大小
+- ```OsuSongsDir``` - 地图的目录
+- ```Players``` - 同屏 replay 的个数
+- ```HitFadeTime``` - 每个 object 判定后显示的时间
+- ```BaseSize``` - 左侧信息的基准大小（相当于一个标准单位，各种基准具体效果请自己尝试）
+- ```BaseX``` - 左侧信息的基准 X 坐标
+- ```BaseY``` - 左侧信息的基准 Y 坐标
+- ```SpinnerMult``` - 转盘大小参数
+- ```ReverseFadeMult``` - 滑条总体时间与滑条折返开始显示时间之比
+- ```SpinnerMinusTime``` - 转盘提前显示时间
+- ```SaveResultCache``` - 是否缓存 replay 分析结果（acc、评级、pp等）。因为如果不修改判定逻辑，replay 每次分析结果应该一样，而分析大量 replay 需要一定时间（数分钟），所以可以事先保存 replay 的分析结果然后直接读取（几秒），从而更有效率地测试总体效果
+- ```ReadResultCache``` - 是否读取 replay 分析结果缓存。这个开启时将不会重新缓存 replay 分析结果
+- ```ReplayDir``` - replay 的目录
+- ```CacheDir``` - replay 分析结果缓存的目录
+- ```CursorColorNum``` - object（note、滑条、转盘）的颜色索引 X，为第 X 个 replay 光标的颜色
+- ```Title``` - 地图名
+- ```Difficulty``` - 难度名
+- ```CursorColorSkipNum``` - 光标颜色跳选参数。设为0时，无跳选，光标会颜色依次渐变，可能会造成区分度过低。自行调整以获得最佳效果
+- ```Recorder``` - 右下角录制信息的录制人
+- ```RecordTime``` - 右下角录制信息的录制时间
+- ```RecordBaseX``` - 右下角录制信息的基准 X 坐标
+- ```RecordBaseY``` - 右下角录制信息的基准 Y 坐标
+- ```RecordBaseSize``` - 右下角录制信息的基准大小
 
 ## 关于自行编译 ##
 
