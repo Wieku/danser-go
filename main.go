@@ -41,7 +41,6 @@ func run() {
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 1, "")
 		tag := flag.Int("tag", 1, "")
-		speed := flag.Float64("speed", 1.0, "")
 		pitch := flag.Float64("pitch", 1.0, "")
 		mover := flag.String("mover", "linear", "")
 		debug := flag.Bool("debug", false, "")
@@ -54,7 +53,6 @@ func run() {
 		settings.FPS = *fps
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
-		settings.SPEED = *speed
 		settings.PITCH = *pitch
 		_ = mover
 		dance.SetMover(*mover)
@@ -67,6 +65,12 @@ func run() {
 		// 从设置重新载入map
 		title := flag.String("title", settings.General.Title, "")
 		difficulty := flag.String("difficulty", settings.General.Difficulty, "")
+		// 开启DT
+		if settings.General.EnableDT {
+			settings.SPEED = *flag.Float64("speed", 1.5, "")
+		}else {
+			settings.SPEED = *flag.Float64("speed", 1.0, "")
+		}
 
 		if (*artist + *title + *difficulty + *creator) == "" {
 			log.Println("No beatmap specified, closing...")

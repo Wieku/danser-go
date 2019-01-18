@@ -34,6 +34,9 @@ type general struct {
 	RecordBaseX			float64
 	RecordBaseY			float64
 	RecordBaseSize		float64
+	EnableDT			bool
+	ShowMouse1			bool
+	ShowMouse2			bool
 }
 
 type graphics struct {

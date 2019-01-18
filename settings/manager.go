@@ -36,7 +36,10 @@ func initDefaults() {
 						"1970.01.01",
 						900,
 						80,
-						20}
+						20,
+						false,
+						true,
+						false}
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, 0, false, false}
 	Beat = &beat{1.2}

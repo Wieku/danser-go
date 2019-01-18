@@ -93,6 +93,7 @@ type Player struct {
 	key1baseX		float64
 	key2baseX		float64
 	key3baseX		float64
+	key4baseX		float64
 	accbaseX		float64
 	rankbaseX		float64
 	ppbaseX			float64
@@ -273,7 +274,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.key1baseX = settings.General.BaseX
 	player.key2baseX = player.key1baseX + 2 * player.keysize
 	player.key3baseX = player.key2baseX + 2 * player.keysize
-	player.accbaseX = player.key3baseX + 2 * settings.General.BaseSize
+	player.key4baseX = player.key3baseX + 2 * player.keysize
+	if settings.General.ShowMouse1 {
+		if settings.General.ShowMouse2 {
+			player.accbaseX = player.key4baseX + 2 * settings.General.BaseSize
+		}else{
+			player.accbaseX = player.key3baseX + 2 * settings.General.BaseSize
+		}
+	}else{
+		player.accbaseX = player.key2baseX + 2 * settings.General.BaseSize
+	}
 	player.rankbaseX = player.accbaseX + 8.375 * settings.General.BaseSize
 	player.ppbaseX = player.rankbaseX + 1.625 * settings.General.BaseSize
 	player.playerbaseX = player.ppbaseX + 8.75 * settings.General.BaseSize
@@ -779,16 +789,31 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.SetColor(1, 1, 1, 0)
 			pl.batch.DrawUnit(*render.PressKey)
 		}
-		if playerkey.LeftClick && !playerkey.Key1 {
-			pl.batch.SetTranslation(bmath.NewVec2d(pl.key3baseX, pl.keybaseY - pl.lineoffset * float64(k)))
-			pl.batch.SetScale(pl.keysize, pl.keysize)
-			pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
-			pl.batch.DrawUnit(*render.PressKey)
-		} else {
-			pl.batch.SetTranslation(bmath.NewVec2d(pl.key3baseX, pl.keybaseY - pl.lineoffset * float64(k)))
-			pl.batch.SetScale(pl.keysize, pl.keysize)
-			pl.batch.SetColor(1, 1, 1, 0)
-			pl.batch.DrawUnit(*render.PressKey)
+		if settings.General.ShowMouse1 {
+			if playerkey.LeftClick && !playerkey.Key1 {
+				pl.batch.SetTranslation(bmath.NewVec2d(pl.key3baseX, pl.keybaseY-pl.lineoffset*float64(k)))
+				pl.batch.SetScale(pl.keysize, pl.keysize)
+				pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+				pl.batch.DrawUnit(*render.PressKey)
+			} else {
+				pl.batch.SetTranslation(bmath.NewVec2d(pl.key3baseX, pl.keybaseY-pl.lineoffset*float64(k)))
+				pl.batch.SetScale(pl.keysize, pl.keysize)
+				pl.batch.SetColor(1, 1, 1, 0)
+				pl.batch.DrawUnit(*render.PressKey)
+			}
+		}
+		if settings.General.ShowMouse2 {
+			if playerkey.RightClick && !playerkey.Key2 {
+				pl.batch.SetTranslation(bmath.NewVec2d(pl.key4baseX, pl.keybaseY-pl.lineoffset*float64(k)))
+				pl.batch.SetScale(pl.keysize, pl.keysize)
+				pl.batch.SetColor(float64(namecolor[0]), float64(namecolor[1]), float64(namecolor[2]), float64(namecolor[3]))
+				pl.batch.DrawUnit(*render.PressKey)
+			} else {
+				pl.batch.SetTranslation(bmath.NewVec2d(pl.key4baseX, pl.keybaseY-pl.lineoffset*float64(k)))
+				pl.batch.SetScale(pl.keysize, pl.keysize)
+				pl.batch.SetColor(1, 1, 1, 0)
+				pl.batch.DrawUnit(*render.PressKey)
+			}
 		}
 	}
 	pl.batch.End()
