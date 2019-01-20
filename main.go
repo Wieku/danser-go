@@ -98,8 +98,42 @@ func run() {
 		//for k := 0; k < 40; k++ {
 		//	log.Println(*r.ReplayData[k])
 		//}
-		//hitjudge.ParseHits("Song/336414 Wagakki Band - Tengaku/Wagakki Band - Tengaku (Shiro) [Uncompressed Fury of a Raging Japanese God].osu",
-		//	"replays/22-OskaRRRitoS.osr")
+
+		//serrs := []hitjudge.Error{
+		//	{
+		//		ReplayIndex: 	28,
+		//		ObjectIndex: 	333,
+		//		Result: 		hitjudge.Hit100,
+		//		IsBreak:		true,
+		//		ComboOffset:	-3,
+		//	},
+		//}
+		//hitjudge.SaveError(serrs)
+		//
+		//errs := hitjudge.ReadError()
+
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/01-Mathi.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/02-rustbell.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/03-idke.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/04-firebat92.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/05-HappyStick.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/06-BeasttrollMC.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/07-Toy.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/09-ThePooN.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/10-WubWoofWolf.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/11-_index.osr")
+		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
+		//	"replays/29-fieryrage.osr", hitjudge.FilterError(28, errs))
 		//os.Exit(1)
 
 		glfw.Init()
@@ -253,5 +287,5 @@ func main() {
 	//files, _ := replay.GetOsrFiles()
 	//log.Println(files)
 
-	//log.Println(bmath.Vector2d{291.6093043265869, 320.52429609268916}.Dst(bmath.Vector2d{233.3333,278.2222}))
+	//log.Println(bmath.Vector2d{433.8265895953757, 313.2369942196532}.Dst(bmath.Vector2d{420,219.3333}))
 }

@@ -1,9 +1,9 @@
 package sliders
 
 import (
+	"danser/bmath"
 	m2 "danser/bmath"
 	"danser/bmath/curves"
-	"danser/bmath"
 	"math"
 )
 
@@ -116,6 +116,21 @@ func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
 	if sa.scale > -0.5 {
 		t*=sa.scale
 	}
+	if len(sa.curves) == 1 {
+		return sa.curves[0].PointAt(t)
+	} else {
+		t = sa.sections[len(sa.sections)-1] * t
+		for i := 1; i < len(sa.sections); i++ {
+			if t <= sa.sections[i] || i == len(sa.sections)-1 {
+				prc := (t - sa.sections[i-1]) / (sa.sections[i] - sa.sections[i-1])
+				return sa.curves[i-1].PointAt(prc)
+			}
+		}
+	}
+	return m2.NewVec2d(512/2, 384/2)
+}
+
+func (sa *SliderAlgo) PointAtTail(t float64) m2.Vector2d {
 	if len(sa.curves) == 1 {
 		return sa.curves[0].PointAt(t)
 	} else {

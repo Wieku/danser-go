@@ -13,7 +13,7 @@ type general struct {
 	EnableBreakandQuit 	bool
 	PlayerFadeTime		float64
 	HitFadeTime			int64
-	RandomOffsetMult	int
+	SameTimeOffset		float64
 	BaseSize			float64
 	BaseX				float64
 	BaseY				float64
@@ -37,6 +37,7 @@ type general struct {
 	EnableDT			bool
 	ShowMouse1			bool
 	ShowMouse2			bool
+	ErrorFixFile		string
 }
 
 type graphics struct {

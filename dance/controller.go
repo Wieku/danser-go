@@ -11,7 +11,6 @@ import (
 	"danser/render/texture"
 	"danser/settings"
 	"github.com/Mempler/rplpa"
-	"math/rand"
 	"strings"
 )
 
@@ -57,7 +56,7 @@ type Controller interface {
 	SetDishowTime(time float64)
 	GetDishowTime() float64
 
-	SetDishowPos(pos bmath.Vector2d)
+	SetDishowPos(pos bmath.Vector2d, num int)
 	GetDishowPos() bmath.Vector2d
 }
 
@@ -302,11 +301,9 @@ func (controller *ReplayController) GetDishowTime() float64{
 	return controller.dishowtime
 }
 
-func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d) {
-	// 随机一个偏移
-	maxoffset := float64(settings.General.RandomOffsetMult) * render.CS
-	offsetX := rand.Float64() * maxoffset - maxoffset/2
-	offsetY := rand.Float64() * maxoffset - maxoffset/2
+func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d, rate int) {
+	// 向下一个偏移
+	offsetY := settings.General.SameTimeOffset * float64(rate)
 	mult := float64(settings.Graphics.WindowHeight) / 384
 	x := pos.X * mult + float64(settings.Graphics.WindowWidth) / 8
 	y := float64(settings.Graphics.WindowHeight) - pos.Y * mult
@@ -315,7 +312,7 @@ func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d) {
 		x = pos.X * mult + float64(settings.Graphics.Width) / 8
 		y = float64(settings.Graphics.Height) - pos.Y * mult
 	}
-	controller.dishowpos = bmath.Vector2d{x + offsetX, y + offsetY}
+	controller.dishowpos = bmath.Vector2d{x, y - offsetY}
 }
 
 func (controller *ReplayController) GetDishowPos() bmath.Vector2d{

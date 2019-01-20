@@ -30,6 +30,8 @@ import (
 	"time"
 )
 
+var defaultpos = bmath.Vector2d{-1, -1}
+
 type Player struct {
 	font           *font.Font
 	bMap           *beatmap.BeatMap
@@ -110,6 +112,10 @@ type Player struct {
 
 	// 色彩参数
 	objectcolorIndex	int
+
+	// 偏移参数
+	lastDishowPos	bmath.Vector2d
+	SameRate		int
 }
 
 //endregion
@@ -304,6 +310,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.objectcolorIndex = settings.General.CursorColorNum - 1
 	}
 
+	player.lastDishowPos = bmath.Vector2d{-1, -1}
+	player.SameRate = 0
+
 	//endregion
 
 	//region replay处理
@@ -333,10 +342,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	}else {
 		log.Println("本次选择读取解析replay")
+		errs := hitjudge.ReadError()
 		for k := 0; k < settings.General.Players; k++ {
 			t1 := time.Now()
 			log.Println("解析第", k+1, "个replay")
-			result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k])
+			result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k], hitjudge.FilterError(k+1, errs))
 			player.controller[k].SetHitResult(result)
 			player.controller[k].SetTotalResult(totalresult)
 			// 设置计算数组、初始化acc、rank和pp
@@ -757,6 +767,17 @@ func (pl *Player) Draw(delta float64) {
 
 	//endregion
 
+	//region 渲染录制信息
+
+	pl.batch.Begin()
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	pl.batch.SetColor(1, 1, 1, 0.4)
+	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY, pl.recordbasesize, "Recorded by " + settings.General.Recorder)
+	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY - pl.recordtimeoffsetY, pl.recordbasesize, "Recorded on " + settings.General.RecordTime)
+	pl.batch.End()
+
+	//endregion
+
 	//region 渲染按键
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
@@ -934,7 +955,18 @@ func (pl *Player) Draw(delta float64) {
 						pl.controller[k].SetIsShow(false)
 						// 保存消失时间、消失位置
 						pl.controller[k].SetDishowTime(pl.progressMsF)
-						pl.controller[k].SetDishowPos(pl.controller[k].GetHitResult()[0].JudgePos)
+
+						if pl.lastDishowPos == defaultpos{
+							pl.lastDishowPos = pl.controller[k].GetHitResult()[0].JudgePos
+						}else {
+							if pl.lastDishowPos == pl.controller[k].GetHitResult()[0].JudgePos {
+								pl.SameRate += 1
+							}else {
+								pl.SameRate = 0
+							}
+							pl.lastDishowPos = pl.controller[k].GetHitResult()[0].JudgePos
+						}
+						pl.controller[k].SetDishowPos(pl.controller[k].GetHitResult()[0].JudgePos, pl.SameRate)
 					}
 				}
 				pl.batch.SetTranslation(bmath.NewVec2d(lastPos[k] + pl.hitoffset, pl.hitbaseY - pl.lineoffset * float64(k)))
@@ -1012,16 +1044,6 @@ func (pl *Player) Draw(delta float64) {
 			render.EndCursorRender()
 		}
 	}
-
-	//endregion
-
-	//region 渲染录制信息
-
-	pl.batch.Begin()
-	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY, pl.recordbasesize, "Recorded by " + settings.General.Recorder)
-	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY - pl.recordtimeoffsetY, pl.recordbasesize, "Recorded on " + settings.General.RecordTime)
-	pl.batch.End()
 
 	//endregion
 

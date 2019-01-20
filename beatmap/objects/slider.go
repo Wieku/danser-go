@@ -164,6 +164,20 @@ func (self Slider) GetPointAt(time int64) m2.Vector2d {
 	return pos.Add(self.objData.StackOffset)
 }
 
+func (self Slider) GetPointAtTail(time int64) m2.Vector2d {
+	times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
+
+	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
+
+	var pos m2.Vector2d
+	if (times % 2) == 1 {
+		pos = self.multiCurve.PointAtTail(ttime / self.partLen)
+	} else {
+		pos = self.multiCurve.PointAtTail(1.0 - ttime/self.partLen)
+	}
+	return pos.Add(self.objData.StackOffset)
+}
+
 func (self *Slider) GetAsDummyCircles() []BaseObject {
 	partLen := self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)
 
@@ -298,7 +312,7 @@ func (self *Slider) calculateTailJudgePoint() {
 	}
 	// 计算实际判定点
 	time := self.objData.EndTime - self.TailJudgeOffset
-	self.TailJudgePoint = self.GetPointAt(time)
+	self.TailJudgePoint = self.GetPointAtTail(time)
 }
 
 func (self *Slider) GetCurve() []m2.Vector2d {
