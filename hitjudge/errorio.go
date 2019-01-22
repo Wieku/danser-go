@@ -7,14 +7,14 @@ import (
 )
 
 func SaveError(errors []Error) {
-	oerr := ioutil.WriteFile(settings.General.ErrorFixFile, []byte(getErrorCache(errors)), 0666)
+	oerr := ioutil.WriteFile(settings.VSplayer.ErrorFix.ErrorFixFile, []byte(getErrorCache(errors)), 0666)
 	if oerr != nil {
 		panic(oerr)
 	}
 }
 
 func ReadError() ([]Error) {
-	oread, _ := ioutil.ReadFile(settings.General.ErrorFixFile)
+	oread, _ := ioutil.ReadFile(settings.VSplayer.ErrorFix.ErrorFixFile)
 	return setErrorCache(oread)
 }
 

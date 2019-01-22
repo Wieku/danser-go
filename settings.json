@@ -1,36 +1,57 @@
 {
 	"Version": "v1",
 	"General": {
-		"OsuSongsDir": "song\\",
-		"Players": 49,
-		"EnableBreakandQuit": true,
-		"PlayerFadeTime": 2000,
-		"HitFadeTime": 200,
-		"SameTimeOffset": 36,
-		"BaseSize": 6,
-		"BaseX": 14,
-		"BaseY": 696,
-		"SpinnerMult": 240,
-		"ReverseFadeMult": 4.5,
-		"SpinnerMinusTime": 1000,
-		"SaveResultCache": true,
-		"ReadResultCache": true,
-		"ReplayDir": "replays\\",
-		"CacheDir": "cache\\",
-		"MissMult": 1.5,
-		"CursorColorNum": 25,
-		"Title": "Genryuu Kaiko",
-		"Difficulty": "Higan Torrent",
-		"CursorColorSkipNum": 13,
-		"Recorder": "wasupandceacar",
-		"RecordTime": "2019.1.20",
-		"RecordBaseX": 1019,
-		"RecordBaseY": 35,
-		"RecordBaseSize": 18,
-		"EnableDT": false,
-		"ShowMouse1": false,
-		"ShowMouse2": false,
-		"ErrorFixFile": "error.err"
+		"OsuSongsDir": "song\\"
+	},
+	"VSplayer": {
+		"PlayerInfo": {
+			"Players": 1
+		},
+		"PlayerInfoUI": {
+			"BaseSize": 6,
+			"BaseX": 14,
+			"BaseY": 696,
+			"ShowMouse1": false,
+			"ShowMouse2": false
+		},
+		"RecordInfoUI": {
+			"Recorder": "wasupandceacar",
+			"RecordTime": "2019.1.20",
+			"RecordBaseX": 1019,
+			"RecordBaseY": 35,
+			"RecordBaseSize": 18
+		},
+		"PlayerFieldUI": {
+			"HitFadeTime": 200,
+			"SpinnerMinusTime": 1000,
+			"SpinnerMult": 240,
+			"ReverseFadeMult": 4.5,
+			"CursorColorNum": 25,
+			"CursorColorSkipNum": 13
+		},
+		"MapInfo": {
+			"Title": "Genryuu Kaiko",
+			"Difficulty": "Higan Torrent"
+		},
+		"Mods": {
+			"EnableDT": false
+		},
+		"BreakandQuit": {
+			"EnableBreakandQuit": true,
+			"PlayerFadeTime": 2000,
+			"SameTimeOffset": 36,
+			"MissMult": 1.5
+		},
+		"ReplayandCache": {
+			"ReplayDir": "replays\\",
+			"CacheDir": "cache\\",
+			"SaveResultCache": true,
+			"ReadResultCache": true
+		},
+		"ErrorFix": {
+			"EnableErrorFix": false,
+			"ErrorFixFile": "error.err"
+		}
 	},
 	"Graphics": {
 		"Width": 1920,

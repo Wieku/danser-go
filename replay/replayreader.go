@@ -7,7 +7,7 @@ import (
 )
 
 func GetOsrFiles() (files []string, err error) {
-	dir, err := ioutil.ReadDir(settings.General.ReplayDir)
+	dir, err := ioutil.ReadDir(settings.VSplayer.ReplayandCache.ReplayDir)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func GetOsrFiles() (files []string, err error) {
 	for _, fi := range dir {
 		ok := strings.HasSuffix(fi.Name(), ".osr")
 		if ok {
-			files = append(files, settings.General.ReplayDir+fi.Name())
+			files = append(files, settings.VSplayer.ReplayandCache.ReplayDir+fi.Name())
 		}
 	}
 

@@ -42,7 +42,7 @@ func (self *Spinner) Update(time int64) bool {
 func (self *Spinner) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 	alpha := 1.0
 	//提前显示转盘
-	truestarttime := self.objData.StartTime - settings.General.SpinnerMinusTime
+	truestarttime := self.objData.StartTime - settings.VSplayer.PlayerFieldUI.SpinnerMinusTime
 
 	if time < truestarttime {
 		return false
@@ -72,9 +72,9 @@ func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 func (self *Spinner) DrawApproach(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) {
 	alpha := 1.0
 	//提前显示转盘
-	truestarttime := self.objData.StartTime - settings.General.SpinnerMinusTime
+	truestarttime := self.objData.StartTime - settings.VSplayer.PlayerFieldUI.SpinnerMinusTime
 	// 计算AR
-	fake_preempt := float64(self.objData.EndTime - truestarttime) / settings.General.SpinnerMult
+	fake_preempt := float64(self.objData.EndTime - truestarttime) / settings.VSplayer.PlayerFieldUI.SpinnerMult
 	arr := float64(self.objData.EndTime - time) / fake_preempt
 
 	if time < truestarttime {

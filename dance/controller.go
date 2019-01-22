@@ -303,7 +303,7 @@ func (controller *ReplayController) GetDishowTime() float64{
 
 func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d, rate int) {
 	// 向下一个偏移
-	offsetY := settings.General.SameTimeOffset * float64(rate)
+	offsetY := settings.VSplayer.BreakandQuit.SameTimeOffset * float64(rate)
 	mult := float64(settings.Graphics.WindowHeight) / 384
 	x := pos.X * mult + float64(settings.Graphics.WindowWidth) / 8
 	y := float64(settings.Graphics.WindowHeight) - pos.Y * mult

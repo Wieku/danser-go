@@ -9,36 +9,80 @@ const SETTINGSVERSION = "v1"
 
 type general struct {
 	OsuSongsDir 		string
-	Players				int
-	EnableBreakandQuit 	bool
-	PlayerFadeTime		float64
+}
+
+//region VS-player 自定义参数区域
+
+type playerinfo struct {
+	Players		int
+}
+
+type playerinfoUI struct {
+	BaseSize	float64
+	BaseX		float64
+	BaseY		float64
+	ShowMouse1	bool
+	ShowMouse2	bool
+}
+
+type recordinfoUI struct {
+	Recorder		string
+	RecordTime		string
+	RecordBaseX		float64
+	RecordBaseY		float64
+	RecordBaseSize	float64
+}
+
+type playerfieldUI struct {
 	HitFadeTime			int64
-	SameTimeOffset		float64
-	BaseSize			float64
-	BaseX				float64
-	BaseY				float64
+	SpinnerMinusTime	int64
 	SpinnerMult			float64
 	ReverseFadeMult		float64
-	SpinnerMinusTime	int64
-	SaveResultCache 	bool
-	ReadResultCache 	bool
+	CursorColorNum		int
+	CursorColorSkipNum	int
+}
+
+type mapinfo struct {
+	Title	 		string
+	Difficulty	 	string
+}
+
+type mods struct {
+	EnableDT		bool
+}
+
+type breakandquit struct {
+	EnableBreakandQuit 	bool
+	PlayerFadeTime		float64
+	SameTimeOffset		float64
+	MissMult			float64
+}
+
+type replayandcache struct {
 	ReplayDir 			string
 	CacheDir 			string
-	MissMult			float64
-	CursorColorNum		int
-	Title	 			string
-	Difficulty	 		string
-	CursorColorSkipNum	int
-	Recorder			string
-	RecordTime			string
-	RecordBaseX			float64
-	RecordBaseY			float64
-	RecordBaseSize		float64
-	EnableDT			bool
-	ShowMouse1			bool
-	ShowMouse2			bool
+	SaveResultCache 	bool
+	ReadResultCache 	bool
+}
+
+type errorfix struct {
+	EnableErrorFix		bool
 	ErrorFixFile		string
 }
+
+type vsplayer struct {
+	PlayerInfo		*playerinfo
+	PlayerInfoUI	*playerinfoUI
+	RecordInfoUI	*recordinfoUI
+	PlayerFieldUI	*playerfieldUI
+	MapInfo			*mapinfo
+	Mods			*mods
+	BreakandQuit	*breakandquit
+	ReplayandCache	*replayandcache
+	ErrorFix		*errorfix
+}
+
+//endregion
 
 type graphics struct {
 	Width, Height             int64
@@ -273,6 +317,7 @@ type playfield struct {
 type fileformat struct {
 	Version   *string
 	General   *general
+	VSplayer  *vsplayer
 	Graphics  *graphics
 	Audio     *audio
 	Beat      *beat
@@ -284,6 +329,7 @@ type fileformat struct {
 
 var Version string
 var General *general
+var VSplayer *vsplayer
 var Graphics *graphics
 var Audio *audio
 var Beat *beat

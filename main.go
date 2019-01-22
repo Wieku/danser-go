@@ -63,10 +63,10 @@ func run() {
 		var beatMap *beatmap.BeatMap = nil
 
 		// 从设置重新载入map
-		title := flag.String("title", settings.General.Title, "")
-		difficulty := flag.String("difficulty", settings.General.Difficulty, "")
+		title := flag.String("title", settings.VSplayer.MapInfo.Title, "")
+		difficulty := flag.String("difficulty", settings.VSplayer.MapInfo.Difficulty, "")
 		// 开启DT
-		if settings.General.EnableDT {
+		if settings.VSplayer.Mods.EnableDT {
 			settings.SPEED = *flag.Float64("speed", 1.5, "")
 		}else {
 			settings.SPEED = *flag.Float64("speed", 1.0, "")

@@ -11,36 +11,57 @@ var fileName string
 
 func initDefaults() {
 	Version = SETTINGSVERSION
-	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator),
-						4,
-						true,
-						2000,
-						200,
-						128,
-						8,
-						22,
-						676,
-						10,
-						5,
-						1000,
-						true,
-						false,
-						"replays/",
-						"cache/",
-						1.8,
-						1,
-						"",
-						"",
-						1,
-						"who are you",
-						"1970.01.01",
-						900,
-						80,
-						20,
-						false,
-						true,
-						false,
-						"error.err"}
+	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator)}
+	VSplayer = &vsplayer{
+		&playerinfo{
+			1,
+		},
+		&playerinfoUI{
+			6,
+			14,
+			696,
+			false,
+			false,
+		},
+		&recordinfoUI{
+			"who are you",
+			"1970.01.01",
+			1019,
+			35,
+			18,
+		},
+		&playerfieldUI{
+			200,
+			1000,
+			240,
+			4.5,
+			25,
+			13,
+		},
+		&mapinfo{
+			"title",
+			"difficulty",
+		},
+		&mods{
+			false,
+		},
+		&breakandquit{
+			true,
+			2000,
+			36,
+			1.5,
+		},
+		&replayandcache{
+			"replays\\",
+			"cache\\",
+			true,
+			false,
+		},
+		&errorfix{
+			false,
+			"error.err",
+		},
+	}
 	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
 	Audio = &audio{0.5, 0.5, 0.5, 0, false, false}
 	Beat = &beat{1.2}
@@ -48,7 +69,7 @@ func initDefaults() {
 	Objects = &objects{5, 0.3, true, true, &color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, true, 100.0, 0}, -1, 1.2, true, 30, 50, true, true, true, true, true, 0.0, false, &color{false, 8, &hsv{0, 0.0, 1.0}, false, 0, true, 100.0, 0}, true, 18, true}
 	Playfield = &playfield{5, 2, 5, 0, 0.95, 0.95, true, 0, 0.6, 0.6, 0, 1, 0, true, 1, true, true, 0.8, 1.1, 0, false, 2, true, true, 0.3, &bloom{0.0, 0.6, 0.7}}
 	Dance = &dance{Bezier: &bezier{60, 3}, Flower: &flower{true, 90, 0.666, 130, 90, -1, 0.7, false}, HalfCircle: &circular{1, 130}}
-	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield, Dance}
+	fileStorage = &fileformat{&Version, General, VSplayer, Graphics, Audio, Beat, Cursor, Objects, Playfield, Dance}
 }
 
 func LoadSettings(version int) bool {

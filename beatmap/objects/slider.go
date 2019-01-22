@@ -505,7 +505,7 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 					if i == 0 {
 						num += 1
 					}
-					fadetime := int64(float64(self.TickReverseTrue[num].Time - self.TickReverse[num].Time) / 4.5)
+					fadetime := int64(float64(self.TickReverseTrue[num].Time - self.TickReverse[num].Time) / settings.VSplayer.PlayerFieldUI.ReverseFadeMult)
 					if time >= self.TickReverseTrue[num].Time {
 						mult = 0.0
 					} else if time >= self.TickReverse[num].Time + fadetime{

@@ -9,19 +9,19 @@ import (
 )
 
 func SaveResult(oresult []hitjudge.ObjectResult, tresult []hitjudge.TotalResult, num int) {
-	oerr := ioutil.WriteFile(settings.General.CacheDir+getFileNum(num)+".ocache", []byte(getObjectCache(oresult)), 0666)
+	oerr := ioutil.WriteFile(settings.VSplayer.ReplayandCache.CacheDir+getFileNum(num)+".ocache", []byte(getObjectCache(oresult)), 0666)
 	if oerr != nil {
 		panic(oerr)
 	}
-	terr := ioutil.WriteFile(settings.General.CacheDir+getFileNum(num)+".tcache", []byte(getTotalCache(tresult)), 0666)
+	terr := ioutil.WriteFile(settings.VSplayer.ReplayandCache.CacheDir+getFileNum(num)+".tcache", []byte(getTotalCache(tresult)), 0666)
 	if terr != nil {
 		panic(terr)
 	}
 }
 
 func ReadResult(num int) ([]hitjudge.ObjectResult, []hitjudge.TotalResult) {
-	oread, _ := ioutil.ReadFile(settings.General.CacheDir+getFileNum(num)+".ocache")
-	tread, _ := ioutil.ReadFile(settings.General.CacheDir+getFileNum(num)+".tcache")
+	oread, _ := ioutil.ReadFile(settings.VSplayer.ReplayandCache.CacheDir+getFileNum(num)+".ocache")
+	tread, _ := ioutil.ReadFile(settings.VSplayer.ReplayandCache.CacheDir+getFileNum(num)+".tcache")
 	return setObjectCache(oread), setTotalCache(tread)
 }
 
