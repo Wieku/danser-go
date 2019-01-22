@@ -1,7 +1,7 @@
 package movers
 
 import (
-	"danser/osuconst"
+	. "danser/osuconst"
 	"math"
 	"danser/beatmap/objects"
 	"danser/settings"
@@ -19,13 +19,13 @@ type BezierMover struct {
 
 func NewBezierMover() MultiPointMover {
 	bm := &BezierMover{invert: 1}
-	bm.pt = bmath.NewVec2d(osuconst.PLAYFIELD_WIDTH / 2, osuconst.PLAYFIELD_HEIGHT / 2)
+	bm.pt = bmath.NewVec2d(PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT / 2)
 	bm.previousSpeed = -1
 	return bm
 }
 
 func (bm *BezierMover) Reset() {
-	bm.pt = bmath.NewVec2d(osuconst.PLAYFIELD_WIDTH / 2, osuconst.PLAYFIELD_HEIGHT / 2)
+	bm.pt = bmath.NewVec2d(PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT / 2)
 	bm.invert = 1
 	bm.previousSpeed = -1
 }

@@ -4,7 +4,7 @@ import (
 	"danser/beatmap"
 	"danser/beatmap/objects"
 	"danser/bmath"
-	"danser/osuconst"
+	. "danser/osuconst"
 	"danser/replay"
 	"danser/score"
 	"github.com/Mempler/rplpa"
@@ -50,24 +50,24 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 	r := pr.ReplayData
 
 	// 如果replay是HR，改变OD和CS，并上下翻转replay的Y坐标
-	if pr.Mods&osuconst.MOD_HR > 0 {
-		newOD := math.Min(osuconst.OD_HR_HENSE * b.OD, osuconst.OD_MAX)
-		OD300 = beatmap.AdjustOD(osuconst.OD_300_BASE - ( newOD * osuconst.OD_300_MULT ) + osuconst.OD_PRECISION_FIX)
-		OD100 = beatmap.AdjustOD(osuconst.OD_100_BASE - ( newOD * osuconst.OD_100_MULT ) + osuconst.OD_PRECISION_FIX)
-		OD50 = beatmap.AdjustOD(osuconst.OD_50_BASE - ( newOD * osuconst.OD_50_MULT ) + osuconst.OD_PRECISION_FIX)
-		ODMiss = beatmap.AdjustOD(osuconst.OD_MISS_BASE - ( newOD * osuconst.OD_MISS_MULT ) + osuconst.OD_PRECISION_FIX)
-		convert_CS = 32 * (1 - 0.7 * (math.Min(osuconst.CS_HR_HENSE * b.CircleSize, osuconst.CS_MAX) - 5) / 5)
+	if pr.Mods&MOD_HR > 0 {
+		newOD := math.Min(OD_HR_HENSE * b.OD, OD_MAX)
+		OD300 = beatmap.AdjustOD(OD_300_BASE - ( newOD * OD_300_MULT ) + OD_PRECISION_FIX)
+		OD100 = beatmap.AdjustOD(OD_100_BASE - ( newOD * OD_100_MULT ) + OD_PRECISION_FIX)
+		OD50 = beatmap.AdjustOD(OD_50_BASE - ( newOD * OD_50_MULT ) + OD_PRECISION_FIX)
+		ODMiss = beatmap.AdjustOD(OD_MISS_BASE - ( newOD * OD_MISS_MULT ) + OD_PRECISION_FIX)
+		convert_CS = 32 * (1 - 0.7 * (math.Min(CS_HR_HENSE * b.CircleSize, CS_MAX) - 5) / 5)
 		makeReplayHR(r)
 	}
 
 	// 如果replay是EZ，改变OD和CS
-	if pr.Mods&osuconst.MOD_EZ > 0 {
-		newOD := b.OD * osuconst.OD_EZ_HENSE
-		OD300 = beatmap.AdjustOD(osuconst.OD_300_BASE - ( newOD * osuconst.OD_300_MULT ) + osuconst.OD_PRECISION_FIX)
-		OD100 = beatmap.AdjustOD(osuconst.OD_100_BASE - ( newOD * osuconst.OD_100_MULT ) + osuconst.OD_PRECISION_FIX)
-		OD50 = beatmap.AdjustOD(osuconst.OD_50_BASE - ( newOD * osuconst.OD_50_MULT ) + osuconst.OD_PRECISION_FIX)
-		ODMiss = beatmap.AdjustOD(osuconst.OD_MISS_BASE - ( newOD * osuconst.OD_MISS_MULT ) + osuconst.OD_PRECISION_FIX)
-		convert_CS = 32 * (1 - 0.7 * (math.Min(b.CircleSize * osuconst.CS_EZ_HENSE, 10) - 5) / 5)
+	if pr.Mods&MOD_EZ > 0 {
+		newOD := b.OD * OD_EZ_HENSE
+		OD300 = beatmap.AdjustOD(OD_300_BASE - ( newOD * OD_300_MULT ) + OD_PRECISION_FIX)
+		OD100 = beatmap.AdjustOD(OD_100_BASE - ( newOD * OD_100_MULT ) + OD_PRECISION_FIX)
+		OD50 = beatmap.AdjustOD(OD_50_BASE - ( newOD * OD_50_MULT ) + OD_PRECISION_FIX)
+		ODMiss = beatmap.AdjustOD(OD_MISS_BASE - ( newOD * OD_MISS_MULT ) + OD_PRECISION_FIX)
+		convert_CS = 32 * (1 - 0.7 * (math.Min(b.CircleSize * CS_EZ_HENSE, 10) - 5) / 5)
 	}
 
 	// 计数
@@ -102,7 +102,7 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 				// 判断滑条头
 				requirehits += 1
 				// ticks的判定倍数
-				CS_scale := osuconst.TICK_JUDGE_SCALE
+				CS_scale := TICK_JUDGE_SCALE
 				// 寻找最近的Key
 				//log.Println("Slider head find", r[keyindex].Time, time, o.GetBasicData().StartTime, o.GetBasicData().StartPos)
 				ticktime := 0.0
@@ -164,7 +164,7 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 					time = nexttime
 					if isHit {
 						//log.Println("Tick", i+1, "hit", t.Time, t.Pos)
-						CS_scale = osuconst.TICK_JUDGE_SCALE
+						CS_scale = TICK_JUDGE_SCALE
 						realhits += 1
 						nowcombo += 1
 					}else {

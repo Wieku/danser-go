@@ -3,7 +3,7 @@ package beatmap
 import (
 	"danser/beatmap/objects"
 	"danser/bmath"
-	"danser/osuconst"
+	. "danser/osuconst"
 	"danser/settings"
 	"math"
 )
@@ -42,10 +42,10 @@ func calculateStackLeniency(b *BeatMap) {
 	b.ARms = preempt
 	b.FadeIn = difficultyRate(b.AR, 1200, 800, 300)
 	// 加入OD
-	b.OD300 = AdjustOD(osuconst.OD_300_BASE - ( b.OD * osuconst.OD_300_MULT ) + osuconst.OD_PRECISION_FIX)
-	b.OD100 = AdjustOD(osuconst.OD_100_BASE - ( b.OD * osuconst.OD_100_MULT ) + osuconst.OD_PRECISION_FIX)
-	b.OD50 = AdjustOD(osuconst.OD_50_BASE - ( b.OD * osuconst.OD_50_MULT ) + osuconst.OD_PRECISION_FIX)
-	b.ODMiss = AdjustOD(osuconst.OD_MISS_BASE - ( b.OD * osuconst.OD_MISS_MULT ) + osuconst.OD_PRECISION_FIX)
+	b.OD300 = AdjustOD(OD_300_BASE - ( b.OD * OD_300_MULT ) + OD_PRECISION_FIX)
+	b.OD100 = AdjustOD(OD_100_BASE - ( b.OD * OD_100_MULT ) + OD_PRECISION_FIX)
+	b.OD50 = AdjustOD(OD_50_BASE - ( b.OD * OD_50_MULT ) + OD_PRECISION_FIX)
+	b.ODMiss = AdjustOD(OD_MISS_BASE - ( b.OD * OD_MISS_MULT ) + OD_PRECISION_FIX)
 	hitObjects := b.HitObjects
 
 	if !settings.Objects.StackEnabled {

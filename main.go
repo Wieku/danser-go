@@ -4,7 +4,7 @@ import (
 	"danser/audio"
 	"danser/beatmap"
 	"danser/bmath"
-	"danser/build"
+	. "danser/build"
 	"danser/dance"
 	"danser/database"
 	"danser/render"
@@ -125,7 +125,7 @@ func run() {
 				panic(err)
 			}
 
-			win.SetTitle("osu vs player " + build.VERSION + " by " + build.OWNER + " on " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+			win.SetTitle("osu vs player " + VERSION + " by " + OWNER + " on " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 			icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
 			icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
 			icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")

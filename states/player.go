@@ -10,7 +10,7 @@ import (
 	"danser/bmath"
 	"danser/dance"
 	"danser/hitjudge"
-	"danser/osuconst"
+	. "danser/osuconst"
 	"danser/render"
 	"danser/render/effects"
 	"danser/render/font"
@@ -185,18 +185,18 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			}
 		}
 
-		scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / osuconst.PLAYFIELD_HEIGHT * settings.Playfield.Scale
+		scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / PLAYFIELD_HEIGHT * settings.Playfield.Scale
 
-		osuAspect := osuconst.PLAYFIELD_WIDTH / osuconst.PLAYFIELD_HEIGHT
+		osuAspect := PLAYFIELD_WIDTH / PLAYFIELD_HEIGHT
 		screenAspect := settings.Graphics.GetWidthF() / settings.Graphics.GetHeightF()
 
 		if osuAspect > screenAspect {
-			scl = (settings.Graphics.GetWidthF() * 900.0 / 1080.0) / osuconst.PLAYFIELD_WIDTH * settings.Playfield.Scale
+			scl = (settings.Graphics.GetWidthF() * 900.0 / 1080.0) / PLAYFIELD_WIDTH * settings.Playfield.Scale
 		}
 
 		player.camera = bmath.NewCamera()
 		player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
-		player.camera.SetOrigin(bmath.NewVec2d(osuconst.PLAYFIELD_WIDTH / 2, osuconst.PLAYFIELD_HEIGHT / 2))
+		player.camera.SetOrigin(bmath.NewVec2d(PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT / 2))
 		player.camera.SetScale(bmath.NewVec2d(scl, scl))
 		player.camera.Update()
 
@@ -910,38 +910,38 @@ func (pl *Player) Draw(delta float64) {
 		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, pl.playerbaseX, pl.fontbaseY - pl.lineoffset * float64(k), pl.fontsize, pl.controller[k].GetPlayname())
 		// 渲染mod
 		mods := "+"
-		if (pl.controller[k].GetMods()&osuconst.MOD_NF > 0){
+		if (pl.controller[k].GetMods()&MOD_NF > 0){
 			mods += "NF"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_EZ > 0){
+		if (pl.controller[k].GetMods()&MOD_EZ > 0){
 			mods += "EZ"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_TD > 0){
+		if (pl.controller[k].GetMods()&MOD_TD > 0){
 			mods += "TD"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_HD > 0){
+		if (pl.controller[k].GetMods()&MOD_HD > 0){
 			mods += "HD"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_HR > 0){
+		if (pl.controller[k].GetMods()&MOD_HR > 0){
 			mods += "HR"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_PF > 0){
+		if (pl.controller[k].GetMods()&MOD_PF > 0){
 			mods += "PF"
-		}else if (pl.controller[k].GetMods()&osuconst.MOD_SD > 0){
+		}else if (pl.controller[k].GetMods()&MOD_SD > 0){
 			mods += "SD"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_NC > 0){
+		if (pl.controller[k].GetMods()&MOD_NC > 0){
 			mods += "NC"
-		}else if (pl.controller[k].GetMods()&osuconst.MOD_DT > 0){
+		}else if (pl.controller[k].GetMods()&MOD_DT > 0){
 			mods += "DT"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_HT > 0){
+		if (pl.controller[k].GetMods()&MOD_HT > 0){
 			mods += "HT"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_FL > 0){
+		if (pl.controller[k].GetMods()&MOD_FL > 0){
 			mods += "FL"
 		}
-		if (pl.controller[k].GetMods()&osuconst.MOD_SO > 0){
+		if (pl.controller[k].GetMods()&MOD_SO > 0){
 			mods += "SO"
 		}
 		if mods != "+" {

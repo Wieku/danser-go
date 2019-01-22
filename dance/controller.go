@@ -7,7 +7,7 @@ import (
 	"danser/dance/movers"
 	"danser/dance/schedulers"
 	"danser/hitjudge"
-	"danser/osuconst"
+	. "danser/osuconst"
 	"danser/render"
 	"danser/render/texture"
 	"danser/settings"
@@ -306,13 +306,13 @@ func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d, rate int) {
 	// 向下一个偏移
 	offsetY := settings.VSplayer.BreakandQuit.SameTimeOffset * float64(rate)
 	// 计算正确的位置
-	mult := float64(settings.Graphics.WindowHeight) / osuconst.PLAYFIELD_HEIGHT
-	width_split := (1 - (osuconst.PLAYFIELD_WIDTH * mult / float64(settings.Graphics.WindowWidth))) / 2
+	mult := float64(settings.Graphics.WindowHeight) / PLAYFIELD_HEIGHT
+	width_split := (1 - (PLAYFIELD_WIDTH * mult / float64(settings.Graphics.WindowWidth))) / 2
 	x := pos.X * mult + float64(settings.Graphics.WindowWidth) * width_split
 	y := float64(settings.Graphics.WindowHeight) - pos.Y * mult
 	if settings.Graphics.Fullscreen {
-		mult = float64(settings.Graphics.Height) / osuconst.PLAYFIELD_HEIGHT
-		width_split = (1 - (osuconst.PLAYFIELD_WIDTH * mult / float64(settings.Graphics.Width))) / 2
+		mult = float64(settings.Graphics.Height) / PLAYFIELD_HEIGHT
+		width_split = (1 - (PLAYFIELD_WIDTH * mult / float64(settings.Graphics.Width))) / 2
 		x = pos.X * mult + float64(settings.Graphics.Width) * width_split
 		y = float64(settings.Graphics.Height) - pos.Y * mult
 	}
