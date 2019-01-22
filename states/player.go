@@ -10,6 +10,7 @@ import (
 	"danser/bmath"
 	"danser/dance"
 	"danser/hitjudge"
+	"danser/osuconst"
 	"danser/render"
 	"danser/render/effects"
 	"danser/render/font"
@@ -26,7 +27,10 @@ import (
 	"github.com/wieku/glhf"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -126,92 +130,180 @@ type Player struct {
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	//region 无关1
 	player := new(Player)
-	render.LoadTextures()
-	render.SetupSlider()
-	player.batch = render.NewSpriteBatch()
-	player.sliderRenderer = render.NewSliderRenderer()
-	player.font = font.GetFont("Roboto Bold")
+	// 非replay debug
+	if !settings.VSplayer.ReplayandCache.ReplayDebug {
+		render.LoadTextures()
+		render.SetupSlider()
+		player.batch = render.NewSpriteBatch()
+		player.sliderRenderer = render.NewSliderRenderer()
+		player.font = font.GetFont("Roboto Bold")
 
-	player.bMap = beatMap
+		player.bMap = beatMap
 
-	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
-	log.Println("Playing:", player.mapFullName)
+		player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
+		log.Println("Playing:", player.mapFullName)
 
-	player.CS = (1.0 - 0.7*(beatMap.CircleSize-5)/5) / 2 * settings.Objects.CSMult
-	render.CS = player.CS
+		player.CS = (1.0 - 0.7*(beatMap.CircleSize-5)/5) / 2 * settings.Objects.CSMult
+		render.CS = player.CS
 
-	var err error
-	player.Background, err = utils.LoadTextureToAtlas(render.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
-	if err != nil {
-		log.Println(err)
-	}
-
-	//if settings.Playfield.StoryboardEnabled {
-	//	player.storyboard = storyboard.NewStoryboard(player.bMap)
-	//
-	//	if player.storyboard == nil {
-	//		log.Println("Storyboard not found!")
-	//	}
-	//}
-
-	//player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	winscl := settings.Graphics.GetAspectRatio()
-
-	player.blurEffect = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-
-	if player.Background != nil {
-		imScl := float64(player.Background.Width) / float64(player.Background.Height)
-
-		condition := imScl < winscl
-		if player.storyboard != nil && !player.storyboard.IsWideScreen() {
-			condition = !condition
+		var err error
+		player.Background, err = utils.LoadTextureToAtlas(render.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+		if err != nil {
+			log.Println(err)
 		}
 
-		if condition {
-			player.BgScl = bmath.NewVec2d(1, winscl/imScl)
-		} else {
-			player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
+		//if settings.Playfield.StoryboardEnabled {
+		//	player.storyboard = storyboard.NewStoryboard(player.bMap)
+		//
+		//	if player.storyboard == nil {
+		//		log.Println("Storyboard not found!")
+		//	}
+		//}
+
+		//player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		winscl := settings.Graphics.GetAspectRatio()
+
+		player.blurEffect = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+
+		if player.Background != nil {
+			imScl := float64(player.Background.Width) / float64(player.Background.Height)
+
+			condition := imScl < winscl
+			if player.storyboard != nil && !player.storyboard.IsWideScreen() {
+				condition = !condition
+			}
+
+			if condition {
+				player.BgScl = bmath.NewVec2d(1, winscl/imScl)
+			} else {
+				player.BgScl = bmath.NewVec2d(imScl/winscl, 1)
+			}
+		}
+
+		scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / osuconst.PLAYFIELD_HEIGHT * settings.Playfield.Scale
+
+		osuAspect := osuconst.PLAYFIELD_WIDTH / osuconst.PLAYFIELD_HEIGHT
+		screenAspect := settings.Graphics.GetWidthF() / settings.Graphics.GetHeightF()
+
+		if osuAspect > screenAspect {
+			scl = (settings.Graphics.GetWidthF() * 900.0 / 1080.0) / osuconst.PLAYFIELD_WIDTH * settings.Playfield.Scale
+		}
+
+		player.camera = bmath.NewCamera()
+		player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
+		player.camera.SetOrigin(bmath.NewVec2d(osuconst.PLAYFIELD_WIDTH / 2, osuconst.PLAYFIELD_HEIGHT / 2))
+		player.camera.SetScale(bmath.NewVec2d(scl, scl))
+		player.camera.Update()
+
+		player.scamera = bmath.NewCamera()
+		player.scamera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
+		player.scamera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
+		player.scamera.Update()
+
+		render.Camera = player.camera
+
+		player.bMap.Reset()
+	}else {
+		log.Println("开始Debug Replay")
+	}
+
+	//endregion
+
+	//region player初始化
+	if settings.VSplayer.PlayerInfo.SpecifiedPlayers {
+		specifiedplayers := strings.Split(settings.VSplayer.PlayerInfo.SpecifiedLine, ",")
+		for _, player := range specifiedplayers {
+			pl, _ := strconv.Atoi(player)
+			if pl <= 0 {
+				log.Panic("指定player的字符串有误，请重新检查设定")
+			}
+		}
+		log.Println("本次已指定特定的player")
+		player.players = len(specifiedplayers)
+	}else {
+		player.players = settings.VSplayer.PlayerInfo.Players
+	}
+
+	if !settings.VSplayer.ReplayandCache.ReplayDebug {
+		player.controller = make([]dance.Controller, player.players)
+		for k := 0; k < player.players; k++ {
+			player.controller[k] = dance.NewReplayController()
+			player.controller[k].SetBeatMap(player.bMap)
+			player.controller[k].InitCursors()
+		}
+	}
+	//endregion
+
+	//region replay处理
+
+	// 读取replay
+	replays, err := replay.GetOsrFiles()
+	if err != nil {
+		panic(err)
+	}
+	// 解析每个replay的判定
+	t := time.Now()
+	if settings.VSplayer.ReplayandCache.ReadResultCache && !settings.VSplayer.ReplayandCache.ReplayDebug{
+		log.Println("本次选择读取缓存replay结果")
+		for k := 0; k < player.players; k++ {
+			t1 := time.Now()
+			log.Println("读取第", k+1, "个replay缓存")
+			result, totalresult := resultcache.ReadResult(k+1)
+			player.controller[k].SetHitResult(result)
+			player.controller[k].SetTotalResult(totalresult)
+			// 设置计算数组、初始化acc、rank和pp
+			player.controller[k].SetAcc(osuconst.DEFAULT_ACC)
+			player.controller[k].SetRank(*render.RankX)
+			player.controller[k].SetPP(osuconst.DEFAULT_PP)
+			// 设置初始显示
+			player.controller[k].SetIsShow(true)
+			log.Println("读取第", k+1, "个replay缓存完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+		}
+	}else {
+		log.Println("本次选择解析replay")
+		var errs []hitjudge.Error
+		if settings.VSplayer.ErrorFix.EnableErrorFix {
+			log.Println("本次选择进行replay解析纠错")
+			errs = hitjudge.ReadError()
+		}else {
+			errs = []hitjudge.Error{}
+		}
+		for k := 0; k < player.players; k++ {
+			t1 := time.Now()
+			log.Println("解析第", k+1, "个replay")
+			result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k], hitjudge.FilterError(k+1, errs))
+			if !settings.VSplayer.ReplayandCache.ReplayDebug {
+				player.controller[k].SetHitResult(result)
+				player.controller[k].SetTotalResult(totalresult)
+				// 设置计算数组、初始化acc、rank和pp
+				player.controller[k].SetAcc(osuconst.DEFAULT_ACC)
+				player.controller[k].SetRank(*render.RankX)
+				player.controller[k].SetPP(osuconst.DEFAULT_PP)
+				// 设置初始显示
+				player.controller[k].SetIsShow(true)
+			}
+			// 保存结果缓存
+			if settings.VSplayer.ReplayandCache.SaveResultCache && !settings.VSplayer.ReplayandCache.ReplayDebug{
+				resultcache.SaveResult(result, totalresult, k+1)
+				log.Println("已保存第", k+1, "个replay的结果缓存")
+			}
+			log.Println("解析第", k+1, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
 		}
 	}
 
-	scl := (settings.Graphics.GetHeightF() * 900.0 / 1080.0) / float64(384) * settings.Playfield.Scale
-
-	osuAspect := 512.0 / 384.0
-	screenAspect := settings.Graphics.GetWidthF() / settings.Graphics.GetHeightF()
-
-	if osuAspect > screenAspect {
-		scl = (settings.Graphics.GetWidthF() * 900.0 / 1080.0) / float64(512) * settings.Playfield.Scale
+	if settings.VSplayer.ReplayandCache.ReplayDebug {
+		log.Println("Debug Replay 结束，直接退出")
+		os.Exit(0)
 	}
 
-	player.camera = bmath.NewCamera()
-	player.camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
-	player.camera.SetOrigin(bmath.NewVec2d(512.0/2, 384.0/2))
-	player.camera.SetScale(bmath.NewVec2d(scl, scl))
-	player.camera.Update()
+	//endregion
 
-	player.scamera = bmath.NewCamera()
-	player.scamera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
-	player.scamera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
-	player.scamera.Update()
-
-	render.Camera = player.camera
-
-	player.bMap.Reset()
-
-	// 控制初始化
-	player.players = settings.VSplayer.PlayerInfo.Players
-
-	player.controller = make([]dance.Controller, player.players)
-	for k := 0; k < player.players; k++ {
-		player.controller[k] = dance.NewReplayController()
-		player.controller[k].SetBeatMap(player.bMap)
-		player.controller[k].InitCursors()
-	}
+	//region 无关11
 
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
@@ -317,63 +409,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.lastDishowPos = bmath.Vector2d{-1, -1}
 	player.SameRate = 0
-
-	//endregion
-
-	//region replay处理
-
-	// 读取replay
-	replays, err := replay.GetOsrFiles()
-	if err != nil {
-		panic(err)
-	}
-	// 解析每个replay的判定
-	t := time.Now()
-	if settings.VSplayer.ReplayandCache.ReadResultCache {
-		log.Println("本次选择读取缓存replay结果")
-		for k := 0; k < player.players; k++ {
-			t1 := time.Now()
-			log.Println("读取第", k+1, "个replay缓存")
-			result, totalresult := resultcache.ReadResult(k+1)
-			player.controller[k].SetHitResult(result)
-			player.controller[k].SetTotalResult(totalresult)
-			// 设置计算数组、初始化acc、rank和pp
-			player.controller[k].SetAcc(100.0)
-			player.controller[k].SetRank(*render.RankX)
-			player.controller[k].SetPP(0.0)
-			// 设置初始显示
-			player.controller[k].SetIsShow(true)
-			log.Println("读取第", k+1, "个replay缓存完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
-		}
-	}else {
-		log.Println("本次选择解析replay")
-		var errs []hitjudge.Error
-		if settings.VSplayer.ErrorFix.EnableErrorFix {
-			log.Println("本次选择进行replay解析纠错")
-			errs = hitjudge.ReadError()
-		}else {
-			errs = []hitjudge.Error{}
-		}
-		for k := 0; k < player.players; k++ {
-			t1 := time.Now()
-			log.Println("解析第", k+1, "个replay")
-			result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k], hitjudge.FilterError(k+1, errs))
-			player.controller[k].SetHitResult(result)
-			player.controller[k].SetTotalResult(totalresult)
-			// 设置计算数组、初始化acc、rank和pp
-			player.controller[k].SetAcc(100.0)
-			player.controller[k].SetRank(*render.RankX)
-			player.controller[k].SetPP(0.0)
-			// 设置初始显示
-			player.controller[k].SetIsShow(true)
-			// 保存结果缓存
-			if settings.VSplayer.ReplayandCache.SaveResultCache {
-				resultcache.SaveResult(result, totalresult, k+1)
-				log.Println("已保存第", k+1, "个replay的结果缓存")
-			}
-			log.Println("解析第", k+1, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
-		}
-	}
 
 	//endregion
 
@@ -782,7 +817,7 @@ func (pl *Player) Draw(delta float64) {
 
 	pl.batch.Begin()
 	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	pl.batch.SetColor(1, 1, 1, 0.4)
+	pl.batch.SetColor(1, 1, 1, settings.VSplayer.RecordInfoUI.RecordAlpha)
 	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY, pl.recordbasesize, "Recorded by " + settings.VSplayer.RecordInfoUI.Recorder)
 	pl.font.Draw(pl.batch, pl.recordbaseX, pl.recordbaseY - pl.recordtimeoffsetY, pl.recordbasesize, "Recorded on " + settings.VSplayer.RecordInfoUI.RecordTime)
 	pl.batch.End()
@@ -875,38 +910,38 @@ func (pl *Player) Draw(delta float64) {
 		lastPos[k] = pl.font.DrawAndGetLastPosition(pl.batch, pl.playerbaseX, pl.fontbaseY - pl.lineoffset * float64(k), pl.fontsize, pl.controller[k].GetPlayname())
 		// 渲染mod
 		mods := "+"
-		if (pl.controller[k].GetMods()&1 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_NF > 0){
 			mods += "NF"
 		}
-		if (pl.controller[k].GetMods()&2 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_EZ > 0){
 			mods += "EZ"
 		}
-		if (pl.controller[k].GetMods()&4 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_TD > 0){
 			mods += "TD"
 		}
-		if (pl.controller[k].GetMods()&8 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_HD > 0){
 			mods += "HD"
 		}
-		if (pl.controller[k].GetMods()&16 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_HR > 0){
 			mods += "HR"
 		}
-		if (pl.controller[k].GetMods()&16384 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_PF > 0){
 			mods += "PF"
-		}else if (pl.controller[k].GetMods()&32 > 0){
+		}else if (pl.controller[k].GetMods()&osuconst.MOD_SD > 0){
 			mods += "SD"
 		}
-		if (pl.controller[k].GetMods()&512 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_NC > 0){
 			mods += "NC"
-		}else if (pl.controller[k].GetMods()&64 > 0){
+		}else if (pl.controller[k].GetMods()&osuconst.MOD_DT > 0){
 			mods += "DT"
 		}
-		if (pl.controller[k].GetMods()&256 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_HT > 0){
 			mods += "HT"
 		}
-		if (pl.controller[k].GetMods()&1024 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_FL > 0){
 			mods += "FL"
 		}
-		if (pl.controller[k].GetMods()&4096 > 0){
+		if (pl.controller[k].GetMods()&osuconst.MOD_SO > 0){
 			mods += "SO"
 		}
 		if mods != "+" {

@@ -4,6 +4,7 @@ import (
 	"danser/beatmap"
 	"danser/beatmap/objects"
 	"danser/bmath"
+	"danser/osuconst"
 	"danser/replay"
 	"danser/score"
 	"github.com/Mempler/rplpa"
@@ -36,7 +37,7 @@ func ParseReplay(name string) *rplpa.Replay {
 	return replay.ExtractReplay(name)
 }
 
-func ParseHits(mapname string, replayname string, errors []Error) ([]ObjectResult, []TotalResult) {
+func ParseHits(mapname string, replayname string, errors []Error) (result []ObjectResult, totalresult []TotalResult) {
 	// 加载map
 	b := ParseMap(mapname)
 	OD300 := b.OD300
@@ -49,24 +50,24 @@ func ParseHits(mapname string, replayname string, errors []Error) ([]ObjectResul
 	r := pr.ReplayData
 
 	// 如果replay是HR，改变OD和CS，并上下翻转replay的Y坐标
-	if pr.Mods&16 > 0 {
-		newOD := math.Min(1.4 * b.OD, 10)
-		OD300 = beatmap.AdjustOD(79 - ( newOD * 6 ) + 0.5)
-		OD100 = beatmap.AdjustOD(139 - ( newOD * 8 ) + 0.5)
-		OD50 = beatmap.AdjustOD(199 - ( newOD * 10 ) + 0.5)
-		ODMiss = beatmap.AdjustOD(229 - ( newOD * 11 ) + 0.5)
-		convert_CS = 32 * (1 - 0.7 * (math.Min(1.3 * b.CircleSize, 10) - 5) / 5)
+	if pr.Mods&osuconst.MOD_HR > 0 {
+		newOD := math.Min(osuconst.OD_HR_HENSE * b.OD, osuconst.OD_MAX)
+		OD300 = beatmap.AdjustOD(osuconst.OD_300_BASE - ( newOD * osuconst.OD_300_MULT ) + osuconst.OD_PRECISION_FIX)
+		OD100 = beatmap.AdjustOD(osuconst.OD_100_BASE - ( newOD * osuconst.OD_100_MULT ) + osuconst.OD_PRECISION_FIX)
+		OD50 = beatmap.AdjustOD(osuconst.OD_50_BASE - ( newOD * osuconst.OD_50_MULT ) + osuconst.OD_PRECISION_FIX)
+		ODMiss = beatmap.AdjustOD(osuconst.OD_MISS_BASE - ( newOD * osuconst.OD_MISS_MULT ) + osuconst.OD_PRECISION_FIX)
+		convert_CS = 32 * (1 - 0.7 * (math.Min(osuconst.CS_HR_HENSE * b.CircleSize, osuconst.CS_MAX) - 5) / 5)
 		makeReplayHR(r)
 	}
 
 	// 如果replay是EZ，改变OD和CS
-	if pr.Mods&2 > 0 {
-		newOD := b.OD / 2
-		OD300 = beatmap.AdjustOD(79 - ( newOD * 6 ) + 0.5)
-		OD100 = beatmap.AdjustOD(139 - ( newOD * 8 ) + 0.5)
-		OD50 = beatmap.AdjustOD(199 - ( newOD * 10 ) + 0.5)
-		ODMiss = beatmap.AdjustOD(229 - ( newOD * 11 ) + 0.5)
-		convert_CS = 32 * (1 - 0.7 * (math.Min(b.CircleSize / 2, 10) - 5) / 5)
+	if pr.Mods&osuconst.MOD_EZ > 0 {
+		newOD := b.OD * osuconst.OD_EZ_HENSE
+		OD300 = beatmap.AdjustOD(osuconst.OD_300_BASE - ( newOD * osuconst.OD_300_MULT ) + osuconst.OD_PRECISION_FIX)
+		OD100 = beatmap.AdjustOD(osuconst.OD_100_BASE - ( newOD * osuconst.OD_100_MULT ) + osuconst.OD_PRECISION_FIX)
+		OD50 = beatmap.AdjustOD(osuconst.OD_50_BASE - ( newOD * osuconst.OD_50_MULT ) + osuconst.OD_PRECISION_FIX)
+		ODMiss = beatmap.AdjustOD(osuconst.OD_MISS_BASE - ( newOD * osuconst.OD_MISS_MULT ) + osuconst.OD_PRECISION_FIX)
+		convert_CS = 32 * (1 - 0.7 * (math.Min(b.CircleSize * osuconst.CS_EZ_HENSE, 10) - 5) / 5)
 	}
 
 	// 计数
@@ -75,10 +76,6 @@ func ParseHits(mapname string, replayname string, errors []Error) ([]ObjectResul
 	count50 := 0
 	countMiss := 0
 
-	// 结果数组
-	result := []ObjectResult{}
-	// 总体结果数组
-	totalresult := []TotalResult{}
 	// 判定数组
 	totalhits := []int64{}
 	// maxcombo
@@ -105,7 +102,7 @@ func ParseHits(mapname string, replayname string, errors []Error) ([]ObjectResul
 				// 判断滑条头
 				requirehits += 1
 				// ticks的判定倍数
-				CS_scale := 2.4
+				CS_scale := osuconst.TICK_JUDGE_SCALE
 				// 寻找最近的Key
 				//log.Println("Slider head find", r[keyindex].Time, time, o.GetBasicData().StartTime, o.GetBasicData().StartPos)
 				ticktime := 0.0
@@ -167,7 +164,7 @@ func ParseHits(mapname string, replayname string, errors []Error) ([]ObjectResul
 					time = nexttime
 					if isHit {
 						//log.Println("Tick", i+1, "hit", t.Time, t.Pos)
-						CS_scale = 2.4
+						CS_scale = osuconst.TICK_JUDGE_SCALE
 						realhits += 1
 						nowcombo += 1
 					}else {
@@ -612,38 +609,14 @@ func makeReplayHR(r []*rplpa.ReplayData){
 	}
 }
 
-// oppai载入map
-func loadMap(filename string) *oppai.Map {
-	f, _ := os.Open(filename)
-	return oppai.Parse(f)
-}
-
 // 部分载入map
 func loadMapbyNum(filename string, objnum int) *oppai.Map {
 	f, _ := os.Open(filename)
 	return oppai.ParsebyNum(f, objnum)
 }
 
-// oppai计算pp
-func calculatePP(filename string, result TotalResult) oppai.PPv2 {
-	//amap := loadMap(filename)
-	//diff := (&oppai.DiffCalc{}).CalcMapWithMods(*amap, int(result.Mods))
-	//log.Println(diff.Beatmap.MaxCombo, result.Combo, diff.Total)
-	return oppai.PPInfo(loadMap(filename), &oppai.Parameters{
-		Combo:  result.Combo,
-		Mods:   result.Mods,
-		N300:   result.N300,
-		N100:   result.N100,
-		N50:    result.N50,
-		Misses: result.Misses,
-	}).PP
-}
-
 // 计算部分的pp
 func calculatePPbyNum(filename string, result TotalResult, objnum int) oppai.PPv2 {
-	//amap := loadMapbyNum(filename, objnum)
-	//diff := (&oppai.DiffCalc{}).CalcMapWithMods(*amap, int(result.Mods))
-	//log.Println(diff.Beatmap.MaxCombo, result.Combo, diff.Total)
 	return oppai.PPInfo(loadMapbyNum(filename, objnum), &oppai.Parameters{
 		Combo:  result.Combo,
 		Mods:   result.Mods,
@@ -665,13 +638,12 @@ func shouldfixError(objectindex int, errors []Error) *Error {
 	return nil
 }
 
-func fixError(error Error, result []ObjectResult, count300 int, count100 int, count50 int, countMiss int, maxcombo int, nowcombo int, totalhits []int64) ([]ObjectResult, int, int, int, int, int, int, []int64){
+func fixError(error Error, result []ObjectResult, count300 int, count100 int, count50 int, countMiss int, maxcombo int, nowcombo int, totalhits []int64) (reresult []ObjectResult, recount300 int, recount100 int, recount50 int, recountMiss int, remaxcombo int, renowcombo int, retotalhits []int64){
 	lastresult := result[len(result)-1]
-	recount300 := count300
-	recount100 := count100
-	recount50 := count50
-	recountMiss := countMiss
-	var retotalhits []int64
+	recount300 = count300
+	recount100 = count100
+	recount50 = count50
+	recountMiss = countMiss
 	// 修正判定计数
 	switch lastresult.Result {
 	case Hit300:
@@ -710,10 +682,10 @@ func fixError(error Error, result []ObjectResult, count300 int, count100 int, co
 		break
 	}
 	// 修正结果数组
-	reresult := append(result[:len(result)-2], ObjectResult{lastresult.JudgePos, lastresult.JudgeTime, error.Result, error.IsBreak})
+	reresult = append(result[:len(result)-2], ObjectResult{lastresult.JudgePos, lastresult.JudgeTime, error.Result, error.IsBreak})
 	// 修正combo
-	remaxcombo := maxcombo + error.MaxComboOffset
-	renowcombo := maxcombo + error.NowComboOffset
+	remaxcombo = maxcombo + error.MaxComboOffset
+	renowcombo = maxcombo + error.NowComboOffset
 	// 修正判定数组
 	switch error.Result {
 	case Hit300:

@@ -94,119 +94,79 @@ func run() {
 			os.Exit(0)
 		}
 
-		//r := replay.ExtractReplay("replays/22-OskaRRRitoS.osr")
-		//for k := 0; k < 40; k++ {
-		//	log.Println(*r.ReplayData[k])
-		//}
+		if !settings.VSplayer.ReplayandCache.ReplayDebug {
+			glfw.Init()
+			glfw.WindowHint(glfw.ContextVersionMajor, 3)
+			glfw.WindowHint(glfw.ContextVersionMinor, 3)
+			glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+			glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+			glfw.WindowHint(glfw.Resizable, glfw.False)
+			glfw.WindowHint(glfw.Samples, int(settings.Graphics.MSAA))
 
-		//serrs := []hitjudge.Error{
-		//	{
-		//		ReplayIndex: 	28,
-		//		ObjectIndex: 	333,
-		//		Result: 		hitjudge.Hit100,
-		//		IsBreak:		true,
-		//		ComboOffset:	-3,
-		//	},
-		//}
-		//hitjudge.SaveError(serrs)
-		//
-		//errs := hitjudge.ReadError()
+			var err error
 
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/01-Mathi.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/02-rustbell.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/03-idke.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/04-firebat92.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/05-HappyStick.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/06-BeasttrollMC.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/07-Toy.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/09-ThePooN.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/10-WubWoofWolf.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/11-_index.osr")
-		//hitjudge.ParseHits("Song/180138 Halozy - Genryuu Kaiko/Halozy - Genryuu Kaiko (Hollow Wings) [Higan Torrent].osu",
-		//	"replays/29-fieryrage.osr", hitjudge.FilterError(28, errs))
-		//os.Exit(1)
+			monitor := glfw.GetPrimaryMonitor()
+			mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
 
-		glfw.Init()
-		glfw.WindowHint(glfw.ContextVersionMajor, 3)
-		glfw.WindowHint(glfw.ContextVersionMinor, 3)
-		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-		glfw.WindowHint(glfw.Resizable, glfw.False)
-		glfw.WindowHint(glfw.Samples, int(settings.Graphics.MSAA))
-
-		var err error
-
-		monitor := glfw.GetPrimaryMonitor()
-		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
-
-		if newSettings {
-			log.Println(mWidth, mHeight)
-			settings.Graphics.Width, settings.Graphics.Height = int64(mWidth), int64(mHeight)
-			settings.Save()
-			win, err = glfw.CreateWindow(mWidth, mHeight, "osu vs player", monitor, nil)
-		} else {
-			if settings.Graphics.Fullscreen {
-				win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
+			if newSettings {
+				log.Println(mWidth, mHeight)
+				settings.Graphics.Width, settings.Graphics.Height = int64(mWidth), int64(mHeight)
+				settings.Save()
+				win, err = glfw.CreateWindow(mWidth, mHeight, "osu vs player", monitor, nil)
 			} else {
-				win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
+				if settings.Graphics.Fullscreen {
+					win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
+				} else {
+					win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
+				}
 			}
+
+			if err != nil {
+				panic(err)
+			}
+
+			win.SetTitle("osu vs player " + build.VERSION + " by " + build.OWNER + " on " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+			icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
+			icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
+			icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")
+			icon4, _ := utils.LoadImage("assets/textures/dansercoin16.png")
+			win.SetIcon([]image.Image{icon, icon2, icon3, icon4})
+
+			win.MakeContextCurrent()
+			log.Println("GLFW initialized!")
+			glhf.Init()
+			glhf.Clear(0, 0, 0, 1)
+
+			batch := render.NewSpriteBatch()
+			batch.Begin()
+			batch.SetColor(1, 1, 1, 1)
+			camera := bmath.NewCamera()
+			camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
+			camera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
+			camera.Update()
+			batch.SetCamera(camera.GetProjectionView())
+
+			file, _ := os.Open("assets/fonts/Roboto-Bold.ttf")
+			font := font.LoadFont(file)
+			file.Close()
+
+			font.Draw(batch, 0, 10, 32, "Loading...")
+
+			batch.End()
+			win.SwapBuffers()
+			glfw.PollEvents()
+
+			glfw.SwapInterval(0)
+			if settings.Graphics.VSync {
+				glfw.SwapInterval(1)
+			}
+
+			audio.Init()
+			audio.LoadSamples()
+
+			beatmap.ParseObjects(beatMap)
+			beatMap.LoadCustomSamples()
 		}
-
-		if err != nil {
-			panic(err)
-		}
-
-		win.SetTitle("osu vs player " + build.VERSION + " by " + build.OWNER + " on " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
-		icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
-		icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
-		icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")
-		icon4, _ := utils.LoadImage("assets/textures/dansercoin16.png")
-		win.SetIcon([]image.Image{icon, icon2, icon3, icon4})
-
-		win.MakeContextCurrent()
-		log.Println("GLFW initialized!")
-		glhf.Init()
-		glhf.Clear(0, 0, 0, 1)
-
-		batch := render.NewSpriteBatch()
-		batch.Begin()
-		batch.SetColor(1, 1, 1, 1)
-		camera := bmath.NewCamera()
-		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
-		camera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
-		camera.Update()
-		batch.SetCamera(camera.GetProjectionView())
-
-		file, _ := os.Open("assets/fonts/Roboto-Bold.ttf")
-		font := font.LoadFont(file)
-		file.Close()
-
-		font.Draw(batch, 0, 10, 32, "Loading...")
-
-		batch.End()
-		win.SwapBuffers()
-		glfw.PollEvents()
-
-		glfw.SwapInterval(0)
-		if settings.Graphics.VSync {
-			glfw.SwapInterval(1)
-		}
-
-		audio.Init()
-		audio.LoadSamples()
-
-		beatmap.ParseObjects(beatMap)
-		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
 
 	})

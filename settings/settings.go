@@ -14,7 +14,9 @@ type general struct {
 //region VS-player 自定义参数区域
 
 type playerinfo struct {
-	Players		int
+	Players				int
+	SpecifiedPlayers	bool
+	SpecifiedLine		string
 }
 
 type playerinfoUI struct {
@@ -31,6 +33,7 @@ type recordinfoUI struct {
 	RecordBaseX		float64
 	RecordBaseY		float64
 	RecordBaseSize	float64
+	RecordAlpha		float64
 }
 
 type playerfieldUI struct {
@@ -63,6 +66,7 @@ type replayandcache struct {
 	CacheDir 			string
 	SaveResultCache 	bool
 	ReadResultCache 	bool
+	ReplayDebug			bool
 }
 
 type errorfix struct {

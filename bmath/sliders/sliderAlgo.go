@@ -4,6 +4,7 @@ import (
 	"danser/bmath"
 	m2 "danser/bmath"
 	"danser/bmath/curves"
+	"danser/osuconst"
 	"math"
 )
 
@@ -127,7 +128,7 @@ func (sa *SliderAlgo) PointAt(t float64) m2.Vector2d {
 			}
 		}
 	}
-	return m2.NewVec2d(512/2, 384/2)
+	return m2.NewVec2d(osuconst.PLAYFIELD_WIDTH / 2, osuconst.PLAYFIELD_HEIGHT / 2)
 }
 
 func (sa *SliderAlgo) PointAtTail(t float64) m2.Vector2d {
@@ -142,7 +143,7 @@ func (sa *SliderAlgo) PointAtTail(t float64) m2.Vector2d {
 			}
 		}
 	}
-	return m2.NewVec2d(512/2, 384/2)
+	return m2.NewVec2d(osuconst.PLAYFIELD_WIDTH / 2, osuconst.PLAYFIELD_HEIGHT / 2)
 }
 
 func (sa *SliderAlgo) GetLength() float64 {

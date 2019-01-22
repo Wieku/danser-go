@@ -1,6 +1,7 @@
 package bmath
 
 import (
+	"danser/osuconst"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -52,16 +53,16 @@ func (camera *Camera) SetViewport(width, height int, yDown bool) {
 }
 
 func (camera *Camera) SetOsuViewport(width, height int) {
-	osuAspect := 512.0 / 384.0
+	osuAspect := osuconst.PLAYFIELD_WIDTH / osuconst.PLAYFIELD_HEIGHT
 	screenAspect := float64(width) / float64(height)
 
 	if screenAspect > osuAspect {
-		sh := (384.0 - float64(384.0)*900.0/1080.0) / 2
-		sw := (512.0*screenAspect*900.0/1080.0 - 512.0) / 2
+		sh := (osuconst.PLAYFIELD_HEIGHT - osuconst.PLAYFIELD_HEIGHT * 900.0/1080.0) / 2
+		sw := (osuconst.PLAYFIELD_WIDTH * screenAspect * 900.0/1080.0 - osuconst.PLAYFIELD_WIDTH) / 2
 		camera.screenRect.MinX = -sw
-		camera.screenRect.MaxX = 512.0 + sw
+		camera.screenRect.MaxX = osuconst.PLAYFIELD_WIDTH + sw
 
-		camera.screenRect.MinY = 384.0 + sh
+		camera.screenRect.MinY = osuconst.PLAYFIELD_HEIGHT + sh
 		camera.screenRect.MaxY = -sh
 	}
 

@@ -15,6 +15,8 @@ func initDefaults() {
 	VSplayer = &vsplayer{
 		&playerinfo{
 			1,
+			false,
+			"",
 		},
 		&playerinfoUI{
 			6,
@@ -29,6 +31,7 @@ func initDefaults() {
 			1019,
 			35,
 			18,
+			0.5,
 		},
 		&playerfieldUI{
 			200,
@@ -55,6 +58,7 @@ func initDefaults() {
 			"replays\\",
 			"cache\\",
 			true,
+			false,
 			false,
 		},
 		&errorfix{
