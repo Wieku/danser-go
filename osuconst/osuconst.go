@@ -49,3 +49,14 @@ const CS_EZ_HENSE = 0.5
 
 const CS_MAX = 10.0
 
+// AR参数
+const AR_HR_HENSE = 1.4
+const AR_EZ_HENSE = 0.5
+
+const AR_MAX = 10.0
+
+// HD参数
+const FADE_IN_DURATION_MULTIPLIER = 0.4
+const FADE_OUT_DURATION_MULTIPLIER = 0.3
+
+

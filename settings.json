@@ -6,7 +6,7 @@
 	"VSplayer": {
 		"PlayerInfo": {
 			"Players": 1,
-			"SpecifiedPlayers": true,
+			"SpecifiedPlayers": false,
 			"SpecifiedLine": "2,3"
 		},
 		"PlayerInfoUI": {
@@ -37,7 +37,11 @@
 			"Difficulty": "Higan Torrent"
 		},
 		"Mods": {
-			"EnableDT": false
+			"EnableDT": false,
+			"EnableHT": false,
+			"EnableEZ": false,
+			"EnableHR": false,
+			"EnableHD": true
 		},
 		"BreakandQuit": {
 			"EnableBreakandQuit": true,
@@ -50,7 +54,7 @@
 			"CacheDir": "cache\\",
 			"SaveResultCache": true,
 			"ReadResultCache": true,
-			"ReplayDebug": true
+			"ReplayDebug": false
 		},
 		"ErrorFix": {
 			"EnableErrorFix": false,

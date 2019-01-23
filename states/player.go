@@ -257,9 +257,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.controller[k].SetHitResult(result)
 			player.controller[k].SetTotalResult(totalresult)
 			// 设置计算数组、初始化acc、rank和pp
-			player.controller[k].SetAcc(osuconst.DEFAULT_ACC)
+			player.controller[k].SetAcc(DEFAULT_ACC)
 			player.controller[k].SetRank(*render.RankX)
-			player.controller[k].SetPP(osuconst.DEFAULT_PP)
+			player.controller[k].SetPP(DEFAULT_PP)
 			// 设置初始显示
 			player.controller[k].SetIsShow(true)
 			log.Println("读取第", k+1, "个replay缓存完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
@@ -281,9 +281,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				player.controller[k].SetHitResult(result)
 				player.controller[k].SetTotalResult(totalresult)
 				// 设置计算数组、初始化acc、rank和pp
-				player.controller[k].SetAcc(osuconst.DEFAULT_ACC)
+				player.controller[k].SetAcc(DEFAULT_ACC)
 				player.controller[k].SetRank(*render.RankX)
-				player.controller[k].SetPP(osuconst.DEFAULT_PP)
+				player.controller[k].SetPP(DEFAULT_PP)
 				// 设置初始显示
 				player.controller[k].SetIsShow(true)
 			}
@@ -1159,7 +1159,7 @@ func (pl *Player) Draw(delta float64) {
 			}
 		}
 
-		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
+		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles && !settings.VSplayer.Mods.EnableHD {
 			pl.batch.Flush()
 
 			for j := 0; j < settings.DIVIDES; j++ {

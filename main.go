@@ -7,6 +7,7 @@ import (
 	. "danser/build"
 	"danser/dance"
 	"danser/database"
+	. "danser/osuconst"
 	"danser/render"
 	"danser/render/font"
 	"danser/settings"
@@ -19,6 +20,7 @@ import (
 	"github.com/wieku/glhf"
 	"image"
 	"log"
+	"math"
 	"os"
 )
 
@@ -65,12 +67,6 @@ func run() {
 		// 从设置重新载入map
 		title := flag.String("title", settings.VSplayer.MapInfo.Title, "")
 		difficulty := flag.String("difficulty", settings.VSplayer.MapInfo.Difficulty, "")
-		// 开启DT
-		if settings.VSplayer.Mods.EnableDT {
-			settings.SPEED = *flag.Float64("speed", 1.5, "")
-		}else {
-			settings.SPEED = *flag.Float64("speed", 1.0, "")
-		}
 
 		if (*artist + *title + *difficulty + *creator) == "" {
 			log.Println("No beatmap specified, closing...")
@@ -92,6 +88,32 @@ func run() {
 		if beatMap == nil {
 			log.Println("Beatmap not found, closing...")
 			os.Exit(0)
+		}
+
+		if settings.VSplayer.Mods.EnableDT {
+			// 开启DT
+			settings.SPEED = *flag.Float64("speed", 1.5, "")
+		}else if settings.VSplayer.Mods.EnableHT {
+			settings.SPEED = *flag.Float64("speed", 0.75, "")
+		}else {
+			settings.SPEED = *flag.Float64("speed", 1.0, "")
+		}
+
+		// 开启EZ
+		if settings.VSplayer.Mods.EnableEZ {
+			beatMap.CircleSize = math.Min(beatMap.CircleSize * CS_EZ_HENSE, CS_MAX)
+			beatMap.AR = math.Min(beatMap.AR * AR_EZ_HENSE, AR_MAX)
+		}
+
+		// 开启HR
+		if settings.VSplayer.Mods.EnableHR {
+			beatMap.CircleSize = math.Min(beatMap.CircleSize * CS_HR_HENSE, CS_MAX)
+			beatMap.AR = math.Min(beatMap.AR * AR_HR_HENSE, AR_MAX)
+		}
+
+		// 开启HD，为维持HD效果，关闭一些特效
+		if settings.VSplayer.Mods.EnableHD {
+			settings.Objects.SliderMerge = *flag.Bool("slidermerge", false, "")
 		}
 
 		if !settings.VSplayer.ReplayandCache.ReplayDebug {

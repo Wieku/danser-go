@@ -52,6 +52,10 @@ type mapinfo struct {
 
 type mods struct {
 	EnableDT		bool
+	EnableHT		bool
+	EnableEZ		bool
+	EnableHR		bool
+	EnableHD		bool
 }
 
 type breakandquit struct {

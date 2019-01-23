@@ -5,6 +5,7 @@ import (
 	"danser/bmath"
 	"danser/render"
 	"danser/settings"
+	. "danser/osuconst"
 	"github.com/go-gl/mathgl/mgl32"
 	"strconv"
 )
@@ -74,12 +75,25 @@ func (self *Circle) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 
 	alpha := 1.0
 
-	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
-	} else if time >= self.objData.StartTime {
-		alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
-	} else {
-		alpha = float64(color[3])
+	if settings.VSplayer.Mods.EnableHD {
+		fadein := preempt * FADE_IN_DURATION_MULTIPLIER
+		fadeoutstarttime := float64(self.objData.StartTime) - preempt + fadein
+		fadeoutduration := preempt * FADE_OUT_DURATION_MULTIPLIER
+		if time < self.objData.StartTime - int64(fadein) {
+			alpha = (float64(time)- fadeoutstarttime) / fadein
+		} else if time >= self.objData.StartTime {
+			alpha = 0.0
+		} else {
+			alpha = float64(color[3]) * float64(self.objData.EndTime-time) / fadeoutduration
+		}
+	}else {
+		if time < self.objData.StartTime-int64(preempt) {
+			alpha = float64(time-(self.objData.StartTime-int64(preempt))) / preempt
+		} else if time >= self.objData.StartTime {
+			alpha = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
+		} else {
+			alpha = float64(color[3])
+		}
 	}
 
 	batch.SetTranslation(self.objData.StartPos)

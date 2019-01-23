@@ -47,6 +47,10 @@ func initDefaults() {
 		},
 		&mods{
 			false,
+			false,
+			false,
+			false,
+			false,
 		},
 		&breakandquit{
 			true,

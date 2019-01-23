@@ -7,6 +7,7 @@ import (
 	"danser/bmath"
 	m2 "danser/bmath"
 	"danser/bmath/sliders"
+	. "danser/osuconst"
 	"danser/render"
 	"danser/settings"
 	"danser/utils"
@@ -85,6 +86,9 @@ func NewSlider(data []string) *Slider {
 		list2 := strings.Split(list[i], ":")
 		x, _ := strconv.ParseFloat(list2[0], 64)
 		y, _ := strconv.ParseFloat(list2[1], 64)
+		if settings.VSplayer.Mods.EnableHR {
+			y = PLAYFIELD_HEIGHT - y
+		}
 		points = append(points, m2.NewVec2d(x, y))
 	}
 
@@ -442,12 +446,25 @@ func (self *Slider) DrawBody(time int64, preempt float64, color mgl32.Vec4, colo
 
 	colorAlpha := 1.0
 
-	if time < self.objData.StartTime-int64(preempt)/2 {
-		colorAlpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
-	} else if time >= self.objData.EndTime {
-		colorAlpha = 1.0 - float64(time-self.objData.EndTime)/(preempt/4)
-	} else {
-		colorAlpha = float64(color[3])
+	if settings.VSplayer.Mods.EnableHD {
+		fadein := preempt * FADE_IN_DURATION_MULTIPLIER
+		fadeoutstarttime := float64(self.objData.StartTime) - preempt + fadein
+		longfadeduration := float64(self.objData.EndTime) - fadeoutstarttime
+		if time < self.objData.StartTime-int64(fadein)/2 {
+			colorAlpha = float64(time-(self.objData.StartTime-int64(fadein))) / (fadein / 2)
+		} else if time >= self.objData.EndTime {
+			colorAlpha = 1.0 - float64(time-self.objData.EndTime)/(fadein/4)
+		} else {
+			colorAlpha = float64(color[3]) * float64(self.objData.EndTime-time) / longfadeduration
+		}
+	}else {
+		if time < self.objData.StartTime-int64(preempt)/2 {
+			colorAlpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
+		} else if time >= self.objData.EndTime {
+			colorAlpha = 1.0 - float64(time-self.objData.EndTime)/(preempt/4)
+		} else {
+			colorAlpha = float64(color[3])
+		}
 	}
 
 	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha)}, mgl32.Vec4{color1[0], color1[1], color1[2], float32(colorAlpha)})
@@ -463,15 +480,35 @@ func (self *Slider) DrawBody(time int64, preempt float64, color mgl32.Vec4, colo
 func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *render.SpriteBatch) bool {
 	alpha := 1.0
 	alphaF := 1.0
+	alphaT := 1.0
 
-	if time < self.objData.StartTime-int64(preempt)/2 {
-		alpha = float64(time-(self.objData.StartTime-int64(preempt))) / (preempt / 2)
-	} else if time >= self.objData.EndTime {
-		alpha = 1.0 - float64(time-self.objData.EndTime)/(preempt/4)
-		alphaF = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
-	} else {
-		alpha = float64(color[3])
-		alphaF = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
+	if settings.VSplayer.Mods.EnableHD {
+		fadein := preempt * FADE_IN_DURATION_MULTIPLIER
+		fadeoutstarttime := float64(self.objData.StartTime) - preempt + fadein
+		longfadeduration := float64(self.objData.EndTime) - fadeoutstarttime
+		if time < self.objData.StartTime-int64(fadein) {
+			alpha = (float64(time)- fadeoutstarttime) / fadein
+			alphaT = alpha
+		} else if time >= self.objData.EndTime {
+			alpha = 0.0
+			alphaF = 0.0
+			alphaT = alpha
+		} else {
+			alpha = float64(color[3]) * float64(self.objData.EndTime-time) / longfadeduration
+			alphaT = float64(color[3])
+			alphaF = 1.0 - float64(time-self.objData.StartTime)/(fadein/2)
+		}
+	}else {
+		if time < self.objData.StartTime-int64(preempt) {
+			alpha = float64(time-(self.objData.StartTime-int64(preempt))) / preempt
+		} else if time >= self.objData.EndTime {
+			alpha = 1.0 - float64(time-self.objData.EndTime)/(preempt/4)
+			alphaF = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
+		} else {
+			alpha = float64(color[3])
+			alphaF = 1.0 - float64(time-self.objData.StartTime)/(preempt/2)
+		}
+		alphaT = alpha
 	}
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -508,10 +545,12 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 					fadetime := int64(float64(self.TickReverseTrue[num].Time - self.TickReverse[num].Time) / settings.VSplayer.PlayerFieldUI.ReverseFadeMult)
 					if time >= self.TickReverseTrue[num].Time {
 						mult = 0.0
-					} else if time >= self.TickReverse[num].Time + fadetime{
+					}else if time >= self.TickReverse[num].Time + fadetime{
 						mult = 1.0
-					} else {
+					}else if time >= self.TickReverse[num].Time {
 						mult = float64((time - self.TickReverse[num].Time)) / float64(fadetime)
+					}else {
+						mult = 0.0
 					}
 					batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha * mult)
 					batch.DrawUnit(*render.SliderReverse)
@@ -563,7 +602,7 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 				batch.DrawUnit(*render.CircleOverlay)
 			}
 
-			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+			batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alphaT)
 			batch.SetSubScale(1.0, 1.0)
 			batch.SetTranslation(self.Pos)
 			batch.DrawUnit(*render.SliderBall)
