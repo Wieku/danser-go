@@ -72,6 +72,10 @@ osu-vs-player 用于同屏回放多个 osu replay，并实时显示replay信息�
 ### Mods ###
 
 - ```EnableDT``` - 开启 ```DT``` 模式
+- ```EnableHT``` - 开启 ```HT``` 模式
+- ```EnableEZ``` - 开启 ```EZ``` 模式
+- ```EnableHR``` - 开启 ```HR``` 模式
+- ```EnableHD``` - 开启 ```HD``` 模式
 
 ### BreakandQuit ###
 
