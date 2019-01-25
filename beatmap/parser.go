@@ -255,7 +255,7 @@ func ParseObjects(beatMap *BeatMap) {
 	calculateStackLeniency(beatMap)
 }
 
-func ParseObjectsbyPath(beatMap *BeatMap, filename string) {
+func ParseObjectsbyPath(beatMap *BeatMap, filename string, isHR bool, isEZ bool) {
 
 	file, err := os.Open(filename)
 	defer file.Close()
@@ -298,5 +298,5 @@ func ParseObjectsbyPath(beatMap *BeatMap, filename string) {
 
 	}
 
-	calculateStackLeniency(beatMap)
+	calculateStackLeniencywithMods(beatMap, isHR, isEZ)
 }

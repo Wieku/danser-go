@@ -21,12 +21,12 @@ var None = rplpa.KeyPressed{
 	Key2:       false,
 }
 
-func ParseMap(filename string) *beatmap.BeatMap{
+func ParseMapwithMods(filename string, isHR bool, isEZ bool) *beatmap.BeatMap{
 	file, err := os.Open(filename)
 	if err == nil {
 		defer file.Close()
 		beatMap := beatmap.ParseBeatMap(file)
-		beatmap.ParseObjectsbyPath(beatMap, filename)
+		beatmap.ParseObjectsbyPath(beatMap, filename, isHR, isEZ)
 		return beatMap
 	}else{
 		panic(err)
@@ -38,16 +38,17 @@ func ParseReplay(name string) *rplpa.Replay {
 }
 
 func ParseHits(mapname string, replayname string, errors []Error) (result []ObjectResult, totalresult []TotalResult) {
-	// 加载map
-	b := ParseMap(mapname)
+	// 加载replay
+	pr := ParseReplay(replayname)
+	r := pr.ReplayData
+
+	// 根据replay的mods加载map
+	b := ParseMapwithMods(mapname, (pr.Mods&MOD_HR > 0), (pr.Mods&MOD_EZ > 0))
 	OD300 := b.OD300
 	OD100 := b.OD100
 	OD50 := b.OD50
 	ODMiss := b.ODMiss
 	convert_CS := 32 * (1 - 0.7 * (b.CircleSize - 5) / 5)
-	// 加载replay
-	pr := ParseReplay(replayname)
-	r := pr.ReplayData
 
 	// 如果replay是HR，改变OD和CS，并上下翻转replay的Y坐标
 	if pr.Mods&MOD_HR > 0 {
@@ -86,9 +87,7 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 	keyindex := 3
 	time := r[1].Time + r[2].Time
 	for k := 0; k < len(b.HitObjects); k++ {
-	//for k := 0; k < 1858; k++ {
-	//for k := 0; k < 1299; k++ {
-	//for k := 0; k < 333; k++ {
+	//for k := 0; k < 1326; k++ {
 		//log.Println("Object", k+1)
 		obj :=  b.HitObjects[k]
 		if obj != nil {
