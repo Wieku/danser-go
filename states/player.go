@@ -123,6 +123,11 @@ type Player struct {
 
 	// player人数
 	players			int
+
+	// 实时pp显示参数数组
+	lastb4PP		[]float64
+	lastPP			[]float64
+	lastPPTime		[]int64
 }
 
 //endregion
@@ -215,6 +220,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	//endregion
 
 	//region player初始化
+	tmpplindex := []int{}
 	if settings.VSplayer.PlayerInfo.SpecifiedPlayers {
 		specifiedplayers := strings.Split(settings.VSplayer.PlayerInfo.SpecifiedLine, ",")
 		for _, player := range specifiedplayers {
@@ -222,6 +228,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			if pl <= 0 {
 				log.Panic("指定player的字符串有误，请重新检查设定")
 			}
+			tmpplindex = append(tmpplindex, pl)
 		}
 		log.Println("本次已指定特定的player")
 		player.players = len(specifiedplayers)
@@ -251,18 +258,28 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	if settings.VSplayer.ReplayandCache.ReadResultCache && !settings.VSplayer.ReplayandCache.ReplayDebug{
 		log.Println("本次选择读取缓存replay结果")
 		for k := 0; k < player.players; k++ {
+			var rnum int
+			if settings.VSplayer.PlayerInfo.SpecifiedPlayers {
+				rnum = tmpplindex[k]
+			}else {
+				rnum = k+1
+			}
 			t1 := time.Now()
-			log.Println("读取第", k+1, "个replay缓存")
-			result, totalresult := resultcache.ReadResult(k+1)
-			player.controller[k].SetHitResult(result)
-			player.controller[k].SetTotalResult(totalresult)
-			// 设置计算数组、初始化acc、rank和pp
+			log.Println("读取第", rnum, "个replay缓存")
+			result, totalresult := resultcache.ReadResult(rnum)
+			// 初始化acc、rank和pp
 			player.controller[k].SetAcc(DEFAULT_ACC)
-			player.controller[k].SetRank(*render.RankX)
+			if score.IsSilver(replay.ExtractReplay(replays[k]).Mods) {
+				player.controller[k].SetRank(*render.RankXH)
+			}else {
+				player.controller[k].SetRank(*render.RankX)
+			}
 			player.controller[k].SetPP(DEFAULT_PP)
 			// 设置初始显示
 			player.controller[k].SetIsShow(true)
-			log.Println("读取第", k+1, "个replay缓存完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+			player.controller[k].SetHitResult(result)
+			player.controller[k].SetTotalResult(totalresult)
+			log.Println("读取第", rnum, "个replay缓存完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
 		}
 	}else {
 		log.Println("本次选择解析replay")
@@ -274,31 +291,53 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			errs = []hitjudge.Error{}
 		}
 		for k := 0; k < player.players; k++ {
+			var rnum int
+			if settings.VSplayer.PlayerInfo.SpecifiedPlayers {
+				rnum = tmpplindex[k]
+			}else {
+				rnum = k+1
+			}
 			t1 := time.Now()
-			log.Println("解析第", k+1, "个replay")
-			result, totalresult := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k], hitjudge.FilterError(k+1, errs))
+			log.Println("解析第", rnum, "个replay")
+			result, totalresult, mods := hitjudge.ParseHits(settings.General.OsuSongsDir+beatMap.Dir+"/"+beatMap.File, replays[k], hitjudge.FilterError(rnum, errs))
+			// 初始化acc、rank和pp
+			player.controller[k].SetAcc(DEFAULT_ACC)
+			if score.IsSilver(mods) {
+				player.controller[k].SetRank(*render.RankXH)
+			}else {
+				player.controller[k].SetRank(*render.RankX)
+			}
+			player.controller[k].SetPP(DEFAULT_PP)
+			// 设置初始显示
+			player.controller[k].SetIsShow(true)
 			if !settings.VSplayer.ReplayandCache.ReplayDebug {
 				player.controller[k].SetHitResult(result)
 				player.controller[k].SetTotalResult(totalresult)
-				// 设置计算数组、初始化acc、rank和pp
-				player.controller[k].SetAcc(DEFAULT_ACC)
-				player.controller[k].SetRank(*render.RankX)
-				player.controller[k].SetPP(DEFAULT_PP)
-				// 设置初始显示
-				player.controller[k].SetIsShow(true)
 			}
 			// 保存结果缓存
 			if settings.VSplayer.ReplayandCache.SaveResultCache && !settings.VSplayer.ReplayandCache.ReplayDebug{
-				resultcache.SaveResult(result, totalresult, k+1)
-				log.Println("已保存第", k+1, "个replay的结果缓存")
+				resultcache.SaveResult(result, totalresult, rnum)
+				log.Println("已保存第", rnum, "个replay的结果缓存")
 			}
-			log.Println("解析第", k+1, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
+			log.Println("解析第", rnum, "个replay完成，耗时", time.Now().Sub(t1), "，总耗时", time.Now().Sub(t))
 		}
 	}
 
 	if settings.VSplayer.ReplayandCache.ReplayDebug {
 		log.Println("Debug Replay 结束，直接退出")
 		os.Exit(0)
+	}
+
+	// 初始化实时pp参数数组
+	if settings.VSplayer.PlayerInfoUI.ShowRealTimePP {
+		for k := 0; k < player.players; k++ {
+			player.lastb4PP = make([]float64, player.players)
+			player.lastPP = make([]float64, player.players)
+			player.lastPPTime = make([]int64, player.players)
+			player.lastb4PP[k] = player.controller[k].GetTotalResult()[0].PP.Total
+			player.lastPP[k] = player.controller[k].GetTotalResult()[0].PP.Total
+			player.lastPPTime[k] = player.controller[k].GetHitResult()[0].JudgeTime
+		}
 	}
 
 	//endregion
@@ -369,7 +408,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.missfontsize = settings.VSplayer.BreakandQuit.MissMult * player.fontsize
 	player.misssize = 1.5 * settings.VSplayer.BreakandQuit.MissMult * settings.VSplayer.PlayerInfoUI.BaseSize
 	player.keysize = 1.25 * settings.VSplayer.PlayerInfoUI.BaseSize
-	player.modoffset =  1.25 * settings.VSplayer.PlayerInfoUI.BaseSize
+	player.modoffset =  settings.VSplayer.PlayerInfoUI.BaseSize
 	player.missoffsetX =  2 * settings.VSplayer.BreakandQuit.MissMult * settings.VSplayer.PlayerInfoUI.BaseSize
 	player.missoffsetY =  0.6 * settings.VSplayer.BreakandQuit.MissMult * settings.VSplayer.PlayerInfoUI.BaseSize
 	player.lineoffset = 2.25 * settings.VSplayer.PlayerInfoUI.BaseSize
@@ -475,6 +514,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			var last= musicPlayer.GetPosition()
 			for {
+				if len(r.ReplayData) <= index {
+					time.Sleep(1000 * time.Second)
+				}
+
 				// 获取第index个replay数据
 				rdata := *r.ReplayData[index]
 				offset := rdata.Time
@@ -500,7 +543,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if true_offset >= float64(offset) {
 					// 如果是HR，上下翻转
 					if (player.controller[k].GetMods()&16 > 0){
-						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(384 - posY)))
+						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(PLAYFIELD_HEIGHT - posY)))
 					}else {
 						player.controller[k].Update(int64(progressMsF), true_offset, bmath.NewVec2d(float64(posX), float64(posY)))
 					}
@@ -654,10 +697,10 @@ func (pl *Player) Draw(delta float64) {
 		pl.fadeOut -= timMs / (settings.Playfield.FadeOutTime * 1000)
 		pl.fadeOut = math.Max(0.0, pl.fadeOut)
 		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
-		pl.dimGlider.UpdateD(timMs)
-		pl.blurGlider.UpdateD(timMs)
-		//pl.fxGlider.UpdateD(timMs)
-		pl.cursorGlider.UpdateD(timMs)
+		//pl.dimGlider.UpdateD(timMs)
+		//pl.blurGlider.UpdateD(timMs)
+		////pl.fxGlider.UpdateD(timMs)
+		//pl.cursorGlider.UpdateD(timMs)
 	}
 
 	render.CS = pl.CS
@@ -976,6 +1019,27 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.SetScale(2.75 * pl.misssize, pl.misssize)
 			pl.batch.DrawUnit(*render.Hit0)
 		}
+		if !settings.VSplayer.PlayerInfoUI.ShowRealTimePP{
+			pl.controller[k].SetPP(pl.controller[k].GetTotalResult()[0].PP.Total)
+		}else {
+			// 显示每帧实时变化
+			if len(pl.controller[k].GetHitResult()) > 0 {
+				pl.controller[k].SetPP(score.CalculateRealtimePP(
+					pl.lastb4PP[k],
+					pl.lastPP[k],
+					pl.lastPPTime[k],
+					pl.controller[k].GetHitResult()[0].JudgeTime,
+					pl.progressMsF))
+			}else {
+				pl.controller[k].SetPP(score.CalculateRealtimePP(
+					pl.lastb4PP[k],
+					pl.lastPP[k],
+					pl.lastPPTime[k],
+					pl.lastPPTime[k] + int64(settings.VSplayer.PlayerInfoUI.RealTimePPGap),
+					pl.progressMsF))
+			}
+
+		}
 		// 如果现在时间大于第一个result的时间，渲染这个result，并在渲染一定时间后弹出
 		if len(pl.controller[k].GetHitResult()) != 0 {
 			if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime {
@@ -1022,8 +1086,13 @@ func (pl *Player) Draw(delta float64) {
 				if pl.progressMs > pl.controller[k].GetHitResult()[0].JudgeTime + settings.VSplayer.PlayerFieldUI.HitFadeTime {
 					// 设置acc、rank和pp
 					pl.controller[k].SetAcc(pl.controller[k].GetTotalResult()[0].Acc)
-					pl.controller[k].SetPP(pl.controller[k].GetTotalResult()[0].PP.Total)
 					switch pl.controller[k].GetTotalResult()[0].Rank {
+					case score.SSH:
+						pl.controller[k].SetRank(*render.RankXH)
+						break
+					case score.SH:
+						pl.controller[k].SetRank(*render.RankSH)
+						break
 					case score.SS:
 						pl.controller[k].SetRank(*render.RankX)
 						break
@@ -1042,6 +1111,11 @@ func (pl *Player) Draw(delta float64) {
 					case score.D:
 						pl.controller[k].SetRank(*render.RankD)
 						break
+					}
+					if settings.VSplayer.PlayerInfoUI.ShowRealTimePP {
+						pl.lastb4PP[k] = pl.lastPP[k]
+						pl.lastPP[k] = pl.controller[k].GetTotalResult()[0].PP.Total
+						pl.lastPPTime[k] = pl.controller[k].GetHitResult()[0].JudgeTime
 					}
 					// 弹出
 					pl.controller[k].SetHitResult(pl.controller[k].GetHitResult()[1:])

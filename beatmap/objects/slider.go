@@ -542,13 +542,15 @@ func (self *Slider) Draw(time int64, preempt float64, color mgl32.Vec4, batch *r
 					if i == 0 {
 						num += 1
 					}
-					fadetime := int64(float64(self.TickReverseTrue[num].Time - self.TickReverse[num].Time) / settings.VSplayer.PlayerFieldUI.ReverseFadeMult)
+					fnum := num
+					if (k!=0) || (i!=1) {
+						//如果不是第一个折返点，则多显示一倍时间
+						fnum -= 1
+					}
 					if time >= self.TickReverseTrue[num].Time {
 						mult = 0.0
-					}else if time >= self.TickReverse[num].Time + fadetime{
+					}else if time >= self.TickReverse[fnum].Time{
 						mult = 1.0
-					}else if time >= self.TickReverse[num].Time {
-						mult = float64((time - self.TickReverse[num].Time)) / float64(fadetime)
 					}else {
 						mult = 0.0
 					}

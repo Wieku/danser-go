@@ -5,14 +5,14 @@
 	},
 	"VSplayer": {
 		"PlayerInfo": {
-			"Players": 50,
-			"SpecifiedPlayers": true,
-			"SpecifiedLine": "16"
+			"Players": 3,
+			"SpecifiedPlayers": false,
+			"SpecifiedLine": "2"
 		},
 		"PlayerInfoUI": {
-			"BaseSize": 6,
-			"BaseX": 14,
-			"BaseY": 696,
+			"BaseSize": 9,
+			"BaseX": 18,
+			"BaseY": 1007,
 			"ShowMouse1": false,
 			"ShowMouse2": false,
 			"ShowRealTimePP": true,
@@ -20,10 +20,10 @@
 		},
 		"RecordInfoUI": {
 			"Recorder": "wasupandceacar",
-			"RecordTime": "2019.1.20",
-			"RecordBaseX": 1019,
-			"RecordBaseY": 35,
-			"RecordBaseSize": 18,
+			"RecordTime": "2019.1.27",
+			"RecordBaseX": 1609,
+			"RecordBaseY": 40,
+			"RecordBaseSize": 22,
 			"RecordAlpha": 0.4
 		},
 		"PlayerFieldUI": {
@@ -55,19 +55,19 @@
 			"ReplayDir": "replays\\",
 			"CacheDir": "cache\\",
 			"SaveResultCache": true,
-			"ReadResultCache": false,
+			"ReadResultCache": true,
 			"ReplayDebug": false
 		},
 		"ErrorFix": {
-			"EnableErrorFix": true,
+			"EnableErrorFix": false,
 			"ErrorFixFile": "error.err"
 		}
 	},
 	"Graphics": {
 		"Width": 1920,
 		"Height": 1080,
-		"WindowWidth": 1280,
-		"WindowHeight": 720,
+		"WindowWidth": 1920,
+		"WindowHeight": 1080,
 		"Fullscreen": false,
 		"VSync": false,
 		"FPSCap": 1000,

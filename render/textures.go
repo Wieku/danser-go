@@ -26,6 +26,8 @@ var Hit100 *texture.TextureRegion
 var Hit50 *texture.TextureRegion
 var Hit0 *texture.TextureRegion
 
+var RankXH *texture.TextureRegion
+var RankSH *texture.TextureRegion
 var RankX *texture.TextureRegion
 var RankS *texture.TextureRegion
 var RankA *texture.TextureRegion
@@ -55,6 +57,8 @@ func LoadTextures() {
 	Hit50, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/hit-50.png")
 	Hit0, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/hit-0.png")
 
+	RankXH, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/ranking-xh.png")
+	RankSH, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/ranking-sh.png")
 	RankX, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/ranking-x.png")
 	RankS, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/ranking-s.png")
 	RankA, _ = utils.LoadTextureToAtlas(Atlas,"assets/textures/ranking-a.png")

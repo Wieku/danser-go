@@ -1,5 +1,7 @@
 package score
 
+import . "danser/osuconst"
+
 func CalculateAccuracy(hits []int64) float64 {
 	sum := int64(0)
 	for _, value := range hits{
@@ -8,7 +10,7 @@ func CalculateAccuracy(hits []int64) float64 {
 	return 100 * float64(sum) / float64(300 * len(hits))
 }
 
-func CalculateRank(hits []int64) Rank {
+func CalculateRank(hits []int64, mods uint32) Rank {
 	countall := len(hits)
 	count300 := 0
 	count100 := 0
@@ -31,11 +33,21 @@ func CalculateRank(hits []int64) Rank {
 		}
 	}
 	if count300 == countall {
-		// SS
-		return SS
+		if IsSilver(mods) {
+			// SSH
+			return SSH
+		}else {
+			// SS
+			return SS
+		}
 	}else if ((float64(count300) / float64(countall)) > 0.9) && ((float64(count50) / float64(countall)) < 0.01) && (countmiss == 0) {
-		// S
-		return S
+		if IsSilver(mods) {
+			// SH
+			return SH
+		}else {
+			// S
+			return S
+		}
 	}else if ((float64(count300) / float64(countall)) > 0.9) || (((float64(count300) / float64(countall)) > 0.8) && (countmiss == 0)) {
 		// A
 		return A
@@ -49,4 +61,8 @@ func CalculateRank(hits []int64) Rank {
 		// D
 		return D
 	}
+}
+
+func IsSilver(mods uint32) bool {
+	return (mods&MOD_HD > 0) || (mods&MOD_FL > 0)
 }

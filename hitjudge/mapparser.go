@@ -37,13 +37,15 @@ func ParseReplay(name string) *rplpa.Replay {
 	return replay.ExtractReplay(name)
 }
 
-func ParseHits(mapname string, replayname string, errors []Error) (result []ObjectResult, totalresult []TotalResult) {
+func ParseHits(mapname string, replayname string, errors []Error) (result []ObjectResult, totalresult []TotalResult, mods uint32) {
 	// 加载replay
 	pr := ParseReplay(replayname)
 	r := pr.ReplayData
 
+	mods = pr.Mods
+
 	// 根据replay的mods加载map
-	b := ParseMapwithMods(mapname, (pr.Mods&MOD_HR > 0), (pr.Mods&MOD_EZ > 0))
+	b := ParseMapwithMods(mapname, (mods&MOD_HR > 0), (mods&MOD_EZ > 0))
 	OD300 := b.OD300
 	OD100 := b.OD100
 	OD50 := b.OD50
@@ -51,7 +53,7 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 	convert_CS := 32 * (1 - 0.7 * (b.CircleSize - 5) / 5)
 
 	// 如果replay是HR，改变OD和CS，并上下翻转replay的Y坐标
-	if pr.Mods&MOD_HR > 0 {
+	if mods&MOD_HR > 0 {
 		newOD := math.Min(OD_HR_HENSE * b.OD, OD_MAX)
 		OD300 = beatmap.AdjustOD(OD_300_BASE - ( newOD * OD_300_MULT ) + OD_PRECISION_FIX)
 		OD100 = beatmap.AdjustOD(OD_100_BASE - ( newOD * OD_100_MULT ) + OD_PRECISION_FIX)
@@ -62,7 +64,7 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 	}
 
 	// 如果replay是EZ，改变OD和CS
-	if pr.Mods&MOD_EZ > 0 {
+	if mods&MOD_EZ > 0 {
 		newOD := b.OD * OD_EZ_HENSE
 		OD300 = beatmap.AdjustOD(OD_300_BASE - ( newOD * OD_300_MULT ) + OD_PRECISION_FIX)
 		OD100 = beatmap.AdjustOD(OD_100_BASE - ( newOD * OD_100_MULT ) + OD_PRECISION_FIX)
@@ -304,9 +306,9 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 										uint16(count50),
 										uint16(countMiss),
 										uint16(maxcombo),
-										pr.Mods,
+										mods,
 										score.CalculateAccuracy(totalhits),
-										score.CalculateRank(totalhits),
+										score.CalculateRank(totalhits, mods),
 										oppai.PPv2{}}
 		//tmptotalresult.PP = calculatePP(mapname, tmptotalresult)
 		tmptotalresult.PP = calculatePPbyNum(mapname, tmptotalresult, k+1)
@@ -323,7 +325,7 @@ func ParseHits(mapname string, replayname string, errors []Error) (result []Obje
 	log.Println("Acc:", totalresult[len(totalresult)-1].Acc)
 	log.Println("PP:", totalresult[len(totalresult)-1].PP.Total)
 
-	return result, totalresult
+	return result, totalresult, mods
 }
 
 // 定位Key放下的位置
@@ -604,19 +606,13 @@ func getTickRangeJudgePoint(time int64, hit1 *rplpa.ReplayData, hit2 *rplpa.Repl
 // HR上下翻转replay
 func makeReplayHR(r []*rplpa.ReplayData){
 	for k := 0; k < len(r); k++ {
-		r[k].MouseY = 384 - r[k].MouseY
+		r[k].MouseY = PLAYFIELD_HEIGHT - r[k].MouseY
 	}
-}
-
-// 部分载入map
-func loadMapbyNum(filename string, objnum int) *oppai.Map {
-	f, _ := os.Open(filename)
-	return oppai.ParsebyNum(f, objnum)
 }
 
 // 计算部分的pp
 func calculatePPbyNum(filename string, result TotalResult, objnum int) oppai.PPv2 {
-	return oppai.PPInfo(loadMapbyNum(filename, objnum), &oppai.Parameters{
+	return oppai.PPInfo(score.LoadMapbyNum(filename, objnum), &oppai.Parameters{
 		Combo:  result.Combo,
 		Mods:   result.Mods,
 		N300:   result.N300,

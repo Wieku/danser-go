@@ -307,14 +307,19 @@ func (controller *ReplayController) SetDishowPos(pos bmath.Vector2d, rate int) {
 	offsetY := settings.VSplayer.BreakandQuit.SameTimeOffset * float64(rate)
 	// 计算正确的位置
 	mult := float64(settings.Graphics.WindowHeight) / PLAYFIELD_HEIGHT
+	// 向内修正
+	gapheight := float64(settings.Graphics.WindowHeight) / 15.0
+	gapwidth := gapheight * PLAYFIELD_WIDTH / PLAYFIELD_HEIGHT
 	width_split := (1 - (PLAYFIELD_WIDTH * mult / float64(settings.Graphics.WindowWidth))) / 2
-	x := pos.X * mult + float64(settings.Graphics.WindowWidth) * width_split
-	y := float64(settings.Graphics.WindowHeight) - pos.Y * mult
+	x := pos.X * mult + float64(settings.Graphics.WindowWidth) * width_split + gapwidth
+	y := float64(settings.Graphics.WindowHeight) - pos.Y * mult - gapheight
 	if settings.Graphics.Fullscreen {
+		gapheight = float64(settings.Graphics.Height) / 15.0
+		gapwidth = gapheight * PLAYFIELD_WIDTH / PLAYFIELD_HEIGHT
 		mult = float64(settings.Graphics.Height) / PLAYFIELD_HEIGHT
 		width_split = (1 - (PLAYFIELD_WIDTH * mult / float64(settings.Graphics.Width))) / 2
-		x = pos.X * mult + float64(settings.Graphics.Width) * width_split
-		y = float64(settings.Graphics.Height) - pos.Y * mult
+		x = pos.X * mult + float64(settings.Graphics.Width) * width_split + gapwidth
+		y = float64(settings.Graphics.Height) - pos.Y * mult - gapheight
 	}
 	controller.dishowpos = bmath.Vector2d{x, y - offsetY}
 }

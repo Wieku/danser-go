@@ -20,11 +20,13 @@ type playerinfo struct {
 }
 
 type playerinfoUI struct {
-	BaseSize	float64
-	BaseX		float64
-	BaseY		float64
-	ShowMouse1	bool
-	ShowMouse2	bool
+	BaseSize		float64
+	BaseX			float64
+	BaseY			float64
+	ShowMouse1		bool
+	ShowMouse2		bool
+	ShowRealTimePP	bool
+	RealTimePPGap	float64
 }
 
 type recordinfoUI struct {
@@ -40,7 +42,7 @@ type playerfieldUI struct {
 	HitFadeTime			int64
 	SpinnerMinusTime	int64
 	SpinnerMult			float64
-	ReverseFadeMult		float64
+	ReverseFadeTime		int64
 	CursorColorNum		int
 	CursorColorSkipNum	int
 }
