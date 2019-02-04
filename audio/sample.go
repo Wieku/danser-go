@@ -24,7 +24,7 @@ func NewSample(path string) *Sample {
 	f.Close()
 
 	player := &Sample{}
-	han := C.BASS_SampleLoad(0, unsafe.Pointer(C.CString(path)), 0, 0, 32, 0)
+	han := C.BASS_SampleLoad(0, unsafe.Pointer(C.CString(path)), 0, 0, 32, C.BASS_SAMPLE_OVER_POS)
 	player.channel = han
 	return player
 }
