@@ -1,17 +1,20 @@
 package schedulers
 
 import (
-	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/dance/movers"
-	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/dance/movers"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/settings"
 )
 
 type GenericScheduler struct {
 	cursor *render.Cursor
 	queue  []objects.BaseObject
 	mover  movers.MultiPointMover
+	lastLeft bool
+	moving bool
+	lastEnd int64
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
@@ -39,7 +42,24 @@ func (sched *GenericScheduler) Update(time int64) {
 
 			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
 				sched.cursor.SetPos(g.GetPosition())
+
+				if !sched.moving {
+					if !sched.lastLeft && g.GetBasicData().StartTime-sched.lastEnd < 130 {
+						sched.cursor.LeftButton = true
+						sched.lastLeft = true
+					} else {
+						sched.cursor.RightButton = true
+						sched.lastLeft = false
+					}
+				}
+				sched.moving = true
+
 			} else if time > g.GetBasicData().EndTime {
+
+				sched.moving = false
+				sched.cursor.LeftButton = false
+				sched.cursor.RightButton = false
+
 				if i < len(sched.queue)-1 {
 					sched.queue = append(sched.queue[:i], sched.queue[i+1:]...)
 				} else if i < len(sched.queue) {
@@ -51,7 +71,7 @@ func (sched *GenericScheduler) Update(time int64) {
 					sched.queue = PreprocessQueue(i+1, sched.queue, settings.Dance.SliderDance)
 					sched.mover.SetObjects([]objects.BaseObject{g, sched.queue[i+1]})
 				}
-
+				sched.lastEnd = g.GetBasicData().EndTime
 				move = true
 			}
 		}
