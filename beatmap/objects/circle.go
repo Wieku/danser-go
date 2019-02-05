@@ -1,14 +1,14 @@
 package objects
 
 import (
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/audio"
-	"strconv"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/animation"
+	"github.com/wieku/danser/audio"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/settings"
+	"strconv"
 )
 
 type Circle struct {
@@ -67,10 +67,8 @@ func (self *Circle) Update(time int64) bool {
 		}
 	}*/
 
-
 	return true
 }
-
 
 func (self *Circle) PlaySound() {
 	index := self.objData.customIndex
@@ -98,7 +96,6 @@ func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
 	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+fadeIn, 0)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-preempt*0.6, 1)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt*0.6, float64(self.objData.StartTime)-preempt*0.3, 0) HIDDEN
-
 
 	self.fadeApproach = animation.NewGlider(1)
 	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)

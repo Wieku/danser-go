@@ -139,11 +139,11 @@ func (self Slider) GetHalf() bmath.Vector2d {
 }
 
 func (self Slider) GetStartAngle() float64 {
-	return self.GetBasicData().StartPos.AngleRV(self.GetPointAt(self.objData.StartTime + 10)) //temporary solution
+	return self.GetBasicData().StartPos.AngleRV(self.GetPointAt(self.objData.StartTime + int64(math.Min(10, self.partLen)))) //temporary solution
 }
 
 func (self Slider) GetEndAngle() float64 {
-	return self.GetBasicData().EndPos.AngleRV(self.GetPointAt(self.objData.EndTime - 10)) //temporary solution
+	return self.GetBasicData().EndPos.AngleRV(self.GetPointAt(self.objData.EndTime - int64(math.Min(10, self.partLen)))) //temporary solution
 }
 
 func (self Slider) GetPartLen() float64 {
@@ -196,7 +196,11 @@ func (self *Slider) SetTiming(timings *Timings) {
 	self.calculateFollowPoints()
 	self.discreteCurve = self.GetCurve()
 	self.startAngle = self.GetStartAngle()
-	self.endAngle = self.discreteCurve[len(self.discreteCurve)-1].AngleRV(self.discreteCurve[len(self.discreteCurve)-2])
+	if len(self.discreteCurve) > 1 {
+		self.endAngle = self.discreteCurve[len(self.discreteCurve)-1].AngleRV(self.discreteCurve[len(self.discreteCurve)-2])
+	} else {
+		self.endAngle = self.startAngle+math.Pi
+	}
 }
 
 func (self *Slider) calculateFollowPoints() {
@@ -304,13 +308,13 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 	self.scaleFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1*followBaseScale, 0.8*followBaseScale)
 
 	for j, p := range self.ScorePoints {
-		if j < 1 || j > len(self.ScorePoints)-2 {
+		if j < 1 {
 			continue
 		}
 
 		fade := 200.0
 		delay := fade
-		if len(self.ScorePoints) > 2 {
+		if len(self.ScorePoints) >= 2 {
 			delay = math.Min(fade, float64(p.Time-self.ScorePoints[j-1].Time))
 			ratio := delay / fade
 			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1-ratio*0.1)*followBaseScale)
