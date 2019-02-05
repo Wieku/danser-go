@@ -64,6 +64,22 @@ func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	}
 }
 
+func (diff *Difficulty) GetHPDrain() float64 {
+	return diff.hpDrain
+}
+
+func (diff *Difficulty) GetCS() float64 {
+	return diff.cs
+}
+
+func (diff *Difficulty) GetOD() float64 {
+	return diff.od
+}
+
+func (diff *Difficulty) GetAR() float64 {
+	return diff.ar
+}
+
 func DifficultyRate(diff, min, mid, max float64) float64 {
 	if diff > 5 {
 		return mid + (max-mid)*(diff-5)/5

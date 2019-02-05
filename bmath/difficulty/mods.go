@@ -72,5 +72,9 @@ func (modifier Modifier) GetScoreMultiplier() float64 {
 		multiplier = 0
 	}
 
+	if modifier&SpunOut > 0 {
+		multiplier *= 0.9
+	}
+
 	return multiplier
 }
