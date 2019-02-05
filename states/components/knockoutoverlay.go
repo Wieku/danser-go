@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/settings"
+	"math"
 	"strconv"
 	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/render"
@@ -87,9 +88,9 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			player.deathFade.AddEventS(float64(time+1800), float64(time+2000), 1, 0)
 
 			//Show all players when the map ends
-			endTime := overlay.controller.GetBeatMap().HitObjects[len(overlay.controller.GetBeatMap().HitObjects)-1].GetBasicData().EndTime
-			player.fade.AddEvent(float64(endTime), float64(endTime+1000), 1)
-			player.height.AddEvent(float64(endTime), float64(endTime+1000), settings.Graphics.GetHeightF()*0.9*1.04/(51))
+			//endTime := overlay.controller.GetBeatMap().HitObjects[len(overlay.controller.GetBeatMap().HitObjects)-1].GetBasicData().EndTime
+			//player.fade.AddEvent(float64(endTime), float64(endTime+1000), 1)
+			//player.height.AddEvent(float64(endTime), float64(endTime+1000), settings.Graphics.GetHeightF()*0.9*1.04/(51))
 		}
 	})
 	return overlay
@@ -115,8 +116,12 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 	scl := /*settings.Graphics.GetHeightF() * 0.9*(900.0/1080.0)*/ 384.0*(1080.0/900.0*0.9) / (51)
 	batch.SetScale(1, -1)
 	rescale := /*384.0/512.0 * (1080.0/settings.Graphics.GetHeightF())*/ 1.0
+	alive := 0
 	for i, r := range overlay.controller.GetReplays() {
 		player := overlay.players[r.Name]
+		if !player.hasBroken {
+			alive++
+		}
 		if player.deathFade.GetValue() >= 0.01 {
 
 			batch.SetColor(float64(colors[i].X()), float64(colors[i].Y()), float64(colors[i].Z()), alpha*player.deathFade.GetValue())
@@ -130,6 +135,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 		}
 
 	}
+	settings.Cursor.CursorSize = 3.0 + (10-3)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
 	batch.SetScale(1, 1)
 }
 
