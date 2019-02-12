@@ -1,7 +1,9 @@
 package osu
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/render/batches"
 	"math"
 )
 
@@ -30,9 +32,13 @@ type Spinner struct {
 	maxAcceleration   float64
 }
 
+func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+	panic("implement me")
+}
+
 var spinners = 0
 
-func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer, perfectAnimation bool) {
+func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
 	spinner.ruleSet = ruleSet
 	spinner.hitSpinner = object.(*objects.Spinner)
 	spinner.players = players

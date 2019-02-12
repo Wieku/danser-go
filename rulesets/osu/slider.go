@@ -1,7 +1,9 @@
 package osu
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/render/batches"
 	"math"
 	"github.com/wieku/danser/bmath"
 	"sort"
@@ -83,10 +85,6 @@ func (slider *Slider) Update(time int64) bool {
 			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
 			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 		}
-
-		/*if !player.cursor.IsReplayFrame {
-			continue
-		}*/
 
 		if !state.finished {
 			numFinishedTotal++
@@ -200,7 +198,7 @@ func (slider *Slider) Update(time int64) bool {
 			rate := float64(state.scored) / float64(len(state.points))
 			hit := HitResults.Miss
 
-			if rate > 0 {
+			if rate > 0 && len(slider.players) == 1 {
 				slider.hitSlider.PlayEdgeSample(len(slider.hitSlider.TickReverse)-1)
 			}
 
@@ -240,4 +238,8 @@ func (slider *Slider) Update(time int64) bool {
 
 func (slider *Slider) GetFadeTime() int64 {
 	return slider.hitSlider.GetBasicData().StartTime - int64(slider.fadeStartRelative)
+}
+
+func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+
 }

@@ -1,17 +1,17 @@
 package render
 
 import (
-	"github.com/wieku/danser/bmath"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"math"
-	"github.com/wieku/glhf"
-	"sync"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/render/framebuffer"
 	"github.com/wieku/danser/settings"
 	"github.com/wieku/danser/utils"
+	"github.com/wieku/glhf"
 	"io/ioutil"
-	"github.com/wieku/danser/render/framebuffer"
-	"github.com/wieku/danser/render/batches"
+	"math"
+	"sync"
 )
 
 var cursorShader *glhf.Shader = nil

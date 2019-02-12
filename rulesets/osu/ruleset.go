@@ -1,8 +1,10 @@
 package osu
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/beatmap"
+	"github.com/wieku/danser/render/batches"
 	"math"
 	"github.com/wieku/danser/beatmap/objects"
 	"github.com/wieku/danser/bmath/difficulty"
@@ -14,6 +16,12 @@ import (
 )
 
 type Grade int64
+
+const (
+	FadeIn   = 120
+	FadeOut  = 600
+	PostEmpt = 500
+)
 
 const (
 	D = iota
@@ -66,6 +74,7 @@ type buttonState struct {
 type hitobject interface {
 	Init(ruleset *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer)
 	Update(time int64) bool
+	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
 	GetFadeTime() int64
 }
 
@@ -190,6 +199,15 @@ func (set *OsuRuleSet) Update(time int64) {
 		}
 	}
 
+}
+
+func (set *OsuRuleSet) Draw(time int64, batch *batches.SpriteBatch, color mgl32.Vec4) {
+	if len(set.processed) > 0 {
+		for i := len(set.processed)-1; i > 0; i-- {
+			g := set.processed[i]
+			g.Draw(time, color, batch)
+		}
+	}
 }
 
 func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int64, x, y float64, result HitResult, raw bool, comboResult ComboResult) {

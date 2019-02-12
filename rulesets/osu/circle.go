@@ -1,10 +1,17 @@
 package osu
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser/beatmap/objects"
-	"math"
 	"github.com/wieku/danser/bmath/difficulty"
+	"github.com/wieku/danser/render/batches"
+	"math"
 )
+
+type Renderable interface {
+	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
+	DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
+}
 
 type objstate struct {
 	buttons  buttonState
@@ -17,12 +24,19 @@ type Circle struct {
 	players           []*difficultyPlayer
 	state             []objstate
 	fadeStartRelative float64
+	renderable *HitCircleSprite
 }
 
-func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer, perfectAnimation bool) {
+func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
 	circle.ruleSet = ruleSet
 	circle.hitCircle = object.(*objects.Circle)
 	circle.players = players
+	if len(players) > 1 {
+		circle.renderable = NewHitCircleSprite(*difficulty.NewDifficulty(players[0].diff.GetHPDrain(), players[0].diff.GetCS(), players[0].diff.GetOD(), players[0].diff.GetAR()), object.GetBasicData().StartPos, object.GetBasicData().StartTime)
+	} else {
+		circle.renderable = NewHitCircleSprite(*players[0].diff, object.GetBasicData().StartPos, object.GetBasicData().StartTime)
+	}
+
 	circle.state = make([]objstate, len(players))
 
 	circle.fadeStartRelative = 1000000
@@ -73,9 +87,13 @@ func (circle *Circle) Update(time int64) bool {
 						combo := ComboResults.Increase
 						if hit == HitResults.Miss {
 							combo = ComboResults.Reset
+							if len(circle.players) == 1 {
+								circle.renderable.Miss(time)
+							}
 						} else {
 							if len(circle.players) == 1 {
 								circle.hitCircle.PlaySound()
+								circle.renderable.Hit(time)
 							}
 						}
 
@@ -92,6 +110,9 @@ func (circle *Circle) Update(time int64) bool {
 
 			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
 				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
+				if len(circle.players) == 1 {
+					circle.renderable.Miss(time)
+				}
 				player.cursorLock = -1
 				state.finished = true
 				continue
@@ -106,7 +127,8 @@ func (circle *Circle) Update(time int64) bool {
 	}
 
 	if len(circle.players) > 1 && time == circle.hitCircle.GetBasicData().StartTime {
-		circle.hitCircle.PlaySound()
+		//circle.hitCircle.PlaySound()
+		circle.renderable.Hit(time)
 	}
 
 	return unfinished == 0
@@ -114,4 +136,12 @@ func (circle *Circle) Update(time int64) bool {
 
 func (circle *Circle) GetFadeTime() int64 {
 	return circle.hitCircle.GetBasicData().StartTime - int64(circle.fadeStartRelative)
+}
+
+func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+	self.renderable.Draw(time, color, batch)
+}
+
+func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+	self.renderable.DrawApproach(time, color, batch)
 }
