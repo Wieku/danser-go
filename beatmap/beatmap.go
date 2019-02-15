@@ -105,10 +105,18 @@ func (beatMap *BeatMap) LoadTimingPoints() {
 				samplevolume, _ = strconv.ParseInt(line[5], 10, 64)
 			}
 
+			kiai := false
+			if len(line) > 7 {
+				ki, _ := strconv.ParseInt(line[7], 10, 64)
+				if ki == 1 {
+					kiai = true
+				}
+			}
+
 			beatMap.Timings.LastSet = int(sampleset)
-			beatMap.Timings.AddPoint(time, bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100)
+			beatMap.Timings.AddPoint(time, bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, kiai)
 		} else {
-			beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet, 1, 1)
+			beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet, 1, 1, false)
 		}
 	}
 }
