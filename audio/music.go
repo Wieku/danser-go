@@ -17,9 +17,9 @@ static inline void setSync(HCHANNEL channel) {
 import "C"
 import (
 	"unsafe"
+	"github.com/wieku/danser/settings"
 	//"log"
 	"math"
-	"github.com/wieku/danser/settings"
 )
 
 const (
@@ -60,10 +60,12 @@ func unregisterEndCallback(channel C.DWORD, f func()) {
 }
 
 type Music struct {
-	channel C.DWORD
-	fft     []float32
-	beat    float64
-	peak    float64
+	channel      C.DWORD
+	fft          []float32
+	beat         float64
+	peak         float64
+	leftChannel  float64
+	rightChannel float64
 }
 
 func NewMusic(path string) *Music {
@@ -154,6 +156,13 @@ func (wv *Music) Update() {
 	//toAv /= 512
 	wv.beat = beatAv
 	wv.peak = toPeak
+
+	level := int(C.BASS_ChannelGetLevel(wv.channel))
+	left := int(level & 65535)
+	right := int(level >> 16)
+
+	wv.leftChannel = float64(left) / 32768
+	wv.rightChannel = float64(right) / 32768
 }
 
 func (wv *Music) GetFFT() []float32 {
@@ -162,6 +171,18 @@ func (wv *Music) GetFFT() []float32 {
 
 func (wv *Music) GetPeak() float64 {
 	return wv.peak
+}
+
+func (wv *Music) GetLevelCombined() float64 {
+	return (wv.leftChannel + wv.rightChannel) / 2
+}
+
+func (wv *Music) GetLeftLevel() float64 {
+	return wv.leftChannel
+}
+
+func (wv *Music) GetRightLevel() float64 {
+	return wv.rightChannel
 }
 
 func (wv *Music) GetBeat() float64 {
