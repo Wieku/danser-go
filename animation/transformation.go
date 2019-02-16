@@ -16,7 +16,8 @@ const (
 	Move
 	MoveX
 	MoveY
-	Color
+	Color3
+	Color4
 	HorizontalFlip
 	VerticalFlip
 	Additive
@@ -143,4 +144,16 @@ func (t *Transformation) GetColor(time float64) bmath.Color {
 		B: t.startValues[2] + progress*(t.endValues[2]-t.startValues[2]),
 		A: t.startValues[3] + progress*(t.endValues[3]-t.startValues[3]),
 	}
+}
+
+func (t *Transformation) GetStartTime() float64 {
+	return t.startTime
+}
+
+func (t *Transformation) GetEndTime() float64 {
+	return t.endTime
+}
+
+func (t *Transformation) GetType() TransformationType {
+	return t.transformationType
 }
