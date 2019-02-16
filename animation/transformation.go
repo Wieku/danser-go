@@ -38,15 +38,14 @@ type Transformation struct {
 	endValues          [4]float64
 	easing             func(float64) float64
 	startTime, endTime float64
-	valueThrough       bool
 }
 
-func NewBooleanTransform(transformationType TransformationType, startTime, endTime float64, valueThrough bool) *Transformation {
+func NewBooleanTransform(transformationType TransformationType, startTime, endTime float64) *Transformation {
 	if transformationType&(HorizontalFlip|VerticalFlip|Additive) == 0 {
 		panic("Wrong TransformationType used!")
 	}
 
-	return &Transformation{transformationType: transformationType, startTime: startTime, endTime: endTime, valueThrough: valueThrough}
+	return &Transformation{transformationType: transformationType, startTime: startTime, endTime: endTime}
 }
 
 func NewSingleTransform(transformationType TransformationType, easing func(float64) float64, startTime, endTime, startValue, endValue float64) *Transformation {
@@ -133,7 +132,7 @@ func (t *Transformation) GetVector(time float64) bmath.Vector2d {
 }
 
 func (t *Transformation) GetBoolean(time float64) bool {
-	return (time >= t.startTime && time < t.endTime) == t.valueThrough
+	return time >= t.startTime && time < t.endTime
 }
 
 func (t *Transformation) GetColor(time float64) bmath.Color {
