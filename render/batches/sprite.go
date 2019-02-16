@@ -218,9 +218,12 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
 
-func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
+func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
 	newScale := bmath.NewVec2d(scale.X*float64(texture.Width)/2, scale.Y*float64(texture.Height)/2)
-	newPosition := bmath.NewVec2d(position.X-64, position.Y-48)
+	newPosition := position
+	if storyboard {
+		newPosition = bmath.NewVec2d(position.X-64, position.Y-48)
+	}
 
 	vec00 := bmath.NewVec2d(-1, -1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
 	vec10 := bmath.NewVec2d(1, -1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
