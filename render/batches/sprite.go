@@ -140,9 +140,9 @@ func (batch *SpriteBatch) Flush() {
 }
 
 func (batch *SpriteBatch) addVertex(vx mgl32.Vec3, texCoord mgl32.Vec3, color mgl32.Vec4) {
-	add := 0
+	add := 1
 	if batch.additive {
-		add = 1
+		add = 0
 	}
 	fillArray(batch.data, batch.currentSize, vx.X(), vx.Y(), vx.Z(), texCoord.X(), texCoord.Y(), texCoord.Z(), color.X(), color.Y(), color.Z(), color.W(), float32(add))
 	batch.currentSize += 11

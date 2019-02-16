@@ -13,7 +13,5 @@ void main()
     vec4 in_color = texture(tex, tex_coord);
 	color = in_color*col_tint;
 	color.rgb *= color.a;
-	if (additive == 1) {
-	    color.a = 0;
-	}
+	color.a *= additive;
 }
