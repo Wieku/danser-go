@@ -1,3 +1,5 @@
+## PROJECT ABANDONED DUE TO REWRITE
+
 # danser
 danser is a visualiser for osu! maps written in Go.
 
