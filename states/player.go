@@ -99,7 +99,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	player.background = components.NewBackground(beatMap)
+	player.background = components.NewBackground(beatMap, 0, true)
 
 	player.camera = bmath.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)

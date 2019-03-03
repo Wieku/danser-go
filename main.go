@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser/audio"
 	"github.com/wieku/danser/beatmap"
 	"flag"
+	"github.com/wieku/danser/input"
 	"log"
 	"github.com/faiface/mainthread"
 	"github.com/wieku/glhf"
@@ -22,7 +23,7 @@ import (
 	"github.com/wieku/danser/render/batches"
 )
 
-var player *states.Player
+var player *states.MainMenu
 var pressed = false
 var pressedM = false
 var pressedP = false
@@ -122,6 +123,7 @@ func run() {
 		}
 
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
+		input.Win = win
 		icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
 		icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
 		icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")
@@ -162,7 +164,7 @@ func run() {
 
 		beatmap.ParseObjects(beatMap)
 		beatMap.LoadCustomSamples()
-		player = states.NewPlayer(beatMap)
+		player = states.NewMainMenu(beatMap)
 
 	})
 

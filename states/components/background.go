@@ -1,29 +1,33 @@
 package components
 
 import (
-	"github.com/wieku/danser/render/texture"
-	"github.com/wieku/danser/storyboard"
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/utils"
-	"github.com/wieku/danser/render"
-	"path/filepath"
-	"github.com/wieku/danser/settings"
-	"log"
-	"github.com/wieku/danser/bmath"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser/beatmap"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/input"
+	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/render/effects"
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/storyboard"
+	"github.com/wieku/danser/utils"
+	"log"
+	"path/filepath"
 )
 
 type Background struct {
 	blur       *effects.BlurEffect
 	scale      bmath.Vector2d
+	position      bmath.Vector2d
+	parallax float64
 	background *texture.TextureRegion
 	storyboard *storyboard.Storyboard
+	lastTime int64
 }
 
-func NewBackground(beatMap *beatmap.BeatMap) *Background {
+func NewBackground(beatMap *beatmap.BeatMap, parallax float64, useStoryboard bool) *Background {
 	bg := new(Background)
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
@@ -33,7 +37,7 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 		log.Println(err)
 	}
 
-	if settings.Playfield.StoryboardEnabled {
+	if settings.Playfield.StoryboardEnabled && useStoryboard {
 		bg.storyboard = storyboard.NewStoryboard(beatMap)
 
 		if bg.storyboard == nil {
@@ -52,12 +56,12 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 		}
 
 		if condition {
-			bg.scale = bmath.NewVec2d(1, winscl/imScl)
+			bg.scale = bmath.NewVec2d(1, winscl/imScl).Scl(1+parallax)
 		} else {
-			bg.scale = bmath.NewVec2d(imScl/winscl, 1)
+			bg.scale = bmath.NewVec2d(imScl/winscl, 1).Scl(1+parallax)
 		}
 	}
-
+	bg.parallax = parallax
 	return bg
 }
 
@@ -65,6 +69,15 @@ func (bg *Background) Update(time int64) {
 	if bg.storyboard != nil {
 		bg.storyboard.Update(time)
 	}
+	x, y := input.Win.GetCursorPos()
+	x = -(x-settings.Graphics.GetWidthF()/2)/settings.Graphics.GetWidthF()*bg.parallax
+	y = (y-settings.Graphics.GetHeightF()/2)/settings.Graphics.GetHeightF()*bg.parallax
+
+	delta := float64(time - bg.lastTime)
+	bg.position.X = bg.position.X + delta*0.005*(x-bg.position.X)
+	bg.position.Y = bg.position.Y + delta*0.005*(y-bg.position.Y)
+
+	bg.lastTime = time
 }
 
 func project(pos bmath.Vector2d, camera mgl32.Mat4) bmath.Vector2d {
@@ -96,6 +109,7 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 			batch.SetScale(bg.scale.X, -bg.scale.Y)
 			if !settings.Playfield.BlurEnable {
 				batch.SetColor(1, 1, 1, bgAlpha)
+				batch.SetTranslation(bg.position)
 			}
 			batch.DrawUnit(*bg.background)
 		}
@@ -104,8 +118,11 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 			batch.SetScale(1, 1)
 			if !settings.Playfield.BlurEnable {
 				batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+				batch.SetTranslation(bmath.NewVec2d(320*bg.position.X, 240*bg.position.Y))
+				batch.SetScale(1+bg.parallax, 1+bg.parallax)
 			}
 			batch.SetCamera(camera)
+
 			bg.storyboard.Draw(time, batch)
 			batch.Flush()
 		}
@@ -117,7 +134,9 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 			batch.Begin()
 			batch.SetColor(1, 1, 1, bgAlpha)
 			batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
-			batch.DrawUnscaled(texture.GetRegion())
+			batch.SetTranslation(bg.position)
+			batch.SetScale(1+bg.parallax, 1+bg.parallax)
+			batch.DrawUnit(texture.GetRegion())
 		}
 		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
 			gl.Disable(gl.SCISSOR_TEST)
