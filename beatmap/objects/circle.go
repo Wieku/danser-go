@@ -53,6 +53,9 @@ func (self Circle) GetBasicData() *basicData {
 
 func (self *Circle) Update(time int64) bool {
 
+	if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+		self.PlaySound()
+	}
 	/*index := self.objData.customIndex
 
 	if index == 0 {

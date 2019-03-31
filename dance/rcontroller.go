@@ -207,6 +207,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		counter++
 	}
 
+	settings.PLAYERS = len(controller.replays)
+
 	controller.bMap = beatMap
 }
 

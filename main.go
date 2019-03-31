@@ -1,29 +1,29 @@
 package main
 
 import (
+	"flag"
+	"github.com/faiface/mainthread"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/wieku/danser/audio"
 	"github.com/wieku/danser/beatmap"
-	"flag"
-	"github.com/wieku/danser/input"
-	"log"
-	"github.com/faiface/mainthread"
-	"github.com/wieku/glhf"
-	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/wieku/danser/states"
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"os"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/utils"
+	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/build"
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/database"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/render/font"
-	"image"
+	"github.com/wieku/danser/input"
 	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser/render/font"
+	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser/states"
+	"github.com/wieku/danser/utils"
+	"github.com/wieku/glhf"
+	"image"
+	"log"
+	"os"
 )
 
-var player *states.MainMenu
+var player *states.Player
 var pressed = false
 var pressedM = false
 var pressedP = false
@@ -164,7 +164,7 @@ func run() {
 
 		beatmap.ParseObjects(beatMap)
 		beatMap.LoadCustomSamples()
-		player = states.NewMainMenu(beatMap)
+		player = states.NewPlayer(beatMap)
 
 	})
 

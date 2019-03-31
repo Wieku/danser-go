@@ -338,26 +338,33 @@ func (self *Slider) GetCurve() []bmath.Vector2d {
 
 func (self *Slider) Update(time int64) bool {
 	if time < self.objData.EndTime {
-		/*times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
+		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
 
 		if self.lastT != times {
-			self.playSample(self.sampleSets[times-1], self.additionSets[times-1], self.samples[times-1])
+			if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+				self.PlayEdgeSample(int(times-1))
+			}
 			self.lastT = times
 		}
 
 		for i, p := range self.TickPoints {
 			if p.Time < time && self.lastTick < i {
-				audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+				if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+					audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+				}
 				self.lastTick = i
 			}
-		}*/
+		}
 
 		self.Pos = self.GetPointAt(time)
 
-		/*if !self.clicked {
-			self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
+		if !self.clicked {
+			//self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
+			if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+				self.PlayEdgeSample(0)
+			}
 			self.clicked = true
-		}*/
+		}
 
 		return false
 	}
@@ -365,8 +372,11 @@ func (self *Slider) Update(time int64) bool {
 	self.Pos = self.GetPointAt(self.objData.EndTime)
 
 	//self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
+	if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+		self.PlayEdgeSample(int(self.repeat))
+	}
 	self.End = true
-	//self.clicked = false
+	self.clicked = false
 
 	return true
 }
