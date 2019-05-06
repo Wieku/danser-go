@@ -40,7 +40,7 @@ func (diff *Difficulty) calculate() {
 		hpDrain /= 2
 	}
 
-	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5)
+	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5) * 1.00041
 	diff.Preempt = DifficultyRate(ar, 1800, 1200, 450)
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
 	diff.Hit50 = int64(150 + 50*(5-od)/5)
