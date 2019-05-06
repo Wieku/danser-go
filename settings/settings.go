@@ -267,6 +267,7 @@ var DEBUG = false
 var FPS = false
 var PLAY = false
 var KNOCKOUT = ""
+var KNOCKOUTDANCE = false
 var PLAYERS = 1
 var DIVIDES = 2
 var SPEED = 1.0

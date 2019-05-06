@@ -1,24 +1,24 @@
 package dance
 
 import (
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/animation"
 	"github.com/Mempler/rplpa"
 	"github.com/thehowl/go-osuapi"
+	"github.com/wieku/danser/animation"
+	"github.com/wieku/danser/beatmap"
+	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser/bmath/difficulty"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/rulesets/osu"
 	"github.com/wieku/danser/settings"
-	"log"
 	"io/ioutil"
+	"log"
+	"math"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
-	"net/url"
 	"strconv"
-	"net/http"
-	"github.com/wieku/danser/rulesets/osu"
-	"github.com/wieku/danser/bmath/difficulty"
-	"math"
-	"github.com/wieku/danser/bmath"
+	"strings"
 )
 
 type RpData struct {
@@ -31,23 +31,23 @@ type RpData struct {
 }
 
 type subControl struct {
-	xGlider  *animation.Glider
-	yGlider  *animation.Glider
-	k1Glider *animation.Glider
-	k2Glider *animation.Glider
-	m1Glider *animation.Glider
-	m2Glider *animation.Glider
-	frame    *animation.Glider
+	xGlider    *animation.Glider
+	yGlider    *animation.Glider
+	k1Glider   *animation.Glider
+	k2Glider   *animation.Glider
+	m1Glider   *animation.Glider
+	m2Glider   *animation.Glider
+	frame      *animation.Glider
 	lolControl Controller
 }
 
 type ReplayController struct {
-	bMap        *beatmap.BeatMap
-	replays     []RpData
-	cursors     []*render.Cursor
-	controllers []*subControl
-	ruleset     *osu.OsuRuleSet
-	lastTime, counter    int64
+	bMap              *beatmap.BeatMap
+	replays           []RpData
+	cursors           []*render.Cursor
+	controllers       []*subControl
+	ruleset           *osu.OsuRuleSet
+	lastTime, counter int64
 }
 
 func NewReplayController() Controller {
@@ -88,39 +88,37 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	}
 	counter := 0
 
-
 	//bot
+	if settings.KNOCKOUTDANCE {
+		control := new(subControl)
+		control.xGlider = animation.NewGlider(0)
+		control.xGlider.SetSorting(false)
+		control.yGlider = animation.NewGlider(0)
+		control.yGlider.SetSorting(false)
+		control.k1Glider = animation.NewGlider(0)
+		control.k1Glider.SetSorting(false)
+		control.k2Glider = animation.NewGlider(0)
+		control.k2Glider.SetSorting(false)
+		control.m1Glider = animation.NewGlider(0)
+		control.m1Glider.SetSorting(false)
+		control.m2Glider = animation.NewGlider(0)
+		control.m2Glider.SetSorting(false)
+		control.frame = animation.NewGlider(0)
+		control.frame.SetSorting(false)
 
-	control := new(subControl)
-	control.xGlider = animation.NewGlider(0)
-	control.xGlider.SetSorting(false)
-	control.yGlider = animation.NewGlider(0)
-	control.yGlider.SetSorting(false)
-	control.k1Glider = animation.NewGlider(0)
-	control.k1Glider.SetSorting(false)
-	control.k2Glider = animation.NewGlider(0)
-	control.k2Glider.SetSorting(false)
-	control.m1Glider = animation.NewGlider(0)
-	control.m1Glider.SetSorting(false)
-	control.m2Glider = animation.NewGlider(0)
-	control.m2Glider.SetSorting(false)
-	control.frame = animation.NewGlider(0)
-	control.frame.SetSorting(false)
+		control.lolControl = NewGenericController()
+		control.lolControl.SetBeatMap(beatMap)
 
-	control.lolControl = NewGenericController()
-	control.lolControl.SetBeatMap(beatMap)
-
-	controller.replays = append(controller.replays, RpData{"danser", "AT", difficulty.None, 100, 0, 0})
-	controller.controllers = append(controller.controllers, control)
-
-	counter++
-
+		controller.replays = append(controller.replays, RpData{"danser", "AT", difficulty.None, 100, 0, 0})
+		controller.controllers = append(controller.controllers, control)
+		counter++
+	}
 
 	for _, score := range scores {
 		if score.Mods&osuapi.ModHalfTime > 0 || counter >= 50 {
 			continue
 		}
-		//if score.Username != /*"itsamemarioo"*/"nathan on osu"/*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ {
+		//if score.Username != /*"itsamemarioo"*//*"nathan on osu"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*/"WalkingTuna" {
 		//	continue
 		//}
 		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
@@ -229,7 +227,7 @@ func (controller *ReplayController) InitCursors() {
 
 func (controller *ReplayController) Update(time int64, delta float64) {
 
-	for nTime := controller.lastTime+1; nTime <= time; nTime++ {
+	for nTime := controller.lastTime + 1; nTime <= time; nTime++ {
 
 		for i, c := range controller.controllers {
 			if c.lolControl != nil {
@@ -249,13 +247,13 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				c.k1Glider.Update(float64(nTime))
 				c.k2Glider.Update(float64(nTime))
 
-				controller.counter += nTime-controller.lastTime
+				controller.counter += nTime - controller.lastTime
 
 				if controller.counter >= 12 {
-					controller.cursors[i].LastFrameTime = nTime-12
+					controller.cursors[i].LastFrameTime = nTime - 12
 					controller.cursors[i].CurrentFrameTime = nTime
 					controller.cursors[i].IsReplayFrame = true
-					controller.counter-=12
+					controller.counter -= 12
 				} else {
 					controller.cursors[i].IsReplayFrame = false
 				}
