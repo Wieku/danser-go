@@ -59,6 +59,7 @@ type Player struct {
 	profilerU      *utils.FPSCounter
 
 	camera         *bmath.Camera
+	camera1         *bmath.Camera
 	scamera        *bmath.Camera
 	dimGlider      *animation.Glider
 	blurGlider     *animation.Glider
@@ -104,6 +105,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.camera = bmath.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
 	player.camera.Update()
+
+	player.camera1 = bmath.NewCamera()
+	player.camera1.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), 1)
+	player.camera1.Update()
 
 	player.scamera = bmath.NewCamera()
 	player.scamera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
@@ -395,6 +400,7 @@ func (pl *Player) Draw(delta float64) {
 	blurVal := 0.0
 
 	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	if settings.Playfield.BlurEnable {
 		blurVal = pl.blurGlider.GetValue()
@@ -407,7 +413,7 @@ func (pl *Player) Draw(delta float64) {
 		bgAlpha *= pl.Scl
 	}
 
-	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras[0])
+	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras1[0])
 
 	if pl.fxGlider.GetValue() > 0.0 || pl.epiGlider.GetValue() > 0 {
 		pl.batch.Begin()
