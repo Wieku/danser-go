@@ -45,8 +45,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", fix(beatMap.Artist), fix(beatMap.Name), fix(beatMap.Creator)))}
 
-	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer(), atlas: texture.NewTextureAtlas(8192, 4)}
-	storyboard.atlas.Bind(17)
+	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
 
 	var currentSection string
@@ -122,7 +121,9 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	}
 
 	if counter == 0 {
-		storyboard.atlas.Dispose()
+		if storyboard.atlas != nil {
+			storyboard.atlas.Dispose()
+		}
 		return nil
 	}
 
@@ -205,20 +206,24 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 }
 
 func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureRegion {
-	var texture *texture.TextureRegion
+	var texture1 *texture.TextureRegion
 
-	if texture = storyboard.textures[image]; texture == nil {
+	if texture1 = storyboard.textures[image]; texture1 == nil {
 		nrgba, err := utils.LoadImage(path + string(os.PathSeparator) + image)
 
 		if err != nil {
 			log.Println(err)
 		} else {
-			texture = storyboard.atlas.AddTexture(image, nrgba.Bounds().Dx(), nrgba.Bounds().Dy(), nrgba.Pix)
-			storyboard.textures[image] = texture
+			if storyboard.atlas == nil {
+				storyboard.atlas = texture.NewTextureAtlas(8192, 4)
+				storyboard.atlas.Bind(17)
+			}
+			texture1 = storyboard.atlas.AddTexture(image, nrgba.Bounds().Dx(), nrgba.Bounds().Dy(), nrgba.Pix)
+			storyboard.textures[image] = texture1
 		}
 	}
 
-	return texture
+	return texture1
 }
 
 func (storyboard *Storyboard) Update(time int64) {
