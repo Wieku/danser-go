@@ -24,7 +24,7 @@ type Circle struct {
 	players           []*difficultyPlayer
 	state             []objstate
 	fadeStartRelative float64
-	renderable *HitCircleSprite
+	renderable        *HitCircleSprite
 }
 
 func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
@@ -62,12 +62,18 @@ func (circle *Circle) Update(time int64) bool {
 			yOffset := 0.0
 			if player.diff.Mods&difficulty.HardRock > 0 {
 				data := circle.hitCircle.GetBasicData()
-				xOffset = data.StackOffset.X + float64(data.StackIndex) * player.diff.CircleRadius/(10)
-				yOffset = data.StackOffset.Y - float64(data.StackIndex) * player.diff.CircleRadius/(10)
+				xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
+				yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 			}
 
 			if player.cursorLock == -1 || player.cursorLock == circle.hitCircle.GetBasicData().Number {
-				clicked := (!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)
+				clicked := player.DoubleClick || (!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)
+
+				if player.DoubleClick {
+					player.DoubleClick = false
+				} else if (!state.buttons.Left && player.cursor.LeftButton) && (!state.buttons.Right && player.cursor.RightButton) {
+					player.DoubleClick = true
+				}
 
 				if clicked && player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius {
 					hit := HitResults.Miss

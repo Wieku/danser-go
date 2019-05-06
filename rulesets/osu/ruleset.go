@@ -1,18 +1,18 @@
 package osu
 
 import (
+	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/render"
 	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/render/batches"
-	"math"
 	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser/bmath"
 	"github.com/wieku/danser/bmath/difficulty"
+	"github.com/wieku/danser/render"
+	"github.com/wieku/danser/render/batches"
+	"log"
+	"math"
 	"sort"
 	"strconv"
-	"fmt"
-	"log"
-	"github.com/wieku/danser/bmath"
 )
 
 type Grade int64
@@ -79,9 +79,10 @@ type hitobject interface {
 }
 
 type difficultyPlayer struct {
-	cursor     *render.Cursor
-	diff       *difficulty.Difficulty
-	cursorLock int64
+	cursor      *render.Cursor
+	diff        *difficulty.Difficulty
+	cursorLock  int64
+	DoubleClick bool
 }
 
 type subSet struct {
@@ -101,6 +102,8 @@ type OsuRuleSet struct {
 	beatMap         *beatmap.BeatMap
 	cursors         map[*render.Cursor]*subSet
 	scoreMultiplier float64
+
+	ended bool
 
 	queue     []hitobject
 	processed []hitobject
@@ -127,7 +130,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 		diff := difficulty.NewDifficulty(beatMap.HPDrainRate, beatMap.CircleSize, beatMap.OverallDifficulty, beatMap.AR)
 		diff.SetMods(mods[i])
 
-		player := &difficultyPlayer{cursor, diff, -1}
+		player := &difficultyPlayer{cursor, diff, -1, false}
 		diffPlayers = append(diffPlayers, player)
 
 		grade := Grade(SS)
@@ -199,11 +202,26 @@ func (set *OsuRuleSet) Update(time int64) {
 		}
 	}
 
+	if len(set.queue) == 0 && len(set.processed) == 0 && !set.ended {
+		cs := make([]*render.Cursor, 0)
+		for c := range set.cursors {
+			cs = append(cs, c)
+		}
+		sort.Slice(cs, func(i, j int) bool {
+			return set.cursors[cs[i]].score > set.cursors[cs[j]].score
+		})
+
+		for _, c := range cs {
+			log.Println(set.cursors[c])
+		}
+		set.ended = true
+	}
+
 }
 
 func (set *OsuRuleSet) Draw(time int64, batch *batches.SpriteBatch, color mgl32.Vec4) {
 	if len(set.processed) > 0 {
-		for i := len(set.processed)-1; i > 0; i-- {
+		for i := len(set.processed) - 1; i > 0; i-- {
 			g := set.processed[i]
 			g.Draw(time, color, batch)
 		}
