@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser/dance"
 	"github.com/wieku/danser/render/batches"
 	"github.com/wieku/danser/settings"
+	"log"
 	"math"
 	"strconv"
 	"github.com/wieku/danser/bmath"
@@ -22,6 +23,7 @@ type knockoutPlayer struct {
 	slide     *animation.Glider
 	height    *animation.Glider
 	lastCombo int64
+	sCombo int64
 	hasBroken bool
 
 	lastHit  osu.HitResult
@@ -54,13 +56,18 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), 0}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), 0}
 	}
 	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult) {
+		player := overlay.players[overlay.names[cursor]]
+
+		if comboResult == osu.ComboResults.Increase {
+			player.sCombo++
+		}
+
 		if result == osu.HitResults.Hit300 {
 			return
 		}
-		player := overlay.players[overlay.names[cursor]]
 
 		if result == osu.HitResults.Hit100 || result == osu.HitResults.Hit50 || result == osu.HitResults.Miss {
 			player.fadeHit.Reset()
@@ -87,6 +94,8 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			player.deathFade.AddEventS(float64(time), float64(time+200), 0, 1)
 			player.deathFade.AddEventS(float64(time+1800), float64(time+2000), 1, 0)
 
+			log.Println(overlay.names[cursor], "has broken! Max combo:", player.sCombo)
+			player.sCombo = 0
 			//Show all players when the map ends
 			//endTime := overlay.controller.GetBeatMap().HitObjects[len(overlay.controller.GetBeatMap().HitObjects)-1].GetBasicData().EndTime
 			//player.fade.AddEvent(float64(endTime), float64(endTime+1000), 1)
@@ -135,7 +144,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 		}
 
 	}
-	settings.Cursor.CursorSize = 3.0 + (10-3)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
+	settings.Cursor.CursorSize = 3.0 + (8-3)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
 	batch.SetScale(1, 1)
 }
 
@@ -201,8 +210,12 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 
 		switch player.lastHit {
 		case osu.HitResults.Hit100:
+			batch.SetSubScale(scl*0.9/2*player.scaleHit.GetValue()*(float64(render.Hit100.Width)/float64(render.Hit100.Height)), -scl*0.9/2*player.scaleHit.GetValue())
+			batch.SetTranslation(bmath.NewVec2d(4*scl+width+nWidth+scl*(float64(render.Hit100.Width)/float64(render.Hit100.Height))*0.5, rowBaseY))
 			batch.DrawUnit(*render.Hit100)
 		case osu.HitResults.Hit50:
+			batch.SetSubScale(scl*0.9/2*player.scaleHit.GetValue()*(float64(render.Hit50.Width)/float64(render.Hit50.Height)), -scl*0.9/2*player.scaleHit.GetValue())
+			batch.SetTranslation(bmath.NewVec2d(4*scl+width+nWidth+scl*(float64(render.Hit50.Width)/float64(render.Hit50.Height))*0.5, rowBaseY))
 			batch.DrawUnit(*render.Hit50)
 		case osu.HitResults.Miss:
 			batch.DrawUnit(*render.Hit0)
