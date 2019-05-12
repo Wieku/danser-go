@@ -57,6 +57,7 @@ type Cursor struct {
 
 	LeftButton, RightButton bool
 	IsReplayFrame           bool  // TODO: temporary hacky solution for spinners
+	IsPlayer bool
 	LastFrameTime           int64 //
 	CurrentFrameTime        int64 //
 	Position                bmath.Vector2d

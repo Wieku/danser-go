@@ -154,7 +154,7 @@ func (slider *Slider) Update(time int64) bool {
 			continue
 		}
 
-		if player.cursor.IsReplayFrame {
+		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
 
 			radiusNeeded := player.diff.CircleRadius
 
