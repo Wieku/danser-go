@@ -9,10 +9,14 @@ type Bezier struct {
 	points           []math2.Vector2d
 	ApproxLength     float64
 	lengthCalculated bool
+	lastPos math2.Vector2d
+	lastC float64
+	lastWidth float64
+	lastT float64
 }
 
-func NewBezier(points []math2.Vector2d) Bezier {
-	bz := &Bezier{points: points}
+func NewBezier(points []math2.Vector2d) *Bezier {
+	bz := &Bezier{points: points, lastPos: points[0]}
 
 	pointLength := 0.0
 	for i := 1; i < len(points); i++ {
@@ -25,7 +29,7 @@ func NewBezier(points []math2.Vector2d) Bezier {
 		bz.ApproxLength += bz.NPointAt(float64(i) / pointLength).Dst(bz.NPointAt(float64(i-1) / pointLength))
 	}
 
-	return *bz
+	return bz
 }
 
 func (bz Bezier) NPointAt(t float64) math2.Vector2d {
@@ -42,22 +46,41 @@ func (bz Bezier) NPointAt(t float64) math2.Vector2d {
 
 //It's not a neat solution, but it works
 //This calculates point on bezier with constant velocity
-func (bz Bezier) PointAt(t float64) math2.Vector2d {
+func (bz *Bezier) PointAt(t float64) math2.Vector2d {
 	desiredWidth := bz.ApproxLength * t
-	width := 0.0
-	pos := bz.points[0]
-	c := 0.0
-	for width < desiredWidth {
-		pt := bz.NPointAt(c)
-		width += pt.Dst(pos)
-		if width > desiredWidth {
-			return pos
+	//width := b
+	//pos := bz.lastPos
+	//c := 0.0
+
+	if desiredWidth == bz.lastWidth {
+		return bz.lastPos
+	} else if desiredWidth > bz.lastWidth {
+		for bz.lastWidth < desiredWidth {
+			pt := bz.NPointAt(bz.lastC)
+			lsW := bz.lastWidth + pt.Dst(bz.lastPos)
+			if lsW > desiredWidth {
+				bz.lastC -= 1.0 / float64(bz.ApproxLength*2-1)
+				return bz.lastPos
+			}
+			bz.lastWidth = lsW
+			bz.lastPos = pt
+			bz.lastC += 1.0 / float64(bz.ApproxLength*2-1)
 		}
-		pos = pt
-		c += 1.0 / float64(bz.ApproxLength*2-1)
+	} else {
+		for bz.lastWidth > desiredWidth {
+			pt := bz.NPointAt(bz.lastC)
+			lsW := bz.lastWidth - pt.Dst(bz.lastPos)
+			if lsW < desiredWidth {
+				bz.lastC += 1.0 / float64(bz.ApproxLength*2-1)
+				return bz.lastPos
+			}
+			bz.lastWidth = lsW
+			bz.lastPos = pt
+			bz.lastC -= 1.0 / float64(bz.ApproxLength*2-1)
+		}
 	}
 
-	return pos
+	return bz.lastPos
 }
 
 func (bz Bezier) GetLength() float64 {

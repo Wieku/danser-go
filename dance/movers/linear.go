@@ -8,7 +8,7 @@ import (
 )
 
 type LinearMover struct {
-	bz                 curves.Bezier
+	bz                 *curves.Bezier
 	beginTime, endTime int64
 }
 

@@ -11,7 +11,7 @@ import (
 type AngleOffsetMover struct {
 	lastAngle          float64
 	lastPoint          bmath.Vector2d
-	bz                 curves.Bezier
+	bz                 *curves.Bezier
 	startTime, endTime int64
 	invert             float64
 }

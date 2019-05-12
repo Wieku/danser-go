@@ -10,7 +10,7 @@ import (
 
 type BezierMover struct {
 	pt                 bmath.Vector2d
-	bz                 curves.Bezier
+	bz                 *curves.Bezier
 	beginTime, endTime int64
 	previousSpeed      float64
 	invert             float64
