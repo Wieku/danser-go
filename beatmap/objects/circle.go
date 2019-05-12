@@ -33,10 +33,10 @@ func NewCircle(data []string) *Circle {
 }
 
 func DummyCircle(pos bmath.Vector2d, time int64) *Circle {
-	return DummyCircleInherit(pos, time, false)
+	return DummyCircleInherit(pos, time, false, false, false)
 }
 
-func DummyCircleInherit(pos bmath.Vector2d, time int64, inherit bool) *Circle {
+func DummyCircleInherit(pos bmath.Vector2d, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
 	circle := &Circle{objData: &basicData{}}
 	circle.objData.StartPos = pos
 	circle.objData.EndPos = pos
@@ -44,6 +44,8 @@ func DummyCircleInherit(pos bmath.Vector2d, time int64, inherit bool) *Circle {
 	circle.objData.EndTime = time
 	circle.objData.EndPos = circle.objData.StartPos
 	circle.objData.SliderPoint = inherit
+	circle.objData.SliderPointStart = inheritStart
+	circle.objData.SliderPointEnd = inheritEnd
 	return circle
 }
 

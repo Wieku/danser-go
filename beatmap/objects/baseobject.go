@@ -28,6 +28,8 @@ type basicData struct {
 	StackIndex         int64
 	Number             int64
 	SliderPoint        bool
+	SliderPointStart        bool
+	SliderPointEnd        bool
 	NewCombo           bool
 	ComboNumber        int64
 	ComboSet           int64
