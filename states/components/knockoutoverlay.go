@@ -25,6 +25,7 @@ type knockoutPlayer struct {
 	lastCombo int64
 	sCombo int64
 	hasBroken bool
+	pp float64
 
 	lastHit  osu.HitResult
 	fadeHit  *animation.Glider
@@ -56,10 +57,12 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, 0, false, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), 0}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), 0, 0, false, 0.0, osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), animation.NewGlider(0), 0}
 	}
-	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult) {
+	replayController.GetRuleset().SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64) {
 		player := overlay.players[overlay.names[cursor]]
+
+		player.pp = pp
 
 		if comboResult == osu.ComboResults.Increase {
 			player.sCombo++
@@ -156,17 +159,22 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 	//margin := scl*0.02
 
 	highestCombo := int64(0)
+	highestPP := 0.0
 	cumulativeHeight := 0.0
 	for _, r := range replays {
 		cumulativeHeight += overlay.players[r.Name].height.GetValue()
 		if r.Combo > highestCombo {
 			highestCombo = r.Combo
 		}
+		if overlay.players[r.Name].pp > highestPP {
+			highestPP = overlay.players[r.Name].pp
+		}
 	}
 
 	rowPosY := settings.Graphics.GetHeightF() - (settings.Graphics.GetHeightF()-cumulativeHeight)/2
 
 	cL := strconv.FormatInt(highestCombo, 10)
+	cP := strconv.FormatInt(int64(highestPP), 10)
 
 	for i, r := range replays {
 		player := overlay.players[r.Name]
@@ -184,15 +192,18 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 
-		accuracy := fmt.Sprintf("%6.2f%% %"+strconv.Itoa(len(cL))+"dx", r.Accuracy, r.Combo)
-		accuracy1 := "100.00% " + cL + "x "
+		accuracy := fmt.Sprintf("%6.2f%% %"+strconv.Itoa(len(cP)+3)+".2fpp", r.Accuracy, /*r.Combo*/overlay.players[r.Name].pp)
+		_ = cL
+		accuracy1 := "100.00% " + cP + ".00pp "
 		nWidth := overlay.font.GetWidthMonospaced(scl, accuracy1)
 
 		overlay.font.DrawMonospaced(batch, 3*scl, rowBaseY-scl*0.8/2, scl, accuracy)
 
 		batch.SetSubScale(scl*0.9/2, -scl*0.9/2)
 		batch.SetTranslation(bmath.NewVec2d(3*scl+nWidth, rowBaseY))
-		batch.DrawUnit(*render.GradeTexture[int64(r.Grade)])
+		if r.Grade != osu.NONE {
+			batch.DrawUnit(*render.GradeTexture[int64(r.Grade)])
+		}
 
 		batch.SetColor(float64(colors[i].X()), float64(colors[i].Y()), float64(colors[i].Z()), alpha*player.fade.GetValue())
 		overlay.font.Draw(batch, 4*scl+nWidth, rowBaseY-scl*0.8/2, scl, r.Name)
