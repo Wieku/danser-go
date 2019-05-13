@@ -24,6 +24,7 @@ const (
 	FadeIn   = 120
 	FadeOut  = 600
 	PostEmpt = 500
+	Shake = 400
 )
 
 const (

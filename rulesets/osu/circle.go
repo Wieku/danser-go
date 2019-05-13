@@ -85,7 +85,7 @@ func (circle *Circle) Update(time int64) bool {
 						hit = HitResults.Hit100
 					} else if relative < player.diff.Hit50 {
 						hit = HitResults.Hit50
-					} else if relative > int64(player.diff.Preempt-player.diff.FadeIn) {
+					} else if relative >= Shake {
 						hit = HitResults.Ignore
 					}
 

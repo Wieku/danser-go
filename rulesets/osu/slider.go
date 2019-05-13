@@ -117,7 +117,7 @@ func (slider *Slider) Update(time int64) bool {
 						hit = HitResults.Slider30
 						state.startScored = true
 						combo = ComboResults.Increase
-					} else if relative > int64(player.diff.Preempt-player.diff.FadeIn) {
+					} else if relative >= Shake {
 						hit = HitResults.Ignore
 						combo = ComboResults.Hold
 					}
