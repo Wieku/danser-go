@@ -80,7 +80,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			player.lastHit = result
 		}
 
-		if comboResult == osu.ComboResults.Reset && !player.hasBroken {
+		if comboResult == osu.ComboResults.Reset && !player.hasBroken && number != 0 {
 			player.hasBroken = true
 
 			//Fade out player name
