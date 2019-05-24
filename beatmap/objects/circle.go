@@ -138,7 +138,9 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 		batch.SetColor(1, 1, 1, alpha)
 		batch.DrawUnit(*render.CircleOverlay)
 		if time < self.objData.StartTime {
-			render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+			if settings.DIVIDES < 2 {
+				render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+			}
 			batch.SetTranslation(self.objData.StartPos)
 		}
 	}

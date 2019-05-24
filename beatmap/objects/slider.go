@@ -174,7 +174,7 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 	for i := int64(0); i <= self.repeat; i++ {
 		time := self.objData.StartTime + i*partLen
 
-		if i == self.repeat {
+		if i == self.repeat && settings.KNOCKOUT != "" {
 			time = int64(math.Max(float64(self.GetBasicData().StartTime)+float64((self.GetBasicData().EndTime-self.GetBasicData().StartTime)/2), float64(self.GetBasicData().EndTime-36)))
 		}
 
@@ -542,7 +542,10 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 			batch.DrawUnit(*render.Circle)
 			batch.SetColor(1, 1, 1, alpha)
 			batch.DrawUnit(*render.CircleOverlay)
-			render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+			if settings.DIVIDES < 2 {
+				render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+			}
+
 			batch.SetSubScale(1, 1)
 
 		} else {
@@ -611,7 +614,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
 		if self.vao != nil {
-			self.vao.Delete()
+			//self.vao.Delete()
 		}
 		return true
 	}
