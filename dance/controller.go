@@ -30,6 +30,8 @@ func SetMover(name string) {
 		Mover = movers.NewLinearMover
 	} else if name == "axis" {
 		Mover = movers.NewAxisMover
+	} else if name == "aggressive" {
+		Mover = movers.NewAggressiveMover
 	} else {
 		Mover = movers.NewAngleOffsetMover
 	}
