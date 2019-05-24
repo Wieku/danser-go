@@ -39,8 +39,18 @@ func getSection(line string) string {
 func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	path := filepath.Join(settings.General.OsuSongsDir, beatMap.Dir)
 
+	replacer := strings.NewReplacer("\\", "",
+		"/", "",
+		"<", "",
+		">", "",
+		"|", "",
+		"?", "",
+		"*", "",
+		":", "",
+		"\"", "",)
+
 	fix := func(el string) string {
-		return strings.Replace(strings.Replace(el, "\\", "", -1), "/", "", -1)
+		return replacer.Replace(el)
 	}
 
 	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", fix(beatMap.Artist), fix(beatMap.Name), fix(beatMap.Creator)))}
