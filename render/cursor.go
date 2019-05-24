@@ -16,6 +16,7 @@ import (
 
 var cursorShader *glhf.Shader = nil
 var cursorFbo *framebuffer.Framebuffer = nil
+var cursorSpaceFbo *framebuffer.Framebuffer = nil
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
 
@@ -48,6 +49,8 @@ func initCursor() {
 
 	cursorFbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	cursorFbo.Texture().Bind(30)
+	cursorSpaceFbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
+	cursorSpaceFbo.Texture().Bind(18)
 	osuRect = Camera.GetWorldRect()
 }
 
@@ -199,9 +202,20 @@ func (cursor *Cursor) UpdateRenderer() {
 
 func BeginCursorRender() {
 	CursorTrail.Bind(1)
+	cursorSpaceFbo.Begin()
+	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
 func EndCursorRender() {
+	cursorSpaceFbo.End()
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	fboShader.Begin()
+	fboShader.SetUniformAttr(0, int32(18))
+	fboSlice.BeginDraw()
+	fboSlice.Draw()
+	fboSlice.EndDraw()
+	fboShader.End()
 }
 
 func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4) {
@@ -254,6 +268,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 
 	batch.SetTranslation(cursor.RendPos)
 	batch.SetScale(siz*scale, siz*scale)
+	batch.SetSubScale(1, 1)
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), float64(color[3]))
 	batch.DrawUnit(*CursorTex)
