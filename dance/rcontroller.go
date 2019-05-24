@@ -65,6 +65,7 @@ func getReplay(scoreID int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	client := new(http.Client)
 	response, err := client.Do(request)
 	if err != nil {
@@ -109,7 +110,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.lolControl = NewGenericController()
 		control.lolControl.SetBeatMap(beatMap)
 
-		controller.replays = append(controller.replays, RpData{"danser", "AT", difficulty.None, 100, 0, osu.NONE})
+		controller.replays = append(controller.replays, RpData{"danser", "", difficulty.None, 100, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
 		counter++
 	}
@@ -208,6 +209,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	settings.PLAYERS = len(controller.replays)
 
 	controller.bMap = beatMap
+	controller.lastTime = -200
 }
 
 func (controller *ReplayController) InitCursors() {
@@ -229,7 +231,7 @@ func (controller *ReplayController) InitCursors() {
 func (controller *ReplayController) Update(time int64, delta float64) {
 
 	for nTime := controller.lastTime + 1; nTime <= time; nTime++ {
-
+		controller.bMap.Update(nTime)
 		for i, c := range controller.controllers {
 			if c.lolControl != nil {
 				c.lolControl.Update(nTime, 1)
@@ -237,18 +239,18 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 					c.k1Glider.Reset()
 					c.k1Glider.AddEventS(float64(nTime), float64(nTime), 1.0, 1.0)
-					c.k1Glider.AddEventS(float64(nTime+15), float64(nTime+15), 0.0, 0.0)
+					c.k1Glider.AddEventS(float64(nTime+50), float64(nTime+50), 0.0, 0.0)
 				}
 				if controller.cursors[i].RightButton {
 					c.k2Glider.Reset()
 					c.k2Glider.AddEventS(float64(nTime), float64(nTime), 1.0, 1.0)
-					c.k2Glider.AddEventS(float64(nTime+15), float64(nTime+15), 0.0, 0.0)
+					c.k2Glider.AddEventS(float64(nTime+50), float64(nTime+50), 0.0, 0.0)
 				}
 
 				c.k1Glider.Update(float64(nTime))
 				c.k2Glider.Update(float64(nTime))
 
-				controller.counter += nTime - controller.lastTime
+				controller.counter += 1//nTime - controller.lastTime
 
 				if controller.counter >= 12 {
 					controller.cursors[i].LastFrameTime = nTime - 12

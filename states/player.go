@@ -66,6 +66,7 @@ type Player struct {
 	fxGlider       *animation.Glider
 	cursorGlider   *animation.Glider
 	playersGlider  *animation.Glider
+	unfold  *animation.Glider
 	counter        float64
 	fpsC           float64
 	fpsU           float64
@@ -138,6 +139,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
+
+	for _, p := range player.queue2 {
+		if s, ok := p.(*objects.Slider); ok {
+			s.InitCurve(player.sliderRenderer)
+		}
+	}
+
 	copy(player.queue2, player.bMap.Queue)
 
 	log.Println("Music:", beatMap.Audio)
@@ -176,6 +184,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.epiGlider = animation.NewGlider(0)
 	player.epiGlider.AddEvent(0, 500, 1.0)
 	player.epiGlider.AddEvent(2500, 3000, 0.0)
+
+	player.unfold = animation.NewGlider(0)
+	player.unfold.AddEventS(179453, 179753, 0.0, 1.0)
+
 
 	for _, p := range beatMap.Pauses {
 		bd := p.GetBasicData()
@@ -233,11 +245,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(10 * time.Millisecond)
 		}
 
-		player.start = true
+
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-		//musicPlayer.SetPosition(295)
+		player.start = true
 	}()
 
 	player.fxBatch = render.NewFxBatch()
@@ -247,31 +259,40 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		var last = musicPlayer.GetPosition()
 		var lastT = utils.GetNanoTime()
 		for {
+			if player.start {
+				currtime := utils.GetNanoTime()
 
-			currtime := utils.GetNanoTime()
+				player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
 
-			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
+				if musicPlayer.GetState() == audio.MUSIC_STOPPED {
+					player.progressMsF += float64(currtime-lastT)/1000000.0
+				} else {
+					player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+				}
 
-			lastT = currtime
+				if _, ok := player.controller.(*dance.GenericController); ok {
+					player.bMap.Update(int64(player.progressMsF))
+				}
 
-			player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+				player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
+				if player.overlay != nil {
+					player.overlay.Update(int64(player.progressMsF))
+				}
 
-			player.bMap.Update(int64(player.progressMsF))
-			player.controller.Update(int64(player.progressMsF), player.progressMsF-last)
-			if player.overlay != nil {
-				player.overlay.Update(int64(player.progressMsF))
-			}
+				player.background.Update(int64(player.progressMsF))
 
-			player.background.Update(int64(player.progressMsF))
+				last = player.progressMsF
 
-			last = player.progressMsF
+				if player.start && len(player.bMap.Queue) > 0 {
+					player.dimGlider.Update(player.progressMsF)
+					player.blurGlider.Update(player.progressMsF)
+					player.fxGlider.Update(player.progressMsF)
+					player.cursorGlider.Update(player.progressMsF)
+					player.playersGlider.Update(player.progressMsF)
+					player.unfold.Update(player.progressMsF)
+				}
 
-			if player.start && len(player.bMap.Queue) > 0 {
-				player.dimGlider.Update(player.progressMsF)
-				player.blurGlider.Update(player.progressMsF)
-				player.fxGlider.Update(player.progressMsF)
-				player.cursorGlider.Update(player.progressMsF)
-				player.playersGlider.Update(player.progressMsF)
+				lastT = currtime
 			}
 
 			time.Sleep(time.Millisecond)
@@ -330,6 +351,18 @@ func (pl *Player) Show() {
 }
 
 func (pl *Player) Draw(delta float64) {
+
+	/*settings.Objects.Colors.BaseColor.Saturation = pl.unfold.GetValue()
+	settings.Objects.Colors.BaseColor.Value = 0.5+0.5*pl.unfold.GetValue()
+
+	if pl.progressMsF >= 179453 {
+		settings.DIVIDES = 2
+		settings.Objects.DrawApproachCircles = false
+	} else {
+		settings.DIVIDES = 1
+		settings.Objects.DrawApproachCircles = true
+	}*/
+
 	if pl.lastTime < 0 {
 		pl.lastTime = utils.GetNanoTime()
 	}
@@ -399,8 +432,8 @@ func (pl *Player) Draw(delta float64) {
 	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
 
-	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
-	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)/**pl.unfold.GetValue()*/)
+	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)/**pl.unfold.GetValue()*/)
 
 	if settings.Playfield.BlurEnable {
 		blurVal = pl.blurGlider.GetValue()
@@ -612,7 +645,7 @@ func (pl *Player) Draw(delta float64) {
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	gl.BlendEquation(gl.FUNC_ADD)
-	pl.batch.SetAdditive(true)
+	pl.batch.SetAdditive(false)
 	render.BeginCursorRender()
 	for j := 0; j < settings.DIVIDES; j++ {
 
