@@ -158,6 +158,7 @@ type cursor struct {
 	TrailRemoveSpeed            float64 //1.0 - trail removal multiplier, 0.5 means half the speed
 	GlowEndScale                float64 //0.4
 	InnerLengthMult             float64 //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
+	AdditiveBlending            bool
 }
 
 func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) []mgl32.Vec4 {
@@ -204,7 +205,7 @@ type objects struct {
 	SliderLOD                              int64   //30, number of triangles in a circle
 	SliderPathLOD                          int64   //50, int(pixelLength*(PathLOD/100)) => number of slider path points
 	SliderSnakeIn                          bool
-	SliderSnakeInMult                     float64
+	SliderSnakeInMult                      float64
 	SliderSnakeOut                         bool
 	SliderMerge                            bool
 	SliderDynamicLoad                      bool

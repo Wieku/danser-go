@@ -279,7 +279,11 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 
 	cursorFbo.End()
 
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+	if settings.Cursor.AdditiveBlending {
+		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+	} else {
+		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	}
 
 	fboShader.Begin()
 	fboShader.SetUniformAttr(0, int32(30))
