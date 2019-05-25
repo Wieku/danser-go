@@ -36,9 +36,17 @@ func run() {
 	mainthread.Call(func() {
 
 		artist := flag.String("artist", "", "")
+		artistS := flag.String("a", "", "")
+
 		title := flag.String("title", "", "")
+		titleS := flag.String("t", "", "")
+
 		difficulty := flag.String("difficulty", "", "")
+		difficultyS := flag.String("d", "", "")
+
 		creator := flag.String("creator", "", "")
+		creatorS := flag.String("c", "", "")
+
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 2, "")
 		tag := flag.Int("tag", 1, "")
@@ -53,7 +61,7 @@ func run() {
 
 		flag.Parse()
 
-		if (*artist + *title + *difficulty + *creator) == "" {
+		if (*artist + *title + *difficulty + *creator + *artistS + *titleS + *difficultyS + *creatorS) == "" {
 			log.Println("No beatmap specified, closing...")
 			os.Exit(0)
 		}
@@ -79,7 +87,10 @@ func run() {
 		beatmaps := database.LoadBeatmaps()
 
 		for _, b := range beatmaps {
-			if (*artist == "" || *artist == b.Artist) && (*title == "" || *title == b.Name) && (*difficulty == "" || *difficulty == b.Difficulty) && (*creator == "" || *creator == b.Creator) {
+			if (*artist == "" || *artist == b.Artist) && (*artistS == "" || *artistS == b.Artist) &&
+				(*title == "" || *title == b.Name) && (*titleS == "" || *titleS == b.Name) &&
+				(*difficulty == "" || *difficulty == b.Difficulty) && (*difficultyS == "" || *difficultyS == b.Difficulty) &&
+				(*creator == "" || *creator == b.Creator) && (*creatorS == "" || *creatorS == b.Creator) {
 				beatMap = b
 				beatMap.UpdatePlayStats()
 				database.UpdatePlayStats(beatMap)

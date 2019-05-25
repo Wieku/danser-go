@@ -49,10 +49,10 @@ danser <arguments>
 ```
 
 #### Arguments
-* `-artist="NOMA"`
-* `-title="Brain Power"`
-* `-difficulty="Overdrive"`
-* `-creator="Skystar"`
+* `-artist="NOMA"` or `-a="NOMA"`
+* `-title="Brain Power"` or `-t="Brain Power"`
+* `-difficulty="Overdrive"` or `-d="Overdrive"`
+* `-creator="Skystar"` or `-c="Skystar"`
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of TAG cursors
 * `-speed=1.5` - music speed. Value of 1.5 equals to osu!'s DoubleTime
