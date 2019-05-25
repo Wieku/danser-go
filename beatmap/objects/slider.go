@@ -258,11 +258,14 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 
 	if settings.Objects.SliderSnakeIn {
 		self.sliderSnakeIn.AddEvent(slSnInS, slSnInE, 1)
+	} else {
+		self.sliderSnakeIn.SetValue(1)
 	}
 
 	if settings.Objects.SliderSnakeOut {
 		self.sliderSnakeOut.AddEvent(float64(self.objData.EndTime)-self.partLen, float64(self.objData.EndTime), 1)
 	}
+
 	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
 	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+fadeIn/3, 0)
