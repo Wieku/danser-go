@@ -11,6 +11,7 @@ Application is in dev phase so only few things work. But if you want to test it,
 * [Sex Whales & Fraxo - Dead To Me (feat. Lox Chatterbox) [extrad1881 (ar 10)] Mirror Collage](https://youtu.be/KCHqrVGdXrk)
 * [Halozy - Genryuu Kaiko [Higan Torrent] Mirror Collage](https://youtu.be/HCVIBQh4ljI)
 * [Nightcore - Flower Dance [Amachoco ARX.7] Mandala Mirror Collage](https://youtu.be/HBC89S-UwFc)
+* [MDK - Press Start [bhop_start_collab] - Co-Op Mirror Collage](https://youtu.be/P5mYXvH48Uk)
 
 ## How to download it
 
@@ -56,7 +57,7 @@ danser <arguments>
 * `-tag=2` - number of TAG cursors
 * `-speed=1.5` - music speed. Value of 1.5 equals to osu!'s DoubleTime
 * `-pitch=1.5` - music pitch. Value of 1.5 equals to osu!'s Nightcore pitch. To recreate osu!'s Nightcore mod, use with 1.5 speed
-* `-mover=flower` - cursor mover. Movers available now: linear, bezier, flower (default), circular.
+* `-mover=flower` - cursor mover. Movers available now: linear, bezier, flower (default), circular, aggressive.
 * `-settings=1` - if number given is bigger than 0 (e.g. 1) then app will try to load `settings-1.json` instead of `settings.json`
 * `-fps` - shows fps in the lower-left corner 
 * `-debug` - shows more info during the map
