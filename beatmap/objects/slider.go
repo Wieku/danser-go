@@ -254,7 +254,7 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 	self.sliderSnakeOut = animation.NewGlider(0)
 
 	slSnInS := float64(self.objData.StartTime)-preempt
-	slSnInE := float64(self.objData.StartTime)-(preempt-fadeIn)+self.partLen
+	slSnInE := float64(self.objData.StartTime)-(preempt-fadeIn)+self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
 
 	if settings.Objects.SliderSnakeIn {
 		self.sliderSnakeIn.AddEvent(slSnInS, slSnInE, 1)
