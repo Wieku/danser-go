@@ -217,9 +217,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.entry = 1
 		time.Sleep(time.Duration(settings.Playfield.LeadInTime * float64(time.Second)))
 
-		for i := 0; i <= 300; i++ {
-			player.epiGlider.Update(float64(i * 10))
-			time.Sleep(10 * time.Millisecond)
+		if settings.Playfield.ShowWarning {
+			for i := 0; i <= 300; i++ {
+				player.epiGlider.Update(float64(i * 10))
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
 
 		start := -2000.0

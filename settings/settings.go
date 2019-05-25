@@ -221,6 +221,7 @@ type objects struct {
 }
 
 type playfield struct {
+	ShowWarning          bool
 	LeadInTime           float64 //5
 	LeadInHold           float64 //2
 	FadeOutTime          float64 //5
