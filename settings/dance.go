@@ -23,6 +23,7 @@ type circular struct {
 type dance struct {
 	SliderDance    bool
 	TAGSliderDance bool
+	SliderDance2B  bool
 	Bezier         *bezier
 	Flower         *flower
 	HalfCircle     *circular

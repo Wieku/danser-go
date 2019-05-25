@@ -39,7 +39,9 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 
 	points := []bmath.Vector2d{endPos, bmath.NewVec2dRad(newAngle, scaledDistance).Add(endPos)}
 
-	bm.lastAngle = points[1].AngleRV(startPos)
+	if scaledDistance > 1 {
+		bm.lastAngle = points[1].AngleRV(startPos)
+	}
 
 	if s, ok := start.(*objects.Slider); ok {
 		points = append(points, bmath.NewVec2dRad(s.GetStartAngle(), scaledDistance).Add(startPos))

@@ -31,30 +31,29 @@ func (limiter *FpsLimiter) Sync() {
 	yieldTime := Minint64(sleepTime, limiter.variableYieldTime+sleepTime%int64(1000*1000))
 	overSleep := int64(0) // time the sync goes over by
 
-	for ;; {
+	for ; ; {
 		t := GetNanoTime() - limiter.lastTime
 
-		if t < sleepTime - yieldTime{
+		if t < sleepTime-yieldTime {
 			time.Sleep(time.Millisecond)
-		} else if t < sleepTime{
+		} else if t < sleepTime {
 			// burn the last few CPU cycles to ensure accuracy
 			runtime.Gosched()
-		} else{
+		} else {
 			overSleep = t - sleepTime
 			break // exit while loop
 		}
 	}
 
-
 	limiter.lastTime = GetNanoTime() - Minint64(overSleep, sleepTime)
 
-		// auto tune the time sync should yield
-	if overSleep > limiter.variableYieldTime{
+	// auto tune the time sync should yield
+	if overSleep > limiter.variableYieldTime {
 		// increase by 200 microseconds (1/5 a ms)
-		limiter.variableYieldTime = Minint64(limiter.variableYieldTime + 200 * 1000, sleepTime)
-	} else if overSleep < limiter.variableYieldTime - 200 * 1000{
+		limiter.variableYieldTime = Minint64(limiter.variableYieldTime+200*1000, sleepTime)
+	} else if overSleep < limiter.variableYieldTime-200*1000 {
 		// decrease by 2 microseconds
-		limiter.variableYieldTime = Maxint64(limiter.variableYieldTime - 2 * 1000, 0)
+		limiter.variableYieldTime = Maxint64(limiter.variableYieldTime-2*1000, 0)
 	}
 
 }
