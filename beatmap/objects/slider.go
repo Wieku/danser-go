@@ -364,6 +364,8 @@ func (self *Slider) GetCurve() []bmath.Vector2d {
 }
 
 func (self *Slider) Update(time int64) bool {
+	self.sliderSnakeOut.Update(float64(time))
+
 	if time < self.objData.EndTime {
 		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
 
@@ -455,7 +457,6 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 
 func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
 	self.sliderSnakeIn.Update(float64(time))
-	self.sliderSnakeOut.Update(float64(time))
 	self.fade.Update(float64(time))
 
 	in := 0
@@ -505,28 +506,30 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 
-		for i := 0; i < 2; i++ {
-			for _, p := range self.reversePoints[i] {
-				if p.fade.GetValue() >= 0.001 {
-					if i == 1 {
+		if settings.Objects.DrawReverseArrows {
+			for i := 0; i < 2; i++ {
+				for _, p := range self.reversePoints[i] {
+					if p.fade.GetValue() >= 0.001 {
+						if i == 1 {
 
-						out := int(self.sliderSnakeIn.GetValue() * float64(len(self.discreteCurve)-1))
-						batch.SetTranslation(self.discreteCurve[out])
-						if out == 0 {
-							batch.SetRotation(self.startAngle)
-						} else if out == len(self.discreteCurve)-1 {
-							batch.SetRotation(self.endAngle + math.Pi)
+							out := int(self.sliderSnakeIn.GetValue() * float64(len(self.discreteCurve)-1))
+							batch.SetTranslation(self.discreteCurve[out])
+							if out == 0 {
+								batch.SetRotation(self.startAngle)
+							} else if out == len(self.discreteCurve)-1 {
+								batch.SetRotation(self.endAngle + math.Pi)
+							} else {
+								batch.SetRotation(self.discreteCurve[out-1].AngleRV(self.discreteCurve[out]))
+							}
+
 						} else {
-							batch.SetRotation(self.discreteCurve[out-1].AngleRV(self.discreteCurve[out]))
+							batch.SetTranslation(self.discreteCurve[0])
+							batch.SetRotation(self.startAngle + math.Pi)
 						}
-
-					} else {
-						batch.SetTranslation(self.discreteCurve[0])
-						batch.SetRotation(self.startAngle + math.Pi)
+						batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
+						batch.SetColor(1, 1, 1, alpha*self.sliderSnakeIn.GetValue()*p.fade.GetValue())
+						batch.DrawUnit(*render.SliderReverse)
 					}
-					batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
-					batch.SetColor(1, 1, 1, alpha*self.sliderSnakeIn.GetValue()*p.fade.GetValue())
-					batch.DrawUnit(*render.SliderReverse)
 				}
 			}
 		}
@@ -542,7 +545,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 			batch.DrawUnit(*render.Circle)
 			batch.SetColor(1, 1, 1, alpha)
 			batch.DrawUnit(*render.CircleOverlay)
-			if settings.DIVIDES < 2 {
+			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 				render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
 			}
 
@@ -590,10 +593,12 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 			batch.DrawUnit(*render.SliderBall)
 		}
 
-		batch.SetTranslation(self.Pos)
-		batch.SetSubScale(self.scaleFollow.GetValue(), self.scaleFollow.GetValue())
-		batch.SetColor(1, 1, 1, self.fadeFollow.GetValue())
-		batch.DrawUnit(*render.SliderFollow)
+		if settings.Objects.DrawSliderFollowCircle {
+			batch.SetTranslation(self.Pos)
+			batch.SetSubScale(self.scaleFollow.GetValue(), self.scaleFollow.GetValue())
+			batch.SetColor(1, 1, 1, self.fadeFollow.GetValue())
+			batch.DrawUnit(*render.SliderFollow)
+		}
 
 	} else {
 		if time < self.objData.StartTime {
@@ -614,7 +619,9 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
 		if self.vao != nil {
-			//self.vao.Delete()
+			if settings.Objects.SliderDynamicUnload {
+				self.vao.Delete()
+			}
 		}
 		return true
 	}

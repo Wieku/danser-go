@@ -193,6 +193,10 @@ type objects struct {
 	MandalaTexturesAlpha                   float64 //0.3
 	ForceSliderBallTexture                 bool    //true, if this is disabled, mandala texture will be used for slider ball
 	DrawApproachCircles                    bool    //true
+	DrawComboNumbers                       bool
+	DrawReverseArrows                      bool
+	DrawSliderFollowCircle                 bool
+	LoadSpinners                           bool
 	Colors                                 *color
 	ObjectsSize                            float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
 	CSMult                                 float64 //1.2, if ObjectsSize is -1, then CS value will be multiplied by this
@@ -202,6 +206,8 @@ type objects struct {
 	SliderSnakeIn                          bool
 	SliderSnakeOut                         bool
 	SliderMerge                            bool
+	SliderDynamicLoad                      bool
+	SliderDynamicUnload                    bool
 	DrawFollowPoints                       bool    //true
 	WhiteFollowPoints                      bool    //true
 	FollowPointColorOffset                 float64 //0.0, hue offset of the followpoint

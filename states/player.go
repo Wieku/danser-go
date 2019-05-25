@@ -140,9 +140,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 
-	for _, p := range player.queue2 {
-		if s, ok := p.(*objects.Slider); ok {
-			s.InitCurve(player.sliderRenderer)
+	if settings.Objects.SliderDynamicLoad {
+		for _, p := range player.queue2 {
+			if s, ok := p.(*objects.Slider); ok {
+				s.InitCurve(player.sliderRenderer)
+			}
 		}
 	}
 
