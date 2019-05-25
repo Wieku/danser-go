@@ -702,9 +702,10 @@ func (pl *Player) Draw(delta float64) {
 
 		if settings.DEBUG {
 			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, pl.mapFullName)
-			pl.font.Draw(pl.batch, 0, padDown+shift*5, size, fmt.Sprintf("%0.0f FPS", pl.fpsC))
-			pl.font.Draw(pl.batch, 0, padDown+shift*4, size, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
-			pl.font.Draw(pl.batch, 0, padDown+shift*3, size, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
+			pl.font.Draw(pl.batch, 0, padDown+shift*4, size, fmt.Sprintf("%0.0f FPS, %0.2f ms", pl.fpsC, 1000/pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift*3, size, fmt.Sprintf("%0.0f TPS, %0.2f ms", pl.fpsU, 1000/pl.fpsU))
+			//pl.font.Draw(pl.batch, 0, padDown+shift*4, size, fmt.Sprintf("%0.2f ms", 1000/pl.fpsC))
+			//pl.font.Draw(pl.batch, 0, padDown+shift*3, size, fmt.Sprintf("%0.2f ms update", 1000/pl.fpsU))
 
 			time := int(pl.musicPlayer.GetPosition())
 			totalTime := int(pl.musicPlayer.GetLength())
@@ -719,7 +720,8 @@ func (pl *Player) Draw(delta float64) {
 				pl.font.Draw(pl.batch, 0, padDown, size, "No storyboard")
 			}
 		} else {
-			pl.font.Draw(pl.batch, 0, padDown, size, fmt.Sprintf("%0.0f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown+shift, size, fmt.Sprintf("%0.0f FPS", pl.fpsC))
+			pl.font.Draw(pl.batch, 0, padDown, size, fmt.Sprintf("%0.0f TPS", pl.fpsU))
 		}
 
 		pl.batch.End()

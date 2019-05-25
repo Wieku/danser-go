@@ -21,6 +21,7 @@ import (
 	"image"
 	"log"
 	"os"
+	"runtime"
 )
 
 var player *states.Player
@@ -30,6 +31,7 @@ var pressedP = false
 
 func run() {
 	var win *glfw.Window
+	var limiter *utils.FpsLimiter
 
 	mainthread.Call(func() {
 
@@ -167,7 +169,7 @@ func run() {
 		beatmap.ParseObjects(beatMap)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
-
+		limiter = utils.NewFpsLimiter(int(settings.Graphics.FPSCap))
 	})
 
 	for !win.ShouldClose() {
@@ -230,11 +232,16 @@ func run() {
 
 			win.SwapBuffers()
 			glfw.PollEvents()
+
+			if !settings.Graphics.VSync {
+				limiter.Sync()
+			}
 		})
 	}
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
 }
