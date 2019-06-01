@@ -9,6 +9,10 @@ func GetColors(baseHue, hueShift float64, times int, alpha float64) []mgl32.Vec4
 	return GetColorsSV(baseHue, hueShift, times, 1, 1, alpha)
 }
 
+func GetColorsH(baseHue, hueShift float64, times int, alpha float64) ([]mgl32.Vec4, []float64) {
+	return GetColorsSVH(baseHue, hueShift, times, 1, 1, alpha)
+}
+
 func GetColor(H, S, V, alpha float64) mgl32.Vec4 {
 	color := colorful.Hsv(H, S, V)
 	return mgl32.Vec4{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
@@ -42,8 +46,9 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mg
 	return colors
 }
 
-func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) []mgl32.Vec4 {
-	colors := make([]mgl32.Vec4, 0)
+func GetColorsSVH(baseHue, hueShift float64, times int, S, V, alpha float64) ([]mgl32.Vec4, []float64) {
+	colors := make([]mgl32.Vec4, times)
+	shifts := make([]float64, times)
 
 	for baseHue < 0.0 {
 		baseHue += 360.0
@@ -64,10 +69,43 @@ func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alp
 			hue -= 360.0
 		}
 
-		colors = append(colors, GetColorsSV(hue, tagShift, tag, S, V, alpha)...)
+		colors[i] = GetColor(hue, S, V, alpha)
+		shifts[i] = hue
 	}
 
-	return colors
+	return colors, shifts
+}
+
+func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) ([]mgl32.Vec4, []float64) {
+	colors := make([]mgl32.Vec4, 0)
+	shifts := make([]float64, 0)
+
+	for baseHue < 0.0 {
+		baseHue += 360.0
+	}
+
+	for baseHue >= 360.0 {
+		baseHue -= 360.0
+	}
+
+	for i := 0; i < times; i++ {
+		hue := baseHue + float64(i)*hueShift
+
+		for hue < 0.0 {
+			hue += 360.0
+		}
+
+		for hue >= 360.0 {
+			hue -= 360.0
+		}
+
+		c, h := GetColorsSVH(hue, tagShift, tag, S, V, alpha)
+
+		colors = append(colors, c...)
+		shifts = append(shifts, h...)
+	}
+
+	return colors, shifts
 }
 
 func GetColorShifted(color mgl32.Vec4, hueOffset float64) mgl32.Vec4 {

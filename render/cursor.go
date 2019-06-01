@@ -22,11 +22,19 @@ var osuRect bmath.Rectangle
 
 func initCursor() {
 
+	if settings.Cursor.TrailStyle < 1 || settings.Cursor.TrailStyle > 3 {
+		panic("Wrong cursor trail type")
+	}
+
 	vertexFormat := glhf.AttrFormat{
 		{Name: "in_position", Type: glhf.Vec3},
 		{Name: "in_mid", Type: glhf.Vec3},
 		{Name: "in_tex_coord", Type: glhf.Vec2},
 		{Name: "in_index", Type: glhf.Float},
+	}
+
+	if settings.Cursor.TrailStyle >= 2 {
+		vertexFormat = append(vertexFormat, glhf.Attr{Name: "hue", Type: glhf.Float})
 	}
 
 	uniformFormat := glhf.AttrFormat{
@@ -38,10 +46,20 @@ func initCursor() {
 		{Name: "endScale", Type: glhf.Float},
 	}
 
+	if settings.Cursor.TrailStyle >= 2 {
+		uniformFormat = append(uniformFormat, glhf.Attr{Name: "hueshift", Type: glhf.Float})
+	}
+
 	var err error
-	vert, _ := ioutil.ReadFile("assets/shaders/cursortrail.vsh")
-	frag, _ := ioutil.ReadFile("assets/shaders/cursortrail.fsh")
-	cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	if settings.Cursor.TrailStyle == 1 {
+		vert, _ := ioutil.ReadFile("assets/shaders/cursortrail.vsh")
+		frag, _ := ioutil.ReadFile("assets/shaders/cursortrail.fsh")
+		cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	} else {
+		vert, _ := ioutil.ReadFile("assets/shaders/cursortrail1.vsh")
+		frag, _ := ioutil.ReadFile("assets/shaders/cursortrail1.fsh")
+		cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	}
 
 	if err != nil {
 		panic("Cursor: " + err.Error())
@@ -56,6 +74,7 @@ func initCursor() {
 
 type Cursor struct {
 	Points        []bmath.Vector2d
+	PointsC        []float64
 	removeCounter float64
 
 	LeftButton, RightButton bool
@@ -74,6 +93,8 @@ type Cursor struct {
 	vao      *glhf.VertexSlice
 	subVao   *glhf.VertexSlice
 	mutex    *sync.Mutex
+	hueBase float64
+	vecSize int
 }
 
 func NewCursor() *Cursor {
@@ -83,7 +104,12 @@ func NewCursor() *Cursor {
 
 	len := int(math.Ceil(float64(settings.Cursor.TrailMaxLength)*settings.Cursor.TrailDensity) * 6)
 	vao := glhf.MakeVertexSlice(cursorShader, len, len)
-	return &Cursor{LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
+	cursor := &Cursor{LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
+	cursor.vecSize = 9
+	if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+		cursor.vecSize = 10
+	}
+	return cursor
 }
 
 func (cr *Cursor) SetPos(pt bmath.Vector2d) {
@@ -123,6 +149,16 @@ func (cr *Cursor) SetScreenPos(pt bmath.Vector2d) {
 
 func (cr *Cursor) Update(tim float64) {
 	tim = math.Abs(tim)
+
+	if settings.Cursor.TrailStyle == 3 {
+		cr.hueBase += settings.Cursor.Style23Speed/360.0 * tim
+		if cr.hueBase > 1.0 {
+			cr.hueBase -= 1.0
+		} else if cr.hueBase < 0 {
+			cr.hueBase += 1.0
+		}
+	}
+
 	points := cr.Position.Dst(cr.LastPos)
 	density := 1.0 / settings.Cursor.TrailDensity
 
@@ -131,6 +167,16 @@ func (cr *Cursor) Update(tim float64) {
 		for i := density; i < points; i += density {
 			temp = cr.Position.Sub(cr.LastPos).Scl(i / points).Add(cr.LastPos)
 			cr.Points = append(cr.Points, temp)
+			cr.PointsC = append(cr.PointsC, cr.hueBase)
+
+			if settings.Cursor.TrailStyle == 2 {
+				cr.hueBase += settings.Cursor.Style23Speed/360.0 * density
+				if cr.hueBase > 1.0 {
+					cr.hueBase -= 1.0
+				} else if cr.hueBase < 0 {
+					cr.hueBase += 1.0
+				}
+			}
 		}
 		cr.LastPos = temp
 	}
@@ -141,34 +187,47 @@ func (cr *Cursor) Update(tim float64) {
 		if times < len(cr.Points) {
 			if len(cr.Points) > int(float64(settings.Cursor.TrailMaxLength)/density) {
 				cr.Points = cr.Points[len(cr.Points)-int(float64(settings.Cursor.TrailMaxLength)/density):]
+				cr.PointsC = cr.PointsC[len(cr.PointsC)-int(float64(settings.Cursor.TrailMaxLength)/density):]
 				cr.removeCounter = 0
 			} else {
 				cr.Points = cr.Points[times:]
+				cr.PointsC = cr.PointsC[times:]
 				cr.removeCounter -= float64(times)
 			}
 		} else {
 			cr.Points = cr.Points[len(cr.Points):]
+			cr.PointsC = cr.PointsC[len(cr.PointsC):]
 			cr.removeCounter = 0
 		}
 
 		cr.mutex.Lock()
 
-		if len(cr.vertices) < len(cr.Points)*6*9 {
-			cr.vertices = make([]float32, len(cr.Points)*6*9)
+		if len(cr.vertices) < len(cr.Points)*6*cr.vecSize {
+			cr.vertices = make([]float32, len(cr.Points)*6*cr.vecSize)
 		}
 
 		for i, o := range cr.Points {
-			bI := i * 6 * 9
+			bI := i * 6 * cr.vecSize
 			inv := float32(len(cr.Points) - i - 1)
-			fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv)
-			fillArray(cr.vertices, bI+9, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv)
-			fillArray(cr.vertices, bI+9*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv)
-			fillArray(cr.vertices, bI+9*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv)
-			fillArray(cr.vertices, bI+9*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv)
-			fillArray(cr.vertices, bI+9*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv)
+			if settings.Cursor.TrailStyle == 1 {
+				fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv)
+				fillArray(cr.vertices, bI+cr.vecSize, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv)
+				fillArray(cr.vertices, bI+cr.vecSize*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv)
+				fillArray(cr.vertices, bI+cr.vecSize*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv)
+				fillArray(cr.vertices, bI+cr.vecSize*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv)
+				fillArray(cr.vertices, bI+cr.vecSize*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv)
+			} else {
+				hue := float32(cr.PointsC[i])
+				fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv, hue)
+				fillArray(cr.vertices, bI+cr.vecSize, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
+				fillArray(cr.vertices, bI+cr.vecSize*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
+				fillArray(cr.vertices, bI+cr.vecSize*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
+				fillArray(cr.vertices, bI+cr.vecSize*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv, hue)
+				fillArray(cr.vertices, bI+cr.vecSize*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
+			}
 		}
 
-		cr.vaoSize = len(cr.Points) * 6 * 9
+		cr.vaoSize = len(cr.Points) * 6 * cr.vecSize
 		cr.VaoPos = cr.Position
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
@@ -190,7 +249,7 @@ func fillArray(dst []float32, index int, values ... float32) {
 func (cursor *Cursor) UpdateRenderer() {
 	cursor.mutex.Lock()
 	if cursor.vaoDirty {
-		cursor.subVao = cursor.vao.Slice(0, cursor.vaoSize/9)
+		cursor.subVao = cursor.vao.Slice(0, cursor.vaoSize/cursor.vecSize)
 		cursor.subVao.Begin()
 		cursor.subVao.SetVertexData(cursor.vertices[0:cursor.vaoSize])
 		cursor.subVao.End()
@@ -218,12 +277,17 @@ func EndCursorRender() {
 	fboShader.End()
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4) {
-	cursor.DrawM(scale, batch, color, color)
+func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, hueshift float64) {
+	cursor.DrawM(scale, batch, color, color, hueshift)
 }
 
-func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4) {
+func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
 	gl.Disable(gl.DEPTH_TEST)
+
+	if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+		color = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
+		color2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
+	}
 
 	cursorFbo.Begin()
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
@@ -249,10 +313,15 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 		cursorShader.SetUniformAttr(0, color2)
 		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
 		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
-
+		if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+			cursorShader.SetUniformAttr(6, float32((hueshift-36)/360))
+		}
 		cursor.subVao.Draw()
 	}
 
+	if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+		cursorShader.SetUniformAttr(6, float32(hueshift/360))
+	}
 	cursorShader.SetUniformAttr(0, color)
 	cursorShader.SetUniformAttr(4, float32(siz*(12.0/18)*scale))
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points))*innerLengthMult)

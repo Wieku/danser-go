@@ -60,7 +60,13 @@ func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 func (self *Spinner) Update(time int64) bool {
 	if time < self.objData.EndTime {
 		self.rad = rpms * float64(time-self.objData.StartTime) * 2 * math.Pi
-		self.pos = bmath.NewVec2dRad(self.rad, 10).Add(self.objData.StartPos)
+		/*self.pos = bmath.NewVec2dRad(self.rad, 10).Add(self.objData.StartPos)*/
+
+		self.pos.X = 16*math.Pow(math.Sin(self.rad), 3)
+		self.pos.Y = 13*math.Cos(self.rad) - 5*math.Cos(2*self.rad) - 2*math.Cos(3 *self.rad) - math.Cos(4 *self.rad)
+
+		self.pos = self.pos.Scl(-8).Add(self.objData.StartPos)
+
 		return false
 	}
 

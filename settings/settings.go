@@ -136,11 +136,37 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 	return utils.GetColorsSV(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
+func (cl *color) GetColorsH(divides int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
+	flashOffset := 0.0
+	if cl.FlashToTheBeat {
+		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Beat.BeatScale)
+	}
+	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
+
+	for hue >= 360.0 {
+		hue -= 360.0
+	}
+
+	for hue < 0.0 {
+		hue += 360.0
+	}
+
+	offset := 360.0 / float64(divides)
+
+	if cl.EnableCustomHueOffset {
+		offset = cl.HueOffset
+	}
+
+	return utils.GetColorsSVH(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
+}
+
 type bloom struct {
 	Threshold, Blur, Power float64
 }
 
 type cursor struct {
+	TrailStyle                  int
+	Style23Speed                float64
 	Colors                      *color
 	EnableCustomTagColorOffset  bool    //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used
 	TagColorOffset              float64 //-36, offset of the next tag cursor
@@ -161,9 +187,9 @@ type cursor struct {
 	AdditiveBlending            bool
 }
 
-func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) []mgl32.Vec4 {
+func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
 	if !cr.EnableCustomTagColorOffset {
-		return cr.Colors.GetColors(divides*tag, beatScale, alpha)
+		return cr.Colors.GetColorsH(divides*tag, beatScale, alpha)
 	}
 	flashOffset := 0.0
 	cl := cr.Colors

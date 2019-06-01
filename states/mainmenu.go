@@ -448,7 +448,7 @@ func (pl *MainMenu) Draw(delta float64) {
 		settings.Cursor.Colors.Update(timMs)
 	}
 
-	colors1 := settings.Cursor.GetColors(settings.DIVIDES, 1, /*pl.Scl*/1, 1.0 /*pl.cursorGlider.GetValue()*/)
+	colors1, _ := settings.Cursor.GetColors(settings.DIVIDES, 1, /*pl.Scl*/1, 1.0 /*pl.cursorGlider.GetValue()*/)
 
 	scale2 := 1.0
 
@@ -473,7 +473,7 @@ func (pl *MainMenu) Draw(delta float64) {
 	render.BeginCursorRender()
 
 	pl.batch.SetCamera(pl.camera.GetProjectionView())
-	pl.cursor.DrawM(scale2, pl.batch, colors1[0], colors1[0])
+	pl.cursor.DrawM(scale2, pl.batch, colors1[0], colors1[0], 0)
 
 	render.EndCursorRender()
 	pl.batch.SetAdditive(false)

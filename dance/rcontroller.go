@@ -41,6 +41,25 @@ type subControl struct {
 	lolControl Controller
 }
 
+func NewSubControl() *subControl {
+	control := new(subControl)
+	control.xGlider = animation.NewGlider(0)
+	control.xGlider.SetSorting(false)
+	control.yGlider = animation.NewGlider(0)
+	control.yGlider.SetSorting(false)
+	control.k1Glider = animation.NewGlider(0)
+	control.k1Glider.SetSorting(false)
+	control.k2Glider = animation.NewGlider(0)
+	control.k2Glider.SetSorting(false)
+	control.m1Glider = animation.NewGlider(0)
+	control.m1Glider.SetSorting(false)
+	control.m2Glider = animation.NewGlider(0)
+	control.m2Glider.SetSorting(false)
+	control.frame = animation.NewGlider(0)
+	control.frame.SetSorting(false)
+	return control
+}
+
 type ReplayController struct {
 	bMap              *beatmap.BeatMap
 	replays           []RpData
@@ -91,21 +110,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	//bot
 	if settings.KNOCKOUTDANCE {
-		control := new(subControl)
-		control.xGlider = animation.NewGlider(0)
-		control.xGlider.SetSorting(false)
-		control.yGlider = animation.NewGlider(0)
-		control.yGlider.SetSorting(false)
-		control.k1Glider = animation.NewGlider(0)
-		control.k1Glider.SetSorting(false)
-		control.k2Glider = animation.NewGlider(0)
-		control.k2Glider.SetSorting(false)
-		control.m1Glider = animation.NewGlider(0)
-		control.m1Glider.SetSorting(false)
-		control.m2Glider = animation.NewGlider(0)
-		control.m2Glider.SetSorting(false)
-		control.frame = animation.NewGlider(0)
-		control.frame.SetSorting(false)
+		control := NewSubControl()
 
 		control.lolControl = NewGenericController()
 		control.lolControl.SetBeatMap(beatMap)
@@ -137,21 +142,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			ioutil.WriteFile(fileName, data, 644)
 		}
 
-		control := new(subControl)
-		control.xGlider = animation.NewGlider(0)
-		control.xGlider.SetSorting(false)
-		control.yGlider = animation.NewGlider(0)
-		control.yGlider.SetSorting(false)
-		control.k1Glider = animation.NewGlider(0)
-		control.k1Glider.SetSorting(false)
-		control.k2Glider = animation.NewGlider(0)
-		control.k2Glider.SetSorting(false)
-		control.m1Glider = animation.NewGlider(0)
-		control.m1Glider.SetSorting(false)
-		control.m2Glider = animation.NewGlider(0)
-		control.m2Glider.SetSorting(false)
-		control.frame = animation.NewGlider(0)
-		control.frame.SetSorting(false)
+		control := NewSubControl()
 
 		lastTime := int64(0)
 		lastX := 0.0

@@ -527,7 +527,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1 := settings.Cursor.GetColors(settings.DIVIDES, /*settings.TAG*/ len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES, /*settings.TAG*/ len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -665,7 +665,7 @@ func (pl *Player) Draw(delta float64) {
 				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
 			}
 
-			g.DrawM(scale2, pl.batch, colors1[j*len(pl.controller.GetCursors())+i], colors1[ind])
+			g.DrawM(scale2, pl.batch, colors1[j*len(pl.controller.GetCursors())+i], colors1[ind], hshifts[ind])
 		}
 
 	}
