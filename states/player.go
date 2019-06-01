@@ -556,7 +556,7 @@ func (pl *Player) Draw(delta float64) {
 		pl.bloomEffect.Begin()
 	}
 
-	if pl.start {
+	if pl.start && settings.Playfield.DrawObjects {
 
 		if settings.Objects.SliderMerge {
 			pl.sliderRenderer.Begin()
