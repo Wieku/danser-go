@@ -1,11 +1,11 @@
 package beatmap
 
 import (
-	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser-go/beatmap/objects"
 	"strconv"
 	"strings"
 	"time"
-	"github.com/wieku/danser/audio"
+	"github.com/wieku/danser-go/audio"
 )
 
 type BeatMap struct {

@@ -1,7 +1,7 @@
 package animation
 
 import (
-	"github.com/wieku/danser/animation/easing"
+	"github.com/wieku/danser-go/animation/easing"
 	"sort"
 )
 

@@ -1,8 +1,8 @@
 package schedulers
 
 import (
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/render"
+	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/render"
 )
 
 type Scheduler interface {

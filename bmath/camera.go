@@ -2,7 +2,7 @@ package bmath
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser-go/settings"
 )
 
 type Rectangle struct {

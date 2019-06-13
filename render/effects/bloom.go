@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/glhf"
 	"io/ioutil"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser/render/framebuffer"
+	"github.com/wieku/danser-go/render/framebuffer"
 )
 
 type BloomEffect struct {

@@ -2,9 +2,9 @@ package osu
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath/difficulty"
-	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/bmath/difficulty"
+	"github.com/wieku/danser-go/render/batches"
 	"math"
 )
 

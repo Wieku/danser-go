@@ -6,14 +6,14 @@ import (
 	"log"
 	"strings"
 	"strconv"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/utils"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/utils"
 	"path/filepath"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser-go/settings"
+	"github.com/wieku/danser-go/beatmap"
+	"github.com/wieku/danser-go/render/texture"
 	"fmt"
-	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser-go/render/batches"
 )
 
 type Storyboard struct {

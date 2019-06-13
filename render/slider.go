@@ -1,17 +1,17 @@
 package render
 
 import (
-	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser-go/bmath"
 	"math"
 	"github.com/wieku/glhf"
 	"log"
 	_ "image/png"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser-go/settings"
 	"io/ioutil"
-	"github.com/wieku/danser/utils"
-	"github.com/wieku/danser/render/framebuffer"
+	"github.com/wieku/danser-go/utils"
+	"github.com/wieku/danser-go/render/framebuffer"
 )
 
 var sliderShader *glhf.Shader = nil

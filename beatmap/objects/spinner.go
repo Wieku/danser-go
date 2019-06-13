@@ -3,13 +3,13 @@ package objects
 import (
 	"strconv"
 	"math"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/audio"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/audio"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/render/batches"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/animation"
+	"github.com/wieku/danser-go/settings"
+	"github.com/wieku/danser-go/render/batches"
+	"github.com/wieku/danser-go/render"
+	"github.com/wieku/danser-go/animation"
 )
 
 const rpms = 0.00795

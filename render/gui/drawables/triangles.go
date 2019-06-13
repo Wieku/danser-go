@@ -1,14 +1,14 @@
 package drawables
 
 import (
-	"github.com/wieku/danser/animation"
-	"github.com/wieku/danser/animation/easing"
-	"github.com/wieku/danser/audio"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/render/batches"
-	"github.com/wieku/danser/render/sprites"
-	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser-go/animation"
+	"github.com/wieku/danser-go/animation/easing"
+	"github.com/wieku/danser-go/audio"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/render"
+	"github.com/wieku/danser-go/render/batches"
+	"github.com/wieku/danser-go/render/sprites"
+	"github.com/wieku/danser-go/settings"
 	"math"
 	"math/rand"
 	"sort"

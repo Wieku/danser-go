@@ -5,7 +5,7 @@ import (
 
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser-go/render/texture"
 )
 
 var bindHistory []int32

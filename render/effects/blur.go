@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"math"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/render/texture"
-	"github.com/wieku/danser/render/framebuffer"
+	"github.com/wieku/danser-go/settings"
+	"github.com/wieku/danser-go/render/texture"
+	"github.com/wieku/danser-go/render/framebuffer"
 )
 
 type BlurEffect struct {

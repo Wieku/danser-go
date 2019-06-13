@@ -1,12 +1,12 @@
 package dance
 
 import (
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/render"
+	"github.com/wieku/danser-go/beatmap"
+	"github.com/wieku/danser-go/render"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/wieku/danser/rulesets/osu"
-	"github.com/wieku/danser/bmath/difficulty"
-	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser-go/rulesets/osu"
+	"github.com/wieku/danser-go/bmath/difficulty"
+	"github.com/wieku/danser-go/bmath"
 )
 
 type PlayerController struct {

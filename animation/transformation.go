@@ -1,7 +1,7 @@
 package animation
 
 import (
-	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser-go/bmath"
 	"math"
 )
 

@@ -1,11 +1,11 @@
 package schedulers
 
 import (
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/dance/movers"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/dance/movers"
+	"github.com/wieku/danser-go/render"
+	"github.com/wieku/danser-go/settings"
 )
 
 type GenericScheduler struct {

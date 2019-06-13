@@ -2,9 +2,9 @@ package movers
 
 import (
 	"math"
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath/curves"
-	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/bmath/curves"
+	"github.com/wieku/danser-go/bmath"
 )
 
 type LinearMover struct {

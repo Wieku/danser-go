@@ -10,9 +10,9 @@ import (
 	"image"
 	"image/draw"
 	"log"
-	"github.com/wieku/danser/render/texture"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser-go/render/texture"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/render/batches"
 )
 
 var fonts map[string]*Font

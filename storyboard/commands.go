@@ -1,10 +1,10 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser-go/bmath"
 	"math"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/animation/easing"
+	"github.com/wieku/danser-go/animation/easing"
 	"strconv"
 	"log"
 )

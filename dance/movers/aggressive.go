@@ -1,9 +1,9 @@
 package movers
 
 import (
-	"github.com/wieku/danser/beatmap/objects"
-	"github.com/wieku/danser/bmath"
-	"github.com/wieku/danser/bmath/curves"
+	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/curves"
 	"math"
 )
 

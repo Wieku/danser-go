@@ -1,10 +1,10 @@
 package font
 
 import (
-	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser-go/render/texture"
 	"path/filepath"
 	"strings"
-	"github.com/wieku/danser/utils"
+	"github.com/wieku/danser-go/utils"
 )
 
 func LoadTextureFont(path, name string, min, max rune, atlas *texture.TextureAtlas) *Font {

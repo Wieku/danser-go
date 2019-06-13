@@ -3,10 +3,10 @@ package batches
 import (
 	"github.com/wieku/glhf"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser/bmath"
+	"github.com/wieku/danser-go/bmath"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"io/ioutil"
-	"github.com/wieku/danser/render/texture"
+	"github.com/wieku/danser-go/render/texture"
 )
 
 const batchSize = 2000

@@ -2,12 +2,12 @@ package beatmap
 
 import (
 	"sort"
-	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser-go/beatmap/objects"
 	"strconv"
 	"strings"
 	"os"
 	"bufio"
-	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser-go/settings"
 	"errors"
 	"path/filepath"
 )

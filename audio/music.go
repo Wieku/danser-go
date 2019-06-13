@@ -17,7 +17,7 @@ static inline void setSync(HCHANNEL channel) {
 import "C"
 import (
 	"unsafe"
-	"github.com/wieku/danser/settings"
+	"github.com/wieku/danser-go/settings"
 	//"log"
 	"math"
 )

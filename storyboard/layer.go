@@ -3,7 +3,7 @@ package storyboard
 import (
 	"sort"
 	"sync"
-	"github.com/wieku/danser/render/batches"
+	"github.com/wieku/danser-go/render/batches"
 )
 
 type StoryboardLayer struct {

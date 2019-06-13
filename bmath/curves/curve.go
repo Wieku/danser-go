@@ -1,6 +1,6 @@
 package curves
 
-import "github.com/wieku/danser/bmath"
+import "github.com/wieku/danser-go/bmath"
 
 type Curve interface {
 	PointAt(t float64) bmath.Vector2d

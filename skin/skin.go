@@ -1,6 +1,6 @@
 package skin
 
-import "github.com/wieku/danser/render/texture"
+import "github.com/wieku/danser-go/render/texture"
 
 type Source int
 

@@ -1,6 +1,6 @@
 package storyboard
 
-import "github.com/wieku/danser/bmath"
+import "github.com/wieku/danser-go/bmath"
 
 var Origin = map[string]bmath.Vector2d{
 	"0":       bmath.NewVec2d(-1, -1),

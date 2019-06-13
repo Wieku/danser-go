@@ -1,12 +1,12 @@
 package dance
 
 import (
-	"github.com/wieku/danser/beatmap"
-	"github.com/wieku/danser/render"
-	"github.com/wieku/danser/dance/schedulers"
-	"github.com/wieku/danser/dance/movers"
-	"github.com/wieku/danser/settings"
-	"github.com/wieku/danser/beatmap/objects"
+	"github.com/wieku/danser-go/beatmap"
+	"github.com/wieku/danser-go/render"
+	"github.com/wieku/danser-go/dance/schedulers"
+	"github.com/wieku/danser-go/dance/movers"
+	"github.com/wieku/danser-go/settings"
+	"github.com/wieku/danser-go/beatmap/objects"
 	"strings"
 )
 
