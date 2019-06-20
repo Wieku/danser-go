@@ -34,6 +34,8 @@ func (controller *PlayerController) InitCursors() {
 
 func (controller *PlayerController) Update(time int64, delta float64) {
 
+	controller.bMap.Update(time)
+
 	if controller.window != nil {
 		glfw.PollEvents()
 		x, y := controller.window.GetCursorPos()
