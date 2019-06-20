@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"github.com/wieku/danser-go/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -87,6 +88,15 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 
 	newBeatmaps := make([]*beatmap.BeatMap, 0)
 	cachedBeatmaps := make([]*beatmap.BeatMap, 0)
+
+	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+		if strings.HasSuffix(f.Name(), ".osz") {
+			log.Println("Unpacking", path, "to", filepath.Dir(path)+"/"+strings.TrimSuffix(f.Name(), ".osz"))
+			utils.Unzip(path, filepath.Dir(path)+"/"+strings.TrimSuffix(f.Name(), ".osz"))
+			os.Remove(path)
+		}
+		return nil
+	})
 
 	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(f.Name(), ".osu") {
