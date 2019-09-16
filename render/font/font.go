@@ -193,7 +193,7 @@ func (font *Font) DrawMonospaced(renderer *batches.SpriteBatch, x, y float64, si
 		}
 
 		renderer.SetSubScale(scale, scale)
-		if c=='.' {
+		if c=='.' ||  c==',' {
 			renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
 			renderer.DrawTexture(char.region)
 			xpad += scale * renderer.GetScale().X * (char.advance)
@@ -234,7 +234,7 @@ func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
 			continue
 		}
 
-		if c=='.' {
+		if c=='.' || c==',' {
 			xpad += scale * char.advance
 		}  else {
 			xpad += scale * font.biggest

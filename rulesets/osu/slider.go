@@ -37,6 +37,10 @@ type Slider struct {
 	lastTime          int64
 }
 
+func (slider *Slider) GetNumber() int64 {
+	return  slider.hitSlider.GetBasicData().Number
+}
+
 func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
 	slider.ruleSet = ruleSet
 	slider.hitSlider = object.(*objects.Slider)

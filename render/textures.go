@@ -45,6 +45,7 @@ var GradeTexture map[int64]*texture.TextureRegion
 var Hit0 *texture.TextureRegion
 var Hit50 *texture.TextureRegion
 var Hit100 *texture.TextureRegion
+var OvButton *texture.TextureRegion
 
 func LoadTextures() {
 	Atlas = texture.NewTextureAtlas(8192, 4)
@@ -81,6 +82,7 @@ func LoadTextures() {
 	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit0-0.png")
 	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit50.png")
 	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit100.png")
+	OvButton, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton.png")
 
 	Triangle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle.png")
 

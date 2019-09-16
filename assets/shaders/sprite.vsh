@@ -12,7 +12,7 @@ out vec3 tex_coord;
 out float additive;
 void main()
 {
-    gl_Position = proj * vec4(in_position, 1);
+    gl_Position = proj * vec4(in_position, 1.0);
     tex_coord = in_tex_coord;
     col_tint = in_color;
     additive = in_additive;

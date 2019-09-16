@@ -27,6 +27,10 @@ type Circle struct {
 	renderable        *HitCircleSprite
 }
 
+func (circle *Circle) GetNumber() int64 {
+	return circle.hitCircle.GetBasicData().Number
+}
+
 func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
 	circle.ruleSet = ruleSet
 	circle.hitCircle = object.(*objects.Circle)

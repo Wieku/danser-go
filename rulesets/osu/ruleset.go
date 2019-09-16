@@ -81,6 +81,7 @@ type hitobject interface {
 	Update(time int64) bool
 	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
 	GetFadeTime() int64
+	GetNumber() int64
 }
 
 type difficultyPlayer struct {
@@ -118,7 +119,8 @@ type OsuRuleSet struct {
 
 	queue     []hitobject
 	processed []hitobject
-	listener  func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64)
+	listener  func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
+	endlistener  func(time int64, number int64)
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -239,6 +241,7 @@ func (set *OsuRuleSet) Update(time int64) {
 			g := set.processed[i]
 
 			if isDone := g.Update(time); isDone {
+				set.endlistener(time, g.GetNumber())
 				if i < len(set.processed)-1 {
 					set.processed = append(set.processed[:i], set.processed[i+1:]...)
 				} else if i < len(set.processed) {
@@ -364,7 +367,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo)) //oppai.PPInfo(set.oppaiMap, set.params).PP.Total
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total)
+		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
@@ -372,8 +375,12 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	}
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64)) {
+func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
 	set.listener = listener
+}
+
+func (set *OsuRuleSet) SetEndListener(endlistener func(time int64, number int64)) {
+	set.endlistener = endlistener
 }
 
 func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, int64, Grade) {

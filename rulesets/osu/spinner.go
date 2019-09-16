@@ -32,6 +32,10 @@ type Spinner struct {
 	maxAcceleration   float64
 }
 
+func (spinner *Spinner) GetNumber() int64 {
+	return spinner.hitSpinner.GetBasicData().Number
+}
+
 func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
 	panic("implement me")
 }
