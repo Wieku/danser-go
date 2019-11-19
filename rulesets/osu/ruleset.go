@@ -367,7 +367,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo)) //oppai.PPInfo(set.oppaiMap, set.params).PP.Total
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total, subSet.score)
+		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total * 1.02730112005, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
