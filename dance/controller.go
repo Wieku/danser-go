@@ -17,6 +17,7 @@ type Controller interface {
 	GetCursors() []*render.Cursor
 }
 
+var useSmooth = false
 var Mover = movers.NewAngleOffsetMover
 
 func SetMover(name string) {
@@ -35,6 +36,11 @@ func SetMover(name string) {
 	} else {
 		Mover = movers.NewAngleOffsetMover
 	}
+
+	if name == "smooth" {
+		useSmooth = true
+	}
+
 }
 
 type GenericController struct {
@@ -57,7 +63,11 @@ func (controller *GenericController) InitCursors() {
 
 	for i := range controller.cursors {
 		controller.cursors[i] = render.NewCursor()
-		controller.schedulers[i] = schedulers.NewGenericScheduler(Mover)
+		if useSmooth {
+			controller.schedulers[i] =  schedulers.NewSmoothScheduler()
+		} else {
+			controller.schedulers[i] = schedulers.NewGenericScheduler(Mover)
+		}
 	}
 
 	type Queue struct {
