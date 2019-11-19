@@ -1,14 +1,14 @@
 package movers
 
 import (
-	"math"
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
-	"github.com/wieku/danser-go/bmath/sliders"
+	"github.com/wieku/danser-go/bmath/curves"
+	"math"
 )
 
 type AxisMover struct {
-	bz                 sliders.SliderAlgo
+	bz                 curves.MultiCurve
 	beginTime, endTime int64
 }
 
@@ -35,7 +35,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 		midP = bmath.NewVec2d(startPos.X, endPos.Y)
 	}
 
-	bm.bz = sliders.NewSliderAlgo("L", []bmath.Vector2d{endPos, midP, startPos}, endPos.Dst(midP)+midP.Dst(startPos))
+	bm.bz = curves.NewMultiCurve("L", []bmath.Vector2d{endPos, midP, startPos}, endPos.Dst(midP)+midP.Dst(startPos), nil)
 	bm.endTime = endTime
 	bm.beginTime = startTime
 }

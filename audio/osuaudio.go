@@ -26,6 +26,12 @@ var hitsounds = map[string]int{
 	"slidertick": 5,
 }
 
+var listeners = make([]func(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64), 0)
+
+func AddListener(function func(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64)) {
+	listeners = append(listeners, function)
+}
+
 func LoadSamples() {
 	Samples[0][0] = NewSample("assets/sounds/normal-hitnormal.wav")
 	Samples[0][1] = NewSample("assets/sounds/normal-hitwhistle.wav")
@@ -46,27 +52,31 @@ func LoadSamples() {
 	Samples[2][4] = NewSample("assets/sounds/drum-slidertick.wav")
 }
 
-func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64) {
-	playSample(sampleSet, 0, index, volume)
+func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64) {
+	playSample(sampleSet, 0, index, volume, objNum)
 
 	if additionSet == 0 {
 		additionSet = sampleSet
 	}
 
 	if hitsound&2 > 0 {
-		playSample(additionSet, 1, index, volume)
+		playSample(additionSet, 1, index, volume, objNum)
 	}
 	if hitsound&4 > 0 {
-		playSample(additionSet, 2, index, volume)
+		playSample(additionSet, 2, index, volume, objNum)
 	}
 	if hitsound&8 > 0 {
-		playSample(additionSet, 3, index, volume)
+		playSample(additionSet, 3, index, volume, objNum)
 	}
 }
 
-func playSample(sampleSet int, hitsoundIndex, index int, volume float64) {
+func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64) {
 	if settings.Audio.IgnoreBeatmapSampleVolume {
 		volume = 1.0
+	}
+
+	for _, f := range listeners {
+		f(sampleSet, hitsoundIndex, index, volume, objNum)
 	}
 
 	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil {
@@ -76,8 +86,8 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64) {
 	}
 }
 
-func PlaySliderTick(sampleSet, index int, volume float64) {
-	playSample(sampleSet, 4, index, volume)
+func PlaySliderTick(sampleSet, index int, volume float64, objNum int64) {
+	playSample(sampleSet, 4, index, volume, objNum)
 }
 
 func LoadBeatmapSamples(dir string) {

@@ -1,15 +1,15 @@
 package objects
 
 import (
-	"strconv"
-	"math"
-	"github.com/wieku/danser-go/bmath"
-	"github.com/wieku/danser-go/audio"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/settings"
-	"github.com/wieku/danser-go/render/batches"
-	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/animation"
+	"github.com/wieku/danser-go/audio"
+	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/render"
+	"github.com/wieku/danser-go/render/batches"
+	"github.com/wieku/danser-go/settings"
+	"math"
+	"strconv"
 )
 
 const rpms = 0.00795
@@ -77,9 +77,9 @@ func (self *Spinner) Update(time int64) bool {
 	}
 
 	if self.objData.sampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number)
 	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number)
 	}
 
 	return true

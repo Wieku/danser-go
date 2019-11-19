@@ -119,6 +119,14 @@ func (v Vector2d) Scl(mag float64) Vector2d {
 	return Vector2d{v.X * mag, v.Y * mag}
 }
 
+func (v Vector2d) SclOrDenorm(mag float64) Vector2d {
+	v1 := v
+	if mag > 1.0 || mag < -1.0 {
+		v1 = v1.Nor()
+	}
+	return Vector2d{v1.X * mag, v1.Y * mag}
+}
+
 func (v Vector2d) Abs() Vector2d {
 	return NewVec2d(math.Abs(v.X), math.Abs(v.Y))
 }

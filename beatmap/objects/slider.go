@@ -7,7 +7,7 @@ import (
 	"github.com/wieku/danser-go/animation/easing"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
-	"github.com/wieku/danser-go/bmath/sliders"
+	"github.com/wieku/danser-go/bmath/curves"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/settings"
@@ -41,25 +41,25 @@ func newReverse() (point *reversePoint) {
 }
 
 type Slider struct {
-	objData              *basicData
-	multiCurve           sliders.SliderAlgo
-	Timings              *Timings
-	TPoint               TimingPoint
-	pixelLength          float64
-	partLen              float64
-	repeat               int64
-	clicked              bool
-	sampleSets           []int
-	additionSets         []int
-	samples              []int
-	lastT                int64
-	Pos                  bmath.Vector2d
-	divides              int
-	TickPoints           []TickPoint
-	TickReverse          []TickPoint
-	ScorePoints          []TickPoint
-	lastTick             int
-	End                  bool
+	objData      *basicData
+	multiCurve   curves.MultiCurve
+	Timings      *Timings
+	TPoint       TimingPoint
+	pixelLength  float64
+	partLen      float64
+	repeat       int64
+	clicked      bool
+	sampleSets   []int
+	additionSets []int
+	samples      []int
+	lastT        int64
+	Pos          bmath.Vector2d
+	divides      int
+	TickPoints   []TickPoint
+	TickReverse  []TickPoint
+	ScorePoints  []TickPoint
+	lastTick     int
+	End          bool
 	vao                  *glhf.VertexSlice
 	created              bool
 	discreteCurve        []bmath.Vector2d
@@ -90,7 +90,7 @@ func NewSlider(data []string) *Slider {
 		points = append(points, bmath.NewVec2d(x, y))
 	}
 
-	slider.multiCurve = sliders.NewSliderAlgo(list[0], points, slider.pixelLength)
+	slider.multiCurve = curves.NewMultiCurve(list[0], points, slider.pixelLength, nil)
 
 	slider.objData.EndTime = slider.objData.StartTime
 	slider.objData.EndPos = slider.objData.StartPos
@@ -271,8 +271,8 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+fadeIn/3, 0)
 
 	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+fadeIn, 0)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-FadeIn), 1)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+FadeOut, 0)
 
 	self.fadeApproach = animation.NewGlider(1)
 	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)
@@ -382,7 +382,7 @@ func (self *Slider) Update(time int64) bool {
 		for i, p := range self.TickPoints {
 			if p.Time < time && self.lastTick < i {
 				if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
-					audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+					audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume, self.objData.Number)
 				}
 				self.lastTick = i
 			}
@@ -418,7 +418,7 @@ func (self *Slider) PlayEdgeSample(index int) {
 }
 
 func (self *Slider) PlayTick() {
-	audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume)
+	audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume, self.objData.Number)
 }
 
 func (self *Slider) playSample(sampleSet, additionSet, sample int) {
@@ -437,7 +437,7 @@ func (self *Slider) playSampleT(sampleSet, additionSet, sample int, point Timing
 		additionSet = self.objData.additionSet
 	}
 
-	audio.PlaySample(sampleSet, additionSet, sample, point.SampleIndex, point.SampleVolume)
+	audio.PlaySample(sampleSet, additionSet, sample, point.SampleIndex, point.SampleVolume, self.objData.Number)
 }
 
 func (self *Slider) GetPosition() bmath.Vector2d {

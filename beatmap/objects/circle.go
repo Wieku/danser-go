@@ -85,9 +85,9 @@ func (self *Circle) PlaySound() {
 	}
 
 	if self.objData.sampleSet == 0 {
-		audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume)
+		audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number)
 	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number)
 	}
 }
 
@@ -97,8 +97,8 @@ func (self *Circle) SetTiming(timings *Timings) {
 
 func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
 	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+fadeIn, 0)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt/*-fadeIn*/)+FadeIn, 1)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+FadeOut, 0)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-preempt*0.6, 1)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt*0.6, float64(self.objData.StartTime)-preempt*0.3, 0) HIDDEN
 

@@ -23,7 +23,7 @@ func NewBezier(points []math2.Vector2d) *Bezier {
 		pointLength += points[i].Dst(points[i-1])
 	}
 
-	pointLength = math.Ceil(pointLength)
+	pointLength = math.Ceil(pointLength*2)
 
 	for i := 1; i <= int(pointLength); i++ {
 		bz.ApproxLength += bz.NPointAt(float64(i) / pointLength).Dst(bz.NPointAt(float64(i-1) / pointLength))
@@ -32,7 +32,7 @@ func NewBezier(points []math2.Vector2d) *Bezier {
 	return bz
 }
 
-func (bz Bezier) NPointAt(t float64) math2.Vector2d {
+func (bz *Bezier) NPointAt(t float64) math2.Vector2d {
 	x := 0.0
 	y := 0.0
 	n := len(bz.points) - 1

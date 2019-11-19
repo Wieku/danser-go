@@ -66,6 +66,10 @@ func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
 	return *arc
 }
 
+func (ln CirArc) NPointAt(t float64) math2.Vector2d {
+	return math2.NewVec2dRad(ln.startAngle+ln.dir*t*ln.totalAngle, ln.r).Add(ln.centre)
+}
+
 func (ln CirArc) PointAt(t float64) math2.Vector2d {
 	return math2.NewVec2dRad(ln.startAngle+ln.dir*t*ln.totalAngle, ln.r).Add(ln.centre)
 }
