@@ -115,7 +115,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.lolControl = NewGenericController()
 		control.lolControl.SetBeatMap(beatMap)
 
-		controller.replays = append(controller.replays, RpData{"danser", "", difficulty.None, 100, 0, osu.NONE})
+		controller.replays = append(controller.replays, RpData{"danser", "AT", difficulty.None, 100, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
 		counter++
 	}
@@ -124,7 +124,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		if score.Mods&osuapi.ModHalfTime > 0 || counter >= 50 {
 			continue
 		}
-		//if score.Username != /*"itsamemarioo"*//*"nathan on osu"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ "Vaxei" /*"Dustice"*//*"WalkingTuna"*/ {
+		//if score.Username == /*"itsamemarioo"*/"Alumetri"/*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
 		//	continue
 		//}
 		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
@@ -191,7 +191,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "", -1), "NV", "", -1), difficulty.Modifier(score.Mods), 100, 0, osu.NONE})
+		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
 
 		counter++
