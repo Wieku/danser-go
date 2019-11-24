@@ -24,7 +24,7 @@ const (
 	FadeIn   = 120
 	FadeOut  = 600
 	PostEmpt = 500
-	Shake = 400
+	Shake    = 400
 )
 
 const (
@@ -85,10 +85,11 @@ type hitobject interface {
 }
 
 type difficultyPlayer struct {
-	cursor      *render.Cursor
-	diff        *difficulty.Difficulty
-	cursorLock  int64
-	DoubleClick bool
+	cursor        *render.Cursor
+	diff          *difficulty.Difficulty
+	cursorLock    int64
+	DoubleClick   bool
+	alreadyStolen bool
 }
 
 type subSet struct {
@@ -101,8 +102,8 @@ type subSet struct {
 	modMultiplier float64
 	numObjects    int64
 	grade         Grade
-	diff []oppai.DiffCalc
-	ppv2 *oppai.PPv2
+	diff          []oppai.DiffCalc
+	ppv2          *oppai.PPv2
 	hits          map[HitResult]int64
 }
 
@@ -114,13 +115,13 @@ type OsuRuleSet struct {
 	ended bool
 
 	oppaiMaps []*oppai.Map
-	oppDiffs map[int][]oppai.DiffCalc
-	params *oppai.Parameters
+	oppDiffs  map[int][]oppai.DiffCalc
+	params    *oppai.Parameters
 
-	queue     []hitobject
-	processed []hitobject
-	listener  func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
-	endlistener  func(time int64, number int64)
+	queue       []hitobject
+	processed   []hitobject
+	listener    func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
+	endlistener func(time int64, number int64)
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -169,7 +170,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 		diff := difficulty.NewDifficulty(beatMap.HPDrainRate, beatMap.CircleSize, beatMap.OverallDifficulty, beatMap.AR)
 		diff.SetMods(mods[i])
 
-		player := &difficultyPlayer{cursor, diff, -1, false}
+		player := &difficultyPlayer{cursor, diff, -1, false, false}
 		diffPlayers = append(diffPlayers, player)
 
 		grade := Grade(NONE)
@@ -217,6 +218,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 }
 
 func (set *OsuRuleSet) Update(time int64) {
+	for _, pl := range set.cursors {
+		pl.player.alreadyStolen = false
+	}
 	if len(set.queue) > 0 {
 		for i := 0; i < len(set.queue); i++ {
 			g := set.queue[i]
@@ -241,7 +245,9 @@ func (set *OsuRuleSet) Update(time int64) {
 			g := set.processed[i]
 
 			if isDone := g.Update(time); isDone {
-				set.endlistener(time, g.GetNumber())
+				if set.endlistener != nil {
+					set.endlistener(time, g.GetNumber())
+				}
 				if i < len(set.processed)-1 {
 					set.processed = append(set.processed[:i], set.processed[i+1:]...)
 				} else if i < len(set.processed) {
@@ -367,11 +373,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo)) //oppai.PPInfo(set.oppaiMap, set.params).PP.Total
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total * 1.02730112005, subSet.score)
+		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total*1.02730112005, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
-		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits)
+		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits, "from:", number)
 	}
 }
 

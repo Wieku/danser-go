@@ -27,6 +27,7 @@ type RpData struct {
 	ModsV    difficulty.Modifier
 	Accuracy float64
 	Combo    int64
+	MaxCombo int64
 	Grade    osu.Grade
 }
 
@@ -115,7 +116,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.lolControl = NewGenericController()
 		control.lolControl.SetBeatMap(beatMap)
 
-		controller.replays = append(controller.replays, RpData{"danser", "AT", difficulty.None, 100, 0, osu.NONE})
+		controller.replays = append(controller.replays, RpData{"danser", "AT", difficulty.None, 100, 0, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
 		counter++
 	}
@@ -191,7 +192,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, osu.NONE})
+		mxCombo := score.MaxCombo
+
+		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, int64(mxCombo), osu.NONE})
 		controller.controllers = append(controller.controllers, control)
 
 		counter++
@@ -241,7 +244,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				c.k1Glider.Update(float64(nTime))
 				c.k2Glider.Update(float64(nTime))
 
-				controller.counter += 1//nTime - controller.lastTime
+				controller.counter += 1 //nTime - controller.lastTime
 
 				if controller.counter >= 12 {
 					controller.cursors[i].LastFrameTime = nTime - 12

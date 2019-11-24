@@ -79,7 +79,7 @@ func (circle *Circle) Update(time int64) bool {
 					player.DoubleClick = true
 				}
 
-				if clicked && player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius {
+				if !player.alreadyStolen && clicked && player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius {
 					hit := HitResults.Miss
 
 					relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))

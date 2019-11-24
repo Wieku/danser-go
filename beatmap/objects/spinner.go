@@ -19,8 +19,8 @@ type Spinner struct {
 	Timings *Timings
 	sample  int
 	rad     float64
-	pos bmath.Vector2d
-	fade *animation.Glider
+	pos     bmath.Vector2d
+	fade    *animation.Glider
 }
 
 func NewSpinner(data []string) *Spinner {
@@ -50,7 +50,6 @@ func (self *Spinner) SetTiming(timings *Timings) {
 	self.Timings = timings
 }
 
-
 func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
@@ -62,11 +61,11 @@ func (self *Spinner) Update(time int64) bool {
 		self.rad = rpms * float64(time-self.objData.StartTime) * 2 * math.Pi
 		/*self.pos = bmath.NewVec2dRad(self.rad, 10).Add(self.objData.StartPos)*/
 
-		self.pos.X = 16*math.Pow(math.Sin(self.rad), 3)
-		self.pos.Y = 13*math.Cos(self.rad) - 5*math.Cos(2*self.rad) - 2*math.Cos(3 *self.rad) - math.Cos(4 *self.rad)
+		self.pos.X = 16 * math.Pow(math.Sin(self.rad), 3)
+		self.pos.Y = 13*math.Cos(self.rad) - 5*math.Cos(2*self.rad) - 2*math.Cos(3*self.rad) - math.Cos(4*self.rad)
 
-		self.pos = self.pos.Scl(-8).Add(self.objData.StartPos)
-
+		self.pos = self.pos.Scl(-8 * (float64(time-self.objData.StartTime) / float64(self.objData.EndTime-self.objData.StartTime))).Add(self.objData.StartPos)
+		self.GetBasicData().EndPos = self.pos
 		return false
 	}
 
@@ -101,12 +100,12 @@ func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBat
 	batch.SetScale(1, 1)
 
 	batch.SetRotation(self.rad)
-	batch.SetSubScale(20,20)
+	batch.SetSubScale(20, 20)
 
 	batch.DrawUnit(*render.SpinnerMiddle)
 	batch.DrawUnit(*render.SpinnerMiddle2)
 
-	scl := 16 + math.Min(220, math.Max(0, (1.0 - float64(time - self.objData.StartTime)/float64(self.objData.EndTime - self.objData.StartTime)) * 220))
+	scl := 16 + math.Min(220, math.Max(0, (1.0-float64(time-self.objData.StartTime)/float64(self.objData.EndTime-self.objData.StartTime))*220))
 
 	batch.SetSubScale(scl, scl)
 
