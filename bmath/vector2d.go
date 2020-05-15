@@ -2,8 +2,8 @@ package bmath
 
 import (
 	"fmt"
-	"math"
 	"github.com/go-gl/mathgl/mgl32"
+	"math"
 )
 
 type Vector2d struct {
@@ -113,6 +113,10 @@ func (v Vector2d) Rotate(rad float64) Vector2d {
 
 func (v Vector2d) Len() float64 {
 	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+func (v Vector2d) LenSq() float64 {
+	return v.X*v.X + v.Y*v.Y
 }
 
 func (v Vector2d) Scl(mag float64) Vector2d {
