@@ -2,6 +2,7 @@ package animation
 
 import (
 	"github.com/wieku/danser-go/animation/easing"
+	"math"
 	"sort"
 )
 
@@ -71,7 +72,8 @@ func (glider *Glider) Update(time float64) {
 				break
 			}
 		}*/
-		if e := glider.eventqueue[0]; e.startTime <= time {
+		for i:=0; len(glider.eventqueue) > 0 &&glider.eventqueue[i].startTime <= time;i++ {
+			e := glider.eventqueue[i]
 			if e.hasStartValue {
 				glider.startValue = e.startValue
 			} else if glider.current.endTime <= e.startTime {
@@ -90,6 +92,7 @@ func (glider *Glider) Update(time float64) {
 			}
 			//glider.updateCurrent(time)
 			glider.eventqueue = glider.eventqueue[1:]
+			i--
 		}
 	}
 }
@@ -97,7 +100,7 @@ func (glider *Glider) Update(time float64) {
 func (glider *Glider) updateCurrent(time float64) {
 	if time < glider.current.endTime {
 		e := glider.current
-		t := (time - e.startTime) / (e.endTime - e.startTime)
+		t := math.Min(1.0, math.Max(0.0, time - e.startTime) / (e.endTime - e.startTime))
 		glider.value = glider.startValue + glider.easing(t)*(e.targetValue-glider.startValue)
 	} else {
 		glider.value = glider.current.targetValue
@@ -117,6 +120,12 @@ func (glider *Glider) SetValue(value float64) {
 
 func (glider *Glider) Reset() {
 	glider.eventqueue = make([]event, 0)
+}
+
+func (glider *Glider) RemoveLast() {
+	if len(glider.eventqueue) > 1 {
+		glider.eventqueue = glider.eventqueue[:len(glider.eventqueue)-1]
+	}
 }
 
 func (glider *Glider) GetValue() float64 {

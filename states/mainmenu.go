@@ -102,7 +102,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	render.SetupSlider()
 	player.batch = batches.NewSpriteBatch()
 
-	player.font = font.GetFont("Roboto Bold")
+	player.font = font.GetFont("Exo 2 Bold")
 
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
@@ -190,7 +190,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-
+		//musicPlayer.SetPosition(57)
 	}()
 
 	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
@@ -225,7 +225,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 			player.bMap.Update(int64(player.progressMsF))
 
-			player.background.Update(int64(player.progressMsF))
+			player.background.Update(int64(player.progressMsF), 0 ,0)
 			player.visualiser.Update(player.progressMsF)
 			player.triangles.Update(player.progressMsF)
 
@@ -234,6 +234,9 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 			}
 
 			x, y := input.Win.GetCursorPos()
+
+			player.cursor.SetScreenPos(bmath.NewVec2d(x, y))
+			player.cursor.Update(delta)
 
 			player.vposition.X = -(x-settings.Graphics.GetWidthF()/2)/settings.Graphics.GetWidthF()*0.04
 			player.vposition.Y = -(y-settings.Graphics.GetHeightF()/2)/settings.Graphics.GetHeightF()*0.04

@@ -1,8 +1,9 @@
 package curves
 
 import (
-	m2 "github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath"
+	m2 "github.com/wieku/danser-go/bmath"
+	"log"
 )
 
 type MultiCurve struct {
@@ -10,10 +11,12 @@ type MultiCurve struct {
 	sections []float64
 	length   float64
 	scale    float64
+	lines 	[]Linear
 }
 
 func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, customTiming []float64) MultiCurve {
 	var curveList []Curve
+	var lines []Linear
 
 	length := 0.0
 	if len(points) < 3 {
@@ -28,6 +31,7 @@ func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, cust
 		if !c.Unstable {
 			curveList = append(curveList, c)
 			length += c.GetLength()
+			lines = append(lines, c.GetLines()...)
 			break
 		}
 		fallthrough
@@ -40,6 +44,8 @@ func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, cust
 			} else {
 				length += customTiming[index]
 			}
+
+			lines = append(lines, c.GetLines()...)
 
 			index++
 		}
@@ -59,6 +65,9 @@ func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, cust
 				}
 
 				curveList = append(curveList, c)
+
+				lines = append(lines, c.GetLines()...)
+
 				if customTiming == nil {
 					length += c.GetLength()
 				} else {
@@ -80,6 +89,8 @@ func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, cust
 				length += customTiming[index]
 			}
 
+			lines = append(lines, c.GetLines()...)
+
 			index++
 		}
 		break
@@ -96,6 +107,7 @@ func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, cust
 		for i := 0; i < len(points)-3; i++ {
 			c := NewCatmull(points[i : i+4])
 			curveList = append(curveList, c)
+			lines = append(lines, c.GetLines()...)
 			if customTiming == nil {
 				length += c.GetLength()
 			} else {
@@ -111,36 +123,58 @@ func NewMultiCurve(typ string, points []m2.Vector2d, desiredLength float64, cust
 
 	if desiredLength >= 0 {
 		if length > desiredLength {
+			log.Println("shortening", desiredLength, length, len(lines))
 			scale = desiredLength / length
+			diff := length - desiredLength
+			length -= diff
+			for i := len(lines) - 1; i >= 0 && diff > 0.0 ; i-- {
+				line := lines[i]
+				log.Println(i, line, line.GetLength(), diff)
+				if diff >= line.GetLength() {
+					diff -= line.GetLength()
+					lines = lines[:len(lines) - 1]
+				} else {
+					log.Println((line.GetLength()-diff) / line.GetLength())
+					log.Println(line.PointAt((line.GetLength()-diff) / line.GetLength()))
+					pt := line.PointAt((line.GetLength()-diff) / line.GetLength())
+					lines[i] = Linear{line.Point1, pt}
+					break
+				}
+			}
+
+			log.Println(lines[len(lines) - 1])
+
 		} else if desiredLength > length {
-			last := curveList[len(curveList)-1]
+			log.Println("lenghtening", desiredLength)
+			last := lines[len(lines)-1]
 			p2 := last.PointAt(1)
 			p3 := bmath.NewVec2dRad(last.GetEndAngle(), desiredLength-length).Add(p2)
 			c := NewLinear(p2, p3)
 			curveList = append(curveList, c)
+			lines = append(lines, c)
 			length += c.GetLength()
 		}
 	}
 
-	sections := make([]float64, len(curveList)+1)
+	sections := make([]float64, len(lines)+1)
 	sections[0] = 0.0
 	prev := 0.0
-	if len(curveList) > 1 {
-		for i := 0; i < len(curveList); i++ {
+	//if len(lines) > 1 {
+		for i := 0; i < len(lines); i++ {
 			if customTiming == nil {
-				prev += curveList[i].GetLength() / length
+				prev += lines[i].GetLength()
 			} else {
 				prev += customTiming[i] / length
 			}
 			sections[i+1] = prev
 		}
-	}
+	//}
 
-	return MultiCurve{curveList, sections, length, scale}
+	return MultiCurve{curveList, sections, length, scale, lines}
 }
 
 func (sa *MultiCurve) PointAt(t float64) m2.Vector2d {
-	if sa.scale > -0.5 {
+	/*if sa.scale > -0.5 {
 		t *= sa.scale
 	}
 	if len(sa.curves) == 1 {
@@ -153,9 +187,39 @@ func (sa *MultiCurve) PointAt(t float64) m2.Vector2d {
 				return sa.curves[i-1].PointAt(prc)
 			}
 		}
+	}*/
+
+	desiredWidth := sa.length * t
+
+	//log.Println(sa.sections, sa.length)
+
+	lineI := len(sa.sections)-2
+	//log.Println(lineI)
+	for i, k := range sa.sections[:len(sa.sections)-1]  {
+		if k <= desiredWidth {
+			lineI = i
+		}
 	}
 
-	return m2.NewVec2d(512/2, 384/2)
+	//log.Println(lineI)
+
+
+	//lineI := sort.SearchFloat64s(bz.sections[:len(bz.sections)-2], desiredWidth)
+
+	//log.Println(lineI, len(bz.sections), len(bz.lines))
+	line := sa.lines[lineI]
+
+	/*log.Println(line.Point1, line.Point2)
+
+	log.Println((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI]))
+	log.Println(sa.sections[lineI+1]-sa.sections[lineI])
+	log.Println(sa.sections[lineI+1], sa.sections[lineI])
+	log.Println(line.PointAt((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI])))
+	log.Println()*/
+
+	return line.PointAt((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI]))
+
+	//return m2.NewVec2d(512/2, 384/2)
 }
 
 func (sa *MultiCurve) NPointAt(t float64) m2.Vector2d {
@@ -178,9 +242,9 @@ func (sa *MultiCurve) NPointAt(t float64) m2.Vector2d {
 }
 
 func (sa *MultiCurve) GetLength() float64 {
-	if sa.scale > -0.5 {
+	/*if sa.scale > -0.5 {
 		return sa.length * sa.scale
-	}
+	}*/
 	return sa.length
 }
 
@@ -190,4 +254,8 @@ func (sa *MultiCurve) GetStartAngle() float64 {
 
 func (sa *MultiCurve) GetEndAngle() float64 {
 	return sa.curves[len(sa.curves)-1].GetEndAngle()
+}
+
+func (ln *MultiCurve) GetLines() []Linear {
+	return ln.lines
 }

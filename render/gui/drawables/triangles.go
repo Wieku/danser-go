@@ -1,8 +1,6 @@
 package drawables
 
 import (
-	"github.com/wieku/danser-go/animation"
-	"github.com/wieku/danser-go/animation/easing"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/render"
@@ -17,10 +15,10 @@ import (
 const baseSpeed = 100.0
 const separation = 1.4
 const decay = 0.5
-const minSize = 120.0
-const maxSize = 300.0
-const bars = 40
-const maxTriangles = 200
+const minSize = 60.0
+const maxSize = 200.0
+const bars = 20
+const maxTriangles = 40
 
 type Triangles struct {
 	triangles    []*sprites.Sprite
@@ -37,7 +35,7 @@ func NewTriangles(colors []bmath.Color) *Triangles {
 	visualiser.colorPalette = colors
 
 	for i := 0; i < maxTriangles; i++ {
-		visualiser.AddTriangle(true)
+		visualiser.AddTriangle(false)
 	}
 	sort.Slice(visualiser.triangles, func(i, j int) bool {
 		return visualiser.triangles[i].GetDepth() > visualiser.triangles[j].GetDepth()
@@ -62,9 +60,10 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 
 	sprite.SetVFlip(rand.Float64() >= 0.5)
 	sprite.SetScale(size / float64(render.Triangle.Height))
-	sprite.SetAlpha(0.5+rand.Float64()*0.5)
+	sprite.SetAlpha(0.65)//0.5+rand.Float64()*0.5)
 	if onscreen {
-		sprite.AddTransform(animation.NewSingleTransform(animation.MoveY, easing.OutQuad, 0, 1000, position.Y, -(rand.Float64() - 0.5)*(settings.Graphics.GetHeightF()+size)), false)
+		sprite.SetPosition(bmath.NewVec2d(sprite.GetPosition().X, -(rand.Float64() - 0.5)*(settings.Graphics.GetHeightF()+size)))
+		//sprite.AddTransform(animation.NewSingleTransform(animation.MoveY, easing.OutQuad, -2000, -1000, position.Y, -(rand.Float64() - 0.5)*(settings.Graphics.GetHeightF()+size)), false)
 	}
 
 	vis.triangles = append(vis.triangles, sprite)
@@ -75,6 +74,9 @@ func (vis *Triangles) SetColors(colors []bmath.Color) {
 }
 
 func (vis *Triangles) Update(time float64) {
+	if vis.lastTime == 0 {
+		vis.lastTime = time
+	}
 	delta := time - vis.lastTime
 
 	boost := 0.0

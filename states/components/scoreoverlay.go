@@ -142,7 +142,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	//overlay.controller = replayController
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
-	overlay.font = font.GetFont("Roboto Bold")
+	overlay.font = font.GetFont("Exo 2 Bold")
 	overlay.newComboScale = animation.NewGlider(1)
 	overlay.newComboScaleB = animation.NewGlider(1)
 	overlay.scoreGlider = animation.NewGlider(0)

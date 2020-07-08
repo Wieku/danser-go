@@ -76,9 +76,18 @@ type buttonState struct {
 	Left, Right bool
 }
 
+func (state buttonState) BothReleased() bool {
+	return !(state.Left || state.Right)
+}
+
 type hitobject interface {
 	Init(ruleset *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer)
 	Update(time int64) bool
+	UpdateFor(player *difficultyPlayer, time int64) bool
+	UpdatePost(time int64) bool
+	UpdateClick(time int64) bool
+	UpdateClickFor(player *difficultyPlayer, time int64) bool
+	IsHit(player *difficultyPlayer) bool
 	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
 	GetFadeTime() int64
 	GetNumber() int64
@@ -87,9 +96,18 @@ type hitobject interface {
 type difficultyPlayer struct {
 	cursor        *render.Cursor
 	diff          *difficulty.Difficulty
-	cursorLock    int64
+	//cursorLock    int64
 	DoubleClick   bool
 	alreadyStolen bool
+	buttons     buttonState
+	gameDownState     bool
+	mouseDownButton     Buttons
+	lastButton     Buttons
+	lastButton2    Buttons
+	leftCond bool
+	leftCondE bool
+	rightCond bool
+	rightCondE bool
 }
 
 type subSet struct {
@@ -170,7 +188,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 		diff := difficulty.NewDifficulty(beatMap.HPDrainRate, beatMap.CircleSize, beatMap.OverallDifficulty, beatMap.AR)
 		diff.SetMods(mods[i])
 
-		player := &difficultyPlayer{cursor, diff, -1, false, false}
+		player := &difficultyPlayer{cursor: cursor, diff: diff}
 		diffPlayers = append(diffPlayers, player)
 
 		grade := Grade(NONE)
@@ -218,9 +236,36 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 }
 
 func (set *OsuRuleSet) Update(time int64) {
-	for _, pl := range set.cursors {
-		pl.player.alreadyStolen = false
-	}
+	/*for _, pl := range set.cursors {
+		player := pl.player
+
+		player.alreadyStolen = false
+
+		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+
+			player.leftCond = !player.buttons.Left && player.cursor.LeftButton
+			player.rightCond = !player.buttons.Right && player.cursor.RightButton
+
+			player.leftCondE = player.leftCond
+			player.rightCondE = player.rightCond
+
+			if player.buttons.Left != player.cursor.LeftButton || player.buttons.Right != player.cursor.RightButton {
+				player.gameDownState = player.cursor.LeftButton || player.cursor.RightButton
+
+				player.lastButton2 = player.lastButton
+				player.lastButton = player.mouseDownButton
+				player.mouseDownButton = Buttons(0)
+				if player.cursor.LeftButton {
+					player.mouseDownButton |= Left
+				}
+				if player.cursor.RightButton {
+					player.mouseDownButton |= Right
+				}
+			}
+		}
+
+	}*/
+
 	if len(set.queue) > 0 {
 		for i := 0; i < len(set.queue); i++ {
 			g := set.queue[i]
@@ -240,11 +285,38 @@ func (set *OsuRuleSet) Update(time int64) {
 		}
 	}
 
+	/*if len(set.processed) > 0 {
+		for i := 0; i < len(set.processed); i++ {
+			g := set.processed[i]
+
+			g.Update(time)
+		}
+	}
+
+	if len(set.processed) > 0 {
+		for i := 0; i < len(set.processed); i++ {
+			g := set.processed[i]
+			g.UpdateClick(time)
+			/*if isDone := g.UpdateClick(time); isDone {
+				if set.endlistener != nil {
+					set.endlistener(time, g.GetNumber())
+				}
+				if i < len(set.processed)-1 {
+					set.processed = append(set.processed[:i], set.processed[i+1:]...)
+				} else if i < len(set.processed) {
+					set.processed = set.processed[:i]
+				}
+				i--
+			}*//*
+		}
+	}*/
+
 	if len(set.processed) > 0 {
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
-			if isDone := g.Update(time); isDone {
+			//g.UpdatePost(time)
+			if isDone := g.UpdatePost(time); isDone {
 				if set.endlistener != nil {
 					set.endlistener(time, g.GetNumber())
 				}
@@ -268,11 +340,65 @@ func (set *OsuRuleSet) Update(time int64) {
 		})
 
 		for _, c := range cs {
-			log.Println(set.cursors[c])
+			log.Println(c.Name, set.cursors[c], set.cursors[c].ppv2.Total)
 		}
 		set.ended = true
 	}
 
+	/*for _, pl := range set.cursors {
+		player := pl.player
+
+		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+			player.buttons.Left = player.cursor.LeftButton
+			player.buttons.Right = player.cursor.RightButton
+		}
+
+	}*/
+
+}
+
+func (set *OsuRuleSet) UpdateFor(cursor *render.Cursor, time int64) {
+	player := set.cursors[cursor].player
+
+	player.alreadyStolen = false
+
+	if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+
+		player.leftCond = !player.buttons.Left && player.cursor.LeftButton
+		player.rightCond = !player.buttons.Right && player.cursor.RightButton
+
+		player.leftCondE = player.leftCond
+		player.rightCondE = player.rightCond
+
+		if player.buttons.Left != player.cursor.LeftButton || player.buttons.Right != player.cursor.RightButton {
+			player.gameDownState = player.cursor.LeftButton || player.cursor.RightButton
+
+			player.lastButton2 = player.lastButton
+			player.lastButton = player.mouseDownButton
+			player.mouseDownButton = Buttons(0)
+			if player.cursor.LeftButton {
+				player.mouseDownButton |= Left
+			}
+			if player.cursor.RightButton {
+				player.mouseDownButton |= Right
+			}
+		}
+	}
+
+	if len(set.processed) > 0 {
+		for i := 0; i < len(set.processed); i++ {
+			g := set.processed[i]
+
+			g.UpdateFor(player, time)
+			g.UpdateClickFor(player, time)
+		}
+	}
+
+
+	if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+		player.buttons.Left = player.cursor.LeftButton
+		player.buttons.Right = player.cursor.RightButton
+	}
 }
 
 func (set *OsuRuleSet) Draw(time int64, batch *batches.SpriteBatch, color mgl32.Vec4) {
@@ -330,7 +456,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 		subSet.accuracy = 100 * float64(subSet.rawScore) / float64(subSet.numObjects*300)
 	}
 
-	ratio := float64(subSet.hits[HitResults.Hit300]) / float64(subSet.numObjects)
+	ratio := float64(subSet.hits[HitResults.Hit300]) / float64(subSet.numObjects) //* (1 / 0.51445)
 
 	if subSet.hits[HitResults.Hit300] == subSet.numObjects {
 		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
@@ -373,12 +499,43 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo)) //oppai.PPInfo(set.oppaiMap, set.params).PP.Total
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total*1.02730112005, subSet.score)
+		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total * 1.00050243137 /** 1.00018787323*//** 1.02046696933*//**1.02730112005*/, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
-		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits, "from:", number)
+		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits, "from:", number, "at:", time, "pos:", x, y)
 	}
+}
+
+func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficultyPlayer) bool {
+	isNextCircle := true
+
+	if _, ok := object.(*Circle); ok {
+		index := -1
+
+		for i, g := range set.processed  {
+			if g == object {
+				index = i
+			}
+		}
+
+		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetBasicData().StackIndex > 0 && !set.processed[index-1].IsHit(player) {
+			return false
+		}
+	}
+
+	for _, g := range set.processed  {
+		if /*set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime + player.diff.Hit50 <= time ||*/ g.IsHit(player) {
+			continue
+		}
+
+		if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime && g.GetNumber() != object.GetNumber() {
+			isNextCircle = false
+		}
+		break
+	}
+
+	return isNextCircle
 }
 
 func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {

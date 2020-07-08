@@ -215,6 +215,34 @@ func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]mgl32
 	return utils.GetColorsSVT(hue, offset, cr.TagColorOffset, divides, tag, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
+func (cr *cursor) GetColorsA(divides, tag int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
+	if !cr.EnableCustomTagColorOffset {
+		return cr.Colors.GetColorsH(divides*tag, beatScale, alpha)
+	}
+	flashOffset := 0.0
+	cl := cr.Colors
+	if cl.FlashToTheBeat {
+		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Beat.BeatScale)
+	}
+	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
+
+	for hue >= 360.0 {
+		hue -= 360.0
+	}
+
+	for hue < 0.0 {
+		hue += 360.0
+	}
+
+	offset := 360.0 / float64(divides)
+
+	if cl.EnableCustomHueOffset {
+		offset = cl.HueOffset
+	}
+
+	return utils.GetColorsSVTA(hue, offset, cr.TagColorOffset, divides, tag, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
+}
+
 type objects struct {
 	MandalaTexturesTrigger                 int     //5, minimum value of cursors needed to use more translucent texture
 	MandalaTexturesAlpha                   float64 //0.3

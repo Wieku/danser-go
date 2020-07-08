@@ -6,9 +6,11 @@ import (
 
 type BSpline struct {
 	points       []bmath.Vector2d
-	timing 		[]int64
+	timing 		[]float64
 	subPoints []bmath.Vector2d
-	path MultiCurve
+	//path MultiCurve
+
+	path []*Bezier
 	ApproxLength float64
 }
 
@@ -24,7 +26,12 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) BSpline {
 
 	//log.Println(points)
 
-	bz := &BSpline{points: points, timing: timing}
+	newTiming := make([]float64, len(timing))
+	for i := range newTiming {
+		newTiming[i] = float64(timing[i] - timing[0])
+	}
+
+	bz := &BSpline{points: points, timing: newTiming}
 
 	n := len(points)-2
 
@@ -81,8 +88,14 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) BSpline {
 
 	//log.Println(bz.subPoints, "\n")
 
+	bz.ApproxLength = bz.timing[len(bz.timing) - 1]
 
-	bz.path = NewMultiCurve("CB", bz.subPoints, -1, converted)
+	for i := 0; i < len(bz.subPoints)-3; i+=3 {
+		c := NewBezierNA(bz.subPoints[i : i+4])
+		bz.path = append(bz.path, c)
+	}
+
+	//bz.path = NewMultiCurve("CB", bz.subPoints, -1, converted)
 
 	return *bz
 }
@@ -90,11 +103,40 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) BSpline {
 //It's not a neat solution, but it works
 //This calculates point on bezier with constant velocity
 func (bz BSpline) PointAt(t float64) bmath.Vector2d {
-	return bz.path.PointAt(t)
+	return bz.NPointAt(t)//bz.path.PointAt(t)
 }
 
 func (bz BSpline) NPointAt(t float64) bmath.Vector2d {
-	return bz.path.NPointAt(t)
+	desiredWidth := bz.ApproxLength * t
+
+	//log.Println(sa.sections, sa.length)
+
+	lineI := len(bz.timing)-2
+	//log.Println(lineI)
+	for i, k := range bz.timing[:len(bz.timing)-1]  {
+		if k <= desiredWidth {
+			lineI = i
+		}
+	}
+
+	//log.Println(lineI)
+
+
+	//lineI := sort.SearchFloat64s(bz.sections[:len(bz.sections)-2], desiredWidth)
+
+	//log.Println(lineI, len(bz.sections), len(bz.lines))
+	line := bz.path[lineI]
+
+	/*log.Println(line.Point1, line.Point2)
+
+	log.Println((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI]))
+	log.Println(sa.sections[lineI+1]-sa.sections[lineI])
+	log.Println(sa.sections[lineI+1], sa.sections[lineI])
+	log.Println(line.PointAt((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI])))
+	log.Println()*/
+
+	return line.NPointAt((desiredWidth-bz.timing[lineI])/(bz.timing[lineI+1]-bz.timing[lineI]))
+	//return bz.path.NPointAt(t)
 }
 
 func (bz BSpline) GetLength() float64 {
@@ -120,4 +162,8 @@ func (ln BSpline) GetPoints(num int) []bmath.Vector2d {
 	}
 
 	return points
+}
+
+func (ln *BSpline) GetLines() []Linear {
+	return nil//ln.path.GetLines()
 }

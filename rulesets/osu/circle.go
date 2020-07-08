@@ -14,15 +14,14 @@ type Renderable interface {
 }
 
 type objstate struct {
-	buttons  buttonState
-	finished bool
+	isHit bool
 }
 
 type Circle struct {
 	ruleSet           *OsuRuleSet
 	hitCircle         *objects.Circle
 	players           []*difficultyPlayer
-	state             []objstate
+	state             map[*difficultyPlayer]*objstate
 	fadeStartRelative float64
 	renderable        *HitCircleSprite
 }
@@ -41,26 +40,30 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 		circle.renderable = NewHitCircleSprite(*players[0].diff, object.GetBasicData().StartPos, object.GetBasicData().StartTime)
 	}
 
-	circle.state = make([]objstate, len(players))
+	circle.state = make(map[*difficultyPlayer]*objstate)
 
 	circle.fadeStartRelative = 1000000
 	for _, player := range circle.players {
+		circle.state[player] = new(objstate)
 		circle.fadeStartRelative = math.Min(circle.fadeStartRelative, player.diff.Preempt)
 	}
 }
 
 func (circle *Circle) Update(time int64) bool {
+	return true
+}
+
+func (circle *Circle) UpdateFor(player *difficultyPlayer, time int64) bool {
+	return true
+}
+
+func (circle *Circle) UpdateClick(time int64) bool {
 	unfinished := 0
-	for i, player := range circle.players {
-		state := &circle.state[i]
+	for _, player := range circle.players {
+		state := circle.state[player]
 
-		if !state.finished {
+		if !state.isHit {
 			unfinished++
-
-			if player.cursorLock == -1 {
-				state.buttons.Left = player.cursor.LeftButton
-				state.buttons.Right = player.cursor.RightButton
-			}
 
 			xOffset := 0.0
 			yOffset := 0.0
@@ -70,16 +73,18 @@ func (circle *Circle) Update(time int64) bool {
 				yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 			}
 
-			if player.cursorLock == -1 || player.cursorLock == circle.hitCircle.GetBasicData().Number {
-				clicked := player.DoubleClick || (!state.buttons.Left && player.cursor.LeftButton) || (!state.buttons.Right && player.cursor.RightButton)
+			if circle.ruleSet.CanBeHit(time, circle, player) {
+				clicked := player.leftCondE || player.rightCondE
+				inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius
 
-				if player.DoubleClick {
-					player.DoubleClick = false
-				} else if (!state.buttons.Left && player.cursor.LeftButton) && (!state.buttons.Right && player.cursor.RightButton) {
-					player.DoubleClick = true
+				if player.leftCondE {
+					player.leftCondE = false
+				} else if player.rightCondE {
+					player.rightCondE = false
 				}
 
-				if !player.alreadyStolen && clicked && player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius {
+				if clicked && inRange {
+
 					hit := HitResults.Miss
 
 					relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))
@@ -109,28 +114,104 @@ func (circle *Circle) Update(time int64) bool {
 
 						circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
 
-						player.cursorLock = -1
-						state.finished = true
+						state.isHit = true
 						continue
 					}
 				}
-
-				player.cursorLock = circle.hitCircle.GetBasicData().Number
 			}
 
-			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
+		}
+
+	}
+
+	if len(circle.players) > 1 && time == circle.hitCircle.GetBasicData().StartTime {
+		//circle.hitCircle.PlaySound()
+		circle.renderable.Hit(time)
+	}
+
+	return unfinished == 0
+}
+
+func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool {
+
+	state := circle.state[player]
+
+	if !state.isHit {
+
+		xOffset := 0.0
+		yOffset := 0.0
+		if player.diff.Mods&difficulty.HardRock > 0 {
+			data := circle.hitCircle.GetBasicData()
+			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
+			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
+		}
+
+		if circle.ruleSet.CanBeHit(time, circle, player) {
+			clicked := player.leftCondE || player.rightCondE
+			inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius
+
+			if player.leftCondE {
+				player.leftCondE = false
+			} else if player.rightCondE {
+				player.rightCondE = false
+			}
+
+			if clicked && inRange {
+
+				hit := HitResults.Miss
+
+				relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))
+				if relative < player.diff.Hit300 {
+					hit = HitResults.Hit300
+				} else if relative < player.diff.Hit100 {
+					hit = HitResults.Hit100
+				} else if relative < player.diff.Hit50 {
+					hit = HitResults.Hit50
+				} else if relative >= Shake {
+					hit = HitResults.Ignore
+				}
+
+				if hit != HitResults.Ignore {
+					combo := ComboResults.Increase
+					if hit == HitResults.Miss {
+						combo = ComboResults.Reset
+						if len(circle.players) == 1 {
+							circle.renderable.Miss(time)
+						}
+					} else {
+						if len(circle.players) == 1 {
+							circle.hitCircle.PlaySound()
+							circle.renderable.Hit(time)
+						}
+					}
+
+					circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
+
+					state.isHit = true
+				}
+			}
+		}
+
+	}
+
+	return !state.isHit
+}
+
+func (circle *Circle) UpdatePost(time int64) bool {
+	unfinished := 0
+	for _, player := range circle.players {
+		state := circle.state[player]
+
+		if !state.isHit {
+			unfinished++
+
+			if time > circle.hitCircle.GetBasicData().EndTime + player.diff.Hit50 {
 				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
 				if len(circle.players) == 1 {
 					circle.renderable.Miss(time)
 				}
-				player.cursorLock = -1
-				state.finished = true
-				continue
-			}
 
-			if player.cursorLock == circle.hitCircle.GetBasicData().Number {
-				state.buttons.Left = player.cursor.LeftButton
-				state.buttons.Right = player.cursor.RightButton
+				state.isHit = true
 			}
 		}
 
@@ -142,6 +223,10 @@ func (circle *Circle) Update(time int64) bool {
 	}
 
 	return unfinished == 0
+}
+
+func (circle *Circle) IsHit(player *difficultyPlayer) bool {
+	return circle.state[player].isHit
 }
 
 func (circle *Circle) GetFadeTime() int64 {

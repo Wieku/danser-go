@@ -1,19 +1,25 @@
 package components
 
 import (
+	"github.com/EdlinOrg/prominentcolor"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/animation"
+	"github.com/wieku/danser-go/animation/easing"
+	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/beatmap"
 	"github.com/wieku/danser-go/bmath"
-	"github.com/wieku/danser-go/input"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/render/effects"
+	"github.com/wieku/danser-go/render/gui/drawables"
 	"github.com/wieku/danser-go/render/texture"
 	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/storyboard"
 	"github.com/wieku/danser-go/utils"
 	"log"
+	"math"
+	"math/rand"
 	"path/filepath"
 )
 
@@ -25,10 +31,26 @@ type Background struct {
 	background *texture.TextureRegion
 	storyboard *storyboard.Storyboard
 	lastTime int64
+	bMap *beatmap.BeatMap
+	pulse *animation.Glider
+	triangles *drawables.Triangles
+
+	lastBeatLength float64
+	lastBeatStart  float64
+	lastBeatProg   int64
+
+	rotation *animation.Glider
+	deltaSum float64
+	lastRandom float64
 }
 
 func NewBackground(beatMap *beatmap.BeatMap, parallax float64, useStoryboard bool) *Background {
 	bg := new(Background)
+	bg.bMap = beatMap
+	bg.pulse = animation.NewGlider(1.0)
+	bg.rotation = animation.NewGlider(0.0)
+	bg.pulse.SetEasing(easing.OutQuad)
+	bg.rotation.SetEasing(easing.InOutSine)
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	var err error
@@ -62,22 +84,70 @@ func NewBackground(beatMap *beatmap.BeatMap, parallax float64, useStoryboard boo
 		}
 	}
 	bg.parallax = parallax
+
+	imag, _ := utils.LoadImage(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+
+	cItems, _ := prominentcolor.KmeansWithAll(5, imag, prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
+	newCol := make([]bmath.Color, len(cItems))
+
+	for i:=0; i < len(cItems); i++ {
+		newCol[i] = bmath.Color{float64(cItems[i].Color.R)/255, float64(cItems[i].Color.G)/255, float64(cItems[i].Color.B)/255, 1}
+	}
+	bg.triangles = drawables.NewTriangles(newCol)
 	return bg
 }
 
-func (bg *Background) Update(time int64) {
+func (bg *Background) SetTrack(track *audio.Music) {
+	bg.triangles.SetTrack(track)
+}
+
+func (bg *Background) Update(time int64, x, y float64) {
+	if bg.lastTime == 0 {
+		bg.lastTime = time
+	}
 	if bg.storyboard != nil {
 		bg.storyboard.Update(time)
 	}
-	x, y := input.Win.GetCursorPos()
+	//x, y := input.Win.GetCursorPos()
 	x = -(x-settings.Graphics.GetWidthF()/2)/settings.Graphics.GetWidthF()*bg.parallax
 	y = (y-settings.Graphics.GetHeightF()/2)/settings.Graphics.GetHeightF()*bg.parallax
 
 	delta := float64(time - bg.lastTime)
-	bg.position.X = bg.position.X + delta*0.005*(x-bg.position.X)
-	bg.position.Y = bg.position.Y + delta*0.005*(y-bg.position.Y)
+	bg.position.X = bg.position.X + delta*0.000625*(x-bg.position.X)
+	bg.position.Y = bg.position.Y + delta*0.000625*(y-bg.position.Y)
 
 	bg.lastTime = time
+
+	bg.deltaSum += delta
+
+	if bg.deltaSum >= 0 {
+		randomV := rand.Float64()
+
+		bg.rotation.AddEvent(float64(time), float64(time)+math.Abs(randomV-bg.lastRandom)*4000, (randomV-0.5)*0.08)
+		bg.deltaSum -= math.Abs(randomV-bg.lastRandom)*4000
+		bg.lastRandom = randomV
+	}
+
+	bTime := bg.bMap.Timings.Current.BaseBpm
+	
+	if bTime != bg.lastBeatLength {
+		bg.lastBeatLength = bTime
+		bg.lastBeatStart = float64(bg.bMap.Timings.Current.Time)
+		bg.lastBeatProg = -1
+	}
+
+	if int64((float64(time)-bg.lastBeatStart)/bg.lastBeatLength) > bg.lastBeatProg {
+
+		if bg.bMap.Timings.Current.Kiai {
+			bg.pulse.AddEventS(float64(time), float64(time)+bg.lastBeatLength, 1.05, 1.0)
+		}
+
+		bg.lastBeatProg++
+	}
+	
+	bg.pulse.Update(float64(time))
+	bg.rotation.Update(float64(time))
+	bg.triangles.Update(float64(time))
 }
 
 func project(pos bmath.Vector2d, camera mgl32.Mat4) bmath.Vector2d {
@@ -105,13 +175,24 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 		}
 
 		if bg.background != nil && (bg.storyboard == nil || !bg.storyboard.BGFileUsed()) {
-			batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
-			batch.SetScale(bg.scale.X, -bg.scale.Y)
+			batch.SetCamera(mgl32.Ortho(-1*float32(settings.Graphics.GetAspectRatio()), 1*float32(settings.Graphics.GetAspectRatio()), -1, 1, 1, -1).Mul4(/*mgl32.Translate3D(bg.position.X32(), bg.position.Y32(), 0).Mul4*/(mgl32.Scale3D(float32(bg.scale.X), float32(-bg.scale.Y), 0))/*.Mul4(mgl32.HomogRotate3DZ(float32(bg.rotation.GetValue())))*/))
+			batch.SetScale(/*bg.scale.X*bg.pulse.GetValue(), -bg.scale.Y*bg.pulse.GetValue()*/settings.Graphics.GetAspectRatio(), 1)
+
 			if !settings.Playfield.BlurEnable {
-				batch.SetColor(1, 1, 1, bgAlpha)
-				batch.SetTranslation(bg.position)
+				bgAlpha1 := math.Max(0.0, bgAlpha/* - 0.15*/)
+				batch.SetColor(bgAlpha1, bgAlpha1, bgAlpha1, 1)
+				//batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+				//batch.SetTranslation(bg.position)
 			}
 			batch.DrawUnit(*bg.background)
+			/*if bg.pulse.GetValue() > 1.0 {
+				batch.SetColor(bgAlpha*0.6, bgAlpha*0.6, bgAlpha*0.6, 1)
+
+				batch.SetScale(/*bg.scale.X*bg.pulse.GetValue(), -bg.scale.Y*bg.pulse.GetValue()*//*settings.Graphics.GetAspectRatio()*bg.pulse.GetValue(), bg.pulse.GetValue())
+				batch.SetAdditive(true)
+				batch.DrawUnit(*bg.background)
+				batch.SetAdditive(false)
+			}*/
 		}
 
 		if bg.storyboard != nil {
@@ -127,6 +208,14 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 			batch.Flush()
 		}
 
+		batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+		if !settings.Playfield.BlurEnable {
+			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+		} else {
+			batch.SetColor(1, 1, 1, 1)
+		}
+		bg.triangles.Draw(float64(time), batch)
+
 		if settings.Playfield.BlurEnable {
 			batch.End()
 
@@ -134,8 +223,11 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 			batch.Begin()
 			batch.SetColor(1, 1, 1, bgAlpha)
 			batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
-			batch.SetTranslation(bg.position)
-			batch.SetScale(1+bg.parallax, 1+bg.parallax)
+			//batch.SetTranslation(bg.position)
+			//batch.SetScale(1+bg.parallax, 1+bg.parallax)
+			batch.SetTranslation(bmath.NewVec2d(0, 0))
+			batch.SetScale(1, 1)
+			//batch.SetScale(1+bg.parallax, 1+bg.parallax)
 			batch.DrawUnit(texture.GetRegion())
 		}
 		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {

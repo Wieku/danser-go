@@ -3,6 +3,7 @@ package curves
 import (
 	math2 "github.com/wieku/danser-go/bmath"
 	"math"
+	"sort"
 )
 
 type CirArc struct {
@@ -10,10 +11,13 @@ type CirArc struct {
 	centre                         math2.Vector2d
 	startAngle, totalAngle, r, dir float64
 	Unstable                       bool
+	lines []Linear
+	sections []float64
+	ApproxLength     float64
 }
 
-func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
-	arc := &CirArc{pt1: pt1, pt2: pt2, pt3: pt3}
+func NewCirArc(pt1, pt2, pt3 math2.Vector2d) *CirArc {
+	arc := &CirArc{pt1: pt1, pt2: pt2, pt3: pt3, lines: make([]Linear, 0), sections: make([]float64, 1)}
 
 	aSq := pt2.DstSq(pt3)
 	bSq := pt1.DstSq(pt3)
@@ -63,19 +67,53 @@ func NewCirArc(pt1, pt2, pt3 math2.Vector2d) CirArc {
 	arc.centre = centre
 	arc.r = r
 
-	return *arc
+
+	segments := int(arc.r*arc.totalAngle*0.125)
+
+	//ang := 2*math.Asin(BEZIER_QUANTIZATION/(2*arc.r))
+
+	previous := pt1
+
+	for p := 1; p < segments; p++  {
+		currentPoint := math2.NewVec2dRad(arc.startAngle+arc.dir*(float64(p)/float64(segments))*arc.totalAngle, arc.r).Add(arc.centre)
+
+		arc.lines = append(arc.lines, NewLinear(previous, currentPoint))
+		arc.sections = append(arc.sections, previous.Dst(currentPoint))
+		if len(arc.sections) > 1 {
+			arc.sections[len(arc.sections)-1] += arc.sections[len(arc.sections)-2]
+		}
+		previous = currentPoint
+
+	}
+
+	arc.ApproxLength = 0.0
+
+	for _, l := range arc.lines  {
+		arc.ApproxLength += l.GetLength()
+	}
+
+	return arc
 }
 
 func (ln CirArc) NPointAt(t float64) math2.Vector2d {
 	return math2.NewVec2dRad(ln.startAngle+ln.dir*t*ln.totalAngle, ln.r).Add(ln.centre)
 }
 
-func (ln CirArc) PointAt(t float64) math2.Vector2d {
-	return math2.NewVec2dRad(ln.startAngle+ln.dir*t*ln.totalAngle, ln.r).Add(ln.centre)
+func (ln *CirArc) PointAt(t float64) math2.Vector2d {
+	//return math2.NewVec2dRad(ln.startAngle+ln.dir*t*ln.totalAngle, ln.r).Add(ln.centre)
+	desiredWidth := ln.ApproxLength * t
+
+	lineI := sort.SearchFloat64s(ln.sections[:len(ln.sections)-2], desiredWidth)
+
+	//println(lineI, len(ln.sections), len(ln.lines))
+	line := ln.lines[lineI]
+
+	point := line.PointAt((desiredWidth-ln.sections[lineI])/(ln.sections[lineI+1]-ln.sections[lineI]))
+	return point
 }
 
-func (ln CirArc) GetLength() float64 {
-	return ln.r * ln.totalAngle
+func (ln *CirArc) GetLength() float64 {
+	return ln.ApproxLength/*ln.r*ln.totalAngle*/
 }
 
 func (ln CirArc) GetStartAngle() float64 {
@@ -97,4 +135,8 @@ func (ln CirArc) GetPoints(num int) []math2.Vector2d {
 	}
 
 	return points
+}
+
+func (ln *CirArc) GetLines() []Linear {
+	return ln.lines
 }

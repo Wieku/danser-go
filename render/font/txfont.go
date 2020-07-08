@@ -11,7 +11,7 @@ func LoadTextureFont(path, name string, min, max rune, atlas *texture.TextureAtl
 	font := new(Font)
 	font.min = min
 	font.max = max
-	font.glyphs = make([]*glyphData, font.max-font.min+1)
+	font.glyphs = make(map[rune]*glyphData)//, font.max-font.min+1)
 
 	font.atlas = atlas
 

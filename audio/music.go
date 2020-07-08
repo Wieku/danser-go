@@ -16,8 +16,8 @@ static inline void setSync(HCHANNEL channel) {
  */
 import "C"
 import (
-	"unsafe"
 	"github.com/wieku/danser-go/settings"
+	"unsafe"
 	//"log"
 	"math"
 )
@@ -152,9 +152,16 @@ func (wv *Music) Update() {
 		}
 		//toAv += math.Abs(float64(g))
 	}
+
+	boost := 0.0
+
+	for i := 0; i < 20; i++ {
+		boost += float64(wv.fft[i]) * float64(20-i) / float64(20)
+	}
+	//log.Println(boost)
 	//beatAv /= 5.0
 	//toAv /= 512
-	wv.beat = beatAv
+	wv.beat = boost//beatAv
 	wv.peak = toPeak
 
 	level := int(C.BASS_ChannelGetLevel(wv.channel))

@@ -1,28 +1,31 @@
 package states
 
 import (
+	"fmt"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/animation"
+	"github.com/wieku/danser-go/animation/easing"
+	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/beatmap"
 	"github.com/wieku/danser-go/beatmap/objects"
-	"github.com/wieku/danser-go/render"
-	"time"
-	"log"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/glhf"
-	"math"
-	"github.com/wieku/danser-go/audio"
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser-go/utils"
 	"github.com/wieku/danser-go/bmath"
-	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/dance"
-	"github.com/wieku/danser-go/animation"
-	"github.com/wieku/danser-go/render/effects"
-	"github.com/wieku/danser-go/render/texture"
-	"github.com/wieku/danser-go/render/font"
-	"fmt"
-	"path/filepath"
+	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
+	"github.com/wieku/danser-go/render/effects"
+	"github.com/wieku/danser-go/render/font"
+	"github.com/wieku/danser-go/render/gui/drawables"
+	"github.com/wieku/danser-go/render/sprites"
+	"github.com/wieku/danser-go/render/texture"
+	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/states/components"
+	"github.com/wieku/danser-go/utils"
+	"github.com/wieku/glhf"
+	"log"
+	"math"
+	"path/filepath"
+	"time"
 )
 
 type Player struct {
@@ -59,14 +62,14 @@ type Player struct {
 	profilerU      *utils.FPSCounter
 
 	camera         *bmath.Camera
-	camera1         *bmath.Camera
+	camera1        *bmath.Camera
 	scamera        *bmath.Camera
 	dimGlider      *animation.Glider
 	blurGlider     *animation.Glider
 	fxGlider       *animation.Glider
 	cursorGlider   *animation.Glider
 	playersGlider  *animation.Glider
-	unfold  *animation.Glider
+	unfold         *animation.Glider
 	counter        float64
 	fpsC           float64
 	fpsU           float64
@@ -74,8 +77,50 @@ type Player struct {
 	mapFullName    string
 	Epi            *texture.TextureRegion
 	epiGlider      *animation.Glider
-	overlay 		components.Overlay
+	overlay        components.Overlay
+	velocity       float64
+	hGlider        *animation.Glider
+	vGlider        *animation.Glider
+	oGlider        *animation.Glider
+	flashGlider    *animation.Glider
+	danserGlider   *animation.Glider
+	resnadGlider   *animation.Glider
+	blur           *effects.BlurEffect
+	lastFromQueue  objects.BaseObject
+	x              float64
+	y              float64
+
+	currentBeatVal float64
+	lastBeatLength float64
+	lastBeatStart  float64
+	beatProgress   float64
+	lastBeatProg   int64
+
+	progress, lastProgress float64
+	LogoS1                 *sprites.Sprite
+	LogoS2                 *sprites.Sprite
+
+	vol        float64
+	volAverage float64
+	cookieSize float64
+	visualiser *drawables.Visualiser
+	Noice *sprites.Sprite
 }
+
+type hsv struct {
+	h, s, v float64
+}
+
+var hsvarray = []hsv {
+	hsv{3, 0.88, 0.79},
+	hsv{295, 0.85, 0.82},
+	hsv{251, 0.80, 0.73},
+	hsv{209, 0.85, 0.82},
+	hsv{165, 0.85, 0.78},
+}
+
+var hsvindex = 0
+var hsvDir = 1
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
@@ -83,7 +128,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	render.SetupSlider()
 	player.batch = batches.NewSpriteBatch()
 	player.sliderRenderer = render.NewSliderRenderer()
-	player.font = font.GetFont("Roboto Bold")
+	player.font = font.GetFont("Exo 2 Bold")
 
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
@@ -95,16 +140,41 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	var err error
 
 	player.Logo, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/logo-medium.png")
+	LogoT, err := utils.LoadTextureToAtlas(render.Atlas, "assets/textures/coinbig.png")
+	NoiceT, err := utils.LoadTextureToAtlas(render.Atlas, "assets/noicet.png")
+
+	player.Noice = sprites.NewSpriteSingle(NoiceT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
+
+	player.Noice.SetAlpha(0)
+	player.Noice.SetRotation(12.0/180.0 * math.Pi)
+	player.Noice.SetScale(1.3)
+	player.Noice.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, -1500, -1000, 0, 1), false)
+	//player.Noice.AddTransform(animation.NewSingleTransform(animation.Rotate, easing.OutQuad, -1500, -1000, 0, 12.0/180.0 * math.Pi), false)
+	//player.Noice.AddTransform(animation.NewVectorTransform(animation.Move, easing.OutQuad, -1000, 1500, 0, 0, -354*4, -161*4), false)
+	//player.Noice.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, -1000, 1500, 1, 4), false)
+	player.Noice.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, -500, 0, 1, 0), false)
+	//player.Noice.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, 1000, 1500, 1, 0), false)
+
+	player.LogoS1 = sprites.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
+	player.LogoS2 = sprites.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
+
+	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
+		player.cookieSize = 0.5*settings.Graphics.GetHeightF()
+	} else {
+		player.cookieSize = 0.5*settings.Graphics.GetWidthF()
+	}
+
 	player.Epi, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/warning.png")
 
 	if err != nil {
 		log.Println(err)
 	}
 
-	player.background = components.NewBackground(beatMap, 0, true)
+	player.background = components.NewBackground(beatMap, 0.1, true)
 
 	player.camera = bmath.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
+	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
 	player.camera.Update()
 
 	player.camera1 = bmath.NewCamera()
@@ -130,6 +200,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller = controller
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
+		//player.overlay = components.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
 		player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
 	} else {
 		player.controller = dance.NewGenericController()
@@ -185,10 +256,34 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.epiGlider = animation.NewGlider(0)
 	player.epiGlider.AddEvent(0, 500, 1.0)
-	player.epiGlider.AddEvent(2500, 3000, 0.0)
+	player.epiGlider.AddEvent(4500, 5000, 0.0)
+
+	player.hGlider = animation.NewGlider(1)
+	player.vGlider = animation.NewGlider(1)
+	player.oGlider = animation.NewGlider(-36)
+	player.flashGlider = animation.NewGlider(1)
+	player.danserGlider = animation.NewGlider(0.0)
+	player.danserGlider.AddEventS(182887, 183125, 0.0, 1.0)
+	//player.danserGlider.AddEventS(187000, 189000, 0.0, 1.0)
+	player.resnadGlider = animation.NewGlider(0.0)
+	player.resnadGlider.AddEventS(221432, 226542, 0.0, 1.0)
 
 	player.unfold = animation.NewGlider(0)
-	player.unfold.AddEventS(179453, 179753, 0.0, 1.0)
+	player.unfold.AddEventS(182887, 183125, 0.0, 1.0)
+	player.unfold.AddEventS(183125, 228601, 1.0, 2.0)
+	player.unfold.AddEventS(228601, 250030, 2.0, 0.0)
+	//player.unfold.AddEventS(65719, 65862, 1.0, 0.0)
+	//player.unfold.AddEventS(105290, 105433, 0.0, -1.0)
+	//player.unfold.AddEventS(122862, 123005, -1.0, 0.0)
+	//player.unfold.AddEventS(160148, 160290, 0.0, -0.5)
+	//player.unfold.AddEventS(169290, 169433, -0.5, -1.0)
+	//player.unfold.AddEventS(173862, 173005, -1.0, -1.25)
+	//player.unfold.AddEventS(178433, 178576, -1.25, -1.5)
+	//player.unfold.AddEventS(196148, 196719, -1.5, 0.0)
+	//player.unfold.AddEventS(74317, 74574, 0.0, 1.0)
+	//player.unfold.AddEventS(80086, 80407, 0.0, 1.0)
+	//player.unfold.AddEventS(114317, 114606, 1.0, 0.0)
+	//player.unfold.AddEventS(129702, /*130086*/129958, 0.0, 1.0)
 
 
 	for _, p := range beatMap.Pauses {
@@ -212,13 +307,89 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	musicPlayer := audio.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	player.background.SetTrack(musicPlayer)
+	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
+	player.visualiser.SetTrack(musicPlayer)
+
+	audio.AddListener(func(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64) {
+		//_, isSlider := player.bMap.HitObjects[objNum].(*objects.Slider)
+		startTime := player.progressMsF
+		endTime := player.progressMsF+500
+		/*if isSlider{
+			startTime = float64(s.GetBasicData().StartTime)
+			endTime = float64(s.GetBasicData().EndTime)
+		}*/
+		if hitsoundIndex == 2 {
+			if hsvDir < 0 {
+				hsvindex--
+			} else {
+				hsvindex++
+			}
+			if hsvindex > 4 {
+				hsvindex = 0
+			} else if hsvindex < 0 {
+				hsvindex = 4
+			}
+			col := hsvarray[hsvindex]
+			/*settings.Cursor.Colors.BaseColor.Hue = col.h
+			settings.Objects.Colors.BaseColor.Hue = col.h
+			settings.Cursor.Colors.BaseColor.Value = col.v
+			settings.Objects.Colors.BaseColor.Value = col.v*/
+			//player.hGlider.Reset()
+			//player.hGlider.AddEvent(startTime, endTime, col.h)
+			//player.vGlider.Reset()
+			//player.vGlider.AddEvent(startTime, endTime, col.v)
+			player.flashGlider.Reset()
+			player.flashGlider.AddEventS(startTime, endTime, 0.0, col.s)
+			//println("hat", sampleSet, index)
+		} else if hitsoundIndex == 1 && player.bMap.HitObjects[objNum].GetBasicData().NewCombo {
+			//prev := hsvarray[hsvindex]
+			/*if hsvDir < 0 {
+				hsvindex--
+			} else {
+				hsvindex++
+			}*/
+			hsvindex++
+			if hsvindex > 4 {
+				hsvindex = 0
+			} else if hsvindex < 0 {
+				hsvindex = 4
+			}
+
+			hsvDir *= -1.0
+
+			col := hsvarray[hsvindex]
+			/*settings.Cursor.Colors.BaseColor.Hue = col.h
+			settings.Objects.Colors.BaseColor.Hue = col.h
+			settings.Cursor.Colors.BaseColor.Value = col.v
+			settings.Objects.Colors.BaseColor.Value = col.v*/
+			//println("clap", sampleSet, index)
+
+			player.hGlider.Reset()
+			player.hGlider.AddEvent(startTime, endTime, col.h)
+			player.vGlider.Reset()
+			player.vGlider.AddEvent(startTime, endTime, col.v)
+
+			player.oGlider.Reset()
+			if hsvDir > 0 {
+				player.oGlider.AddEvent(startTime, endTime, 0.0)
+			} else {
+				player.oGlider.AddEvent(startTime, endTime, -36)
+			}
+
+			/*player.flashGlider.Reset()
+			player.flashGlider.AddEvent(startTime, endTime, col.s)*/
+		}
+	})
+
+	player.background.Update(0, settings.Graphics.GetWidthF() / 2, settings.Graphics.GetHeightF() / 2)
 
 	go func() {
 		player.entry = 1
 		time.Sleep(time.Duration(settings.Playfield.LeadInTime * float64(time.Second)))
 
 		if settings.Playfield.ShowWarning {
-			for i := 0; i <= 300; i++ {
+			for i := 0; i <= 500; i++ {
 				player.epiGlider.Update(float64(i * 10))
 				time.Sleep(10 * time.Millisecond)
 			}
@@ -233,6 +404,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.fxGlider.Update(start)
 			player.cursorGlider.Update(start)
 			player.playersGlider.Update(start)
+			player.Noice.Update(int64(start))
+			//player.background.Update(int64(start), 0, 0)
 			time.Sleep(10 * time.Millisecond)
 		}
 
@@ -246,6 +419,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.fxGlider.Update(start)
 			player.cursorGlider.Update(start)
 			player.playersGlider.Update(start)
+			player.Noice.Update(int64(start))
+			//player.background.Update(int64(start), 0, 0)
 			time.Sleep(10 * time.Millisecond)
 		}
 
@@ -253,6 +428,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
+		//musicPlayer.SetPosition(15)
 		player.start = true
 	}()
 
@@ -262,11 +438,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	go func() {
 		var last = musicPlayer.GetPosition()
 		var lastT = utils.GetNanoTime()
+		firstT := lastT
 		for {
-			if player.start {
-				currtime := utils.GetNanoTime()
+			_ = firstT
+			player.background.Update((lastT - firstT) / 1000000, 0, 0)
+			currtime := utils.GetNanoTime()
 
-				player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
+			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
+			if player.start {
+
 
 				if musicPlayer.GetState() == audio.MUSIC_STOPPED {
 					player.progressMsF += float64(currtime-lastT)/1000000.0
@@ -283,7 +463,38 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 					player.overlay.Update(int64(player.progressMsF))
 				}
 
-				player.background.Update(int64(player.progressMsF))
+
+
+				/*if player.lastFromQueue != nil && len(player.bMap.Queue) > 0 {
+
+
+				}
+
+				if len(player.bMap.Queue) > 0 && player.bMap.Queue[0].GetBasicData().StartTime > int64(player.progressMsF) {
+					player.lastFromQueue = player.bMap.Queue[0]
+					prog := int64(player.progressMsF)
+				}
+
+				if player.lastFromQueue.GetBasicData().*/
+
+				bTime := player.bMap.Timings.Current.BaseBpm
+
+				if bTime != player.lastBeatLength {
+					player.lastBeatLength = bTime
+					player.lastBeatStart = float64(player.bMap.Timings.Current.Time)
+					player.lastBeatProg = -1
+				}
+
+				if int64(float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength) > player.lastBeatProg {
+					player.lastBeatProg++
+				}
+
+				player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
+				player.visualiser.Update(player.progressMsF)
+
+				//crsr := player.controller.GetCursors()[0].Position
+
+				//player.background.Update(int64(player.progressMsF), /*crsr.X*settings.Graphics.GetHeightF()/384, crsr.Y*settings.Graphics.GetHeightF()/384*/0, 0)
 
 				last = player.progressMsF
 
@@ -294,11 +505,28 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 					player.cursorGlider.Update(player.progressMsF)
 					player.playersGlider.Update(player.progressMsF)
 					player.unfold.Update(player.progressMsF)
+					player.hGlider.Update(player.progressMsF)
+					player.vGlider.Update(player.progressMsF)
+					player.flashGlider.Update(player.progressMsF)
+					player.danserGlider.Update(player.progressMsF)
+					player.resnadGlider.Update(player.progressMsF)
+					player.oGlider.Update(player.progressMsF)
+					player.Noice.Update(int64(player.progressMsF))
+					/*settings.Objects.Colors.BaseColor.Hue = player.hGlider.GetValue()
+					settings.Cursor.Colors.BaseColor.Hue = player.hGlider.GetValue()
+
+					settings.Objects.Colors.BaseColor.Value = player.vGlider.GetValue()
+					settings.Cursor.Colors.BaseColor.Value = player.vGlider.GetValue()
+
+					settings.Objects.Colors.BaseColor.Saturation = player.flashGlider.GetValue()
+					settings.Cursor.Colors.BaseColor.Saturation = player.flashGlider.GetValue()
+
+					settings.Objects.Colors.HueOffset = player.oGlider.GetValue()
+					settings.Cursor.Colors.HueOffset = player.oGlider.GetValue()*/
 				}
 
-				lastT = currtime
 			}
-
+			lastT = currtime
 			time.Sleep(time.Millisecond)
 		}
 	}()
@@ -336,6 +564,25 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			}
 
+			bars := 40
+			boost := 0.0
+
+			for i := 0; i < bars; i++ {
+				boost += 2 * float64(fft[i]) * float64(bars-i) / float64(bars)
+			}
+
+			//oldVelocity := player.velocity
+
+			player.velocity = math.Max(player.velocity, boost*1.5)
+
+			player.velocity *= 1.0 - 0.05
+
+			//log.Println(player.velocity)
+
+			/*if player.velocity > 13 && oldVelocity < 10 {
+				player.flashGlider.AddEventS(player.progressMsF, player.progressMsF+500, 0.0, 1)
+			}*/
+
 			player.vaoD = vertices
 			player.vaoDirty = true
 
@@ -346,6 +593,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+	player.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	return player
 }
@@ -356,16 +604,97 @@ func (pl *Player) Show() {
 
 func (pl *Player) Draw(delta float64) {
 
-	/*settings.Objects.Colors.BaseColor.Saturation = pl.unfold.GetValue()
-	settings.Objects.Colors.BaseColor.Value = 0.5+0.5*pl.unfold.GetValue()
+	//player.unfold.AddEventS(105290, 105433, 0.0, -1.0)
+	//player.unfold.AddEventS(122933, 123005, 1.0, 0.0)
 
-	if pl.progressMsF >= 179453 {
-		settings.DIVIDES = 2
-		settings.Objects.DrawApproachCircles = false
-	} else {
-		settings.DIVIDES = 1
-		settings.Objects.DrawApproachCircles = true
-	}*/
+	//if pl.progressMsF >= /*74317*/160148 {
+	//	//settings.Playfield.BloomEnabled = true
+	//	settings.Playfield.Bloom.Power = 1
+	//} else if pl.progressMsF >= /*74317*/123005 {
+	//	settings.DIVIDES = 1
+	//	pl.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
+	//	settings.Cursor.BounceOnEdges = true
+	//	//	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
+	//	pl.camera.Update()
+	//	//settings.Playfield.BloomEnabled = false
+	//	settings.Playfield.Bloom.Power = 0.1
+	//} else if pl.progressMsF >= /*74317*/105290 {
+	//	settings.DIVIDES = 6
+	//	pl.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale+0.2*pl.unfold.GetValue())
+	//	settings.Cursor.BounceOnEdges = false
+	//	//	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
+	//	//settings.Playfield.BloomEnabled = true
+	//	settings.Playfield.Bloom.Power = 1
+	//	pl.camera.Update()
+	//} else if pl.progressMsF >= /*74317*/65862 {
+	//	settings.DIVIDES = 1
+	//	settings.Objects.DrawApproachCircles = true
+	//	//settings.Playfield.BloomEnabled = false
+	//	settings.Playfield.Bloom.Power = 0.1
+	//	//settings.Cursor.Colors.EnableCustomHueOffset = false
+	//} else if pl.progressMsF >= 48148/*105290*//*80086*/ {
+	//	settings.DIVIDES = 2
+	//	settings.Objects.DrawApproachCircles = false
+	//	//settings.Playfield.BloomEnabled = true
+	//	settings.Playfield.Bloom.Power = 1
+	//	//settings.Cursor.Colors.EnableCustomHueOffset = false
+	//	//settings.Cursor.Colors.HueOffset = 60
+	//	//settings.Objects.Colors.HueOffset = 60
+	//	//if pl.progressMsF <= 80317 {
+	//	//	settings.Objects.Colors.BaseColor.Saturation = pl.unfold.GetValue()
+	//	//	settings.Objects.Colors.BaseColor.Value = 0.5+0.5*pl.unfold.GetValue()
+	//	//}
+	//} else {
+	//	settings.DIVIDES = 1
+	//	settings.Objects.DrawApproachCircles = true
+	//	//settings.Playfield.BloomEnabled = false
+	//	settings.Playfield.Bloom.Power = 0.1
+	//}
+
+	settings.Playfield.Bloom.Power = 0.2 + math.Abs(pl.unfold.GetValue()) * 0.3
+	settings.Playfield.Bloom.Blur = 0.5 + math.Abs(pl.unfold.GetValue()) / 1.5
+
+	//if pl.progressMsF >= /*74317*/172000 {
+	//	settings.DIVIDES = 2
+	//	pl.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
+	//	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
+	//	pl.camera.Update()
+	//
+	//	if pl.progressMsF >= /*74317*/180000 {
+	//		settings.Cursor.BounceOnEdges = true
+	//	}
+	//
+	//	settings.Cursor.Colors.HueOffset = 60
+	//	settings.Objects.Colors.HueOffset = 60
+	//} else if pl.progressMsF >= /*74317*/129702 {
+	//	settings.DIVIDES = 10
+	//	//settings.Objects.DrawApproachCircles = false
+	//	settings.Cursor.BounceOnEdges = false
+	//	//settings.Cursor.Colors.EnableCustomHueOffset = false
+	//
+	//	pl.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale-0.2*pl.unfold.GetValue())
+	//	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
+	//	pl.camera.Update()
+	//	settings.Cursor.Colors.HueOffset = -36
+	//	settings.Objects.Colors.HueOffset = -36
+	//} else if pl.progressMsF >= /*74317*/114606 {
+	//	settings.DIVIDES = 1
+	//	//settings.Objects.DrawApproachCircles = false
+	//	//settings.Cursor.Colors.EnableCustomHueOffset = false
+	//} else if pl.progressMsF >= 74317/*80086*/ {
+	//	settings.DIVIDES = 2
+	//	//settings.Objects.DrawApproachCircles = false
+	//	//settings.Cursor.Colors.EnableCustomHueOffset = false
+	//	settings.Cursor.Colors.HueOffset = 60
+	//	settings.Objects.Colors.HueOffset = 60
+	//	if pl.progressMsF <= 80317 {
+	//		settings.Objects.Colors.BaseColor.Saturation = pl.unfold.GetValue()
+	//		settings.Objects.Colors.BaseColor.Value = 0.5+0.5*pl.unfold.GetValue()
+	//	}
+	//} else {
+	//	settings.DIVIDES = 1
+	//	settings.Objects.DrawApproachCircles = true
+	//}
 
 	if pl.lastTime < 0 {
 		pl.lastTime = utils.GetNanoTime()
@@ -431,13 +760,13 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	render.CS = pl.CS
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
 	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
 
-	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)/**pl.unfold.GetValue()*/)
-	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)/**pl.unfold.GetValue()*/)
+	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)*pl.unfold.GetValue())
+	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)*pl.unfold.GetValue())
 
 	if settings.Playfield.BlurEnable {
 		blurVal = pl.blurGlider.GetValue()
@@ -452,24 +781,28 @@ func (pl *Player) Draw(delta float64) {
 
 	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras1[0])
 
-	if pl.fxGlider.GetValue() > 0.0 || pl.epiGlider.GetValue() > 0 {
+	if pl.fxGlider.GetValue() > 0.01 || pl.epiGlider.GetValue() > 0.01 {
 		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
 		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-		if pl.fxGlider.GetValue() > 0.0 {
+		/*if pl.fxGlider.GetValue() > 0.01 {
 			scl := (settings.Graphics.GetWidthF() / float64(pl.Logo.Width)) / 4
 			pl.batch.SetScale(scl, scl)
 			pl.batch.DrawTexture(*pl.Logo)
 			pl.batch.SetScale(scl*(1/pl.Scl), scl*(1/pl.Scl))
 			pl.batch.SetColor(1, 1, 1, 0.25*pl.fxGlider.GetValue())
 			pl.batch.DrawTexture(*pl.Logo)
-		}
+		}*/
 
-		if pl.epiGlider.GetValue() > 0 {
+		if pl.epiGlider.GetValue() > 0.01 {
 			scl := (settings.Graphics.GetWidthF() / float64(pl.Epi.Width)) / 2 * 0.66
 			pl.batch.SetScale(scl, scl)
 			pl.batch.SetColor(1, 1, 1, pl.epiGlider.GetValue())
 			pl.batch.DrawTexture(*pl.Epi)
+			pl.batch.SetScale(1.0, -1.0)
+			s := "Support me on ko-fi.com/wiekus"
+			width := pl.font.GetWidth(settings.Graphics.GetHeightF() / 40, s)
+			pl.font.Draw(pl.batch, -width / 2, (0.77) * (settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF() / 40, s)
 		}
 
 		pl.batch.End()
@@ -480,15 +813,47 @@ func (pl *Player) Draw(delta float64) {
 	if pl.counter >= 1000.0/60 {
 		pl.fpsC = pl.profiler.GetFPS()
 		pl.fpsU = pl.profilerU.GetFPS()
+
+		pl.vol = pl.musicPlayer.GetLevelCombined()
+		pl.volAverage = pl.volAverage*0.9 + pl.vol*0.1
+
 		pl.counter -= 1000.0 / 60
 		if pl.background.GetStoryboard() != nil {
 			pl.storyboardLoad = pl.background.GetStoryboard().GetLoad()
 		}
 	}
 
-	if pl.fxGlider.GetValue() > 0.0 {
+	vprog := 1 - ((pl.vol - pl.volAverage) / 0.5)
+	pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+pl.beatProgress*0.5)))
 
-		pl.fxBatch.Begin()
+	ratio := math.Pow(0.5, timMs/16.6666666666667)
+
+	pl.progress = pl.lastProgress*ratio + (pV)*(1-ratio)
+	pl.lastProgress = pl.progress
+
+	if pl.fxGlider.GetValue() > 0.01 {
+		pl.batch.Begin()
+		pl.visualiser.SetStartDistance(pl.cookieSize * 0.5)
+		pl.visualiser.Draw(pl.progressMsF, pl.batch)
+
+		pl.batch.SetColor(1, 1, 1, pl.Scl*pl.fxGlider.GetValue())
+
+		scl := (pl.cookieSize/2048.0) * 1.05
+
+		pl.LogoS1.SetScale((1.05 - easing.OutQuad(pl.progress)*0.05) * scl)
+		pl.LogoS2.SetScale((1.05 + easing.OutQuad(pl.progress)*0.03) * scl)
+
+		alpha := 0.3
+		if pl.bMap.Timings.Current.Kiai {
+			alpha = 0.12
+		}
+
+		pl.LogoS2.SetAlpha(alpha * (1 - easing.OutQuad(pl.progress)))
+
+		pl.LogoS1.UpdateAndDraw(pl.progressMs, pl.batch)
+		pl.LogoS2.UpdateAndDraw(pl.progressMs, pl.batch)
+		pl.batch.End()
+		/*pl.fxBatch.Begin()
 		pl.batch.SetCamera(mgl32.Ortho(-1, 1, 1, -1, 1, -1))
 		pl.fxBatch.SetColor(1, 1, 1, 0.25*pl.Scl*pl.fxGlider.GetValue())
 		pl.vao.Begin()
@@ -507,7 +872,7 @@ func (pl *Player) Draw(delta float64) {
 		pl.vao.Draw()
 
 		pl.vao.End()
-		pl.fxBatch.End()
+		pl.fxBatch.End()*/
 	}
 
 	if pl.start {
@@ -527,7 +892,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES, /*settings.TAG*/ len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors1, hshifts := settings.Cursor.GetColorsA(settings.DIVIDES, /*settings.TAG*/ len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -636,10 +1001,28 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.End()
 	}
 
+	/*text := pl.blur.EndAndProcess()
+
+	pl.batch.Begin()
+	pl.batch.SetScale(1, -1)
+	pl.batch.SetTranslation(bmath.NewVec2d(0, 0))
+	pl.batch.SetColor(1, 1, 1, 1)
+	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+
+	pl.batch.DrawTexture(text.GetRegion())
+	pl.batch.End()*/
+
 	if pl.overlay != nil && pl.overlay.NormalBeforeCursor() {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
-		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
+
+		//for j := 0; j < settings.DIVIDES; j++ {
+
+			pl.batch.SetCamera(cameras[0])
+
+			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
+		//}
+
 		pl.batch.End()
 	}
 
@@ -665,7 +1048,18 @@ func (pl *Player) Draw(delta float64) {
 				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
 			}
 
-			g.DrawM(scale2, pl.batch, colors1[j*len(pl.controller.GetCursors())+i], colors1[ind], hshifts[ind])
+			col1 := colors1[j*len(pl.controller.GetCursors())+i]
+			col2 := colors1[ind]
+
+			/*if i == 0 {
+				col1[3] *= float32(pl.danserGlider.GetValue())
+				col2[3] *= float32(pl.danserGlider.GetValue())
+			}*//* else if i == 1 {
+				col1[3] *= float32(pl.resnadGlider.GetValue())
+				col2[3] *= float32(pl.resnadGlider.GetValue())
+			}*/
+
+			g.DrawM(scale2, pl.batch, col1, col2, hshifts[ind])
 		}
 
 	}
@@ -689,6 +1083,13 @@ func (pl *Player) Draw(delta float64) {
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.EndAndRender()
 	}
+
+	/*pl.batch.Begin()
+	pl.batch.SetColor(1, 1, 1, 1)
+	pl.batch.SetScale(1, 1)
+	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+	pl.Noice.Draw(pl.progressMs, pl.batch)
+	pl.batch.End()*/
 
 	if settings.DEBUG || settings.FPS {
 		pl.batch.Begin()

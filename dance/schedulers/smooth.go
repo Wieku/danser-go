@@ -65,7 +65,7 @@ func (sched *SmoothScheduler) Update(time int64) {
 
 				}
 				sched.moving = true
-			} else if time > g.GetBasicData().EndTime {
+			} else if time > g.GetBasicData().StartTime && time > g.GetBasicData().EndTime {
 
 				sched.moving = false
 				if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd {
@@ -106,6 +106,13 @@ func (sched *SmoothScheduler) Update(time int64) {
 	}
 }
 
+func max(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func (sched *SmoothScheduler) InitCurve(index int) {
 	points := make([]bmath.Vector2d, 0)
 	timing := make([]int64, 0)
@@ -114,17 +121,17 @@ func (sched *SmoothScheduler) InitCurve(index int) {
 		if i == index {
 			if s, ok := sched.queue[i].(*objects.Slider); ok {
 				points = append(points, s.GetBasicData().EndPos, bmath.NewVec2dRad(s.GetEndAngle(), s.GetBasicData().EndPos.Dst(sched.queue[i+1].GetBasicData().StartPos)*0.7).Add(s.GetBasicData().EndPos))
-				timing = append(timing, s.GetBasicData().EndTime)
+				//timing = append(timing, s.GetBasicData().EndTime)
 			}
 			if s, ok := sched.queue[i].(*objects.Circle); ok {
 				points = append(points, s.GetBasicData().EndPos, sched.queue[i+1].GetBasicData().StartPos.Sub(s.GetBasicData().EndPos).Scl(0.333).Add(s.GetBasicData().EndPos))
-				timing = append(timing, s.GetBasicData().StartTime)
+				//timing = append(timing, s.GetBasicData().StartTime)
 			}
 			if s, ok := sched.queue[i].(*objects.Spinner); ok {
 				points = append(points, s.GetBasicData().EndPos, sched.queue[i+1].GetBasicData().StartPos.Sub(s.GetBasicData().EndPos).Scl(0.333).Add(s.GetBasicData().EndPos))
-				timing = append(timing, s.GetBasicData().EndTime)
 			}
-			endTime = sched.queue[i].GetBasicData().EndTime
+			timing = append(timing, max(sched.queue[i].GetBasicData().StartTime, sched.queue[i].GetBasicData().EndTime))
+			endTime = max(sched.queue[i].GetBasicData().StartTime, sched.queue[i].GetBasicData().EndTime)
 			continue
 		}
 

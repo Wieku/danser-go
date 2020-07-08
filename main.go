@@ -127,6 +127,7 @@ func run() {
 				glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
 				glfw.WindowHint(glfw.BlueBits, monitor.GetVideoMode().BlueBits)
 				glfw.WindowHint(glfw.RefreshRate, monitor.GetVideoMode().RefreshRate)
+				//glfw.WindowHint(glfw.Decorated, glfw.False)
 				win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
 			} else {
 				win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
@@ -159,7 +160,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		file, _ := os.Open("assets/fonts/Roboto-Bold.ttf")
+		file, _ := os.Open("assets/fonts/Exo2-Bold.ttf")
 		font := font.LoadFont(file)
 		file.Close()
 

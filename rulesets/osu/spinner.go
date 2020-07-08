@@ -27,7 +27,7 @@ type Spinner struct {
 	ruleSet           *OsuRuleSet
 	hitSpinner        *objects.Spinner
 	players           []*difficultyPlayer
-	state             []*spinnerstate
+	state             map[*difficultyPlayer]*spinnerstate
 	fadeStartRelative float64
 	maxAcceleration   float64
 }
@@ -46,7 +46,7 @@ func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, pla
 	spinner.ruleSet = ruleSet
 	spinner.hitSpinner = object.(*objects.Spinner)
 	spinner.players = players
-	spinner.state = make([]*spinnerstate, len(players))
+	spinner.state = make(map[*difficultyPlayer]*spinnerstate)
 
 	rSpinner := object.(*objects.Spinner)
 
@@ -54,15 +54,33 @@ func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, pla
 
 	spinner.fadeStartRelative = 100000
 
-	for i, player := range spinner.players {
-		spinner.state[i] = new(spinnerstate)
+	for _, player := range spinner.players {
+		spinner.state[player] = new(spinnerstate)
 		spinner.fadeStartRelative = math.Min(spinner.fadeStartRelative, player.diff.Preempt)
 		spinners++
-		spinner.state[i].requirement = int64(float64(spinnerTime) / 1000 * player.diff.SpinnerRatio)
-		spinner.state[i].frameVariance = FrameTime
+		spinner.state[player].requirement = int64(float64(spinnerTime) / 1000 * player.diff.SpinnerRatio)
+		spinner.state[player].frameVariance = FrameTime
 	}
 
 	spinner.maxAcceleration = 0.00008 + math.Max(0, (5000-float64(spinnerTime))/1000/2000)
+}
+
+func (spinner *Spinner) UpdateClick(time int64) bool {
+	numFinishedTotal := 0
+
+	for _, player := range spinner.players {
+		state := spinner.state[player]
+
+		if !state.finished {
+			numFinishedTotal++
+		}
+	}
+
+	return numFinishedTotal == 0
+}
+
+func (spinner *Spinner) UpdateClickFor(player *difficultyPlayer, time int64) bool {
+	return true;
 }
 
 func (spinner *Spinner) Update(time int64) bool {
@@ -70,15 +88,15 @@ func (spinner *Spinner) Update(time int64) bool {
 
 	spinnerPosition := spinner.hitSpinner.GetBasicData().StartPos
 
-	for i, player := range spinner.players {
-		state := spinner.state[i]
+	for _, player := range spinner.players {
+		state := spinner.state[player]
 		timeDiff := time - player.cursor.LastFrameTime
 
 		if !state.finished {
 			numFinishedTotal++
-			if player.cursor.IsReplayFrame {
+			if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
 
-				if (player.cursorLock == -1 || player.cursorLock == spinner.hitSpinner.GetBasicData().Number) && timeDiff > 0 {
+				if timeDiff > 0 {
 
 					mouseAngle := player.cursor.Position.Sub(spinnerPosition).AngleR()
 
@@ -104,7 +122,7 @@ func (spinner *Spinner) Update(time int64) bool {
 					} else {
 						state.zeroCount = 0
 
-						if (!player.cursor.LeftButton && !player.cursor.RightButton) || time < spinner.hitSpinner.GetBasicData().StartTime || time > spinner.hitSpinner.GetBasicData().EndTime {
+						if !player.gameDownState || time < spinner.hitSpinner.GetBasicData().StartTime || time >= spinner.hitSpinner.GetBasicData().EndTime {
 							angleDiff = 0
 						}
 
@@ -151,9 +169,114 @@ func (spinner *Spinner) Update(time int64) bool {
 						state.lastRotationCount = state.rotationCount
 					}
 
-					player.cursorLock = spinner.hitSpinner.GetBasicData().Number
 				}
 			}
+		}
+	}
+
+	return numFinishedTotal == 0
+}
+
+func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
+	numFinishedTotal := 0
+
+	spinnerPosition := spinner.hitSpinner.GetBasicData().StartPos
+
+	state := spinner.state[player]
+	timeDiff := time - player.cursor.LastFrameTime
+
+	if !state.finished {
+		numFinishedTotal++
+		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+
+			if timeDiff > 0 {
+
+				mouseAngle := player.cursor.Position.Sub(spinnerPosition).AngleR()
+
+				angleDiff := mouseAngle - state.lastAngle
+
+				if mouseAngle-state.lastAngle < -math.Pi {
+					angleDiff = (2 * math.Pi) + mouseAngle - state.lastAngle
+				} else if state.lastAngle-mouseAngle < -math.Pi {
+					angleDiff = (-2 * math.Pi) - state.lastAngle + mouseAngle
+				}
+
+				decay := math.Pow(0.999, float64(timeDiff))
+				state.frameVariance = decay*state.frameVariance + (1-decay)*float64(timeDiff)
+
+				if angleDiff == 0 {
+					state.zeroCount += 1
+
+					if state.zeroCount < 2 {
+						state.theoreticalVelocity /= 3
+					} else {
+						state.theoreticalVelocity = 0
+					}
+				} else {
+					state.zeroCount = 0
+
+					if !player.gameDownState || time < spinner.hitSpinner.GetBasicData().StartTime || time > spinner.hitSpinner.GetBasicData().EndTime {
+						angleDiff = 0
+					}
+
+					if math.Abs(angleDiff) < math.Pi {
+						if player.diff.GetModifiedTime(state.frameVariance) > FrameTime*1.04 {
+							state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(float64(timeDiff))
+						} else {
+							state.theoreticalVelocity = angleDiff / FrameTime
+						}
+					} else {
+						state.theoreticalVelocity = 0
+					}
+				}
+
+				state.lastAngle = mouseAngle
+
+				maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * float64(timeDiff))
+
+				if state.theoreticalVelocity > state.currentVelocity {
+					state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, maxAccelThisFrame)
+				} else {
+					state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, -maxAccelThisFrame)
+				}
+
+				state.currentVelocity = math.Max(-0.05, math.Min(state.currentVelocity, 0.05))
+
+				rotationAddition := state.currentVelocity * float64(timeDiff)
+
+				state.rotationCountF += math.Abs(rotationAddition / math.Pi)
+				state.rotationCount = int64(state.rotationCountF)
+
+				if state.rotationCount != state.lastRotationCount {
+
+					state.scoringRotationCount++
+
+					if state.scoringRotationCount > state.requirement+3 && (state.scoringRotationCount-(state.requirement+3))%2 == 0 {
+						spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerBonus, true, ComboResults.Hold)
+					} else if state.scoringRotationCount > 1 && state.scoringRotationCount%2 == 0 {
+						spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerScore, true, ComboResults.Hold)
+					} else if state.scoringRotationCount > 1 {
+						//hp inpact in the future
+					}
+
+					state.lastRotationCount = state.rotationCount
+				}
+
+			}
+		}
+	}
+
+	return numFinishedTotal == 0
+}
+
+func (spinner *Spinner) UpdatePost(time int64) bool {
+	numFinishedTotal := 0
+
+	for _, player := range spinner.players {
+		state := spinner.state[player]
+
+		if !state.finished {
+			numFinishedTotal++
 
 			if time >= spinner.hitSpinner.GetBasicData().EndTime {
 
@@ -174,7 +297,6 @@ func (spinner *Spinner) Update(time int64) bool {
 
 				spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)
 
-				player.cursorLock = -1
 				state.finished = true
 				continue
 			}
@@ -182,6 +304,10 @@ func (spinner *Spinner) Update(time int64) bool {
 	}
 
 	return numFinishedTotal == 0
+}
+
+func (circle *Spinner) IsHit(pl *difficultyPlayer) bool {
+	return circle.state[pl].finished
 }
 
 func (spinner *Spinner) GetFadeTime() int64 {

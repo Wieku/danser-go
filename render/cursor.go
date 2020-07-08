@@ -87,6 +87,8 @@ type Cursor struct {
 	VaoPos                  bmath.Vector2d
 	RendPos                 bmath.Vector2d
 
+	Name string
+
 	vertices []float32
 	vaoSize  int
 	vaoDirty bool
@@ -163,7 +165,7 @@ func (cr *Cursor) Update(tim float64) {
 	density := 1.0 / settings.Cursor.TrailDensity
 
 	if int(points/density) > 0 {
-		var temp bmath.Vector2d
+		temp := cr.LastPos
 		for i := density; i < points; i += density {
 			temp = cr.Position.Sub(cr.LastPos).Scl(i / points).Add(cr.LastPos)
 			cr.Points = append(cr.Points, temp)
@@ -294,6 +296,11 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	/*if settings.Cursor.AdditiveBlending {
+		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+	} else {
+		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	}*/
 	cursorShader.Begin()
 
 	siz := settings.Cursor.CursorSize
@@ -308,7 +315,19 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	cursor.subVao.BeginDraw()
 
 	innerLengthMult := float32(1.0)
+
+	//cursScl := float32(siz*(16.0/18)*scale)
+
+	/*color[0] *= 0.5
+	color[1] *= 0.5
+	color[2] *= 0.5
+
+	color2[0] *= 0.5
+	color2[1] *= 0.5
+	color2[2] *= 0.5*/
+
 	if settings.Cursor.EnableTrailGlow {
+		//cursScl = float32(siz*(12.0/18)*scale)
 		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
 		cursorShader.SetUniformAttr(0, color2)
 		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))

@@ -46,3 +46,10 @@ func (wv *Sample) PlayRV(volume float64) {
 	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
 	C.BASS_ChannelPlay(channel, 1)
 }
+
+func (wv *Sample) PlayRVPos(volume float64, balance float64) {
+	channel := C.BASS_SampleGetChannel(C.DWORD(wv.channel), 0)
+	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
+	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_PAN, C.float(balance))
+	C.BASS_ChannelPlay(channel, 1)
+}

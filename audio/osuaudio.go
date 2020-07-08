@@ -52,25 +52,25 @@ func LoadSamples() {
 	Samples[2][4] = NewSample("assets/sounds/drum-slidertick.wav")
 }
 
-func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64) {
-	playSample(sampleSet, 0, index, volume, objNum)
+func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64, xPos float64) {
+	playSample(sampleSet, 0, index, volume, objNum, xPos)
 
 	if additionSet == 0 {
 		additionSet = sampleSet
 	}
 
 	if hitsound&2 > 0 {
-		playSample(additionSet, 1, index, volume, objNum)
+		playSample(additionSet, 1, index, volume, objNum, xPos)
 	}
 	if hitsound&4 > 0 {
-		playSample(additionSet, 2, index, volume, objNum)
+		playSample(additionSet, 2, index, volume, objNum, xPos)
 	}
 	if hitsound&8 > 0 {
-		playSample(additionSet, 3, index, volume, objNum)
+		playSample(additionSet, 3, index, volume, objNum, xPos)
 	}
 }
 
-func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64) {
+func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) {
 	if settings.Audio.IgnoreBeatmapSampleVolume {
 		volume = 1.0
 	}
@@ -79,15 +79,15 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 		f(sampleSet, hitsoundIndex, index, volume, objNum)
 	}
 
-	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil {
-		sample.PlayRV(volume)
+	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil && !settings.Audio.IgnoreBeatmapSamples {
+		sample.PlayRVPos(volume, (xPos-256)/512/**0.8*/)
 	} else {
-		Samples[sampleSet-1][hitsoundIndex].PlayRV(volume)
+		Samples[sampleSet-1][hitsoundIndex].PlayRVPos(volume, (xPos-256)/512/**0.8*/)
 	}
 }
 
-func PlaySliderTick(sampleSet, index int, volume float64, objNum int64) {
-	playSample(sampleSet, 4, index, volume, objNum)
+func PlaySliderTick(sampleSet, index int, volume float64, objNum int64, xPos float64) {
+	playSample(sampleSet, 4, index, volume, objNum, xPos)
 }
 
 func LoadBeatmapSamples(dir string) {
@@ -103,11 +103,11 @@ func LoadBeatmapSamples(dir string) {
 	fullPath := settings.General.OsuSongsDir + string(os.PathSeparator) + dir
 
 	filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(info.Name(), ".wav") {
+		if !strings.HasSuffix(info.Name(), ".wav") && !strings.HasSuffix(info.Name(), ".mp3") && !strings.HasSuffix(info.Name(), ".ogg") {
 			return nil
 		}
 
-		rawName := strings.TrimSuffix(info.Name(), ".wav")
+		rawName := strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(info.Name(), ".wav"), ".ogg"), ".mp3")
 
 		if separated := strings.Split(rawName, "-"); len(separated) == 2 {
 

@@ -49,7 +49,7 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 
 	points = append(points, startPos)
 
-	bm.bz = curves.NewBezier(points)
+	bm.bz = curves.NewBezierNA(points)
 	bm.endTime = endTime
 	bm.startTime = startTime
 }

@@ -90,7 +90,6 @@ func parseHitObjects(line []string, beatMap *BeatMap) {
 	obj := objects.GetObject(line)
 
 	if obj != nil {
-		obj.SetTiming(beatMap.Timings)
 		/*if o, ok := obj.(*objects.Slider); ok {
 			o.SetTiming(beatMap.Timings)
 		}
@@ -259,5 +258,8 @@ func ParseObjects(beatMap *BeatMap) {
 
 	}
 
+	for _, obj := range beatMap.HitObjects {
+		obj.SetTiming(beatMap.Timings)
+	}
 	calculateStackLeniency(beatMap)
 }

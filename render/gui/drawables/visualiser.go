@@ -50,7 +50,7 @@ func (vis *Visualiser) Update(time float64) {
 			fft := vis.music.GetFFT()
 
 			for i := 0; i < vis.bars; i++ {
-				value := float64(fft[(i+vis.jumpCounter)%vis.bars]) * math.Pow(float64((i+vis.jumpCounter)%vis.bars+1), 0.08)
+				value := float64(fft[(i+vis.jumpCounter)%vis.bars]) * 0.5// * math.Pow(float64((i+vis.jumpCounter)%vis.bars+1), 0.08)
 				if value > vis.fft[i] {
 					vis.fft[i] = value
 				}
@@ -64,7 +64,10 @@ func (vis *Visualiser) Update(time float64) {
 	}
 
 	for i := 0; i < vis.bars; i++ {
-		vis.fft[i] -= vis.fft[i] * decay
+		vis.fft[i] -= (vis.fft[i] + 0.03) * decay
+		if vis.fft[i] < 0 {
+			vis.fft[i] = 0
+		}
 	}
 
 	vis.lastTime = time
@@ -74,7 +77,7 @@ func (vis *Visualiser) Draw(time float64, batch *batches.SpriteBatch) {
 	origin := bmath.NewVec2d(-1, 0)
 
 	flip := bmath.NewVec2d(1, 1)
-	color := mgl32.Vec4{1, 1, 1, 0.5}
+	color := mgl32.Vec4{1, 1, 1, 0.3}
 	region := render.Pixel.GetRegion()
 	for i := 0; i < 5; i++ {
 		for j, v := range vis.fft {

@@ -141,7 +141,7 @@ func calculateStackLeniency(b *BeatMap) {
 					break
 				}
 
-				if objectN.GetBasicData().StartPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
+				if objectN.GetBasicData().EndPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
 					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex + 1
 					objectI = objectN
 				}
@@ -159,6 +159,7 @@ func calculateStackLeniency(b *BeatMap) {
 			v.GetBasicData().StackOffset = bmath.NewVec2d(sc, sc)
 			v.GetBasicData().StartPos = v.GetBasicData().StartPos.Add(v.GetBasicData().StackOffset)
 			v.GetBasicData().EndPos = v.GetBasicData().EndPos.Add(v.GetBasicData().StackOffset)
+			v.UpdateStacking()
 		}
 	}
 }

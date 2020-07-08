@@ -86,3 +86,7 @@ func (ln Catmull) GetPoints(num int) []math2.Vector2d {
 
 	return points
 }
+
+func (ln Catmull) GetLines() []Linear {
+	return []Linear{}
+}

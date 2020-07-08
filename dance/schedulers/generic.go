@@ -60,7 +60,7 @@ func (sched *GenericScheduler) Update(time int64) {
 				sched.cursor.SetPos(g.GetPosition())
 
 				if !sched.moving {
-					if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
+					//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
 						if !sched.lastLeft && g.GetBasicData().StartTime-sched.lastEnd < 130 {
 							sched.cursor.LeftButton = true
 							sched.lastLeft = true
@@ -68,7 +68,7 @@ func (sched *GenericScheduler) Update(time int64) {
 							sched.cursor.RightButton = true
 							sched.lastLeft = false
 						}
-					}
+					//}
 
 				}
 				sched.moving = true
@@ -76,10 +76,10 @@ func (sched *GenericScheduler) Update(time int64) {
 			} else if time > g.GetBasicData().EndTime {
 
 				sched.moving = false
-				if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd {
+				//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd || g.GetBasicData().SliderPointStart {
 					sched.cursor.LeftButton = false
 					sched.cursor.RightButton = false
-				}
+				//}
 
 				if i < len(sched.queue)-1 {
 					sched.queue = append(sched.queue[:i], sched.queue[i+1:]...)

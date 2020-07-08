@@ -12,6 +12,7 @@ type BaseObject interface {
 	GetBasicData() *basicData
 	Update(time int64) bool
 	SetTiming(timings *Timings)
+	UpdateStacking()
 	SetDifficulty(preempt, fadeIn float64)
 	GetPosition() om.Vector2d
 }

@@ -50,6 +50,8 @@ func (self *Spinner) SetTiming(timings *Timings) {
 	self.Timings = timings
 }
 
+func (self *Spinner) UpdateStacking() {}
+
 func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
@@ -59,12 +61,12 @@ func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 func (self *Spinner) Update(time int64) bool {
 	if time < self.objData.EndTime {
 		self.rad = rpms * float64(time-self.objData.StartTime) * 2 * math.Pi
-		/*self.pos = bmath.NewVec2dRad(self.rad, 10).Add(self.objData.StartPos)*/
+		//self.pos = bmath.NewVec2dRad(self.rad, 50).Add(self.objData.StartPos)
 
 		self.pos.X = 16 * math.Pow(math.Sin(self.rad), 3)
 		self.pos.Y = 13*math.Cos(self.rad) - 5*math.Cos(2*self.rad) - 2*math.Cos(3*self.rad) - math.Cos(4*self.rad)
 
-		self.pos = self.pos.Scl(-8 * (float64(time-self.objData.StartTime) / float64(self.objData.EndTime-self.objData.StartTime))).Add(self.objData.StartPos)
+		self.pos = self.pos.Scl(-6 - 2 * math.Sin(float64(time-self.objData.StartTime) / 2000 * 2 * math.Pi)).Add(self.objData.StartPos)
 		self.GetBasicData().EndPos = self.pos
 		return false
 	}
@@ -76,9 +78,9 @@ func (self *Spinner) Update(time int64) bool {
 	}
 
 	if self.objData.sampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number)
+		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
 	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
 	}
 
 	return true
@@ -100,7 +102,7 @@ func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBat
 	batch.SetScale(1, 1)
 
 	batch.SetRotation(self.rad)
-	batch.SetSubScale(20, 20)
+	batch.SetSubScale(20*10, 20*10)
 
 	batch.DrawUnit(*render.SpinnerMiddle)
 	batch.DrawUnit(*render.SpinnerMiddle2)

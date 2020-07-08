@@ -28,6 +28,8 @@ func (self *Pause) SetTiming(timings *Timings) {
 
 }
 
+func (self *Pause) UpdateStacking() {}
+
 func (self *Pause) SetDifficulty(preempt, fadeIn float64) {
 
 }

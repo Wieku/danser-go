@@ -28,8 +28,10 @@ func (controller *PlayerController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 func (controller *PlayerController) InitCursors() {
 	controller.cursors = []*render.Cursor{render.NewCursor()}
+	controller.cursors[0].IsPlayer = true
 	controller.window = glfw.GetCurrentContext()
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{difficulty.None})
+
 }
 
 func (controller *PlayerController) Update(time int64, delta float64) {
@@ -37,11 +39,12 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 	controller.bMap.Update(time)
 
 	if controller.window != nil {
+		controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 		glfw.PollEvents()
 		x, y := controller.window.GetCursorPos()
 		controller.cursors[0].SetScreenPos(bmath.NewVec2d(x, y))
-		controller.cursors[0].LeftButton = controller.window.GetKey(glfw.KeyZ) == glfw.Press
-		controller.cursors[0].RightButton = controller.window.GetKey(glfw.KeyX) == glfw.Press
+		controller.cursors[0].LeftButton = controller.window.GetKey(glfw.KeyC) == glfw.Press
+		controller.cursors[0].RightButton = controller.window.GetKey(glfw.KeyV) == glfw.Press
 	}
 
 	controller.counter += time-controller.lastTime
@@ -57,6 +60,7 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 
 	controller.lastTime = time
 
+	controller.ruleset.UpdateFor(controller.cursors[0], time)
 	controller.ruleset.Update(time)
 
 	controller.cursors[0].Update(delta)

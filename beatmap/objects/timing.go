@@ -7,7 +7,7 @@ import (
 
 type TimingPoint struct {
 	Time         int64
-	BaseBpm, Bpm float64
+	BaseBpm, Bpm, beatLen float64
 	SampleSet    int
 	SampleIndex  int
 	SampleVolume float64
@@ -15,7 +15,10 @@ type TimingPoint struct {
 }
 
 func (t TimingPoint) GetRatio() float64 {
-	return t.Bpm / t.BaseBpm
+	if t.beatLen >= 0 {
+		return 1.0
+	}
+	return float64(float32(math.Max(10, math.Min(-t.beatLen, 1000))) / 100)
 }
 
 type Timings struct {
@@ -34,7 +37,7 @@ func NewTimings() *Timings {
 }
 
 func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int, samplevolume float64, isKiai bool) {
-	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex, SampleVolume: samplevolume}
+	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex, SampleVolume: samplevolume, beatLen: bpm}
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {
@@ -88,8 +91,18 @@ func (tim Timings) GetSliderTime(pixelLength float64) int64 {
 	return int64(tim.partBPM * pixelLength / (100.0 * tim.SliderMult))
 }
 
-func (tim Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) int64 {
-	return int64(point.Bpm * pixelLength / (100.0 * tim.SliderMult))
+func (tim Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) float64 {
+	return float64(float32(1000.0 * pixelLength) / float32(100.0 * tim.SliderMult * (1000.0/point.Bpm)))
+}
+
+func (tim Timings) GetVelocity(point TimingPoint) float64 {
+	scoringDistance := (100 * tim.SliderMult) / tim.TickRate
+	return scoringDistance * tim.TickRate * (1000.0 / point.Bpm)
+}
+
+func (tim Timings) GetTickDistance(point TimingPoint) float64 {
+	scoringDistance := (100 * tim.SliderMult) / tim.TickRate
+	return scoringDistance / point.GetRatio()
 }
 
 func (tim *Timings) Reset() {

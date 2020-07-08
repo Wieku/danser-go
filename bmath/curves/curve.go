@@ -8,4 +8,5 @@ type Curve interface {
 	GetStartAngle() float64
 	GetEndAngle() float64
 	GetLength() float64
+	GetLines() []Linear
 }

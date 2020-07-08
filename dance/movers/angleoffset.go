@@ -135,7 +135,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 		points = []bmath.Vector2d{endPos, pt1, pt2, startPos}
 	}
 
-	bm.bz = curves.NewBezier(points)
+	bm.bz = curves.NewBezierNA(points)
 	bm.endTime = endTime
 	bm.startTime = startTime
 	bm.lastPoint = endPos

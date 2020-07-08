@@ -123,6 +123,7 @@ func (sr *SliderRenderer) EndAndRender() {
 	fboSlice.Draw()
 	fboSlice.EndDraw()
 	fboShader.End()
+	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 }
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {

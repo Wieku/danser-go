@@ -85,9 +85,9 @@ func (self *Circle) PlaySound() {
 	}
 
 	if self.objData.sampleSet == 0 {
-		audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number)
+		audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
 	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
 	}
 }
 
@@ -105,6 +105,8 @@ func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
 	self.fadeApproach = animation.NewGlider(1)
 	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)
 }
+
+func (self *Circle) UpdateStacking() {}
 
 func (self *Circle) GetPosition() bmath.Vector2d {
 	return self.objData.StartPos

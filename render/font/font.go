@@ -32,7 +32,7 @@ type glyphData struct {
 
 type Font struct {
 	atlas       *texture.TextureAtlas
-	glyphs      []*glyphData
+	glyphs      map[rune]*glyphData
 	min, max    rune
 	initialSize float64
 	lineDist    float64
@@ -56,7 +56,7 @@ func LoadFont(reader io.Reader) *Font {
 	font.min = rune(32)
 	font.max = rune(127)
 	font.initialSize = 64.0
-	font.glyphs = make([]*glyphData, font.max-font.min+1)
+	font.glyphs = make(map[rune]*glyphData)//, font.max-font.min+1)
 	font.kernTable = make(map[rune]map[rune]float64)
 	font.atlas = texture.NewTextureAtlas(4096, 4)
 
@@ -150,7 +150,7 @@ func LoadFont(reader io.Reader) *Font {
 		bearingH := float64(gBnd.Min.X) / 64
 		font.glyphs[i-font.min] = &glyphData{*region, advance, bearingH, bearingV}
 	}
-	font.biggest = font.glyphs['W'].advance
+	font.biggest = font.glyphs['9'].advance
 	log.Println(ttf.Name(truetype.NameIDFontFullName), "loaded!")
 	fonts[ttf.Name(truetype.NameIDFontFullName)] = font
 	return font
@@ -193,10 +193,14 @@ func (font *Font) DrawMonospaced(renderer *batches.SpriteBatch, x, y float64, si
 		}
 
 		renderer.SetSubScale(scale, scale)
-		if c=='.' ||  c==',' {
+		if c=='.' ||  c==',' ||  c=='%' {
 			renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
 			renderer.DrawTexture(char.region)
 			xpad += scale * renderer.GetScale().X * (char.advance)
+		} else if c == '1' {
+			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(float64(char.advance)))*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+			renderer.DrawTexture(char.region)
+			xpad += scale * renderer.GetScale().X * font.biggest
 		} else {
 			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(char.bearingX+float64(char.advance))/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
 			renderer.DrawTexture(char.region)
@@ -234,7 +238,7 @@ func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
 			continue
 		}
 
-		if c=='.' || c==',' {
+		if c=='.' || c==',' || c == '%' {
 			xpad += scale * char.advance
 		}  else {
 			xpad += scale * font.biggest
