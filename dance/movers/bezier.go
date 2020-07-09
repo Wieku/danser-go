@@ -1,11 +1,11 @@
 package movers
 
 import (
-	"math"
 	"github.com/wieku/danser-go/beatmap/objects"
-	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/curves"
+	"github.com/wieku/danser-go/settings"
+	"math"
 )
 
 type BezierMover struct {
@@ -58,18 +58,18 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 	} else if ok1 && ok2 {
 		endAngle := s1.GetEndAngle()
 		startAngle := s2.GetStartAngle()
-		bm.pt = bmath.NewVec2dRad(endAngle, s1.GetPointAt(endTime - 10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
-		pt2 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime + 10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		bm.pt = bmath.NewVec2dRad(endAngle, s1.GetPointAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt2 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []bmath.Vector2d{endPos, bm.pt, pt2, startPos}
 	} else if ok1 {
 		endAngle := s1.GetEndAngle()
-		pt1 := bmath.NewVec2dRad(endAngle, s1.GetPointAt(endTime - 10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt1 := bmath.NewVec2dRad(endAngle, s1.GetPointAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
 		bm.pt = bmath.NewVec2dRad(startPos.AngleRV(bm.pt), genScale*aggressiveness).Add(startPos)
 		points = []bmath.Vector2d{endPos, pt1, bm.pt, startPos}
 	} else if ok2 {
 		startAngle := s2.GetStartAngle()
 		bm.pt = bmath.NewVec2dRad(endPos.AngleRV(bm.pt), genScale*aggressiveness).Add(endPos)
-		pt1 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime + 10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		pt1 := bmath.NewVec2dRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []bmath.Vector2d{endPos, bm.pt, pt1, startPos}
 	} else {
 		angle := endPos.AngleRV(bm.pt)
@@ -89,7 +89,7 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm *BezierMover) Update(time int64) bmath.Vector2d {
-	return bm.bz.NPointAt(float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime))
+	return bm.bz.PointAt(float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime))
 }
 
 func (bm *BezierMover) GetEndTime() int64 {

@@ -8,7 +8,7 @@ import (
 )
 
 type AxisMover struct {
-	bz                 curves.MultiCurve
+	bz                 *curves.MultiCurve
 	beginTime, endTime int64
 }
 
@@ -35,7 +35,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 		midP = bmath.NewVec2d(startPos.X, endPos.Y)
 	}
 
-	bm.bz = curves.NewMultiCurve("L", []bmath.Vector2d{endPos, midP, startPos}, endPos.Dst(midP)+midP.Dst(startPos), nil)
+	bm.bz = curves.NewMultiCurve("L", []bmath.Vector2d{endPos, midP, startPos}, endPos.Dst(midP)+midP.Dst(startPos))
 	bm.endTime = endTime
 	bm.beginTime = startTime
 }

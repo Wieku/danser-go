@@ -30,9 +30,9 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 	startPos := start.GetBasicData().StartPos
 	startTime := start.GetBasicData().StartTime
 
-	scaledDistance := float64(startTime-endTime)
+	scaledDistance := float64(startTime - endTime)
 
-	newAngle := bm.lastAngle+math.Pi
+	newAngle := bm.lastAngle + math.Pi
 	if s, ok := end.(*objects.Slider); ok {
 		newAngle = s.GetEndAngle()
 	}
@@ -57,7 +57,7 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 func (bm *AggressiveMover) Update(time int64) bmath.Vector2d {
 	t := float64(time-bm.endTime) / float64(bm.startTime-bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
-	return bm.bz.NPointAt(t)
+	return bm.bz.PointAt(t)
 }
 
 func (bm *AggressiveMover) GetEndTime() int64 {

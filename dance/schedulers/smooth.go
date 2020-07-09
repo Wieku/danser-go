@@ -9,13 +9,13 @@ import (
 )
 
 type SmoothScheduler struct {
-	cursor *render.Cursor
-	queue  []objects.BaseObject
-	curve 	curves.BSpline
+	cursor             *render.Cursor
+	queue              []objects.BaseObject
+	curve              *curves.BSpline
 	endTime, startTime int64
-	lastLeft bool
-	moving bool
-	lastEnd int64
+	lastLeft           bool
+	moving             bool
+	lastEnd            int64
 }
 
 func NewSmoothScheduler() Scheduler {
@@ -100,7 +100,7 @@ func (sched *SmoothScheduler) Update(time int64) {
 		}
 
 		if move && sched.startTime >= time {
-			sched.cursor.SetPos(sched.curve.NPointAt(float64(time-sched.endTime)/float64(sched.startTime-sched.endTime)))
+			sched.cursor.SetPos(sched.curve.PointAt(float64(time-sched.endTime) / float64(sched.startTime-sched.endTime)))
 		}
 
 	}
@@ -145,7 +145,7 @@ func (sched *SmoothScheduler) InitCurve(index int) {
 
 		ok := ok1 || ok2
 
-		if ok || i == len(sched.queue) -1 {
+		if ok || i == len(sched.queue)-1 {
 			if s, ok := sched.queue[i].(*objects.Slider); ok {
 				timing = append(timing, s.GetBasicData().StartTime)
 				points = append(points, bmath.NewVec2dRad(s.GetStartAngle(), s.GetBasicData().StartPos.Dst(sched.queue[i-1].GetBasicData().EndPos)*0.7).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)

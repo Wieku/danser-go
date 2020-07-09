@@ -6,34 +6,30 @@ import (
 
 type BSpline struct {
 	points       []bmath.Vector2d
-	timing 		[]float64
-	subPoints []bmath.Vector2d
-	//path MultiCurve
-
-	path []*Bezier
+	timing       []float64
+	subPoints    []bmath.Vector2d
+	path         []*Bezier
 	ApproxLength float64
 }
 
-func NewBSpline(points1 []bmath.Vector2d, timing []int64) BSpline {
+func NewBSpline(points1 []bmath.Vector2d, timing []int64) *BSpline {
 
 	pointsLen := len(points1)
-	//log.Println(points1)
+
 	points := make([]bmath.Vector2d, 0)
 
 	points = append(points, points1[0])
 	points = append(points, points1[2:pointsLen-2]...)
 	points = append(points, points1[pointsLen-1], points1[1], points1[pointsLen-2])
 
-	//log.Println(points)
-
 	newTiming := make([]float64, len(timing))
 	for i := range newTiming {
 		newTiming[i] = float64(timing[i] - timing[0])
 	}
 
-	bz := &BSpline{points: points, timing: newTiming}
+	spline := &BSpline{points: points, timing: newTiming}
 
-	n := len(points)-2
+	n := len(points) - 2
 
 	d := make([]bmath.Vector2d, n)
 	d[0] = points[n].Sub(points[0])
@@ -42,15 +38,14 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) BSpline {
 	A := make([]bmath.Vector2d, len(points))
 	Bi := make([]float64, len(points))
 
-
 	Bi[1] = -0.25
-	A[1] = points[2].Sub(points[0]).Sub(d[0]).Scl(1.0/4)//(Px[2] - Px[0] - dx[0])/4;   Ay[1] = (Py[2] - Py[0] - dy[0])/4;
-	for i := 2; i < n-1; i++{
-		Bi[i] = -1/(4 + Bi[i-1])
-		A[i] = points[i+1].Sub(points[i-1]).Sub(A[i-1]).Scl(-1*Bi[i])//-(Px[i+1] - Px[i-1] - Ax[i-1])*Bi[i];
+	A[1] = points[2].Sub(points[0]).Sub(d[0]).Scl(1.0 / 4)
+	for i := 2; i < n-1; i++ {
+		Bi[i] = -1 / (4 + Bi[i-1])
+		A[i] = points[i+1].Sub(points[i-1]).Sub(A[i-1]).Scl(-1 * Bi[i])
 	}
 
-	for i := n-2; i > 0; i--{
+	for i := n - 2; i > 0; i-- {
 		d[i] = A[i].Add(d[i+1].Scl(Bi[i]))
 
 	}
@@ -60,110 +55,63 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) BSpline {
 	for i, time := range timing {
 		if i > 0 {
 			converted[i-1] = float64(time - timing[i-1])
-		}/* else {
-			converted[i] = float64(time)
-		}*/
+		}
 	}
 
-	//log.Println(points)
 	firstMul := 1.0
 	if converted[0] > 600 {
-		firstMul = converted[0]/2//math.Log(converted[0]/2)
+		firstMul = converted[0] / 2
 	}
 
 	secondMul := 1.0
 
-	bz.subPoints = append(bz.subPoints, points[0], points[0].Add(d[0].SclOrDenorm(firstMul)))
-	for i := 1; i<len(points)-2; i++  {
+	spline.subPoints = append(spline.subPoints, points[0], points[0].Add(d[0].SclOrDenorm(firstMul)))
+	for i := 1; i < len(points)-2; i++ {
 		if converted[i] > 600 {
-			secondMul = converted[i]/2//math.Log(converted[i]/2)
+			secondMul = converted[i] / 2
 		} else {
 			secondMul = 1.0
 		}
 
-		bz.subPoints = append(bz.subPoints, points[i].Sub(d[i].SclOrDenorm(firstMul)), points[i], points[i].Add(d[i].SclOrDenorm(secondMul)))
+		spline.subPoints = append(spline.subPoints, points[i].Sub(d[i].SclOrDenorm(firstMul)), points[i], points[i].Add(d[i].SclOrDenorm(secondMul)))
 		firstMul = secondMul
 	}
-	bz.subPoints = append(bz.subPoints, points[len(points)-3].Sub(d[n-1].SclOrDenorm(firstMul)), points[len(points)-3])
+	spline.subPoints = append(spline.subPoints, points[len(points)-3].Sub(d[n-1].SclOrDenorm(firstMul)), points[len(points)-3])
 
-	//log.Println(bz.subPoints, "\n")
+	spline.ApproxLength = spline.timing[len(spline.timing)-1]
 
-	bz.ApproxLength = bz.timing[len(bz.timing) - 1]
-
-	for i := 0; i < len(bz.subPoints)-3; i+=3 {
-		c := NewBezierNA(bz.subPoints[i : i+4])
-		bz.path = append(bz.path, c)
+	for i := 0; i < len(spline.subPoints)-3; i += 3 {
+		c := NewBezierNA(spline.subPoints[i : i+4])
+		spline.path = append(spline.path, c)
 	}
 
-	//bz.path = NewMultiCurve("CB", bz.subPoints, -1, converted)
-
-	return *bz
+	return spline
 }
 
-//It's not a neat solution, but it works
-//This calculates point on bezier with constant velocity
-func (bz BSpline) PointAt(t float64) bmath.Vector2d {
-	return bz.NPointAt(t)//bz.path.PointAt(t)
-}
+func (spline *BSpline) PointAt(t float64) bmath.Vector2d {
+	desiredWidth := spline.ApproxLength * t
 
-func (bz BSpline) NPointAt(t float64) bmath.Vector2d {
-	desiredWidth := bz.ApproxLength * t
+	lineI := len(spline.timing) - 2
 
-	//log.Println(sa.sections, sa.length)
-
-	lineI := len(bz.timing)-2
-	//log.Println(lineI)
-	for i, k := range bz.timing[:len(bz.timing)-1]  {
+	for i, k := range spline.timing[:len(spline.timing)-1] {
 		if k <= desiredWidth {
 			lineI = i
 		}
 	}
 
-	//log.Println(lineI)
+	line := spline.path[lineI]
 
-
-	//lineI := sort.SearchFloat64s(bz.sections[:len(bz.sections)-2], desiredWidth)
-
-	//log.Println(lineI, len(bz.sections), len(bz.lines))
-	line := bz.path[lineI]
-
-	/*log.Println(line.Point1, line.Point2)
-
-	log.Println((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI]))
-	log.Println(sa.sections[lineI+1]-sa.sections[lineI])
-	log.Println(sa.sections[lineI+1], sa.sections[lineI])
-	log.Println(line.PointAt((desiredWidth-sa.sections[lineI])/(sa.sections[lineI+1]-sa.sections[lineI])))
-	log.Println()*/
-
-	return line.NPointAt((desiredWidth-bz.timing[lineI])/(bz.timing[lineI+1]-bz.timing[lineI]))
-	//return bz.path.NPointAt(t)
+	return line.PointAt((desiredWidth - spline.timing[lineI]) / (spline.timing[lineI+1] - spline.timing[lineI]))
 }
 
-func (bz BSpline) GetLength() float64 {
-	return bz.ApproxLength
+func (spline *BSpline) GetLength() float64 {
+	return spline.ApproxLength
 }
 
-func (bz BSpline) GetStartAngle() float64 {
-	return bz.points[0].AngleRV(bz.PointAt(1.0/bz.ApproxLength))
+func (spline *BSpline) GetStartAngle() float64 {
+	return spline.points[0].AngleRV(spline.PointAt(1.0 / spline.ApproxLength))
 }
 
-func (bz BSpline) GetEndAngle() float64 {
-	return bz.points[len(bz.points)-1].AngleRV(bz.PointAt((bz.ApproxLength-1)/bz.ApproxLength))
-}
-
-func (ln BSpline) GetPoints(num int) []bmath.Vector2d {
-	t0 := 1 / float64(num-1)
-
-	points := make([]bmath.Vector2d, num)
-	t := 0.0
-	for i := 0; i < num; i += 1 {
-		points[i] = ln.PointAt(t)
-		t += t0
-	}
-
-	return points
-}
-
-func (ln *BSpline) GetLines() []Linear {
-	return nil//ln.path.GetLines()
+func (spline *BSpline) GetEndAngle() float64 {
+	return spline.points[len(spline.points)-1].AngleRV(spline.PointAt((spline.ApproxLength - 1) / spline.ApproxLength))
 }

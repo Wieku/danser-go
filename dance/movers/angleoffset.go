@@ -1,11 +1,11 @@
 package movers
 
 import (
-	"math"
 	"github.com/wieku/danser-go/beatmap/objects"
-	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/curves"
+	"github.com/wieku/danser-go/settings"
+	"math"
 )
 
 type AngleOffsetMover struct {
@@ -89,7 +89,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 		if math.Abs(float64(startTime-endTime)) > 1 {
 			bm.lastAngle = endPos.AngleRV(startPos) - newAngle*bm.invert
 		} else {
-			bm.lastAngle = s1.GetEndAngle()+math.Pi
+			bm.lastAngle = s1.GetEndAngle() + math.Pi
 		}
 
 		pt1 := bmath.NewVec2dRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
@@ -120,7 +120,6 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 			angle = bm.lastAngle
 		}
 
-
 		pt1 := bmath.NewVec2dRad(bm.lastAngle+math.Pi, scaledDistance).Add(endPos)
 		pt2 := bmath.NewVec2dRad(angle, scaledDistance).Add(startPos)
 
@@ -144,7 +143,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 func (bm *AngleOffsetMover) Update(time int64) bmath.Vector2d {
 	t := float64(time-bm.endTime) / float64(bm.startTime-bm.endTime)
 	t = math.Max(0.0, math.Min(1.0, t))
-	return bm.bz.NPointAt(t)
+	return bm.bz.PointAt(t)
 }
 
 func (bm *AngleOffsetMover) GetEndTime() int64 {
