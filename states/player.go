@@ -104,14 +104,14 @@ type Player struct {
 	volAverage float64
 	cookieSize float64
 	visualiser *drawables.Visualiser
-	Noice *sprites.Sprite
+	Noice      *sprites.Sprite
 }
 
 type hsv struct {
 	h, s, v float64
 }
 
-var hsvarray = []hsv {
+var hsvarray = []hsv{
 	hsv{3, 0.88, 0.79},
 	hsv{295, 0.85, 0.82},
 	hsv{251, 0.80, 0.73},
@@ -146,7 +146,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.Noice = sprites.NewSpriteSingle(NoiceT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 
 	player.Noice.SetAlpha(0)
-	player.Noice.SetRotation(12.0/180.0 * math.Pi)
+	player.Noice.SetRotation(12.0 / 180.0 * math.Pi)
 	player.Noice.SetScale(1.3)
 	player.Noice.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, -1500, -1000, 0, 1), false)
 	//player.Noice.AddTransform(animation.NewSingleTransform(animation.Rotate, easing.OutQuad, -1500, -1000, 0, 12.0/180.0 * math.Pi), false)
@@ -159,9 +159,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.LogoS2 = sprites.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 
 	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
-		player.cookieSize = 0.5*settings.Graphics.GetHeightF()
+		player.cookieSize = 0.5 * settings.Graphics.GetHeightF()
 	} else {
-		player.cookieSize = 0.5*settings.Graphics.GetWidthF()
+		player.cookieSize = 0.5 * settings.Graphics.GetWidthF()
 	}
 
 	player.Epi, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/warning.png")
@@ -211,7 +211,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 
-	if settings.Objects.SliderDynamicLoad {
+	if !settings.Objects.SliderDynamicLoad {
 		for _, p := range player.queue2 {
 			if s, ok := p.(*objects.Slider); ok {
 				s.InitCurve(player.sliderRenderer)
@@ -285,7 +285,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	//player.unfold.AddEventS(114317, 114606, 1.0, 0.0)
 	//player.unfold.AddEventS(129702, /*130086*/129958, 0.0, 1.0)
 
-
 	for _, p := range beatMap.Pauses {
 		bd := p.GetBasicData()
 
@@ -314,7 +313,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	audio.AddListener(func(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64) {
 		//_, isSlider := player.bMap.HitObjects[objNum].(*objects.Slider)
 		startTime := player.progressMsF
-		endTime := player.progressMsF+500
+		endTime := player.progressMsF + 500
 		/*if isSlider{
 			startTime = float64(s.GetBasicData().StartTime)
 			endTime = float64(s.GetBasicData().EndTime)
@@ -382,7 +381,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	})
 
-	player.background.Update(0, settings.Graphics.GetWidthF() / 2, settings.Graphics.GetHeightF() / 2)
+	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
 
 	go func() {
 		player.entry = 1
@@ -424,7 +423,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(10 * time.Millisecond)
 		}
 
-
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
@@ -441,15 +439,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		firstT := lastT
 		for {
 			_ = firstT
-			player.background.Update((lastT - firstT) / 1000000, 0, 0)
+			player.background.Update((lastT-firstT)/1000000, 0, 0)
 			currtime := utils.GetNanoTime()
 
 			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
 			if player.start {
 
-
 				if musicPlayer.GetState() == audio.MUSIC_STOPPED {
-					player.progressMsF += float64(currtime-lastT)/1000000.0
+					player.progressMsF += float64(currtime-lastT) / 1000000.0
 				} else {
 					player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
 				}
@@ -462,8 +459,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if player.overlay != nil {
 					player.overlay.Update(int64(player.progressMsF))
 				}
-
-
 
 				/*if player.lastFromQueue != nil && len(player.bMap.Queue) > 0 {
 
@@ -651,8 +646,8 @@ func (pl *Player) Draw(delta float64) {
 	//	settings.Playfield.Bloom.Power = 0.1
 	//}
 
-	settings.Playfield.Bloom.Power = 0.2 + math.Abs(pl.unfold.GetValue()) * 0.3
-	settings.Playfield.Bloom.Blur = 0.5 + math.Abs(pl.unfold.GetValue()) / 1.5
+	settings.Playfield.Bloom.Power = 0.2 + math.Abs(pl.unfold.GetValue())*0.3
+	settings.Playfield.Bloom.Blur = 0.5 + math.Abs(pl.unfold.GetValue())/1.5
 
 	//if pl.progressMsF >= /*74317*/172000 {
 	//	settings.DIVIDES = 2
@@ -801,8 +796,8 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.DrawTexture(*pl.Epi)
 			pl.batch.SetScale(1.0, -1.0)
 			s := "Support me on ko-fi.com/wiekus"
-			width := pl.font.GetWidth(settings.Graphics.GetHeightF() / 40, s)
-			pl.font.Draw(pl.batch, -width / 2, (0.77) * (settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF() / 40, s)
+			width := pl.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
+			pl.font.Draw(pl.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
 		}
 
 		pl.batch.End()
@@ -838,7 +833,7 @@ func (pl *Player) Draw(delta float64) {
 
 		pl.batch.SetColor(1, 1, 1, pl.Scl*pl.fxGlider.GetValue())
 
-		scl := (pl.cookieSize/2048.0) * 1.05
+		scl := (pl.cookieSize / 2048.0) * 1.05
 
 		pl.LogoS1.SetScale((1.05 - easing.OutQuad(pl.progress)*0.05) * scl)
 		pl.LogoS2.SetScale((1.05 + easing.OutQuad(pl.progress)*0.03) * scl)
@@ -892,7 +887,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1, hshifts := settings.Cursor.GetColorsA(settings.DIVIDES, /*settings.TAG*/ len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors1, hshifts := settings.Cursor.GetColorsA(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -977,7 +972,7 @@ func (pl *Player) Draw(delta float64) {
 					}
 					res := pl.processed[i].Draw(pl.progressMs, colors[j], pl.batch)
 					if res {
-						pl.processed = append(pl.processed[:i], pl.processed[(i + 1):]...)
+						pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
 						i++
 					}
 				}
@@ -1018,9 +1013,9 @@ func (pl *Player) Draw(delta float64) {
 
 		//for j := 0; j < settings.DIVIDES; j++ {
 
-			pl.batch.SetCamera(cameras[0])
+		pl.batch.SetCamera(cameras[0])
 
-			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
+		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
 		//}
 
 		pl.batch.End()
@@ -1054,7 +1049,7 @@ func (pl *Player) Draw(delta float64) {
 			/*if i == 0 {
 				col1[3] *= float32(pl.danserGlider.GetValue())
 				col2[3] *= float32(pl.danserGlider.GetValue())
-			}*//* else if i == 1 {
+			}*/ /* else if i == 1 {
 				col1[3] *= float32(pl.resnadGlider.GetValue())
 				col2[3] *= float32(pl.resnadGlider.GetValue())
 			}*/
@@ -1097,9 +1092,9 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetScale(1, 1)
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
-		padDown := 4.0*(settings.Graphics.GetHeightF()/1080.0)
-		shift := 16.0*(settings.Graphics.GetHeightF()/1080.0)
-		size := 16.0*(settings.Graphics.GetHeightF()/1080.0)
+		padDown := 4.0 * (settings.Graphics.GetHeightF() / 1080.0)
+		shift := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
+		size := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
 
 		if settings.DEBUG {
 			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, pl.mapFullName)
