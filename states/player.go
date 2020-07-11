@@ -211,6 +211,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.lastTime = -1
 	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 
+	copy(player.queue2, player.bMap.Queue)
+
 	if !settings.Objects.SliderDynamicLoad {
 		for _, p := range player.queue2 {
 			if s, ok := p.(*objects.Slider); ok {
@@ -218,8 +220,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			}
 		}
 	}
-
-	copy(player.queue2, player.bMap.Queue)
 
 	log.Println("Music:", beatMap.Audio)
 
