@@ -22,7 +22,7 @@ var osuRect bmath.Rectangle
 
 func initCursor() {
 
-	if settings.Cursor.TrailStyle < 1 || settings.Cursor.TrailStyle > 3 {
+	if settings.Cursor.TrailStyle < 1 || settings.Cursor.TrailStyle > 4 {
 		panic("Wrong cursor trail type")
 	}
 
@@ -64,12 +64,12 @@ func initCursor() {
 
 type Cursor struct {
 	Points        []bmath.Vector2d
-	PointsC        []float64
+	PointsC       []float64
 	removeCounter float64
 
 	LeftButton, RightButton bool
-	IsReplayFrame           bool  // TODO: temporary hacky solution for spinners
-	IsPlayer bool
+	IsReplayFrame           bool // TODO: temporary hacky solution for spinners
+	IsPlayer                bool
 	LastFrameTime           int64 //
 	CurrentFrameTime        int64 //
 	Position                bmath.Vector2d
@@ -85,8 +85,8 @@ type Cursor struct {
 	vao      *glhf.VertexSlice
 	subVao   *glhf.VertexSlice
 	mutex    *sync.Mutex
-	hueBase float64
-	vecSize int
+	hueBase  float64
+	vecSize  int
 }
 
 func NewCursor() *Cursor {
@@ -140,7 +140,7 @@ func (cr *Cursor) Update(tim float64) {
 	tim = math.Abs(tim)
 
 	if settings.Cursor.TrailStyle == 3 {
-		cr.hueBase += settings.Cursor.Style23Speed/360.0 * tim
+		cr.hueBase += settings.Cursor.Style23Speed / 360.0 * tim
 		if cr.hueBase > 1.0 {
 			cr.hueBase -= 1.0
 		} else if cr.hueBase < 0 {
@@ -159,7 +159,7 @@ func (cr *Cursor) Update(tim float64) {
 			cr.PointsC = append(cr.PointsC, cr.hueBase)
 
 			if settings.Cursor.TrailStyle == 2 {
-				cr.hueBase += settings.Cursor.Style23Speed/360.0 * density
+				cr.hueBase += settings.Cursor.Style23Speed / 360.0 * density
 				if cr.hueBase > 1.0 {
 					cr.hueBase -= 1.0
 				} else if cr.hueBase < 0 {
@@ -199,6 +199,9 @@ func (cr *Cursor) Update(tim float64) {
 			bI := i * 6 * cr.vecSize
 			inv := float32(len(cr.Points) - i - 1)
 			hue := float32(cr.PointsC[i])
+			if settings.Cursor.TrailStyle == 4 {
+				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cr.Points))
+			}
 
 			fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv, hue)
 			fillArray(cr.vertices, bI+cr.vecSize, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
@@ -221,7 +224,7 @@ func (cr *Cursor) Update(tim float64) {
 	}
 }
 
-func fillArray(dst []float32, index int, values ... float32) {
+func fillArray(dst []float32, index int, values ...float32) {
 	for i, j := range values {
 		dst[index+i] = j
 	}
@@ -265,7 +268,7 @@ func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl3
 func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
 	gl.Disable(gl.DEPTH_TEST)
 
-	if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+	if settings.Cursor.TrailStyle > 1 {
 		color = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
 		color2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
 	}
@@ -289,30 +292,30 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
 
 	if settings.Cursor.TrailStyle == 1 {
-		cursorShader.SetUniformAttr(7,  float32(0.0))
+		cursorShader.SetUniformAttr(7, float32(0.0))
 	} else {
-		cursorShader.SetUniformAttr(7,  float32(1.0))
+		cursorShader.SetUniformAttr(7, float32(1.0))
 	}
 
 	cursor.subVao.BeginDraw()
 
 	innerLengthMult := float32(1.0)
 
-	cursorScl := float32(siz*(16.0/18)*scale)
+	cursorScl := float32(siz * (16.0 / 18) * scale)
 
 	if settings.Cursor.EnableTrailGlow {
-		cursorScl = float32(siz*(12.0/18)*scale)
+		cursorScl = float32(siz * (12.0 / 18) * scale)
 		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
 		cursorShader.SetUniformAttr(0, color2)
 		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
 		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
-		if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+		if settings.Cursor.TrailStyle > 1 {
 			cursorShader.SetUniformAttr(6, float32((hueshift-36)/360))
 		}
 		cursor.subVao.Draw()
 	}
 
-	if settings.Cursor.TrailStyle == 2 || settings.Cursor.TrailStyle == 3 {
+	if settings.Cursor.TrailStyle > 1 {
 		cursorShader.SetUniformAttr(6, float32(hueshift/360))
 	}
 	cursorShader.SetUniformAttr(0, color)

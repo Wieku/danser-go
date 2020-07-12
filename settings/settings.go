@@ -167,6 +167,7 @@ type bloom struct {
 type cursor struct {
 	TrailStyle                  int
 	Style23Speed                float64
+	Style4Shift                 float64
 	Colors                      *color
 	EnableCustomTagColorOffset  bool    //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used
 	TagColorOffset              float64 //-36, offset of the next tag cursor
