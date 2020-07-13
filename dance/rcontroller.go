@@ -33,17 +33,17 @@ type RpData struct {
 }
 
 type subControl struct {
-	xGlider    *animation.Glider
-	yGlider    *animation.Glider
-	k1Glider   *animation.Glider
-	k2Glider   *animation.Glider
-	m1Glider   *animation.Glider
-	m2Glider   *animation.Glider
-	frame      *animation.Glider
-	lolControl Controller
+	xGlider     *animation.Glider
+	yGlider     *animation.Glider
+	k1Glider    *animation.Glider
+	k2Glider    *animation.Glider
+	m1Glider    *animation.Glider
+	m2Glider    *animation.Glider
+	frame       *animation.Glider
+	lolControl  Controller
 	replayIndex int
-	replayTime int64
-	frames []*rplpa.ReplayData
+	replayTime  int64
+	frames      []*rplpa.ReplayData
 }
 
 func NewSubControl() *subControl {
@@ -66,12 +66,12 @@ func NewSubControl() *subControl {
 }
 
 type ReplayController struct {
-	bMap              *beatmap.BeatMap
-	replays           []RpData
-	cursors           []*render.Cursor
-	controllers       []*subControl
-	ruleset           *osu.OsuRuleSet
-	lastTime int64
+	bMap        *beatmap.BeatMap
+	replays     []RpData
+	cursors     []*render.Cursor
+	controllers []*subControl
+	ruleset     *osu.OsuRuleSet
+	lastTime    int64
 	//counter int64
 }
 
@@ -157,7 +157,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			lastTime := int64(0)
 
-
 			control.frames = replayD.ReplayData
 			for _, frame := range replayD.ReplayData {
 				if frame.Time == -12345 {
@@ -203,7 +202,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			mxCombo := replayD.MaxCombo
 
-			controller.replays = append(controller.replays, RpData{replayD.Username + "Ç", /*strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1)*/"", difficulty.Modifier(0), 100, 0, int64(mxCombo), osu.NONE})
+			controller.replays = append(controller.replays, RpData{replayD.Username + "Ç" /*strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1)*/, "", difficulty.Modifier(0), 100, 0, int64(mxCombo), osu.NONE})
 			controller.controllers = append(controller.controllers, control)
 
 			counter++
@@ -226,9 +225,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		if score.Mods&osuapi.ModHalfTime > 0 || score.Mods&osuapi.ModEasy > 0 || counter >= 50 {
 			continue
 		}
-		if score.Username != "FlyingTuna" && score.Username != "WhiteCat" {
-			continue
-		}
+
 		//if score.Username != "Freddie Benson"/*"itsamemarioo"*//*"Teppi"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
 		//	continue
 		//}
@@ -314,7 +311,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			lastTime += frame.Time
 		}
 
-		aa := 1000.0 / (float64(ad1)/float64(ad2))
+		aa := 1000.0 / (float64(ad1) / float64(ad2))
 
 		log.Println("Framerate", aa)
 
@@ -395,7 +392,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 					controller.cursors[i].IsReplayFrame = false
 				}*/
 
-				if nTime % 12 == 0 {
+				if nTime%12 == 0 {
 					controller.cursors[i].LastFrameTime = nTime - 12
 					controller.cursors[i].CurrentFrameTime = nTime
 					controller.cursors[i].IsReplayFrame = true
@@ -407,14 +404,14 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 			} else {
 
-				for ; c.replayIndex < len(c.frames) && c.replayTime + c.frames[c.replayIndex].Time <= nTime ; {
+				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= nTime {
 
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
 
 					mY := float64(frame.MouseY)
 
-					if controller.replays[i].ModsV & difficulty.HardRock > 0 {
+					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
 						mY = 384 - mY
 					}
 

@@ -54,7 +54,7 @@ type bubble struct {
 	endTime    int64
 	name       string
 	combo      int64
-	lastHit  osu.HitResult
+	lastHit    osu.HitResult
 	lastCombo  osu.ComboResult
 }
 
@@ -170,7 +170,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			player.fadeHit.AddEventS(float64(time+600), float64(time+900), 1, 0)
 			player.scaleHit.AddEventS(float64(time), float64(time+300), 0.5, 1)
 			player.lastHit = result
-			overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, result, comboResult))
+			//overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, result, comboResult))
 		}
 
 		if comboResult == osu.ComboResults.Reset && number != 0 {
@@ -182,24 +182,24 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 				//}
 
 				//if math.Abs(float64(player.sCombo-player.maxCombo)) < 5 || (player.name == "TeRiRi" && math.Abs(float64(player.sCombo-506)) < 5) {
-					player.hasBroken = true
-					player.breakTime = time
-					//Fade out player name
-					player.height.SetEasing(easing.OutQuad)
-					player.fade.AddEvent(float64(time), float64(time+3000), 0)
-					player.height.AddEvent(float64(time+2500), float64(time+3000), 0)
+				player.hasBroken = true
+				player.breakTime = time
+				//Fade out player name
+				player.height.SetEasing(easing.OutQuad)
+				player.fade.AddEvent(float64(time), float64(time+3000), 0)
+				player.height.AddEvent(float64(time+2500), float64(time+3000), 0)
 
-					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, result, comboResult))
-					deathShift := (overlay.generator.Float64() - 0.5) * 30
-					player.deathX = float64(position.X) + deathShift
-					player.deathSlide.SetEasing(easing.OutQuad)
-					baseY := position.Y + deathShift
-					player.deathSlide.AddEventS(float64(time), float64(time+2000), baseY, baseY+50)
-					player.deathFade.AddEventS(float64(time), float64(time+200), 0, 1)
-					player.deathFade.AddEventS(float64(time+1800), float64(time+2000), 1, 0)
-					log.Println(overlay.names[cursor], "has broken! Max combo:", player.sCombo)
-					//player.fade.AddEvent(float64(230273), float64(230273+750), 1)
-					//player.height.AddEvent(float64(230273), float64(230273+750), settings.Graphics.GetHeightF()*0.9*1.04/(51))
+				overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, result, comboResult))
+				deathShift := (overlay.generator.Float64() - 0.5) * 30
+				player.deathX = float64(position.X) + deathShift
+				player.deathSlide.SetEasing(easing.OutQuad)
+				baseY := position.Y + deathShift
+				player.deathSlide.AddEventS(float64(time), float64(time+2000), baseY, baseY+50)
+				player.deathFade.AddEventS(float64(time), float64(time+200), 0, 1)
+				player.deathFade.AddEventS(float64(time+1800), float64(time+2000), 1, 0)
+				log.Println(overlay.names[cursor], "has broken! Max combo:", player.sCombo)
+				//player.fade.AddEvent(float64(230273), float64(230273+750), 1)
+				//player.height.AddEvent(float64(230273), float64(230273+750), settings.Graphics.GetHeightF()*0.9*1.04/(51))
 				//}
 
 				//Show "bubble" in the fail position
@@ -213,48 +213,6 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	})
 
 	replayController.GetRuleset().SetEndListener(func(time int64, number int64) {
-		/*nextnum := number + 1
-
-		timediff := false
-
-		if int(number) == len(overlay.controller.GetBeatMap().HitObjects)-1 {
-			nextnum = -1
-		} else {
-			endTime := overlay.controller.GetBeatMap().HitObjects[number].GetBasicData().EndTime
-			startTime := overlay.controller.GetBeatMap().HitObjects[nextnum].GetBasicData().StartTime
-
-			if startTime - endTime > 2000 {
-				nextnum = number + 1
-				timediff = true
-			}
-
-			if number-overlay.lastObj > 4 {
-				nextnum = number + 3
-			}
-
-			if int(nextnum) >= len(overlay.controller.GetBeatMap().HitObjects) {
-				nextnum = int64(len(overlay.controller.GetBeatMap().HitObjects)-1)
-			}
-		}
-
-		if number-overlay.lastObj > 4 || int(nextnum) >= len(overlay.controller.GetBeatMap().HitObjects)-1 || nextnum == -1 || timediff {
-			overlay.lastObj = number
-			endSortTime := time + 500
-			if nextnum > -1 {
-				startTime := overlay.controller.GetBeatMap().HitObjects[nextnum].GetBasicData().StartTime
-				if startTime < endSortTime {
-					endSortTime = startTime
-				}
-			}*?
-			/*sort.Slice(overlay.playersArray, func(i, j int) bool {
-				return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && overlay.playersArray[i].score > overlay.playersArray[j].score) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && overlay.playersArray[i].score > overlay.playersArray[j].score)))
-			})
-
-			for i, g := range overlay.playersArray {
-				g.index.AddEvent(float64(time), float64(endSortTime), float64(i))
-			}*/
-
-		/*}*/
 		sort.SliceStable(overlay.playersArray, func(i, j int) bool {
 			return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && overlay.playersArray[i].score > overlay.playersArray[j].score) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number])))
 		})
@@ -322,7 +280,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 			rep := overlay.players[bub.name]
 			batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*bub.deathFade.GetValue())
 			width := overlay.font.GetWidth(scl*rescale, bub.name)
-			overlay.font.Draw(batch, bub.deathX-width/2, bub.deathSlide.GetValue() - scl*rescale/2, scl*rescale, bub.name)
+			overlay.font.Draw(batch, bub.deathX-width/2, bub.deathSlide.GetValue()-scl*rescale/2, scl*rescale, bub.name)
 
 			batch.SetColor(1, 1, 1, alpha*bub.deathFade.GetValue())
 
@@ -332,7 +290,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 			if bub.lastCombo == osu.ComboResults.Reset {
 				combo := fmt.Sprintf("%dx", bub.combo)
 				comboWidth := overlay.font.GetWidth(scl*rescale*0.8, combo)
-				overlay.font.Draw(batch, bub.deathX-comboWidth/2, bub.deathSlide.GetValue() + scl*rescale*0.8/2, scl*rescale*0.8, combo)
+				overlay.font.Draw(batch, bub.deathX-comboWidth/2, bub.deathSlide.GetValue()+scl*rescale*0.8/2, scl*rescale*0.8, combo)
 			} else {
 				switch bub.lastHit {
 				case osu.HitResults.Hit100:
@@ -341,12 +299,10 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 					batch.DrawUnit(*render.Hit100)
 				case osu.HitResults.Hit50:
 					batch.SetSubScale(scl*(float64(render.Hit50.Width)/float64(render.Hit50.Height))/2, -scl/2)
-					batch.SetTranslation(bmath.NewVec2d(bub.deathX, bub.deathSlide.GetValue() - scl*rescale*0.8))
+					batch.SetTranslation(bmath.NewVec2d(bub.deathX, bub.deathSlide.GetValue()-scl*rescale*0.8))
 					batch.DrawUnit(*render.Hit50)
 				}
 			}
-
-
 
 			//batch.DrawUnit(*render.Hit0)
 		}
@@ -411,7 +367,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 			batch.SetSubScale(scl*0.9/2, scl*0.9/2)
 			batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl /*rowPosY*/, rowBaseY))
 			batch.DrawUnit(*render.OvButtonE)
-			if controller.GetClick(i, j) || controller.GetClick(i, j + 2) {
+			if controller.GetClick(i, j) || controller.GetClick(i, j+2) {
 				batch.DrawUnit(*render.OvButton)
 			}
 		}

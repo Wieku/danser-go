@@ -1,9 +1,9 @@
 package render
 
 import (
-	"github.com/wieku/danser-go/utils"
-	"github.com/wieku/danser-go/render/texture"
 	"github.com/wieku/danser-go/render/font"
+	"github.com/wieku/danser-go/render/texture"
+	"github.com/wieku/danser-go/utils"
 )
 
 var Atlas *texture.TextureAtlas
@@ -49,7 +49,7 @@ var OvButton *texture.TextureRegion
 var OvButtonE *texture.TextureRegion
 
 func LoadTextures() {
-	Atlas = texture.NewTextureAtlas(8192, 4)
+	Atlas = texture.NewTextureAtlas(4096, 4)
 	Atlas.Bind(16)
 
 	Circle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle.png")
