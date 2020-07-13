@@ -151,6 +151,8 @@ func (cr *Cursor) Update(tim float64) {
 	points := cr.Position.Dst(cr.LastPos)
 	density := 1.0 / settings.Cursor.TrailDensity
 
+	dirtyLocal := false
+
 	if int(points/density) > 0 {
 		temp := cr.LastPos
 		for i := density; i < points; i += density {
@@ -167,28 +169,36 @@ func (cr *Cursor) Update(tim float64) {
 				}
 			}
 		}
+		dirtyLocal = true
 		cr.LastPos = temp
 	}
 
 	if len(cr.Points) > 0 {
-		cr.removeCounter += float64(len(cr.Points)) / (360.0 / tim) * settings.Cursor.TrailRemoveSpeed
+		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / tim) * settings.Cursor.TrailRemoveSpeed
 		times := int(math.Floor(cr.removeCounter))
-		if times < len(cr.Points) {
-			if len(cr.Points) > int(float64(settings.Cursor.TrailMaxLength)/density) {
-				cr.Points = cr.Points[len(cr.Points)-int(float64(settings.Cursor.TrailMaxLength)/density):]
-				cr.PointsC = cr.PointsC[len(cr.PointsC)-int(float64(settings.Cursor.TrailMaxLength)/density):]
-				cr.removeCounter = 0
-			} else {
+		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) / density)
+
+		if len(cr.Points) > lengthAdjusted {
+			cr.Points = cr.Points[len(cr.Points)-lengthAdjusted:]
+			cr.PointsC = cr.PointsC[len(cr.PointsC)-lengthAdjusted:]
+			cr.removeCounter = 0
+			dirtyLocal = true
+		} else if times > 0 {
+			if times < len(cr.Points) {
 				cr.Points = cr.Points[times:]
 				cr.PointsC = cr.PointsC[times:]
 				cr.removeCounter -= float64(times)
+			} else {
+				cr.Points = cr.Points[len(cr.Points):]
+				cr.PointsC = cr.PointsC[len(cr.PointsC):]
+				cr.removeCounter = 0
 			}
-		} else {
-			cr.Points = cr.Points[len(cr.Points):]
-			cr.PointsC = cr.PointsC[len(cr.PointsC):]
-			cr.removeCounter = 0
-		}
 
+			dirtyLocal = true
+		}
+	}
+
+	if dirtyLocal {
 		cr.mutex.Lock()
 
 		if len(cr.vertices) < len(cr.Points)*6*cr.vecSize {
@@ -196,28 +206,23 @@ func (cr *Cursor) Update(tim float64) {
 		}
 
 		for i, o := range cr.Points {
-			bI := i * 6 * cr.vecSize
+			offset := i * 6 * cr.vecSize
 			inv := float32(len(cr.Points) - i - 1)
+
 			hue := float32(cr.PointsC[i])
 			if settings.Cursor.TrailStyle == 4 {
 				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cr.Points))
 			}
 
-			fillArray(cr.vertices, bI, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv, hue)
-			fillArray(cr.vertices, bI+cr.vecSize, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
-			fillArray(cr.vertices, bI+cr.vecSize*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
-			fillArray(cr.vertices, bI+cr.vecSize*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
-			fillArray(cr.vertices, bI+cr.vecSize*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv, hue)
-			fillArray(cr.vertices, bI+cr.vecSize*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
+			fillArray(cr.vertices, offset, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
 		}
 
 		cr.vaoSize = len(cr.Points) * 6 * cr.vecSize
-		cr.VaoPos = cr.Position
-		cr.vaoDirty = true
-		cr.mutex.Unlock()
-	} else {
-		cr.mutex.Lock()
-		cr.vaoSize = 0
 		cr.VaoPos = cr.Position
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
