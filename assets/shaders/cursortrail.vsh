@@ -24,8 +24,8 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    gl_Position = proj * vec4((in_position - in_mid) * scale * (endScale + (1.0 - endScale) * (points-1-in_index) / points) + in_mid, 1);
+    gl_Position = proj * vec4((in_position - in_mid) * scale * (endScale + (1.0 - endScale) * (points - 1 - in_index) / points) + in_mid, 1.0);
     tex_coord = in_tex_coord;
     index = in_index;
-    color_pass = vec4(hsv2rgb(vec3(fract(hue+hueshift), saturation, 1.0)).rgb, 1.0);
+    color_pass = vec4(hsv2rgb(vec3(fract(hue + hueshift), saturation, 1.0)), 1.0);
 }
