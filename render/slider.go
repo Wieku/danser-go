@@ -1,17 +1,17 @@
 package render
 
 import (
-	"github.com/wieku/danser-go/bmath"
-	"math"
-	"github.com/wieku/glhf"
-	"log"
-	_ "image/png"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/settings"
-	"io/ioutil"
-	"github.com/wieku/danser-go/utils"
+	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/render/framebuffer"
+	"github.com/wieku/danser-go/settings"
+	"github.com/wieku/danser-go/utils"
+	"github.com/wieku/glhf"
+	_ "image/png"
+	"io/ioutil"
+	"log"
+	"math"
 )
 
 var sliderShader *glhf.Shader = nil
@@ -28,13 +28,13 @@ func SetupSlider() {
 	sliderVertexFormat = glhf.AttrFormat{
 		{Name: "in_position", Type: glhf.Vec3},
 		{Name: "center", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec2},
+		//{Name: "in_tex_coord", Type: glhf.Vec2},
 	}
 	var err error
 
 	svert, _ := ioutil.ReadFile("assets/shaders/slider.vsh")
 	sfrag, _ := ioutil.ReadFile("assets/shaders/slider.fsh")
-	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "tex", Type: glhf.Int}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}}, string(svert), string(sfrag))
+	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}}, string(svert), string(sfrag))
 	if err != nil {
 		log.Println(err)
 	}
@@ -89,21 +89,20 @@ func (sr *SliderRenderer) Begin() {
 	sliderShader.Begin()
 
 	SliderGradient.Bind(0)
-	sliderShader.SetUniformAttr(1, int32(0))
-	sliderShader.SetUniformAttr(2, cam)
+	sliderShader.SetUniformAttr(1, cam)
 }
 
 func (sr *SliderRenderer) SetColor(color mgl32.Vec4, prev mgl32.Vec4) {
 	sliderShader.SetUniformAttr(0, color)
 	if settings.Objects.EnableCustomSliderBorderGradientOffset {
-		sliderShader.SetUniformAttr(4, utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset))
+		sliderShader.SetUniformAttr(3, utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset))
 	} else {
-		sliderShader.SetUniformAttr(4, prev)
+		sliderShader.SetUniformAttr(3, prev)
 	}
 }
 
 func (sr *SliderRenderer) SetScale(scale float64) {
-	sliderShader.SetUniformAttr(3, mgl32.Scale3D(float32(scale), float32(scale), 1))
+	sliderShader.SetUniformAttr(2, mgl32.Scale3D(float32(scale), float32(scale), 1))
 }
 
 func (sr *SliderRenderer) EndAndRender() {
@@ -128,7 +127,7 @@ func (sr *SliderRenderer) EndAndRender() {
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
 	cam = camera
-	sliderShader.SetUniformAttr(2, cam)
+	sliderShader.SetUniformAttr(1, cam)
 }
 
 func (self *SliderRenderer) GetShape(curve []bmath.Vector2d) ([]float32, int) {
@@ -136,7 +135,7 @@ func (self *SliderRenderer) GetShape(curve []bmath.Vector2d) ([]float32, int) {
 }
 
 func (self *SliderRenderer) UploadMesh(mesh []float32) *glhf.VertexSlice {
-	slice := glhf.MakeVertexSlice(sliderShader, len(mesh)/8, len(mesh)/8)
+	slice := glhf.MakeVertexSlice(sliderShader, len(mesh)/6, len(mesh)/6)
 	slice.Begin()
 	slice.SetVertexData(mesh)
 	slice.End()
@@ -144,7 +143,7 @@ func (self *SliderRenderer) UploadMesh(mesh []float32) *glhf.VertexSlice {
 }
 
 func createMesh(curve []bmath.Vector2d) []float32 {
-	vertices := make([]float32, 8*3*int(settings.Objects.SliderLOD)*len(curve))
+	vertices := make([]float32, 6*3*int(settings.Objects.SliderLOD)*len(curve))
 	num := 0
 	iter := 0
 	for _, v := range curve {
@@ -152,8 +151,8 @@ func createMesh(curve []bmath.Vector2d) []float32 {
 		for j := range tab {
 			if j >= 2 {
 				p1, p2, p3 := tab[j-1], tab[j], tab[0]
-				set(vertices, iter, float32(p1.X), float32(p1.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, 0.0, 0.0, float32(p2.X), float32(p2.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, 0.0, 0.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0, 1.0, 0.0)
-				iter += 24
+				set(vertices, iter, float32(p1.X), float32(p1.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p2.X), float32(p2.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0)
+				iter += 6 * 3
 			}
 		}
 		num += len(tab)
@@ -162,11 +161,11 @@ func createMesh(curve []bmath.Vector2d) []float32 {
 	return vertices
 }
 
-func set(array []float32, index int, data ... float32) {
+func set(array []float32, index int, data ...float32) {
 	copy(array[index:index+len(data)], data)
 }
 
-func createCircle(x, y, radius float64, segments int) ([]bmath.Vector2d) {
+func createCircle(x, y, radius float64, segments int) []bmath.Vector2d {
 	points := make([]bmath.Vector2d, segments+2)
 	points[0] = bmath.NewVec2d(x, y)
 
