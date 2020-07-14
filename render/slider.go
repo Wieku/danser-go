@@ -88,7 +88,6 @@ func (sr *SliderRenderer) Begin() {
 
 	sliderShader.Begin()
 
-	SliderGradient.Bind(0)
 	sliderShader.SetUniformAttr(1, cam)
 }
 

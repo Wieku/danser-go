@@ -13,7 +13,6 @@ var ApproachCircle *texture.TextureRegion
 var CircleFull *texture.TextureRegion
 var CircleOverlay *texture.TextureRegion
 
-var SliderGradient *texture.TextureSingle
 var SliderTick *texture.TextureRegion
 var SliderBall *texture.TextureRegion
 var SliderReverse *texture.TextureRegion
@@ -88,7 +87,6 @@ func LoadTextures() {
 
 	Triangle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle.png")
 
-	SliderGradient, _ = utils.LoadTexture("assets/textures/slidergradient.png")
 	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
 	Pixel = texture.NewTextureSingle(1, 1, 0)
 	Pixel.SetData(0, 0, 1, 1, []byte{0xFF, 0xFF, 0xFF, 0xFF})
