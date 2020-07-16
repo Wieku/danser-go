@@ -587,8 +587,8 @@ func (pl *Player) Draw(delta float64) {
 	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
 
-	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)/**pl.unfold.GetValue()*/)
-	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES)/**pl.unfold.GetValue()*/)
+	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
+	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
 
 	if settings.Playfield.BlurEnable {
 		blurVal = pl.blurGlider.GetValue()
@@ -686,7 +686,7 @@ func (pl *Player) Draw(delta float64) {
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1, hshifts := settings.Cursor.GetColorsA(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
 	if settings.Objects.EnableCustomSliderBorderColor {
@@ -826,12 +826,13 @@ func (pl *Player) Draw(delta float64) {
 				continue
 			}
 
-			ind := j*len(pl.controller.GetCursors()) + i - 1
+			baseIndex := j*len(pl.controller.GetCursors()) + i
+			ind := baseIndex - 1
 			if ind < 0 {
 				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
 			}
 
-			col1 := colors1[j*len(pl.controller.GetCursors())+i]
+			col1 := colors1[baseIndex]
 			col2 := colors1[ind]
 
 			/*if i == 0 {
@@ -842,7 +843,7 @@ func (pl *Player) Draw(delta float64) {
 				col2[3] *= float32(pl.resnadGlider.GetValue())
 			}*/
 
-			g.DrawM(scale2, pl.batch, col1, col2, hshifts[ind])
+			g.DrawM(scale2, pl.batch, col1, col2, hshifts[baseIndex])
 		}
 
 	}
@@ -897,8 +898,8 @@ func (pl *Player) Draw(delta float64) {
 		if settings.DEBUG || settings.FPS {
 			fpsText := fmt.Sprintf("%0.0ffps (%0.2fms)", pl.fpsC, 1000/pl.fpsC)
 			tpsText := fmt.Sprintf("%0.0ftps (%0.2fms)", pl.fpsU, 1000/pl.fpsU)
-			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF() - pl.font.GetWidth(size, fpsText), padDown+shift, size, fpsText)
-			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF() - pl.font.GetWidth(size, tpsText), padDown, size, tpsText)
+			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidth(size, fpsText), padDown+shift, size, fpsText)
+			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidth(size, tpsText), padDown, size, tpsText)
 		}
 
 		pl.batch.End()
