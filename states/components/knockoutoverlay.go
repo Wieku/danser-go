@@ -356,7 +356,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 	cA := strconv.FormatInt(int64(highestACC), 10)
 	cS := overlay.font.GetWidthMonospaced(scl, humanize(highestScore))
 
-	for i, rep := range overlay.playersArray {
+	for _, rep := range overlay.playersArray {
 		r := replays[rep.oldIndex]
 		player := overlay.players[r.Name]
 		batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*player.fade.GetValue())
@@ -367,7 +367,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 			batch.SetSubScale(scl*0.9/2, scl*0.9/2)
 			batch.SetTranslation(bmath.NewVec2d((float64(j)+0.5)*scl /*rowPosY*/, rowBaseY))
 			batch.DrawUnit(*render.OvButtonE)
-			if controller.GetClick(i, j) || controller.GetClick(i, j+2) {
+			if controller.GetClick(rep.oldIndex, j) || controller.GetClick(rep.oldIndex, j+2) {
 				batch.DrawUnit(*render.OvButton)
 			}
 		}
