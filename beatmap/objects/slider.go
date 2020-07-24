@@ -234,14 +234,14 @@ func (self *Slider) SetTiming(timings *Timings) {
 
 	startTime := float64(self.GetBasicData().StartTime)
 
-	velocity := self.Timings.GetVelocity(self.TPoint) / 0.99999993944
+	velocity := self.Timings.GetVelocity(self.TPoint)
 
 	minDistanceFromEnd := velocity * 0.01
 
 	scoringLengthTotal := 0.0
 	scoringDistance := 0.0
 
-	tickDistance := math.Min(self.Timings.GetTickDistance(self.TPoint)*0.99999993944, self.multiCurve.GetLength())
+	tickDistance := math.Min(self.Timings.GetTickDistance(self.TPoint), self.multiCurve.GetLength())
 
 	for i := int64(0); i < self.repeat; i++ {
 		distanceToEnd := self.multiCurve.GetLength()
@@ -268,14 +268,11 @@ func (self *Slider) SetTiming(timings *Timings) {
 				p1, p2 = p2, p1
 			}
 
-			distance := float32(line.GetLength())
+			distance := line.GetLength32()
 
-			progress := float64(1000.0*distance) / velocity /** 0.99999987889*/
+			progress := 1000.0 * float64(distance) / velocity
 
-			//log.Println(distance*1000, progress*1000, velocity*1000, int64(startTime+progress))
 			self.scorePath = append(self.scorePath, PathLine{Time1: int64(startTime), Time2: int64(startTime + progress), Line: curves.NewLinear(p1, p2)})
-
-			//log.Println(self.scorePath[len(self.scorePath)-1])
 
 			startTime += progress
 
