@@ -6,12 +6,12 @@ import (
 )
 
 type TimingPoint struct {
-	Time         int64
+	Time                  int64
 	BaseBpm, Bpm, beatLen float64
-	SampleSet    int
-	SampleIndex  int
-	SampleVolume float64
-	Kiai	bool
+	SampleSet             int
+	SampleIndex           int
+	SampleVolume          float64
+	Kiai                  bool
 }
 
 func (t TimingPoint) GetRatio() float64 {
@@ -41,7 +41,7 @@ func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {
-		point.Bpm = tim.fullBPM / math.Max(0.1, -100.0/point.Bpm)
+		point.Bpm = tim.fullBPM * float64(float32(math.Max(10, math.Min(1000, -point.Bpm)))/float32(100.0))
 	}
 	point.BaseBpm = tim.fullBPM
 	point.Kiai = isKiai
@@ -92,7 +92,7 @@ func (tim Timings) GetSliderTime(pixelLength float64) int64 {
 }
 
 func (tim Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) float64 {
-	return float64(float32(1000.0 * pixelLength) / float32(100.0 * tim.SliderMult * (1000.0/point.Bpm)))
+	return float64(float32(1000.0*pixelLength) / float32(100.0*tim.SliderMult*(1000.0/point.Bpm)))
 }
 
 func (tim Timings) GetVelocity(point TimingPoint) float64 {
