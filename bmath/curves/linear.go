@@ -1,6 +1,9 @@
 package curves
 
-import math2 "github.com/wieku/danser-go/bmath"
+import (
+	math2 "github.com/wieku/danser-go/bmath"
+	"math"
+)
 
 type Linear struct {
 	Point1, Point2 math2.Vector2d
@@ -24,4 +27,11 @@ func (ln Linear) GetEndAngle() float64 {
 
 func (ln Linear) GetLength() float64 {
 	return ln.Point1.Dst(ln.Point2)
+}
+
+func (ln Linear) GetLength32() float32 {
+	s1 := ln.Point2.X32() - ln.Point1.X32()
+	s2 := ln.Point2.Y32() - ln.Point1.Y32()
+	s := s1*s1 + s2*s2
+	return float32(math.Sqrt(float64(s)))
 }
