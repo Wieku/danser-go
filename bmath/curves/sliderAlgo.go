@@ -4,6 +4,8 @@ import (
 	"github.com/wieku/danser-go/bmath"
 )
 
+const minPartWidth = 0.0001
+
 type MultiCurve struct {
 	sections []float64
 	length   float64
@@ -73,14 +75,14 @@ func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *
 			for i := len(lines) - 1; i >= 0 && diff > 0.0; i-- {
 				line := lines[i]
 
-				if diff >= line.GetLength() {
-					diff -= line.GetLength()
-					lines = lines[:len(lines)-1]
-				} else {
+				if line.GetLength() >= diff+minPartWidth {
 					pt := line.PointAt((line.GetLength() - diff) / line.GetLength())
 					lines[i] = NewLinear(line.Point1, pt)
 					break
 				}
+
+				diff -= line.GetLength()
+				lines = lines[:len(lines)-1]
 			}
 
 		} else if desiredLength > length {
