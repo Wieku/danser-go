@@ -237,28 +237,32 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 }
 
 func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
+	maniaFrameIndex := 0
+	for i, frame := range frames {
+		if frame.Time == -12345 {
+			maniaFrameIndex = i
+			break
+		}
+	}
+
+	frames = append(frames[:maniaFrameIndex], frames[maniaFrameIndex+1:]...)
+
 	subController.frames = frames
 
-	lastTime := int64(0)
-
-	for _, frame := range frames {
-		if frame.Time == -12345 {
-			continue
+	translate := func(k bool) float64 {
+		if k {
+			return 1.0
 		}
+		return 0.0
+	}
 
+	lastTime := int64(0)
+	for _, frame := range frames {
 		eventTime := math.Max(float64(lastTime), float64(lastTime+frame.Time))
 
 		//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
 
 		press := frame.KeyPressed
-
-		translate := func(k bool) float64 {
-			if k {
-				return 1.0
-			} else {
-				return 0.0
-			}
-		}
 
 		subController.k1Glider.AddEventS(eventTime, eventTime, translate(press.Key1), translate(press.Key1))
 		subController.k2Glider.AddEventS(eventTime, eventTime, translate(press.Key2), translate(press.Key2))
@@ -370,7 +374,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 						localIndex = len(c.frames) - 1
 					}
 
-					progress := float64(nTime-c.replayTime) / float64(c.frames[localIndex].Time)
+					progress := math.Min(float64(nTime-c.replayTime), float64(c.frames[localIndex].Time)) / float64(c.frames[localIndex].Time)
 
 					prevIndex := localIndex - 1
 					if prevIndex < 0 {
