@@ -365,15 +365,20 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				c.m2Glider.Update(float64(nTime))
 
 				if !wasUpdated {
-					progress := float64(nTime-c.replayTime) / float64(c.frames[c.replayIndex].Time)
+					localIndex := c.replayIndex
+					if localIndex >= len(c.frames) {
+						localIndex = len(c.frames) - 1
+					}
 
-					prevIndex := c.replayIndex - 1
+					progress := float64(nTime-c.replayTime) / float64(c.frames[localIndex].Time)
+
+					prevIndex := localIndex - 1
 					if prevIndex < 0 {
 						prevIndex = 0
 					}
 
-					mX := float64(c.frames[c.replayIndex].MosueX-c.frames[prevIndex].MosueX)*progress + float64(c.frames[prevIndex].MosueX)
-					mY := float64(c.frames[c.replayIndex].MouseY-c.frames[prevIndex].MouseY)*progress + float64(c.frames[prevIndex].MouseY)
+					mX := float64(c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + float64(c.frames[prevIndex].MosueX)
+					mY := float64(c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + float64(c.frames[prevIndex].MouseY)
 
 					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
 						mY = 384 - mY
