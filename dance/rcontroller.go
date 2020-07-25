@@ -292,7 +292,7 @@ func (controller *ReplayController) InitCursors() {
 	}
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, modifiers)
 
-	controller.Update(480000, 1)
+	//controller.Update(480000, 1)
 }
 
 func (controller *ReplayController) Update(time int64, delta float64) {
