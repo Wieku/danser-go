@@ -149,36 +149,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			control := NewSubControl()
 
-			lastTime := int64(0)
-
-			control.frames = replayD.ReplayData
-			for _, frame := range replayD.ReplayData {
-				if frame.Time == -12345 {
-					continue
-				}
-
-				time1 := float64(lastTime)
-				time2 := math.Max(time1, float64(lastTime+frame.Time))
-
-				//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
-
-				press := frame.KeyPressed
-
-				translate := func(k bool) float64 {
-					if k {
-						return 1.0
-					} else {
-						return 0.0
-					}
-				}
-
-				control.k1Glider.AddEventS(time2, time2, translate(press.Key1), translate(press.Key1))
-				control.k2Glider.AddEventS(time2, time2, translate(press.Key2), translate(press.Key2))
-				control.m1Glider.AddEventS(time2, time2, translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
-				control.m2Glider.AddEventS(time2, time2, translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
-
-				lastTime += frame.Time
-			}
+			loadFrames(control, replayD.ReplayData)
 
 			mxCombo := replayD.MaxCombo
 
@@ -238,42 +209,14 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		control := NewSubControl()
 
-		lastTime := int64(0)
-
 		data, err := ioutil.ReadFile(fileName)
 		if err != nil {
 			panic(err)
 		}
 
 		replay, _ := rplpa.ParseCompressed(data)
-		control.frames = replay
-		for _, frame := range replay {
-			if frame.Time == -12345 {
-				continue
-			}
 
-			time1 := float64(lastTime)
-			time2 := math.Max(time1, float64(lastTime+frame.Time))
-
-			//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
-
-			press := frame.KeyPressed
-
-			translate := func(k bool) float64 {
-				if k {
-					return 1.0
-				} else {
-					return 0.0
-				}
-			}
-
-			control.k1Glider.AddEventS(time2, time2, translate(press.Key1), translate(press.Key1))
-			control.k2Glider.AddEventS(time2, time2, translate(press.Key2), translate(press.Key2))
-			control.m1Glider.AddEventS(time2, time2, translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
-			control.m2Glider.AddEventS(time2, time2, translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
-
-			lastTime += frame.Time
-		}
+		loadFrames(control, replay)
 
 		mxCombo := score.MaxCombo
 
@@ -291,6 +234,39 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	controller.bMap = beatMap
 	controller.lastTime = -200
+}
+
+func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
+	subController.frames = frames
+
+	lastTime := int64(0)
+
+	for _, frame := range frames {
+		if frame.Time == -12345 {
+			continue
+		}
+
+		eventTime := math.Max(float64(lastTime), float64(lastTime+frame.Time))
+
+		//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
+
+		press := frame.KeyPressed
+
+		translate := func(k bool) float64 {
+			if k {
+				return 1.0
+			} else {
+				return 0.0
+			}
+		}
+
+		subController.k1Glider.AddEventS(eventTime, eventTime, translate(press.Key1), translate(press.Key1))
+		subController.k2Glider.AddEventS(eventTime, eventTime, translate(press.Key2), translate(press.Key2))
+		subController.m1Glider.AddEventS(eventTime, eventTime, translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
+		subController.m2Glider.AddEventS(eventTime, eventTime, translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
+
+		lastTime += frame.Time
+	}
 }
 
 func (controller *ReplayController) InitCursors() {
