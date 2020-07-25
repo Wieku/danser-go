@@ -1,13 +1,13 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser-go/bmath"
 	"github.com/go-gl/mathgl/mgl32"
-	"unicode"
-	"strings"
-	"math"
-	"github.com/wieku/danser-go/render/texture"
+	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/render/batches"
+	"github.com/wieku/danser-go/render/texture"
+	"math"
+	"strings"
+	"unicode"
 )
 
 const (
@@ -143,6 +143,10 @@ func (sprite *Sprite) Update(time int64) {
 
 	if len(sprite.texture) > 1 {
 		frame := int(math.Floor(float64(time-sprite.startTime) / sprite.frameDelay))
+		if frame < 0 {
+			frame = 0
+		}
+
 		if !sprite.loopForever {
 			if frame >= len(sprite.texture) {
 				frame = len(sprite.texture) - 1
@@ -186,6 +190,7 @@ func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
 	if alpha > 1.001 {
 		alpha -= math.Ceil(sprite.color.A) - 1
 	}
+	//log.Println(sprite.currentFrame)
 	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs(), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], true)
 }
 
