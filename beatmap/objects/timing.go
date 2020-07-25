@@ -41,7 +41,7 @@ func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int
 	if point.Bpm > 0 {
 		tim.fullBPM = point.Bpm
 	} else {
-		point.Bpm = tim.fullBPM * float64(float32(math.Max(10, math.Min(1000, -point.Bpm)))/float32(100.0))
+		point.Bpm = tim.fullBPM * /* float64(float32(*/ math.Max(10, math.Min(1000, -point.Bpm)) / 100.0 /*)/float32(100.0))*/
 	}
 	point.BaseBpm = tim.fullBPM
 	point.Kiai = isKiai
