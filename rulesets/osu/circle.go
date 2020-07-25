@@ -49,10 +49,6 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 	}
 }
 
-func (circle *Circle) Update(time int64) bool {
-	return true
-}
-
 func (circle *Circle) UpdateFor(player *difficultyPlayer, time int64) bool {
 	return true
 }
@@ -205,7 +201,7 @@ func (circle *Circle) UpdatePost(time int64) bool {
 		if !state.isHit {
 			unfinished++
 
-			if time > circle.hitCircle.GetBasicData().EndTime + player.diff.Hit50 {
+			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
 				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
 				if len(circle.players) == 1 {
 					circle.renderable.Miss(time)

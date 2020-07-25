@@ -1,21 +1,21 @@
 package dance
 
 import (
-	"github.com/wieku/danser-go/beatmap"
-	"github.com/wieku/danser-go/render"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/wieku/danser-go/rulesets/osu"
-	"github.com/wieku/danser-go/bmath/difficulty"
+	"github.com/wieku/danser-go/beatmap"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/difficulty"
+	"github.com/wieku/danser-go/render"
+	"github.com/wieku/danser-go/rulesets/osu"
 )
 
 type PlayerController struct {
-	bMap    *beatmap.BeatMap
-	cursors []*render.Cursor
-	window  *glfw.Window
-	ruleset *osu.OsuRuleSet
+	bMap     *beatmap.BeatMap
+	cursors  []*render.Cursor
+	window   *glfw.Window
+	ruleset  *osu.OsuRuleSet
 	lastTime int64
-	counter int64
+	counter  int64
 }
 
 func NewPlayerController() Controller {
@@ -47,20 +47,21 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 		controller.cursors[0].RightButton = controller.window.GetKey(glfw.KeyV) == glfw.Press
 	}
 
-	controller.counter += time-controller.lastTime
+	controller.counter += time - controller.lastTime
 
 	if controller.counter >= 12 {
-		controller.cursors[0].LastFrameTime = time-12
+		controller.cursors[0].LastFrameTime = time - 12
 		controller.cursors[0].CurrentFrameTime = time
 		controller.cursors[0].IsReplayFrame = true
-		controller.counter-=12
+		controller.counter -= 12
 	} else {
 		controller.cursors[0].IsReplayFrame = false
 	}
 
 	controller.lastTime = time
 
-	controller.ruleset.UpdateFor(controller.cursors[0], time)
+	controller.ruleset.UpdateClickFor(controller.cursors[0], time)
+	controller.ruleset.UpdateNormalFor(controller.cursors[0], time)
 	controller.ruleset.Update(time)
 
 	controller.cursors[0].Update(delta)

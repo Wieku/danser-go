@@ -33,13 +33,13 @@ type RpData struct {
 }
 
 type subControl struct {
-	xGlider     *animation.Glider
-	yGlider     *animation.Glider
-	k1Glider    *animation.Glider
-	k2Glider    *animation.Glider
-	m1Glider    *animation.Glider
-	m2Glider    *animation.Glider
-	frame       *animation.Glider
+	//xGlider     *animation.Glider
+	//yGlider     *animation.Glider
+	k1Glider *animation.Glider
+	k2Glider *animation.Glider
+	m1Glider *animation.Glider
+	m2Glider *animation.Glider
+	//frame       *animation.Glider
 	lolControl  Controller
 	replayIndex int
 	replayTime  int64
@@ -48,10 +48,10 @@ type subControl struct {
 
 func NewSubControl() *subControl {
 	control := new(subControl)
-	control.xGlider = animation.NewGlider(0)
+	/*control.xGlider = animation.NewGlider(0)
 	control.xGlider.SetSorting(false)
 	control.yGlider = animation.NewGlider(0)
-	control.yGlider.SetSorting(false)
+	control.yGlider.SetSorting(false)*/
 	control.k1Glider = animation.NewGlider(0)
 	control.k1Glider.SetSorting(false)
 	control.k2Glider = animation.NewGlider(0)
@@ -60,8 +60,8 @@ func NewSubControl() *subControl {
 	control.m1Glider.SetSorting(false)
 	control.m2Glider = animation.NewGlider(0)
 	control.m2Glider.SetSorting(false)
-	control.frame = animation.NewGlider(0)
-	control.frame.SetSorting(false)
+	//control.frame = animation.NewGlider(0)
+	//control.frame.SetSorting(false)
 	return control
 }
 
@@ -165,13 +165,13 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 				time1 := float64(lastTime)
 				time2 := math.Max(time1, float64(lastTime+frame.Time))
-				mY := float64(frame.MouseY)
+				//mY := float64(frame.MouseY)
 				/*if strings.Contains(replayD., "HR") {
 					mY = 384 - mY
 				}*/
 
-				control.xGlider.AddEventS(time2, time2, float64(frame.MosueX), float64(frame.MosueX))
-				control.yGlider.AddEventS(time2, time2, mY, mY)
+				//control.xGlider.AddEventS(time2, time2, float64(frame.MosueX), float64(frame.MosueX))
+				//control.yGlider.AddEventS(time2, time2, mY, mY)
 
 				//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
 
@@ -189,11 +189,11 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 				control.k2Glider.AddEventS(time2, time2, translate(press.Key2), translate(press.Key2))
 				control.m1Glider.AddEventS(time2, time2, translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
 				control.m2Glider.AddEventS(time2, time2, translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
-				if frame.Time == 0 {
-					control.frame.RemoveLast()
-				}
-				control.frame.AddEventS(time2, time2, 1, 1)
-				control.frame.AddEventS(time2+1, time2+1, 0, 0)
+				//if frame.Time == 0 {
+				//	control.frame.RemoveLast()
+				//}
+				//control.frame.AddEventS(time2, time2, 1, 1)
+				//control.frame.AddEventS(time2+1, time2+1, 0, 0)
 
 				//lastX = float64(frame.MosueX)
 				//lastY = mY
@@ -226,6 +226,10 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			continue
 		}
 
+		//if score.Username != "emilia"/*"eyeball"*//*"Rhythm blue"*/ {
+		//	continue
+		//}
+
 		//if score.Username != "Freddie Benson"/*"itsamemarioo"*//*"Teppi"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
 		//	continue
 		//}
@@ -250,8 +254,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control := NewSubControl()
 
 		lastTime := int64(0)
-		lastX := 0.0
-		lastY := 0.0
+		//lastX := 0.0
+		//lastY := 0.0
 
 		log.Println(score.Username, score.PP)
 
@@ -277,8 +281,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 				mY = 384 - mY
 			}
 
-			control.xGlider.AddEventS(time1, time2, lastX, float64(frame.MosueX))
-			control.yGlider.AddEventS(time1, time2, lastY, mY)
+			//control.xGlider.AddEventS(time1, time2, lastX, float64(frame.MosueX))
+			//control.yGlider.AddEventS(time1, time2, lastY, mY)
 
 			//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
 
@@ -296,18 +300,18 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			control.k2Glider.AddEventS(time2, time2, translate(press.Key2), translate(press.Key2))
 			control.m1Glider.AddEventS(time2, time2, translate(press.LeftClick && !press.Key1), translate(press.LeftClick && !press.Key1))
 			control.m2Glider.AddEventS(time2, time2, translate(press.RightClick && !press.Key2), translate(press.RightClick && !press.Key2))
-			if frame.Time == 0 {
-				control.frame.RemoveLast()
-			}
-			control.frame.AddEventS(time2, time2, 1, 1)
-			control.frame.AddEventS(time2+1, time2+1, 0, 0)
+			//if frame.Time == 0 {
+			//	control.frame.RemoveLast()
+			//}
+			//control.frame.AddEventS(time2, time2, 1, 1)
+			//control.frame.AddEventS(time2+1, time2+1, 0, 0)
 
 			if frame.Time > 0 {
 				ad1 += frame.Time
 				ad2++
 			}
-			lastX = float64(frame.MosueX)
-			lastY = mY
+			//lastX = float64(frame.MosueX)
+			//lastY = mY
 			lastTime += frame.Time
 		}
 
@@ -352,7 +356,7 @@ func (controller *ReplayController) InitCursors() {
 	}
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, modifiers)
 
-	//controller.Update(480000, 1)
+	controller.Update(480000, 1)
 }
 
 func (controller *ReplayController) Update(time int64, delta float64) {
@@ -400,10 +404,11 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 					controller.cursors[i].IsReplayFrame = false
 				}
 
-				controller.ruleset.UpdateFor(controller.cursors[i], nTime)
+				controller.ruleset.UpdateClickFor(controller.cursors[i], nTime)
+				controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 
 			} else {
-
+				wasUpdated := false
 				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= nTime {
 
 					frame := c.frames[c.replayIndex]
@@ -422,27 +427,50 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 					controller.cursors[i].CurrentFrameTime = c.replayTime
 					controller.cursors[i].IsReplayFrame = true
 
-					controller.ruleset.UpdateFor(controller.cursors[i], c.replayTime)
+					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
+					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
+					wasUpdated = true
+
 					c.replayIndex++
 				}
 
-				c.xGlider.Update(float64(nTime))
-				c.yGlider.Update(float64(nTime))
+				//c.xGlider.Update(float64(nTime))
+				//c.yGlider.Update(float64(nTime))
 				c.k1Glider.Update(float64(nTime))
 				c.k2Glider.Update(float64(nTime))
 				c.m1Glider.Update(float64(nTime))
 				c.m2Glider.Update(float64(nTime))
-				c.frame.Update(float64(nTime))
-				controller.cursors[i].SetPos(bmath.NewVec2d(c.xGlider.GetValue(), c.yGlider.GetValue()))
+				//c.frame.Update(float64(nTime))
+
+				if !wasUpdated {
+					progress := float64(nTime-c.replayTime) / float64(c.frames[c.replayIndex].Time)
+
+					prevIndex := c.replayIndex - 1
+					if prevIndex < 0 {
+						prevIndex = 0
+					}
+
+					mX := float64(c.frames[c.replayIndex].MosueX-c.frames[prevIndex].MosueX)*progress + float64(c.frames[prevIndex].MosueX)
+					mY := float64(c.frames[c.replayIndex].MouseY-c.frames[prevIndex].MouseY)*progress + float64(c.frames[prevIndex].MouseY)
+
+					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
+						mY = 384 - mY
+					}
+
+					controller.cursors[i].SetPos(bmath.NewVec2d(mX, mY))
+					controller.cursors[i].IsReplayFrame = false
+					controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
+				}
+				//controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 				//controller.cursors[i].LeftButton = controller.GetClick(i, 0) || controller.GetClick(i, 2)
 				//controller.cursors[i].RightButton = controller.GetClick(i, 1) || controller.GetClick(i, 3)
-				if c.frame.GetValue() > 0.5 {
+				/*if c.frame.GetValue() > 0.5 {
 					//controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
 					//controller.cursors[i].CurrentFrameTime = nTime
 					controller.cursors[i].IsReplayFrame = true
 				} else {
 					controller.cursors[i].IsReplayFrame = false
-				}
+				}*/
 			}
 		}
 

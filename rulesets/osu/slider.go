@@ -71,91 +71,10 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 		}
 
 		if len(slider.state[player].points) > 0 {
-			slider.state[player].points[len(slider.state[player].points) - 1].time = int64(math.Max(float64(slider.hitSlider.GetBasicData().StartTime + (slider.hitSlider.GetBasicData().EndTime - slider.hitSlider.GetBasicData().StartTime) / 2), float64(slider.hitSlider.GetBasicData().EndTime-36))) //slider ends 36ms before the real end for scoring
+			slider.state[player].points[len(slider.state[player].points)-1].time = int64(math.Max(float64(slider.hitSlider.GetBasicData().StartTime+(slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime)/2), float64(slider.hitSlider.GetBasicData().EndTime-36))) //slider ends 36ms before the real end for scoring
 		}
 	}
 
-}
-
-func (slider *Slider) UpdateClick(time int64) bool {
-	numFinishedTotal := 0
-
-	for _, player := range slider.players {
-		state := slider.state[player]
-
-		xOffset := 0.0
-		yOffset := 0.0
-		if player.diff.Mods&difficulty.HardRock > 0 {
-			data := slider.hitSlider.GetBasicData()
-			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
-			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
-		}
-
-		if !state.isHit || !state.isStartHit {
-			numFinishedTotal++
-		}
-
-		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
-			clicked := player.leftCondE || player.rightCondE
-			inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius
-
-			//log.Println("ee", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.leftCondE, player.rightCondE, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
-
-
-			if slider.ruleSet.CanBeHit(time, slider, player) && !state.isStartHit && !state.isHit {
-					if slider.hitSlider.GetBasicData().Number == 736  {
-						log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
-					}
-
-				if clicked && inRadius {
-					if player.leftCondE {
-						player.leftCondE = false
-					} else if player.rightCondE {
-						player.rightCondE = false
-					}
-
-					if player.leftCond {
-						state.downButton = Left
-					} else if player.rightCond {
-						state.downButton = Right
-					} else {
-						state.downButton = player.mouseDownButton
-					}
-
-					hit := HitResults.SliderMiss
-					combo := ComboResults.Reset
-
-					relative := int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime)))
-
-					if relative < player.diff.Hit50 {
-						hit = HitResults.Slider30
-						state.startScored = true
-						combo = ComboResults.Increase
-					} else if relative >= Shake {
-						hit = HitResults.Ignore
-						combo = ComboResults.Hold
-					}
-
-					if hit != HitResults.Ignore {
-						//log.Println("sk", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, relative, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
-						if hit != HitResults.SliderMiss && len(slider.players) == 1 {
-							slider.hitSlider.PlayEdgeSample(0)
-						}
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
-
-						state.isStartHit = true
-					}
-
-				}
-
-			}
-
-		}
-	}
-
-	slider.lastTime = time
-
-	return numFinishedTotal == 0
 }
 
 func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool {
@@ -169,57 +88,53 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 		yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 	}
 
-	if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
-		clicked := player.leftCondE || player.rightCondE
-		inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius
+	clicked := player.leftCondE || player.rightCondE
+	inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius
 
-		//log.Println("ee", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.leftCondE, player.rightCondE, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
+	//log.Println("ee", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.leftCondE, player.rightCondE, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
 
+	if slider.ruleSet.CanBeHit(time, slider, player) && !state.isStartHit && !state.isHit {
+		if slider.hitSlider.GetBasicData().Number == /*582*/ /*906*/ 506 {
+			log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
+		}
 
-		if slider.ruleSet.CanBeHit(time, slider, player) && !state.isStartHit && !state.isHit {
-			//if slider.hitSlider.GetBasicData().Number == 736  {
-			//	log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
-			//}
+		if clicked && inRadius {
+			if player.leftCondE {
+				player.leftCondE = false
+			} else if player.rightCondE {
+				player.rightCondE = false
+			}
 
-			if clicked && inRadius {
-				if player.leftCondE {
-					player.leftCondE = false
-				} else if player.rightCondE {
-					player.rightCondE = false
+			if player.leftCond {
+				state.downButton = Left
+			} else if player.rightCond {
+				state.downButton = Right
+			} else {
+				state.downButton = player.mouseDownButton
+			}
+
+			hit := HitResults.SliderMiss
+			combo := ComboResults.Reset
+
+			relative := int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime)))
+
+			if relative < player.diff.Hit50 {
+				hit = HitResults.Slider30
+				state.startScored = true
+				combo = ComboResults.Increase
+			} else if relative >= Shake {
+				hit = HitResults.Ignore
+				combo = ComboResults.Hold
+			}
+
+			if hit != HitResults.Ignore {
+				//log.Println("sk", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, relative, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
+				if hit != HitResults.SliderMiss && len(slider.players) == 1 {
+					slider.hitSlider.PlayEdgeSample(0)
 				}
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
-				if player.leftCond {
-					state.downButton = Left
-				} else if player.rightCond {
-					state.downButton = Right
-				} else {
-					state.downButton = player.mouseDownButton
-				}
-
-				hit := HitResults.SliderMiss
-				combo := ComboResults.Reset
-
-				relative := int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime)))
-
-				if relative < player.diff.Hit50 {
-					hit = HitResults.Slider30
-					state.startScored = true
-					combo = ComboResults.Increase
-				} else if relative >= Shake {
-					hit = HitResults.Ignore
-					combo = ComboResults.Hold
-				}
-
-				if hit != HitResults.Ignore {
-					//log.Println("sk", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, relative, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
-					if hit != HitResults.SliderMiss && len(slider.players) == 1 {
-						slider.hitSlider.PlayEdgeSample(0)
-					}
-					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
-
-					state.isStartHit = true
-				}
-
+				state.isStartHit = true
 			}
 
 		}
@@ -227,128 +142,6 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	}
 
 	return state.isStartHit
-}
-
-func (slider *Slider) Update(time int64) bool {
-	numFinishedTotal := 0
-
-	sliderPosition := slider.hitSlider.GetPointAt(time)
-
-	for _, player := range slider.players {
-		state := slider.state[player]
-
-		xOffset := 0.0
-		yOffset := 0.0
-		if player.diff.Mods&difficulty.HardRock > 0 {
-			data := slider.hitSlider.GetBasicData()
-			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
-			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
-		}
-
-		if !state.isHit || !state.isStartHit {
-			numFinishedTotal++
-		}
-
-		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
-
-			if time >= slider.hitSlider.GetBasicData().StartTime && !state.isHit {
-
-				mouseDownAcceptable := false
-				mouseDownAcceptableSwap := player.gameDownState &&
-					!(player.lastButton == (Left | Right) &&
-						player.lastButton2 == player.mouseDownButton)
-
-				if player.gameDownState {
-					if state.downButton == Buttons(0) ||
-						(player.mouseDownButton != (Left | Right) && mouseDownAcceptableSwap) {
-
-						state.downButton = Buttons(0)
-						if player.leftCond {
-							state.downButton = Left
-						} else if player.rightCond {
-							state.downButton = Right
-						} else {
-							state.downButton = player.mouseDownButton
-						}
-
-						mouseDownAcceptable = true
-
-					} else if (player.mouseDownButton & state.downButton) > 0 {
-						mouseDownAcceptable = true
-					}
-				} else {
-					state.downButton = Buttons(0)
-				}
-
-				mouseDownAcceptable = mouseDownAcceptable || mouseDownAcceptableSwap
-
-				radiusNeeded := player.diff.CircleRadius
-				if state.sliding {
-					radiusNeeded *= 2.4
-				}
-
-				allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= radiusNeeded
-
-				if allowable && !state.sliding {
-					state.sliding = true
-					state.slideStart = time
-				}
-
-				pointsPassed := int64(0)
-				for _, point := range state.points {
-					if point.time <= time {
-						pointsPassed++
-					} else {
-						break
-					}
-				}
-
-				if slider.hitSlider.GetBasicData().Number == 736 {
-					log.Println("norma", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
-				}
-
-				for ;state.scored+state.missed < pointsPassed; {
-
-					index := state.scored + state.missed
-					point := state.points[index]
-
-					log.Println(point.time)
-					//log.Println(time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
-
-					if allowable && state.slideStart <= point.time {
-						if len(slider.players) == 1 && int(index) < len(state.points)-1 {
-							if point.edgeNum == -1 {
-								slider.hitSlider.PlayTick()
-							} else {
-								slider.hitSlider.PlayEdgeSample(point.edgeNum)
-							}
-						}
-
-
-						state.scored++
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
-					} else {
-						combo := ComboResults.Reset
-						if int(index) == len(state.points)-1 {
-							combo = ComboResults.Hold
-						}
-
-						state.missed++
-						slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
-					}
-				}
-
-				if !allowable && state.sliding && state.scored+state.missed < int64(len(state.points)) {
-					state.sliding = false
-				}
-			}
-		}
-
-	}
-
-	slider.lastTime = time
-
-	return numFinishedTotal == 0
 }
 
 func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
@@ -364,100 +157,99 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 		yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
 	}
 
-	if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+	//if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
 
-		if time >= slider.hitSlider.GetBasicData().StartTime && !state.isHit {
+	if time >= slider.hitSlider.GetBasicData().StartTime && !state.isHit {
 
-			mouseDownAcceptable := false
-			mouseDownAcceptableSwap := player.gameDownState &&
-				!(player.lastButton == (Left | Right) &&
-					player.lastButton2 == player.mouseDownButton)
+		mouseDownAcceptable := false
+		mouseDownAcceptableSwap := player.gameDownState &&
+			!(player.lastButton == (Left|Right) &&
+				player.lastButton2 == player.mouseDownButton)
 
-			if player.gameDownState {
-				if state.downButton == Buttons(0) ||
-					(player.mouseDownButton != (Left | Right) && mouseDownAcceptableSwap) {
+		if player.gameDownState {
+			if state.downButton == Buttons(0) ||
+				(player.mouseDownButton != (Left|Right) && mouseDownAcceptableSwap) {
 
-					state.downButton = Buttons(0)
-					if player.leftCond {
-						state.downButton = Left
-					} else if player.rightCond {
-						state.downButton = Right
-					} else {
-						state.downButton = player.mouseDownButton
-					}
-
-					mouseDownAcceptable = true
-
-				} else if (player.mouseDownButton & state.downButton) > 0 {
-					mouseDownAcceptable = true
-				}
-			} else {
 				state.downButton = Buttons(0)
-			}
-
-			mouseDownAcceptable = mouseDownAcceptable || mouseDownAcceptableSwap
-
-			radiusNeeded := player.diff.CircleRadius
-			if state.sliding {
-				radiusNeeded *= 2.4
-			}
-
-			allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= radiusNeeded
-
-			if allowable && !state.sliding {
-				state.sliding = true
-				state.slideStart = time
-			}
-
-			pointsPassed := int64(0)
-			for _, point := range state.points {
-				if point.time <= time {
-					pointsPassed++
+				if player.leftCond {
+					state.downButton = Left
+				} else if player.rightCond {
+					state.downButton = Right
 				} else {
-					break
+					state.downButton = player.mouseDownButton
 				}
+
+				mouseDownAcceptable = true
+
+			} else if (player.mouseDownButton & state.downButton) > 0 {
+				mouseDownAcceptable = true
 			}
+		} else {
+			state.downButton = Buttons(0)
+		}
 
-			/*if slider.hitSlider.GetBasicData().Number == 736 {
-				log.Println("norma", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
-			}*/
+		mouseDownAcceptable = mouseDownAcceptable || mouseDownAcceptableSwap
 
-			if state.scored+state.missed < pointsPassed {
+		radiusNeeded := player.diff.CircleRadius
+		if state.sliding {
+			radiusNeeded *= 2.4
+		}
 
-				index := state.scored + state.missed
-				point := state.points[index]
+		allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= radiusNeeded
 
-				//log.Println(point.time)
-				//log.Println(time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
+		if allowable && !state.sliding {
+			state.sliding = true
+			state.slideStart = time
+		}
 
-				if allowable && state.slideStart <= point.time {
-					if len(slider.players) == 1 && int(index) < len(state.points)-1 {
-						if point.edgeNum == -1 {
-							slider.hitSlider.PlayTick()
-						} else {
-							slider.hitSlider.PlayEdgeSample(point.edgeNum)
-						}
-					}
-
-
-					state.scored++
-					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
-				} else {
-					combo := ComboResults.Reset
-					if int(index) == len(state.points)-1 {
-						combo = ComboResults.Hold
-					}
-
-					state.missed++
-					slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
-				}
-			}
-
-			if !allowable && state.sliding && state.scored+state.missed < int64(len(state.points)) {
-				state.sliding = false
+		pointsPassed := int64(0)
+		for _, point := range state.points {
+			if point.time <= time {
+				pointsPassed++
+			} else {
+				break
 			}
 		}
+
+		//if slider.hitSlider.GetBasicData().Number == /*582*//*906*/506 {
+		//	log.Println("norma", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
+		//}
+
+		if state.scored+state.missed < pointsPassed {
+
+			index := state.scored + state.missed
+			point := state.points[index]
+
+			//log.Println(point.time)
+			//log.Println(time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
+
+			if allowable && state.slideStart <= point.time {
+				if len(slider.players) == 1 && int(index) < len(state.points)-1 {
+					if point.edgeNum == -1 {
+						slider.hitSlider.PlayTick()
+					} else {
+						slider.hitSlider.PlayEdgeSample(point.edgeNum)
+					}
+				}
+
+				state.scored++
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
+			} else {
+				combo := ComboResults.Reset
+				if int(index) == len(state.points)-1 {
+					combo = ComboResults.Hold
+				}
+
+				state.missed++
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
+			}
+		}
+
+		if !allowable && state.sliding && state.scored+state.missed < int64(len(state.points)) {
+			state.sliding = false
+		}
 	}
+	//}
 
 	return true
 }
@@ -474,7 +266,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 
 		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
 
-			if time > slider.hitSlider.GetBasicData().StartTime + player.diff.Hit50 && !state.isStartHit {
+			if time > slider.hitSlider.GetBasicData().StartTime+player.diff.Hit50 && !state.isStartHit {
 				//log.Println("st", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton)
 
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, ComboResults.Reset)
@@ -498,7 +290,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 				hit := HitResults.Miss
 				combo := ComboResults.Reset
 
-				rate := float64(state.scored) / float64(len(state.points) + 1)
+				rate := float64(state.scored) / float64(len(state.points)+1)
 
 				if rate > 0 && len(slider.players) == 1 {
 					slider.hitSlider.PlayEdgeSample(len(slider.hitSlider.TickReverse) - 1)
