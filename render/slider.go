@@ -22,6 +22,7 @@ var cam mgl32.Mat4
 var fbo *framebuffer.Framebuffer
 var fboUnit int32
 var CS float64
+var unitCircle []float32
 
 func SetupSlider() {
 
@@ -142,19 +143,23 @@ func (self *SliderRenderer) UploadMesh(mesh []float32) *glhf.VertexSlice {
 }
 
 func createMesh(curve []bmath.Vector2d) []float32 {
+	if len(unitCircle) == 0 {
+		createCircle(int(settings.Objects.SliderLOD))
+	}
+
 	vertices := make([]float32, 6*3*int(settings.Objects.SliderLOD)*len(curve))
-	num := 0
-	iter := 0
-	for _, v := range curve {
-		tab := createCircle(v.X, v.Y, CS, int(settings.Objects.SliderLOD))
-		for j := range tab {
-			if j >= 2 {
-				p1, p2, p3 := tab[j-1], tab[j], tab[0]
-				set(vertices, iter, float32(p1.X), float32(p1.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p2.X), float32(p2.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0)
-				iter += 6 * 3
+
+	for i, v := range curve {
+		for j, s := range unitCircle {
+			vertices[i*len(unitCircle)+j] = s
+			if j%3 == 0 {
+				vertices[i*len(unitCircle)+j] *= float32(CS)
+				vertices[i*len(unitCircle)+j] += v.X32()
+			} else if j%3 == 1 {
+				vertices[i*len(unitCircle)+j] *= float32(CS)
+				vertices[i*len(unitCircle)+j] += v.Y32()
 			}
 		}
-		num += len(tab)
 	}
 
 	return vertices
@@ -164,14 +169,22 @@ func set(array []float32, index int, data ...float32) {
 	copy(array[index:index+len(data)], data)
 }
 
-func createCircle(x, y, radius float64, segments int) []bmath.Vector2d {
+func createCircle(segments int) {
 	points := make([]bmath.Vector2d, segments+2)
-	points[0] = bmath.NewVec2d(x, y)
+	points[0] = bmath.NewVec2d(0, 0)
 
 	for i := 0; i < segments; i++ {
-		points[i+1] = bmath.NewVec2dRad(float64(i)/float64(segments)*2*math.Pi, radius).AddS(x, y)
+		points[i+1] = bmath.NewVec2dRad(float64(i)/float64(segments)*2*math.Pi, 1)
 	}
 
 	points[segments+1] = points[1]
-	return points
+
+	unitCircle = make([]float32, 6*3*segments)
+
+	for j := range points {
+		if j >= 2 {
+			p1, p2, p3 := points[j-1], points[j], points[0]
+			set(unitCircle, (j-2)*6*3, float32(p1.X), float32(p1.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p2.X), float32(p2.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0)
+		}
+	}
 }
