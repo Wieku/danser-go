@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/animation"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/math32"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/settings"
@@ -18,8 +19,8 @@ type Spinner struct {
 	objData *basicData
 	Timings *Timings
 	sample  int
-	rad     float64
-	pos     bmath.Vector2d
+	rad     float32
+	pos     bmath.Vector2f
 	fade    *animation.Glider
 }
 
@@ -42,7 +43,7 @@ func (self *Spinner) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self *Spinner) GetPosition() bmath.Vector2d {
+func (self *Spinner) GetPosition() bmath.Vector2f {
 	return self.pos
 }
 
@@ -60,13 +61,13 @@ func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
 
 func (self *Spinner) Update(time int64) bool {
 	if time < self.objData.EndTime {
-		self.rad = rpms * float64(time-self.objData.StartTime) * 2 * math.Pi
+		self.rad = rpms * float32(time-self.objData.StartTime) * 2 * math32.Pi
 		//self.pos = bmath.NewVec2dRad(self.rad, 50).Add(self.objData.StartPos)
 
-		self.pos.X = 16 * math.Pow(math.Sin(self.rad), 3)
-		self.pos.Y = 13*math.Cos(self.rad) - 5*math.Cos(2*self.rad) - 2*math.Cos(3*self.rad) - math.Cos(4*self.rad)
+		self.pos.X = 16 * math32.Pow(math32.Sin(self.rad), 3)
+		self.pos.Y = 13*math32.Cos(self.rad) - 5*math32.Cos(2*self.rad) - 2*math32.Cos(3*self.rad) - math32.Cos(4*self.rad)
 
-		self.pos = self.pos.Scl(-6 - 2 * math.Sin(float64(time-self.objData.StartTime) / 2000 * 2 * math.Pi)).Add(self.objData.StartPos)
+		self.pos = self.pos.Scl(-6 - 2*math32.Sin(float32(time-self.objData.StartTime)/2000*2*math32.Pi)).Add(self.objData.StartPos)
 		self.GetBasicData().EndPos = self.pos
 		return false
 	}
@@ -78,9 +79,9 @@ func (self *Spinner) Update(time int64) bool {
 	}
 
 	if self.objData.sampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
+		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
 	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
 	}
 
 	return true
@@ -89,7 +90,7 @@ func (self *Spinner) Update(time int64) bool {
 func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 	self.fade.Update(float64(time))
 
-	batch.SetTranslation(self.objData.StartPos)
+	batch.SetTranslation(self.objData.StartPos.Copy64())
 
 	alpha := self.fade.GetValue()
 
@@ -101,7 +102,7 @@ func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBat
 	scale := batch.GetScale()
 	batch.SetScale(1, 1)
 
-	batch.SetRotation(self.rad)
+	batch.SetRotation(float64(self.rad))
 	batch.SetSubScale(20*10, 20*10)
 
 	batch.DrawUnit(*render.SpinnerMiddle)

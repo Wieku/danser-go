@@ -32,11 +32,11 @@ func NewCircle(data []string) *Circle {
 	return circle
 }
 
-func DummyCircle(pos bmath.Vector2d, time int64) *Circle {
+func DummyCircle(pos bmath.Vector2f, time int64) *Circle {
 	return DummyCircleInherit(pos, time, false, false, false)
 }
 
-func DummyCircleInherit(pos bmath.Vector2d, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
+func DummyCircleInherit(pos bmath.Vector2f, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
 	circle := &Circle{objData: &basicData{}}
 	circle.objData.StartPos = pos
 	circle.objData.EndPos = pos
@@ -85,9 +85,9 @@ func (self *Circle) PlaySound() {
 	}
 
 	if self.objData.sampleSet == 0 {
-		audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
+		audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
 	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X)
+		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
 	}
 }
 
@@ -97,7 +97,7 @@ func (self *Circle) SetTiming(timings *Timings) {
 
 func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
 	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt/*-fadeIn*/)+FadeIn, 1)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt /*-fadeIn*/)+FadeIn, 1)
 	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+FadeOut, 0)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-preempt*0.6, 1)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt*0.6, float64(self.objData.StartTime)-preempt*0.3, 0) HIDDEN
@@ -108,7 +108,7 @@ func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
 
 func (self *Circle) UpdateStacking() {}
 
-func (self *Circle) GetPosition() bmath.Vector2d {
+func (self *Circle) GetPosition() bmath.Vector2f {
 	return self.objData.StartPos
 }
 
@@ -116,7 +116,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	self.fadeCircle.Update(float64(time))
 	alpha := self.fadeCircle.GetValue()
 
-	batch.SetTranslation(self.objData.StartPos)
+	batch.SetTranslation(self.objData.StartPos.Copy64())
 
 	if time >= self.objData.StartTime {
 		subScale := 1 + (1.0-alpha)*0.5
@@ -141,9 +141,9 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 		batch.DrawUnit(*render.CircleOverlay)
 		if time < self.objData.StartTime {
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				render.Combo.DrawCentered(batch, self.objData.StartPos.X, self.objData.StartPos.Y, 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
 			}
-			batch.SetTranslation(self.objData.StartPos)
+			batch.SetTranslation(self.objData.StartPos.Copy64())
 		}
 	}
 
@@ -160,7 +160,7 @@ func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.Sp
 	arr := self.fadeApproach.GetValue()
 	alpha := self.fadeCircle.GetValue()
 
-	batch.SetTranslation(self.objData.StartPos)
+	batch.SetTranslation(self.objData.StartPos.Copy64())
 
 	if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)

@@ -29,7 +29,7 @@ func difficultyRate(diff, min, mid, max float64) float64 {
 }
 
 func calculateStackLeniency(b *BeatMap) {
-	stack_distance := 3.0
+	stack_distance := float32(3.0)
 
 	preempt := difficultyRate(b.AR, 1800, 1200, 450)
 	b.Preempt = preempt
@@ -151,12 +151,12 @@ func calculateStackLeniency(b *BeatMap) {
 
 	}
 
-	scale := (1.0 - 0.7*(b.CircleSize-5)/5) / 2
+	scale := float32(1.0-0.7*(b.CircleSize-5)/5) / 2
 
 	for _, v := range hitObjects {
 		if !isSpinnerBreak(v) {
-			sc := float64(v.GetBasicData().StackIndex) * scale * -6.4
-			v.GetBasicData().StackOffset = bmath.NewVec2d(sc, sc)
+			sc := float32(v.GetBasicData().StackIndex) * scale * -6.4
+			v.GetBasicData().StackOffset = bmath.NewVec2f(sc, sc)
 			v.GetBasicData().StartPos = v.GetBasicData().StartPos.Add(v.GetBasicData().StackOffset)
 			v.GetBasicData().EndPos = v.GetBasicData().EndPos.Add(v.GetBasicData().StackOffset)
 			v.UpdateStacking()
