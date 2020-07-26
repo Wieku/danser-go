@@ -12,7 +12,7 @@ type MultiCurve struct {
 	lines    []Linear
 }
 
-func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float32) *MultiCurve {
+func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *MultiCurve {
 	lines := make([]Linear, 0)
 
 	if len(points) < 3 {
@@ -69,39 +69,26 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float32) *
 	}
 
 	if desiredLength >= 0 {
-		if length > desiredLength {
-			diff := length - desiredLength
-			length -= diff
-			for i := len(lines) - 1; i >= 0 && diff > 0.0; i-- {
-				line := lines[i]
+		diff := float64(length) - desiredLength
 
-				if line.GetLength() >= diff+minPartWidth {
-					pt := line.PointAt((line.GetLength() - diff) / line.GetLength())
-					lines[i] = NewLinear(line.Point1, pt)
-					break
-				}
+		for len(lines) > 0 {
+			line := lines[len(lines)-1]
 
-				diff -= line.GetLength()
-				lines = lines[:len(lines)-1]
+			if float64(line.GetLength()) > diff+minPartWidth {
+				pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
+				lines[len(lines)-1] = NewLinear(line.Point1, pt)
+				break
 			}
 
-		} else if desiredLength > length {
-			last := lines[len(lines)-1]
-
-			p1 := last.PointAt(1)
-			p2 := bmath.NewVec2fRad(last.GetEndAngle(), desiredLength-length).Add(p1)
-
-			c := NewLinear(p1, p2)
-
-			length += c.GetLength()
-			lines = append(lines, c)
+			diff -= float64(line.GetLength())
+			lines = lines[:len(lines)-1]
 		}
 	}
 
 	length = 0.0
 
 	for _, l := range lines {
-		length += float32(l.GetLength())
+		length += l.GetLength()
 	}
 
 	sections := make([]float32, len(lines)+1)
