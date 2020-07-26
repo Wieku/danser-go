@@ -340,7 +340,7 @@ func (set *OsuRuleSet) Draw(time int64, batch *batches.SpriteBatch, color mgl32.
 	}
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int64, x, y float64, result HitResult, raw bool, comboResult ComboResult) {
+func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
 	if result == HitResults.Ignore {
 		return
 	}
@@ -427,7 +427,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo)) //oppai.PPInfo(set.oppaiMap, set.params).PP.Total
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2d(x, y), result, comboResult, subSet.ppv2.Total*1.00013679674 /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
+		set.listener(cursor, time, number, bmath.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total*1.00013679674 /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
@@ -453,10 +453,16 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 	}
 
 	for _, g := range set.processed {
-		if /*set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime + player.diff.Hit50 <= time ||*/ g.IsHit(player) {
+		is2B := set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime <= set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime
+
+		//s, isSlider := g.(*Slider)
+
+		//log.Println("canbehit", object.GetNumber(), set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime, set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime, is2B, isSlider)
+
+		if /*(*/ is2B /*&& (set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime + player.diff.Hit50 <= time || (isSlider && s.IsStartHit(player))))*/ || g.IsHit(player) {
 			continue
 		}
-
+		//log.Println("nopass")
 		if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime && g.GetNumber() != object.GetNumber() {
 			isNextCircle = false
 		}

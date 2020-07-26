@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render/batches"
+	"log"
 	"math"
 )
 
@@ -23,7 +24,6 @@ type Circle struct {
 	players           []*difficultyPlayer
 	state             map[*difficultyPlayer]*objstate
 	fadeStartRelative float64
-	renderable        *HitCircleSprite
 }
 
 func (circle *Circle) GetNumber() int64 {
@@ -34,11 +34,11 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 	circle.ruleSet = ruleSet
 	circle.hitCircle = object.(*objects.Circle)
 	circle.players = players
-	if len(players) > 1 {
-		circle.renderable = NewHitCircleSprite(*difficulty.NewDifficulty(players[0].diff.GetHPDrain(), players[0].diff.GetCS(), players[0].diff.GetOD(), players[0].diff.GetAR()), object.GetBasicData().StartPos, object.GetBasicData().StartTime)
-	} else {
-		circle.renderable = NewHitCircleSprite(*players[0].diff, object.GetBasicData().StartPos, object.GetBasicData().StartTime)
-	}
+	//if len(players) > 1 {
+	//	circle.renderable = NewHitCircleSprite(*difficulty.NewDifficulty(players[0].diff.GetHPDrain(), players[0].diff.GetCS(), players[0].diff.GetOD(), players[0].diff.GetAR()), object.GetBasicData().StartPos, object.GetBasicData().StartTime)
+	//} else {
+	//	circle.renderable = NewHitCircleSprite(*players[0].diff, object.GetBasicData().StartPos, object.GetBasicData().StartTime)
+	//}
 
 	circle.state = make(map[*difficultyPlayer]*objstate)
 
@@ -61,12 +61,12 @@ func (circle *Circle) UpdateClick(time int64) bool {
 		if !state.isHit {
 			unfinished++
 
-			xOffset := 0.0
-			yOffset := 0.0
+			xOffset := float32(0.0)
+			yOffset := float32(0.0)
 			if player.diff.Mods&difficulty.HardRock > 0 {
 				data := circle.hitCircle.GetBasicData()
-				xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
-				yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
+				xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
+				yOffset = data.StackOffset.Y - float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
 			}
 
 			if circle.ruleSet.CanBeHit(time, circle, player) {
@@ -98,13 +98,13 @@ func (circle *Circle) UpdateClick(time int64) bool {
 						combo := ComboResults.Increase
 						if hit == HitResults.Miss {
 							combo = ComboResults.Reset
-							if len(circle.players) == 1 {
-								circle.renderable.Miss(time)
-							}
+							//if len(circle.players) == 1 {
+							//	circle.renderable.Miss(time)
+							//}
 						} else {
 							if len(circle.players) == 1 {
 								circle.hitCircle.PlaySound()
-								circle.renderable.Hit(time)
+								//circle.renderable.Hit(time)
 							}
 						}
 
@@ -122,7 +122,7 @@ func (circle *Circle) UpdateClick(time int64) bool {
 
 	if len(circle.players) > 1 && time == circle.hitCircle.GetBasicData().StartTime {
 		//circle.hitCircle.PlaySound()
-		circle.renderable.Hit(time)
+		//circle.renderable.Hit(time)
 	}
 
 	return unfinished == 0
@@ -134,12 +134,16 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 	if !state.isHit {
 
-		xOffset := 0.0
-		yOffset := 0.0
+		xOffset := float32(0.0)
+		yOffset := float32(0.0)
 		if player.diff.Mods&difficulty.HardRock > 0 {
 			data := circle.hitCircle.GetBasicData()
-			xOffset = data.StackOffset.X + float64(data.StackIndex)*player.diff.CircleRadius/(10)
-			yOffset = data.StackOffset.Y - float64(data.StackIndex)*player.diff.CircleRadius/(10)
+			xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
+			yOffset = data.StackOffset.Y - float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
+		}
+
+		if circle.GetNumber() == 53 {
+			log.Println("click", time, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetBasicData().StartTime, circle.hitCircle.GetBasicData().EndTime, circle.hitCircle.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, circle.ruleSet.CanBeHit(time, circle, player), player.cursor.Position, circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
 		}
 
 		if circle.ruleSet.CanBeHit(time, circle, player) {
@@ -172,12 +176,12 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 					if hit == HitResults.Miss {
 						combo = ComboResults.Reset
 						if len(circle.players) == 1 {
-							circle.renderable.Miss(time)
+							//circle.renderable.Miss(time)
 						}
 					} else {
 						if len(circle.players) == 1 {
 							circle.hitCircle.PlaySound()
-							circle.renderable.Hit(time)
+							//circle.renderable.Hit(time)
 						}
 					}
 
@@ -203,9 +207,9 @@ func (circle *Circle) UpdatePost(time int64) bool {
 
 			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
 				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
-				if len(circle.players) == 1 {
-					circle.renderable.Miss(time)
-				}
+				//if len(circle.players) == 1 {
+				//	circle.renderable.Miss(time)
+				//}
 
 				state.isHit = true
 			}
@@ -215,7 +219,7 @@ func (circle *Circle) UpdatePost(time int64) bool {
 
 	if len(circle.players) > 1 && time == circle.hitCircle.GetBasicData().StartTime {
 		//circle.hitCircle.PlaySound()
-		circle.renderable.Hit(time)
+		//circle.renderable.Hit(time)
 	}
 
 	return unfinished == 0
@@ -230,9 +234,9 @@ func (circle *Circle) GetFadeTime() int64 {
 }
 
 func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-	self.renderable.Draw(time, color, batch)
+	//self.renderable.Draw(time, color, batch)
 }
 
 func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-	self.renderable.DrawApproach(time, color, batch)
+	//self.renderable.DrawApproach(time, color, batch)
 }
