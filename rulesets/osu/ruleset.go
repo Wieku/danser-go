@@ -21,10 +21,11 @@ import (
 type Grade int64
 
 const (
-	FadeIn   = 120
-	FadeOut  = 600
-	PostEmpt = 500
-	Shake    = 400
+	FadeIn             = 120
+	FadeOut            = 600
+	PostEmpt           = 500
+	Shake              = 400
+	SliderEndTolerance = 3
 )
 
 const (
@@ -453,16 +454,16 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 	}
 
 	for _, g := range set.processed {
-		is2B := set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime <= set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime
+		is2B := false
 
-		//s, isSlider := g.(*Slider)
+		if _, isSlider := g.(*Slider); isSlider && set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime <= set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime+SliderEndTolerance {
+			is2B = true
+		}
 
-		//log.Println("canbehit", object.GetNumber(), set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime, set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime, is2B, isSlider)
-
-		if /*(*/ is2B /*&& (set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime + player.diff.Hit50 <= time || (isSlider && s.IsStartHit(player))))*/ || g.IsHit(player) {
+		if is2B || g.IsHit(player) {
 			continue
 		}
-		//log.Println("nopass")
+
 		if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime && g.GetNumber() != object.GetNumber() {
 			isNextCircle = false
 		}
