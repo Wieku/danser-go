@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/curves"
-	"math"
+	"github.com/wieku/danser-go/bmath/math32"
 )
 
 type AxisMover struct {
@@ -27,22 +27,22 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 	startPos := start.GetBasicData().StartPos
 	startTime := start.GetBasicData().StartTime
 
-	var midP bmath.Vector2d
+	var midP bmath.Vector2f
 
-	if math.Abs(startPos.Sub(endPos).X) < math.Abs(startPos.Sub(endPos).X) {
-		midP = bmath.NewVec2d(endPos.X, startPos.Y)
+	if math32.Abs(startPos.Sub(endPos).X) < math32.Abs(startPos.Sub(endPos).X) {
+		midP = bmath.NewVec2f(endPos.X, startPos.Y)
 	} else {
-		midP = bmath.NewVec2d(startPos.X, endPos.Y)
+		midP = bmath.NewVec2f(startPos.X, endPos.Y)
 	}
 
-	bm.bz = curves.NewMultiCurve("L", []bmath.Vector2d{endPos, midP, startPos}, endPos.Dst(midP)+midP.Dst(startPos))
+	bm.bz = curves.NewMultiCurve("L", []bmath.Vector2f{endPos, midP, startPos}, float64(endPos.Dst(midP)+midP.Dst(startPos)))
 	bm.endTime = endTime
 	bm.beginTime = startTime
 }
 
-func (bm AxisMover) Update(time int64) bmath.Vector2d {
-	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
-	tr := math.Max(0.0, math.Min(1.0, math.Sin(t*math.Pi/2)))
+func (bm AxisMover) Update(time int64) bmath.Vector2f {
+	t := float32(time-bm.endTime) / float32(bm.beginTime-bm.endTime)
+	tr := bmath.ClampF32(math32.Sin(t*math32.Pi/2), 0, 1)
 	return bm.bz.PointAt(tr)
 }
 

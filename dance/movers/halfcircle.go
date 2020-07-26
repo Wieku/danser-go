@@ -1,17 +1,17 @@
 package movers
 
 import (
-	"math"
-	"github.com/wieku/danser-go/bmath/curves"
 	"github.com/wieku/danser-go/beatmap/objects"
-	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/curves"
+	"github.com/wieku/danser-go/settings"
+	"math"
 )
 
 type HalfCircleMover struct {
 	ca                 curves.Curve
 	startTime, endTime int64
-	invert             float64
+	invert             float32
 }
 
 func NewHalfCircleMover() MultiPointMover {
@@ -41,12 +41,12 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 	}
 
 	point := endPos.Mid(startPos)
-	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(settings.Dance.HalfCircle.RadiusMultiplier).Add(point)
+	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(float32(settings.Dance.HalfCircle.RadiusMultiplier)).Add(point)
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
 
-func (bm *HalfCircleMover) Update(time int64) bmath.Vector2d {
-	return bm.ca.PointAt(float64(time-bm.endTime) / float64(bm.startTime-bm.endTime))
+func (bm *HalfCircleMover) Update(time int64) bmath.Vector2f {
+	return bm.ca.PointAt(float32(time-bm.endTime) / float32(bm.startTime-bm.endTime))
 }
 
 func (bm *HalfCircleMover) GetEndTime() int64 {

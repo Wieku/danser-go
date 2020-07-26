@@ -5,11 +5,10 @@ import (
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/curves"
-	"math"
 )
 
 type LinearMover struct {
-	bz                 *curves.Bezier
+	line               curves.Linear
 	beginTime, endTime int64
 }
 
@@ -28,22 +27,16 @@ func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
 	startPos := start.GetBasicData().StartPos
 	startTime := start.GetBasicData().StartTime
 
-	bm.bz = curves.NewBezier([]bmath.Vector2d{endPos, startPos})
+	bm.line = curves.NewLinear(endPos, startPos)
 
-	waitTime := start.GetBasicData().StartTime - 380 //math.Max(0.0, 479.9999999999999 - 100.0)
-
-	if waitTime > endTime {
-		endTime = waitTime
-	}
-
-	bm.endTime = endTime
+	bm.endTime = bmath.MaxI64(endTime, start.GetBasicData().StartTime-380)
 	bm.beginTime = startTime
 }
 
-func (bm LinearMover) Update(time int64) bmath.Vector2d {
+func (bm LinearMover) Update(time int64) bmath.Vector2f {
 	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
-	t = math.Max(0.0, math.Min(1.0, t))
-	return bm.bz.PointAt(easing.OutQuad(t))
+	t = bmath.ClampF64(t, 0, 1)
+	return bm.line.PointAt(float32(easing.OutQuad(t)))
 }
 
 func (bm *LinearMover) GetEndTime() int64 {

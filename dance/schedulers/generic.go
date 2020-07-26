@@ -6,15 +6,16 @@ import (
 	"github.com/wieku/danser-go/dance/movers"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/settings"
+	"math/rand"
 )
 
 type GenericScheduler struct {
-	cursor *render.Cursor
-	queue  []objects.BaseObject
-	mover  movers.MultiPointMover
+	cursor   *render.Cursor
+	queue    []objects.BaseObject
+	mover    movers.MultiPointMover
 	lastLeft bool
-	moving bool
-	lastEnd int64
+	moving   bool
+	lastEnd  int64
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
@@ -31,10 +32,10 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *render.Cu
 		for i := 0; i < len(sched.queue); i++ {
 			if s, ok := sched.queue[i].(*objects.Slider); ok {
 				sd := s.GetBasicData()
-				for j := i+1; j < len(sched.queue); j++ {
+				for j := i + 1; j < len(sched.queue); j++ {
 					od := sched.queue[j].GetBasicData()
 					if (od.StartTime > sd.StartTime && od.StartTime < sd.EndTime) || (od.EndTime > sd.StartTime && od.EndTime < sd.EndTime) {
-						sched.queue = PreprocessQueue(i, sched.queue, true)
+						sched.queue = PreprocessQueue(i, sched.queue, !settings.Dance.RandomSliderDance || rand.Intn(2) == 0)
 						break
 					}
 				}
@@ -42,7 +43,7 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *render.Cu
 		}
 	}
 
-	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2d(100, 100), 0), sched.queue[0]})
+	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2f(100, 100), 0), sched.queue[0]})
 }
 
 func (sched *GenericScheduler) Update(time int64) {
@@ -61,13 +62,13 @@ func (sched *GenericScheduler) Update(time int64) {
 
 				if !sched.moving {
 					//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
-						if !sched.lastLeft && g.GetBasicData().StartTime-sched.lastEnd < 130 {
-							sched.cursor.LeftButton = true
-							sched.lastLeft = true
-						} else {
-							sched.cursor.RightButton = true
-							sched.lastLeft = false
-						}
+					if !sched.lastLeft && g.GetBasicData().StartTime-sched.lastEnd < 130 {
+						sched.cursor.LeftButton = true
+						sched.lastLeft = true
+					} else {
+						sched.cursor.RightButton = true
+						sched.lastLeft = false
+					}
 					//}
 
 				}
@@ -77,8 +78,8 @@ func (sched *GenericScheduler) Update(time int64) {
 
 				sched.moving = false
 				//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd || g.GetBasicData().SliderPointStart {
-					sched.cursor.LeftButton = false
-					sched.cursor.RightButton = false
+				sched.cursor.LeftButton = false
+				sched.cursor.RightButton = false
 				//}
 
 				if i < len(sched.queue)-1 {
@@ -89,7 +90,7 @@ func (sched *GenericScheduler) Update(time int64) {
 				i--
 
 				if i+1 < len(sched.queue) {
-					sched.queue = PreprocessQueue(i+1, sched.queue, settings.Dance.SliderDance)
+					sched.queue = PreprocessQueue(i+1, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
 					sched.mover.SetObjects([]objects.BaseObject{g, sched.queue[i+1]})
 				}
 				sched.lastEnd = g.GetBasicData().EndTime
