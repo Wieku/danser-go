@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/bmath/math32"
-	"math"
 )
 
 type Vector2f struct {

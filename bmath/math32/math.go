@@ -2,6 +2,8 @@ package math32
 
 import "math"
 
+var Pi = float32(math.Pi)
+
 func Abs(v float32) float32 {
 	return float32(math.Abs(float64(v)))
 }
