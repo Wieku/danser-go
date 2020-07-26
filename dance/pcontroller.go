@@ -42,7 +42,7 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 		controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 		glfw.PollEvents()
 		x, y := controller.window.GetCursorPos()
-		controller.cursors[0].SetScreenPos(bmath.NewVec2d(x, y))
+		controller.cursors[0].SetScreenPos(bmath.NewVec2d(x, y).Copy32())
 		controller.cursors[0].LeftButton = controller.window.GetKey(glfw.KeyC) == glfw.Press
 		controller.cursors[0].RightButton = controller.window.GetKey(glfw.KeyV) == glfw.Press
 	}

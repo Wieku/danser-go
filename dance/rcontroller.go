@@ -134,7 +134,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		controller.replays = append(controller.replays, RpData{"serand", "HD", difficulty.Hidden, 100, 0, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
-		counter = 50
+		counter++
 	}
 
 	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {

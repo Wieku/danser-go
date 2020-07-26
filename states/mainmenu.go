@@ -44,9 +44,9 @@ type MainMenu struct {
 	LogoS1 *sprites.Sprite
 	LogoS2 *sprites.Sprite
 
-	WaveTex     *texture.TextureRegion
-	BgScl       bmath.Vector2d
-	vposition       bmath.Vector2d
+	WaveTex   *texture.TextureRegion
+	BgScl     bmath.Vector2d
+	vposition bmath.Vector2d
 
 	fadeOut     float64
 	fadeIn      float64
@@ -56,10 +56,10 @@ type MainMenu struct {
 	musicPlayer *audio.Music
 
 	visualiser *drawables.Visualiser
-	triangles *drawables.Triangles
+	triangles  *drawables.Triangles
 
-	profiler    *utils.FPSCounter
-	profilerU   *utils.FPSCounter
+	profiler  *utils.FPSCounter
+	profilerU *utils.FPSCounter
 
 	camera  *bmath.Camera
 	scamera *bmath.Camera
@@ -74,8 +74,8 @@ type MainMenu struct {
 
 	mapFullName string
 
-	Epi       *texture.TextureRegion
-	epiGlider *animation.Glider
+	Epi            *texture.TextureRegion
+	epiGlider      *animation.Glider
 	currentBeatVal float64
 	lastBeatLength float64
 	lastBeatStart  float64
@@ -91,7 +91,7 @@ type MainMenu struct {
 	waves      []*sprites.Sprite
 
 	hovering bool
-	hover float64
+	hover    float64
 
 	cookieSize float64
 }
@@ -140,11 +140,10 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 	player.background = components.NewBackground(beatMap, 0.02, false)
 
-
 	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
-		player.cookieSize = 0.5*settings.Graphics.GetHeightF()
+		player.cookieSize = 0.5 * settings.Graphics.GetHeightF()
 	} else {
-		player.cookieSize = 0.5*settings.Graphics.GetWidthF()
+		player.cookieSize = 0.5 * settings.Graphics.GetWidthF()
 	}
 
 	player.camera = bmath.NewCamera()
@@ -195,14 +194,13 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
 
-
 	imag, _ := utils.LoadImage(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 
 	cItems, _ := prominentcolor.KmeansWithAll(5, imag, prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
 	newCol := make([]bmath.Color, len(cItems))
 
-	for i:=0; i < len(cItems); i++ {
-		newCol[i] = bmath.Color{float64(cItems[i].Color.R)/255, float64(cItems[i].Color.G)/255, float64(cItems[i].Color.B)/255, 1}
+	for i := 0; i < len(cItems); i++ {
+		newCol[i] = bmath.Color{float64(cItems[i].Color.R) / 255, float64(cItems[i].Color.G) / 255, float64(cItems[i].Color.B) / 255, 1}
 	}
 
 	player.triangles = drawables.NewTriangles(newCol)
@@ -225,7 +223,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 			player.bMap.Update(int64(player.progressMsF))
 
-			player.background.Update(int64(player.progressMsF), 0 ,0)
+			player.background.Update(int64(player.progressMsF), 0, 0)
 			player.visualiser.Update(player.progressMsF)
 			player.triangles.Update(player.progressMsF)
 
@@ -235,18 +233,18 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 			x, y := input.Win.GetCursorPos()
 
-			player.cursor.SetScreenPos(bmath.NewVec2d(x, y))
+			player.cursor.SetScreenPos(bmath.NewVec2d(x, y).Copy32())
 			player.cursor.Update(delta)
 
-			player.vposition.X = -(x-settings.Graphics.GetWidthF()/2)/settings.Graphics.GetWidthF()*0.04
-			player.vposition.Y = -(y-settings.Graphics.GetHeightF()/2)/settings.Graphics.GetHeightF()*0.04
+			player.vposition.X = -(x - settings.Graphics.GetWidthF()/2) / settings.Graphics.GetWidthF() * 0.04
+			player.vposition.Y = -(y - settings.Graphics.GetHeightF()/2) / settings.Graphics.GetHeightF() * 0.04
 
-			player.visualiser.Position = player.vposition.Scl(player.cookieSize*0.66)
-			player.LogoS1.SetPosition(player.vposition.Scl(player.cookieSize*0.66))
-			player.LogoS2.SetPosition(player.vposition.Scl(player.cookieSize*0.66))
+			player.visualiser.Position = player.vposition.Scl(player.cookieSize * 0.66)
+			player.LogoS1.SetPosition(player.vposition.Scl(player.cookieSize * 0.66))
+			player.LogoS2.SetPosition(player.vposition.Scl(player.cookieSize * 0.66))
 
-			xm := x-settings.Graphics.GetWidthF()/2 - player.vposition.X*player.cookieSize*0.66
-			ym := y-settings.Graphics.GetHeightF()/2 - player.vposition.Y*player.cookieSize*0.66
+			xm := x - settings.Graphics.GetWidthF()/2 - player.vposition.X*player.cookieSize*0.66
+			ym := y - settings.Graphics.GetHeightF()/2 - player.vposition.Y*player.cookieSize*0.66
 
 			//log.Println(xm, ym, xm*xm+ym*ym)
 			if xm*xm+ym*ym < player.cookieSize*0.66*player.cookieSize*0.66*player.hover*player.hover {
@@ -269,7 +267,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 					wave := sprites.NewSpriteSingle(player.WaveTex, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 					wave.SetScale(0)
-					bScale := player.cookieSize/float64(player.WaveTex.Height/2)*0.7
+					bScale := player.cookieSize / float64(player.WaveTex.Height/2) * 0.7
 					wave.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+1000, 0.5, 0), false)
 					wave.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, player.progressMsF, player.progressMsF+1000, 1*bScale*player.hover, 1.4*bScale*player.hover), false)
 					wave.AdjustTimesToTransformations()
@@ -357,10 +355,9 @@ func (pl *MainMenu) Draw(delta float64) {
 	if settings.Playfield.BlurEnable {
 		blurVal = 1 //pl.blurGlider.GetValue()
 		if settings.Playfield.UnblurToTheBeat {
-			blurVal -= settings.Playfield.UnblurFill * (blurVal) * (/*pl.Scl*/1.4 - 1.0) / (settings.Beat.BeatScale * 0.4)
+			blurVal -= settings.Playfield.UnblurFill * (blurVal) * ( /*pl.Scl*/ 1.4 - 1.0) / (settings.Beat.BeatScale * 0.4)
 		}
 	}
-
 
 	pl.background.Draw(pl.progressMs, pl.batch, blurVal*0.3, bgAlpha*0.5, cameras[0])
 
@@ -386,64 +383,61 @@ func (pl *MainMenu) Draw(delta float64) {
 	pl.progress = pl.lastProgress*ratio + (pV)*(1-ratio)
 	pl.lastProgress = pl.progress
 
+	pl.batch.Begin()
+	pl.batch.SetColor(1, 1, 1, 1)
+	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		pl.batch.Begin()
-		pl.batch.SetColor(1, 1, 1, 1)
-		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+	pl.triangles.Draw(pl.progressMsF, pl.batch)
 
-		pl.triangles.Draw(pl.progressMsF, pl.batch)
+	pl.visualiser.Draw(pl.progressMsF, pl.batch)
 
-		pl.visualiser.Draw(pl.progressMsF, pl.batch)
+	pl.batch.Flush()
 
-		pl.batch.Flush()
+	pl.batch.SetColor(1, 1, 1, 1)
 
-		pl.batch.SetColor(1, 1, 1, 1)
+	pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), -float32(settings.Graphics.GetHeightF()/2), -1, 1))
+	//scl1 := (settings.Graphics.GetHeightF() / float64(pl.WaveTex.Height)) * (settings.Graphics.GetHeightF() / 600) * 0.6
 
-		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), -float32(settings.Graphics.GetHeightF()/2), -1, 1))
-			//scl1 := (settings.Graphics.GetHeightF() / float64(pl.WaveTex.Height)) * (settings.Graphics.GetHeightF() / 600) * 0.6
+	for i := 0; i < len(pl.waves); i++ {
+		wave := pl.waves[i]
 
-			for i := 0; i < len(pl.waves); i++ {
-				wave := pl.waves[i]
+		wave.UpdateAndDraw(pl.progressMs, pl.batch)
 
-				wave.UpdateAndDraw(pl.progressMs, pl.batch)
-
-				if wave.GetEndTime() < pl.progressMsF {
-					pl.waves = pl.waves[1:]
-					i--
-				}
-			}
-
-			pl.batch.SetColor(1, 1, 1, 1)
-
-			scl := (pl.cookieSize/2048.0) * 0.7
-
-			pl.LogoS1.SetScale((1.05 - easing.OutQuad(pl.progress)*0.05) * scl * pl.hover)
-			pl.LogoS2.SetScale((1.05 + easing.OutQuad(pl.progress)*0.03) * scl * pl.hover)
-			pl.visualiser.SetStartDistance(pl.cookieSize * 0.66 * pl.hover)
-
-			alpha := 0.3
-			if pl.bMap.Timings.Current.Kiai {
-				alpha = 0.12
-			}
-
-			pl.LogoS2.SetAlpha(alpha)
-
-			pl.LogoS1.UpdateAndDraw(pl.progressMs, pl.batch)
-			pl.LogoS2.UpdateAndDraw(pl.progressMs, pl.batch)
-
-
-
-		if pl.epiGlider.GetValue() > 0 {
-			scl := (settings.Graphics.GetWidthF() / float64(pl.Epi.Width)) / 2 * 0.66
-			pl.batch.SetScale(scl, scl)
-			pl.batch.SetColor(1, 1, 1, pl.epiGlider.GetValue())
-			pl.batch.DrawTexture(*pl.Epi)
+		if wave.GetEndTime() < pl.progressMsF {
+			pl.waves = pl.waves[1:]
+			i--
 		}
+	}
 
-		pl.leftPulse.UpdateAndDraw(pl.progressMs, pl.batch)
-		pl.rightPulse.UpdateAndDraw(pl.progressMs, pl.batch)
+	pl.batch.SetColor(1, 1, 1, 1)
 
-		pl.batch.End()
+	scl := (pl.cookieSize / 2048.0) * 0.7
+
+	pl.LogoS1.SetScale((1.05 - easing.OutQuad(pl.progress)*0.05) * scl * pl.hover)
+	pl.LogoS2.SetScale((1.05 + easing.OutQuad(pl.progress)*0.03) * scl * pl.hover)
+	pl.visualiser.SetStartDistance(pl.cookieSize * 0.66 * pl.hover)
+
+	alpha := 0.3
+	if pl.bMap.Timings.Current.Kiai {
+		alpha = 0.12
+	}
+
+	pl.LogoS2.SetAlpha(alpha)
+
+	pl.LogoS1.UpdateAndDraw(pl.progressMs, pl.batch)
+	pl.LogoS2.UpdateAndDraw(pl.progressMs, pl.batch)
+
+	if pl.epiGlider.GetValue() > 0 {
+		scl := (settings.Graphics.GetWidthF() / float64(pl.Epi.Width)) / 2 * 0.66
+		pl.batch.SetScale(scl, scl)
+		pl.batch.SetColor(1, 1, 1, pl.epiGlider.GetValue())
+		pl.batch.DrawTexture(*pl.Epi)
+	}
+
+	pl.leftPulse.UpdateAndDraw(pl.progressMs, pl.batch)
+	pl.rightPulse.UpdateAndDraw(pl.progressMs, pl.batch)
+
+	pl.batch.End()
 
 	if pl.start {
 		settings.Objects.Colors.Update(timMs)
@@ -451,7 +445,7 @@ func (pl *MainMenu) Draw(delta float64) {
 		settings.Cursor.Colors.Update(timMs)
 	}
 
-	colors1, _ := settings.Cursor.GetColors(settings.DIVIDES, 1, /*pl.Scl*/1, 1.0 /*pl.cursorGlider.GetValue()*/)
+	colors1, _ := settings.Cursor.GetColors(settings.DIVIDES, 1 /*pl.Scl*/, 1, 1.0 /*pl.cursorGlider.GetValue()*/)
 
 	scale2 := 1.0
 
@@ -464,7 +458,7 @@ func (pl *MainMenu) Draw(delta float64) {
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*(/*pl.Scl*/1.4-1.0)/(settings.Beat.BeatScale*0.4))
+		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*( /*pl.Scl*/ 1.4-1.0)/(settings.Beat.BeatScale*0.4))
 		pl.bloomEffect.Begin()
 	}
 
