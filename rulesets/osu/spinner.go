@@ -83,7 +83,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 			if timeDiff > 0 {
 
-				mouseAngle := player.cursor.Position.Sub(spinnerPosition).AngleR()
+				mouseAngle := float64(player.cursor.Position.Sub(spinnerPosition).AngleR())
 
 				angleDiff := mouseAngle - state.lastAngle
 

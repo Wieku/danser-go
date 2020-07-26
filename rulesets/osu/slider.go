@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render/batches"
-	"log"
 	"math"
 )
 
@@ -89,11 +88,11 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	}
 
 	clicked := player.leftCondE || player.rightCondE
-	inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius
+	inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
-	if slider.GetNumber() == 53 {
-		log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, slider.ruleSet.CanBeHit(time, slider, player), clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
-	}
+	//if slider.GetNumber() == 53 {
+	//	log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, slider.ruleSet.CanBeHit(time, slider, player), clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius))
+	//}
 	//log.Println("ee", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.leftCondE, player.rightCondE, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
 
 	if slider.ruleSet.CanBeHit(time, slider, player) && !state.isStartHit && !state.isHit {
@@ -198,7 +197,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			radiusNeeded *= 2.4
 		}
 
-		allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= radiusNeeded
+		allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= float32(radiusNeeded)
 
 		if allowable && !state.sliding {
 			state.sliding = true

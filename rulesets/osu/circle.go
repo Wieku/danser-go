@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render/batches"
-	"log"
 	"math"
 )
 
@@ -71,7 +70,7 @@ func (circle *Circle) UpdateClick(time int64) bool {
 
 			if circle.ruleSet.CanBeHit(time, circle, player) {
 				clicked := player.leftCondE || player.rightCondE
-				inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius
+				inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
 				if player.leftCondE {
 					player.leftCondE = false
@@ -142,13 +141,13 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 			yOffset = data.StackOffset.Y - float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
 		}
 
-		if circle.GetNumber() == 53 {
-			log.Println("click", time, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetBasicData().StartTime, circle.hitCircle.GetBasicData().EndTime, circle.hitCircle.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, circle.ruleSet.CanBeHit(time, circle, player), player.cursor.Position, circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
-		}
+		//if circle.GetNumber() == 53 {
+		//	log.Println("click", time, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetBasicData().StartTime, circle.hitCircle.GetBasicData().EndTime, circle.hitCircle.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, circle.ruleSet.CanBeHit(time, circle, player), player.cursor.Position, circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius))
+		//}
 
 		if circle.ruleSet.CanBeHit(time, circle, player) {
 			clicked := player.leftCondE || player.rightCondE
-			inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= player.diff.CircleRadius
+			inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
 			if player.leftCondE {
 				player.leftCondE = false
