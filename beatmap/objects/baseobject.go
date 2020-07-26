@@ -1,11 +1,11 @@
 package objects
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	om "github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/render/batches"
 	"strconv"
 	"strings"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/render/batches"
 )
 
 type BaseObject interface {
@@ -14,7 +14,7 @@ type BaseObject interface {
 	SetTiming(timings *Timings)
 	UpdateStacking()
 	SetDifficulty(preempt, fadeIn float64)
-	GetPosition() om.Vector2d
+	GetPosition() om.Vector2f
 }
 
 type Renderable interface {
@@ -23,14 +23,14 @@ type Renderable interface {
 }
 
 type basicData struct {
-	StartPos, EndPos   om.Vector2d
+	StartPos, EndPos   om.Vector2f
 	StartTime, EndTime int64
-	StackOffset        om.Vector2d
+	StackOffset        om.Vector2f
 	StackIndex         int64
 	Number             int64
 	SliderPoint        bool
-	SliderPointStart        bool
-	SliderPointEnd        bool
+	SliderPointStart   bool
+	SliderPointEnd     bool
 	NewCombo           bool
 	ComboNumber        int64
 	ComboSet           int64
@@ -42,11 +42,11 @@ type basicData struct {
 }
 
 func commonParse(data []string) *basicData {
-	x, _ := strconv.ParseFloat(data[0], 64)
-	y, _ := strconv.ParseFloat(data[1], 64)
+	x, _ := strconv.ParseFloat(data[0], 32)
+	y, _ := strconv.ParseFloat(data[1], 32)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
-	return &basicData{StartPos: om.NewVec2d(x, y), StartTime: time, Number: -1, NewCombo: (objType & 4) == 4}
+	return &basicData{StartPos: om.NewVec2f(float32(x), float32(y)), StartTime: time, Number: -1, NewCombo: (objType & 4) == 4}
 }
 
 func (bData *basicData) parseExtras(data []string, extraIndex int) {

@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/math32"
 	"github.com/wieku/danser-go/render/framebuffer"
 	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/utils"
@@ -11,7 +12,6 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
-	"math"
 )
 
 var sliderShader *glhf.Shader = nil
@@ -130,7 +130,7 @@ func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
 	sliderShader.SetUniformAttr(1, cam)
 }
 
-func (self *SliderRenderer) GetShape(curve []bmath.Vector2d) ([]float32, int) {
+func (self *SliderRenderer) GetShape(curve []bmath.Vector2f) ([]float32, int) {
 	return createMesh(curve), int(settings.Objects.SliderLOD)
 }
 
@@ -142,7 +142,7 @@ func (self *SliderRenderer) UploadMesh(mesh []float32) *glhf.VertexSlice {
 	return slice
 }
 
-func createMesh(curve []bmath.Vector2d) []float32 {
+func createMesh(curve []bmath.Vector2f) []float32 {
 	if len(unitCircle) == 0 {
 		createCircle(int(settings.Objects.SliderLOD))
 	}
@@ -154,10 +154,10 @@ func createMesh(curve []bmath.Vector2d) []float32 {
 			vertices[i*len(unitCircle)+j] = s
 			if j%3 == 0 {
 				vertices[i*len(unitCircle)+j] *= float32(CS)
-				vertices[i*len(unitCircle)+j] += v.X32()
+				vertices[i*len(unitCircle)+j] += v.X
 			} else if j%3 == 1 {
 				vertices[i*len(unitCircle)+j] *= float32(CS)
-				vertices[i*len(unitCircle)+j] += v.Y32()
+				vertices[i*len(unitCircle)+j] += v.Y
 			}
 		}
 	}
@@ -170,11 +170,11 @@ func set(array []float32, index int, data ...float32) {
 }
 
 func createCircle(segments int) {
-	points := make([]bmath.Vector2d, segments+2)
-	points[0] = bmath.NewVec2d(0, 0)
+	points := make([]bmath.Vector2f, segments+2)
+	points[0] = bmath.NewVec2f(0, 0)
 
 	for i := 0; i < segments; i++ {
-		points[i+1] = bmath.NewVec2dRad(float64(i)/float64(segments)*2*math.Pi, 1)
+		points[i+1] = bmath.NewVec2fRad(float32(i)/float32(segments)*2*math32.Pi, 1)
 	}
 
 	points[segments+1] = points[1]
@@ -184,7 +184,7 @@ func createCircle(segments int) {
 	for j := range points {
 		if j >= 2 {
 			p1, p2, p3 := points[j-1], points[j], points[0]
-			set(unitCircle, (j-2)*6*3, float32(p1.X), float32(p1.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p2.X), float32(p2.Y), 1.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0, float32(p3.X), float32(p3.Y), 0.0)
+			set(unitCircle, (j-2)*6*3, p1.X, p1.Y, 1.0, p3.X, p3.Y, 0.0, p2.X, p2.Y, 1.0, p3.X, p3.Y, 0.0, p3.X, p3.Y, 0.0, p3.X, p3.Y, 0.0)
 		}
 	}
 }
