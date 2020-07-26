@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/beatmap"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/difficulty"
+	"github.com/wieku/danser-go/bmath/math32"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/rulesets/osu"
 	"github.com/wieku/danser-go/settings"
@@ -133,7 +134,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		controller.replays = append(controller.replays, RpData{"serand", "HD", difficulty.Hidden, 100, 0, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
-		counter++
+		counter = 50
 	}
 
 	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
@@ -303,6 +304,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 	for nTime := controller.lastTime + 1; nTime <= time; nTime++ {
 		controller.bMap.Update(nTime)
+		controller.ruleset.Update(nTime)
 		for i, c := range controller.controllers {
 			if c.danceController != nil {
 				/*if i == 1 {
@@ -343,13 +345,13 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
 
-					mY := float64(frame.MouseY)
+					mY := frame.MouseY
 
 					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
 						mY = 384 - mY
 					}
 
-					controller.cursors[i].SetPos(bmath.NewVec2d(float64(frame.MosueX), mY))
+					controller.cursors[i].SetPos(bmath.NewVec2f(frame.MosueX, mY))
 					controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick || frame.KeyPressed.Key1
 					controller.cursors[i].RightButton = frame.KeyPressed.RightClick || frame.KeyPressed.Key2
 					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
@@ -369,33 +371,25 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				c.m2Glider.Update(float64(nTime))
 
 				if !wasUpdated {
-					localIndex := c.replayIndex
-					if localIndex >= len(c.frames) {
-						localIndex = len(c.frames) - 1
-					}
+					localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
 
-					progress := math.Min(float64(nTime-c.replayTime), float64(c.frames[localIndex].Time)) / float64(c.frames[localIndex].Time)
+					progress := math32.Min(float32(nTime-c.replayTime), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
 
-					prevIndex := localIndex - 1
-					if prevIndex < 0 {
-						prevIndex = 0
-					}
+					prevIndex := bmath.MaxI(0, localIndex-1)
 
-					mX := float64(c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + float64(c.frames[prevIndex].MosueX)
-					mY := float64(c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + float64(c.frames[prevIndex].MouseY)
+					mX := (c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + c.frames[prevIndex].MosueX
+					mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
 
 					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
 						mY = 384 - mY
 					}
 
-					controller.cursors[i].SetPos(bmath.NewVec2d(mX, mY))
+					controller.cursors[i].SetPos(bmath.NewVec2f(mX, mY))
 					controller.cursors[i].IsReplayFrame = false
 					controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 				}
 			}
 		}
-
-		controller.ruleset.Update(nTime)
 		controller.lastTime = nTime
 	}
 
