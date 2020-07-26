@@ -7,12 +7,12 @@ import (
 const minPartWidth = 0.0001
 
 type MultiCurve struct {
-	sections []float64
-	length   float64
+	sections []float32
+	length   float32
 	lines    []Linear
 }
 
-func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *MultiCurve {
+func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float32) *MultiCurve {
 	lines := make([]Linear, 0)
 
 	if len(points) < 3 {
@@ -49,7 +49,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *
 	case "C":
 
 		if points[0] != points[1] {
-			points = append([]bmath.Vector2d{points[0]}, points...)
+			points = append([]bmath.Vector2f{points[0]}, points...)
 		}
 
 		if points[len(points)-1] != points[len(points)-2] {
@@ -62,7 +62,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *
 		break
 	}
 
-	length := 0.0
+	length := float32(0.0)
 
 	for _, l := range lines {
 		length += l.GetLength()
@@ -89,7 +89,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *
 			last := lines[len(lines)-1]
 
 			p1 := last.PointAt(1)
-			p2 := bmath.NewVec2dRad(last.GetEndAngle(), desiredLength-length).Add(p1)
+			p2 := bmath.NewVec2fRad(last.GetEndAngle(), desiredLength-length).Add(p1)
 
 			c := NewLinear(p1, p2)
 
@@ -98,9 +98,15 @@ func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *
 		}
 	}
 
-	sections := make([]float64, len(lines)+1)
+	length = 0.0
+
+	for _, l := range lines {
+		length += float32(l.GetLength())
+	}
+
+	sections := make([]float32, len(lines)+1)
 	sections[0] = 0.0
-	prev := 0.0
+	prev := float32(0.0)
 
 	for i := 0; i < len(lines); i++ {
 		prev += lines[i].GetLength()
@@ -110,7 +116,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2d, desiredLength float64) *
 	return &MultiCurve{sections, length, lines}
 }
 
-func (sa *MultiCurve) PointAt(t float64) bmath.Vector2d {
+func (sa *MultiCurve) PointAt(t float32) bmath.Vector2f {
 
 	desiredWidth := sa.length * t
 
@@ -127,15 +133,15 @@ func (sa *MultiCurve) PointAt(t float64) bmath.Vector2d {
 	return line.PointAt((desiredWidth - sa.sections[lineI]) / (sa.sections[lineI+1] - sa.sections[lineI]))
 }
 
-func (sa *MultiCurve) GetLength() float64 {
+func (sa *MultiCurve) GetLength() float32 {
 	return sa.length
 }
 
-func (sa *MultiCurve) GetStartAngle() float64 {
+func (sa *MultiCurve) GetStartAngle() float32 {
 	return sa.lines[0].GetStartAngle()
 }
 
-func (sa *MultiCurve) GetEndAngle() float64 {
+func (sa *MultiCurve) GetEndAngle() float32 {
 	return sa.lines[len(sa.lines)-1].GetEndAngle()
 }
 

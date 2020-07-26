@@ -5,38 +5,38 @@ import (
 )
 
 type BSpline struct {
-	points       []bmath.Vector2d
-	timing       []float64
-	subPoints    []bmath.Vector2d
+	points       []bmath.Vector2f
+	timing       []float32
+	subPoints    []bmath.Vector2f
 	path         []*Bezier
-	ApproxLength float64
+	ApproxLength float32
 }
 
-func NewBSpline(points1 []bmath.Vector2d, timing []int64) *BSpline {
+func NewBSpline(points1 []bmath.Vector2f, timing []int64) *BSpline {
 
 	pointsLen := len(points1)
 
-	points := make([]bmath.Vector2d, 0)
+	points := make([]bmath.Vector2f, 0)
 
 	points = append(points, points1[0])
 	points = append(points, points1[2:pointsLen-2]...)
 	points = append(points, points1[pointsLen-1], points1[1], points1[pointsLen-2])
 
-	newTiming := make([]float64, len(timing))
+	newTiming := make([]float32, len(timing))
 	for i := range newTiming {
-		newTiming[i] = float64(timing[i] - timing[0])
+		newTiming[i] = float32(timing[i] - timing[0])
 	}
 
 	spline := &BSpline{points: points, timing: newTiming}
 
 	n := len(points) - 2
 
-	d := make([]bmath.Vector2d, n)
+	d := make([]bmath.Vector2f, n)
 	d[0] = points[n].Sub(points[0])
 	d[n-1] = points[n+1].Sub(points[n-1]).Scl(-1)
 
-	A := make([]bmath.Vector2d, len(points))
-	Bi := make([]float64, len(points))
+	A := make([]bmath.Vector2f, len(points))
+	Bi := make([]float32, len(points))
 
 	Bi[1] = -0.25
 	A[1] = points[2].Sub(points[0]).Sub(d[0]).Scl(1.0 / 4)
@@ -50,20 +50,20 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) *BSpline {
 
 	}
 
-	converted := make([]float64, len(timing))
+	converted := make([]float32, len(timing))
 
 	for i, time := range timing {
 		if i > 0 {
-			converted[i-1] = float64(time - timing[i-1])
+			converted[i-1] = float32(time - timing[i-1])
 		}
 	}
 
-	firstMul := 1.0
+	firstMul := float32(1.0)
 	if converted[0] > 600 {
 		firstMul = converted[0] / 2
 	}
 
-	secondMul := 1.0
+	secondMul := float32(1.0)
 
 	spline.subPoints = append(spline.subPoints, points[0], points[0].Add(d[0].SclOrDenorm(firstMul)))
 	for i := 1; i < len(points)-2; i++ {
@@ -88,7 +88,7 @@ func NewBSpline(points1 []bmath.Vector2d, timing []int64) *BSpline {
 	return spline
 }
 
-func (spline *BSpline) PointAt(t float64) bmath.Vector2d {
+func (spline *BSpline) PointAt(t float32) bmath.Vector2f {
 	desiredWidth := spline.ApproxLength * t
 
 	lineI := len(spline.timing) - 2
@@ -104,14 +104,14 @@ func (spline *BSpline) PointAt(t float64) bmath.Vector2d {
 	return line.PointAt((desiredWidth - spline.timing[lineI]) / (spline.timing[lineI+1] - spline.timing[lineI]))
 }
 
-func (spline *BSpline) GetLength() float64 {
+func (spline *BSpline) GetLength() float32 {
 	return spline.ApproxLength
 }
 
-func (spline *BSpline) GetStartAngle() float64 {
+func (spline *BSpline) GetStartAngle() float32 {
 	return spline.points[0].AngleRV(spline.PointAt(1.0 / spline.ApproxLength))
 }
 
-func (spline *BSpline) GetEndAngle() float64 {
+func (spline *BSpline) GetEndAngle() float32 {
 	return spline.points[len(spline.points)-1].AngleRV(spline.PointAt((spline.ApproxLength - 1) / spline.ApproxLength))
 }

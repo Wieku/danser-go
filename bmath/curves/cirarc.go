@@ -2,24 +2,25 @@ package curves
 
 import (
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/math32"
 	"math"
 )
 
 type CirArc struct {
-	pt1, pt2, pt3                  bmath.Vector2d
-	centre                         bmath.Vector2d
-	startAngle, totalAngle, r, dir float64
+	pt1, pt2, pt3                  bmath.Vector2f
+	centre                         bmath.Vector2f
+	startAngle, totalAngle, r, dir float32
 	Unstable                       bool
 }
 
-func NewCirArc(pt1, pt2, pt3 bmath.Vector2d) *CirArc {
+func NewCirArc(pt1, pt2, pt3 bmath.Vector2f) *CirArc {
 	arc := &CirArc{pt1: pt1, pt2: pt2, pt3: pt3}
 
 	aSq := pt2.DstSq(pt3)
 	bSq := pt1.DstSq(pt3)
 	cSq := pt1.DstSq(pt2)
 
-	if math.Abs(aSq) < 0.001 || math.Abs(bSq) < 0.001 || math.Abs(cSq) < 0.001 {
+	if math32.Abs(aSq) < 0.001 || math32.Abs(bSq) < 0.001 || math32.Abs(cSq) < 0.001 {
 		arc.Unstable = true
 	}
 
@@ -29,7 +30,7 @@ func NewCirArc(pt1, pt2, pt3 bmath.Vector2d) *CirArc {
 
 	sum := s + t + u
 
-	if math.Abs(sum) < 0.001 {
+	if math32.Abs(sum) < 0.001 {
 		arc.Unstable = true
 	}
 
@@ -40,8 +41,8 @@ func NewCirArc(pt1, pt2, pt3 bmath.Vector2d) *CirArc {
 
 	r := dA.Len()
 
-	start := math.Atan2(dA.Y, dA.X)
-	end := math.Atan2(dC.Y, dC.X)
+	start := math32.Atan2(dA.Y, dA.X)
+	end := math32.Atan2(dC.Y, dC.X)
 
 	for end < start {
 		end += 2 * math.Pi
@@ -51,14 +52,14 @@ func NewCirArc(pt1, pt2, pt3 bmath.Vector2d) *CirArc {
 	totalAngle := end - start
 
 	aToC := pt3.Sub(pt1)
-	aToC = bmath.NewVec2d(aToC.Y, -aToC.X)
+	aToC = bmath.NewVec2f(aToC.Y, -aToC.X)
 	if aToC.Dot(pt2.Sub(pt1)) < 0 {
 		dir = -dir
 		totalAngle = 2*math.Pi - totalAngle
 	}
 
 	arc.totalAngle = totalAngle
-	arc.dir = float64(dir)
+	arc.dir = float32(dir)
 	arc.startAngle = start
 	arc.centre = centre
 	arc.r = r
@@ -66,18 +67,18 @@ func NewCirArc(pt1, pt2, pt3 bmath.Vector2d) *CirArc {
 	return arc
 }
 
-func (arc *CirArc) PointAt(t float64) bmath.Vector2d {
-	return bmath.NewVec2dRad(arc.startAngle+arc.dir*t*arc.totalAngle, arc.r).Add(arc.centre)
+func (arc *CirArc) PointAt(t float32) bmath.Vector2f {
+	return bmath.NewVec2fRad(arc.startAngle+arc.dir*t*arc.totalAngle, arc.r).Add(arc.centre)
 }
 
-func (arc *CirArc) GetLength() float64 {
+func (arc *CirArc) GetLength() float32 {
 	return arc.r * arc.totalAngle
 }
 
-func (arc *CirArc) GetStartAngle() float64 {
+func (arc *CirArc) GetStartAngle() float32 {
 	return arc.pt1.AngleRV(arc.PointAt(1.0 / arc.GetLength()))
 }
 
-func (arc *CirArc) GetEndAngle() float64 {
+func (arc *CirArc) GetEndAngle() float32 {
 	return arc.pt3.AngleRV(arc.PointAt((arc.GetLength() - 1.0) / arc.GetLength()))
 }

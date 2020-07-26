@@ -3,8 +3,8 @@ package curves
 import "github.com/wieku/danser-go/bmath"
 
 type Curve interface {
-	PointAt(t float64) bmath.Vector2d
-	GetStartAngle() float64
-	GetEndAngle() float64
-	GetLength() float64
+	PointAt(t float32) bmath.Vector2f
+	GetStartAngle() float32
+	GetEndAngle() float32
+	GetLength() float32
 }

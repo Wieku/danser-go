@@ -2,7 +2,7 @@ package curves
 
 import "github.com/wieku/danser-go/bmath"
 
-func ApproximateCircularArc(pt1, pt2, pt3 bmath.Vector2d, detail float64) []Linear {
+func ApproximateCircularArc(pt1, pt2, pt3 bmath.Vector2f, detail float32) []Linear {
 	arc := NewCirArc(pt1, pt2, pt3)
 
 	if arc.Unstable {
@@ -14,25 +14,25 @@ func ApproximateCircularArc(pt1, pt2, pt3 bmath.Vector2d, detail float64) []Line
 	lines := make([]Linear, segments)
 
 	for i := 0; i < segments; i++ {
-		lines[i] = NewLinear(arc.PointAt(float64(i)/float64(segments)), arc.PointAt(float64(i+1)/float64(segments)))
+		lines[i] = NewLinear(arc.PointAt(float32(i)/float32(segments)), arc.PointAt(float32(i+1)/float32(segments)))
 	}
 
 	return lines
 }
 
-func ApproximateCatmullRom(points []bmath.Vector2d, detail int) []Linear {
+func ApproximateCatmullRom(points []bmath.Vector2f, detail int) []Linear {
 	catmull := NewCatmull(points)
 
 	lines := make([]Linear, detail)
 
 	for i := 0; i < detail; i++ {
-		lines[i] = NewLinear(catmull.PointAt(float64(i)/float64(detail)), catmull.PointAt(float64(i+1)/float64(detail)))
+		lines[i] = NewLinear(catmull.PointAt(float32(i)/float32(detail)), catmull.PointAt(float32(i+1)/float32(detail)))
 	}
 
 	return lines
 }
 
-func ApproximateBezier(points []bmath.Vector2d) []Linear {
+func ApproximateBezier(points []bmath.Vector2f) []Linear {
 	extracted := NewBezierApproximator(points).CreateBezier()
 
 	lines := make([]Linear, len(extracted)-1)
