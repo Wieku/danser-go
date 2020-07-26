@@ -138,3 +138,7 @@ func (v Vector2d) Abs() Vector2d {
 func (v Vector2d) Copy() Vector2d {
 	return Vector2d{v.X, v.Y}
 }
+
+func (v Vector2d) Copy32() Vector2f {
+	return Vector2f{float32(v.X), float32(v.Y)}
+}
