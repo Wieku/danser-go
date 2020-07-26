@@ -6,7 +6,7 @@ import (
 )
 
 type Rectangle struct {
-	MinX, MinY, MaxX, MaxY float64
+	MinX, MinY, MaxX, MaxY float32
 }
 
 type Camera struct {
@@ -31,21 +31,21 @@ func NewCamera() *Camera {
 }
 
 func (camera *Camera) SetViewport(width, height int, yDown bool) {
-	camera.screenRect.MinX = -float64(width) / 2
-	camera.screenRect.MaxX = float64(width) / 2
+	camera.screenRect.MinX = -float32(width) / 2
+	camera.screenRect.MaxX = float32(width) / 2
 
 	if yDown {
-		camera.screenRect.MinY = float64(height) / 2
-		camera.screenRect.MaxY = -float64(height) / 2
+		camera.screenRect.MinY = float32(height) / 2
+		camera.screenRect.MaxY = -float32(height) / 2
 	} else {
-		camera.screenRect.MinY = -float64(height) / 2
-		camera.screenRect.MaxY = float64(height) / 2
+		camera.screenRect.MinY = -float32(height) / 2
+		camera.screenRect.MaxY = float32(height) / 2
 	}
 
 	if yDown {
-		camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
+		camera.projection = mgl32.Ortho(camera.screenRect.MinX, camera.screenRect.MaxX, camera.screenRect.MinY, camera.screenRect.MaxY, 1, -1)
 	} else {
-		camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), -1, 1)
+		camera.projection = mgl32.Ortho(camera.screenRect.MinX, camera.screenRect.MaxX, camera.screenRect.MinY, camera.screenRect.MaxY, -1, 1)
 	}
 
 	camera.rebuildCache = true
@@ -69,12 +69,12 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64) {
 }
 
 func (camera *Camera) SetViewportF(x, y, width, height int) {
-	camera.screenRect.MinX = float64(x)
-	camera.screenRect.MaxX = float64(width)
-	camera.screenRect.MinY = float64(y)
-	camera.screenRect.MaxY = float64(height)
+	camera.screenRect.MinX = float32(x)
+	camera.screenRect.MaxX = float32(width)
+	camera.screenRect.MinY = float32(y)
+	camera.screenRect.MaxY = float32(height)
 
-	camera.projection = mgl32.Ortho(float32(camera.screenRect.MinX), float32(camera.screenRect.MaxX), float32(camera.screenRect.MinY), float32(camera.screenRect.MaxY), 1, -1)
+	camera.projection = mgl32.Ortho(camera.screenRect.MinX, camera.screenRect.MaxX, camera.screenRect.MinY, camera.screenRect.MaxY, 1, -1)
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }
@@ -149,18 +149,18 @@ func (camera Camera) GetProjectionView() mgl32.Mat4 {
 }
 
 func (camera Camera) Unproject(screenPos Vector2d) Vector2d {
-	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{float32((screenPos.X + camera.screenRect.MinX) / camera.screenRect.MaxX), -float32((screenPos.Y + camera.screenRect.MaxY) / camera.screenRect.MinY), 0.0, 1.0})
+	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{(screenPos.X32() + camera.screenRect.MinX) / camera.screenRect.MaxX, -(screenPos.Y32() + camera.screenRect.MaxY) / camera.screenRect.MinY, 0.0, 1.0})
 	return NewVec2d(float64(res[0]), float64(res[1]))
 }
 
 func (camera Camera) GetWorldRect() Rectangle {
 	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{-1.0, 1.0, 0.0, 1.0})
 	var rectangle Rectangle
-	rectangle.MinX = float64(res[0])
-	rectangle.MinY = float64(res[1])
+	rectangle.MinX = res[0]
+	rectangle.MinY = res[1]
 	res = camera.invProjectionView.Mul4x1(mgl32.Vec4{1.0, -1.0, 0.0, 1.0})
-	rectangle.MaxX = float64(res[0])
-	rectangle.MaxY = float64(res[1])
+	rectangle.MaxX = res[0]
+	rectangle.MaxY = res[1]
 	if rectangle.MinY > rectangle.MaxY {
 		a := rectangle.MinY
 		rectangle.MinY, rectangle.MaxY = rectangle.MaxY, a

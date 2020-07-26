@@ -63,7 +63,7 @@ func initCursor() {
 }
 
 type Cursor struct {
-	Points        []bmath.Vector2d
+	Points        []bmath.Vector2f
 	PointsC       []float64
 	removeCounter float64
 
@@ -72,10 +72,10 @@ type Cursor struct {
 	IsPlayer                bool
 	LastFrameTime           int64 //
 	CurrentFrameTime        int64 //
-	Position                bmath.Vector2d
-	LastPos                 bmath.Vector2d
-	VaoPos                  bmath.Vector2d
-	RendPos                 bmath.Vector2d
+	Position                bmath.Vector2f
+	LastPos                 bmath.Vector2f
+	VaoPos                  bmath.Vector2f
+	RendPos                 bmath.Vector2f
 
 	Name string
 
@@ -96,12 +96,12 @@ func NewCursor() *Cursor {
 
 	length := int(math.Ceil(float64(settings.Cursor.TrailMaxLength)*settings.Cursor.TrailDensity) * 6)
 	vao := glhf.MakeVertexSlice(cursorShader, length, length)
-	cursor := &Cursor{LastPos: bmath.NewVec2d(100, 100), Position: bmath.NewVec2d(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2d(100, 100)}
+	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100)}
 	cursor.vecSize = 10
 	return cursor
 }
 
-func (cr *Cursor) SetPos(pt bmath.Vector2d) {
+func (cr *Cursor) SetPos(pt bmath.Vector2f) {
 	tmp := pt
 
 	if settings.Cursor.BounceOnEdges {
@@ -132,8 +132,8 @@ func (cr *Cursor) SetPos(pt bmath.Vector2d) {
 	cr.Position = tmp
 }
 
-func (cr *Cursor) SetScreenPos(pt bmath.Vector2d) {
-	cr.SetPos(Camera.Unproject(pt))
+func (cr *Cursor) SetScreenPos(pt bmath.Vector2f) {
+	cr.SetPos(Camera.Unproject(pt.Copy64()).Copy32())
 }
 
 func (cr *Cursor) Update(tim float64) {
@@ -149,7 +149,7 @@ func (cr *Cursor) Update(tim float64) {
 	}
 
 	points := cr.Position.Dst(cr.LastPos)
-	density := 1.0 / settings.Cursor.TrailDensity
+	density := float32(1.0 / settings.Cursor.TrailDensity)
 
 	dirtyLocal := false
 
@@ -161,7 +161,7 @@ func (cr *Cursor) Update(tim float64) {
 			cr.PointsC = append(cr.PointsC, cr.hueBase)
 
 			if settings.Cursor.TrailStyle == 2 {
-				cr.hueBase += settings.Cursor.Style23Speed / 360.0 * density
+				cr.hueBase += settings.Cursor.Style23Speed / 360.0 * float64(density)
 				if cr.hueBase > 1.0 {
 					cr.hueBase -= 1.0
 				} else if cr.hueBase < 0 {
@@ -176,7 +176,7 @@ func (cr *Cursor) Update(tim float64) {
 	if len(cr.Points) > 0 {
 		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / tim) * settings.Cursor.TrailRemoveSpeed
 		times := int(math.Floor(cr.removeCounter))
-		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) / density)
+		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) / float64(density))
 
 		if len(cr.Points) > lengthAdjusted {
 			cr.Points = cr.Points[len(cr.Points)-lengthAdjusted:]
@@ -214,12 +214,12 @@ func (cr *Cursor) Update(tim float64) {
 				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cr.Points))
 			}
 
-			fillArray(cr.vertices, offset, -1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 0, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*2, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*3, 1+o.X32(), -1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 0, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*4, 1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 1, 1, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*5, -1+o.X32(), 1+o.Y32(), 0, o.X32(), o.Y32(), 0, 0, 1, inv, hue)
+			fillArray(cr.vertices, offset, -1+o.X, -1+o.Y, 0, o.X, o.Y, 0, 0, 0, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize, 1+o.X, -1+o.Y, 0, o.X, o.Y, 0, 1, 0, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*2, -1+o.X, 1+o.Y, 0, o.X, o.Y, 0, 0, 1, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*3, 1+o.X, -1+o.Y, 0, o.X, o.Y, 0, 1, 0, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*4, 1+o.X, 1+o.Y, 0, o.X, o.Y, 0, 1, 1, inv, hue)
+			fillArray(cr.vertices, offset+cr.vecSize*5, -1+o.X, 1+o.Y, 0, o.X, o.Y, 0, 0, 1, inv, hue)
 		}
 
 		cr.vaoSize = len(cr.Points) * 6 * cr.vecSize
@@ -336,7 +336,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 
 	batch.Begin()
 
-	batch.SetTranslation(cursor.RendPos)
+	batch.SetTranslation(cursor.RendPos.Copy64())
 	batch.SetScale(siz*scale, siz*scale)
 	batch.SetSubScale(1, 1)
 
