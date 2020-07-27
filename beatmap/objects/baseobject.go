@@ -3,6 +3,7 @@ package objects
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	om "github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render/batches"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ type BaseObject interface {
 	Update(time int64) bool
 	SetTiming(timings *Timings)
 	UpdateStacking()
-	SetDifficulty(preempt, fadeIn float64)
+	SetDifficulty(difficulty *difficulty.Difficulty)
 	GetPosition() om.Vector2f
 }
 

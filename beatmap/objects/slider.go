@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/curves"
+	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/settings"
@@ -388,12 +389,12 @@ func (self *Slider) UpdateStacking() {
 	}
 }
 
-func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
+func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.sliderSnakeIn = animation.NewGlider(0)
 	self.sliderSnakeOut = animation.NewGlider(0)
 
-	slSnInS := float64(self.objData.StartTime) - preempt
-	slSnInE := float64(self.objData.StartTime) - (preempt - fadeIn) + self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
+	slSnInS := float64(self.objData.StartTime) - diff.Preempt
+	slSnInE := float64(self.objData.StartTime) - (diff.Preempt - difficulty.HitFadeIn) + self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
 
 	if settings.Objects.SliderSnakeIn {
 		self.sliderSnakeIn.AddEvent(slSnInS, slSnInE, 1)
@@ -406,15 +407,15 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 	}
 
 	self.fade = animation.NewGlider(0)
-	self.fade.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
-	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+fadeIn/3, 0)
+	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
+	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeIn/3, 0)
 
 	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-FadeIn), 1)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-FadeIn), 1)
 	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+FadeOut, 0)
 
 	self.fadeApproach = animation.NewGlider(1)
-	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)
+	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime), 0)
 
 	for i := int64(2); i < self.repeat; i += 2 {
 		arrow := newReverse()
@@ -440,7 +441,7 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
 		end := float64(self.objData.StartTime) + float64(i)*self.partLen
 		if i == 1 {
-			start -= fadeIn
+			start -= difficulty.HitFadeIn
 		}
 
 		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
@@ -479,7 +480,7 @@ func (self *Slider) SetDifficulty(preempt, fadeIn float64) {
 	}
 
 	for _, p := range self.TickPoints {
-		a := float64((p.Time-self.objData.StartTime)/2+self.objData.StartTime) - preempt*2/3
+		a := float64((p.Time-self.objData.StartTime)/2+self.objData.StartTime) - diff.Preempt*2/3
 
 		fs := float64(p.Time-self.objData.StartTime) / self.partLen
 

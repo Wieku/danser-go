@@ -1,11 +1,12 @@
 package beatmap
 
 import (
+	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/bmath/difficulty"
 	"strconv"
 	"strings"
 	"time"
-	"github.com/wieku/danser-go/audio"
 )
 
 type BeatMap struct {
@@ -19,13 +20,9 @@ type BeatMap struct {
 	Tags string
 
 	SliderMultiplier,
-	StackLeniency,
-	CircleSize,
-	AR,
-	Preempt,
-	FadeIn,
-	OverallDifficulty,
-	HPDrainRate float64
+	StackLeniency float64
+
+	Diff *difficulty.Difficulty
 
 	Dir,
 	File,
@@ -44,7 +41,7 @@ type BeatMap struct {
 }
 
 func NewBeatMap() *BeatMap {
-	return &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7}
+	return &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7, Diff: difficulty.NewDifficulty(5, 5, 5, 5)}
 }
 
 func (b *BeatMap) Reset() {
@@ -52,7 +49,7 @@ func (b *BeatMap) Reset() {
 	copy(b.Queue, b.HitObjects)
 	b.Timings.Reset()
 	for _, o := range b.HitObjects {
-		o.SetDifficulty(b.Preempt, b.FadeIn)
+		o.SetDifficulty(b.Diff)
 	}
 }
 

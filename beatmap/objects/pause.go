@@ -2,6 +2,7 @@ package objects
 
 import (
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/difficulty"
 	"strconv"
 )
 
@@ -30,7 +31,7 @@ func (self *Pause) SetTiming(timings *Timings) {
 
 func (self *Pause) UpdateStacking() {}
 
-func (self *Pause) SetDifficulty(preempt, fadeIn float64) {
+func (self *Pause) SetDifficulty(diff *difficulty.Difficulty) {
 
 }
 

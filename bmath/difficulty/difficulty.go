@@ -2,6 +2,9 @@ package difficulty
 
 import "math"
 
+const HitFadeIn = 400
+const HitFadeOut = 240
+
 type Difficulty struct {
 	hpDrain, cs, od, ar float64
 	Preempt, FadeIn     float64
@@ -40,7 +43,7 @@ func (diff *Difficulty) calculate() {
 		hpDrain /= 2
 	}
 
-	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5) * 1.00041
+	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5) * 1.00041 //some weird allowance osu has
 	diff.Preempt = DifficultyRate(ar, 1800, 1200, 450)
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
 	diff.Hit50 = int64(150 + 50*(5-od)/5)
@@ -56,11 +59,11 @@ func (diff *Difficulty) SetMods(mods Modifier) {
 
 func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	if diff.Mods&DoubleTime > 0 {
-		return float64(time) / 1.5
+		return time / 1.5
 	} else if diff.Mods&HalfTime > 0 {
-		return float64(time) / 0.75
+		return time / 0.75
 	} else {
-		return float64(time)
+		return time
 	}
 }
 
@@ -68,16 +71,36 @@ func (diff *Difficulty) GetHPDrain() float64 {
 	return diff.hpDrain
 }
 
+func (diff *Difficulty) SetHPDrain(hpDrain float64) {
+	diff.hpDrain = hpDrain
+	diff.calculate()
+}
+
 func (diff *Difficulty) GetCS() float64 {
 	return diff.cs
+}
+
+func (diff *Difficulty) SetCS(cs float64) {
+	diff.cs = cs
+	diff.calculate()
 }
 
 func (diff *Difficulty) GetOD() float64 {
 	return diff.od
 }
 
+func (diff *Difficulty) SetOD(od float64) {
+	diff.od = od
+	diff.calculate()
+}
+
 func (diff *Difficulty) GetAR() float64 {
 	return diff.ar
+}
+
+func (diff *Difficulty) SetAR(ar float64) {
+	diff.ar = ar
+	diff.calculate()
 }
 
 func DifficultyRate(diff, min, mid, max float64) float64 {

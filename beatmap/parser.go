@@ -1,15 +1,15 @@
 package beatmap
 
 import (
-	"sort"
+	"bufio"
+	"errors"
 	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/settings"
+	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
-	"os"
-	"bufio"
-	"github.com/wieku/danser-go/settings"
-	"errors"
-	"path/filepath"
 )
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
@@ -64,15 +64,19 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 		beatMap.SliderMultiplier, _ = strconv.ParseFloat(line[1], 64)
 		beatMap.Timings.SliderMult = float64(beatMap.SliderMultiplier)
 	case "ApproachRate":
-		beatMap.AR, _ = strconv.ParseFloat(line[1], 64)
+		parsed, _ := strconv.ParseFloat(line[1], 64)
+		beatMap.Diff.SetAR(parsed)
 	case "CircleSize":
-		beatMap.CircleSize, _ = strconv.ParseFloat(line[1], 64)
+		parsed, _ := strconv.ParseFloat(line[1], 64)
+		beatMap.Diff.SetCS(parsed)
 	case "SliderTickRate":
 		beatMap.Timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
 	case "HPDrainRate":
-		beatMap.HPDrainRate, _ = strconv.ParseFloat(line[1], 64)
+		parsed, _ := strconv.ParseFloat(line[1], 64)
+		beatMap.Diff.SetHPDrain(parsed)
 	case "OverallDifficulty":
-		beatMap.OverallDifficulty, _ = strconv.ParseFloat(line[1], 64)
+		parsed, _ := strconv.ParseFloat(line[1], 64)
+		beatMap.Diff.SetOD(parsed)
 	}
 }
 
@@ -234,7 +238,9 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 	}
 
-	sort.Slice(beatMap.HitObjects, func(i, j int) bool { return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime })
+	sort.Slice(beatMap.HitObjects, func(i, j int) bool {
+		return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime
+	})
 
 	num := 0
 	comboNumber := 1

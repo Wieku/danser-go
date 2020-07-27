@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/animation"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/settings"
@@ -95,15 +96,15 @@ func (self *Circle) SetTiming(timings *Timings) {
 	self.Timings = timings
 }
 
-func (self *Circle) SetDifficulty(preempt, fadeIn float64) {
+func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt /*-fadeIn*/)+FadeIn, 1)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+FadeOut, 0)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt /*-fadeIn*/)+FadeIn, 1)
+	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+difficulty.HitFadeOut, 0)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-preempt*0.6, 1)
 	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt*0.6, float64(self.objData.StartTime)-preempt*0.3, 0) HIDDEN
 
 	self.fadeApproach = animation.NewGlider(1)
-	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime), 0)
+	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime), 0)
 }
 
 func (self *Circle) UpdateStacking() {}

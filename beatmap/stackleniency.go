@@ -31,9 +31,6 @@ func difficultyRate(diff, min, mid, max float64) float64 {
 func calculateStackLeniency(b *BeatMap) {
 	stack_distance := float32(3.0)
 
-	preempt := difficultyRate(b.AR, 1800, 1200, 450)
-	b.Preempt = preempt
-	b.FadeIn = difficultyRate(b.AR, 1200, 800, 300)
 	hitObjects := b.HitObjects
 
 	if !settings.Objects.StackEnabled {
@@ -60,7 +57,7 @@ func calculateStackLeniency(b *BeatMap) {
 				continue
 			}
 
-			stackThreshold := preempt * b.StackLeniency
+			stackThreshold := b.Diff.Preempt * b.StackLeniency
 
 			if objectN.GetBasicData().StartTime-stackBaseObject.GetBasicData().EndTime > int64(stackThreshold) {
 				break
@@ -91,7 +88,7 @@ func calculateStackLeniency(b *BeatMap) {
 			continue
 		}
 
-		stackThreshold := preempt * b.StackLeniency
+		stackThreshold := b.Diff.Preempt * b.StackLeniency
 
 		if _, ok := objectI.(*objects.Circle); ok {
 			for n--; n >= 0; n-- {
@@ -151,11 +148,9 @@ func calculateStackLeniency(b *BeatMap) {
 
 	}
 
-	scale := float32(1.0-0.7*(b.CircleSize-5)/5) / 2
-
 	for _, v := range hitObjects {
 		if !isSpinnerBreak(v) {
-			sc := float32(v.GetBasicData().StackIndex) * scale * -6.4
+			sc := float32(v.GetBasicData().StackIndex) * float32(b.Diff.CircleRadius) / 32 * -6.4
 			v.GetBasicData().StackOffset = bmath.NewVec2f(sc, sc)
 			v.GetBasicData().StartPos = v.GetBasicData().StartPos.Add(v.GetBasicData().StackOffset)
 			v.GetBasicData().EndPos = v.GetBasicData().EndPos.Add(v.GetBasicData().StackOffset)

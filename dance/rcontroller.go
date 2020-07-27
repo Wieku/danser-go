@@ -176,60 +176,60 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		counter++
 	}*/
 
-	for _, score := range scores {
-		if score.Mods&osuapi.ModHalfTime > 0 || score.Mods&osuapi.ModEasy > 0 || counter >= 50 {
-			continue
-		}
-
-		//if score.Username != "emilia"/*"eyeball"*//*"Rhythm blue"*/ {
-		//	continue
-		//}
-
-		//if score.Username != "Freddie Benson"/*"itsamemarioo"*//*"Teppi"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
-		//	continue
-		//}
-		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
-		file, err := os.Open(fileName)
-		file.Close()
-
-		if os.IsNotExist(err) {
-			data, err := getReplay(score.ScoreID)
-			if err != nil {
-				panic(err)
-			} else if len(data) == 0 {
-				log.Println("Replay for:", score.Username, "doesn't exist. Skipping...")
-				continue
-			} else {
-				log.Println("Downloaded replay for:", score.Username)
-			}
-
-			ioutil.WriteFile(fileName, data, 644)
-		}
-
-		log.Println("Loading replay for:", score.Username)
-
-		control := NewSubControl()
-
-		data, err := ioutil.ReadFile(fileName)
-		if err != nil {
-			panic(err)
-		}
-
-		replay, _ := rplpa.ParseCompressed(data)
-
-		loadFrames(control, replay)
-
-		mxCombo := score.MaxCombo
-
-		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, int64(mxCombo), osu.NONE})
-		controller.controllers = append(controller.controllers, control)
-
-		log.Println("Expected score:", score.Score.Score)
-		log.Println("Expected pp:", score.PP)
-		log.Println("Replay loaded!")
-
-		counter++
-	}
+	//for _, score := range scores {
+	//	if score.Mods&osuapi.ModHalfTime > 0 || score.Mods&osuapi.ModEasy > 0 || counter >= 50 {
+	//		continue
+	//	}
+	//
+	//	//if score.Username != "emilia"/*"eyeball"*//*"Rhythm blue"*/ {
+	//	//	continue
+	//	//}
+	//
+	//	//if score.Username != "Freddie Benson"/*"itsamemarioo"*//*"Teppi"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
+	//	//	continue
+	//	//}
+	//	fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
+	//	file, err := os.Open(fileName)
+	//	file.Close()
+	//
+	//	if os.IsNotExist(err) {
+	//		data, err := getReplay(score.ScoreID)
+	//		if err != nil {
+	//			panic(err)
+	//		} else if len(data) == 0 {
+	//			log.Println("Replay for:", score.Username, "doesn't exist. Skipping...")
+	//			continue
+	//		} else {
+	//			log.Println("Downloaded replay for:", score.Username)
+	//		}
+	//
+	//		ioutil.WriteFile(fileName, data, 644)
+	//	}
+	//
+	//	log.Println("Loading replay for:", score.Username)
+	//
+	//	control := NewSubControl()
+	//
+	//	data, err := ioutil.ReadFile(fileName)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	replay, _ := rplpa.ParseCompressed(data)
+	//
+	//	loadFrames(control, replay)
+	//
+	//	mxCombo := score.MaxCombo
+	//
+	//	controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, int64(mxCombo), osu.NONE})
+	//	controller.controllers = append(controller.controllers, control)
+	//
+	//	log.Println("Expected score:", score.Score.Score)
+	//	log.Println("Expected pp:", score.PP)
+	//	log.Println("Replay loaded!")
+	//
+	//	counter++
+	//}
 
 	settings.PLAYERS = len(controller.replays)
 
@@ -261,7 +261,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 	for _, frame := range frames {
 		eventTime := math.Max(float64(lastTime), float64(lastTime+frame.Time))
 
-		//log.Println(time2, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
+		log.Println(eventTime, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
 
 		press := frame.KeyPressed
 

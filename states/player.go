@@ -126,7 +126,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	player.CS = 32 * (1.0 - 0.7*(beatMap.CircleSize-5)/5) * settings.Objects.CSMult
+	player.CS = beatMap.Diff.CircleRadius * settings.Objects.CSMult
 	render.CS = player.CS
 
 	var err error
@@ -557,7 +557,7 @@ func (pl *Player) Draw(delta float64) {
 					s.InitCurve(pl.sliderRenderer)
 				}
 
-				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.Preempt) <= pl.progressMs {
+				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.Diff.Preempt) <= pl.progressMs {
 
 					pl.processed = append(pl.processed, p.(objects.Renderable))
 

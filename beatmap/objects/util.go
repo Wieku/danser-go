@@ -5,15 +5,17 @@ import (
 	"strconv"
 )
 
-const FadeIn = 400
-const FadeOut = 240
+const FadeIn = 400.0
+const FadeOut = 240.0
 
 func GetObject(data []string) BaseObject {
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
 	if (objType & CIRCLE) > 0 {
 		return NewCircle(data)
 	} else if (objType & SPINNER) > 0 {
-		if settings.Objects.LoadSpinners || settings.KNOCKOUT != "" {return NewSpinner(data)}
+		if settings.Objects.LoadSpinners || settings.KNOCKOUT != "" {
+			return NewSpinner(data)
+		}
 	} else if (objType & SLIDER) > 0 {
 		sl := NewSlider(data)
 		if sl == nil {
@@ -26,7 +28,7 @@ func GetObject(data []string) BaseObject {
 }
 
 const (
-	CIRCLE int64 = 1
-	SLIDER int64 = 2
+	CIRCLE  int64 = 1
+	SLIDER  int64 = 2
 	SPINNER int64 = 8
 )

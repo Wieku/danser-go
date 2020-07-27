@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/animation"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/bmath/math32"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
@@ -53,10 +54,10 @@ func (self *Spinner) SetTiming(timings *Timings) {
 
 func (self *Spinner) UpdateStacking() {}
 
-func (self *Spinner) SetDifficulty(preempt, fadeIn float64) {
+func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	self.fade = animation.NewGlider(0)
-	self.fade.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-(preempt-fadeIn), 1)
-	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+fadeIn, 0)
+	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
+	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeIn, 0)
 }
 
 func (self *Spinner) Update(time int64) bool {

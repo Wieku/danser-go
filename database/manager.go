@@ -2,25 +2,26 @@ package database
 
 import (
 	"database/sql"
+	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/utils"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/wieku/danser-go/settings"
 
-	"github.com/wieku/danser-go/beatmap"
 	"crypto/md5"
-	"io"
 	"encoding/hex"
 	_ "github.com/mattn/go-sqlite3"
-	"time"
+	"github.com/wieku/danser-go/beatmap"
+	"io"
 	"strconv"
+	"time"
 )
 
 var dbFile *sql.DB
 
 var currentPreVersion = 20181111
+
 const databaseVersion = 20181111
 
 func Init() {
@@ -186,8 +187,8 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 					removeBeatmap(bMap.Dir, bMap.File)
 				} else {
 					_, err1 := st.Exec(
-						bMap.HPDrainRate,
-						bMap.OverallDifficulty,
+						bMap.Diff.GetHPDrain(),
+						bMap.Diff.GetOD(),
 						bMap.Dir,
 						bMap.File)
 
@@ -213,6 +214,12 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		for res.Next() {
 			beatmap := beatmap.NewBeatMap()
 			var mode int
+
+			var cs float64
+			var ar float64
+			var hp float64
+			var od float64
+
 			res.Scan(
 				&beatmap.Dir,
 				&beatmap.File,
@@ -225,8 +232,8 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.Difficulty,
 				&beatmap.Source,
 				&beatmap.Tags,
-				&beatmap.CircleSize,
-				&beatmap.AR,
+				&cs,
+				&ar,
 				&beatmap.Timings.SliderMult,
 				&beatmap.Timings.TickRate,
 				&beatmap.Audio,
@@ -241,8 +248,13 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.TimeAdded,
 				&beatmap.PlayCount,
 				&beatmap.LastPlayed,
-				&beatmap.HPDrainRate,
-				&beatmap.OverallDifficulty)
+				&hp,
+				&od)
+
+			beatmap.Diff.SetCS(cs)
+			beatmap.Diff.SetAR(ar)
+			beatmap.Diff.SetHPDrain(hp)
+			beatmap.Diff.SetOD(od)
 
 			if beatmap.Name+beatmap.Artist+beatmap.Creator == "" || beatmap.TimingPoints == "" {
 				log.Println("Corrupted cached beatmap found. Removing from database:", beatmap.File)
@@ -282,8 +294,8 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.Difficulty,
 					bMap.Source,
 					bMap.Tags,
-					bMap.CircleSize,
-					bMap.AR,
+					bMap.Diff.GetCS(),
+					bMap.Diff.GetAR(),
 					bMap.SliderMultiplier,
 					bMap.Timings.TickRate,
 					bMap.Audio,
@@ -298,8 +310,8 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.TimeAdded,
 					bMap.PlayCount,
 					bMap.LastPlayed,
-					bMap.HPDrainRate,
-					bMap.OverallDifficulty)
+					bMap.Diff.GetHPDrain(),
+					bMap.Diff.GetOD())
 
 				if err1 != nil {
 					log.Println(err1)
