@@ -13,12 +13,12 @@ const (
 	DoubleTime
 	Relax
 	HalfTime
-	Nightcore  // Only set along with DoubleTime. i.e: NC only gives 576
+	Nightcore // Only set along with DoubleTime. i.e: NC only gives 576
 	Flashlight
 	Autoplay
 	SpunOut
-	Relax2   // Autopilot
-	Perfect  // Only set along with SuddenDeath. i.e: PF only gives 16416
+	Relax2  // Autopilot
+	Perfect // Only set along with SuddenDeath. i.e: PF only gives 16416
 	Key4
 	Key5
 	Key6
@@ -36,6 +36,37 @@ const (
 	ScoreV2
 	LastMod
 )
+
+var modsString = [...]string{
+	"NF",
+	"EZ",
+	"TD",
+	"HD",
+	"HR",
+	"SD",
+	"DT",
+	"RX",
+	"HT",
+	"NC",
+	"FL",
+	"AU", // Auto.
+	"SO",
+	"AP", // Autopilot.
+	"PF",
+	"K4",
+	"K5",
+	"K6",
+	"K7",
+	"K8",
+	"K9",
+	"RN", // Random
+	"LM", // LastMod. Cinema?
+	"K9",
+	"K0",
+	"K1",
+	"K3",
+	"K2",
+}
 
 func (modifier Modifier) GetScoreMultiplier() float64 {
 	multiplier := 1.0
@@ -77,4 +108,15 @@ func (modifier Modifier) GetScoreMultiplier() float64 {
 	}
 
 	return multiplier
+}
+
+func (mods Modifier) String() (s string) {
+	for i := 0; i < len(modsString); i++ {
+		activated := mods&1 == 1
+		if activated {
+			s += modsString[i]
+		}
+		mods >>= 1
+	}
+	return
 }
