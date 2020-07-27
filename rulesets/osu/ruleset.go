@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/flesnuk/oppai5"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/olekukonko/tablewriter"
 	"github.com/wieku/danser-go/beatmap"
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type Grade int64
@@ -29,7 +31,7 @@ const (
 )
 
 const (
-	D = iota
+	D = Grade(iota)
 	C
 	B
 	A
@@ -39,6 +41,8 @@ const (
 	SSH
 	NONE
 )
+
+var GradesText = []string{"D", "C", "B", "A", "S", "SH", "SS", "SSH", "None"}
 
 type HitResult int64
 type ComboResult int64
@@ -271,11 +275,53 @@ func (set *OsuRuleSet) Update(time int64) {
 			return set.cursors[cs[i]].score > set.cursors[cs[j]].score
 		})
 
-		for _, c := range cs {
-			log.Println(c.Name, set.cursors[c], set.cursors[c].ppv2.Total)
+		tableString := &strings.Builder{}
+		table := tablewriter.NewWriter(tableString)
+		table.SetHeader([]string{"#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP"})
+
+		for i, c := range cs {
+			var data []string
+			data = append(data, fmt.Sprintf("%d", i+1))
+			data = append(data, c.Name)
+			data = append(data, humanize(set.cursors[c].score))
+			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].accuracy))
+			data = append(data, GradesText[set.cursors[c].grade])
+			data = append(data, humanize(set.cursors[c].hits[HitResults.Hit300]))
+			data = append(data, humanize(set.cursors[c].hits[HitResults.Hit100]))
+			data = append(data, humanize(set.cursors[c].hits[HitResults.Hit50]))
+			data = append(data, humanize(set.cursors[c].hits[HitResults.Miss]))
+			data = append(data, humanize(set.cursors[c].combo))
+			data = append(data, humanize(set.cursors[c].maxCombo))
+			data = append(data, set.cursors[c].player.diff.Mods.String())
+			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Total))
+			table.Append(data)
 		}
+
+		table.Render()
+
+		for _, s := range strings.Split(tableString.String(), "\n") {
+			log.Println(s)
+		}
+
 		set.ended = true
 	}
+}
+
+func humanize(number int64) string {
+	stringified := strconv.FormatInt(number, 10)
+
+	a := len(stringified) % 3
+	if a == 0 {
+		a = 3
+	}
+
+	humanized := stringified[0:a]
+
+	for i := a; i < len(stringified); i += 3 {
+		humanized += "," + stringified[i:i+3]
+	}
+
+	return humanized
 }
 
 func (set *OsuRuleSet) UpdateClickFor(cursor *render.Cursor, time int64) {
