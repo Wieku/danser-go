@@ -369,9 +369,23 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *render.Cursor, time int64) {
 func (set *OsuRuleSet) UpdateNormalFor(cursor *render.Cursor, time int64) {
 	player := set.cursors[cursor].player
 
+	wasSliderAlready := false
+
 	if len(set.processed) > 0 {
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
+
+			s, isSlider := g.(*Slider)
+
+			if isSlider {
+				if wasSliderAlready {
+					continue
+				}
+
+				if !s.IsHit(player) {
+					wasSliderAlready = true
+				}
+			}
 
 			g.UpdateFor(player, time)
 		}
