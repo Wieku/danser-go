@@ -3,6 +3,7 @@ package osu
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/beatmap/objects"
+	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render/batches"
 	"math"
@@ -38,6 +39,8 @@ type Slider struct {
 	state             map[*difficultyPlayer]*objstateS
 	fadeStartRelative float64
 	lastTime          int64
+	lastSliderTime    int64
+	sliderPosition    bmath.Vector2f
 }
 
 func (slider *Slider) GetNumber() int64 {
@@ -52,6 +55,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 
 	rSlider := object.(*objects.Slider)
 
+	slider.lastSliderTime = math.MinInt64
 	slider.fadeStartRelative = 100000
 
 	for _, player := range slider.players {
@@ -149,7 +153,10 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 	state := slider.state[player]
 
-	sliderPosition := slider.hitSlider.GetPointAt(time)
+	if time != slider.lastSliderTime {
+		slider.sliderPosition = slider.hitSlider.GetPointAt(time)
+		slider.lastSliderTime = time
+	}
 
 	xOffset := float32(0.0)
 	yOffset := float32(0.0)
@@ -197,7 +204,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			radiusNeeded *= 2.4
 		}
 
-		allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition.SubS(xOffset, yOffset)) <= float32(radiusNeeded)
+		allowable := mouseDownAcceptable && player.cursor.Position.Dst(slider.sliderPosition.SubS(xOffset, yOffset)) <= float32(radiusNeeded)
 
 		if allowable && !state.sliding {
 			state.sliding = true
