@@ -23,11 +23,11 @@ import (
 type Grade int64
 
 const (
-	FadeIn             = 120
-	FadeOut            = 600
-	PostEmpt           = 500
-	Shake              = 400
-	SliderEndTolerance = 3
+	FadeIn      = 120
+	FadeOut     = 600
+	PostEmpt    = 500
+	Shake       = 400
+	Tolerance2B = 3
 )
 
 const (
@@ -497,8 +497,6 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 }
 
 func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficultyPlayer) bool {
-	isNextCircle := true
-
 	if _, ok := object.(*Circle); ok {
 		index := -1
 
@@ -509,28 +507,23 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 		}
 
 		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetBasicData().StackIndex > 0 && !set.processed[index-1].IsHit(player) {
-			return false
+			return false //TODO: this should not shake the object
 		}
 	}
 
 	for _, g := range set.processed {
-		is2B := false
-
-		if _, isSlider := g.(*Slider); isSlider && set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime <= set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime+SliderEndTolerance {
-			is2B = true
+		if !g.IsHit(player) {
+			if g.GetNumber() != object.GetNumber() {
+				if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime {
+					return false
+				}
+			} else {
+				break
+			}
 		}
-
-		if is2B || g.IsHit(player) {
-			continue
-		}
-
-		if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().StartTime < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime && g.GetNumber() != object.GetNumber() {
-			isNextCircle = false
-		}
-		break
 	}
 
-	return isNextCircle
+	return true
 }
 
 func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
