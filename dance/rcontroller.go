@@ -286,7 +286,14 @@ func (controller *ReplayController) InitCursors() {
 			controller.controllers[i].danceController.InitCursors()
 			//settings.Dance.SliderDance = false
 			controller.controllers[i].danceController.GetCursors()[0].IsPlayer = true
-			controller.cursors = append(controller.cursors, controller.controllers[i].danceController.GetCursors()...)
+
+			cursors := controller.controllers[i].danceController.GetCursors()
+
+			for _, crsr := range cursors {
+				crsr.Name = controller.replays[i].Name
+			}
+
+			controller.cursors = append(controller.cursors, cursors...)
 		} else {
 			crsr := render.NewCursor()
 			crsr.Name = controller.replays[i].Name
