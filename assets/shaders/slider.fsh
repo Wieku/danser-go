@@ -19,9 +19,9 @@ const float borderWidth = 1.0f;
 
 void main()
 {
-    vec4 outerShadow = vec4(vec3(0.0), 0.5 * distance_inv / borderStart);
     vec4 borderColorOuter = col_border1;
     vec4 borderColorInner = col_border;
+    vec4 outerShadow = vec4(vec3(0.0), 0.5 * distance_inv / borderStart * borderColorInner.a);
     vec4 bodyColorOuter = vec4(vec3(0.05), borderColorInner.a);
     vec4 bodyColorInner = vec4(vec3(0.2), borderColorInner.a);
 
