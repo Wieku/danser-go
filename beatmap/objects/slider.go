@@ -79,6 +79,7 @@ type Slider struct {
 	sliderSnakeIn        *animation.Glider
 	sliderSnakeOut       *animation.Glider
 	fade                 *animation.Glider
+	bodyFade             *animation.Glider
 	fadeFollow           *animation.Glider
 	scaleFollow          *animation.Glider
 	reversePoints        [2][]*reversePoint
@@ -134,6 +135,7 @@ func NewSlider(data []string) *Slider {
 	slider.End = false
 	slider.lastTick = -1
 	slider.fade = animation.NewGlider(1)
+	slider.bodyFade = animation.NewGlider(1)
 	//slider.fadeCircle = animation.NewGlider(1)
 	//slider.fadeApproach = animation.NewGlider(1)
 	slider.sliderSnakeIn = animation.NewGlider(1)
@@ -408,7 +410,17 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
-	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeIn/3, 0)
+
+	self.bodyFade = animation.NewGlider(0)
+	self.bodyFade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
+
+	if diff.CheckModActive(difficulty.Hidden) {
+		self.bodyFade.AddEvent(float64(self.objData.StartTime)-diff.Preempt+difficulty.HitFadeIn, float64(self.objData.EndTime), 0)
+	} else {
+		self.bodyFade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeOut, 0)
+	}
+
+	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeOut, 0)
 
 	self.startCircle = DummyCircle(self.objData.StartPos, self.objData.StartTime)
 	self.startCircle.objData.ComboNumber = self.objData.ComboNumber
@@ -646,7 +658,7 @@ func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
 
 func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer) {
 	self.sliderSnakeIn.Update(float64(time))
-	self.fade.Update(float64(time))
+	self.bodyFade.Update(float64(time))
 
 	in := 0
 	out := int(self.sliderSnakeIn.GetValue() * float64(len(self.discreteCurve)))
@@ -663,7 +675,7 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 		in, out = out, in
 	}
 
-	colorAlpha := self.fade.GetValue()
+	colorAlpha := self.bodyFade.GetValue()
 
 	renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
 

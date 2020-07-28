@@ -28,6 +28,7 @@ type Circle struct {
 	hitCircleOverlay *sprites.Sprite
 	approachCircle   *sprites.Sprite
 	sprites          []*sprites.Sprite
+	diff             *difficulty.Difficulty
 }
 
 func NewCircle(data []string) *Circle {
@@ -108,6 +109,7 @@ func (self *Circle) SetTiming(timings *Timings) {
 }
 
 func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
+	self.diff = diff
 	self.fadeCircle = animation.NewGlider(0)
 	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt /*-fadeIn*/)+FadeIn, 1)
 	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+difficulty.HitFadeOut, 0)
@@ -130,21 +132,41 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	self.sprites = append(self.sprites, self.approachCircle)
 
 	self.hitCircle.SetPosition(self.objData.StartPos.Copy64())
+	self.hitCircle.SetAlpha(0)
 	self.hitCircleOverlay.SetPosition(self.objData.StartPos.Copy64())
+	self.hitCircleOverlay.SetAlpha(0)
 	self.approachCircle.SetPosition(self.objData.StartPos.Copy64())
+	self.approachCircle.SetAlpha(0)
 
-	self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0))
-	self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0))
-	self.textFade.AddEventS(startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0)
+	circles := []*sprites.Sprite{self.hitCircle, self.hitCircleOverlay}
 
-	self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0))
-	self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0))
-	self.textFade.AddEventS(startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0)
+	for _, t := range circles {
+		if diff.CheckModActive(difficulty.Hidden) {
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, startTime-diff.Preempt*0.6, 0.0, 1.0))
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt*0.6, startTime-diff.Preempt*0.3, 1.0, 0.0))
+		} else {
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0))
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0))
+		}
+	}
 
-	self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, math.Min(startTime, startTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
-	self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
-	self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime-diff.Preempt, startTime, 4.0, 1.0))
+	if diff.CheckModActive(difficulty.Hidden) {
+		self.textFade.AddEventS(startTime-diff.Preempt, startTime-diff.Preempt*0.6, 0.0, 1.0)
+		self.textFade.AddEventS(startTime-diff.Preempt*0.6, startTime-diff.Preempt*0.3, 1.0, 0.0)
+	} else {
+		self.textFade.AddEventS(startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0)
+		self.textFade.AddEventS(startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0)
+	}
 
+	if !diff.CheckModActive(difficulty.Hidden) || self.objData.Number == 0 {
+		self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, math.Min(startTime, startTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
+		if diff.CheckModActive(difficulty.Hidden) {
+			self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt*0.6, startTime-diff.Preempt*0.3, 0.9, 0.0))
+		} else {
+			self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
+		}
+		self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime-diff.Preempt, startTime, 4.0, 1.0))
+	}
 }
 
 func (self *Circle) Arm(clicked bool, time int64) {
@@ -152,7 +174,7 @@ func (self *Circle) Arm(clicked bool, time int64) {
 	self.hitCircleOverlay.ClearTransformations()
 	self.textFade.Reset()
 
-	if clicked {
+	if clicked && !self.diff.CheckModActive(difficulty.Hidden) {
 		startTime := float64(time)
 		endTime := startTime + difficulty.HitFadeOut
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
