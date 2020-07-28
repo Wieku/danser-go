@@ -412,6 +412,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.startCircle = DummyCircle(self.objData.StartPos, self.objData.StartTime)
 	self.startCircle.objData.ComboNumber = self.objData.ComboNumber
+	self.startCircle.objData.Number = self.objData.Number
 	self.startCircle.SetDifficulty(diff)
 
 	for i := int64(2); i < self.repeat; i += 2 {
@@ -759,30 +760,8 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 		batch.SetSubScale(1, 1)
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
-		if time < self.objData.StartTime {
-			/*batch.SetTranslation(self.objData.StartPos.Copy64())
-
-			batch.DrawUnit(*render.Circle)
+		if time >= self.objData.StartTime && time <= self.objData.EndTime {
 			batch.SetColor(1, 1, 1, alpha)
-			batch.DrawUnit(*render.CircleOverlay)
-			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
-			}*/
-
-			batch.SetSubScale(1, 1)
-
-		} else {
-
-			/*if time >= self.objData.StartTime && alphaF > 0.0 {
-				batch.SetTranslation(self.objData.StartPos.Copy64())
-				batch.SetSubScale(1+(1.0-alphaF)*0.5, 1+(1.0-alphaF)*0.5)
-				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alphaF)
-				batch.DrawUnit(*render.Circle)
-				batch.SetColor(1, 1, 1, alphaF)
-				batch.DrawUnit(*render.CircleOverlay)
-			}*/
-
-			batch.SetColor( /*float64(color[0]), float64(color[1]), float64(color[2])*/ 1, 1, 1, alpha)
 			batch.SetSubScale(1.0, 1.0)
 			batch.SetTranslation(self.Pos.Copy64())
 			batch.DrawUnit(*render.SliderBall)
