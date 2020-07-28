@@ -70,6 +70,8 @@ type Slider struct {
 	lastTick     int
 	End          bool
 
+	startCircle *Circle
+
 	vao                  *glhf.VertexSlice
 	created              bool
 	discreteCurve        []bmath.Vector2f
@@ -77,8 +79,6 @@ type Slider struct {
 	sliderSnakeIn        *animation.Glider
 	sliderSnakeOut       *animation.Glider
 	fade                 *animation.Glider
-	fadeApproach         *animation.Glider
-	fadeCircle           *animation.Glider
 	fadeFollow           *animation.Glider
 	scaleFollow          *animation.Glider
 	reversePoints        [2][]*reversePoint
@@ -134,8 +134,8 @@ func NewSlider(data []string) *Slider {
 	slider.End = false
 	slider.lastTick = -1
 	slider.fade = animation.NewGlider(1)
-	slider.fadeCircle = animation.NewGlider(1)
-	slider.fadeApproach = animation.NewGlider(1)
+	//slider.fadeCircle = animation.NewGlider(1)
+	//slider.fadeApproach = animation.NewGlider(1)
 	slider.sliderSnakeIn = animation.NewGlider(1)
 	slider.sliderSnakeOut = animation.NewGlider(0)
 	return slider
@@ -410,12 +410,9 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
 	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeIn/3, 0)
 
-	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-FadeIn), 1)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+FadeOut, 0)
-
-	self.fadeApproach = animation.NewGlider(1)
-	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime), 0)
+	self.startCircle = DummyCircle(self.objData.StartPos, self.objData.StartTime)
+	self.startCircle.objData.ComboNumber = self.objData.ComboNumber
+	self.startCircle.SetDifficulty(diff)
 
 	for i := int64(2); i < self.repeat; i += 2 {
 		arrow := newReverse()
@@ -631,7 +628,7 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 	self.fade.Update(float64(time))
-	self.fadeCircle.Update(float64(time))
+	//self.fadeCircle.Update(float64(time))
 	self.fadeFollow.Update(float64(time))
 	self.scaleFollow.Update(float64(time))
 
@@ -643,7 +640,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	}
 
 	alpha := self.fade.GetValue()
-	alphaF := self.fadeCircle.GetValue()
+	//alphaF := self.fadeCircle.GetValue()
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= settings.Objects.MandalaTexturesAlpha
@@ -715,27 +712,27 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 		if time < self.objData.StartTime {
-			batch.SetTranslation(self.objData.StartPos.Copy64())
+			/*batch.SetTranslation(self.objData.StartPos.Copy64())
 
 			batch.DrawUnit(*render.Circle)
 			batch.SetColor(1, 1, 1, alpha)
 			batch.DrawUnit(*render.CircleOverlay)
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
-			}
+			}*/
 
 			batch.SetSubScale(1, 1)
 
 		} else {
 
-			if time >= self.objData.StartTime && alphaF > 0.0 {
+			/*if time >= self.objData.StartTime && alphaF > 0.0 {
 				batch.SetTranslation(self.objData.StartPos.Copy64())
 				batch.SetSubScale(1+(1.0-alphaF)*0.5, 1+(1.0-alphaF)*0.5)
 				batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alphaF)
 				batch.DrawUnit(*render.Circle)
 				batch.SetColor(1, 1, 1, alphaF)
 				batch.DrawUnit(*render.CircleOverlay)
-			}
+			}*/
 
 			batch.SetColor( /*float64(color[0]), float64(color[1]), float64(color[2])*/ 1, 1, 1, alpha)
 			batch.SetSubScale(1.0, 1.0)
@@ -765,6 +762,8 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 		}
 	}
 
+	self.startCircle.Draw(time, color, batch)
+
 	batch.SetSubScale(1, 1)
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
@@ -779,17 +778,5 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 }
 
 func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-	self.fadeApproach.Update(float64(time))
-	alpha := self.fade.GetValue()
-	arr := self.fadeApproach.GetValue()
-
-	batch.SetTranslation(self.objData.StartPos.Copy64())
-
-	if settings.Objects.DrawApproachCircles && time <= self.objData.StartTime {
-		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-		batch.SetSubScale(1.0+arr*4, 1.0+arr*4)
-		batch.DrawUnit(*render.ApproachCircle)
-	}
-
-	batch.SetSubScale(1, 1)
+	self.startCircle.DrawApproach(time, color, batch)
 }
