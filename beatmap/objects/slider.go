@@ -550,6 +550,10 @@ func (self *Slider) Update(time int64) bool {
 	return true
 }
 
+func (self *Slider) ArmStart(clicked bool, time int64) {
+	self.startCircle.Arm(clicked, time)
+}
+
 func (self *Slider) PlayEdgeSample(index int) {
 	self.playSampleT(self.sampleSets[index], self.additionSets[index], self.samples[index], self.Timings.GetPoint(self.objData.StartTime+int64(float64(index)*self.partLen)), self.GetPointAt(self.objData.StartTime+int64(float64(index)*self.partLen)))
 }
