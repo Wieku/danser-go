@@ -293,6 +293,7 @@ type playfield struct {
 	DrawObjects          bool
 	StoryboardEnabled    bool
 	Scale                float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
+	OsuShift             bool    //false, offset the playfield like in osu!
 	FlashToTheBeat       bool    //true, background dim varies accoriding to music power
 	UnblurToTheBeat      bool    //true, background blur varies accoriding to music power
 	UnblurFill           float64 //0.8, if blur is set to 0.6, then on full beat blur will be equal to 0.12

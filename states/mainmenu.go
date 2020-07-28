@@ -147,7 +147,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	}
 
 	player.camera = bmath.NewCamera()
-	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
+	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, false)
 	player.camera.Update()
 
 	render.Camera = player.camera

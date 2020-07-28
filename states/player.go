@@ -150,12 +150,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.background = components.NewBackground(beatMap, 0.1, true)
 
 	player.camera = bmath.NewCamera()
-	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale)
+	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
 	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
 	player.camera.Update()
 
 	player.camera1 = bmath.NewCamera()
-	player.camera1.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), 1)
+	player.camera1.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), 1, false)
 	player.camera1.Update()
 
 	player.scamera = bmath.NewCamera()

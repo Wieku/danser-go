@@ -2,8 +2,10 @@ package bmath
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/settings"
 )
+
+const OsuWidth = 512.0
+const OsuHeight = 384.0
 
 type Rectangle struct {
 	MinX, MinY, MaxX, MaxY float32
@@ -52,15 +54,21 @@ func (camera *Camera) SetViewport(width, height int, yDown bool) {
 	camera.viewDirty = true
 }
 
-func (camera *Camera) SetOsuViewport(width, height int, scale float64) {
-	scl := (float64(height) * 900.0 / 1080.0) / 384.0 * scale
-
-	if 512.0/384.0 > float64(width)/float64(height) {
-		scl = (float64(width) * 900.0 / 1080.0) / 512.0 * scale
+func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bool) {
+	baseScale := float64(height) / OsuHeight
+	if OsuWidth/OsuHeight > float64(width)/float64(height) {
+		baseScale = float64(width) / OsuWidth
 	}
 
-	camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
-	camera.SetOrigin(NewVec2d(512.0/2, 384.0/2))
+	scl := baseScale * 0.8 * scale
+
+	shift := 0.0
+	if offset {
+		shift = 8
+	}
+
+	camera.SetViewport(width, height, true)
+	camera.SetOrigin(NewVec2d(512.0/2, 384.0/2-shift))
 	camera.SetScale(NewVec2d(scl, scl))
 	camera.Update()
 
