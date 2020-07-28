@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/animation"
+	"github.com/wieku/danser-go/animation/easing"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/input"
@@ -112,6 +113,7 @@ type ScoreOverlay struct {
 	newCombo       int64
 	newComboScale  *animation.Glider
 	newComboScaleB *animation.Glider
+	newComboFadeB  *animation.Glider
 	oldScore       int64
 	scoreGlider    *animation.Glider
 	ppGlider       *animation.Glider
@@ -120,6 +122,7 @@ type ScoreOverlay struct {
 	sprites        []*PseudoSprite
 	combobreak     *audio.Sample
 	music          *audio.Music
+	nextEnd        int64
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverlay {
@@ -129,6 +132,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	overlay.font = font.GetFont("Exo 2 Bold")
 	overlay.newComboScale = animation.NewGlider(1)
 	overlay.newComboScaleB = animation.NewGlider(1)
+	overlay.newComboFadeB = animation.NewGlider(1)
 	overlay.scoreGlider = animation.NewGlider(0)
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.combobreak = audio.NewSample("assets/sounds/combobreak.wav")
@@ -140,10 +144,17 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 		}
 
 		if comboResult == osu.ComboResults.Increase {
+			overlay.newComboScaleB.Reset()
+			overlay.newComboScaleB.AddEventS(float64(time), float64(time+300), 1.7, 1.1)
+
+			overlay.newComboFadeB.Reset()
+			overlay.newComboFadeB.AddEventS(float64(time), float64(time+300), 0.6, 0.0)
+
+			overlay.animate(time)
+
 			overlay.combo = overlay.newCombo
 			overlay.newCombo++
-			overlay.newComboScaleB.AddEventS(float64(time), float64(time+300), 2, 1.0)
-			overlay.newComboScale.AddEventS(float64(time), float64(time+200), 1.1, 1.0)
+			overlay.nextEnd = time + 300
 		} else if comboResult == osu.ComboResults.Reset {
 			if overlay.newCombo > 20 {
 				overlay.combobreak.Play()
@@ -164,6 +175,12 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	return overlay
 }
 
+func (overlay *ScoreOverlay) animate(time int64) {
+	overlay.newComboScale.Reset()
+	overlay.newComboScale.AddEventSEase(float64(time), float64(time+50), 1.0, 1.2, easing.InQuad)
+	overlay.newComboScale.AddEventSEase(float64(time+50), float64(time+100), 1.2, 1.0, easing.OutQuad)
+}
+
 func (overlay *ScoreOverlay) Update(time int64) {
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
@@ -176,10 +193,16 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
 		overlay.newComboScale.Update(float64(sTime))
 		overlay.newComboScaleB.Update(float64(sTime))
+		overlay.newComboFadeB.Update(float64(sTime))
 		overlay.scoreGlider.Update(float64(sTime))
 		overlay.ppGlider.Update(float64(sTime))
 	}
-	if overlay.combo != overlay.newCombo && overlay.newComboScale.GetValue() < 1.01 {
+
+	if overlay.combo != overlay.newCombo && overlay.nextEnd < time+140 {
+		overlay.animate(time)
+	}
+
+	if overlay.combo != overlay.newCombo && overlay.newComboScaleB.GetValue() < 1.01 {
 		overlay.combo = overlay.newCombo
 	}
 
@@ -210,10 +233,10 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl
 func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	scale := settings.Graphics.GetHeightF() / 1080.0
 	batch.SetScale(1, -1)
-	batch.SetColor(1, 1, 1, 0.5)
+	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue())
 	render.Score.Draw(batch, 10, 10+scale*50*overlay.newComboScaleB.GetValue()/2, scale*50*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
 	batch.SetColor(1, 1, 1, 1)
-	render.Score.Draw(batch, 10, 10+scale*50*overlay.newComboScale.GetValue()/2, scale*overlay.newComboScale.GetValue()*50, fmt.Sprintf("%dx", overlay.combo))
+	render.Score.Draw(batch, 10, 10+scale*50*overlay.newComboScale.GetValue()/2, scale*50*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
 
 	acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
 
