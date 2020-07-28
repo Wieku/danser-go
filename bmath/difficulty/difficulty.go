@@ -58,6 +58,10 @@ func (diff *Difficulty) SetMods(mods Modifier) {
 	diff.calculate()
 }
 
+func (diff *Difficulty) CheckModActive(mods Modifier) bool {
+	return diff.Mods&mods > 0
+}
+
 func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	if diff.Mods&DoubleTime > 0 {
 		return time / 1.5
