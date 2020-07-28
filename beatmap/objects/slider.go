@@ -455,7 +455,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.fadeFollow = animation.NewGlider(0)
 	self.scaleFollow = animation.NewGlider(0)
 
-	self.fadeFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+60), float64(self.objData.EndTime)), 0, 1)
+	/*self.fadeFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+60), float64(self.objData.EndTime)), 0, 1)
 	self.fadeFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0)
 
 	self.scaleFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+180), float64(self.objData.EndTime)), 0.5*followBaseScale, 1*followBaseScale)
@@ -474,7 +474,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1-ratio*0.1)*followBaseScale)
 		}
 
-	}
+	}*/
 
 	for _, p := range self.TickPoints {
 		a := float64((p.Time-self.objData.StartTime)/2+self.objData.StartTime) - diff.Preempt*2/3
@@ -531,6 +531,7 @@ func (self *Slider) Update(time int64) bool {
 			//self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
 			if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
 				self.PlayEdgeSample(0)
+				self.InitSlide(time)
 			}
 			self.clicked = true
 		}
@@ -552,6 +553,49 @@ func (self *Slider) Update(time int64) bool {
 
 func (self *Slider) ArmStart(clicked bool, time int64) {
 	self.startCircle.Arm(clicked, time)
+}
+
+func (self *Slider) InitSlide(time int64) {
+	self.fadeFollow.Reset()
+	self.scaleFollow.Reset()
+
+	startTime := float64(time)
+	self.fadeFollow.AddEventS(startTime, math.Min(startTime+60, float64(self.objData.EndTime)), 0, 1)
+	self.scaleFollow.AddEventS(startTime, math.Min(startTime+180, float64(self.objData.EndTime)), 0.5*followBaseScale, 1*followBaseScale)
+
+	for j, p := range self.ScorePoints {
+		if j < 1 || p.Time < time {
+			continue
+		}
+
+		fade := 200.0
+		delay := fade
+		if len(self.ScorePoints) >= 2 {
+			delay = math.Min(fade, float64(p.Time-self.ScorePoints[j-1].Time))
+			ratio := delay / fade
+			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1-ratio*0.1)*followBaseScale)
+		}
+
+	}
+
+	self.scaleFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1*followBaseScale, 0.8*followBaseScale)
+	self.fadeFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0)
+}
+
+func (self *Slider) KillSlide(time int64) {
+	self.fadeFollow.Reset()
+	self.scaleFollow.Reset()
+
+	nextPoint := self.objData.EndTime
+	for _, p := range self.ScorePoints {
+		if p.Time > time {
+			nextPoint = p.Time
+			break
+		}
+	}
+
+	self.fadeFollow.AddEventS(float64(nextPoint-100), float64(nextPoint), 1, 0)
+	self.scaleFollow.AddEventS(float64(nextPoint-100), float64(nextPoint), 1, 2)
 }
 
 func (self *Slider) PlayEdgeSample(index int) {
