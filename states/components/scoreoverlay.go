@@ -2,10 +2,12 @@ package components
 
 import (
 	"fmt"
+	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/animation"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/input"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/render/font"
@@ -117,6 +119,7 @@ type ScoreOverlay struct {
 	cursor         *render.Cursor
 	sprites        []*PseudoSprite
 	combobreak     *audio.Sample
+	music          *audio.Music
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverlay {
@@ -162,6 +165,14 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 }
 
 func (overlay *ScoreOverlay) Update(time int64) {
+
+	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
+		start := overlay.ruleset.GetBeatMap().HitObjects[0].GetBasicData().StartTime
+		if start-time > 7000 {
+			overlay.music.SetPosition((float64(start) - 2000) / 1000)
+		}
+	}
+
 	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
 		overlay.newComboScale.Update(float64(sTime))
 		overlay.newComboScaleB.Update(float64(sTime))
@@ -178,6 +189,10 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	}
 
 	overlay.lastTime = time
+}
+
+func (overlay *ScoreOverlay) SetMusic(music *audio.Music) {
+	overlay.music = music
 }
 
 func (overlay *ScoreOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {

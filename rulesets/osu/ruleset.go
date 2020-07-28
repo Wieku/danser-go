@@ -538,3 +538,7 @@ func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, int64,
 	subSet := set.cursors[cursor]
 	return subSet.accuracy, subSet.maxCombo, subSet.score, subSet.grade
 }
+
+func (set *OsuRuleSet) GetBeatMap() *beatmap.BeatMap {
+	return set.beatMap
+}

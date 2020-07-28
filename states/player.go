@@ -385,7 +385,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		musicPlayer.Play()
 		musicPlayer.SetTempo(settings.SPEED)
 		musicPlayer.SetPitch(settings.PITCH)
-		//musicPlayer.SetPosition(15)
+		if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
+			ov.SetMusic(musicPlayer)
+		}
+		//musicPlayer.SetPosition(30)
 		player.start = true
 	}()
 
