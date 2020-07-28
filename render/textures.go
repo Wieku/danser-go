@@ -29,6 +29,7 @@ var SpinnerAC *texture.TextureRegion
 var Pixel *texture.TextureSingle
 var Triangle *texture.TextureRegion
 var Combo *font.Font
+var Score *font.Font
 
 var RankingD *texture.TextureRegion
 var RankingC *texture.TextureRegion
@@ -91,4 +92,22 @@ func LoadTextures() {
 	Pixel = texture.NewTextureSingle(1, 1, 0)
 	Pixel.SetData(0, 0, 1, 1, []byte{0xFF, 0xFF, 0xFF, 0xFF})
 	Combo = font.LoadTextureFont("assets/textures/default-.png", "Numbers", '0', '9', Atlas)
+
+	dict := make(map[string]rune)
+	dict["0"] = '0'
+	dict["1"] = '1'
+	dict["2"] = '2'
+	dict["3"] = '3'
+	dict["4"] = '4'
+	dict["5"] = '5'
+	dict["6"] = '6'
+	dict["7"] = '7'
+	dict["8"] = '8'
+	dict["9"] = '9'
+	dict["comma"] = ','
+	dict["dot"] = '.'
+	dict["percent"] = '%'
+	dict["x"] = 'x'
+
+	Score = font.LoadTextureFontMap("assets/textures/score-.png", "Numbers", dict, Atlas)
 }

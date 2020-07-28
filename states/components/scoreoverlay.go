@@ -209,11 +209,11 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl
 
 func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	scale := settings.Graphics.GetHeightF() / 1080.0
-
+	batch.SetScale(1, -1)
 	batch.SetColor(1, 1, 1, 0.5)
-	overlay.font.Draw(batch, 10, 10, scale*64*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
+	render.Score.Draw(batch, 10, 10+scale*50*overlay.newComboScaleB.GetValue()/2, scale*50*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
 	batch.SetColor(1, 1, 1, 1)
-	overlay.font.Draw(batch, 10, 10, scale*overlay.newComboScale.GetValue()*64, fmt.Sprintf("%dx", overlay.combo))
+	render.Score.Draw(batch, 10, 10+scale*50*overlay.newComboScale.GetValue()/2, scale*overlay.newComboScale.GetValue()*50, fmt.Sprintf("%dx", overlay.combo))
 
 	acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
 
@@ -222,9 +222,11 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.
 	scoreText := fmt.Sprintf("%08d", int64(overlay.scoreGlider.GetValue()))
 	ppText := fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue())
 
-	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*96, scoreText), settings.Graphics.GetHeightF()-scale*(96-16), scale*96, scoreText)
-	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*96/3, ppText), settings.Graphics.GetHeightF()-scale*(96-16)-scale*96/2.8, scale*96/3, ppText)
-	overlay.font.DrawCentered(batch, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()-scale*32, scale*32, accText)
+	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*60, scoreText), settings.Graphics.GetHeightF()-scale*60/2, scale*60, scoreText)
+	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*32, accText), settings.Graphics.GetHeightF()-scale*60-scale*32/2, scale*32, accText)
+	batch.SetScale(1, 1)
+	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*30, ppText)*1.1, 25+scale*30/2, scale*30, ppText)
+	batch.SetScale(1, -1)
 
 	scll := scale / 20 * settings.Graphics.GetHeightF()
 
