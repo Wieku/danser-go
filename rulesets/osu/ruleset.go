@@ -26,7 +26,6 @@ const (
 	FadeIn      = 120
 	FadeOut     = 600
 	PostEmpt    = 500
-	Shake       = 400
 	Tolerance2B = 3
 )
 
@@ -70,6 +69,14 @@ func (result HitResult) String() string {
 		return strconv.Itoa(int(result))
 	}
 }
+
+type ClickAction int64
+
+const (
+	Ignored = ClickAction(iota)
+	Shake
+	Click
+)
 
 var ComboResults = struct {
 	Reset,
@@ -496,7 +503,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 	}
 }
 
-func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficultyPlayer) bool {
+func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficultyPlayer) ClickAction {
 	if _, ok := object.(*Circle); ok {
 		index := -1
 
@@ -507,7 +514,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 		}
 
 		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetBasicData().StackIndex > 0 && !set.processed[index-1].IsHit(player) {
-			return false //TODO: this should not shake the object
+			return Ignored //TODO: this should not shake the object
 		}
 	}
 
@@ -515,7 +522,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 		if !g.IsHit(player) {
 			if g.GetNumber() != object.GetNumber() {
 				if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime {
-					return false
+					return Shake
 				}
 			} else {
 				break
@@ -523,7 +530,10 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 		}
 	}
 
-	return true
+	if math.Abs(float64(time-set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime)) >= difficulty.HittableRange {
+		return Shake
+	}
+	return Click
 }
 
 func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
