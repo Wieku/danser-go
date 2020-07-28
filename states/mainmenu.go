@@ -268,8 +268,8 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 					wave := sprites.NewSpriteSingle(player.WaveTex, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 					wave.SetScale(0)
 					bScale := player.cookieSize / float64(player.WaveTex.Height/2) * 0.7
-					wave.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+1000, 0.5, 0), false)
-					wave.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, player.progressMsF, player.progressMsF+1000, 1*bScale*player.hover, 1.4*bScale*player.hover), false)
+					wave.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+1000, 0.5, 0))
+					wave.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, player.progressMsF, player.progressMsF+1000, 1*bScale*player.hover, 1.4*bScale*player.hover))
 					wave.AdjustTimesToTransformations()
 					player.waves = append(player.waves, wave)
 
@@ -277,11 +277,11 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 					if player.bMap.Timings.Current.Kiai || player.lastBeatProg%4 == 0 {
 						if !player.bMap.Timings.Current.Kiai || player.lastBeatProg%2 == 0 {
-							player.leftPulse.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+norLength, 0.6*player.musicPlayer.GetLeftLevel(), 0), false)
+							player.leftPulse.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+norLength, 0.6*player.musicPlayer.GetLeftLevel(), 0))
 						}
 
 						if !player.bMap.Timings.Current.Kiai || player.lastBeatProg%2 == 1 {
-							player.rightPulse.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+norLength, 0.6*player.musicPlayer.GetRightLevel(), 0), false)
+							player.rightPulse.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, player.progressMsF, player.progressMsF+norLength, 0.6*player.musicPlayer.GetRightLevel(), 0))
 						}
 					}
 

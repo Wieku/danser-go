@@ -34,12 +34,22 @@ type Sprite struct {
 	dirty            bool
 	additive         bool
 	showForever      bool
+
+	scaleTo bmath.Vector2d
 }
 
 func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position bmath.Vector2d, origin bmath.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever:true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
+	return sprite
+}
+
+func NewSpriteSingleCentered(tex *texture.TextureRegion, size bmath.Vector2d) *Sprite {
+	textures := []*texture.TextureRegion{tex}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: bmath.NewVec2d(0, 0), scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite.transforms = make([]*animation.Transformation, 0)
+	sprite.scaleTo = bmath.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
 }
 
@@ -103,7 +113,7 @@ func NewSpriteSingle(texture []*texture.TextureRegion, frameDelay float64, loopF
 
 	return sprite
 }
- */
+*/
 
 func (sprite *Sprite) Update(time int64) {
 	sprite.currentFrame = 0
@@ -184,18 +194,34 @@ func (sprite *Sprite) Update(time int64) {
 	}
 }
 
-func (sprite *Sprite) AddTransform(transformation *animation.Transformation, sortAfter bool) {
+func (sprite *Sprite) AddTransform(transformation *animation.Transformation) {
 	sprite.transforms = append(sprite.transforms, transformation)
 
-	if sortAfter {
-		sprite.SortTransformations()
-	}
+	sprite.SortTransformations()
+}
+
+func (sprite *Sprite) AddTransformUnordered(transformation *animation.Transformation) {
+	sprite.transforms = append(sprite.transforms, transformation)
 }
 
 func (sprite *Sprite) SortTransformations() {
 	sort.Slice(sprite.transforms, func(i, j int) bool {
 		return sprite.transforms[i].GetStartTime() < sprite.transforms[j].GetStartTime()
 	})
+}
+
+func (sprite *Sprite) ClearTransformations() {
+	sprite.transforms = make([]*animation.Transformation, 0)
+}
+
+func (sprite *Sprite) ClearTransformationsOfType(transformationType animation.TransformationType) {
+	for i := 0; i < len(sprite.transforms); i++ {
+		t := sprite.transforms[i]
+		if t.GetType() == transformationType {
+			sprite.transforms = append(sprite.transforms[:i], sprite.transforms[i+1:]...)
+			i--
+		}
+	}
 }
 
 func (sprite *Sprite) AdjustTimesToTransformations() {
@@ -227,7 +253,18 @@ func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
 	if alpha > 1.001 {
 		alpha -= math.Ceil(sprite.color.A) - 1
 	}
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs(), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], false)
+
+	scaleX := 1.0
+	if sprite.scaleTo.X > 0 {
+		scaleX = sprite.scaleTo.X
+	}
+
+	scaleY := 1.0
+	if sprite.scaleTo.Y > 0 {
+		scaleY = sprite.scaleTo.Y
+	}
+
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs().Mult(bmath.NewVec2d(scaleX, scaleY)), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], false)
 }
 
 func (sprite *Sprite) GetPosition() bmath.Vector2d {

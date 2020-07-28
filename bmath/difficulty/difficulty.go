@@ -4,6 +4,7 @@ import "math"
 
 const HitFadeIn = 400
 const HitFadeOut = 240
+const HittableRange = 400
 
 type Difficulty struct {
 	hpDrain, cs, od, ar float64
