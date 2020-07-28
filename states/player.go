@@ -392,7 +392,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.start = true
 	}()
 
-	player.profilerU = utils.NewFPSCounter(60, false)
+	player.profilerU = utils.NewFPSCounter(1000, false)
 	go func() {
 		var last = musicPlayer.GetPosition()
 		var lastT = utils.GetNanoTime()
@@ -402,7 +402,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.background.Update((lastT-firstT)/1000000, 0, 0)
 			currtime := utils.GetNanoTime()
 
-			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
+			player.profilerU.PutSample(float64(currtime-lastT) / 1000000.0)
 			if player.start {
 
 				if musicPlayer.GetState() == audio.MUSIC_STOPPED {
@@ -449,7 +449,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 				//crsr := player.controller.GetCursors()[0].Position
 
-				//player.background.Update(int64(player.progressMsF), /*crsr.X*settings.Graphics.GetHeightF()/384, crsr.Y*settings.Graphics.GetHeightF()/384*/0, 0)
+				player.background.Update(int64(player.progressMsF) /*crsr.X*settings.Graphics.GetHeightF()/384, crsr.Y*settings.Graphics.GetHeightF()/384*/, 0, 0)
 
 				last = player.progressMsF
 
@@ -532,7 +532,7 @@ func (pl *Player) Draw(delta float64) {
 	tim := utils.GetNanoTime()
 	timMs := float64(tim-pl.lastTime) / 1000000.0
 
-	pl.profiler.PutSample(1000.0 / timMs)
+	pl.profiler.PutSample(timMs)
 	fps := pl.profiler.GetFPS()
 
 	if pl.start {
@@ -709,6 +709,20 @@ func (pl *Player) Draw(delta float64) {
 
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
+	}
+
+	if pl.overlay != nil {
+		pl.batch.Begin()
+		pl.batch.SetScale(1, 1)
+
+		//for j := 0; j < settings.DIVIDES; j++ {
+
+		pl.batch.SetCamera(cameras[0])
+
+		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
+		//}
+
+		pl.batch.End()
 	}
 
 	if settings.Playfield.BloomEnabled {
