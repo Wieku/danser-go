@@ -2,14 +2,16 @@ package curves
 
 import (
 	"github.com/wieku/danser-go/bmath"
+	"sort"
 )
 
 const minPartWidth = 0.0001
 
 type MultiCurve struct {
-	sections []float32
-	length   float32
-	lines    []Linear
+	sections   []float32
+	lines      []Linear
+	length     float32
+	firstPoint bmath.Vector2f
 }
 
 func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *MultiCurve {
@@ -68,21 +70,21 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *
 		length += l.GetLength()
 	}
 
-	if desiredLength >= 0 {
-		diff := float64(length) - desiredLength
+	firstPoint := lines[0].Point1
 
-		for len(lines) > 0 {
-			line := lines[len(lines)-1]
+	diff := float64(length) - desiredLength
 
-			if float64(line.GetLength()) > diff+minPartWidth {
-				pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
-				lines[len(lines)-1] = NewLinear(line.Point1, pt)
-				break
-			}
+	for len(lines) > 0 {
+		line := lines[len(lines)-1]
 
-			diff -= float64(line.GetLength())
-			lines = lines[:len(lines)-1]
+		if float64(line.GetLength()) > diff+minPartWidth {
+			pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
+			lines[len(lines)-1] = NewLinear(line.Point1, pt)
+			break
 		}
+
+		diff -= float64(line.GetLength())
+		lines = lines[:len(lines)-1]
 	}
 
 	length = 0.0
@@ -100,38 +102,42 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *
 		sections[i+1] = prev
 	}
 
-	return &MultiCurve{sections, length, lines}
+	return &MultiCurve{sections, lines, length, firstPoint}
 }
 
-func (sa *MultiCurve) PointAt(t float32) bmath.Vector2f {
-
-	desiredWidth := sa.length * t
-
-	lineI := len(sa.sections) - 2
-
-	for i, k := range sa.sections[:len(sa.sections)-1] {
-		if k <= desiredWidth {
-			lineI = i
-		}
+func (mCurve *MultiCurve) PointAt(t float32) bmath.Vector2f {
+	if len(mCurve.lines) == 0 {
+		return mCurve.firstPoint
 	}
 
-	line := sa.lines[lineI]
+	desiredWidth := mCurve.length * bmath.ClampF32(t, 0.0, 1.0)
 
-	return line.PointAt((desiredWidth - sa.sections[lineI]) / (sa.sections[lineI+1] - sa.sections[lineI]))
+	withoutFirst := mCurve.sections[1:]
+	index := sort.Search(len(withoutFirst), func(i int) bool {
+		return withoutFirst[i] >= desiredWidth
+	})
+
+	return mCurve.lines[index].PointAt((desiredWidth - mCurve.sections[index]) / (mCurve.sections[index+1] - mCurve.sections[index]))
 }
 
-func (sa *MultiCurve) GetLength() float32 {
-	return sa.length
+func (mCurve *MultiCurve) GetLength() float32 {
+	return mCurve.length
 }
 
-func (sa *MultiCurve) GetStartAngle() float32 {
-	return sa.lines[0].GetStartAngle()
+func (mCurve *MultiCurve) GetStartAngle() float32 {
+	if len(mCurve.lines) > 0 {
+		return mCurve.lines[0].GetStartAngle()
+	}
+	return 0.0
 }
 
-func (sa *MultiCurve) GetEndAngle() float32 {
-	return sa.lines[len(sa.lines)-1].GetEndAngle()
+func (mCurve *MultiCurve) GetEndAngle() float32 {
+	if len(mCurve.lines) > 0 {
+		return mCurve.lines[len(mCurve.lines)-1].GetEndAngle()
+	}
+	return 0.0
 }
 
-func (ln *MultiCurve) GetLines() []Linear {
-	return ln.lines
+func (mCurve *MultiCurve) GetLines() []Linear {
+	return mCurve.lines
 }
