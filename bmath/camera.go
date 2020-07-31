@@ -68,7 +68,8 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bo
 	}
 
 	camera.SetViewport(width, height, true)
-	camera.SetOrigin(NewVec2d(512.0/2, 384.0/2-shift))
+	camera.SetOrigin(NewVec2d(OsuWidth/2, OsuHeight/2))
+	camera.SetPosition(NewVec2d(0, shift))
 	camera.SetScale(NewVec2d(scl, scl))
 	camera.Update()
 
@@ -143,8 +144,11 @@ func (camera *Camera) GenRotated(rotations int, rotOffset float64) []mgl32.Mat4 
 			camera.cache = make([]mgl32.Mat4, rotations)
 		}
 
+		pos := mgl32.Translate3D(camera.position.X32(), camera.position.Y32(), 0)
+		view := mgl32.HomogRotate3DZ(float32(camera.rotation)).Mul4(mgl32.Scale3D(camera.scale.X32(), camera.scale.Y32(), 1)).Mul4(mgl32.Translate3D(camera.origin.X32(), camera.origin.Y32(), 0))
+
 		for i := 0; i < rotations; i++ {
-			camera.cache[i] = camera.projection.Mul4(mgl32.HomogRotate3DZ(float32(i) * float32(rotOffset))).Mul4(camera.view)
+			camera.cache[i] = camera.projection.Mul4(pos).Mul4(mgl32.HomogRotate3DZ(float32(i) * float32(rotOffset))).Mul4(view)
 		}
 		camera.rebuildCache = false
 	}
