@@ -393,6 +393,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}()
 
 	player.profilerU = utils.NewFPSCounter(1000, false)
+	limiter := utils.NewFpsLimiter(5000)
 	go func() {
 		var last = musicPlayer.GetPosition()
 		var lastT = utils.GetNanoTime()
@@ -481,7 +482,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			}
 			lastT = currtime
-			time.Sleep(time.Millisecond)
+			limiter.Sync()
 		}
 	}()
 
@@ -538,7 +539,7 @@ func (pl *Player) Draw(delta float64) {
 	if pl.start {
 
 		if fps > 58 && timMs > 18 {
-			log.Println("Slow frame detected! Frame time:", timMs, "| Av. frame time:", 1000.0/fps)
+			log.Println(fmt.Sprintf("Slow frame detected! Frame time: %.3fms | Av. frame time: %.3fms", timMs, 1000.0/fps))
 		}
 
 		pl.progressMs = int64(pl.progressMsF)
