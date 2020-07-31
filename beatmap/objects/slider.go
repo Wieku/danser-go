@@ -14,6 +14,7 @@ import (
 	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/danser-go/utils"
 	"github.com/wieku/glhf"
+	"log"
 	"math"
 	"runtime"
 	"sort"
@@ -164,6 +165,9 @@ func (self Slider) GetPartLen() float32 {
 }
 
 func (self Slider) GetPointAt(time int64) bmath.Vector2f {
+	if self.IsRetarded() {
+		return self.objData.StartPos
+	}
 	/*times := int64(math.Min(math.Floor(float64(time-self.objData.StartTime)/self.partLen)+1, float64(self.repeat)))
 
 	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
@@ -278,7 +282,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 			self.scorePath = append(self.scorePath, PathLine{Time1: int64(startTime), Time2: int64(startTime + progress), Line: curves.NewLinear(p1, p2)})
 
 			startTime += progress
-
+			self.objData.EndTime = int64(math.Floor(startTime))
 			/*if self.objData.StartTime == 120273 {
 				log.Printf("%.10f", distance)
 				log.Printf("%.10f", progress)
@@ -323,19 +327,20 @@ func (self *Slider) SetTiming(timings *Timings) {
 			scoringLengthTotal -= tickDistance - scoringDistance
 			scoringDistance = tickDistance - scoringDistance
 		}
-
 	}
 
-	//log.Println()
-
-	self.objData.EndTime = int64(math.Floor(startTime))
 	self.objData.EndPos = self.GetPointAt(self.objData.EndTime)
+
+	//log.Println()
+	if len(self.scorePath) == 0 || self.objData.StartTime == self.objData.EndTime {
+		log.Println("Warning: slider", self.objData.Number, "at ", self.objData.StartTime, "is broken.")
+	}
 
 	self.calculateFollowPoints()
 	self.discreteCurve = self.GetCurve()
 	self.startAngle = float64(self.GetStartAngle())
-	if len(self.discreteCurve) > 1 {
-		self.endAngle = float64(self.discreteCurve[len(self.discreteCurve)-1].AngleRV(self.discreteCurve[len(self.discreteCurve)-2]))
+	if len(lines) > 0 {
+		self.endAngle = float64(lines[len(lines)-1].GetEndAngle()) //float64(self.discreteCurve[len(self.discreteCurve)-1].AngleRV(self.discreteCurve[len(self.discreteCurve)-2]))
 	} else {
 		self.endAngle = self.startAngle + math.Pi
 	}
@@ -505,15 +510,23 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 }
 
 func (self *Slider) GetCurve() []bmath.Vector2f {
-	lod := math.Ceil(self.pixelLength * float64(settings.Objects.SliderPathLOD) / 100.0)
-	t0 := float32(1.0 / lod)
-	points := make([]bmath.Vector2f, int(lod)+1)
-	t := float32(0.0)
-	for i := 0; i <= int(lod); i += 1 {
-		points[i] = self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
-		t += t0
+	length := float64(self.multiCurve.GetLength())
+	lod := math.Ceil(length * float64(settings.Objects.SliderPathLOD) / 100.0)
+	if lod > 0 {
+		t0 := float32(1.0 / lod)
+		points := make([]bmath.Vector2f, int(lod)+1)
+		t := float32(0.0)
+		for i := 0; i <= int(lod); i += 1 {
+			points[i] = self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
+			t += t0
+		}
+		return points
 	}
-	return points
+	return make([]bmath.Vector2f, 0)
+}
+
+func (self *Slider) IsRetarded() bool {
+	return len(self.scorePath) == 0 || self.objData.StartTime == self.objData.EndTime
 }
 
 func (self *Slider) Update(time int64) bool {
@@ -545,6 +558,7 @@ func (self *Slider) Update(time int64) bool {
 			if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
 				self.PlayEdgeSample(0)
 				self.InitSlide(time)
+				self.ArmStart(true, time)
 			}
 			self.clicked = true
 		}
@@ -616,7 +630,7 @@ func (self *Slider) PlayEdgeSample(index int) {
 }
 
 func (self *Slider) PlayTick() {
-	//audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume, self.objData.Number)
+	audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume, self.objData.Number, self.Pos.X64())
 }
 
 func (self *Slider) playSample(sampleSet, additionSet, sample int) {
@@ -688,6 +702,9 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 }
 
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
+	if len(self.scorePath) == 0 {
+		return true
+	}
 	self.fade.Update(float64(time))
 	//self.fadeCircle.Update(float64(time))
 	self.fadeFollow.Update(float64(time))
@@ -817,5 +834,8 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 }
 
 func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+	if len(self.scorePath) == 0 {
+		return
+	}
 	self.startCircle.DrawApproach(time, color, batch)
 }

@@ -16,11 +16,9 @@ import (
 )
 
 type Circle struct {
-	objData      *basicData
-	sample       int
-	Timings      *Timings
-	fadeApproach *animation.Glider
-	fadeCircle   *animation.Glider
+	objData *basicData
+	sample  int
+	Timings *Timings
 
 	textFade *animation.Glider
 
@@ -39,8 +37,7 @@ func NewCircle(data []string) *Circle {
 	circle.objData.EndTime = circle.objData.StartTime
 	circle.objData.EndPos = circle.objData.StartPos
 	circle.objData.parseExtras(data, 5)
-	circle.fadeCircle = animation.NewGlider(1)
-	//circle.fadeApproach = animation.NewGlider(1)
+
 	return circle
 }
 
@@ -110,14 +107,6 @@ func (self *Circle) SetTiming(timings *Timings) {
 
 func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	self.diff = diff
-	self.fadeCircle = animation.NewGlider(0)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt /*-fadeIn*/)+FadeIn, 1)
-	self.fadeCircle.AddEvent(float64(self.objData.StartTime), float64(self.objData.StartTime)+difficulty.HitFadeOut, 0)
-	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt, float64(self.objData.StartTime)-preempt*0.6, 1)
-	//self.fadeCircle.AddEvent(float64(self.objData.StartTime)-preempt*0.6, float64(self.objData.StartTime)-preempt*0.3, 0) HIDDEN
-
-	self.fadeApproach = animation.NewGlider(1)
-	self.fadeApproach.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime), 0)
 
 	startTime := float64(self.objData.StartTime)
 
@@ -174,8 +163,12 @@ func (self *Circle) Arm(clicked bool, time int64) {
 	self.hitCircleOverlay.ClearTransformations()
 	self.textFade.Reset()
 
+	startTime := float64(time)
+
+	self.approachCircle.ClearTransformations()
+	self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
+
 	if clicked && !self.diff.CheckModActive(difficulty.Hidden) {
-		startTime := float64(time)
 		endTime := startTime + difficulty.HitFadeOut
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
 		self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
@@ -184,7 +177,6 @@ func (self *Circle) Arm(clicked bool, time int64) {
 		self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
 		self.textFade.AddEventS(startTime, endTime, 1.0, 0.0)
 	} else {
-		startTime := float64(time)
 		endTime := startTime + 60
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, self.hitCircle.GetAlpha(), 0.0))
 		self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, self.hitCircleOverlay.GetAlpha(), 0.0))
