@@ -775,9 +775,9 @@ func (pl *Player) Draw(delta float64) {
 				ind = settings.DIVIDES - 1
 			}
 
-			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-				if i < len(pl.processed) {
-					if !settings.Objects.SliderMerge {
+			if !settings.Objects.SliderMerge {
+				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
+					if i < len(pl.processed) {
 						if s, ok := pl.processed[i].(*objects.Slider); ok {
 							pl.batch.Flush()
 							pl.sliderRenderer.Begin()
@@ -786,6 +786,11 @@ func (pl *Player) Draw(delta float64) {
 							pl.sliderRenderer.EndAndRender()
 						}
 					}
+				}
+			}
+
+			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
+				if i < len(pl.processed) {
 					res := pl.processed[i].Draw(pl.progressMs, colors[j], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
