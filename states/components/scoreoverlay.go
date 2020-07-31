@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/render/texture"
 	"github.com/wieku/danser-go/rulesets/osu"
 	"github.com/wieku/danser-go/settings"
+	"math"
 	"math/rand"
 )
 
@@ -211,7 +212,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 		overlay.animate(time)
 	}
 
-	if overlay.combo != overlay.newCombo && overlay.newComboScaleB.GetValue() < 1.01 {
+	if overlay.combo != overlay.newCombo && overlay.newComboFadeB.GetValue() < 0.01 {
 		overlay.combo = overlay.newCombo
 	}
 
@@ -316,7 +317,35 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.
 	ppText := fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue())
 
 	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*70, scoreText), settings.Graphics.GetHeightF()-scale*70/2, scale*70, scoreText)
-	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*32, accText), settings.Graphics.GetHeightF()-scale*70-scale*32/2, scale*32, accText)
+
+	hObjects := overlay.ruleset.GetBeatMap().HitObjects
+
+	startTime := float64(hObjects[0].GetBasicData().StartTime)
+	endTime := float64(hObjects[len(hObjects)-1].GetBasicData().EndTime)
+	musicPos := 0.0
+	if overlay.music != nil {
+		musicPos = overlay.music.GetPosition() * 1000
+	}
+
+	progress := math.Min(1.0, math.Max(0.0, (musicPos-startTime)/(endTime-startTime)))
+	//log.Println(progress)
+	batch.SetColor(0.2, 1, 0.2, 1)
+
+	batch.SetSubScale(scale*150*progress, scale*3)
+	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()+scale*(-5-300+progress*150), settings.Graphics.GetHeightF()-scale*(70+1.5)))
+	batch.DrawUnit(render.Pixel.GetRegion())
+
+	batch.SetColor(1, 1, 1, 1)
+	batch.SetSubScale(1, 2)
+
+	batch.SetSubScale(scale*12, scale*12)
+	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scale*32*5.1, settings.Graphics.GetHeightF()-scale*70-scale*32/2-scale*4))
+	_, _, _, grade := overlay.ruleset.GetResults(overlay.cursor)
+	if grade != osu.NONE {
+		batch.DrawUnit(*render.GradeTexture[int64(grade)])
+	}
+
+	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*32, accText), settings.Graphics.GetHeightF()-scale*70-scale*32/2-scale*4, scale*32, accText)
 	batch.SetScale(1, 1)
 	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*30, ppText)*1.1, 35+scale*30/2, scale*30, ppText)
 	batch.SetScale(1, -1)
@@ -333,12 +362,6 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetSubScale(overlay.leftScale.GetValue(), overlay.leftScale.GetValue())
 	batch.DrawUnit(render.Pixel.GetRegion())
-
-	/*batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scll/2, settings.Graphics.GetHeightF()/2-scll/2))
-	batch.SetScale(scll/2, scll/2)
-	batch.SetSubScale(1, 1)
-	batch.SetColor(0.2, 0.2, 0.2, 0.5)
-	batch.DrawUnit(render.Pixel.GetRegion())*/
 
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scll/2, settings.Graphics.GetHeightF()/2-scll/2))
 	batch.SetColor(1, 1, 1, 1)
