@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/animation/easing"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/dance"
+	"github.com/wieku/danser-go/discord"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/render/font"
@@ -125,6 +126,8 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		overlay.playersArray[i], overlay.playersArray[j] = overlay.playersArray[j], overlay.playersArray[i]
 	})
 
+	discord.UpdateKnockout(len(overlay.playersArray), len(overlay.playersArray))
+
 	for i, g := range overlay.playersArray {
 		if i != g.currentIndex {
 			g.index.Reset()
@@ -216,14 +219,18 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		sort.SliceStable(overlay.playersArray, func(i, j int) bool {
 			return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && overlay.playersArray[i].score > overlay.playersArray[j].score) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number])))
 		})
-
+		alive := 0
 		for i, g := range overlay.playersArray {
+			if !g.hasBroken {
+				alive++
+			}
 			if i != g.currentIndex {
 				g.index.Reset()
 				g.index.AddEvent(float64(time), float64(time)+200+math.Abs(float64(i-g.currentIndex))*10, float64(i))
 				g.currentIndex = i
 			}
 		}
+		discord.UpdateKnockout(alive, len(overlay.playersArray))
 	})
 
 	return overlay
@@ -392,20 +399,21 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl
 		overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-cS-overlay.font.GetWidthMonospaced(scl, sWC)-0.5*scl, rowBaseY-scl*0.8/2, scl, sWC)
 		overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scl, scorestr)-0.5*scl, rowBaseY-scl*0.8/2, scl, scorestr)
 
-		batch.SetSubScale(scl*0.9/2, -scl*0.9/2)
-		batch.SetTranslation(bmath.NewVec2d(2*scl+scl*0.1+nWidth, rowBaseY))
-		if r.Grade != osu.NONE {
-			batch.DrawUnit(*render.GradeTexture[int64(r.Grade)])
-		}
-
 		batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*player.fade.GetValue())
 		overlay.font.Draw(batch, 3*scl+nWidth, rowBaseY-scl*0.8/2, scl, r.Name)
 		width := overlay.font.GetWidth(scl, r.Name)
 
+		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
+
 		if r.Mods != "" {
-			batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 			overlay.font.Draw(batch, 3*scl+width+nWidth, rowBaseY-scl*0.8/2, scl*0.8, "+"+r.Mods)
 			width += overlay.font.GetWidth(scl*0.8, "+"+r.Mods)
+		}
+
+		batch.SetSubScale(scl*0.9/2, -scl*0.9/2)
+		batch.SetTranslation(bmath.NewVec2d(2*scl+scl*0.1+nWidth, rowBaseY))
+		if r.Grade != osu.NONE {
+			batch.DrawUnit(*render.GradeTexture[int64(r.Grade)])
 		}
 
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue()*player.fadeHit.GetValue())

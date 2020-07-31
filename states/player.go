@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/dance"
+	"github.com/wieku/danser-go/discord"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/render/effects"
@@ -121,6 +122,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.batch = batches.NewSpriteBatch()
 	player.sliderRenderer = render.NewSliderRenderer()
 	player.font = font.GetFont("Exo 2 Bold")
+
+	discord.SetMap(beatMap)
 
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
@@ -388,7 +391,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 			ov.SetMusic(musicPlayer)
 		}
-		//musicPlayer.SetPosition(30)
+		//musicPlayer.SetPosition(60)
+		discord.SetDuration(int64(musicPlayer.GetLength() * 1000 / settings.SPEED))
+		if player.overlay == nil {
+			discord.UpdateDance(settings.TAG, settings.DIVIDES)
+		}
 		player.start = true
 	}()
 

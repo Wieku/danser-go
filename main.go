@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/dance"
 	"github.com/wieku/danser-go/database"
+	"github.com/wieku/danser-go/discord"
 	"github.com/wieku/danser-go/input"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/render/font"
@@ -253,7 +254,9 @@ func run() {
 }
 
 func main() {
+	discord.Connect()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
+	discord.Disconnect()
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/animation/easing"
 	"github.com/wieku/danser-go/audio"
 	"github.com/wieku/danser-go/bmath"
+	"github.com/wieku/danser-go/discord"
 	"github.com/wieku/danser-go/input"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
@@ -113,6 +114,7 @@ type ScoreOverlay struct {
 	lastTime       int64
 	combo          int64
 	newCombo       int64
+	maxCombo       int64
 	newComboScale  *animation.Glider
 	newComboScaleB *animation.Glider
 	newComboFadeB  *animation.Glider
@@ -147,6 +149,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.combobreak = audio.NewSample("assets/sounds/combobreak.wav")
 
+	discord.UpdatePlay(0, 0, 0, 0)
+
 	ruleset.SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
 
 		if result == osu.HitResults.Hit100 || result == osu.HitResults.Hit50 || result == osu.HitResults.Miss {
@@ -173,7 +177,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 			overlay.combo = 0
 		}
 
-		_, _, score, _ := overlay.ruleset.GetResults(overlay.cursor)
+		acc, maxCombo, score, _ := overlay.ruleset.GetResults(overlay.cursor)
+
+		discord.UpdatePlay(score, overlay.newCombo, maxCombo, acc)
 
 		overlay.scoreGlider.Reset()
 		overlay.scoreGlider.AddEvent(float64(time), float64(time+1000), float64(score))
