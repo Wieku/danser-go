@@ -1,11 +1,9 @@
 package osu
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/difficulty"
-	"github.com/wieku/danser-go/render/batches"
 	"math"
 )
 
@@ -94,10 +92,6 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	clicked := player.leftCondE || player.rightCondE
 	inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
-	//if slider.GetNumber() == 53 {
-	//	log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, slider.ruleSet.CanBeHit(time, slider, player), clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius))
-	//}
-	//log.Println("ee", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.leftCondE, player.rightCondE, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
 	if clicked && inRadius && !state.isStartHit && !state.isHit {
 
 		if player.leftCondE {
@@ -107,10 +101,6 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 		}
 
 		if slider.ruleSet.CanBeHit(time, slider, player) == Click {
-			//if slider.hitSlider.GetBasicData().Number == /*582*/ /*906*/ 506 {
-			//	log.Println("click", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, clicked, player.cursor.Position, slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= player.diff.CircleRadius)
-			//}
-
 			if player.leftCond {
 				state.downButton = Left
 			} else if player.rightCond {
@@ -131,7 +121,6 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 			}
 
 			if hit != HitResults.Ignore {
-				//log.Println("sk", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, relative, player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius)
 				if len(slider.players) == 1 {
 					if hit != HitResults.SliderMiss {
 						slider.hitSlider.PlayEdgeSample(0)
@@ -165,8 +154,6 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 		xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
 		yOffset = data.StackOffset.Y - float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
 	}
-
-	//if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
 
 	if time >= slider.hitSlider.GetBasicData().StartTime && !state.isHit {
 
@@ -223,17 +210,10 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			}
 		}
 
-		//if slider.hitSlider.GetBasicData().Number == /*582*//*906*/506 {
-		//	log.Println("norma", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
-		//}
-
 		if state.scored+state.missed < pointsPassed {
 
 			index := state.scored + state.missed
 			point := state.points[index]
-
-			//log.Println(point.time)
-			//log.Println(time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, allowable, player.cursor.Position, sliderPosition, slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset), player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)), radiusNeeded, player.cursor.Position.Dst(slider.hitSlider.GetPointAt(time).SubS(xOffset, yOffset)) <= radiusNeeded)
 
 			if allowable && state.slideStart <= point.time {
 				if len(slider.players) == 1 && int(index) < len(state.points)-1 {
@@ -264,7 +244,6 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			state.sliding = false
 		}
 	}
-	//}
 
 	return true
 }
@@ -279,10 +258,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 			numFinishedTotal++
 		}
 
-		//if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
-
 		if time > slider.hitSlider.GetBasicData().StartTime+player.diff.Hit50 && !state.isStartHit {
-			//log.Println("st", time, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetBasicData().StartTime, slider.hitSlider.GetBasicData().EndTime, slider.hitSlider.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton)
 			if len(slider.players) == 1 {
 				slider.hitSlider.ArmStart(false, time)
 			}
@@ -331,7 +307,6 @@ func (slider *Slider) UpdatePost(time int64) bool {
 			state.isHit = true
 
 		}
-		//}
 
 	}
 
@@ -350,8 +325,4 @@ func (slider *Slider) IsStartHit(pl *difficultyPlayer) bool {
 
 func (slider *Slider) GetFadeTime() int64 {
 	return slider.hitSlider.GetBasicData().StartTime - int64(slider.fadeStartRelative)
-}
-
-func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-
 }

@@ -3,31 +3,25 @@ package osu
 import (
 	"fmt"
 	"github.com/flesnuk/oppai5"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/olekukonko/tablewriter"
 	"github.com/wieku/danser-go/beatmap"
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render"
-	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/settings"
 	"log"
 	"math"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-type Grade int64
+const Tolerance2B = 3
 
-const (
-	FadeIn      = 120
-	FadeOut     = 600
-	PostEmpt    = 500
-	Tolerance2B = 3
-)
+type Grade int64
 
 const (
 	D = Grade(iota)
@@ -44,7 +38,6 @@ const (
 var GradesText = []string{"D", "C", "B", "A", "S", "SH", "SS", "SSH", "None"}
 
 type HitResult int64
-type ComboResult int64
 
 var HitResults = struct {
 	Ignore,
@@ -78,6 +71,8 @@ const (
 	Click
 )
 
+type ComboResult int64
+
 var ComboResults = struct {
 	Reset,
 	Hold,
@@ -98,15 +93,13 @@ type hitobject interface {
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
 	UpdatePost(time int64) bool
 	IsHit(player *difficultyPlayer) bool
-	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
 	GetFadeTime() int64
 	GetNumber() int64
 }
 
 type difficultyPlayer struct {
-	cursor *render.Cursor
-	diff   *difficulty.Difficulty
-	//cursorLock    int64
+	cursor          *render.Cursor
+	diff            *difficulty.Difficulty
 	DoubleClick     bool
 	alreadyStolen   bool
 	buttons         buttonState
@@ -143,8 +136,7 @@ type OsuRuleSet struct {
 	ended bool
 
 	oppaiMaps []*oppai.Map
-	oppDiffs  map[int][]oppai.DiffCalc
-	params    *oppai.Parameters
+	oppDiffs  map[difficulty.Modifier][]oppai.DiffCalc
 
 	queue       []hitobject
 	processed   []hitobject
@@ -155,21 +147,20 @@ type OsuRuleSet struct {
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[int][]oppai.DiffCalc)
+	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.DiffCalc)
 
-	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
-	defer file.Close()
+	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
 
 	if err != nil {
-		panic(err)
+		panic("Could not open beatmap file.")
 	}
+
+	defer file.Close()
 
 	for j := range beatMap.HitObjects {
 		ruleset.oppaiMaps = append(ruleset.oppaiMaps, oppai.ParsebyNum(file, j+1))
 		file.Seek(0, 0)
 	}
-
-	ruleset.params = &oppai.Parameters{}
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
@@ -177,7 +168,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 	}
 
 	drainTime := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime-beatMap.HitObjects[0].GetBasicData().StartTime-pauses) / 1000
-	ruleset.scoreMultiplier = math.Round((beatMap.Diff.GetHPDrain() + beatMap.Diff.GetOD() + beatMap.Diff.GetCS() + math.Max(math.Min(float64(len(beatMap.HitObjects))/float64(drainTime)*8, 16), 0)) / 38 * 5)
+	ruleset.scoreMultiplier = math.Round((beatMap.Diff.GetHPDrain() + beatMap.Diff.GetOD() + beatMap.Diff.GetCS() + bmath.ClampF64(float64(len(beatMap.HitObjects))/drainTime*8, 0, 16)) / 38 * 5)
 
 	ruleset.cursors = make(map[*render.Cursor]*subSet)
 
@@ -190,23 +181,17 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 		player := &difficultyPlayer{cursor: cursor, diff: diff}
 		diffPlayers = append(diffPlayers, player)
 
-		grade := Grade(NONE)
-
-		/*if mods[i]&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			grade = SSH
-		}*/
-
-		if ruleset.oppDiffs[int(mods[i])] == nil {
+		if ruleset.oppDiffs[mods[i]] == nil {
 			diffs := make([]oppai.DiffCalc, 0)
 
 			for _, m := range ruleset.oppaiMaps {
 				diffs = append(diffs, (&oppai.DiffCalc{Beatmap: *m}).Calc(int(mods[i]), oppai.DefaultSingletapThreshold))
 			}
 
-			ruleset.oppDiffs[int(mods[i])] = diffs
+			ruleset.oppDiffs[mods[i]] = diffs
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, grade, nil, &oppai.PPv2{}, make(map[HitResult]int64)}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64)}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -244,11 +229,9 @@ func (set *OsuRuleSet) Update(time int64) {
 				if set.endlistener != nil {
 					set.endlistener(time, g.GetNumber())
 				}
-				if i < len(set.processed)-1 {
-					set.processed = append(set.processed[:i], set.processed[i+1:]...)
-				} else if i < len(set.processed) {
-					set.processed = set.processed[:i]
-				}
+
+				set.processed = append(set.processed[:i], set.processed[i+1:]...)
+
 				i--
 			}
 		}
@@ -263,11 +246,7 @@ func (set *OsuRuleSet) Update(time int64) {
 
 			set.processed = append(set.processed, g)
 
-			if i < len(set.queue)-1 {
-				set.queue = append(set.queue[:i], set.queue[i+1:]...)
-			} else if i < len(set.queue) {
-				set.queue = set.queue[:i]
-			}
+			set.queue = append(set.queue[:i], set.queue[i+1:]...)
 
 			i--
 		}
@@ -399,15 +378,6 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *render.Cursor, time int64) {
 	}
 }
 
-func (set *OsuRuleSet) Draw(time int64, batch *batches.SpriteBatch, color mgl32.Vec4) {
-	if len(set.processed) > 0 {
-		for i := len(set.processed) - 1; i > 0; i-- {
-			g := set.processed[i]
-			g.Draw(time, color, batch)
-		}
-	}
-}
-
 func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
 	if result == HitResults.Ignore {
 		return
@@ -415,7 +385,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 
 	subSet := set.cursors[cursor]
 
-	combo := math.Max(float64(subSet.combo-1), 0.0)
+	combo := bmath.MaxI64(subSet.combo-1, 0)
 
 	if result != HitResults.SliderMiss {
 
@@ -428,7 +398,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 		if raw {
 			subSet.score += increase
 		} else {
-			subSet.score += increase + int64(float64(increase)*combo*set.scoreMultiplier*subSet.modMultiplier/25.0)
+			subSet.score += increase + int64(float64(increase)*float64(combo)*set.scoreMultiplier*subSet.modMultiplier/25.0)
 		}
 	}
 
@@ -444,9 +414,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 		subSet.combo++
 	}
 
-	if subSet.combo > subSet.maxCombo {
-		subSet.maxCombo = subSet.combo
-	}
+	subSet.maxCombo = bmath.MaxI64(subSet.combo, subSet.maxCombo)
 
 	if subSet.numObjects == 0 {
 		subSet.accuracy = 100
@@ -478,28 +446,18 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int6
 		subSet.grade = D
 	}
 
-	set.params.N300 = uint16(subSet.hits[HitResults.Hit300])
-	set.params.N100 = uint16(subSet.hits[HitResults.Hit100])
-	set.params.N50 = uint16(subSet.hits[HitResults.Hit50])
-	set.params.Misses = uint16(subSet.hits[HitResults.Miss])
-	set.params.Mods = uint32(subSet.player.diff.Mods)
-	set.params.Combo = uint16(subSet.maxCombo)
+	index := bmath.MaxI64(0, subSet.numObjects-1)
 
-	index := subSet.numObjects - 1
-	if index < 0 {
-		index = 0
-	}
+	diff := set.oppDiffs[subSet.player.diff.Mods][index]
 
-	diff := set.oppDiffs[int(subSet.player.diff.Mods)][index]
-
-	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo)) //oppai.PPInfo(set.oppaiMap, set.params).PP.Total
+	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo))
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total*1.00013679674 /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
+		set.listener(cursor, time, number, bmath.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total /**1.00013679674*/ /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
-		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", 100*float64(subSet.rawScore)/float64(subSet.numObjects*300)), subSet.hits, "from:", number, "at:", time, "pos:", x, y)
+		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", subSet.accuracy), subSet.hits, "from:", number, "at:", time, "pos:", x, y)
 	}
 }
 
@@ -514,7 +472,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 		}
 
 		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetBasicData().StackIndex > 0 && !set.processed[index-1].IsHit(player) {
-			return Ignored
+			return Ignored //don't shake the stacks
 		}
 	}
 

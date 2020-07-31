@@ -1,9 +1,7 @@
 package osu
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/beatmap/objects"
-	"github.com/wieku/danser-go/render/batches"
 	"math"
 )
 
@@ -36,12 +34,6 @@ func (spinner *Spinner) GetNumber() int64 {
 	return spinner.hitSpinner.GetBasicData().Number
 }
 
-func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-	panic("implement me")
-}
-
-var spinners = 0
-
 func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
 	spinner.ruleSet = ruleSet
 	spinner.hitSpinner = object.(*objects.Spinner)
@@ -57,7 +49,6 @@ func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, pla
 	for _, player := range spinner.players {
 		spinner.state[player] = new(spinnerstate)
 		spinner.fadeStartRelative = math.Min(spinner.fadeStartRelative, player.diff.Preempt)
-		spinners++
 		spinner.state[player].requirement = int64(float64(spinnerTime) / 1000 * player.diff.SpinnerRatio)
 		spinner.state[player].frameVariance = FrameTime
 	}
@@ -65,7 +56,7 @@ func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.BaseObject, pla
 	spinner.maxAcceleration = 0.00008 + math.Max(0, (5000-float64(spinnerTime))/1000/2000)
 }
 
-func (spinner *Spinner) UpdateClickFor(player *difficultyPlayer, time int64) bool {
+func (spinner *Spinner) UpdateClickFor(*difficultyPlayer, int64) bool {
 	return true
 }
 

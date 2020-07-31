@@ -1,17 +1,10 @@
 package osu
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/bmath/difficulty"
-	"github.com/wieku/danser-go/render/batches"
 	"math"
 )
-
-type Renderable interface {
-	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
-	DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
-}
 
 type objstate struct {
 	isHit bool
@@ -33,11 +26,6 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 	circle.ruleSet = ruleSet
 	circle.hitCircle = object.(*objects.Circle)
 	circle.players = players
-	//if len(players) > 1 {
-	//	circle.renderable = NewHitCircleSprite(*difficulty.NewDifficulty(players[0].diff.GetHPDrain(), players[0].diff.GetCS(), players[0].diff.GetOD(), players[0].diff.GetAR()), object.GetBasicData().StartPos, object.GetBasicData().StartTime)
-	//} else {
-	//	circle.renderable = NewHitCircleSprite(*players[0].diff, object.GetBasicData().StartPos, object.GetBasicData().StartTime)
-	//}
 
 	circle.state = make(map[*difficultyPlayer]*objstate)
 
@@ -65,10 +53,6 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 			xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
 			yOffset = data.StackOffset.Y - float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
 		}
-
-		//if circle.GetNumber() == 53 {
-		//	log.Println("click", time, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetBasicData().StartTime, circle.hitCircle.GetBasicData().EndTime, circle.hitCircle.GetBasicData().EndPos, player.cursor.LeftButton, player.cursor.RightButton, circle.ruleSet.CanBeHit(time, circle, player), player.cursor.Position, circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset), player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)), player.diff.CircleRadius, player.cursor.Position.Dst(circle.hitCircle.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius))
-		//}
 
 		clicked := player.leftCondE || player.rightCondE
 		inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
@@ -145,7 +129,6 @@ func (circle *Circle) UpdatePost(time int64) bool {
 
 	if len(circle.players) > 1 && time == circle.hitCircle.GetBasicData().StartTime {
 		//circle.hitCircle.PlaySound()
-		//circle.renderable.Hit(time)
 	}
 
 	return unfinished == 0
@@ -157,12 +140,4 @@ func (circle *Circle) IsHit(player *difficultyPlayer) bool {
 
 func (circle *Circle) GetFadeTime() int64 {
 	return circle.hitCircle.GetBasicData().StartTime - int64(circle.fadeStartRelative)
-}
-
-func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-	//self.renderable.Draw(time, color, batch)
-}
-
-func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
-	//self.renderable.DrawApproach(time, color, batch)
 }
