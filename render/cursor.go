@@ -20,6 +20,8 @@ var cursorSpaceFbo *framebuffer.Framebuffer = nil
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
 
+var useAdditive = false
+
 func initCursor() {
 
 	if settings.Cursor.TrailStyle < 1 || settings.Cursor.TrailStyle > 4 {
@@ -250,20 +252,27 @@ func (cursor *Cursor) UpdateRenderer() {
 
 func BeginCursorRender() {
 	CursorTrail.Bind(1)
-	cursorSpaceFbo.Begin()
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+	useAdditive = settings.Cursor.AdditiveBlending && (settings.PLAYERS > 1 || settings.DIVIDES > 1 || settings.TAG > 1)
+
+	if useAdditive {
+		cursorSpaceFbo.Begin()
+		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	}
 }
 
 func EndCursorRender() {
-	cursorSpaceFbo.End()
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	fboShader.Begin()
-	fboShader.SetUniformAttr(0, int32(18))
-	fboSlice.BeginDraw()
-	fboSlice.Draw()
-	fboSlice.EndDraw()
-	fboShader.End()
+	if useAdditive {
+		cursorSpaceFbo.End()
+		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+		fboShader.Begin()
+		fboShader.SetUniformAttr(0, int32(18))
+		fboSlice.BeginDraw()
+		fboSlice.Draw()
+		fboSlice.EndDraw()
+		fboShader.End()
+	}
 }
 
 func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, hueshift float64) {
@@ -278,9 +287,11 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 		color2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
 	}
 
-	cursorFbo.Begin()
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	if useAdditive {
+		cursorFbo.Begin()
+		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	}
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
@@ -347,18 +358,17 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 
 	batch.End()
 
-	cursorFbo.End()
+	if useAdditive {
+		cursorFbo.End()
 
-	if settings.Cursor.AdditiveBlending {
 		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
-	} else {
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+		fboShader.Begin()
+		fboShader.SetUniformAttr(0, int32(30))
+		fboSlice.BeginDraw()
+		fboSlice.Draw()
+		fboSlice.EndDraw()
+		fboShader.End()
 	}
 
-	fboShader.Begin()
-	fboShader.SetUniformAttr(0, int32(30))
-	fboSlice.BeginDraw()
-	fboSlice.Draw()
-	fboSlice.EndDraw()
-	fboShader.End()
 }
