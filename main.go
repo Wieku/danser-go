@@ -81,6 +81,8 @@ func run() {
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
+		discord.Connect()
+
 		player = nil
 		var beatMap *beatmap.BeatMap = nil
 
@@ -254,7 +256,6 @@ func run() {
 }
 
 func main() {
-	discord.Connect()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)

@@ -8,7 +8,8 @@ import (
 const SETTINGSVERSION = "v1"
 
 type general struct {
-	OsuSongsDir string //localappdata
+	OsuSongsDir       string //localappdata
+	DiscordPresenceOn bool
 }
 
 type graphics struct {

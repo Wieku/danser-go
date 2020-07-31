@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"github.com/wieku/danser-go/beatmap"
+	"github.com/wieku/danser-go/settings"
 	"github.com/wieku/rich-go/client"
 	"log"
 	"time"
@@ -19,6 +20,10 @@ var queue chan func()
 var connected bool
 
 func Connect() {
+	if !settings.General.DiscordPresenceOn {
+		return
+	}
+
 	err := client.Login(appId)
 	if err != nil {
 		log.Println("Can't login to Discord RPC")
@@ -139,6 +144,10 @@ func ClearActivity() {
 }
 
 func Disconnect() {
+	if !connected {
+		return
+	}
+
 	close(queue)
 	client.Logout()
 }
