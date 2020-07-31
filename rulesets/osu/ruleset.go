@@ -236,6 +236,24 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 
 func (set *OsuRuleSet) Update(time int64) {
 
+	if len(set.processed) > 0 {
+		for i := 0; i < len(set.processed); i++ {
+			g := set.processed[i]
+
+			if isDone := g.UpdatePost(time); isDone {
+				if set.endlistener != nil {
+					set.endlistener(time, g.GetNumber())
+				}
+				if i < len(set.processed)-1 {
+					set.processed = append(set.processed[:i], set.processed[i+1:]...)
+				} else if i < len(set.processed) {
+					set.processed = set.processed[:i]
+				}
+				i--
+			}
+		}
+	}
+
 	if len(set.queue) > 0 {
 		for i := 0; i < len(set.queue); i++ {
 			g := set.queue[i]
@@ -252,24 +270,6 @@ func (set *OsuRuleSet) Update(time int64) {
 			}
 
 			i--
-		}
-	}
-
-	if len(set.processed) > 0 {
-		for i := 0; i < len(set.processed); i++ {
-			g := set.processed[i]
-
-			if isDone := g.UpdatePost(time); isDone {
-				if set.endlistener != nil {
-					set.endlistener(time, g.GetNumber())
-				}
-				if i < len(set.processed)-1 {
-					set.processed = append(set.processed[:i], set.processed[i+1:]...)
-				} else if i < len(set.processed) {
-					set.processed = set.processed[:i]
-				}
-				i--
-			}
 		}
 	}
 
@@ -514,7 +514,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 		}
 
 		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetBasicData().StackIndex > 0 && !set.processed[index-1].IsHit(player) {
-			return Ignored //TODO: this should not shake the object
+			return Ignored
 		}
 	}
 
