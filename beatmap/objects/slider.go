@@ -168,39 +168,20 @@ func (self Slider) GetPointAt(time int64) bmath.Vector2f {
 	if self.IsRetarded() {
 		return self.objData.StartPos
 	}
-	/*times := int64(math.Min(math.Floor(float64(time-self.objData.StartTime)/self.partLen)+1, float64(self.repeat)))
 
-	ttime := float64(time) - float64(self.objData.StartTime) - float64(times-1)*self.partLen
+	index := sort.Search(len(self.scorePath), func(i int) bool {
+		return self.scorePath[i].Time2 >= time
+	})
+
+	pLine := self.scorePath[bmath.ClampI(index, 0, len(self.scorePath)-1)]
+
+	clamped := bmath.ClampI64(time, pLine.Time1, pLine.Time2)
 
 	var pos bmath.Vector2f
-	if (times % 2) == 1 {
-		pos = self.multiCurve.PointAt((ttime/*+0.6*/ /*) / self.partLen)
+	if pLine.Time2 == pLine.Time1 {
+		pos = pLine.Line.Point2
 	} else {
-		pos = self.multiCurve.PointAt(1.0 - ttime/self.partLen)
-	}*/
-
-	pos := self.GetBasicData().StartPos
-
-	if time >= self.GetBasicData().StartTime {
-		pLineI := len(self.scorePath)
-
-		for i, p := range self.scorePath {
-			if p.Time1 <= time && p.Time2 >= time {
-				pLineI = i
-				break
-			}
-		}
-
-		if pLineI < len(self.scorePath) {
-			pLine := self.scorePath[pLineI]
-			if pLine.Time2 == pLine.Time1 {
-				pos = pLine.Line.Point2
-			} else {
-				pos = pLine.Line.PointAt(float32(time-pLine.Time1) / float32(pLine.Time2-pLine.Time1))
-			}
-		} else {
-			pos = self.scorePath[len(self.scorePath)-1].Line.Point2
-		}
+		pos = pLine.Line.PointAt(float32(clamped-pLine.Time1) / float32(pLine.Time2-pLine.Time1))
 	}
 
 	return pos.Add(self.objData.StackOffset)
