@@ -75,14 +75,19 @@ func UpdateKnockout(alive, players int) {
 	}
 }
 
-func UpdatePlay(score, combo, maxCombo int64, acc float64) {
+func UpdatePlay(name string) {
 	if !connected {
 		return
 	}
 
+	state := "Clicking circles"
+	if name != "" {
+		state = fmt.Sprintf("Watching %s", name)
+	}
+
 	queue <- func() {
 		err := client.SetActivity(client.Activity{
-			State:      fmt.Sprintf("Playing (%dx/%dx) %0.2f%% accuracy, %d score", combo, maxCombo, acc, score),
+			State:      state,
 			Details:    mapString,
 			LargeImage: "danser-logo",
 			Timestamps: &client.Timestamps{
@@ -147,7 +152,8 @@ func Disconnect() {
 	if !connected {
 		return
 	}
-
+	ClearActivity()
+	connected = false
 	close(queue)
 	client.Logout()
 }

@@ -149,7 +149,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.combobreak = audio.NewSample("assets/sounds/combobreak.wav")
 
-	discord.UpdatePlay(0, 0, 0, 0)
+	discord.UpdatePlay(cursor.Name)
 
 	ruleset.SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
 
@@ -177,9 +177,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 			overlay.combo = 0
 		}
 
-		acc, maxCombo, score, _ := overlay.ruleset.GetResults(overlay.cursor)
-
-		discord.UpdatePlay(score, overlay.newCombo, maxCombo, acc)
+		_, _, score, _ := overlay.ruleset.GetResults(overlay.cursor)
 
 		overlay.scoreGlider.Reset()
 		overlay.scoreGlider.AddEvent(float64(time), float64(time+1000), float64(score))
