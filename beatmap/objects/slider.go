@@ -495,10 +495,13 @@ func (self *Slider) GetCurve() []bmath.Vector2f {
 	lod := math.Ceil(length * float64(settings.Objects.SliderPathLOD) / 100.0)
 	if lod > 0 {
 		t0 := float32(1.0 / lod)
-		points := make([]bmath.Vector2f, int(lod)+1)
+		points := make([]bmath.Vector2f, 0)
 		t := float32(0.0)
 		for i := 0; i <= int(lod); i += 1 {
-			points[i] = self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
+			point := self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
+			if point.X >= -bmath.OsuWidth && point.X <= bmath.OsuWidth*2 && point.Y >= -bmath.OsuHeight && point.Y <= bmath.OsuHeight*2 {
+				points = append(points, point)
+			}
 			t += t0
 		}
 		return points
