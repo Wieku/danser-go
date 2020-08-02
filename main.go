@@ -22,6 +22,7 @@ import (
 	"image"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 )
 
@@ -255,7 +256,23 @@ func run() {
 	}
 }
 
+func setWorkingDirectory() {
+	exec, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+
+	if exec, err = filepath.EvalSymlinks(exec); err != nil {
+		panic(err)
+	}
+
+	if err = os.Chdir(filepath.Dir(exec)); err != nil {
+		panic(err)
+	}
+}
+
 func main() {
+	setWorkingDirectory()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
