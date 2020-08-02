@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/wieku/danser-go/beatmap/objects"
 	"github.com/wieku/danser-go/settings"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,6 +21,9 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 		}
 	case "StackLeniency":
 		beatMap.StackLeniency, _ = strconv.ParseFloat(line[1], 64)
+		if math.IsNaN(beatMap.StackLeniency) {
+			beatMap.StackLeniency = 0.0
+		}
 	case "AudioFilename":
 		beatMap.Audio += line[1]
 	case "SampleSet":
@@ -218,8 +222,8 @@ func ParseObjects(beatMap *BeatMap) {
 		panic(err)
 	}
 	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
+	buf := make([]byte, 0, 10*64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
 	var currentSection string
 	for scanner.Scan() {
 		line := scanner.Text()
