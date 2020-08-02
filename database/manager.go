@@ -24,6 +24,11 @@ var currentPreVersion = 20181111
 
 const databaseVersion = 20181111
 
+type toRemove struct {
+	dir  string
+	file string
+}
+
 func Init() {
 	var err error
 	dbFile, err = sql.Open("sqlite3", "danser.db")
@@ -161,6 +166,7 @@ func removeBeatmap(dir, file string) {
 func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	beatmaps := make(map[string]int)
+	var removeList []toRemove
 
 	for i, bMap := range bMaps {
 		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
@@ -184,7 +190,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				err2 := beatmap.ParseBeatMap(bMap)
 				if err2 != nil {
 					log.Println("Corrupted cached beatmap found. Removing from database:", bMap.File)
-					removeBeatmap(bMap.Dir, bMap.File)
+					removeList = append(removeList, toRemove{bMap.Dir, bMap.File})
 				} else {
 					_, err1 := st.Exec(
 						bMap.Diff.GetHPDrain(),
@@ -258,7 +264,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 			if beatmap.Name+beatmap.Artist+beatmap.Creator == "" || beatmap.TimingPoints == "" {
 				log.Println("Corrupted cached beatmap found. Removing from database:", beatmap.File)
-				removeBeatmap(beatmap.Dir, beatmap.File)
+				removeList = append(removeList, toRemove{beatmap.Dir, beatmap.File})
 				continue
 			}
 
@@ -272,6 +278,11 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 		}
 	}
+
+	for _, b := range removeList {
+		removeBeatmap(b.dir, b.file)
+	}
+
 }
 
 func updateBeatmaps(bMaps []*beatmap.BeatMap) {
