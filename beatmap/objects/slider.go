@@ -24,6 +24,7 @@ import (
 )
 
 const followBaseScale = 2.14
+const maxSliderPoints = 10000
 
 type PathLine struct {
 	Time1 int64
@@ -496,7 +497,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 func (self *Slider) GetCurve() []bmath.Vector2f {
 	length := float64(self.multiCurve.GetLength())
-	lod := math.Ceil(length * float64(settings.Objects.SliderPathLOD) / 100.0)
+	lod := math.Min(math.Ceil(length*float64(settings.Objects.SliderPathLOD)/100.0), maxSliderPoints)
 	if lod > 0 {
 		t0 := float32(1.0 / lod)
 		points := make([]bmath.Vector2f, 0)
