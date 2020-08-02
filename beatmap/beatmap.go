@@ -41,7 +41,9 @@ type BeatMap struct {
 }
 
 func NewBeatMap() *BeatMap {
-	return &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7, Diff: difficulty.NewDifficulty(5, 5, 5, 5)}
+	beatMap := &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7, Diff: difficulty.NewDifficulty(5, 5, 5, 5)}
+	//beatMap.Diff.SetMods(difficulty.Hidden)
+	return beatMap
 }
 
 func (b *BeatMap) Reset() {
@@ -90,8 +92,9 @@ func (beatMap *BeatMap) LoadTimingPoints() {
 
 	for _, point := range points {
 		line := strings.Split(point, ",")
-		time, _ := strconv.ParseInt(line[0], 10, 64)
+		pointTime, _ := strconv.ParseInt(line[0], 10, 64)
 		bpm, _ := strconv.ParseFloat(line[1], 64)
+
 		if len(line) > 3 {
 			sampleset, _ := strconv.ParseInt(line[3], 10, 64)
 			sampleindex, _ := strconv.ParseInt(line[4], 10, 64)
@@ -102,18 +105,22 @@ func (beatMap *BeatMap) LoadTimingPoints() {
 				samplevolume, _ = strconv.ParseInt(line[5], 10, 64)
 			}
 
+			inherited := false
+			if len(line) > 6 {
+				inh, _ := strconv.ParseInt(line[6], 10, 64)
+				inherited = inh == 0
+			}
+
 			kiai := false
 			if len(line) > 7 {
 				ki, _ := strconv.ParseInt(line[7], 10, 64)
-				if ki == 1 {
-					kiai = true
-				}
+				kiai = ki == 1
 			}
 
 			beatMap.Timings.LastSet = int(sampleset)
-			beatMap.Timings.AddPoint(time, bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, kiai)
+			beatMap.Timings.AddPoint(pointTime, bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, inherited, kiai)
 		} else {
-			beatMap.Timings.AddPoint(time, bpm, beatMap.Timings.LastSet, 1, 1, false)
+			beatMap.Timings.AddPoint(pointTime, bpm, beatMap.Timings.LastSet, 1, 1, false, false)
 		}
 	}
 }

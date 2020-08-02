@@ -36,12 +36,15 @@ func NewTimings() *Timings {
 	return &Timings{BaseSet: 1, LastSet: 1}
 }
 
-func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int, samplevolume float64, isKiai bool) {
+func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int, samplevolume float64, inherited, isKiai bool) {
 	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex, SampleVolume: samplevolume, beatLen: bpm}
-	if point.Bpm > 0 {
+	if !inherited {
 		tim.fullBPM = point.Bpm
 	} else {
-		point.Bpm = tim.fullBPM * /* float64(float32(*/ math.Max(10, math.Min(1000, -point.Bpm)) / 100.0 /*)/float32(100.0))*/
+		point.Bpm = tim.fullBPM
+		if !math.IsNaN(bpm) {
+			point.Bpm *= math.Max(10, math.Min(1000, -bpm)) / 100.0
+		}
 	}
 	point.BaseBpm = tim.fullBPM
 	point.Kiai = isKiai
