@@ -18,7 +18,6 @@ var sliderShader *glhf.Shader = nil
 var fboShader *glhf.Shader
 var fboSlice *glhf.VertexSlice
 var sliderVertexFormat glhf.AttrFormat
-var cam mgl32.Mat4
 var fbo *framebuffer.Framebuffer
 var fboUnit int32
 var CS float64
@@ -35,7 +34,7 @@ func SetupSlider() {
 
 	svert, _ := ioutil.ReadFile("assets/shaders/slider.vsh")
 	sfrag, _ := ioutil.ReadFile("assets/shaders/slider.fsh")
-	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}}, string(svert), string(sfrag))
+	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}, {Name: "distort", Type: glhf.Mat4}}, string(svert), string(sfrag))
 	if err != nil {
 		log.Println(err)
 	}
@@ -69,7 +68,9 @@ func SetupSlider() {
 
 }
 
-type SliderRenderer struct{}
+type SliderRenderer struct {
+	camera mgl32.Mat4
+}
 
 func NewSliderRenderer() *SliderRenderer {
 	return &SliderRenderer{}
@@ -89,7 +90,7 @@ func (sr *SliderRenderer) Begin() {
 
 	sliderShader.Begin()
 
-	sliderShader.SetUniformAttr(1, cam)
+	sliderShader.SetUniformAttr(1, sr.camera)
 }
 
 func (sr *SliderRenderer) SetColor(color mgl32.Vec4, prev mgl32.Vec4) {
@@ -103,6 +104,14 @@ func (sr *SliderRenderer) SetColor(color mgl32.Vec4, prev mgl32.Vec4) {
 
 func (sr *SliderRenderer) SetScale(scale float64) {
 	sliderShader.SetUniformAttr(2, mgl32.Scale3D(float32(scale), float32(scale), 1))
+}
+
+func (sr *SliderRenderer) SetDistort(scaleX, scaleY float64) {
+	sliderShader.SetUniformAttr(4, mgl32.Translate3D(-1, 1, 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(1, -1, 0)))
+}
+
+func (sr *SliderRenderer) GetCamera() mgl32.Mat4 {
+	return sr.camera
 }
 
 func (sr *SliderRenderer) EndAndRender() {
@@ -126,8 +135,8 @@ func (sr *SliderRenderer) EndAndRender() {
 }
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
-	cam = camera
-	sliderShader.SetUniformAttr(1, cam)
+	self.camera = camera
+	sliderShader.SetUniformAttr(1, self.camera)
 }
 
 func (self *SliderRenderer) GetShape(curve []bmath.Vector2f) ([]float32, int) {

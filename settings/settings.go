@@ -266,6 +266,7 @@ type objects struct {
 	SliderMerge                            bool
 	SliderDynamicLoad                      bool
 	SliderDynamicUnload                    bool
+	SliderDistortions                      bool    //true, osu!stable slider distortions on aspire maps
 	DrawFollowPoints                       bool    //true
 	WhiteFollowPoints                      bool    //true
 	FollowPointColorOffset                 float64 //0.0, hue offset of the followpoint

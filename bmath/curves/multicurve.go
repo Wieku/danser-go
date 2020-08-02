@@ -38,9 +38,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *
 
 				if len(pts) > 2 {
 					lines = append(lines, ApproximateBezier(pts)...)
-				} else if len(pts) == 1 {
-					lines = append(lines, NewLinear(pts[0], pts[0]))
-				} else {
+				} else if len(pts) == 2 {
 					lines = append(lines, NewLinear(pts[0], pts[1]))
 				}
 
@@ -70,7 +68,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *
 		length += l.GetLength()
 	}
 
-	firstPoint := lines[0].Point1
+	firstPoint := points[0]
 
 	diff := float64(length) - desiredLength
 
@@ -116,6 +114,8 @@ func (mCurve *MultiCurve) PointAt(t float32) bmath.Vector2f {
 	index := sort.Search(len(withoutFirst), func(i int) bool {
 		return withoutFirst[i] >= desiredWidth
 	})
+
+	//log.Println(len(mCurve.lines), desiredWidth, mCurve.length, index)
 
 	return mCurve.lines[index].PointAt((desiredWidth - mCurve.sections[index]) / (mCurve.sections[index+1] - mCurve.sections[index]))
 }

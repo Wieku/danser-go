@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/bmath/curves"
 	"github.com/wieku/danser-go/bmath/difficulty"
+	"github.com/wieku/danser-go/bmath/math32"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/render/batches"
 	"github.com/wieku/danser-go/settings"
@@ -84,6 +85,9 @@ type Slider struct {
 	fadeFollow           *animation.Glider
 	scaleFollow          *animation.Glider
 	reversePoints        [2][]*reversePoint
+
+	topLeft     bmath.Vector2f
+	bottomRight bmath.Vector2f
 }
 
 func NewSlider(data []string) *Slider {
@@ -499,7 +503,21 @@ func (self *Slider) GetCurve() []bmath.Vector2f {
 		t := float32(0.0)
 		for i := 0; i <= int(lod); i += 1 {
 			point := self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
-			if point.X >= -bmath.OsuWidth && point.X <= bmath.OsuWidth*2 && point.Y >= -bmath.OsuHeight && point.Y <= bmath.OsuHeight*2 {
+			if i == 0 {
+				self.topLeft = point.Copy()
+				self.bottomRight = point.Copy()
+			}
+			self.topLeft.X = math32.Min(self.topLeft.X, point.X)
+			self.topLeft.Y = math32.Min(self.topLeft.Y, point.Y)
+			self.bottomRight.X = math32.Max(self.bottomRight.X, point.X)
+			self.bottomRight.Y = math32.Max(self.bottomRight.Y, point.Y)
+
+			multiplier := float32(1.0)
+			if settings.Objects.SliderDistortions {
+				multiplier = 3.0 //larger allowable area, we want to see distorted sliders "fully"
+			}
+
+			if point.X >= -bmath.OsuWidth*multiplier && point.X <= bmath.OsuWidth*2*multiplier && point.Y >= -bmath.OsuHeight*multiplier && point.Y <= bmath.OsuHeight*2*multiplier {
 				points = append(points, point)
 			}
 			t += t0
@@ -680,6 +698,27 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 	if self.vao != nil {
 		subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
 		subVao.BeginDraw()
+
+		scaleX := 1.0
+		scaleY := 1.0
+
+		if settings.Objects.SliderDistortions {
+			tLS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.topLeft.X, -self.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+			bRS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.bottomRight.X, -self.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+
+			wS := float32(32768 / (settings.Graphics.GetWidthF()))
+			hS := float32(32768 / (settings.Graphics.GetHeightF()))
+
+			if -tLS.X()+bRS.X() > wS {
+				scaleX = float64(wS / (-tLS.X() + bRS.X()))
+			}
+
+			if tLS.Y()+bRS.Y() > hS {
+				scaleY = float64(hS / (-tLS.Y() + bRS.Y()))
+			}
+		}
+
+		renderer.SetDistort(scaleX, scaleY)
 		subVao.Draw()
 		subVao.EndDraw()
 	}
