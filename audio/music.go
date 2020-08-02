@@ -1,6 +1,7 @@
 package audio
 
 /*
+#include "bass_util.hpp"
 #include "bass.h"
 #include "bass_fx.h"
 
@@ -13,7 +14,7 @@ static inline void SyncFunc(HSYNC handle, DWORD channel, DWORD data, void *user)
 static inline void setSync(HCHANNEL channel) {
 	BASS_ChannelSetSync(channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, SyncFunc, 0);
 }
- */
+*/
 import "C"
 import (
 	"github.com/wieku/danser-go/settings"
@@ -70,7 +71,13 @@ type Music struct {
 
 func NewMusic(path string) *Music {
 	player := new(Music)
-	channel := C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE)
+
+	//ut16 := utf16.Encode([]rune(path))
+	//log.Println("eeeeeeeeeeee")
+	//wc := (*C.wchar_t)(C.convert(C.CString(path)))
+	//log.Println("aaaaaaaaaa")
+	channel := C.CreateBassStream(C.CString(path), C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE)
+	//C.free(unsafe.Pointer(wc))
 	player.channel = C.BASS_FX_TempoCreate(channel, C.BASS_FX_FREESOURCE)
 	player.fft = make([]float32, 512)
 	return player
@@ -161,7 +168,7 @@ func (wv *Music) Update() {
 	//log.Println(boost)
 	//beatAv /= 5.0
 	//toAv /= 512
-	wv.beat = boost//beatAv
+	wv.beat = boost //beatAv
 	wv.peak = toPeak
 
 	level := int(C.BASS_ChannelGetLevel(wv.channel))

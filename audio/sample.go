@@ -1,12 +1,12 @@
 package audio
 
 /*
+#include "bass_util.hpp"
 #include "bass.h"
- */
+*/
 import "C"
 
 import (
-	"unsafe"
 	"github.com/wieku/danser-go/settings"
 	"os"
 )
@@ -24,8 +24,8 @@ func NewSample(path string) *Sample {
 	f.Close()
 
 	player := &Sample{}
-	han := C.BASS_SampleLoad(0, unsafe.Pointer(C.CString(path)), 0, 0, 32, C.BASS_SAMPLE_OVER_POS)
-	player.channel = han
+	player.channel = C.LoadBassSample(C.CString(path), 32, C.BASS_SAMPLE_OVER_POS)
+
 	return player
 }
 
