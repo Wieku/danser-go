@@ -72,12 +72,8 @@ type Music struct {
 func NewMusic(path string) *Music {
 	player := new(Music)
 
-	//ut16 := utf16.Encode([]rune(path))
-	//log.Println("eeeeeeeeeeee")
-	//wc := (*C.wchar_t)(C.convert(C.CString(path)))
-	//log.Println("aaaaaaaaaa")
 	channel := C.CreateBassStream(C.CString(path), C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE)
-	//C.free(unsafe.Pointer(wc))
+
 	player.channel = C.BASS_FX_TempoCreate(channel, C.BASS_FX_FREESOURCE)
 	player.fft = make([]float32, 512)
 	return player
