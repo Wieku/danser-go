@@ -218,7 +218,8 @@ func ParseObjects(beatMap *BeatMap) {
 		panic(err)
 	}
 	scanner := bufio.NewScanner(file)
-
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	var currentSection string
 	for scanner.Scan() {
 		line := scanner.Text()
