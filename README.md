@@ -1,7 +1,5 @@
-## PROJECT ABANDONED DUE TO REWRITE
-
-# danser
-danser is a visualiser for osu! maps written in Go.
+# danser-go
+danser-go is a visualiser for osu! maps written in Go.
 
 Application is in dev phase so only few things work. But if you want to test it, you should follow steps at the end of this readme.
 
@@ -16,7 +14,7 @@ Application is in dev phase so only few things work. But if you want to test it,
 ## How to download it
 
 ### Windows
-You can download windows binaries from [releases](https://github.com/Wieku/danser/releases).
+You can download windows binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
 ### Linux/Unix/Windows
 
@@ -24,7 +22,7 @@ If you want to build it yourself, you would need 64bit [go](https://golang.org/d
 
 In your terminal type:
 ```bash
-go get -u github.com/wieku/danser
+go get -u github.com/wieku/danser-go
 ```
 This will automatically download and compile needed libraries.
 
@@ -38,14 +36,14 @@ danser***.exe <arguments>
 ### Project
 You have to be in the project directory.
 
-If you're running it for the first time type:
+If you're running it for the first time or when you made some changes type:
 ```bash
 go build
 ```
 
 Then type:
 ```bash
-danser <arguments>
+danser-go <arguments>
 ```
 
 #### Arguments
@@ -66,7 +64,6 @@ Example:
 ```bash
 <executable> -title="Brain Power" -difficulty="Overdrive" -tag=2
 ```
-
 
 ## Credits
 
