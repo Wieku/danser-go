@@ -9,21 +9,20 @@ import (
 var fileStorage *fileformat
 var fileName string
 
-func initDefaults() {
-	Version = SETTINGSVERSION
-	General = &general{os.Getenv("localappdata") + string(os.PathSeparator) + "osu!" + string(os.PathSeparator) + "Songs" + string(os.PathSeparator), true}
-	Graphics = &graphics{1920, 1080, 1280, 720, true, false, 1000, 16}
-	Audio = &audio{0.5, 0.5, 0.5, 0, false, false}
-	Beat = &beat{1.2}
-	Cursor = &cursor{1, 0.18, 0.5, &color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, false, 0, 0}, true, -36, true, true, -36.0, false, 18, true, true, false, 0.4, 0.5, 2000, 1, 0.4, 0.9, true}
-	Objects = &objects{5, 0.3, true, true, true, true, true, false, &color{true, 8, &hsv{0, 1.0, 1.0}, false, 0, true, 100.0, 0}, -1, 1.0, true, 30, 50, true, 0.0, true, true, true, true, true, true, true, 0.0, false, &color{false, 8, &hsv{0, 0.0, 1.0}, false, 0, true, 100.0, 0}, true, 18, true}
-	Playfield = &playfield{false, 5, 2, 5, 0, 0.95, 0.95, true, 0, 0.6, 0.6, 0, 1, 0, true, true, 1, false, true, true, 0.8, 1.1, 0, false, 2, true, true, 0.3, &bloom{0.0, 0.6, 0.7}}
-	Dance = &dance{SliderDance2B: true, Bezier: &bezier{60, 3}, Flower: &flower{true, 90, 0.666, 130, 90, -1, 0.7, false}, HalfCircle: &circular{1, 130}}
-	fileStorage = &fileformat{&Version, General, Graphics, Audio, Beat, Cursor, Objects, Playfield, Dance}
+func initStorage() {
+	fileStorage = &fileformat{
+		General:   General,
+		Graphics:  Graphics,
+		Audio:     Audio,
+		Cursor:    Cursor,
+		Objects:   Objects,
+		Playfield: Playfield,
+		Dance:     Dance,
+	}
 }
 
 func LoadSettings(version int) bool {
-	initDefaults()
+	initStorage()
 	fileName = "settings"
 
 	if version > 0 {
@@ -63,7 +62,6 @@ func saveSettings(path string) {
 		panic(err)
 	}
 
-	Version = SETTINGSVERSION
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")
 	encoder.Encode(fileStorage)
