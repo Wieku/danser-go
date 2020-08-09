@@ -233,7 +233,7 @@ func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureReg
 			log.Println(err)
 		} else {
 			if storyboard.atlas == nil {
-				storyboard.atlas = texture.NewTextureAtlas(8192, 4)
+				storyboard.atlas = texture.NewTextureAtlas(8192, 0)
 				storyboard.atlas.Bind(17)
 			}
 			texture1 = storyboard.atlas.AddTexture(image, nrgba.Bounds().Dx(), nrgba.Bounds().Dy(), nrgba.Pix)
