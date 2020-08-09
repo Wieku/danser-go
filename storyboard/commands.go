@@ -1,12 +1,12 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser-go/bmath"
-	"math"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/animation/easing"
-	"strconv"
+	"github.com/wieku/danser-go/bmath"
 	"log"
+	"math"
+	"strconv"
 )
 
 type Command struct {
@@ -104,7 +104,7 @@ func NewCommand(data []string) *Command {
 
 	copy(command.val, command.sections[0])
 
-	if numSections == 1 {
+	if numSections == 1 || command.sectionTime == 0 {
 		command.constant = true
 	}
 
@@ -128,7 +128,7 @@ func (command *Command) Update(time int64) {
 	}
 
 	if command.constant {
-		copy(command.val, command.sections[0])
+		copy(command.val, command.sections[len(command.sections)-1])
 	} else {
 
 		section := int64(0)
