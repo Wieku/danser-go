@@ -8,7 +8,7 @@ func initGraphics() *graphics {
 		Height:       1080,
 		WindowWidth:  1280,
 		WindowHeight: 720,
-		Fullscreen:   false,
+		Fullscreen:   true,
 		VSync:        false,
 		FPSCap:       1000,
 		MSAA:         16,
@@ -24,6 +24,13 @@ type graphics struct {
 	VSync        bool  //false
 	FPSCap       int64 //1000
 	MSAA         int32 //16
+}
+
+func (gr *graphics) SetDefaults(width, height int64) {
+	gr.Width = width
+	gr.Height = height
+	gr.WindowWidth = width * 3 / 4
+	gr.WindowHeight = height * 3 / 4
 }
 
 func (gr graphics) GetSize() (int64, int64) {

@@ -121,21 +121,19 @@ func run() {
 		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
 
 		if newSettings {
-			log.Println(mWidth, mHeight)
-			settings.Graphics.Width, settings.Graphics.Height = int64(mWidth), int64(mHeight)
+			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
 			settings.Save()
-			win, err = glfw.CreateWindow(mWidth, mHeight, "danser", monitor, nil)
+		}
+
+		if settings.Graphics.Fullscreen {
+			glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
+			glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
+			glfw.WindowHint(glfw.BlueBits, monitor.GetVideoMode().BlueBits)
+			glfw.WindowHint(glfw.RefreshRate, monitor.GetVideoMode().RefreshRate)
+			//glfw.WindowHint(glfw.Decorated, glfw.False)
+			win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
 		} else {
-			if settings.Graphics.Fullscreen {
-				glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
-				glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
-				glfw.WindowHint(glfw.BlueBits, monitor.GetVideoMode().BlueBits)
-				glfw.WindowHint(glfw.RefreshRate, monitor.GetVideoMode().RefreshRate)
-				//glfw.WindowHint(glfw.Decorated, glfw.False)
-				win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
-			} else {
-				win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
-			}
+			win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
 		}
 
 		if err != nil {
@@ -190,6 +188,8 @@ func run() {
 
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
+			glfw.PollEvents()
+
 			gl.Enable(gl.MULTISAMPLE)
 			gl.Disable(gl.DITHER)
 			gl.Disable(gl.SCISSOR_TEST)
@@ -247,7 +247,6 @@ func run() {
 			}
 
 			win.SwapBuffers()
-			glfw.PollEvents()
 
 			if !settings.Graphics.VSync {
 				limiter.Sync()
