@@ -1,16 +1,18 @@
 package storyboard
 
 import (
+	"github.com/wieku/danser-go/render/batches"
 	"sort"
 	"sync"
-	"github.com/wieku/danser-go/render/batches"
 )
 
 type StoryboardLayer struct {
 	spriteQueue     []Object
 	spriteProcessed []Object
 	drawArray       []Object
+	interArray      []Object
 	visibleObjects  int
+	interObjects    int
 	allSprites      int
 	mutex           *sync.Mutex
 }
@@ -29,6 +31,7 @@ func (layer *StoryboardLayer) FinishLoading() {
 	})
 	layer.allSprites = len(layer.spriteQueue)
 	layer.drawArray = make([]Object, len(layer.spriteQueue))
+	layer.interArray = make([]Object, len(layer.spriteQueue))
 }
 
 func (layer *StoryboardLayer) Update(time int64) {
@@ -36,7 +39,7 @@ func (layer *StoryboardLayer) Update(time int64) {
 
 	for i := 0; i < len(layer.spriteQueue); i++ {
 		c := layer.spriteQueue[i]
-		if c.GetStartTime() > time {
+		if time < c.GetStartTime() {
 			break
 		}
 
@@ -44,27 +47,37 @@ func (layer *StoryboardLayer) Update(time int64) {
 	}
 
 	if toRemove > 0 {
-		layer.spriteProcessed = append(layer.spriteProcessed, layer.spriteQueue[:toRemove]...)
-		layer.spriteQueue = layer.spriteQueue[toRemove:]
-		sort.Slice(layer.spriteProcessed, func(i, j int) bool {
-			return layer.spriteProcessed[i].GetZIndex() < layer.spriteProcessed[j].GetZIndex()
-		})
-	}
+		for i := 0; i < toRemove; i++ {
+			s := layer.spriteQueue[i]
 
-	layer.mutex.Lock()
+			n := sort.Search(len(layer.spriteProcessed), func(j int) bool {
+				return s.GetZIndex() < layer.spriteProcessed[j].GetZIndex()
+			})
+
+			layer.spriteProcessed = append(layer.spriteProcessed, nil) //allocate bigger array in case when len=cap
+			copy(layer.spriteProcessed[n+1:], layer.spriteProcessed[n:])
+
+			layer.spriteProcessed[n] = s
+		}
+
+		layer.spriteQueue = layer.spriteQueue[toRemove:]
+	}
 
 	for i := 0; i < len(layer.spriteProcessed); i++ {
 		c := layer.spriteProcessed[i]
 		c.Update(time)
 
 		if time >= c.GetEndTime() {
-			layer.spriteProcessed = append(layer.spriteProcessed[:i], layer.spriteProcessed[i+1:]...)
+			copy(layer.spriteProcessed[i:], layer.spriteProcessed[i+1:])
+			layer.spriteProcessed = layer.spriteProcessed[:len(layer.spriteProcessed)-1]
 			i--
 		}
 	}
 
-	layer.visibleObjects = len(layer.spriteProcessed)
-	copy(layer.drawArray, layer.spriteProcessed)
+	layer.mutex.Lock()
+
+	layer.interObjects = len(layer.spriteProcessed)
+	copy(layer.interArray, layer.spriteProcessed)
 
 	layer.mutex.Unlock()
 }
@@ -81,11 +94,14 @@ func (layer *StoryboardLayer) GetLoad() (sum float64) {
 func (layer *StoryboardLayer) Draw(time int64, batch *batches.SpriteBatch) {
 	layer.mutex.Lock()
 
+	layer.visibleObjects = layer.interObjects
+	copy(layer.drawArray, layer.interArray[:layer.interObjects])
+
+	layer.mutex.Unlock()
+
 	for i := 0; i < layer.visibleObjects; i++ {
 		if layer.drawArray[i] != nil {
 			layer.drawArray[i].Draw(time, batch)
 		}
 	}
-
-	layer.mutex.Unlock()
 }
