@@ -295,14 +295,13 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
-	cursorShader.Begin()
-
 	siz := settings.Cursor.CursorSize
 
 	if settings.Cursor.EnableCustomTrailGlowOffset {
 		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
 	}
 
+	cursorShader.Begin()
 	cursorShader.SetUniformAttr(1, int32(1))
 	cursorShader.SetUniformAttr(2, batch.Projection)
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
@@ -323,7 +322,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 		cursorScl = float32(siz * (12.0 / 18) * scale)
 		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
 		cursorShader.SetUniformAttr(0, color2)
-		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale))
+		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale*settings.Cursor.TrailScale))
 		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
 		if settings.Cursor.TrailStyle > 1 {
 			cursorShader.SetUniformAttr(6, float32((hueshift-36)/360))
@@ -335,7 +334,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 		cursorShader.SetUniformAttr(6, float32(hueshift/360))
 	}
 	cursorShader.SetUniformAttr(0, color)
-	cursorShader.SetUniformAttr(4, cursorScl)
+	cursorShader.SetUniformAttr(4, cursorScl*float32(settings.Cursor.TrailScale))
 	cursorShader.SetUniformAttr(3, float32(len(cursor.Points))*innerLengthMult)
 	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
 

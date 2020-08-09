@@ -35,6 +35,7 @@ func initCursor() *cursor {
 		ScaleToTheBeat:              true,
 		ShowCursorsOnBreaks:         true,
 		BounceOnEdges:               false,
+		TrailScale:                  1.0,
 		TrailEndScale:               0.4,
 		TrailDensity:                0.5,
 		TrailMaxLength:              2000,
@@ -60,6 +61,7 @@ type cursor struct {
 	ScaleToTheBeat              bool    //true, cursor size is changing with music peak amplitude
 	ShowCursorsOnBreaks         bool    //true
 	BounceOnEdges               bool    //false
+	TrailScale                  float64 //0.4
 	TrailEndScale               float64 //0.4
 	TrailDensity                float64 //0.5 - 1/TrailDensity = distance between trail points
 	TrailMaxLength              int64   //2000 - maximum width (in osu!pixels) of cursortrail
