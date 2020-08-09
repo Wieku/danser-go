@@ -96,6 +96,7 @@ func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever
 
 		if removed == 1 {
 			if currentLoop != nil {
+				currentLoop.Finalize()
 				sprite.loopQueue = append(sprite.loopQueue, currentLoop)
 				loopDepth = -1
 			}
@@ -116,6 +117,7 @@ func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever
 	}
 
 	if currentLoop != nil {
+		currentLoop.Finalize()
 		sprite.loopQueue = append(sprite.loopQueue, currentLoop)
 		loopDepth = -1
 	}

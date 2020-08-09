@@ -34,3 +34,7 @@ func (loop *Loop) Update(time int64) {
 
 	loop.transformations.Update(sTime + local)
 }
+
+func (loop *Loop) Finalize() {
+	loop.transformations.Finalize()
+}
