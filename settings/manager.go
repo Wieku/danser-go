@@ -18,6 +18,7 @@ func initStorage() {
 		Objects:   Objects,
 		Playfield: Playfield,
 		Dance:     Dance,
+		Knockout:  Knockout,
 	}
 }
 
@@ -33,36 +34,43 @@ func LoadSettings(version int) bool {
 	file, err := os.Open(fileName)
 	defer file.Close()
 	if os.IsNotExist(err) {
-		saveSettings(fileName)
+		saveSettings(fileName, fileStorage)
 		return true
 	} else if err != nil {
 		panic(err)
 	} else {
-		load(file)
-		saveSettings(fileName) //this is done to save additions from the current format
+		load(file, fileStorage)
+		saveSettings(fileName, fileStorage) //this is done to save additions from the current format
 	}
 
 	return false
 }
 
-func load(file *os.File) {
+func load(file *os.File, target interface{}) {
 	decoder := json.NewDecoder(file)
-	decoder.Decode(fileStorage)
+	if err := decoder.Decode(target); err != nil {
+		panic(err)
+	}
 }
 
 func Save() {
-	saveSettings(fileName)
+	saveSettings(fileName, fileStorage)
 }
 
-func saveSettings(path string) {
+func saveSettings(path string, source interface{}) {
 	file, err := os.Create(path)
-	defer file.Close()
-
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")
-	encoder.Encode(fileStorage)
+
+	if err := encoder.Encode(source); err != nil {
+		panic(err)
+	}
+
+	if err := file.Close(); err != nil {
+		panic(err)
+	}
 }

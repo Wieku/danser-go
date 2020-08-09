@@ -12,6 +12,7 @@ type fileformat struct {
 	Objects   *objects
 	Playfield *playfield
 	Dance     *dance
+	Knockout  *knockout
 }
 
 var Beat = &beat{1.2}
