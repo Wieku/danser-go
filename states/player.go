@@ -839,6 +839,8 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.End()
 	}
 
+	pl.background.DrawOverlay(pl.progressMs, pl.batch, bgAlpha, cameras1[0])
+
 	for _, g := range pl.controller.GetCursors() {
 		g.UpdateRenderer()
 	}
