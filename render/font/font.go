@@ -1,18 +1,18 @@
 package font
 
 import (
-	"io"
-	"github.com/golang/freetype/truetype"
-	"io/ioutil"
-	"golang.org/x/image/math/fixed"
 	"github.com/golang/freetype"
-	font2 "golang.org/x/image/font"
-	"image"
-	"image/draw"
-	"log"
-	"github.com/wieku/danser-go/render/texture"
+	"github.com/golang/freetype/truetype"
 	"github.com/wieku/danser-go/bmath"
 	"github.com/wieku/danser-go/render/batches"
+	"github.com/wieku/danser-go/render/texture"
+	font2 "golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
+	"image"
+	"image/draw"
+	"io"
+	"io/ioutil"
+	"log"
 )
 
 var fonts map[string]*Font
@@ -37,7 +37,7 @@ type Font struct {
 	initialSize float64
 	lineDist    float64
 	kernTable   map[rune]map[rune]float64
-	biggest float64
+	biggest     float64
 }
 
 func LoadFont(reader io.Reader) *Font {
@@ -56,9 +56,9 @@ func LoadFont(reader io.Reader) *Font {
 	font.min = rune(32)
 	font.max = rune(127)
 	font.initialSize = 64.0
-	font.glyphs = make(map[rune]*glyphData)//, font.max-font.min+1)
+	font.glyphs = make(map[rune]*glyphData) //, font.max-font.min+1)
 	font.kernTable = make(map[rune]map[rune]float64)
-	font.atlas = texture.NewTextureAtlas(4096, 4)
+	font.atlas = texture.NewTextureAtlas(1024, 4)
 
 	font.atlas.Bind(20)
 
@@ -174,7 +174,7 @@ func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64
 		}
 
 		renderer.SetSubScale(scale, scale)
-		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
 		renderer.DrawTexture(char.region)
 		xpad += scale * renderer.GetScale().X * (char.advance - kerning)
 
@@ -193,16 +193,16 @@ func (font *Font) DrawMonospaced(renderer *batches.SpriteBatch, x, y float64, si
 		}
 
 		renderer.SetSubScale(scale, scale)
-		if c=='.' ||  c==',' ||  c=='%' {
-			renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+		if c == '.' || c == ',' || c == '%' {
+			renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
 			renderer.DrawTexture(char.region)
 			xpad += scale * renderer.GetScale().X * (char.advance)
 		} else if c == '1' {
-			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(float64(char.advance)))*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(float64(char.advance)))*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
 			renderer.DrawTexture(char.region)
 			xpad += scale * renderer.GetScale().X * font.biggest
 		} else {
-			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(char.bearingX+float64(char.advance))/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale* renderer.GetScale().Y))
+			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(char.bearingX+float64(char.advance))/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
 			renderer.DrawTexture(char.region)
 			xpad += scale * renderer.GetScale().X * font.biggest
 		}
@@ -238,9 +238,9 @@ func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
 			continue
 		}
 
-		if c=='.' || c==',' || c == '%' {
+		if c == '.' || c == ',' || c == '%' {
 			xpad += scale * char.advance
-		}  else {
+		} else {
 			xpad += scale * font.biggest
 		}
 
