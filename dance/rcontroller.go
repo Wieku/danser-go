@@ -225,7 +225,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		}
 	}
 
-	if settings.Knockout.IncludeDanser || counter == settings.Knockout.MaxPlayers {
+	if settings.Knockout.AddDanser || counter == settings.Knockout.MaxPlayers {
 		control := NewSubControl()
 
 		control.danceController = NewGenericController()
