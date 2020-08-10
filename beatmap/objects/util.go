@@ -13,7 +13,7 @@ func GetObject(data []string) BaseObject {
 	if (objType & CIRCLE) > 0 {
 		return NewCircle(data)
 	} else if (objType & SPINNER) > 0 {
-		if settings.Objects.LoadSpinners || settings.KNOCKOUT != "" {
+		if settings.Objects.LoadSpinners || settings.KNOCKOUT {
 			return NewSpinner(data)
 		}
 	} else if (objType & SLIDER) > 0 {

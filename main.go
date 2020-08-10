@@ -52,8 +52,7 @@ func run() {
 		settingsVersion := flag.Int("settings", 0, "")
 		cursors := flag.Int("cursors", 2, "")
 		tag := flag.Int("tag", 1, "")
-		knockout := flag.String("knockout", "", "")
-		knockoutdance := flag.Bool("danser", false, "")
+		knockout := flag.Bool("knockout", false, "")
 		speed := flag.Float64("speed", 1.0, "")
 		pitch := flag.Float64("pitch", 1.0, "")
 		mover := flag.String("mover", "flower", "")
@@ -71,7 +70,6 @@ func run() {
 		settings.DEBUG = *debug
 		settings.FPS = *fps
 		settings.KNOCKOUT = *knockout
-		settings.KNOCKOUTDANCE = *knockoutdance
 		settings.PLAY = *play
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag

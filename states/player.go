@@ -175,7 +175,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
 		player.overlay = components.NewScoreOverlay(player.controller.(*dance.PlayerController).GetRuleset(), player.controller.GetCursors()[0])
-	} else if settings.KNOCKOUT != "" {
+	} else if settings.KNOCKOUT {
 		controller := dance.NewReplayController()
 		player.controller = controller
 		player.controller.SetBeatMap(player.bMap)
@@ -706,10 +706,11 @@ func (pl *Player) Draw(delta float64) {
 
 	scale1 := pl.Scl
 	scale2 := pl.Scl
-	rotationRad := (pl.rotation + settings.Playfield.BaseRotation) * math.Pi / 180.0
-
-	pl.camera.SetRotation(-rotationRad)
-	pl.camera.Update()
+	if settings.Playfield.RotationEnabled {
+		rotationRad := (pl.rotation + settings.Playfield.BaseRotation) * math.Pi / 180.0
+		pl.camera.SetRotation(-rotationRad)
+		pl.camera.Update()
+	}
 
 	if !settings.Objects.ScaleToTheBeat {
 		scale1 = 1

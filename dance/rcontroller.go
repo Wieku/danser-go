@@ -76,8 +76,8 @@ func getReplay(scoreID int64) ([]byte, error) {
 	vals := url.Values{}
 	vals.Add("c", strconv.FormatInt(scoreID, 10))
 	vals.Add("m", "0")
-	vals.Add("u", strings.Split(settings.KNOCKOUT, ":")[0])
-	vals.Add("h", strings.Split(settings.KNOCKOUT, ":")[1])
+	vals.Add("u", settings.Knockout.Username)
+	vals.Add("h", settings.Knockout.MD5Pass)
 	request, err := http.NewRequest(http.MethodGet, "https://osu.ppy.sh/web/osu-getreplay.php?"+vals.Encode(), nil)
 
 	if err != nil {
@@ -98,138 +98,142 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	replayDir := filepath.Join("replays", beatMap.MD5)
 	os.Mkdir(replayDir, os.ModeDir)
 
-	client := osuapi.NewClient(strings.Split(settings.KNOCKOUT, ":")[2])
-	beatMapO, _ := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
-
-	var scores []osuapi.GSScore
-	if len(beatMapO) > 0 {
-		scores, _ = client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 200})
-		/*emptyMods := osuapi.Mods(0)
-		scores1, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 200, Mods: &emptyMods})
-		for _, s := range scores1 {
-			washere := false
-			for _, s1 := range scores  {
-				if s.ScoreID == s1.ScoreID || (s.Username == s1.Username) {
-					washere = true
-					break
-				}
-			}
-			if !washere {
-				scores = append(scores, s)
-			}
-		}*/
-	}
-	counter := 0
-
-	sort.SliceStable(scores, func(i, j int) bool {
-		return scores[i].Score.Score > scores[j].Score.Score
-	})
-
 	//bot
-	if settings.KNOCKOUTDANCE {
-		control := NewSubControl()
 
-		control.danceController = NewGenericController()
-		control.danceController.SetBeatMap(beatMap)
+	counter := settings.Knockout.MaxPlayers
 
-		controller.replays = append(controller.replays, RpData{"serand", "HD", difficulty.Hidden, 100, 0, 0, osu.NONE})
-		controller.controllers = append(controller.controllers, control)
-		counter++
+	if settings.Knockout.LocalReplays {
+		filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
+			if strings.HasSuffix(f.Name(), ".osr") {
+				if counter == 0 {
+					return nil
+				}
+
+				data, err := ioutil.ReadFile(path)
+				if err != nil {
+					panic(err)
+				}
+
+				replayD, _ := rplpa.ParseReplay(data)
+
+				log.Println("Loading replay for:", replayD.Username)
+
+				control := NewSubControl()
+
+				loadFrames(control, replayD.ReplayData)
+
+				mxCombo := replayD.MaxCombo
+
+				controller.replays = append(controller.replays, RpData{replayD.Username + "Ç" /*strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1)*/, "", difficulty.Hidden, 100, 0, int64(mxCombo), osu.NONE})
+				controller.controllers = append(controller.controllers, control)
+
+				log.Println("Expected score:", replayD.Score)
+				log.Println("Expected pp:", math.NaN())
+				log.Println("Replay loaded!")
+				counter--
+			}
+			return nil
+		})
 	}
 
-	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osr") {
-			data, err := ioutil.ReadFile(path)
+	if settings.Knockout.OnlineReplays && counter > 0 {
+		client := osuapi.NewClient(settings.Knockout.ApiKey)
+		beatMapO, _ := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
+
+		var scores []osuapi.GSScore
+		if len(beatMapO) > 0 {
+			scores, _ = client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 200})
+			/*emptyMods := osuapi.Mods(0)
+			scores1, _ := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 200, Mods: &emptyMods})
+			for _, s := range scores1 {
+				washere := false
+				for _, s1 := range scores  {
+					if s.ScoreID == s1.ScoreID || (s.Username == s1.Username) {
+						washere = true
+						break
+					}
+				}
+				if !washere {
+					scores = append(scores, s)
+				}
+			}*/
+		}
+
+		sort.SliceStable(scores, func(i, j int) bool {
+			return scores[i].Score.Score > scores[j].Score.Score
+		})
+
+		excludedMods := osuapi.ParseMods(settings.Knockout.ExcludeMods)
+
+		for _, score := range scores {
+			if counter == 0 {
+				break
+			}
+
+			if score.Mods&excludedMods > 0 {
+				continue
+			}
+
+			//if score.Username != "WhiteCat"/*"eyeball"*//*"Rhythm blue"*/ {
+			//	continue
+			//}
+
+			//if score.Username != "Freddie Benson"/*"itsamemarioo"*//*"Teppi"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
+			//	continue
+			//}
+			fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
+			file, err := os.Open(fileName)
+			file.Close()
+
+			if os.IsNotExist(err) {
+				data, err := getReplay(score.ScoreID)
+				if err != nil {
+					panic(err)
+				} else if len(data) == 0 {
+					log.Println("Replay for:", score.Username, "doesn't exist. Skipping...")
+					continue
+				} else {
+					log.Println("Downloaded replay for:", score.Username)
+				}
+
+				ioutil.WriteFile(fileName, data, 644)
+			}
+
+			log.Println("Loading replay for:", score.Username)
+
+			control := NewSubControl()
+
+			data, err := ioutil.ReadFile(fileName)
 			if err != nil {
 				panic(err)
 			}
 
-			replayD, _ := rplpa.ParseReplay(data)
+			replay, _ := rplpa.ParseCompressed(data)
 
-			log.Println("Loading replay for:", replayD.Username)
+			loadFrames(control, replay)
 
-			control := NewSubControl()
+			mxCombo := score.MaxCombo
 
-			loadFrames(control, replayD.ReplayData)
-
-			mxCombo := replayD.MaxCombo
-
-			controller.replays = append(controller.replays, RpData{replayD.Username + "Ç" /*strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1)*/, "", difficulty.Modifier(0), 100, 0, int64(mxCombo), osu.NONE})
+			controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, int64(mxCombo), osu.NONE})
 			controller.controllers = append(controller.controllers, control)
 
-			log.Println("Expected score:", replayD.Score)
-			log.Println("Expected pp:", math.NaN())
+			log.Println("Expected score:", score.Score.Score)
+			log.Println("Expected pp:", score.PP)
 			log.Println("Replay loaded!")
-			counter++
-		}
-		return nil
-	})
 
-	/*if settings.KNOCKOUTDANCE {
+			counter--
+		}
+	}
+
+	if settings.Knockout.IncludeDanser || counter == settings.Knockout.MaxPlayers {
 		control := NewSubControl()
 
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append(controller.replays, RpData{"resnad", "HD", difficulty.Hidden, 100, 0, 0, osu.NONE})
+		controller.replays = append(controller.replays, RpData{settings.Knockout.DanserName /*"HD"*/, "HD", difficulty.Hidden, 100, 0, 0, osu.NONE})
 		controller.controllers = append(controller.controllers, control)
-		counter++
-	}*/
-
-	//for _, score := range scores {
-	//	if score.Mods&osuapi.ModHalfTime > 0 || score.Mods&osuapi.ModEasy > 0 || counter >= 50 {
-	//		continue
-	//	}
-	//
-	//	//if score.Username != "emilia"/*"eyeball"*//*"Rhythm blue"*/ {
-	//	//	continue
-	//	//}
-	//
-	//	//if score.Username != "Freddie Benson"/*"itsamemarioo"*//*"Teppi"*//*"ThePooN"*//*"Kosmonautas"*/ /*"idke"*/ /*"Vaxei"*/ /*"Dustice"*//*"WalkingTuna"*/ {
-	//	//	continue
-	//	//}
-	//	fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
-	//	file, err := os.Open(fileName)
-	//	file.Close()
-	//
-	//	if os.IsNotExist(err) {
-	//		data, err := getReplay(score.ScoreID)
-	//		if err != nil {
-	//			panic(err)
-	//		} else if len(data) == 0 {
-	//			log.Println("Replay for:", score.Username, "doesn't exist. Skipping...")
-	//			continue
-	//		} else {
-	//			log.Println("Downloaded replay for:", score.Username)
-	//		}
-	//
-	//		ioutil.WriteFile(fileName, data, 644)
-	//	}
-	//
-	//	log.Println("Loading replay for:", score.Username)
-	//
-	//	control := NewSubControl()
-	//
-	//	data, err := ioutil.ReadFile(fileName)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	replay, _ := rplpa.ParseCompressed(data)
-	//
-	//	loadFrames(control, replay)
-	//
-	//	mxCombo := score.MaxCombo
-	//
-	//	controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, int64(mxCombo), osu.NONE})
-	//	controller.controllers = append(controller.controllers, control)
-	//
-	//	log.Println("Expected score:", score.Score.Score)
-	//	log.Println("Expected pp:", score.PP)
-	//	log.Println("Replay loaded!")
-	//
-	//	counter++
-	//}
+	}
 
 	settings.PLAYERS = len(controller.replays)
 
@@ -261,7 +265,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 	for _, frame := range frames {
 		eventTime := math.Max(float64(lastTime), float64(lastTime+frame.Time))
 
-		log.Println(eventTime, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
+		//log.Println(eventTime, frame.Time, frame.MosueX, frame.MouseY, frame.KeyPressed)
 
 		press := frame.KeyPressed
 
@@ -311,7 +315,6 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 	for nTime := controller.lastTime + 1; nTime <= time; nTime++ {
 		controller.bMap.Update(nTime)
-		controller.ruleset.Update(nTime)
 		for i, c := range controller.controllers {
 			if c.danceController != nil {
 				/*if i == 1 {
@@ -397,6 +400,9 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				}
 			}
 		}
+
+		controller.ruleset.Update(nTime)
+
 		controller.lastTime = nTime
 	}
 

@@ -200,7 +200,7 @@ func (self *Slider) GetAsDummyCircles() []BaseObject {
 	for i := int64(0); i <= self.repeat; i++ {
 		time := self.objData.StartTime + i*partLen
 
-		if i == self.repeat && settings.KNOCKOUT != "" {
+		if i == self.repeat && settings.KNOCKOUT {
 			time = int64(math.Max(float64(self.GetBasicData().StartTime)+float64((self.GetBasicData().EndTime-self.GetBasicData().StartTime)/2), float64(self.GetBasicData().EndTime-36)))
 		}
 
@@ -539,7 +539,7 @@ func (self *Slider) Update(time int64) bool {
 		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
 
 		if self.lastT != times {
-			if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+			if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 				self.PlayEdgeSample(int(times - 1))
 			}
 			self.lastT = times
@@ -547,7 +547,7 @@ func (self *Slider) Update(time int64) bool {
 
 		for i, p := range self.TickPoints {
 			if p.Time < time && self.lastTick < i {
-				if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+				if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 					audio.PlaySliderTick(self.Timings.Current.SampleSet, self.Timings.Current.SampleIndex, self.Timings.Current.SampleVolume, self.objData.Number, p.Pos.X64())
 				}
 				self.lastTick = i
@@ -558,7 +558,7 @@ func (self *Slider) Update(time int64) bool {
 
 		if !self.clicked {
 			//self.playSample(self.sampleSets[0], self.additionSets[0], self.samples[0])
-			if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+			if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 				self.PlayEdgeSample(0)
 				self.InitSlide(time)
 				self.ArmStart(true, time)
@@ -572,7 +572,7 @@ func (self *Slider) Update(time int64) bool {
 	self.Pos = self.GetPointAt(self.objData.EndTime)
 
 	//self.playSample(self.sampleSets[self.repeat], self.additionSets[self.repeat], self.samples[self.repeat])
-	if (!settings.PLAY && settings.KNOCKOUT == "") || settings.PLAYERS > 1 {
+	if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 		self.PlayEdgeSample(int(self.repeat))
 	}
 	self.End = true
