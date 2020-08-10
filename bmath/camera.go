@@ -69,7 +69,7 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bo
 
 	camera.SetViewport(width, height, true)
 	camera.SetOrigin(NewVec2d(OsuWidth/2, OsuHeight/2))
-	camera.SetPosition(NewVec2d(0, shift))
+	camera.SetPosition(NewVec2d(0, shift).Scl(scl))
 	camera.SetScale(NewVec2d(scl, scl))
 	camera.Update()
 
