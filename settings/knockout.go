@@ -13,6 +13,7 @@ func initKnockout() *knockout {
 		ExcludeMods:        "EZHT",
 		MaxPlayers:         50,
 		BubbleMinimumCombo: 200,
+		RevivePlayersAtEnd: false,
 		AddDanser:          false,
 		DanserName:         "danser",
 	}
@@ -40,6 +41,9 @@ type knockout struct {
 
 	// Minimum combo before combo break to show a bubble in XReplays mode
 	BubbleMinimumCombo int
+
+	// Whether knocked out players should appear on map end
+	RevivePlayersAtEnd bool
 
 	// Self explanatory
 	AddDanser  bool

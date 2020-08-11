@@ -94,11 +94,8 @@ func getReplay(scoreID int64) ([]byte, error) {
 }
 
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
-	os.Mkdir("replays", os.ModeDir)
 	replayDir := filepath.Join("replays", beatMap.MD5)
-	os.Mkdir(replayDir, os.ModeDir)
-
-	//bot
+	os.MkdirAll(replayDir, os.ModeDir)
 
 	counter := settings.Knockout.MaxPlayers
 
@@ -347,6 +344,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 				controller.ruleset.UpdateClickFor(controller.cursors[i], nTime)
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
+				controller.ruleset.UpdatePostFor(controller.cursors[i], nTime)
 
 			} else {
 				wasUpdated := false
@@ -370,6 +368,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
 					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
+					controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
 					wasUpdated = true
 
 					c.replayIndex++
@@ -396,7 +395,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 					controller.cursors[i].SetPos(bmath.NewVec2f(mX, mY))
 					controller.cursors[i].IsReplayFrame = false
-					controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
+					//controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 				}
 			}
 		}
