@@ -8,6 +8,7 @@ type fileformat struct {
 	General   *general
 	Graphics  *graphics
 	Audio     *audio
+	Input     *input
 	Cursor    *cursor
 	Objects   *objects
 	Playfield *playfield

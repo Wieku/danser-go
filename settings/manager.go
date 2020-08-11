@@ -14,6 +14,7 @@ func initStorage() {
 		General:   General,
 		Graphics:  Graphics,
 		Audio:     Audio,
+		Input:     Input,
 		Cursor:    Cursor,
 		Objects:   Objects,
 		Playfield: Playfield,

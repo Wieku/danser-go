@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/bmath/difficulty"
 	"github.com/wieku/danser-go/render"
 	"github.com/wieku/danser-go/rulesets/osu"
+	"github.com/wieku/danser-go/settings"
 )
 
 type PlayerController struct {
@@ -16,6 +17,9 @@ type PlayerController struct {
 	ruleset  *osu.OsuRuleSet
 	lastTime int64
 	counter  int64
+
+	leftClick  bool
+	rightClick bool
 }
 
 func NewPlayerController() Controller {
@@ -31,7 +35,24 @@ func (controller *PlayerController) InitCursors() {
 	controller.cursors[0].IsPlayer = true
 	controller.window = glfw.GetCurrentContext()
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{difficulty.None})
+	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
+	controller.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if glfw.GetKeyName(key, scancode) == settings.Input.LeftKey {
+			if action == glfw.Press {
+				controller.leftClick = true
+			} else if action == glfw.Release {
+				controller.leftClick = false
+			}
+		}
 
+		if glfw.GetKeyName(key, scancode) == settings.Input.RightKey {
+			if action == glfw.Press {
+				controller.rightClick = true
+			} else if action == glfw.Release {
+				controller.rightClick = false
+			}
+		}
+	})
 }
 
 func (controller *PlayerController) Update(time int64, delta float64) {
@@ -39,12 +60,12 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 	controller.bMap.Update(time)
 
 	if controller.window != nil {
-		controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
-		glfw.PollEvents()
-		x, y := controller.window.GetCursorPos()
-		controller.cursors[0].SetScreenPos(bmath.NewVec2d(x, y).Copy32())
-		controller.cursors[0].LeftButton = controller.window.GetKey(glfw.KeyC) == glfw.Press
-		controller.cursors[0].RightButton = controller.window.GetKey(glfw.KeyV) == glfw.Press
+		controller.cursors[0].SetScreenPos(bmath.NewVec2d(controller.window.GetCursorPos()).Copy32())
+
+		mouseEnabled := !settings.Input.MosueButtonsDisabled
+
+		controller.cursors[0].LeftButton = controller.leftClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
+		controller.cursors[0].RightButton = controller.rightClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
 	}
 
 	controller.counter += time - controller.lastTime
