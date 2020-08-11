@@ -373,8 +373,9 @@ func (self *Slider) calculateFollowPoints() {
 }
 
 func (self *Slider) UpdateStacking() {
-	for _, tp := range self.TickPoints {
+	for i, tp := range self.TickPoints {
 		tp.Pos = tp.Pos.Add(self.objData.StackOffset)
+		self.TickPoints[i] = tp
 	}
 
 	for i, p := range self.discreteCurve {
