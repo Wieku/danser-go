@@ -2,7 +2,7 @@ package audio
 
 /*
 #cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -L${SRCDIR}/../ -L/usr/lib -Wl,-rpath=\$ORIGIN -lbass -lbass_fx
+#cgo LDFLAGS: -L${SRCDIR}/../ -L/usr/lib -Wl,-rpath,$ORIGIN -lbass -lbass_fx
 #include "bass.h"
 #include "bass_fx.h"
  */
