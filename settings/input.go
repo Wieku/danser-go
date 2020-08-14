@@ -6,12 +6,12 @@ func initInput() *input {
 	return &input{
 		LeftKey:              "Z",
 		RightKey:             "X",
-		MosueButtonsDisabled: true,
+		MouseButtonsDisabled: true,
 	}
 }
 
 type input struct {
 	LeftKey              string
 	RightKey             string
-	MosueButtonsDisabled bool
+	MouseButtonsDisabled bool
 }

@@ -62,7 +62,7 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 	if controller.window != nil {
 		controller.cursors[0].SetScreenPos(bmath.NewVec2d(controller.window.GetCursorPos()).Copy32())
 
-		mouseEnabled := !settings.Input.MosueButtonsDisabled
+		mouseEnabled := !settings.Input.MouseButtonsDisabled
 
 		controller.cursors[0].LeftButton = controller.leftClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
 		controller.cursors[0].RightButton = controller.rightClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
