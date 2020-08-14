@@ -105,7 +105,7 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 	})
 
 	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osu") {
+		if strings.HasSuffix(f.Name(), ".osu") && filepath.Dir(filepath.Dir(path)) == filepath.Clean(searchDir) {
 			cachedTime := mod[filepath.Base(filepath.Dir(path))+"/"+f.Name()]
 			if cachedTime != f.ModTime().UnixNano()/1000000 {
 				removeBeatmap(filepath.Base(filepath.Dir(path)), f.Name())
