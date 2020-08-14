@@ -132,7 +132,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 	defer file.Close()
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 	scanner := bufio.NewScanner(file)
 
