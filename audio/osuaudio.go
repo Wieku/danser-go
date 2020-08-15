@@ -3,8 +3,8 @@ package audio
 import (
 	"github.com/wieku/danser-go/settings"
 	"os"
-	"strconv"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -71,6 +71,11 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 }
 
 func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) {
+	balance := 0.0
+	if settings.DIVIDES == 1 {
+		balance = (xPos - 256) / 512
+	}
+
 	if settings.Audio.IgnoreBeatmapSampleVolume {
 		volume = 1.0
 	}
@@ -80,9 +85,9 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 	}
 
 	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil && !settings.Audio.IgnoreBeatmapSamples {
-		sample.PlayRVPos(volume, (xPos-256)/512/**0.8*/)
+		sample.PlayRVPos(volume, balance)
 	} else {
-		Samples[sampleSet-1][hitsoundIndex].PlayRVPos(volume, (xPos-256)/512/**0.8*/)
+		Samples[sampleSet-1][hitsoundIndex].PlayRVPos(volume, balance)
 	}
 }
 
