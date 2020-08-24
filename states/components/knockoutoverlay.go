@@ -215,7 +215,6 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	replayController.GetRuleset().SetEndListener(func(time int64, number int64) {
 		if number == int64(len(replayController.GetBeatMap().HitObjects)-1) && settings.Knockout.RevivePlayersAtEnd {
-			sortFunc(time, number, true)
 			for _, player := range overlay.players {
 				player.hasBroken = false
 				player.breakTime = 0
@@ -227,6 +226,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 				player.height.SetEasing(easing.InQuad)
 				player.height.AddEvent(float64(time), float64(time+200), settings.Graphics.GetHeightF()*0.9*1.04/(51))
 			}
+			sortFunc(time, number, true)
 		} else {
 			sortFunc(time, number, false)
 		}
@@ -258,11 +258,11 @@ func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *batches.SpriteBatch, co
 	sizeY := 384 + cs*2
 
 	batch.SetScale(sizeX/2, sizeY/2)
-	batch.SetColor(0, 0, 0, 0.8)
+	batch.SetColor(0, 0, 0, 0.3*alpha)
 	batch.SetTranslation(bmath.NewVec2d(256, 192)) //bg
 	batch.DrawUnit(render.Pixel.GetRegion())
 
-	batch.SetColor(1, 1, 1, 1)
+	batch.SetColor(1, 1, 1, 0.5*alpha)
 	batch.SetScale(sizeX/2, 0.3)
 	batch.SetTranslation(bmath.NewVec2d(256, -cs)) //top line
 	batch.DrawUnit(render.Pixel.GetRegion())
@@ -328,7 +328,10 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 		}
 
 	}
-	settings.Cursor.CursorSize = 3.0 + (7-3)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
+	minSize := 3.0
+	maxSize := 7.0
+	settings.Cursor.CursorSize = minSize + (maxSize-minSize)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
+	//settings.Cursor.TrailScale = 1.0 - 0.95 * (settings.Cursor.CursorSize-minSize) / (maxSize-minSize)
 	batch.SetScale(1, 1)
 }
 
