@@ -72,7 +72,7 @@ type Music struct {
 func NewMusic(path string) *Music {
 	player := new(Music)
 
-	channel := C.CreateBassStream(C.CString(path), C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE)
+	channel := C.CreateBassStream(C.CString(path), C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE|C.BASS_STREAM_PRESCAN)
 
 	player.channel = C.BASS_FX_TempoCreate(channel, C.BASS_FX_FREESOURCE)
 	player.fft = make([]float32, 512)
