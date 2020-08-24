@@ -36,6 +36,7 @@ type TickPoint struct {
 	Time      int64
 	Pos       bmath.Vector2f
 	fade      *animation.Glider
+	scale     *animation.Glider
 	IsReverse bool
 }
 
@@ -291,7 +292,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 
 				scoreTime := self.GetBasicData().StartTime + int64(float64(float32(scoringLengthTotal)*1000)/velocity)
 
-				point := TickPoint{scoreTime, self.GetPointAt(scoreTime), animation.NewGlider(0.0), false}
+				point := TickPoint{scoreTime, self.GetPointAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false}
 				self.TickPoints = append(self.TickPoints, point)
 				self.ScorePoints = append(self.ScorePoints, point)
 
@@ -301,7 +302,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 		scoringLengthTotal += scoringDistance
 
 		scoreTime := self.GetBasicData().StartTime + int64((float64(float32(scoringLengthTotal))/velocity)*1000)
-		point := TickPoint{scoreTime, self.GetPointAt(scoreTime), nil, true}
+		point := TickPoint{scoreTime, self.GetPointAt(scoreTime), nil, nil, true}
 
 		self.TickReverse = append(self.TickReverse, point)
 		self.ScorePoints = append(self.ScorePoints, point)
@@ -490,8 +491,17 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 			a = math.Max(fs*(slSnInE-slSnInS)+slSnInS, a)
 		}
 
-		p.fade.AddEventS(a, math.Min(a+150, float64(p.Time)-36), 0.0, 1.0)
-		p.fade.AddEventS(float64(p.Time), float64(p.Time), 1.0, 0.0)
+		endTime := math.Min(a+150, float64(p.Time)-36)
+
+		p.scale.AddEventS(a, endTime, 0.5, 1.2)
+		p.scale.AddEventSEase(endTime, endTime+150, 1.2, 1.0, easing.OutQuad)
+		p.fade.AddEventS(a, endTime, 0.0, 1.0)
+		if diff.CheckModActive(difficulty.Hidden) {
+			p.fade.AddEventS(math.Max(endTime, float64(p.Time)-1000), float64(p.Time), 1.0, 0.0)
+		} else {
+			p.fade.AddEventS(float64(p.Time), float64(p.Time), 1.0, 0.0)
+		}
+
 	}
 
 }
@@ -792,13 +802,14 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 				for _, p := range self.TickPoints {
 					p.fade.Update(float64(time))
+					p.scale.Update(float64(time))
 					al := p.fade.GetValue()
 					/*if p.Time > time {
 						al = math.Min(1.0, math.Max((float64(time)-(float64(p.Time)-self.TPoint.Bpm*2))/(self.TPoint.Bpm), 0.0))
 					}*/
 					if al > 0.0 {
 						batch.SetTranslation(p.Pos.Copy64())
-						batch.SetSubScale(1.0/5, 1.0/5)
+						batch.SetSubScale(1.0/5*p.scale.GetValue(), 1.0/5*p.scale.GetValue())
 						if settings.Objects.WhiteFollowPoints {
 							batch.SetColor(1, 1, 1, alpha*al)
 						} else {
