@@ -1,8 +1,8 @@
 package font
 
 import (
-	"github.com/wieku/danser-go/app/render/texture"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"path/filepath"
 	"strings"
 )

@@ -3,7 +3,7 @@ package utils
 import (
 	"archive/zip"
 	"fmt"
-	"github.com/wieku/danser-go/app/render/texture"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	_ "golang.org/x/image/bmp"
 	"image"
 	"image/draw"

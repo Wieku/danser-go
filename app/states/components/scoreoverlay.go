@@ -13,9 +13,9 @@ import (
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/font"
-	"github.com/wieku/danser-go/app/render/texture"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"math"
 	"math/rand"
 )

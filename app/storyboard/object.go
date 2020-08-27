@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/texture"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"math"
 	"strings"
 	"unicode"

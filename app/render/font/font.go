@@ -5,7 +5,7 @@ import (
 	"github.com/golang/freetype/truetype"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/texture"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	font2 "golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 	"image"

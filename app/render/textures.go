@@ -2,8 +2,8 @@ package render
 
 import (
 	"github.com/wieku/danser-go/app/render/font"
-	"github.com/wieku/danser-go/app/render/texture"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 )
 
 var Atlas *texture.TextureAtlas
