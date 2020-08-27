@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/animation"
-	"github.com/wieku/danser-go/app/animation/easing"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
@@ -21,6 +20,8 @@ import (
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
 	"math"
@@ -68,7 +69,7 @@ type MainMenu struct {
 	leftPulse  *sprites.Sprite
 	rightPulse *sprites.Sprite
 
-	cursorGlider *animation.Glider
+	cursorGlider *glider.Glider
 	counter      float64
 	fpsC         float64
 	fpsU         float64
@@ -76,7 +77,7 @@ type MainMenu struct {
 	mapFullName string
 
 	Epi            *texture.TextureRegion
-	epiGlider      *animation.Glider
+	epiGlider      *glider.Glider
 	currentBeatVal float64
 	lastBeatLength float64
 	lastBeatStart  float64
@@ -172,9 +173,9 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	player.fadeIn = 0.0
 	player.hover = 1.0
 
-	player.cursorGlider = animation.NewGlider(1)
+	player.cursorGlider = glider.NewGlider(1)
 
-	player.epiGlider = animation.NewGlider(0)
+	player.epiGlider = glider.NewGlider(0)
 	player.epiGlider.AddEvent(0, 500, 1.0)
 	player.epiGlider.AddEvent(2500, 3000, 0.0)
 

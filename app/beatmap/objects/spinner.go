@@ -2,7 +2,6 @@ package objects
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
@@ -10,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"math"
 	"strconv"
 )
@@ -22,7 +22,7 @@ type Spinner struct {
 	sample  int
 	rad     float32
 	pos     bmath.Vector2f
-	fade    *animation.Glider
+	fade    *glider.Glider
 }
 
 func NewSpinner(data []string) *Spinner {
@@ -55,7 +55,7 @@ func (self *Spinner) SetTiming(timings *Timings) {
 func (self *Spinner) UpdateStacking() {}
 
 func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
-	self.fade = animation.NewGlider(0)
+	self.fade = glider.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
 	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeIn, 0)
 }

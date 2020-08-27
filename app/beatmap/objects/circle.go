@@ -3,7 +3,6 @@ package objects
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/animation"
-	"github.com/wieku/danser-go/app/animation/easing"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
@@ -11,6 +10,8 @@ import (
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"math"
 	"strconv"
 )
@@ -20,7 +21,7 @@ type Circle struct {
 	sample  int
 	Timings *Timings
 
-	textFade *animation.Glider
+	textFade *glider.Glider
 
 	hitCircle        *sprites.Sprite
 	hitCircleOverlay *sprites.Sprite
@@ -98,7 +99,7 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	startTime := float64(self.objData.StartTime)
 
-	self.textFade = animation.NewGlider(0)
+	self.textFade = glider.NewGlider(0)
 
 	self.hitCircle = sprites.NewSpriteSingleCentered(render.Circle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
 	self.hitCircleOverlay = sprites.NewSpriteSingleCentered(render.CircleOverlay, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))

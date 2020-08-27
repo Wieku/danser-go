@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/animation"
-	"github.com/wieku/danser-go/app/animation/easing"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/objects"
@@ -22,6 +20,8 @@ import (
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
 	"math"
@@ -59,27 +59,27 @@ type Player struct {
 	camera         *bmath.Camera
 	camera1        *bmath.Camera
 	scamera        *bmath.Camera
-	dimGlider      *animation.Glider
-	blurGlider     *animation.Glider
-	fxGlider       *animation.Glider
-	cursorGlider   *animation.Glider
-	playersGlider  *animation.Glider
-	unfold         *animation.Glider
+	dimGlider      *glider.Glider
+	blurGlider     *glider.Glider
+	fxGlider       *glider.Glider
+	cursorGlider   *glider.Glider
+	playersGlider  *glider.Glider
+	unfold         *glider.Glider
 	counter        float64
 	fpsC           float64
 	fpsU           float64
 	storyboardLoad float64
 	mapFullName    string
 	Epi            *texture.TextureRegion
-	epiGlider      *animation.Glider
+	epiGlider      *glider.Glider
 	overlay        components.Overlay
 	velocity       float64
-	hGlider        *animation.Glider
-	vGlider        *animation.Glider
-	oGlider        *animation.Glider
-	flashGlider    *animation.Glider
-	danserGlider   *animation.Glider
-	resnadGlider   *animation.Glider
+	hGlider        *glider.Glider
+	vGlider        *glider.Glider
+	oGlider        *glider.Glider
+	flashGlider    *glider.Glider
+	danserGlider   *glider.Glider
+	resnadGlider   *glider.Glider
 	blur           *effects.BlurEffect
 	lastFromQueue  objects.BaseObject
 	x              float64
@@ -208,11 +208,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
-	player.dimGlider = animation.NewGlider(0.0)
-	player.blurGlider = animation.NewGlider(0.0)
-	player.fxGlider = animation.NewGlider(0.0)
-	player.cursorGlider = animation.NewGlider(0.0)
-	player.playersGlider = animation.NewGlider(0.0)
+	player.dimGlider = glider.NewGlider(0.0)
+	player.blurGlider = glider.NewGlider(0.0)
+	player.fxGlider = glider.NewGlider(0.0)
+	player.cursorGlider = glider.NewGlider(0.0)
+	player.playersGlider = glider.NewGlider(0.0)
 
 	tmS := float64(player.queue2[0].GetBasicData().StartTime)
 	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
@@ -234,21 +234,21 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 	player.playersGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
-	player.epiGlider = animation.NewGlider(0)
+	player.epiGlider = glider.NewGlider(0)
 	player.epiGlider.AddEvent(0, 500, 1.0)
 	player.epiGlider.AddEvent(4500, 5000, 0.0)
 
-	player.hGlider = animation.NewGlider(1)
-	player.vGlider = animation.NewGlider(1)
-	player.oGlider = animation.NewGlider(-36)
-	player.flashGlider = animation.NewGlider(1)
-	player.danserGlider = animation.NewGlider(0.0)
+	player.hGlider = glider.NewGlider(1)
+	player.vGlider = glider.NewGlider(1)
+	player.oGlider = glider.NewGlider(-36)
+	player.flashGlider = glider.NewGlider(1)
+	player.danserGlider = glider.NewGlider(0.0)
 	player.danserGlider.AddEventS(105640, 105867, 0.0, 1.0)
 	//player.danserGlider.AddEventS(187000, 189000, 0.0, 1.0)
-	player.resnadGlider = animation.NewGlider(0.0)
+	player.resnadGlider = glider.NewGlider(0.0)
 	player.resnadGlider.AddEventS(221432, 226542, 0.0, 1.0)
 
-	player.unfold = animation.NewGlider(1)
+	player.unfold = glider.NewGlider(1)
 
 	for _, p := range beatMap.Pauses {
 		bd := p.GetBasicData()

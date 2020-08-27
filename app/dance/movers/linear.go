@@ -1,10 +1,10 @@
 package movers
 
 import (
-	"github.com/wieku/danser-go/app/animation/easing"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
+	"github.com/wieku/danser-go/framework/math/easing"
 )
 
 type LinearMover struct {

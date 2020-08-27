@@ -4,53 +4,9 @@ import (
 	"math"
 )
 
-var easings = []func(float64) float64{
-	Linear,
-	OutQuad,
-	InQuad,
-	InQuad,
-	OutQuad,
-	InOutQuad,
-	InCubic,
-	OutCubic,
-	InOutCubic,
-	InQuart,
-	OutQuart,
-	InOutQuart,
-	InQuint,
-	OutQuint,
-	InOutQuint,
-	InSine,
-	OutSine,
-	InOutSine,
-	InExpo,
-	OutExpo,
-	InOutExpo,
-	InCirc,
-	OutCirc,
-	InOutCirc,
-	InElastic,
-	OutElastic,
-	OutHalfElastic,
-	OutQuartElastic,
-	InOutElastic,
-	InBack,
-	OutBack,
-	InOutBack,
-	InBounce,
-	OutBounce,
-	InOutBounce,
-}
-
-func GetEasing(easingID int64) func(float64) float64 {
-	if easingID < 0 || easingID >= int64(len(easings)) {
-		easingID = 0
-	}
-	return easings[easingID]
-}
-
 /* ========================
 	Using equations from: https://github.com/fogleman/ease/blob/master/ease.go
+	Based on: https://easings.net/
    ========================*/
 
 func Linear(t float64) float64 {

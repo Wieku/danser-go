@@ -3,7 +3,6 @@ package dance
 import (
 	"github.com/Mempler/rplpa"
 	"github.com/thehowl/go-osuapi"
-	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
@@ -11,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"io/ioutil"
 	"log"
 	"math"
@@ -34,10 +34,10 @@ type RpData struct {
 }
 
 type subControl struct {
-	k1Glider *animation.Glider
-	k2Glider *animation.Glider
-	m1Glider *animation.Glider
-	m2Glider *animation.Glider
+	k1Glider *glider.Glider
+	k2Glider *glider.Glider
+	m1Glider *glider.Glider
+	m2Glider *glider.Glider
 
 	danceController Controller
 	replayIndex     int
@@ -47,13 +47,13 @@ type subControl struct {
 
 func NewSubControl() *subControl {
 	control := new(subControl)
-	control.k1Glider = animation.NewGlider(0)
+	control.k1Glider = glider.NewGlider(0)
 	control.k1Glider.SetSorting(false)
-	control.k2Glider = animation.NewGlider(0)
+	control.k2Glider = glider.NewGlider(0)
 	control.k2Glider.SetSorting(false)
-	control.m1Glider = animation.NewGlider(0)
+	control.m1Glider = glider.NewGlider(0)
 	control.m1Glider.SetSorting(false)
-	control.m2Glider = animation.NewGlider(0)
+	control.m2Glider = glider.NewGlider(0)
 	control.m2Glider.SetSorting(false)
 	return control
 }

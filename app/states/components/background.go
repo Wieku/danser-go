@@ -4,8 +4,6 @@ import (
 	"github.com/EdlinOrg/prominentcolor"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/animation"
-	"github.com/wieku/danser-go/app/animation/easing"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
@@ -17,6 +15,8 @@ import (
 	"github.com/wieku/danser-go/app/storyboard"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"log"
 	"math"
 	"math/rand"
@@ -32,14 +32,14 @@ type Background struct {
 	storyboard *storyboard.Storyboard
 	lastTime   int64
 	bMap       *beatmap.BeatMap
-	pulse      *animation.Glider
+	pulse      *glider.Glider
 	triangles  *drawables.Triangles
 
 	lastBeatLength float64
 	lastBeatStart  float64
 	lastBeatProg   int64
 
-	rotation   *animation.Glider
+	rotation   *glider.Glider
 	deltaSum   float64
 	lastRandom float64
 }
@@ -47,8 +47,8 @@ type Background struct {
 func NewBackground(beatMap *beatmap.BeatMap, parallax float64, useStoryboard bool) *Background {
 	bg := new(Background)
 	bg.bMap = beatMap
-	bg.pulse = animation.NewGlider(1.0)
-	bg.rotation = animation.NewGlider(0.0)
+	bg.pulse = glider.NewGlider(1.0)
+	bg.rotation = glider.NewGlider(0.0)
 	bg.pulse.SetEasing(easing.OutQuad)
 	bg.rotation.SetEasing(easing.InOutSine)
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))

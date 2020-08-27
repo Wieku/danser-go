@@ -3,8 +3,6 @@ package components
 import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/animation"
-	"github.com/wieku/danser-go/app/animation/easing"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
@@ -13,6 +11,8 @@ import (
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/glider"
 	"log"
 	"math"
 	"math/rand"
@@ -21,12 +21,12 @@ import (
 )
 
 type knockoutPlayer struct {
-	fade      *animation.Glider
-	slide     *animation.Glider
-	height    *animation.Glider
-	index     *animation.Glider
-	scoreDisp *animation.Glider
-	ppDisp    *animation.Glider
+	fade      *glider.Glider
+	slide     *glider.Glider
+	height    *glider.Glider
+	index     *glider.Glider
+	scoreDisp *glider.Glider
+	ppDisp    *glider.Glider
 	lastCombo int64
 	sCombo    int64
 	maxCombo  int64
@@ -37,8 +37,8 @@ type knockoutPlayer struct {
 	scores    []int64
 
 	lastHit  osu.HitResult
-	fadeHit  *animation.Glider
-	scaleHit *animation.Glider
+	fadeHit  *glider.Glider
+	scaleHit *glider.Glider
 
 	name         string
 	oldIndex     int
@@ -46,8 +46,8 @@ type knockoutPlayer struct {
 }
 
 type bubble struct {
-	deathFade  *animation.Glider
-	deathSlide *animation.Glider
+	deathFade  *glider.Glider
+	deathSlide *glider.Glider
 	deathX     float64
 	endTime    int64
 	name       string
@@ -61,8 +61,8 @@ func newBubble(position bmath.Vector2d, time int64, name string, combo int64, la
 	bub.name = name
 	deathShift := (rand.Float64() - 0.5) * 30
 	bub.deathX = float64(position.X) + deathShift
-	bub.deathSlide = animation.NewGlider(0.0)
-	bub.deathFade = animation.NewGlider(0.0)
+	bub.deathSlide = glider.NewGlider(0.0)
+	bub.deathFade = glider.NewGlider(0.0)
 	bub.deathSlide.SetEasing(easing.OutQuad)
 	baseY := position.Y + deathShift
 	bub.deathSlide.AddEventS(float64(time), float64(time+2000), baseY, baseY+50)
@@ -101,7 +101,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), osu.HitResults.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
+		overlay.players[r.Name] = &knockoutPlayer{glider.NewGlider(1), glider.NewGlider(0), glider.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), glider.NewGlider(float64(i)), glider.NewGlider(0), glider.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), osu.HitResults.Hit300, glider.NewGlider(0), glider.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 		/*if i == 0 {
