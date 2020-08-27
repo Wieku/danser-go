@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/wieku/danser-go/framework/qpc"
 	"runtime"
 	"time"
 )
@@ -32,7 +33,7 @@ func (limiter *FpsLimiter) Sync() {
 	overSleep := int64(0) // time the sync goes over by
 
 	for {
-		t := GetNanoTime() - limiter.lastTime
+		t := qpc.GetNanoTime() - limiter.lastTime
 
 		if t < sleepTime-yieldTime {
 			time.Sleep(time.Millisecond)
@@ -45,7 +46,7 @@ func (limiter *FpsLimiter) Sync() {
 		}
 	}
 
-	limiter.lastTime = GetNanoTime() - Minint64(overSleep, sleepTime)
+	limiter.lastTime = qpc.GetNanoTime() - Minint64(overSleep, sleepTime)
 
 	// auto tune the time sync should yield
 	if overSleep > limiter.variableYieldTime {

@@ -21,6 +21,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/qpc"
 	"log"
 	"math"
 	"path/filepath"
@@ -208,10 +209,10 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	player.profilerU = utils.NewFPSCounter(60, false)
 	go func() {
 		//var last = musicPlayer.GetPosition()
-		var lastT = utils.GetNanoTime()
+		var lastT = qpc.GetNanoTime()
 		for {
 
-			currtime := utils.GetNanoTime()
+			currtime := qpc.GetNanoTime()
 
 			player.profilerU.PutSample(1000.0 / (float64(currtime-lastT) / 1000000.0))
 
@@ -320,9 +321,9 @@ func (pl *MainMenu) Show() {
 
 func (pl *MainMenu) Draw(delta float64) {
 	if pl.lastTime < 0 {
-		pl.lastTime = utils.GetNanoTime()
+		pl.lastTime = qpc.GetNanoTime()
 	}
-	tim := utils.GetNanoTime()
+	tim := qpc.GetNanoTime()
 	timMs := float64(tim-pl.lastTime) / 1000000.0
 
 	pl.profiler.PutSample(1000.0 / timMs)
