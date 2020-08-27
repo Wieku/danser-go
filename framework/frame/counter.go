@@ -1,39 +1,30 @@
 package frame
 
 import (
-	"log"
 	"math"
 )
 
 type Counter struct {
 	samples []float64
 	index   int
-	FPS     float64
-	sum     float64
-	log     bool
 }
 
-func NewCounter(samples int, log bool) *Counter {
-	return &Counter{make([]float64, samples), -1, 0, 0.0, log}
-}
-
-func (prof *Counter) PutSample(fps float64) {
-	prof.index++
-	if prof.index >= len(prof.samples) {
-		prof.index = 0
-	}
-	prof.samples[prof.index] = fps
-	prof.sum += fps
-	if prof.sum >= 1.0 && prof.log {
-		log.Println("FPS:", prof.GetFPS())
-		prof.sum = 0.0
+func NewCounter(samples int) *Counter {
+	return &Counter{
+		samples: make([]float64, samples),
+		index:   0,
 	}
 }
 
-func (prof *Counter) GetFPS() float64 {
+func (counter *Counter) PutSample(delta float64) {
+	counter.samples[counter.index] = delta
+	counter.index = (counter.index + 1) % len(counter.samples)
+}
+
+func (counter *Counter) GetAverage() float64 {
 	sum := 0.0
 	count := 0
-	for _, g := range prof.samples {
+	for _, g := range counter.samples {
 		if g > 0.01 {
 			sum += g
 			count++
@@ -44,5 +35,9 @@ func (prof *Counter) GetFPS() float64 {
 		return math.NaN()
 	}
 
-	return 1000 / (sum / float64(count))
+	return sum / float64(count)
+}
+
+func (counter *Counter) GetFPS() float64 {
+	return 1000 / counter.GetAverage()
 }

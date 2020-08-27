@@ -18,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/app/states"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/glhf"
 	"image"
 	"log"
@@ -33,7 +34,7 @@ var pressedP = false
 
 func run() {
 	var win *glfw.Window
-	var limiter *utils.FpsLimiter
+	var limiter *frame.Limiter
 
 	mainthread.Call(func() {
 
@@ -57,7 +58,7 @@ func run() {
 		pitch := flag.Float64("pitch", 1.0, "")
 		mover := flag.String("mover", "flower", "")
 		debug := flag.Bool("debug", false, "")
-		fps := flag.Bool("fps", false, "")
+		fps := flag.Bool("frame", false, "")
 		play := flag.Bool("play", false, "")
 
 		flag.Parse()
@@ -181,7 +182,7 @@ func run() {
 		beatmap.ParseObjects(beatMap)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
-		limiter = utils.NewFpsLimiter(int(settings.Graphics.FPSCap))
+		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
 
 	for !win.ShouldClose() {

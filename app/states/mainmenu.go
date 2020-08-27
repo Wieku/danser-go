@@ -208,7 +208,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 	player.triangles = drawables.NewTriangles(newCol)
 
-	player.profilerU = frame.NewCounter(60, false)
+	player.profilerU = frame.NewCounter(60)
 	go func() {
 		//var last = musicPlayer.GetPosition()
 		var lastT = qpc.GetNanoTime()
@@ -307,7 +307,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 			time.Sleep(15 * time.Millisecond)
 		}
 	}()
-	player.profiler = frame.NewCounter(60, false)
+	player.profiler = frame.NewCounter(60)
 	player.musicPlayer = musicPlayer
 	player.visualiser.SetTrack(player.musicPlayer)
 	player.triangles.SetTrack(player.musicPlayer)
