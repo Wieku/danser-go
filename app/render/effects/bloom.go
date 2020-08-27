@@ -2,7 +2,7 @@ package effects
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser-go/app/render/framebuffer"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/glhf"
 	"io/ioutil"
 )
@@ -10,7 +10,7 @@ import (
 type BloomEffect struct {
 	colFilter     *glhf.Shader
 	combineShader *glhf.Shader
-	fbo           *framebuffer.Framebuffer
+	fbo           *buffer.Framebuffer
 
 	blurEffect *BlurEffect
 
@@ -63,7 +63,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	})
 	effect.fboSlice.End()
 
-	effect.fbo = framebuffer.NewFrame(width, height, true, false)
+	effect.fbo = buffer.NewFrame(width, height, true, false)
 
 	effect.threshold = 0.7
 	effect.blur = 0.3

@@ -5,9 +5,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/framebuffer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/glhf"
 	"io/ioutil"
 	"math"
@@ -15,8 +15,8 @@ import (
 )
 
 var cursorShader *glhf.Shader = nil
-var cursorFbo *framebuffer.Framebuffer = nil
-var cursorSpaceFbo *framebuffer.Framebuffer = nil
+var cursorFbo *buffer.Framebuffer = nil
+var cursorSpaceFbo *buffer.Framebuffer = nil
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
 
@@ -57,9 +57,9 @@ func initCursor() {
 		panic("Cursor: " + err.Error())
 	}
 
-	cursorFbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
+	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	cursorFbo.Texture().Bind(30)
-	cursorSpaceFbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
+	cursorSpaceFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	cursorSpaceFbo.Texture().Bind(18)
 	osuRect = Camera.GetWorldRect()
 }

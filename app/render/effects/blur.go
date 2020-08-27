@@ -3,8 +3,8 @@ package effects
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/render/framebuffer"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/glhf"
 	"io/ioutil"
@@ -13,8 +13,8 @@ import (
 
 type BlurEffect struct {
 	blurShader *glhf.Shader
-	fbo1       *framebuffer.Framebuffer
-	fbo2       *framebuffer.Framebuffer
+	fbo1       *buffer.Framebuffer
+	fbo2       *buffer.Framebuffer
 	kernelSize mgl32.Vec2
 	sigma      mgl32.Vec2
 	size       mgl32.Vec2
@@ -57,8 +57,8 @@ func NewBlurEffect(width, height int) *BlurEffect {
 	})
 	effect.fboSlice.End()
 
-	effect.fbo1 = framebuffer.NewFrame(width, height, true, false)
-	effect.fbo2 = framebuffer.NewFrame(width, height, true, false)
+	effect.fbo1 = buffer.NewFrame(width, height, true, false)
+	effect.fbo2 = buffer.NewFrame(width, height, true, false)
 	effect.SetBlur(0, 0)
 	effect.size = mgl32.Vec2{float32(width), float32(height)}
 	return effect

@@ -5,9 +5,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/math32"
-	"github.com/wieku/danser-go/app/render/framebuffer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/glhf"
 	_ "image/png"
 	"io/ioutil"
@@ -18,7 +18,7 @@ var sliderShader *glhf.Shader = nil
 var fboShader *glhf.Shader
 var fboSlice *glhf.VertexSlice
 var sliderVertexFormat glhf.AttrFormat
-var fbo *framebuffer.Framebuffer
+var fbo *buffer.Framebuffer
 var fboUnit int32
 var CS float64
 var unitCircle []float32
@@ -50,7 +50,7 @@ func SetupSlider() {
 		log.Println("FboPass: " + err.Error())
 	}
 
-	fbo = framebuffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)
+	fbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, true)
 	fbo.Texture().Bind(29)
 	fboUnit = 29
 
