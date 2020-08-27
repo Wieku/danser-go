@@ -269,9 +269,9 @@ func setWorkingDirectory() {
 }
 
 func main() {
+	defer discord.Disconnect()
 	setWorkingDirectory()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
-	discord.Disconnect()
 }
