@@ -2,7 +2,7 @@ package curves
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/bmath/math32"
+	"github.com/wieku/danser-go/framework/math/math32"
 )
 
 type Bezier struct {

@@ -4,8 +4,8 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
-	"github.com/wieku/danser-go/app/bmath/math32"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/math32"
 )
 
 type BezierMover struct {
