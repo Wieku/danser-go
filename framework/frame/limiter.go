@@ -1,4 +1,4 @@
-package utils
+package frame
 
 import (
 	"github.com/wieku/danser-go/framework/qpc"
@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-type FpsLimiter struct {
+type Limiter struct {
 	FPS               int
 	variableYieldTime int64
 	lastTime          int64
 }
 
-func NewFpsLimiter(fps int) *FpsLimiter {
-	return &FpsLimiter{fps, 0, 0}
+func NewLimiter(fps int) *Limiter {
+	return &Limiter{fps, 0, 0}
 }
 
 /**
@@ -22,7 +22,7 @@ func NewFpsLimiter(fps int) *FpsLimiter {
  *
  * @author kappa (On the LWJGL Forums)
  */
-func (limiter *FpsLimiter) Sync() {
+func (limiter *Limiter) Sync() {
 	if limiter.FPS <= 0 {
 		return
 	}

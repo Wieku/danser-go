@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
@@ -60,8 +61,8 @@ type MainMenu struct {
 	visualiser *drawables.Visualiser
 	triangles  *drawables.Triangles
 
-	profiler  *utils.FPSCounter
-	profilerU *utils.FPSCounter
+	profiler  *frame.Counter
+	profilerU *frame.Counter
 
 	camera  *bmath.Camera
 	scamera *bmath.Camera
@@ -207,7 +208,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 	player.triangles = drawables.NewTriangles(newCol)
 
-	player.profilerU = utils.NewFPSCounter(60, false)
+	player.profilerU = frame.NewCounter(60, false)
 	go func() {
 		//var last = musicPlayer.GetPosition()
 		var lastT = qpc.GetNanoTime()
@@ -306,7 +307,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 			time.Sleep(15 * time.Millisecond)
 		}
 	}()
-	player.profiler = utils.NewFPSCounter(60, false)
+	player.profiler = frame.NewCounter(60, false)
 	player.musicPlayer = musicPlayer
 	player.visualiser.SetTrack(player.musicPlayer)
 	player.triangles.SetTrack(player.musicPlayer)

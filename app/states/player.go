@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
@@ -53,8 +54,8 @@ type Player struct {
 	mus            bool
 	musicPlayer    *audio.Music
 	rotation       float64
-	profiler       *utils.FPSCounter
-	profilerU      *utils.FPSCounter
+	profiler       *frame.Counter
+	profilerU      *frame.Counter
 
 	camera         *bmath.Camera
 	camera1        *bmath.Camera
@@ -400,8 +401,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.start = true
 	}()
 
-	player.profilerU = utils.NewFPSCounter(1000, false)
-	limiter := utils.NewFpsLimiter(5000)
+	player.profilerU = frame.NewCounter(1000, false)
+	limiter := frame.NewLimiter(5000)
 	go func() {
 		var last = musicPlayer.GetPosition()
 		var lastT = qpc.GetNanoTime()
@@ -538,7 +539,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(15 * time.Millisecond)
 		}
 	}()
-	player.profiler = utils.NewFPSCounter(60, false)
+	player.profiler = frame.NewCounter(60, false)
 	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))

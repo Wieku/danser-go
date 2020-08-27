@@ -1,11 +1,11 @@
-package utils
+package frame
 
 import (
 	"log"
 	"math"
 )
 
-type FPSCounter struct {
+type Counter struct {
 	samples []float64
 	index   int
 	FPS     float64
@@ -13,11 +13,11 @@ type FPSCounter struct {
 	log     bool
 }
 
-func NewFPSCounter(samples int, log bool) *FPSCounter {
-	return &FPSCounter{make([]float64, samples), -1, 0, 0.0, log}
+func NewCounter(samples int, log bool) *Counter {
+	return &Counter{make([]float64, samples), -1, 0, 0.0, log}
 }
 
-func (prof *FPSCounter) PutSample(fps float64) {
+func (prof *Counter) PutSample(fps float64) {
 	prof.index++
 	if prof.index >= len(prof.samples) {
 		prof.index = 0
@@ -30,7 +30,7 @@ func (prof *FPSCounter) PutSample(fps float64) {
 	}
 }
 
-func (prof *FPSCounter) GetFPS() float64 {
+func (prof *Counter) GetFPS() float64 {
 	sum := 0.0
 	count := 0
 	for _, g := range prof.samples {
