@@ -1,12 +1,12 @@
 package drawables
 
 import (
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/bass"
 	"math"
 	"math/rand"
 	"sort"
@@ -27,7 +27,7 @@ type Triangles struct {
 	velocity     float64
 	fft          []float64
 	colorPalette []bmath.Color
-	music        *audio.Music
+	music        *bass.Music
 }
 
 func NewTriangles(colors []bmath.Color) *Triangles {
@@ -43,7 +43,7 @@ func NewTriangles(colors []bmath.Color) *Triangles {
 	return visualiser
 }
 
-func (vis *Triangles) SetTrack(track *audio.Music) {
+func (vis *Triangles) SetTrack(track *bass.Music) {
 	vis.music = track
 }
 

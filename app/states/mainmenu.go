@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/animation"
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/input"
@@ -19,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
@@ -56,7 +56,7 @@ type MainMenu struct {
 	entry       float64
 	start       bool
 	mus         bool
-	musicPlayer *audio.Music
+	musicPlayer *bass.Music
 
 	visualiser *drawables.Visualiser
 	triangles  *drawables.Triangles
@@ -87,7 +87,7 @@ type MainMenu struct {
 
 	progress, lastProgress float64
 
-	heartbeat *audio.Sample
+	heartbeat *bass.Sample
 
 	vol        float64
 	volAverage float64
@@ -162,7 +162,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 	player.bMap.Reset()
 
-	player.heartbeat = audio.NewSample("assets/sounds/heartbeat.mp3")
+	player.heartbeat = bass.NewSample("assets/sounds/heartbeat.mp3")
 
 	player.cursor = render.NewCursor()
 
@@ -180,7 +180,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	player.epiGlider.AddEvent(0, 500, 1.0)
 	player.epiGlider.AddEvent(2500, 3000, 0.0)
 
-	musicPlayer := audio.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	musicPlayer := bass.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 
 	//mapStart := player.bMap.HitObjects[0].GetBasicData().StartTime
 

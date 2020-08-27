@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
@@ -52,7 +53,7 @@ type Player struct {
 	entry          float64
 	start          bool
 	mus            bool
-	musicPlayer    *audio.Music
+	musicPlayer    *bass.Music
 	rotation       float64
 	profiler       *frame.Counter
 	profilerU      *frame.Counter
@@ -271,7 +272,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
 	}
 
-	musicPlayer := audio.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	musicPlayer := bass.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 	player.background.SetTrack(musicPlayer)
 	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
 	player.visualiser.SetTrack(musicPlayer)
@@ -418,7 +419,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.profilerU.PutSample(float64(currtime-lastT) / 1000000.0)
 			if player.start {
 
-				if musicPlayer.GetState() == audio.MUSIC_STOPPED {
+				if musicPlayer.GetState() == bass.MUSIC_STOPPED {
 					player.progressMsF += float64(currtime-lastT) / 1000000.0
 				} else {
 					player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)

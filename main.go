@@ -18,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/app/states"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/glhf"
 	"image"
@@ -176,7 +177,7 @@ func run() {
 			glfw.SwapInterval(1)
 		}
 
-		audio.Init()
+		bass.Init()
 		audio.LoadSamples()
 
 		beatmap.ParseObjects(beatMap)

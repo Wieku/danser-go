@@ -2,10 +2,10 @@ package drawables
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
+	"github.com/wieku/danser-go/framework/bass"
 	"math"
 )
 
@@ -21,7 +21,7 @@ type Visualiser struct {
 	lastTime      float64
 	counter       float64
 	fft           []float64
-	music         *audio.Music
+	music         *bass.Music
 }
 
 func NewVisualiser(startDistance float64, barLength float64, position bmath.Vector2d) *Visualiser {
@@ -34,7 +34,7 @@ func (vis *Visualiser) SetStartDistance(distance float64) {
 	vis.startDistance = distance
 }
 
-func (vis *Visualiser) SetTrack(track *audio.Music) {
+func (vis *Visualiser) SetTrack(track *bass.Music) {
 	vis.music = track
 }
 

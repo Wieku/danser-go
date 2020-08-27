@@ -2,6 +2,7 @@ package audio
 
 import (
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/bass"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -9,8 +10,8 @@ import (
 	"unicode"
 )
 
-var Samples [3][5]*Sample
-var MapSamples [3][5]map[int]*Sample
+var Samples [3][5]*bass.Sample
+var MapSamples [3][5]map[int]*bass.Sample
 
 var sets = map[string]int{
 	"normal": 1,
@@ -33,23 +34,23 @@ func AddListener(function func(sampleSet int, hitsoundIndex, index int, volume f
 }
 
 func LoadSamples() {
-	Samples[0][0] = NewSample("assets/sounds/normal-hitnormal.wav")
-	Samples[0][1] = NewSample("assets/sounds/normal-hitwhistle.wav")
-	Samples[0][2] = NewSample("assets/sounds/normal-hitfinish.wav")
-	Samples[0][3] = NewSample("assets/sounds/normal-hitclap.wav")
-	Samples[0][4] = NewSample("assets/sounds/normal-slidertick.wav")
+	Samples[0][0] = bass.NewSample("assets/sounds/normal-hitnormal.wav")
+	Samples[0][1] = bass.NewSample("assets/sounds/normal-hitwhistle.wav")
+	Samples[0][2] = bass.NewSample("assets/sounds/normal-hitfinish.wav")
+	Samples[0][3] = bass.NewSample("assets/sounds/normal-hitclap.wav")
+	Samples[0][4] = bass.NewSample("assets/sounds/normal-slidertick.wav")
 
-	Samples[1][0] = NewSample("assets/sounds/soft-hitnormal.wav")
-	Samples[1][1] = NewSample("assets/sounds/soft-hitwhistle.wav")
-	Samples[1][2] = NewSample("assets/sounds/soft-hitfinish.wav")
-	Samples[1][3] = NewSample("assets/sounds/soft-hitclap.wav")
-	Samples[1][4] = NewSample("assets/sounds/soft-slidertick.wav")
+	Samples[1][0] = bass.NewSample("assets/sounds/soft-hitnormal.wav")
+	Samples[1][1] = bass.NewSample("assets/sounds/soft-hitwhistle.wav")
+	Samples[1][2] = bass.NewSample("assets/sounds/soft-hitfinish.wav")
+	Samples[1][3] = bass.NewSample("assets/sounds/soft-hitclap.wav")
+	Samples[1][4] = bass.NewSample("assets/sounds/soft-slidertick.wav")
 
-	Samples[2][0] = NewSample("assets/sounds/drum-hitnormal.wav")
-	Samples[2][1] = NewSample("assets/sounds/drum-hitwhistle.wav")
-	Samples[2][2] = NewSample("assets/sounds/drum-hitfinish.wav")
-	Samples[2][3] = NewSample("assets/sounds/drum-hitclap.wav")
-	Samples[2][4] = NewSample("assets/sounds/drum-slidertick.wav")
+	Samples[2][0] = bass.NewSample("assets/sounds/drum-hitnormal.wav")
+	Samples[2][1] = bass.NewSample("assets/sounds/drum-hitwhistle.wav")
+	Samples[2][2] = bass.NewSample("assets/sounds/drum-hitfinish.wav")
+	Samples[2][3] = bass.NewSample("assets/sounds/drum-hitclap.wav")
+	Samples[2][4] = bass.NewSample("assets/sounds/drum-slidertick.wav")
 }
 
 func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64, xPos float64) {
@@ -143,10 +144,10 @@ func LoadBeatmapSamples(dir string) {
 			}
 
 			if MapSamples[setID-1][hitSoundID-1] == nil {
-				MapSamples[setID-1][hitSoundID-1] = make(map[int]*Sample)
+				MapSamples[setID-1][hitSoundID-1] = make(map[int]*bass.Sample)
 			}
 
-			MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = NewSample(path)
+			MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = bass.NewSample(path)
 
 		}
 

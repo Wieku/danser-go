@@ -4,7 +4,6 @@ import (
 	"github.com/EdlinOrg/prominentcolor"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
@@ -14,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/storyboard"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
@@ -97,7 +97,7 @@ func NewBackground(beatMap *beatmap.BeatMap, parallax float64, useStoryboard boo
 	return bg
 }
 
-func (bg *Background) SetTrack(track *audio.Music) {
+func (bg *Background) SetTrack(track *bass.Music) {
 	bg.triangles.SetTrack(track)
 }
 

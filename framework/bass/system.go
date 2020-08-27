@@ -1,4 +1,4 @@
-package audio
+package bass
 
 /*
 #cgo CFLAGS: -I/usr/include -I.

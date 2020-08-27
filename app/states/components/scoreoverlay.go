@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/input"
@@ -13,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
@@ -130,8 +130,8 @@ type ScoreOverlay struct {
 	ruleset        *osu.OsuRuleSet
 	cursor         *render.Cursor
 	sprites        []*PseudoSprite
-	combobreak     *audio.Sample
-	music          *audio.Music
+	combobreak     *bass.Sample
+	music          *bass.Music
 	nextEnd        int64
 }
 
@@ -147,7 +147,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	overlay.rightScale = glider.NewGlider(0.9)
 	overlay.scoreGlider = glider.NewGlider(0)
 	overlay.ppGlider = glider.NewGlider(0)
-	overlay.combobreak = audio.NewSample("assets/sounds/combobreak.wav")
+	overlay.combobreak = bass.NewSample("assets/sounds/combobreak.wav")
 
 	discord.UpdatePlay(cursor.Name)
 
@@ -263,7 +263,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	overlay.lastTime = time
 }
 
-func (overlay *ScoreOverlay) SetMusic(music *audio.Music) {
+func (overlay *ScoreOverlay) SetMusic(music *bass.Music) {
 	overlay.music = music
 }
 
