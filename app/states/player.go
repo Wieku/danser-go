@@ -53,7 +53,7 @@ type Player struct {
 	entry          float64
 	start          bool
 	mus            bool
-	musicPlayer    *bass.Music
+	musicPlayer    *bass.Track
 	rotation       float64
 	profiler       *frame.Counter
 	profilerU      *frame.Counter
@@ -204,7 +204,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	}
 
-	log.Println("Music:", beatMap.Audio)
+	log.Println("Track:", beatMap.Audio)
 
 	player.Scl = 1
 	player.fadeOut = 1.0
@@ -272,7 +272,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
 	}
 
-	musicPlayer := bass.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 	player.background.SetTrack(musicPlayer)
 	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
 	player.visualiser.SetTrack(musicPlayer)

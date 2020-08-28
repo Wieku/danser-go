@@ -97,7 +97,7 @@ func NewBackground(beatMap *beatmap.BeatMap, parallax float64, useStoryboard boo
 	return bg
 }
 
-func (bg *Background) SetTrack(track *bass.Music) {
+func (bg *Background) SetTrack(track *bass.Track) {
 	bg.triangles.SetTrack(track)
 }
 

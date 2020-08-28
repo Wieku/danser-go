@@ -4,16 +4,6 @@ package bass
 #include "bass_util.hpp"
 #include "bass.h"
 #include "bass_fx.h"
-
-extern void musicCallback(DWORD);
-
-static inline void SyncFunc(HSYNC handle, DWORD channel, DWORD data, void *user) {
-  musicCallback(channel);
-}
-
-static inline void setSync(HCHANNEL channel) {
-	BASS_ChannelSetSync(channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, SyncFunc, 0);
-}
 */
 import "C"
 import (
@@ -30,37 +20,7 @@ const (
 	MUSIC_PAUSED  = 3
 )
 
-type Callback func()
-
-var callbacks = make(map[C.DWORD][]Callback)
-
-//export musicCallback
-func musicCallback(channel C.DWORD) {
-	for _, f := range callbacks[channel] {
-		f()
-	}
-}
-
-func registerEndCallback(channel C.DWORD, f func()) {
-	arr := callbacks[channel]
-	arr = append(arr, Callback(f))
-	callbacks[channel] = arr
-	C.setSync(channel)
-}
-
-func unregisterEndCallback(channel C.DWORD, f func()) {
-	arr := callbacks[channel]
-	var cb Callback = f
-	for i, v := range arr {
-		if &v == &cb {
-			arr = append(arr[:i], arr[i+1:]...)
-			break
-		}
-	}
-	callbacks[channel] = arr
-}
-
-type Music struct {
+type Track struct {
 	channel      C.DWORD
 	fft          []float32
 	beat         float64
@@ -69,8 +29,8 @@ type Music struct {
 	rightChannel float64
 }
 
-func NewMusic(path string) *Music {
-	player := new(Music)
+func NewTrack(path string) *Track {
+	player := new(Track)
 
 	channel := C.CreateBassStream(C.CString(path), C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE|C.BASS_STREAM_PRESCAN)
 
@@ -79,69 +39,61 @@ func NewMusic(path string) *Music {
 	return player
 }
 
-func (wv *Music) Play() {
+func (wv *Track) Play() {
 	wv.SetVolume(settings.Audio.GeneralVolume * settings.Audio.MusicVolume)
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 }
 
-func (wv *Music) PlayV(volume float64) {
+func (wv *Track) PlayV(volume float64) {
 	wv.SetVolume(volume)
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 0)
 }
 
-func (wv *Music) RegisterCallback(f func()) {
-	registerEndCallback(wv.channel, f)
-}
-
-func (wv *Music) UnregisterCallback(f func()) {
-	unregisterEndCallback(wv.channel, f)
-}
-
-func (wv *Music) Pause() {
+func (wv *Track) Pause() {
 	C.BASS_ChannelPause(C.DWORD(wv.channel))
 }
 
-func (wv *Music) Resume() {
+func (wv *Track) Resume() {
 	C.BASS_ChannelPlay(C.DWORD(wv.channel), 0)
 }
 
-func (wv *Music) Stop() {
+func (wv *Track) Stop() {
 	C.BASS_ChannelStop(C.DWORD(wv.channel))
 }
 
-func (wv *Music) SetVolume(vol float64) {
+func (wv *Track) SetVolume(vol float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(vol))
 }
 
-func (wv *Music) SetVolumeRelative(vol float64) {
+func (wv *Track) SetVolumeRelative(vol float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.MusicVolume*vol))
 }
 
-func (wv *Music) GetLength() float64 {
+func (wv *Track) GetLength() float64 {
 	return float64(C.BASS_ChannelBytes2Seconds(wv.channel, C.BASS_ChannelGetLength(wv.channel, C.BASS_POS_BYTE)))
 }
 
-func (wv *Music) SetPosition(pos float64) {
+func (wv *Track) SetPosition(pos float64) {
 	C.BASS_ChannelSetPosition(wv.channel, C.BASS_ChannelSeconds2Bytes(wv.channel, C.double(pos)), C.BASS_POS_BYTE)
 }
 
-func (wv *Music) GetPosition() float64 {
+func (wv *Track) GetPosition() float64 {
 	return float64(C.BASS_ChannelBytes2Seconds(wv.channel, C.BASS_ChannelGetPosition(wv.channel, C.BASS_POS_BYTE)))
 }
 
-func (wv *Music) SetTempo(tempo float64) {
+func (wv *Track) SetTempo(tempo float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
 }
 
-func (wv *Music) SetPitch(tempo float64) {
+func (wv *Track) SetPitch(tempo float64) {
 	C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*12))
 }
 
-func (wv *Music) GetState() int {
+func (wv *Track) GetState() int {
 	return int(C.BASS_ChannelIsActive(wv.channel))
 }
 
-func (wv *Music) Update() {
+func (wv *Track) Update() {
 	C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
 	toPeak := -1.0
 	beatAv := 0.0
@@ -175,26 +127,26 @@ func (wv *Music) Update() {
 	wv.rightChannel = float64(right) / 32768
 }
 
-func (wv *Music) GetFFT() []float32 {
+func (wv *Track) GetFFT() []float32 {
 	return wv.fft
 }
 
-func (wv *Music) GetPeak() float64 {
+func (wv *Track) GetPeak() float64 {
 	return wv.peak
 }
 
-func (wv *Music) GetLevelCombined() float64 {
+func (wv *Track) GetLevelCombined() float64 {
 	return (wv.leftChannel + wv.rightChannel) / 2
 }
 
-func (wv *Music) GetLeftLevel() float64 {
+func (wv *Track) GetLeftLevel() float64 {
 	return wv.leftChannel
 }
 
-func (wv *Music) GetRightLevel() float64 {
+func (wv *Track) GetRightLevel() float64 {
 	return wv.rightChannel
 }
 
-func (wv *Music) GetBeat() float64 {
+func (wv *Track) GetBeat() float64 {
 	return wv.beat
 }

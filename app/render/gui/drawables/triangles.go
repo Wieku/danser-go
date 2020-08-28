@@ -27,7 +27,7 @@ type Triangles struct {
 	velocity     float64
 	fft          []float64
 	colorPalette []bmath.Color
-	music        *bass.Music
+	music        *bass.Track
 }
 
 func NewTriangles(colors []bmath.Color) *Triangles {
@@ -43,7 +43,7 @@ func NewTriangles(colors []bmath.Color) *Triangles {
 	return visualiser
 }
 
-func (vis *Triangles) SetTrack(track *bass.Music) {
+func (vis *Triangles) SetTrack(track *bass.Track) {
 	vis.music = track
 }
 

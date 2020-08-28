@@ -21,7 +21,7 @@ type Visualiser struct {
 	lastTime      float64
 	counter       float64
 	fft           []float64
-	music         *bass.Music
+	music         *bass.Track
 }
 
 func NewVisualiser(startDistance float64, barLength float64, position bmath.Vector2d) *Visualiser {
@@ -34,7 +34,7 @@ func (vis *Visualiser) SetStartDistance(distance float64) {
 	vis.startDistance = distance
 }
 
-func (vis *Visualiser) SetTrack(track *bass.Music) {
+func (vis *Visualiser) SetTrack(track *bass.Track) {
 	vis.music = track
 }
 

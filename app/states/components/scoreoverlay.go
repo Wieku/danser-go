@@ -131,7 +131,7 @@ type ScoreOverlay struct {
 	cursor         *render.Cursor
 	sprites        []*PseudoSprite
 	combobreak     *bass.Sample
-	music          *bass.Music
+	music          *bass.Track
 	nextEnd        int64
 }
 
@@ -263,7 +263,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	overlay.lastTime = time
 }
 
-func (overlay *ScoreOverlay) SetMusic(music *bass.Music) {
+func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 	overlay.music = music
 }
 

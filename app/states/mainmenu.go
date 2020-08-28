@@ -56,7 +56,7 @@ type MainMenu struct {
 	entry       float64
 	start       bool
 	mus         bool
-	musicPlayer *bass.Music
+	musicPlayer *bass.Track
 
 	visualiser *drawables.Visualiser
 	triangles  *drawables.Triangles
@@ -168,7 +168,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 	player.lastTime = -1
 
-	log.Println("Music:", beatMap.Audio)
+	log.Println("Track:", beatMap.Audio)
 
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
@@ -180,7 +180,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	player.epiGlider.AddEvent(0, 500, 1.0)
 	player.epiGlider.AddEvent(2500, 3000, 0.0)
 
-	musicPlayer := bass.NewMusic(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 
 	//mapStart := player.bMap.HitObjects[0].GetBasicData().StartTime
 
