@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/buffer/history"
 	"runtime"
 
 	"github.com/faiface/mainthread"
@@ -105,8 +106,7 @@ func (f *Framebuffer) ID() uint32 {
 
 // Begin binds the Framebuffer. All draw operations will target this Framebuffer until End is called.
 func (f *Framebuffer) Begin() {
-	gl.GetIntegerv(gl.FRAMEBUFFER_BINDING, &f.last)
-	fboBindHistory = append(fboBindHistory, f.last)
+	history.Push(gl.FRAMEBUFFER_BINDING)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.obj)
 }
 
@@ -124,9 +124,8 @@ func (f *Framebuffer) End() {
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	}
 
-	lst := fboBindHistory[len(fboBindHistory)-1]
-	fboBindHistory = fboBindHistory[:len(fboBindHistory)-1]
-	gl.BindFramebuffer(gl.FRAMEBUFFER, uint32(lst))
+	handle := history.Pop(gl.FRAMEBUFFER_BINDING)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, handle)
 }
 
 // Texture returns the Framebuffer's underlying Texture that the Framebuffer draws on.
