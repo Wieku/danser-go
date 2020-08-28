@@ -27,6 +27,7 @@ type SpriteBatch struct {
 
 	data        []float32
 	vao         *buffer.VertexSlice
+	ibo         *buffer.IndexBufferObject
 	currentSize int
 	drawing     bool
 }
@@ -53,6 +54,28 @@ func NewSpriteBatch() *SpriteBatch {
 		panic("Sprite: " + err.Error())
 	}
 
+	ibo := buffer.NewIndexBufferObject(batchSize * 6)
+
+	ibo.Bind()
+
+	indices := make([]uint16, batchSize*6)
+
+	index := uint16(0)
+	for i := 0; i < batchSize*6; i += 6 {
+		indices[i] = index
+		indices[i+1] = index + 1
+		indices[i+2] = index + 2
+
+		indices[i+3] = index + 2
+		indices[i+4] = index + 3
+		indices[i+5] = index
+
+		index += 4
+	}
+	ibo.SetData(0, indices)
+
+	ibo.Unbind()
+
 	return &SpriteBatch{
 		shader,
 		false,
@@ -64,8 +87,9 @@ func NewSpriteBatch() *SpriteBatch {
 		0,
 		mgl32.Ident4(),
 		nil,
-		make([]float32, batchSize*6*11),
-		buffer.MakeVertexSlice(shader, batchSize*6, batchSize*6),
+		make([]float32, batchSize*4*11),
+		buffer.MakeVertexSlice(shader, batchSize*4, batchSize*4),
+		ibo,
 		0,
 		false}
 }
@@ -77,6 +101,10 @@ func (batch *SpriteBatch) Begin() {
 	batch.drawing = true
 	batch.shader.Begin()
 	batch.shader.SetUniformAttr(0, batch.Projection)
+
+	batch.vao.Begin()
+	batch.ibo.Bind()
+
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	if batch.texture != nil && batch.texture.GetLocation() == 0 {
 		batch.texture.Bind(0)
@@ -117,9 +145,9 @@ func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d,
 	batch.addVertex(vec10.AsVec3(), mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
 	batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
 
-	batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
+	//batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
 	batch.addVertex(vec01.AsVec3(), mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
-	batch.addVertex(vec00.AsVec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
+	//batch.addVertex(vec00.AsVec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
 
 	if batch.currentSize >= len(batch.data)-1 {
 		batch.Flush()
@@ -133,10 +161,13 @@ func (batch *SpriteBatch) Flush() {
 	}
 
 	subVao := batch.vao.Slice(0, batch.currentSize/11)
-	subVao.Begin()
+	//subVao.Begin()
 	subVao.SetVertexData(batch.data[:batch.currentSize])
-	subVao.Draw()
-	subVao.End()
+
+	batch.ibo.DrawPart(0, batch.currentSize/11/4*6)
+	//batch.ibo.Unbind()
+
+	//subVao.End()
 	batch.currentSize = 0
 }
 
@@ -161,6 +192,10 @@ func (batch *SpriteBatch) End() {
 	}
 	batch.drawing = false
 	batch.Flush()
+
+	batch.ibo.Unbind()
+	batch.vao.End()
+
 	batch.shader.End()
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
