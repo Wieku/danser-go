@@ -2,7 +2,9 @@ package buffer
 
 import (
 	"fmt"
+	"github.com/wieku/danser-go/framework/graphics/buffer/history"
 	"github.com/wieku/danser-go/framework/graphics/shader"
+	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
 
 	"github.com/faiface/mainthread"
@@ -172,7 +174,7 @@ func (vs *VertexSlice) Delete() {
 }
 
 type vertexArray struct {
-	vao, vbo binder
+	vao, vbo uint32
 	cap      int
 	format   shader.AttrFormat
 	stride   int
@@ -188,18 +190,6 @@ func newVertexArray(shdr *shader.Shader, cap int) *vertexArray {
 	}
 
 	va := &vertexArray{
-		vao: binder{
-			restoreLoc: gl.VERTEX_ARRAY_BINDING,
-			bindFunc: func(obj uint32) {
-				gl.BindVertexArray(obj)
-			},
-		},
-		vbo: binder{
-			restoreLoc: gl.ARRAY_BUFFER_BINDING,
-			bindFunc: func(obj uint32) {
-				gl.BindBuffer(gl.ARRAY_BUFFER, obj)
-			},
-		},
 		cap:    cap,
 		format: shdr.VertexFormat(),
 		stride: shdr.VertexFormat().Size(),
@@ -218,12 +208,13 @@ func newVertexArray(shdr *shader.Shader, cap int) *vertexArray {
 		offset += attr.Type.Size()
 	}
 
-	gl.GenVertexArrays(1, &va.vao.obj)
+	gl.GenVertexArrays(1, &va.vao)
 
-	va.vao.bind()
+	va.bindVAO()
 
-	gl.GenBuffers(1, &va.vbo.obj)
-	defer va.vbo.bind().restore()
+	gl.GenBuffers(1, &va.vbo)
+
+	va.bindVBO()
 
 	emptyData := make([]byte, cap*va.stride)
 	gl.BufferData(gl.ARRAY_BUFFER, len(emptyData), gl.Ptr(emptyData), gl.DYNAMIC_DRAW)
@@ -254,7 +245,8 @@ func newVertexArray(shdr *shader.Shader, cap int) *vertexArray {
 		gl.EnableVertexAttribArray(uint32(loc))
 	}
 
-	va.vao.restore()
+	va.unbindVBO()
+	va.unbindVAO()
 
 	runtime.SetFinalizer(va, (*vertexArray).delete)
 
@@ -263,30 +255,60 @@ func newVertexArray(shdr *shader.Shader, cap int) *vertexArray {
 
 func (va *vertexArray) delete() {
 	mainthread.CallNonBlock(func() {
-		gl.DeleteVertexArrays(1, &va.vao.obj)
-		gl.DeleteBuffers(1, &va.vbo.obj)
+		gl.DeleteVertexArrays(1, &va.vao)
+		gl.DeleteBuffers(1, &va.vbo)
 	})
 }
 
 func (va *vertexArray) begin() {
-	va.vao.bind()
-	va.vbo.bind()
+	va.bindVAO()
+	va.bindVBO()
 }
 
 func (va *vertexArray) beginDraw() {
-	va.vao.bind()
+	va.bindVAO()
 }
 
 func (va *vertexArray) end() {
-	va.vbo.restore()
-	va.vao.restore()
+	va.unbindVBO()
+	va.unbindVAO()
 }
 
 func (va *vertexArray) endDraw() {
-	va.vao.restore()
+	va.unbindVAO()
+}
+
+func (va *vertexArray) bindVAO() {
+	history.Push(gl.VERTEX_ARRAY_BINDING)
+	statistic.Increment(statistic.VAOBinds)
+	gl.BindVertexArray(va.vao)
+}
+
+func (va *vertexArray) unbindVAO() {
+	handle := history.Pop(gl.VERTEX_ARRAY_BINDING)
+	if handle != 0 {
+		statistic.Increment(statistic.VAOBinds)
+	}
+	gl.BindVertexArray(handle)
+}
+
+func (va *vertexArray) bindVBO() {
+	history.Push(gl.ARRAY_BUFFER_BINDING)
+	statistic.Increment(statistic.VBOBinds)
+	gl.BindBuffer(gl.ARRAY_BUFFER, va.vbo)
+}
+
+func (va *vertexArray) unbindVBO() {
+	handle := history.Pop(gl.ARRAY_BUFFER_BINDING)
+	if handle != 0 {
+		statistic.Increment(statistic.VBOBinds)
+	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, handle)
 }
 
 func (va *vertexArray) draw(i, j int) {
+	statistic.Add(statistic.VerticesDrawn, int64(j-i))
+	statistic.Increment(statistic.DrawCalls)
 	gl.DrawArrays(gl.TRIANGLES, int32(i), int32(j-i))
 }
 
@@ -295,6 +317,7 @@ func (va *vertexArray) setVertexData(i, j int, data []float32) {
 		// avoid setting 0 bytes of buffer data
 		return
 	}
+	statistic.Add(statistic.VertexUpload, int64(len(data)/(va.stride/4)))
 	gl.BufferSubData(gl.ARRAY_BUFFER, i*va.stride, len(data)*4, gl.Ptr(data))
 }
 
