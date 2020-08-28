@@ -3,55 +3,55 @@ package effects
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
-	"github.com/wieku/glhf"
+	"github.com/wieku/danser-go/framework/graphics/shader"
 	"io/ioutil"
 )
 
 type BloomEffect struct {
-	colFilter     *glhf.Shader
-	combineShader *glhf.Shader
+	colFilter     *shader.Shader
+	combineShader *shader.Shader
 	fbo           *buffer.Framebuffer
 
 	blurEffect *BlurEffect
 
 	blur, threshold, power float64
-	fboSlice               *glhf.VertexSlice
+	fboSlice               *buffer.VertexSlice
 }
 
 func NewBloomEffect(width, height int) *BloomEffect {
 	effect := &BloomEffect{}
-	vertexFormat := glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec2},
+	vertexFormat := shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_tex_coord", Type: shader.Vec2},
 	}
 
-	uniformFormat := glhf.AttrFormat{
-		{Name: "tex", Type: glhf.Int},
-		{Name: "threshold", Type: glhf.Float},
+	uniformFormat := shader.AttrFormat{
+		{Name: "tex", Type: shader.Int},
+		{Name: "threshold", Type: shader.Float},
 	}
 
 	var err error
 	vert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	frag, _ := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
-	effect.colFilter, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	effect.colFilter, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic("BloomFilter: " + err.Error())
 	}
 
-	uniformFormat = glhf.AttrFormat{
-		{Name: "tex", Type: glhf.Int},
-		{Name: "tex2", Type: glhf.Int},
-		{Name: "power", Type: glhf.Float},
+	uniformFormat = shader.AttrFormat{
+		{Name: "tex", Type: shader.Int},
+		{Name: "tex2", Type: shader.Int},
+		{Name: "power", Type: shader.Float},
 	}
 	frag, _ = ioutil.ReadFile("assets/shaders/combine.fsh")
-	effect.combineShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	effect.combineShader, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic("BloomCombine: " + err.Error())
 	}
 
-	effect.fboSlice = glhf.MakeVertexSlice(effect.colFilter, 6, 6)
+	effect.fboSlice = buffer.MakeVertexSlice(effect.colFilter, 6, 6)
 	effect.fboSlice.Begin()
 	effect.fboSlice.SetVertexData([]float32{
 		-1, -1, 0, 0, 0,
@@ -89,14 +89,16 @@ func (effect *BloomEffect) SetPower(power float64) {
 
 func (effect *BloomEffect) Begin() {
 	effect.fbo.Begin()
-	glhf.Clear(0, 0, 0, 0)
+	gl.ClearColor(0, 0, 0, 0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
 func (effect *BloomEffect) EndAndRender() {
 	effect.fbo.End()
 
 	effect.blurEffect.Begin()
-	glhf.Clear(0, 0, 0, 0)
+	gl.ClearColor(0, 0, 0, 0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	effect.colFilter.Begin()
 	effect.colFilter.SetUniformAttr(0, int32(0))

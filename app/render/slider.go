@@ -7,17 +7,17 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
+	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/math/math32"
-	"github.com/wieku/glhf"
 	_ "image/png"
 	"io/ioutil"
 	"log"
 )
 
-var sliderShader *glhf.Shader = nil
-var fboShader *glhf.Shader
-var fboSlice *glhf.VertexSlice
-var sliderVertexFormat glhf.AttrFormat
+var sliderShader *shader.Shader = nil
+var fboShader *shader.Shader
+var fboSlice *buffer.VertexSlice
+var sliderVertexFormat shader.AttrFormat
 var fbo *buffer.Framebuffer
 var fboUnit int32
 var CS float64
@@ -25,26 +25,26 @@ var unitCircle []float32
 
 func SetupSlider() {
 
-	sliderVertexFormat = glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "center", Type: glhf.Vec3},
-		//{Name: "in_tex_coord", Type: glhf.Vec2},
+	sliderVertexFormat = shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "center", Type: shader.Vec3},
+		//{Name: "in_tex_coord", Type: shader.Vec2},
 	}
 	var err error
 
 	svert, _ := ioutil.ReadFile("assets/shaders/slider.vsh")
 	sfrag, _ := ioutil.ReadFile("assets/shaders/slider.fsh")
-	sliderShader, err = glhf.NewShader(sliderVertexFormat, glhf.AttrFormat{{Name: "col_border", Type: glhf.Vec4}, {Name: "proj", Type: glhf.Mat4}, {Name: "trans", Type: glhf.Mat4}, {Name: "col_border1", Type: glhf.Vec4}, {Name: "distort", Type: glhf.Mat4}}, string(svert), string(sfrag))
+	sliderShader, err = shader.NewShader(sliderVertexFormat, shader.AttrFormat{{Name: "col_border", Type: shader.Vec4}, {Name: "proj", Type: shader.Mat4}, {Name: "trans", Type: shader.Mat4}, {Name: "col_border1", Type: shader.Vec4}, {Name: "distort", Type: shader.Mat4}}, string(svert), string(sfrag))
 	if err != nil {
 		log.Println(err)
 	}
 
 	fvert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	ffrag, _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
-	fboShader, err = glhf.NewShader(glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec2},
-	}, glhf.AttrFormat{{Name: "tex", Type: glhf.Int}}, string(fvert), string(ffrag))
+	fboShader, err = shader.NewShader(shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_tex_coord", Type: shader.Vec2},
+	}, shader.AttrFormat{{Name: "tex", Type: shader.Int}}, string(fvert), string(ffrag))
 
 	if err != nil {
 		log.Println("FboPass: " + err.Error())
@@ -54,7 +54,7 @@ func SetupSlider() {
 	fbo.Texture().Bind(29)
 	fboUnit = 29
 
-	fboSlice = glhf.MakeVertexSlice(fboShader, 6, 6)
+	fboSlice = buffer.MakeVertexSlice(fboShader, 6, 6)
 	fboSlice.Begin()
 	fboSlice.SetVertexData([]float32{
 		-1, -1, 0, 0, 0,
@@ -143,8 +143,8 @@ func (self *SliderRenderer) GetShape(curve []bmath.Vector2f) ([]float32, int) {
 	return createMesh(curve), int(settings.Objects.SliderLOD)
 }
 
-func (self *SliderRenderer) UploadMesh(mesh []float32) *glhf.VertexSlice {
-	slice := glhf.MakeVertexSlice(sliderShader, len(mesh)/6, len(mesh)/6)
+func (self *SliderRenderer) UploadMesh(mesh []float32) *buffer.VertexSlice {
+	slice := buffer.MakeVertexSlice(sliderShader, len(mesh)/6, len(mesh)/6)
 	slice.Begin()
 	slice.SetVertexData(mesh)
 	slice.End()

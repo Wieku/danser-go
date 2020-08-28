@@ -4,15 +4,16 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
+	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
-	"github.com/wieku/glhf"
 	"io/ioutil"
 )
 
 const batchSize = 2000
 
 type SpriteBatch struct {
-	shader     *glhf.Shader
+	shader     *shader.Shader
 	additive   bool
 	color      mgl32.Vec4
 	Projection mgl32.Mat4
@@ -25,28 +26,28 @@ type SpriteBatch struct {
 	texture   texture.Texture
 
 	data        []float32
-	vao         *glhf.VertexSlice
+	vao         *buffer.VertexSlice
 	currentSize int
 	drawing     bool
 }
 
 func NewSpriteBatch() *SpriteBatch {
-	circleVertexFormat := glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec3},
-		{Name: "in_color", Type: glhf.Vec4},
-		{Name: "in_additive", Type: glhf.Float},
+	circleVertexFormat := shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_tex_coord", Type: shader.Vec3},
+		{Name: "in_color", Type: shader.Vec4},
+		{Name: "in_additive", Type: shader.Float},
 	}
 
-	circleUniformFormat := glhf.AttrFormat{
-		{Name: "proj", Type: glhf.Mat4},
-		{Name: "tex", Type: glhf.Int},
+	circleUniformFormat := shader.AttrFormat{
+		{Name: "proj", Type: shader.Mat4},
+		{Name: "tex", Type: shader.Int},
 	}
 	vert, _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
 	frag, _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
 
 	var err error
-	shader, err := glhf.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
+	shader, err := shader.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic("Sprite: " + err.Error())
@@ -64,7 +65,7 @@ func NewSpriteBatch() *SpriteBatch {
 		mgl32.Ident4(),
 		nil,
 		make([]float32, batchSize*6*11),
-		glhf.MakeVertexSlice(shader, batchSize*6, batchSize*6),
+		buffer.MakeVertexSlice(shader, batchSize*6, batchSize*6),
 		0,
 		false}
 }

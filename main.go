@@ -20,7 +20,7 @@ import (
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
-	"github.com/wieku/glhf"
+	"github.com/wieku/danser-go/framework/statistic"
 	"image"
 	"log"
 	"os"
@@ -150,8 +150,10 @@ func run() {
 
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
-		glhf.Init()
-		glhf.Clear(0, 0, 0, 1)
+		gl.Init()
+		gl.Enable(gl.BLEND)
+		gl.ClearColor(0, 0, 0, 1)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		batch := batches.NewSpriteBatch()
 		batch.Begin()
@@ -188,6 +190,7 @@ func run() {
 
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
+			statistic.Reset()
 			glfw.PollEvents()
 
 			gl.Enable(gl.MULTISAMPLE)

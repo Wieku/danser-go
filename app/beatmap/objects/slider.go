@@ -11,10 +11,10 @@ import (
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
 	"github.com/wieku/danser-go/framework/math/math32"
-	"github.com/wieku/glhf"
 	"log"
 	"math"
 	"runtime"
@@ -76,7 +76,7 @@ type Slider struct {
 
 	startCircle *Circle
 
-	vao                  *glhf.VertexSlice
+	vao                  *buffer.VertexSlice
 	created              bool
 	discreteCurve        []bmath.Vector2f
 	startAngle, endAngle float64

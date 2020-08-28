@@ -18,9 +18,8 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/oliamb/cutter v0.2.2 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
-	github.com/wieku/glhf v0.0.0-20181019131539-bd9a5520ac7f
 	github.com/wieku/rich-go v0.0.0-20200730185905-836306436db9
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
 )

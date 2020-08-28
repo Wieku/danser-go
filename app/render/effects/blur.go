@@ -5,47 +5,47 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
+	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
-	"github.com/wieku/glhf"
 	"io/ioutil"
 	"math"
 )
 
 type BlurEffect struct {
-	blurShader *glhf.Shader
+	blurShader *shader.Shader
 	fbo1       *buffer.Framebuffer
 	fbo2       *buffer.Framebuffer
 	kernelSize mgl32.Vec2
 	sigma      mgl32.Vec2
 	size       mgl32.Vec2
-	fboSlice   *glhf.VertexSlice
+	fboSlice   *buffer.VertexSlice
 }
 
 func NewBlurEffect(width, height int) *BlurEffect {
 	effect := &BlurEffect{}
-	vertexFormat := glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec2},
+	vertexFormat := shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_tex_coord", Type: shader.Vec2},
 	}
 
-	uniformFormat := glhf.AttrFormat{
-		{Name: "tex", Type: glhf.Int},
-		{Name: "kernelSize", Type: glhf.Vec2},
-		{Name: "direction", Type: glhf.Vec2},
-		{Name: "sigma", Type: glhf.Vec2},
-		{Name: "size", Type: glhf.Vec2},
+	uniformFormat := shader.AttrFormat{
+		{Name: "tex", Type: shader.Int},
+		{Name: "kernelSize", Type: shader.Vec2},
+		{Name: "direction", Type: shader.Vec2},
+		{Name: "sigma", Type: shader.Vec2},
+		{Name: "size", Type: shader.Vec2},
 	}
 
 	var err error
 	vert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	frag, _ := ioutil.ReadFile("assets/shaders/blur.fsh")
-	effect.blurShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	effect.blurShader, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic("Blur: " + err.Error())
 	}
 
-	effect.fboSlice = glhf.MakeVertexSlice(effect.blurShader, 6, 6)
+	effect.fboSlice = buffer.MakeVertexSlice(effect.blurShader, 6, 6)
 	effect.fboSlice.Begin()
 	effect.fboSlice.SetVertexData([]float32{
 		-1, -1, 0, 0, 0,
@@ -100,7 +100,8 @@ func kernelSize(sigma float32) int {
 
 func (effect *BlurEffect) Begin() {
 	effect.fbo1.Begin()
-	glhf.Clear(0, 0, 0, 1)
+	gl.ClearColor(0, 0, 0, 1)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gl.Viewport(0, 0, int32(effect.fbo1.Texture().GetWidth()), int32(effect.fbo1.Texture().GetHeight()))
 }
 
@@ -117,7 +118,8 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fboSlice.Begin()
 
 	effect.fbo2.Begin()
-	glhf.Clear(0, 0, 0, 0)
+	gl.ClearColor(0, 0, 0, 0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	effect.fbo1.Texture().Bind(0)
 
@@ -126,7 +128,8 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo2.End()
 
 	effect.fbo1.Begin()
-	glhf.Clear(0, 0, 0, 0)
+	gl.ClearColor(0, 0, 0, 0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	effect.fbo2.Texture().Bind(0)
 

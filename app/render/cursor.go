@@ -8,13 +8,13 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
-	"github.com/wieku/glhf"
+	"github.com/wieku/danser-go/framework/graphics/shader"
 	"io/ioutil"
 	"math"
 	"sync"
 )
 
-var cursorShader *glhf.Shader = nil
+var cursorShader *shader.Shader = nil
 var cursorFbo *buffer.Framebuffer = nil
 var cursorSpaceFbo *buffer.Framebuffer = nil
 var Camera *bmath.Camera
@@ -28,30 +28,30 @@ func initCursor() {
 		panic("Wrong cursor trail type")
 	}
 
-	vertexFormat := glhf.AttrFormat{
-		{Name: "in_position", Type: glhf.Vec3},
-		{Name: "in_mid", Type: glhf.Vec3},
-		{Name: "in_tex_coord", Type: glhf.Vec2},
-		{Name: "in_index", Type: glhf.Float},
-		{Name: "hue", Type: glhf.Float},
+	vertexFormat := shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_mid", Type: shader.Vec3},
+		{Name: "in_tex_coord", Type: shader.Vec2},
+		{Name: "in_index", Type: shader.Float},
+		{Name: "hue", Type: shader.Float},
 	}
 
-	uniformFormat := glhf.AttrFormat{
-		{Name: "col_tint", Type: glhf.Vec4},
-		{Name: "tex", Type: glhf.Int},
-		{Name: "proj", Type: glhf.Mat4},
-		{Name: "points", Type: glhf.Float},
-		{Name: "scale", Type: glhf.Float},
-		{Name: "endScale", Type: glhf.Float},
-		{Name: "hueshift", Type: glhf.Float},
-		{Name: "saturation", Type: glhf.Float},
+	uniformFormat := shader.AttrFormat{
+		{Name: "col_tint", Type: shader.Vec4},
+		{Name: "tex", Type: shader.Int},
+		{Name: "proj", Type: shader.Mat4},
+		{Name: "points", Type: shader.Float},
+		{Name: "scale", Type: shader.Float},
+		{Name: "endScale", Type: shader.Float},
+		{Name: "hueshift", Type: shader.Float},
+		{Name: "saturation", Type: shader.Float},
 	}
 
 	var err error
 
 	vert, _ := ioutil.ReadFile("assets/shaders/cursortrail.vsh")
 	frag, _ := ioutil.ReadFile("assets/shaders/cursortrail.fsh")
-	cursorShader, err = glhf.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
+	cursorShader, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
 
 	if err != nil {
 		panic("Cursor: " + err.Error())
@@ -84,8 +84,8 @@ type Cursor struct {
 	vertices []float32
 	vaoSize  int
 	vaoDirty bool
-	vao      *glhf.VertexSlice
-	subVao   *glhf.VertexSlice
+	vao      *buffer.VertexSlice
+	subVao   *buffer.VertexSlice
 	mutex    *sync.Mutex
 	hueBase  float64
 	vecSize  int
@@ -97,7 +97,7 @@ func NewCursor() *Cursor {
 	}
 
 	length := int(math.Ceil(float64(settings.Cursor.TrailMaxLength)*settings.Cursor.TrailDensity) * 6)
-	vao := glhf.MakeVertexSlice(cursorShader, length, length)
+	vao := buffer.MakeVertexSlice(cursorShader, length, length)
 	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100)}
 	cursor.vecSize = 10
 	return cursor
