@@ -482,7 +482,7 @@ func (pl *MainMenu) Draw(delta float64) {
 		pl.bloomEffect.EndAndRender()
 	}
 
-	if settings.DEBUG || settings.FPS {
+	if settings.DEBUG || settings.Graphics.ShowFPS {
 		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, 1)
 		pl.batch.SetScale(1, 1)

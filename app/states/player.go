@@ -183,8 +183,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller = controller
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
-		player.overlay = components.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
-		//player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
+		//player.overlay = components.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
+		player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
 	} else {
 		player.controller = dance.NewGenericController()
 		player.controller.SetBeatMap(player.bMap)
@@ -922,7 +922,7 @@ func (pl *Player) Draw(delta float64) {
 		pl.bloomEffect.EndAndRender()
 	}
 
-	if settings.DEBUG || settings.FPS {
+	if settings.DEBUG || settings.Graphics.ShowFPS {
 		pl.batch.Begin()
 		pl.batch.SetColor(1, 1, 1, 1)
 		pl.batch.SetScale(1, 1)
@@ -961,7 +961,7 @@ func (pl *Player) Draw(delta float64) {
 
 		}
 
-		if settings.DEBUG || settings.FPS {
+		if settings.DEBUG || settings.Graphics.ShowFPS {
 			fpsText := fmt.Sprintf("%0.0ffps (%0.2fms)", pl.fpsC, 1000/pl.fpsC)
 			tpsText := fmt.Sprintf("%0.0ftps (%0.2fms)", pl.fpsU, 1000/pl.fpsU)
 			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidth(size, fpsText), padDown+shift, size, fpsText)

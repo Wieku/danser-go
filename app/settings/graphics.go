@@ -12,6 +12,7 @@ func initGraphics() *graphics {
 		VSync:        false,
 		FPSCap:       1000,
 		MSAA:         16,
+		ShowFPS:      false,
 	}
 }
 
@@ -24,6 +25,7 @@ type graphics struct {
 	VSync        bool  //false
 	FPSCap       int64 //1000
 	MSAA         int32 //16
+	ShowFPS      bool
 }
 
 func (gr *graphics) SetDefaults(width, height int64) {

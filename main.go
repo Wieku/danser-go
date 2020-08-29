@@ -59,7 +59,7 @@ func run() {
 		pitch := flag.Float64("pitch", 1.0, "")
 		mover := flag.String("mover", "flower", "")
 		debug := flag.Bool("debug", false, "")
-		fps := flag.Bool("frame", false, "")
+
 		play := flag.Bool("play", false, "")
 
 		flag.Parse()
@@ -70,7 +70,6 @@ func run() {
 		}
 
 		settings.DEBUG = *debug
-		settings.FPS = *fps
 		settings.KNOCKOUT = *knockout
 		settings.PLAY = *play
 		settings.DIVIDES = *cursors

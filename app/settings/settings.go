@@ -19,7 +19,6 @@ type fileformat struct {
 var Beat = &beat{1.2}
 
 var DEBUG = false
-var FPS = false
 var PLAY = false
 var KNOCKOUT = false
 var PLAYERS = 1
