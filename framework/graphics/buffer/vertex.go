@@ -2,7 +2,7 @@ package buffer
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/framework/graphics/buffer/history"
+	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"

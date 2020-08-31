@@ -2,7 +2,7 @@ package buffer
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser-go/framework/graphics/buffer/history"
+	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 )

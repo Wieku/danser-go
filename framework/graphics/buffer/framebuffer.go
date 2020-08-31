@@ -2,7 +2,7 @@ package buffer
 
 import (
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/graphics/buffer/history"
+	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
 
