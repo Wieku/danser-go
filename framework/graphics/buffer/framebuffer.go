@@ -43,7 +43,7 @@ func NewFrame(width, height int, smooth, depth bool) *Framebuffer {
 
 	f.End()
 
-	runtime.SetFinalizer(f, (*Framebuffer).delete)
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
 
 	return f
 }
@@ -84,13 +84,13 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 
 	f.End()
 
-	runtime.SetFinalizer(f, (*Framebuffer).delete)
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
 
 	f.multisampled = true
 	return f
 }
 
-func (f *Framebuffer) delete() {
+func (f *Framebuffer) Dispose() {
 	mainthread.CallNonBlock(func() {
 		gl.DeleteFramebuffers(1, &f.obj)
 	})
