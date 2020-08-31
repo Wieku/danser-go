@@ -34,7 +34,7 @@ type SpriteBatch struct {
 
 func NewSpriteBatch() *SpriteBatch {
 	circleVertexFormat := shader.AttrFormat{
-		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_position", Type: shader.Vec2},
 		{Name: "in_tex_coord", Type: shader.Vec3},
 		{Name: "in_color", Type: shader.Vec4},
 		{Name: "in_additive", Type: shader.Float},
@@ -141,18 +141,14 @@ func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d,
 
 	batch.bind(texture.Texture)
 
-	batch.addVertex(vec00.AsVec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
-	batch.addVertex(vec10.AsVec3(), mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
-	batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
-
-	//batch.addVertex(vec11.AsVec3(), mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
-	batch.addVertex(vec01.AsVec3(), mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
-	//batch.addVertex(vec00.AsVec3(), mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec00, mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec10, mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
+	batch.addVertex(vec11, mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
+	batch.addVertex(vec01, mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
 
 	if batch.currentSize >= len(batch.data)-1 {
 		batch.Flush()
 	}
-
 }
 
 func (batch *SpriteBatch) Flush() {
@@ -160,24 +156,24 @@ func (batch *SpriteBatch) Flush() {
 		return
 	}
 
-	subVao := batch.vao.Slice(0, batch.currentSize/11)
+	subVao := batch.vao.Slice(0, batch.currentSize/10)
 	//subVao.Begin()
 	subVao.SetVertexData(batch.data[:batch.currentSize])
 
-	batch.ibo.DrawPart(0, batch.currentSize/11/4*6)
+	batch.ibo.DrawPart(0, batch.currentSize/10/4*6)
 	//batch.ibo.Unbind()
 
 	//subVao.End()
 	batch.currentSize = 0
 }
 
-func (batch *SpriteBatch) addVertex(vx mgl32.Vec3, texCoord mgl32.Vec3, color mgl32.Vec4) {
+func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, color mgl32.Vec4) {
 	add := 1
 	if batch.additive {
 		add = 0
 	}
-	fillArray(batch.data, batch.currentSize, vx.X(), vx.Y(), vx.Z(), texCoord.X(), texCoord.Y(), texCoord.Z(), color.X(), color.Y(), color.Z(), color.W(), float32(add))
-	batch.currentSize += 11
+	fillArray(batch.data, batch.currentSize, vx.X32(), vx.Y32(), texCoord.X(), texCoord.Y(), texCoord.Z(), color.X(), color.Y(), color.Z(), color.W(), float32(add))
+	batch.currentSize += 10
 }
 
 func fillArray(dst []float32, index int, values ...float32) {
