@@ -3,14 +3,13 @@ package buffer
 import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/buffer/history"
+	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
 
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 )
-
-var fboBindHistory []int32
 
 // Framebuffer is a fixed resolution texture that you can draw on.
 type Framebuffer struct {
@@ -56,16 +55,14 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 
 	gl.GenFramebuffers(1, &f.helperObj)
 
-	gl.GetIntegerv(gl.FRAMEBUFFER_BINDING, &f.last)
-	fboBindHistory = append(fboBindHistory, f.last)
+	history.Push(gl.FRAMEBUFFER_BINDING)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.helperObj)
 
 	f.tex.Bind(0)
 	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
 
-	lst := fboBindHistory[len(fboBindHistory)-1]
-	fboBindHistory = fboBindHistory[:len(fboBindHistory)-1]
-	gl.BindFramebuffer(gl.FRAMEBUFFER, uint32(lst))
+	previous := history.Pop(gl.FRAMEBUFFER_BINDING)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, previous)
 
 	gl.GenFramebuffers(1, &f.obj)
 
@@ -108,6 +105,7 @@ func (f *Framebuffer) ID() uint32 {
 func (f *Framebuffer) Begin() {
 	history.Push(gl.FRAMEBUFFER_BINDING)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.obj)
+	statistic.Increment(statistic.FBOBinds)
 }
 
 // End unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
@@ -125,6 +123,9 @@ func (f *Framebuffer) End() {
 	}
 
 	handle := history.Pop(gl.FRAMEBUFFER_BINDING)
+	if handle != 0 {
+		statistic.Increment(statistic.FBOBinds)
+	}
 	gl.BindFramebuffer(gl.FRAMEBUFFER, handle)
 }
 
