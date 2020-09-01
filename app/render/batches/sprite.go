@@ -87,7 +87,7 @@ func NewSpriteBatch() *SpriteBatch {
 		0,
 		mgl32.Ident4(),
 		nil,
-		make([]float32, batchSize*4*11),
+		make([]float32, batchSize*4*10),
 		buffer.MakeVertexSlice(shader, batchSize*4, batchSize*4),
 		ibo,
 		0,
