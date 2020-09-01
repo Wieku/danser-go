@@ -26,7 +26,7 @@ func NewVertexBufferObject(maxFloats int, mode DrawMode) *VertexBufferObject {
 	gl.BufferData(gl.ARRAY_BUFFER, maxFloats*4, gl.Ptr(nil), uint32(mode))
 	vbo.Unbind()
 
-	runtime.SetFinalizer(vbo, vbo.Dispose)
+	runtime.SetFinalizer(vbo, (*VertexBufferObject).Dispose)
 
 	return vbo
 }
@@ -85,7 +85,7 @@ func (vbo *VertexBufferObject) Unbind() {
 func (vbo *VertexBufferObject) Dispose() {
 	if !vbo.disposed {
 		mainthread.CallNonBlock(func() {
-			gl.DeleteBuffers(gl.ARRAY_BUFFER, &vbo.handle)
+			gl.DeleteBuffers(1, &vbo.handle)
 		})
 	}
 

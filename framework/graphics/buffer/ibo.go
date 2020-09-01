@@ -26,7 +26,7 @@ func NewIndexBufferObject(maxIndices int) *IndexBufferObject {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, maxIndices*2, gl.Ptr(nil), gl.DYNAMIC_DRAW)
 	ibo.Unbind()
 
-	runtime.SetFinalizer(ibo, ibo.Dispose)
+	runtime.SetFinalizer(ibo, (*IndexBufferObject).Dispose)
 
 	return ibo
 }
@@ -108,7 +108,7 @@ func (ibo *IndexBufferObject) Unbind() {
 func (ibo *IndexBufferObject) Dispose() {
 	if !ibo.disposed {
 		mainthread.CallNonBlock(func() {
-			gl.DeleteBuffers(gl.ELEMENT_ARRAY_BUFFER, &ibo.handle)
+			gl.DeleteBuffers(1, &ibo.handle)
 		})
 	}
 
