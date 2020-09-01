@@ -21,3 +21,9 @@ func Pop(binding int) uint32 {
 
 	return handle
 }
+
+func GetCurrent(binding int) uint32 {
+	var handle int32
+	gl.GetIntegerv(uint32(binding), &handle)
+	return uint32(handle)
+}
