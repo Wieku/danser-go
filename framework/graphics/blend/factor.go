@@ -2,7 +2,7 @@ package blend
 
 import "github.com/go-gl/gl/v3.3-core/gl"
 
-type Factor int
+type Factor uint32
 
 const (
 	Zero                  = Factor(gl.ZERO)

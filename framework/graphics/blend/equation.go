@@ -2,7 +2,7 @@ package blend
 
 import "github.com/go-gl/gl/v3.3-core/gl"
 
-type Equation int
+type Equation uint32
 
 const (
 	Add             = Equation(gl.FUNC_ADD)
