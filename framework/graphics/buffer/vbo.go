@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
+	"runtime"
 )
 
 type VertexBufferObject struct {
@@ -25,6 +26,8 @@ func NewVertexBufferObject(maxFloats int, mode DrawMode) *VertexBufferObject {
 	gl.BufferData(gl.ARRAY_BUFFER, maxFloats*4, gl.Ptr(nil), uint32(mode))
 	vbo.Unbind()
 
+	runtime.SetFinalizer(vbo, vbo.Dispose)
+
 	return vbo
 }
 
@@ -33,13 +36,13 @@ func (vbo *VertexBufferObject) Capacity() int {
 }
 
 func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
-	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER)
+	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
 	if currentVBO != vbo.handle {
 		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
 	}
 
 	if offset+len(data) > vbo.capacity {
-		panic(fmt.Sprintf("Data exceeds Vertex Buffer Object's capacity. Data length: %d, offset: %d, capacity: %d", len(data), offset, vbo.capacity))
+		panic(fmt.Sprintf("Data exceeds VBO's capacity. Data length: %d, offset: %d, capacity: %d", len(data), offset, vbo.capacity))
 	}
 
 	gl.BufferSubData(gl.ARRAY_BUFFER, offset, len(data)*4, gl.Ptr(data))
@@ -80,8 +83,11 @@ func (vbo *VertexBufferObject) Unbind() {
 }
 
 func (vbo *VertexBufferObject) Dispose() {
-	mainthread.CallNonBlock(func() {
-		vbo.disposed = true
-		gl.DeleteBuffers(gl.ARRAY_BUFFER, &vbo.handle)
-	})
+	if !vbo.disposed {
+		mainthread.CallNonBlock(func() {
+			gl.DeleteBuffers(gl.ARRAY_BUFFER, &vbo.handle)
+		})
+	}
+
+	vbo.disposed = true
 }
