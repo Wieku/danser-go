@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"io/ioutil"
@@ -14,7 +15,7 @@ import (
 	"sync"
 )
 
-var cursorShader *shader.Shader = nil
+var cursorShader *shader.RShader = nil
 var cursorFbo *buffer.Framebuffer = nil
 var cursorSpaceFbo *buffer.Framebuffer = nil
 var Camera *bmath.Camera
@@ -28,34 +29,9 @@ func initCursor() {
 		panic("Wrong cursor trail type")
 	}
 
-	vertexFormat := shader.AttrFormat{
-		{Name: "in_position", Type: shader.Vec3},
-		{Name: "in_mid", Type: shader.Vec3},
-		{Name: "in_tex_coord", Type: shader.Vec2},
-		{Name: "in_index", Type: shader.Float},
-		{Name: "hue", Type: shader.Float},
-	}
-
-	uniformFormat := shader.AttrFormat{
-		{Name: "col_tint", Type: shader.Vec4},
-		{Name: "tex", Type: shader.Int},
-		{Name: "proj", Type: shader.Mat4},
-		{Name: "points", Type: shader.Float},
-		{Name: "scale", Type: shader.Float},
-		{Name: "endScale", Type: shader.Float},
-		{Name: "hueshift", Type: shader.Float},
-		{Name: "saturation", Type: shader.Float},
-	}
-
-	var err error
-
 	vert, _ := ioutil.ReadFile("assets/shaders/cursortrail.vsh")
 	frag, _ := ioutil.ReadFile("assets/shaders/cursortrail.fsh")
-	cursorShader, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
-
-	if err != nil {
-		panic("Cursor: " + err.Error())
-	}
+	cursorShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
 	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	cursorFbo.Texture().Bind(30)
@@ -81,14 +57,14 @@ type Cursor struct {
 
 	Name string
 
-	vertices []float32
-	vaoSize  int
-	vaoDirty bool
-	vao      *buffer.VertexSlice
-	subVao   *buffer.VertexSlice
-	mutex    *sync.Mutex
-	hueBase  float64
-	vecSize  int
+	vertices  []float32
+	vaoSize   int
+	vaoDirty  bool
+	vao       *buffer.VertexArrayObject
+	mutex     *sync.Mutex
+	hueBase   float64
+	vecSize   int
+	instances int
 }
 
 func NewCursor() *Cursor {
@@ -96,9 +72,45 @@ func NewCursor() *Cursor {
 		initCursor()
 	}
 
-	length := int(math.Ceil(float64(settings.Cursor.TrailMaxLength)*settings.Cursor.TrailDensity) * 6)
-	vao := buffer.MakeVertexSlice(cursorShader, length, length)
-	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, subVao: vao.Slice(0, 0), mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100)}
+	length := int(math.Ceil(float64(settings.Cursor.TrailMaxLength) / settings.Cursor.TrailDensity))
+	//vao := buffer.MakeVertexSlice(cursorShader, length, length)
+
+	vao := buffer.NewVertexArrayObject()
+
+	vao.AddVBO(
+		"default",
+		6,
+		0,
+		attribute.Format{
+			{Name: "in_position", Type: attribute.Vec2},
+			{Name: "in_tex_coord", Type: attribute.Vec2},
+		},
+	)
+
+	vao.SetData("default", 0, []float32{
+		-1, -1, 0, 0,
+		1, -1, 1, 0,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		-1, 1, 0, 1,
+		-1, -1, 0, 0,
+	})
+
+	vao.AddVBO(
+		"points",
+		length,
+		1,
+		attribute.Format{
+			{Name: "in_mid", Type: attribute.Vec2},
+			{Name: "hue", Type: attribute.Float},
+		},
+	)
+
+	vao.Bind()
+	vao.Attach(cursorShader)
+	vao.Unbind()
+
+	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100), vertices: make([]float32, length*3)}
 	cursor.vecSize = 10
 	return cursor
 }
@@ -208,7 +220,6 @@ func (cr *Cursor) Update(tim float64) {
 		}
 
 		for i, o := range cr.Points {
-			offset := i * 6 * cr.vecSize
 			inv := float32(len(cr.Points) - i - 1)
 
 			hue := float32(cr.PointsC[i])
@@ -216,34 +227,24 @@ func (cr *Cursor) Update(tim float64) {
 				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cr.Points))
 			}
 
-			fillArray(cr.vertices, offset, -1+o.X, -1+o.Y, 0, o.X, o.Y, 0, 0, 0, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize, 1+o.X, -1+o.Y, 0, o.X, o.Y, 0, 1, 0, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*2, -1+o.X, 1+o.Y, 0, o.X, o.Y, 0, 0, 1, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*3, 1+o.X, -1+o.Y, 0, o.X, o.Y, 0, 1, 0, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*4, 1+o.X, 1+o.Y, 0, o.X, o.Y, 0, 1, 1, inv, hue)
-			fillArray(cr.vertices, offset+cr.vecSize*5, -1+o.X, 1+o.Y, 0, o.X, o.Y, 0, 0, 1, inv, hue)
+			index := (len(cr.Points) - 1 - i) * 3
+			cr.vertices[index] = o.X
+			cr.vertices[index+1] = o.Y
+			cr.vertices[index+2] = hue
 		}
 
-		cr.vaoSize = len(cr.Points) * 6 * cr.vecSize
+		cr.vaoSize = len(cr.Points)
 		cr.VaoPos = cr.Position
 		cr.vaoDirty = true
 		cr.mutex.Unlock()
 	}
 }
 
-func fillArray(dst []float32, index int, values ...float32) {
-	for i, j := range values {
-		dst[index+i] = j
-	}
-}
-
 func (cursor *Cursor) UpdateRenderer() {
 	cursor.mutex.Lock()
 	if cursor.vaoDirty {
-		cursor.subVao = cursor.vao.Slice(0, cursor.vaoSize/cursor.vecSize)
-		cursor.subVao.Begin()
-		cursor.subVao.SetVertexData(cursor.vertices[0:cursor.vaoSize])
-		cursor.subVao.End()
+		cursor.vao.SetData("points", 0, cursor.vertices[0:cursor.vaoSize*3])
+		cursor.instances = cursor.vaoSize
 		cursor.RendPos = cursor.VaoPos
 		cursor.vaoDirty = false
 	}
@@ -301,18 +302,18 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
 	}
 
-	cursorShader.Begin()
-	cursorShader.SetUniformAttr(1, int32(1))
-	cursorShader.SetUniformAttr(2, batch.Projection)
-	cursorShader.SetUniformAttr(3, float32(len(cursor.Points)))
+	cursorShader.Bind()
+	cursorShader.SetUniform("tex", int32(1))
+	cursorShader.SetUniform("proj", batch.Projection)
+	cursorShader.SetUniform("points", float32(cursor.instances))
 
 	if settings.Cursor.TrailStyle == 1 {
-		cursorShader.SetUniformAttr(7, float32(0.0))
+		cursorShader.SetUniform("saturation", float32(0.0))
 	} else {
-		cursorShader.SetUniformAttr(7, float32(1.0))
+		cursorShader.SetUniform("saturation", float32(1.0))
 	}
 
-	cursor.subVao.BeginDraw()
+	cursor.vao.Bind()
 
 	innerLengthMult := float32(1.0)
 
@@ -321,28 +322,28 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	if settings.Cursor.EnableTrailGlow {
 		cursorScl = float32(siz * (12.0 / 18) * scale)
 		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
-		cursorShader.SetUniformAttr(0, color2)
-		cursorShader.SetUniformAttr(4, float32(siz*(16.0/18)*scale*settings.Cursor.TrailScale))
-		cursorShader.SetUniformAttr(5, float32(settings.Cursor.GlowEndScale))
+		cursorShader.SetUniform("col_tint", color2)
+		cursorShader.SetUniform("scale", float32(siz*(16.0/18)*scale*settings.Cursor.TrailScale))
+		cursorShader.SetUniform("endScale", float32(settings.Cursor.GlowEndScale))
 		if settings.Cursor.TrailStyle > 1 {
-			cursorShader.SetUniformAttr(6, float32((hueshift-36)/360))
+			cursorShader.SetUniform("hueshift", float32((hueshift-36)/360))
 		}
-		cursor.subVao.Draw()
+		cursor.vao.DrawInstanced(0, cursor.instances)
 	}
 
 	if settings.Cursor.TrailStyle > 1 {
-		cursorShader.SetUniformAttr(6, float32(hueshift/360))
+		cursorShader.SetUniform("hueshift", float32(hueshift/360))
 	}
-	cursorShader.SetUniformAttr(0, color)
-	cursorShader.SetUniformAttr(4, cursorScl*float32(settings.Cursor.TrailScale))
-	cursorShader.SetUniformAttr(3, float32(len(cursor.Points))*innerLengthMult)
-	cursorShader.SetUniformAttr(5, float32(settings.Cursor.TrailEndScale))
+	cursorShader.SetUniform("col_tint", color)
+	cursorShader.SetUniform("scale", cursorScl*float32(settings.Cursor.TrailScale))
+	cursorShader.SetUniform("points", float32(len(cursor.Points))*innerLengthMult)
+	cursorShader.SetUniform("endScale", float32(settings.Cursor.TrailEndScale))
 
-	cursor.subVao.Draw()
+	cursor.vao.DrawInstanced(0, cursor.instances)
 
-	cursor.subVao.EndDraw()
+	cursor.vao.Unbind()
 
-	cursorShader.End()
+	cursorShader.Unbind()
 
 	batch.Begin()
 

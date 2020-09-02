@@ -1,9 +1,8 @@
 #version 330
 
-in vec3 in_position;
-in vec3 in_mid;
+in vec2 in_position;
+in vec2 in_mid;
 in vec2 in_tex_coord;
-in float in_index;
 in float hue;
 
 uniform mat4 proj;
@@ -24,8 +23,8 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    gl_Position = proj * vec4((in_position - in_mid) * scale * (endScale + (1.0 - endScale) * (points - 1 - in_index) / points) + in_mid, 1.0);
+    gl_Position = proj * vec4(in_position * scale * (endScale + (1.0 - endScale) * (points - 1 - gl_InstanceID) / points) + in_mid, 0.0, 1.0);
     tex_coord = in_tex_coord;
-    index = in_index;
+    index = gl_InstanceID;
     color_pass = vec4(hsv2rgb(vec3(fract(hue + hueshift), saturation, 1.0)), 1.0);
 }
