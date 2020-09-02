@@ -70,6 +70,43 @@ func (vao *VertexArrayObject) SetData(name string, offset int, data []float32) {
 	holder.vbo.Unbind()
 }
 
+func (vao *VertexArrayObject) Draw() {
+	vao.DrawPart(0, vao.capacity)
+}
+
+func (vao *VertexArrayObject) DrawInstanced(baseInstance, instanceCount int) {
+	vao.DrawPartInstanced(0, vao.capacity, baseInstance, instanceCount)
+}
+
+func (vao *VertexArrayObject) DrawPart(offset, length int) {
+	vao.check(offset, length)
+
+	statistic.Add(statistic.VerticesDrawn, int64(length))
+	statistic.Increment(statistic.DrawCalls)
+
+	gl.DrawArrays(gl.TRIANGLES, int32(offset), int32(length))
+}
+
+func (vao *VertexArrayObject) DrawPartInstanced(offset, length, baseInstance, instanceCount int) {
+	vao.check(offset, length)
+
+	statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
+	statistic.Increment(statistic.DrawCalls)
+
+	gl.DrawArraysInstancedBaseInstance(gl.TRIANGLES, int32(offset), int32(length), int32(instanceCount), uint32(baseInstance))
+}
+
+func (vao *VertexArrayObject) check(offset, length int) {
+	currentVAO := history.GetCurrent(gl.VERTEX_ARRAY_BINDING)
+	if currentVAO != vao.handle {
+		panic(fmt.Sprintf("VAO mismatch. Target VAO: %d, current: %d", vao.handle, currentVAO))
+	}
+
+	if offset+length > vao.capacity {
+		panic(fmt.Sprintf("Draw exceeds VAO's capacity. Draw length: %d, offset: %d, capacity: %d", length, offset, vao.capacity))
+	}
+}
+
 func (vao *VertexArrayObject) Bind() {
 	if vao.disposed {
 		panic("Can't bind disposed VAO")
