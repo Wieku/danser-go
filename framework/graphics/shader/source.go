@@ -13,6 +13,19 @@ const (
 	Fragment = Type(gl.FRAGMENT_SHADER)
 )
 
+func (t Type) Name() string {
+	switch t {
+	case Vertex:
+		return "Vertex shader"
+	case Geometry:
+		return "Geometry shader"
+	case Fragment:
+		return "Fragment shader"
+	default:
+		panic("Invalid type")
+	}
+}
+
 type Source struct {
 	handle  uint32
 	success bool
