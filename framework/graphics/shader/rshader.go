@@ -84,7 +84,7 @@ func (s *RShader) fetchAttributes() {
 
 		s.attributes[name] = attribute.VertexAttribute{
 			Name:     name,
-			Type:     Type(xtype),
+			Type:     attribute.Type(xtype),
 			Location: location,
 		}
 	}
@@ -111,7 +111,7 @@ func (s *RShader) fetchUniforms() {
 
 		s.uniforms[name] = attribute.VertexAttribute{
 			Name:     name,
-			Type:     Type(xtype),
+			Type:     attribute.Type(xtype),
 			Location: location,
 		}
 	}
@@ -142,50 +142,48 @@ func (s *RShader) SetUniform(name string, value interface{}) {
 	}
 
 	switch uniform.Type {
-	case Int:
-		value := value.(int32)
-		gl.Uniform1iv(uniform.Location, 1, &value)
-	case Float:
+	case attribute.Float:
 		value := value.(float32)
 		gl.Uniform1fv(uniform.Location, 1, &value)
-	case Vec2:
+	case attribute.Vec2:
 		value := value.(mgl32.Vec2)
 		gl.Uniform2fv(uniform.Location, 1, &value[0])
-	case Vec3:
+	case attribute.Vec3:
 		value := value.(mgl32.Vec3)
 		gl.Uniform3fv(uniform.Location, 1, &value[0])
-	case Vec4:
+	case attribute.Vec4:
 		value := value.(mgl32.Vec4)
 		gl.Uniform4fv(uniform.Location, 1, &value[0])
-	case Mat2:
+	case attribute.Mat2:
 		value := value.(mgl32.Mat2)
 		gl.UniformMatrix2fv(uniform.Location, 1, false, &value[0])
-	case Mat23:
+	case attribute.Mat23:
 		value := value.(mgl32.Mat2x3)
 		gl.UniformMatrix2x3fv(uniform.Location, 1, false, &value[0])
-	case Mat24:
+	case attribute.Mat24:
 		value := value.(mgl32.Mat2x4)
 		gl.UniformMatrix2x4fv(uniform.Location, 1, false, &value[0])
-	case Mat3:
+	case attribute.Mat3:
 		value := value.(mgl32.Mat3)
 		gl.UniformMatrix3fv(uniform.Location, 1, false, &value[0])
-	case Mat32:
+	case attribute.Mat32:
 		value := value.(mgl32.Mat3x2)
 		gl.UniformMatrix3x2fv(uniform.Location, 1, false, &value[0])
-	case Mat34:
+	case attribute.Mat34:
 		value := value.(mgl32.Mat3x4)
 		gl.UniformMatrix3x4fv(uniform.Location, 1, false, &value[0])
-	case Mat4:
+	case attribute.Mat4:
 		value := value.(mgl32.Mat4)
 		gl.UniformMatrix4fv(uniform.Location, 1, false, &value[0])
-	case Mat42:
+	case attribute.Mat42:
 		value := value.(mgl32.Mat4x2)
 		gl.UniformMatrix4x2fv(uniform.Location, 1, false, &value[0])
-	case Mat43:
+	case attribute.Mat43:
 		value := value.(mgl32.Mat4x3)
 		gl.UniformMatrix4x3fv(uniform.Location, 1, false, &value[0])
-	default:
-		panic("Invalid attribute type")
+	default: // We assume that uniform is of type int or sampler
+		value := value.(int32)
+		gl.Uniform1iv(uniform.Location, 1, &value)
 	}
 }
 
