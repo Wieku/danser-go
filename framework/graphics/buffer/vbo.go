@@ -36,6 +36,10 @@ func (vbo *VertexBufferObject) Capacity() int {
 }
 
 func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
+	if len(data) == 0 {
+		return
+	}
+
 	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
 	if currentVBO != vbo.handle {
 		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))

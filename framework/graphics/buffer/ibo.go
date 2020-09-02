@@ -36,6 +36,10 @@ func (ibo *IndexBufferObject) Capacity() int {
 }
 
 func (ibo *IndexBufferObject) SetData(offset int, data []uint16) {
+	if len(data) == 0 {
+		return
+	}
+
 	ibo.check(offset, len(data), "Data")
 
 	gl.BufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset, len(data)*2, gl.Ptr(data))
