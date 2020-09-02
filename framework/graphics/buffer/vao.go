@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
+	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
 )
@@ -57,6 +58,40 @@ func (vao *VertexArrayObject) AddVBO(name string, maxVertices int, divisor int, 
 	}
 
 	vao.vbos[name] = holder
+}
+
+func (vao *VertexArrayObject) Attach(s *shader.RShader) {
+	currentVAO := history.GetCurrent(gl.VERTEX_ARRAY_BINDING)
+	if currentVAO != vao.handle {
+		panic(fmt.Sprintf("VAO mismatch. Target VAO: %d, current: %d", vao.handle, currentVAO))
+	}
+
+	for _, holder := range vao.vbos {
+
+		holder.vbo.Bind()
+
+		var offset int
+		for _, attr := range holder.format {
+
+			location := s.GetAttributeInfo(attr.Name).Location
+
+			gl.VertexAttribPointer(
+				uint32(location),
+				int32(attr.Type.Size()/4),
+				gl.FLOAT,
+				false,
+				int32(holder.format.Size()),
+				gl.PtrOffset(offset),
+			)
+			gl.VertexAttribDivisor(uint32(location), uint32(holder.divisor))
+			gl.EnableVertexAttribArray(uint32(location))
+
+			offset += attr.Type.Size()
+		}
+
+		holder.vbo.Unbind()
+
+	}
 }
 
 func (vao *VertexArrayObject) SetData(name string, offset int, data []float32) {
