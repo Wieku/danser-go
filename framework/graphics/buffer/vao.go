@@ -106,6 +106,11 @@ func (vao *VertexArrayObject) Unbind() {
 
 func (vao *VertexArrayObject) Dispose() {
 	if !vao.disposed {
+
+		for _, holder := range vao.vbos {
+			holder.vbo.Dispose()
+		}
+
 		mainthread.CallNonBlock(func() {
 			gl.DeleteVertexArrays(1, &vao.handle)
 		})
