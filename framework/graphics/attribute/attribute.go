@@ -22,7 +22,7 @@ func (af Format) Size() int {
 type VertexAttribute struct {
 	Name     string
 	Type     Type
-	Location uint32
+	Location int32
 }
 
 // Type represents the type of an OpenGL attribute.

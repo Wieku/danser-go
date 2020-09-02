@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"runtime"
@@ -84,7 +85,7 @@ func (s *RShader) fetchAttributes() {
 		s.attributes[name] = attribute.VertexAttribute{
 			Name:     name,
 			Type:     Type(xtype),
-			Location: uint32(location),
+			Location: location,
 		}
 	}
 }
@@ -111,7 +112,7 @@ func (s *RShader) fetchUniforms() {
 		s.uniforms[name] = attribute.VertexAttribute{
 			Name:     name,
 			Type:     Type(xtype),
-			Location: uint32(location),
+			Location: location,
 		}
 	}
 }
@@ -132,6 +133,60 @@ func (s *RShader) GetUnformInfo(name string) attribute.VertexAttribute {
 	}
 
 	return attr
+}
+
+func (s *RShader) SetUniform(name string, value interface{}) {
+	uniform, exists := s.uniforms[name]
+	if !exists {
+		panic(fmt.Sprintf("Uniform %s doesn't exist", name))
+	}
+
+	switch uniform.Type {
+	case Int:
+		value := value.(int32)
+		gl.Uniform1iv(uniform.Location, 1, &value)
+	case Float:
+		value := value.(float32)
+		gl.Uniform1fv(uniform.Location, 1, &value)
+	case Vec2:
+		value := value.(mgl32.Vec2)
+		gl.Uniform2fv(uniform.Location, 1, &value[0])
+	case Vec3:
+		value := value.(mgl32.Vec3)
+		gl.Uniform3fv(uniform.Location, 1, &value[0])
+	case Vec4:
+		value := value.(mgl32.Vec4)
+		gl.Uniform4fv(uniform.Location, 1, &value[0])
+	case Mat2:
+		value := value.(mgl32.Mat2)
+		gl.UniformMatrix2fv(uniform.Location, 1, false, &value[0])
+	case Mat23:
+		value := value.(mgl32.Mat2x3)
+		gl.UniformMatrix2x3fv(uniform.Location, 1, false, &value[0])
+	case Mat24:
+		value := value.(mgl32.Mat2x4)
+		gl.UniformMatrix2x4fv(uniform.Location, 1, false, &value[0])
+	case Mat3:
+		value := value.(mgl32.Mat3)
+		gl.UniformMatrix3fv(uniform.Location, 1, false, &value[0])
+	case Mat32:
+		value := value.(mgl32.Mat3x2)
+		gl.UniformMatrix3x2fv(uniform.Location, 1, false, &value[0])
+	case Mat34:
+		value := value.(mgl32.Mat3x4)
+		gl.UniformMatrix3x4fv(uniform.Location, 1, false, &value[0])
+	case Mat4:
+		value := value.(mgl32.Mat4)
+		gl.UniformMatrix4fv(uniform.Location, 1, false, &value[0])
+	case Mat42:
+		value := value.(mgl32.Mat4x2)
+		gl.UniformMatrix4x2fv(uniform.Location, 1, false, &value[0])
+	case Mat43:
+		value := value.(mgl32.Mat4x3)
+		gl.UniformMatrix4x3fv(uniform.Location, 1, false, &value[0])
+	default:
+		panic("Invalid attribute type")
+	}
 }
 
 func (s *RShader) Bind() {
