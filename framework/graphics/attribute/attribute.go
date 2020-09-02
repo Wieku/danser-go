@@ -1,5 +1,7 @@
 package attribute
 
+import "github.com/go-gl/gl/v3.3-core/gl"
+
 // Format defines names and types of OpenGL attributes (vertex format, uniform format, etc.).
 //
 // Example:
@@ -18,8 +20,9 @@ func (af Format) Size() int {
 // VertexAttribute represents an arbitrary OpenGL attribute, such as a vertex attribute or a shader
 // uniform attribute.
 type VertexAttribute struct {
-	Name string
-	Type Type
+	Name     string
+	Type     Type
+	Location uint32
 }
 
 // Type represents the type of an OpenGL attribute.
@@ -27,20 +30,20 @@ type Type int
 
 // List of all possible attribute types.
 const (
-	Int Type = iota
-	Float
-	Vec2
-	Vec3
-	Vec4
-	Mat2
-	Mat23
-	Mat24
-	Mat3
-	Mat32
-	Mat34
-	Mat4
-	Mat42
-	Mat43
+	Int   = Type(gl.INT)
+	Float = Type(gl.FLOAT)
+	Vec2  = Type(gl.FLOAT_VEC2)
+	Vec3  = Type(gl.FLOAT_VEC3)
+	Vec4  = Type(gl.FLOAT_VEC4)
+	Mat2  = Type(gl.FLOAT_MAT2)
+	Mat23 = Type(gl.FLOAT_MAT2x3)
+	Mat24 = Type(gl.FLOAT_MAT2x4)
+	Mat3  = Type(gl.FLOAT_MAT3)
+	Mat32 = Type(gl.FLOAT_MAT3x2)
+	Mat34 = Type(gl.FLOAT_MAT3x4)
+	Mat4  = Type(gl.FLOAT_MAT4)
+	Mat42 = Type(gl.FLOAT_MAT4x2)
+	Mat43 = Type(gl.FLOAT_MAT4x3)
 )
 
 // Size returns the size of a type in bytes.
