@@ -402,7 +402,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.start = true
 	}()
 
-	player.profilerU = frame.NewCounter(1000)
+	player.profilerU = frame.NewCounter()
 	limiter := frame.NewLimiter(5000)
 	go func() {
 		var last = musicPlayer.GetPosition()
@@ -540,7 +540,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(15 * time.Millisecond)
 		}
 	}()
-	player.profiler = frame.NewCounter(60)
+	player.profiler = frame.NewCounter()
 	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
