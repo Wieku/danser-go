@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/math/math32"
@@ -14,7 +15,7 @@ import (
 	"log"
 )
 
-var sliderShader *shader.Shader = nil
+var sliderShader *shader.RShader = nil
 var fboShader *shader.Shader
 var fboSlice *buffer.VertexSlice
 var sliderVertexFormat shader.AttrFormat
@@ -34,10 +35,17 @@ func SetupSlider() {
 
 	svert, _ := ioutil.ReadFile("assets/shaders/slider.vsh")
 	sfrag, _ := ioutil.ReadFile("assets/shaders/slider.fsh")
-	sliderShader, err = shader.NewShader(sliderVertexFormat, shader.AttrFormat{{Name: "col_border", Type: shader.Vec4}, {Name: "proj", Type: shader.Mat4}, {Name: "trans", Type: shader.Mat4}, {Name: "col_border1", Type: shader.Vec4}, {Name: "distort", Type: shader.Mat4}}, string(svert), string(sfrag))
-	if err != nil {
-		log.Println(err)
-	}
+	sliderShader = shader.NewRShader(shader.NewSource(string(svert), shader.Vertex), shader.NewSource(string(sfrag), shader.Fragment))
+	//if err != nil {
+	//	log.Println(err)
+	//}
+
+	//shader.AttrFormat{
+	//	{Name: "col_border", Type: shader.Vec4},
+	//	{Name: "proj", Type: shader.Mat4},
+	//	{Name: "trans", Type: shader.Mat4},
+	//	{Name: "col_border1", Type: shader.Vec4},
+	//	{Name: "distort", Type: shader.Mat4}}
 
 	fvert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	ffrag, _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
@@ -70,6 +78,7 @@ func SetupSlider() {
 
 type SliderRenderer struct {
 	camera mgl32.Mat4
+	scale  float64
 }
 
 func NewSliderRenderer() *SliderRenderer {
@@ -88,26 +97,38 @@ func (sr *SliderRenderer) Begin() {
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	sliderShader.Begin()
+	sliderShader.Bind()
 
-	sliderShader.SetUniformAttr(1, sr.camera)
+	sliderShader.SetUniform("proj", sr.camera)
+}
+
+func (sr *SliderRenderer) BeginShader() {
+	sliderShader.Bind()
+
+	sliderShader.SetUniform("proj", sr.camera)
+	sliderShader.SetUniform("scale", float32(sr.scale*CS))
+}
+
+func (sr *SliderRenderer) EndShader() {
+	sliderShader.Unbind()
 }
 
 func (sr *SliderRenderer) SetColor(color mgl32.Vec4, prev mgl32.Vec4) {
-	sliderShader.SetUniformAttr(0, color)
+	sliderShader.SetUniform("col_border", color)
 	if settings.Objects.EnableCustomSliderBorderGradientOffset {
-		sliderShader.SetUniformAttr(3, utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset))
+		sliderShader.SetUniform("col_border1", utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset))
 	} else {
-		sliderShader.SetUniformAttr(3, prev)
+		sliderShader.SetUniform("col_border1", prev)
 	}
 }
 
 func (sr *SliderRenderer) SetScale(scale float64) {
-	sliderShader.SetUniformAttr(2, mgl32.Scale3D(float32(scale), float32(scale), 1))
+	sr.scale = scale
+	sliderShader.SetUniform("scale", float32(scale*CS))
 }
 
 func (sr *SliderRenderer) SetDistort(scaleX, scaleY float64) {
-	sliderShader.SetUniformAttr(4, mgl32.Translate3D(-1, 1, 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(1, -1, 0)))
+	sliderShader.SetUniform("distort", mgl32.Translate3D(-1, 1, 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(1, -1, 0)))
 }
 
 func (sr *SliderRenderer) GetCamera() mgl32.Mat4 {
@@ -116,7 +137,7 @@ func (sr *SliderRenderer) GetCamera() mgl32.Mat4 {
 
 func (sr *SliderRenderer) EndAndRender() {
 
-	sliderShader.End()
+	sliderShader.Unbind()
 	fbo.End()
 	gl.Disable(gl.DEPTH_TEST)
 	gl.DepthMask(false)
@@ -136,19 +157,48 @@ func (sr *SliderRenderer) EndAndRender() {
 
 func (self *SliderRenderer) SetCamera(camera mgl32.Mat4) {
 	self.camera = camera
-	sliderShader.SetUniformAttr(1, self.camera)
+	sliderShader.SetUniform("proj", self.camera)
 }
 
 func (self *SliderRenderer) GetShape(curve []bmath.Vector2f) ([]float32, int) {
 	return createMesh(curve), int(settings.Objects.SliderLOD)
 }
 
-func (self *SliderRenderer) UploadMesh(mesh []float32) *buffer.VertexSlice {
-	slice := buffer.MakeVertexSlice(sliderShader, len(mesh)/6, len(mesh)/6)
-	slice.Begin()
-	slice.SetVertexData(mesh)
-	slice.End()
-	return slice
+func (self *SliderRenderer) UploadMesh(curve []bmath.Vector2f) *buffer.VertexArrayObject {
+	if len(unitCircle) == 0 {
+		createCircle(int(settings.Objects.SliderLOD))
+	}
+
+	vao := buffer.NewVertexArrayObject()
+
+	vao.AddVBO("default", len(unitCircle)/3, 0, attribute.Format{
+		{Name: "in_position", Type: attribute.Vec3},
+	})
+
+	vao.SetData("default", 0, unitCircle)
+
+	points := make([]float32, len(curve)*2)
+
+	vao.AddVBO("points", len(points)/2, 1, attribute.Format{
+		{Name: "center", Type: attribute.Vec2},
+	})
+
+	for i := 0; i < len(curve); i++ {
+		points[i*2] = curve[i].X
+		points[i*2+1] = curve[i].Y
+	}
+
+	vao.SetData("points", 0, points)
+
+	vao.Bind()
+	vao.Attach(sliderShader)
+	vao.Unbind()
+
+	//slice := buffer.MakeVertexSlice(sliderShader, len(mesh)/6, len(mesh)/6)
+	//slice.Begin()
+	//slice.SetVertexData(mesh)
+	//slice.End()
+	return vao
 }
 
 func createMesh(curve []bmath.Vector2f) []float32 {
@@ -188,12 +238,12 @@ func createCircle(segments int) {
 
 	points[segments+1] = points[1]
 
-	unitCircle = make([]float32, 6*3*segments)
+	unitCircle = make([]float32, 9*segments)
 
 	for j := range points {
 		if j >= 2 {
 			p1, p2, p3 := points[j-1], points[j], points[0]
-			set(unitCircle, (j-2)*6*3, p1.X, p1.Y, 1.0, p3.X, p3.Y, 0.0, p2.X, p2.Y, 1.0, p3.X, p3.Y, 0.0, p3.X, p3.Y, 0.0, p3.X, p3.Y, 0.0)
+			set(unitCircle, (j-2)*9, p1.X, p1.Y, 1.0, p2.X, p2.Y, 1.0, p3.X, p3.Y, 0.0)
 		}
 	}
 }

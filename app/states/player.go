@@ -777,7 +777,7 @@ func (pl *Player) Draw(delta float64) {
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
 						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer)
+						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer, pl.batch)
 					}
 				}
 			}
@@ -810,10 +810,16 @@ func (pl *Player) Draw(delta float64) {
 					if i < len(pl.processed) {
 						if s, ok := pl.processed[i].(*objects.Slider); ok {
 							pl.batch.Flush()
-							pl.sliderRenderer.Begin()
+							if settings.DIVIDES > 1 {
+								pl.sliderRenderer.Begin()
+							}
+
 							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer)
-							pl.sliderRenderer.EndAndRender()
+							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer, pl.batch)
+
+							if settings.DIVIDES > 1 {
+								pl.sliderRenderer.EndAndRender()
+							}
 						}
 					}
 				}

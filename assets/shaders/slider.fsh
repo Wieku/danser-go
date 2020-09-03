@@ -1,6 +1,5 @@
 #version 330
 
-//#define borderEnd 99f/512f //79
 #define borderStart 0.06640625f // 34/512
 #define baseBorderWidth 0.126953125f // 65/512
 #define blend 0.01f
