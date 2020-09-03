@@ -227,7 +227,7 @@ func (cr *Cursor) Update(tim float64) {
 				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cr.Points))
 			}
 
-			index := (len(cr.Points) - 1 - i) * 3
+			index := i * 3
 			cr.vertices[index] = o.X
 			cr.vertices[index+1] = o.Y
 			cr.vertices[index+2] = hue
@@ -306,6 +306,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	cursorShader.SetUniform("tex", int32(1))
 	cursorShader.SetUniform("proj", batch.Projection)
 	cursorShader.SetUniform("points", float32(cursor.instances))
+	cursorShader.SetUniform("instances", float32(cursor.instances))
 
 	if settings.Cursor.TrailStyle == 1 {
 		cursorShader.SetUniform("saturation", float32(0.0))
