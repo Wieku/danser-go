@@ -1,4 +1,13 @@
+<p align="center">
+  <img width="500px" src="assets/textures/coinbig.png"/>
+</p>
+
 # danser-go
+
+[![GitHub release](https://img.shields.io/github/release/wieku/danser-go.svg)]()
+[![CodeFactor](https://www.codefactor.io/repository/github/wieku/danser-go/badge)](https://www.codefactor.io/repository/github/wieku/danser-go)
+[![Discord server](https://img.shields.io/discord/713705871758065685.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/UTPvbe8)
+
 danser-go is a visualiser for osu! maps written in Go.
 
 Application is in dev phase so only few things work. But if you want to test it, you should follow steps at the end of this readme.
@@ -18,7 +27,7 @@ You can download windows binaries from [releases](https://github.com/Wieku/danse
 
 ### Linux/Unix/Windows
 
-If you want to build it yourself, you would need 64bit [go](https://golang.org/dl/), `gcc/mingw` and libgl (on Linux/Unix).
+If you want to build it yourself, you need 64bit [go](https://golang.org/dl/), `gcc/mingw64` and libgl (on Linux/Unix).
 
 In your terminal type:
 ```bash
