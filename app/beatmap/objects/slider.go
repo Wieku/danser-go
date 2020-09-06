@@ -752,7 +752,9 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 			dimensions := self.bottomRightScreen.Sub(self.topLeftScreen).Abs()
 			self.framebuffer = buffer.NewFrame(int(dimensions.X), int(dimensions.Y), true, true)
 			tex := self.framebuffer.Texture().GetRegion()
-			self.bodySprite = sprites.NewSpriteSingle(&tex, 0, self.topLeftScreen.Copy64(), bmath.Origin.BottomLeft)
+			self.bodySprite = sprites.NewSpriteSingle(&tex, 0, self.bottomRightScreenE.Sub(self.topLeftScreenE).Scl(0.5).Add(self.topLeftScreenE).Copy64(), bmath.Origin.Centre)
+			self.bodySprite.SetScale(float64((self.bottomRightScreenE.X - self.topLeftScreenE.X) / dimensions.X))
+			self.bodySprite.SetVFlip(true)
 		}
 
 		drawSlider := func() {
@@ -763,8 +765,8 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 			scaleY := 1.0
 
 			if settings.Objects.SliderDistortions {
-				tLS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.topLeft.X, -self.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-				bRS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.bottomRight.X, -self.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+				tLS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.topLeft.X, self.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+				bRS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.bottomRight.X, self.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 
 				wS := float32(32768 / (settings.Graphics.GetWidthF()))
 				hS := float32(32768 / (settings.Graphics.GetHeightF()))
@@ -773,8 +775,8 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 					scaleX = float64(wS / (-tLS.X() + bRS.X()))
 				}
 
-				if tLS.Y()+bRS.Y() > hS {
-					scaleY = float64(hS / (-tLS.Y() + bRS.Y()))
+				if tLS.Y()-bRS.Y() > hS {
+					scaleY = float64(hS / (tLS.Y() - bRS.Y()))
 				}
 			}
 
@@ -787,7 +789,7 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 			//subVao.EndDraw()
 		}
 
-		if settings.Objects.SliderMerge || settings.DIVIDES > 1 {
+		if settings.Objects.SliderMerge /*|| settings.DIVIDES > 1*/ {
 			renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
 			drawSlider()
 		} else {
@@ -832,16 +834,9 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, re
 				self.prevOut = out
 			}
 
-			previous := batch.Projection
-
 			batch.SetColor(1, 1, 1, 1)
-			batch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidthF()), 0, float32(settings.Graphics.GetHeightF()), 1, -1))
 			self.bodySprite.SetAlpha(colorAlpha)
-			self.bodySprite.SetScaleV(bmath.NewVec2d(1, -1))
 			self.bodySprite.Draw(time, batch)
-			//
-			batch.SetCamera(previous)
-
 		}
 
 	}
