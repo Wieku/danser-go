@@ -32,9 +32,9 @@ func (diff *Difficulty) calculate() {
 
 	if diff.Mods&HardRock > 0 {
 		ar = math.Min(ar*1.4, 10)
-		cs *= 1.3
+		cs = math.Min(cs*1.3, 10)
 		od = math.Min(od*1.4, 10)
-		hpDrain *= 1.4
+		hpDrain = math.Min(hpDrain*1.4, 10)
 	}
 
 	if diff.Mods&Easy > 0 {
@@ -44,12 +44,12 @@ func (diff *Difficulty) calculate() {
 		hpDrain /= 2
 	}
 
-	diff.CircleRadius = 32 * (1.0 - 0.7*(cs-5)/5) * 1.00041 //some weird allowance osu has
+	diff.CircleRadius = DifficultyRate(cs, 54.4, 32, 9.6) * 1.00041 //some weird allowance osu has
 	diff.Preempt = DifficultyRate(ar, 1800, 1200, 450)
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
-	diff.Hit50 = int64(150 + 50*(5-od)/5)
-	diff.Hit100 = int64(100 + 40*(5-od)/5)
-	diff.Hit300 = int64(50 + 30*(5-od)/5)
+	diff.Hit50 = int64(DifficultyRate(od, 200, 150, 100))
+	diff.Hit100 = int64(DifficultyRate(od, 140, 100, 60))
+	diff.Hit300 = int64(DifficultyRate(od, 80, 50, 20))
 	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
 }
 

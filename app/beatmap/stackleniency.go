@@ -18,16 +18,6 @@ func isSlider(obj objects.BaseObject) bool {
 	return ok1
 }
 
-func difficultyRate(diff, min, mid, max float64) float64 {
-	if diff > 5 {
-		return mid + (max-mid)*(diff-5)/5
-	}
-	if diff < 5 {
-		return mid - (mid-min)*(5-diff)/5
-	}
-	return mid
-}
-
 func calculateStackLeniency(b *BeatMap) {
 	stack_distance := float32(3.0)
 
@@ -150,7 +140,7 @@ func calculateStackLeniency(b *BeatMap) {
 
 	for _, v := range hitObjects {
 		if !isSpinnerBreak(v) {
-			sc := float32(v.GetBasicData().StackIndex) * float32(b.Diff.CircleRadius) / 32 * -6.4
+			sc := -float32(v.GetBasicData().StackIndex) * float32(b.Diff.CircleRadius) / 10
 			v.GetBasicData().StackOffset = bmath.NewVec2f(sc, sc)
 			v.GetBasicData().StartPos = v.GetBasicData().StartPos.Add(v.GetBasicData().StackOffset)
 			v.GetBasicData().EndPos = v.GetBasicData().EndPos.Add(v.GetBasicData().StackOffset)
