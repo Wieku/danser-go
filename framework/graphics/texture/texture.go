@@ -39,15 +39,17 @@ type textureStore struct {
 	id                             uint32
 	binding                        uint
 	layers, width, height, mipmaps int32
+	format                         Format
 }
 
-func newStore(layerNum, width, height, mipmaps int) *textureStore {
+func newStore(layerNum, width, height int, format Format, mipmaps int) *textureStore {
 	store := new(textureStore)
 	gl.GenTextures(1, &store.id)
 
 	store.layers = int32(layerNum)
 	store.width = int32(width)
 	store.height = int32(height)
+	store.format = format
 
 	if mipmaps < 1 {
 		mipmaps = 1
@@ -55,7 +57,7 @@ func newStore(layerNum, width, height, mipmaps int) *textureStore {
 	store.mipmaps = int32(mipmaps)
 
 	store.Bind(0)
-	gl.TexStorage3D(gl.TEXTURE_2D_ARRAY, store.mipmaps, gl.RGBA8, store.width, store.height, store.layers)
+	gl.TexStorage3D(gl.TEXTURE_2D_ARRAY, store.mipmaps, format.InternalFormat(), store.width, store.height, store.layers)
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_BASE_LEVEL, 0)
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAX_LEVEL, store.mipmaps-1)
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)

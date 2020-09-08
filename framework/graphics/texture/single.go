@@ -13,8 +13,12 @@ type TextureSingle struct {
 }
 
 func NewTextureSingle(width, height, mipmaps int) *TextureSingle {
+	return NewTextureSingleFormat(width, height, RGBA, mipmaps)
+}
+
+func NewTextureSingleFormat(width, height int, format Format, mipmaps int) *TextureSingle {
 	texture := new(TextureSingle)
-	texture.store = newStore(1, width, height, mipmaps)
+	texture.store = newStore(1, width, height, format, mipmaps)
 	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(width), int32(height), 0}
 
 	runtime.SetFinalizer(texture, (*TextureSingle).Dispose)
@@ -29,11 +33,12 @@ func LoadTextureSingle(img *image.NRGBA, mipmaps int) *TextureSingle {
 }
 
 func (texture *TextureSingle) SetData(x, y, width, height int, data []uint8) {
-	if len(data) != width*height*4 {
+	if len(data) != width*height*texture.store.format.Size() {
 		panic("Wrong number of pixels given!")
 	}
 
-	gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(data))
+	gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+
 	if texture.store.mipmaps > 1 {
 		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
 	}
