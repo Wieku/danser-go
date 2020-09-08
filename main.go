@@ -20,6 +20,8 @@ import (
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/graphics/blend"
+	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/statistic"
 	"image"
 	"log"
@@ -194,10 +196,11 @@ func run() {
 
 			gl.Enable(gl.MULTISAMPLE)
 			gl.Disable(gl.DITHER)
-			gl.Disable(gl.SCISSOR_TEST)
-			gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
+
+			viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+
 			gl.ClearColor(0, 0, 0, 1)
-			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			gl.Clear(gl.COLOR_BUFFER_BIT)
 
 			if player != nil {
 				player.Draw(0)
@@ -253,6 +256,9 @@ func run() {
 			if !settings.Graphics.VSync {
 				limiter.Sync()
 			}
+
+			blend.ClearStack()
+			viewport.ClearStack()
 		})
 	}
 }
