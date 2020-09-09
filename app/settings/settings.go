@@ -1,9 +1,5 @@
 package settings
 
-type beat struct {
-	BeatScale float64 //1.2
-}
-
 type fileformat struct {
 	General   *general
 	Graphics  *graphics
@@ -15,8 +11,6 @@ type fileformat struct {
 	Dance     *dance
 	Knockout  *knockout
 }
-
-var Beat = &beat{1.2}
 
 var DEBUG = false
 var PLAY = false

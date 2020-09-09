@@ -514,7 +514,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			musicPlayer.Update()
 			//log.Println(musicPlayer.GetBeat())
-			player.SclA = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Beat.BeatScale-1.0)+1.0, 1.0, settings.Beat.BeatScale) //math.Min(1.4*settings.Beat.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Beat.BeatScale+1.0, 1.0))
+			player.SclA = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
 
 			fft := musicPlayer.GetFFT()
 
@@ -531,7 +531,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.velocity *= 1.0 - 0.05
 
-			//player.Scl = 1 + player.progress*(settings.Beat.BeatScale-1.0)
+			//player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
 
 			//log.Println(player.velocity)
 
@@ -614,7 +614,7 @@ func (pl *Player) Draw(delta float64) {
 	if settings.Playfield.BlurEnable {
 		blurVal = pl.blurGlider.GetValue()
 		if settings.Playfield.UnblurToTheBeat {
-			blurVal -= settings.Playfield.UnblurFill * (blurVal) * (pl.Scl - 1.0) / (settings.Beat.BeatScale * 0.4)
+			blurVal -= settings.Playfield.UnblurFill * (blurVal) * (pl.Scl - 1.0) / (settings.Audio.BeatScale * 0.4)
 		}
 	}
 
@@ -744,7 +744,7 @@ func (pl *Player) Draw(delta float64) {
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*(pl.Scl-1.0)/(settings.Beat.BeatScale*0.4))
+		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*(pl.Scl-1.0)/(settings.Audio.BeatScale*0.4))
 		pl.bloomEffect.Begin()
 	}
 

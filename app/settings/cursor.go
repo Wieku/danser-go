@@ -78,7 +78,7 @@ func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]mgl32
 	flashOffset := 0.0
 	cl := cr.Colors
 	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Beat.BeatScale)
+		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Audio.BeatScale)
 	}
 	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
 
@@ -106,7 +106,7 @@ func (cr *cursor) GetColorsA(divides, tag int, beatScale, alpha float64) ([]mgl3
 	flashOffset := 0.0
 	cl := cr.Colors
 	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Beat.BeatScale)
+		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Audio.BeatScale)
 	}
 	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
 

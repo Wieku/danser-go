@@ -149,7 +149,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	sliderShader.Bind()
 
 	sliderShader.SetUniform("projection", body.baseProjection)
-	sliderShader.SetUniform("scale", body.radius*float32(settings.Beat.BeatScale))
+	sliderShader.SetUniform("scale", body.radius*float32(settings.Audio.BeatScale))
 	sliderShader.SetUniform("distort", mgl32.Ident4())
 
 	body.vao.Bind()
@@ -204,11 +204,11 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	var topLeftScreenE bmath.Vector2f
 	var bottomRightScreenE bmath.Vector2f
 
-	topLeftScreenE.X = math32.Max(tLW.X(), body.topLeft.X-body.radius*float32(settings.Beat.BeatScale))
-	topLeftScreenE.Y = math32.Max(tLW.Y(), body.topLeft.Y-body.radius*float32(settings.Beat.BeatScale))
+	topLeftScreenE.X = math32.Max(tLW.X(), body.topLeft.X-body.radius*float32(settings.Audio.BeatScale))
+	topLeftScreenE.Y = math32.Max(tLW.Y(), body.topLeft.Y-body.radius*float32(settings.Audio.BeatScale))
 
-	bottomRightScreenE.X = math32.Min(bRW.X(), body.bottomRight.X+body.radius*float32(settings.Beat.BeatScale))
-	bottomRightScreenE.Y = math32.Min(bRW.Y(), body.bottomRight.Y+body.radius*float32(settings.Beat.BeatScale))
+	bottomRightScreenE.X = math32.Min(bRW.X(), body.bottomRight.X+body.radius*float32(settings.Audio.BeatScale))
+	bottomRightScreenE.Y = math32.Min(bRW.Y(), body.bottomRight.Y+body.radius*float32(settings.Audio.BeatScale))
 
 	tLS := baseProjView.Mul4x1(mgl32.Vec4{topLeftScreenE.X, topLeftScreenE.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 	bRS := baseProjView.Mul4x1(mgl32.Vec4{bottomRightScreenE.X, bottomRightScreenE.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)

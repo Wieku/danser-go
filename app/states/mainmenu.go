@@ -357,7 +357,7 @@ func (pl *MainMenu) Draw(delta float64) {
 	if settings.Playfield.BlurEnable {
 		blurVal = 1 //pl.blurGlider.GetValue()
 		if settings.Playfield.UnblurToTheBeat {
-			blurVal -= settings.Playfield.UnblurFill * (blurVal) * ( /*pl.Scl*/ 1.4 - 1.0) / (settings.Beat.BeatScale * 0.4)
+			blurVal -= settings.Playfield.UnblurFill * (blurVal) * ( /*pl.Scl*/ 1.4 - 1.0) / (settings.Audio.BeatScale * 0.4)
 		}
 	}
 
@@ -460,7 +460,7 @@ func (pl *MainMenu) Draw(delta float64) {
 	if settings.Playfield.BloomEnabled {
 		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*( /*pl.Scl*/ 1.4-1.0)/(settings.Beat.BeatScale*0.4))
+		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*( /*pl.Scl*/ 1.4-1.0)/(settings.Audio.BeatScale*0.4))
 		pl.bloomEffect.Begin()
 	}
 
