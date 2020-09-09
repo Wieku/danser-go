@@ -131,11 +131,42 @@ func (mCurve *MultiCurve) GetStartAngle() float32 {
 	return 0.0
 }
 
+func (mCurve *MultiCurve) getLineAt(t float32) Linear {
+	if len(mCurve.lines) == 0 {
+		return Linear{}
+	}
+
+	desiredWidth := mCurve.length * bmath.ClampF32(t, 0.0, 1.0)
+
+	withoutFirst := mCurve.sections[1:]
+	index := sort.Search(len(withoutFirst), func(i int) bool {
+		return withoutFirst[i] >= desiredWidth
+	})
+
+	return mCurve.lines[index]
+}
+
+func (mCurve *MultiCurve) GetStartAngleAt(t float32) float32 {
+	if len(mCurve.lines) == 0 {
+		return 0
+	}
+
+	return mCurve.getLineAt(t).GetStartAngle()
+}
+
 func (mCurve *MultiCurve) GetEndAngle() float32 {
 	if len(mCurve.lines) > 0 {
 		return mCurve.lines[len(mCurve.lines)-1].GetEndAngle()
 	}
 	return 0.0
+}
+
+func (mCurve *MultiCurve) GetEndAngleAt(t float32) float32 {
+	if len(mCurve.lines) == 0 {
+		return 0
+	}
+
+	return mCurve.getLineAt(t).GetEndAngle()
 }
 
 func (mCurve *MultiCurve) GetLines() []Linear {

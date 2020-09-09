@@ -72,8 +72,6 @@ type Slider struct {
 
 	startCircle *Circle
 
-	created              bool
-	discreteCurve        []bmath.Vector2f
 	startAngle, endAngle float64
 	sliderSnakeTail      *glider.Glider
 	sliderSnakeHead      *glider.Glider
@@ -83,13 +81,8 @@ type Slider struct {
 	scaleFollow          *glider.Glider
 	reversePoints        [2][]*reversePoint
 
-	topLeft     bmath.Vector2f
-	bottomRight bmath.Vector2f
-
-	topLeftScreen     bmath.Vector2f
-	bottomRightScreen bmath.Vector2f
-	diff              *difficulty.Difficulty
-	body              *sliderrenderer.Body
+	diff *difficulty.Difficulty
+	body *sliderrenderer.Body
 }
 
 func NewSlider(data []string) *Slider {
@@ -378,10 +371,6 @@ func (self *Slider) UpdateStacking() {
 		tp.Pos = tp.Pos.Add(self.objData.StackOffset)
 		self.TickPoints[i] = tp
 	}
-
-	for i, p := range self.discreteCurve {
-		self.discreteCurve[i] = p.Add(self.objData.StackOffset)
-	}
 }
 
 func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
@@ -664,27 +653,25 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 
 		if settings.Objects.DrawReverseArrows {
+			headPos := self.multiCurve.PointAt(float32(self.sliderSnakeHead.GetValue()))
+			headAngle := self.multiCurve.GetStartAngleAt(float32(self.sliderSnakeHead.GetValue())) + math.Pi
+
+			tailPos := self.multiCurve.PointAt(float32(self.sliderSnakeTail.GetValue()))
+			tailAngle := self.multiCurve.GetEndAngleAt(float32(self.sliderSnakeTail.GetValue())) + math.Pi
+
 			for i := 0; i < 2; i++ {
 				for _, p := range self.reversePoints[i] {
 					if p.fade.GetValue() >= 0.001 {
 						if i == 1 {
-
-							out := int(self.sliderSnakeTail.GetValue() * float64(len(self.discreteCurve)-1))
-							batch.SetTranslation(self.discreteCurve[out].Copy64())
-							if out == 0 {
-								batch.SetRotation(self.startAngle)
-							} else if out == len(self.discreteCurve)-1 {
-								batch.SetRotation(self.endAngle + math.Pi)
-							} else {
-								batch.SetRotation(float64(self.discreteCurve[out-1].AngleRV(self.discreteCurve[out])))
-							}
-
+							batch.SetTranslation(tailPos.Copy64())
+							batch.SetRotation(float64(tailAngle))
 						} else {
-							batch.SetTranslation(self.discreteCurve[0].Copy64())
-							batch.SetRotation(self.startAngle + math.Pi)
+							batch.SetTranslation(headPos.Copy64())
+							batch.SetRotation(float64(headAngle))
 						}
-						batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
-						batch.SetColor(1, 1, 1, alpha*self.sliderSnakeTail.GetValue()*p.fade.GetValue())
+
+						batch.SetSubScale(p.pulse.GetValue()*self.diff.CircleRadius, p.pulse.GetValue()*self.diff.CircleRadius)
+						batch.SetColor(1, 1, 1, alpha*p.fade.GetValue())
 						batch.DrawUnit(*render.SliderReverse)
 					}
 				}
