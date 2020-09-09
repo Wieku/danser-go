@@ -14,6 +14,7 @@ func PushPos(x, y, width, height int) {
 	stack = append(stack, previous)
 
 	gl.Viewport(int32(x), int32(y), int32(width), int32(height))
+	gl.Scissor(int32(x), int32(y), int32(width), int32(height))
 }
 
 func Pop() {
@@ -21,6 +22,7 @@ func Pop() {
 	stack = stack[:len(stack)-1]
 
 	gl.Viewport(viewport[0], viewport[1], viewport[2], viewport[3])
+	gl.Scissor(viewport[0], viewport[1], viewport[2], viewport[3])
 }
 
 func ClearStack() {
