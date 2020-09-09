@@ -255,8 +255,8 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 }
 
 func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
-	newScale := bmath.NewVec2d(scale.X*float64(texture.Width)/2, scale.Y*float64(texture.Height)/2)
-	newPosition := position
+	newScale := bmath.NewVec2d(scale.X*float64(texture.Width)/2*batch.scale.X*batch.subscale.X, scale.Y*float64(texture.Height)/2*batch.scale.Y*batch.subscale.Y)
+	newPosition := position.Add(batch.position)
 	if storyboard {
 		newPosition = bmath.NewVec2d(position.X-64, position.Y-48)
 	}

@@ -745,6 +745,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	self.startCircle.Draw(time, color, batch)
 
 	batch.SetSubScale(1, 1)
+	batch.SetTranslation(bmath.NewVec2d(0, 0))
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
 		//if self.vao != nil {

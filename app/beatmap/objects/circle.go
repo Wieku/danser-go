@@ -196,6 +196,8 @@ func (self *Circle) GetPosition() bmath.Vector2f {
 }
 
 func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
+	batch.SetSubScale(1, 1)
+	batch.SetTranslation(bmath.NewVec2d(0, 0))
 	self.hitCircle.Update(time)
 	self.hitCircleOverlay.Update(time)
 	self.approachCircle.Update(time)
@@ -227,11 +229,11 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65*self.diff.CircleRadius, strconv.Itoa(int(self.objData.ComboNumber)))
 			}
-			batch.SetTranslation(self.objData.StartPos.Copy64())
 		}
 	}
 
 	batch.SetSubScale(1, 1)
+	batch.SetTranslation(bmath.NewVec2d(0, 0))
 
 	if time >= self.objData.StartTime && self.hitCircle.GetAlpha() <= 0.001 {
 		return true
@@ -240,6 +242,8 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 }
 
 func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+	batch.SetSubScale(1, 1)
+	batch.SetTranslation(bmath.NewVec2d(0, 0))
 	batch.SetColor(1, 1, 1, 1)
 	self.approachCircle.Update(time)
 	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
