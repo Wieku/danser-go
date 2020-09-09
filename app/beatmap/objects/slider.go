@@ -633,7 +633,7 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, pr
 	self.bodyFade.Update(float64(time))
 	colorAlpha := self.bodyFade.GetValue()
 
-	self.body.DrawNormal(projection, mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
+	self.body.DrawNormal(projection, self.objData.StackOffset, mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
 }
 
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
