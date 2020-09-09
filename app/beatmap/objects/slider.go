@@ -696,7 +696,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 					}*/
 					if al > 0.0 {
 						batch.SetTranslation(p.Pos.Copy64())
-						batch.SetSubScale(1.0/5*p.scale.GetValue(), 1.0/5*p.scale.GetValue())
+						batch.SetSubScale(1.0/5*p.scale.GetValue()*self.diff.CircleRadius, 1.0/5*p.scale.GetValue()*self.diff.CircleRadius)
 						if settings.Objects.WhiteFollowPoints {
 							batch.SetColor(1, 1, 1, alpha*al)
 						} else {
@@ -714,19 +714,20 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 		if time >= self.objData.StartTime && time <= self.objData.EndTime {
 			batch.SetColor(1, 1, 1, alpha)
-			batch.SetSubScale(1.0, 1.0)
+			batch.SetSubScale(self.diff.CircleRadius, self.diff.CircleRadius)
 			batch.SetTranslation(self.Pos.Copy64())
 			batch.DrawUnit(*render.SliderBall)
 		}
 
 		if settings.Objects.DrawSliderFollowCircle {
 			batch.SetTranslation(self.Pos.Copy64())
-			batch.SetSubScale(self.scaleFollow.GetValue(), self.scaleFollow.GetValue())
+			batch.SetSubScale(self.scaleFollow.GetValue()*self.diff.CircleRadius, self.scaleFollow.GetValue()*self.diff.CircleRadius)
 			batch.SetColor(1, 1, 1, self.fadeFollow.GetValue())
 			batch.DrawUnit(*render.SliderFollow)
 		}
 
 	} else {
+		batch.SetSubScale(self.diff.CircleRadius, self.diff.CircleRadius)
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos.Copy64())
 			batch.DrawUnit(*render.CircleFull)
