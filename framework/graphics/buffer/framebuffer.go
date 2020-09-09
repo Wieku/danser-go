@@ -19,6 +19,7 @@ type Framebuffer struct {
 	multisampled  bool
 	helperObj     uint32
 	helperTexture uint32
+	depth         uint32
 }
 
 // NewFrame creates a new fully transparent Framebuffer with given dimensions in pixels.
@@ -40,6 +41,24 @@ func NewFrame(width, height int, smooth, depth bool) *Framebuffer {
 		gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, int32(width), int32(height))
 		gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer)
 	}
+
+	f.End()
+
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
+
+	return f
+}
+
+func NewFrameDepth(width, height int, smooth bool) *Framebuffer {
+	f := new(Framebuffer)
+
+	f.tex = texture.NewTextureSingleFormat(width, height, texture.Depth, 0)
+
+	gl.GenFramebuffers(1, &f.obj)
+
+	f.Begin()
+	f.tex.Bind(0)
+	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, f.tex.GetID(), 0, 0)
 
 	f.End()
 
@@ -80,6 +99,7 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 		gl.BindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer)
 		gl.RenderbufferStorageMultisample(gl.RENDERBUFFER, settings.Graphics.MSAA, gl.DEPTH_COMPONENT, int32(width), int32(height))
 		gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer)
+		f.depth = depthRenderBuffer
 	}
 
 	f.End()
@@ -92,6 +112,19 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 
 func (f *Framebuffer) Dispose() {
 	mainthread.CallNonBlock(func() {
+		f.tex.Dispose()
+		if f.depth > 0 {
+			gl.DeleteRenderbuffers(1, &f.depth)
+		}
+
+		if f.helperObj > 0 {
+			gl.DeleteFramebuffers(1, &f.helperObj)
+		}
+
+		if f.helperTexture > 0 {
+			gl.DeleteTextures(1, &f.helperTexture)
+		}
+
 		gl.DeleteFramebuffers(1, &f.obj)
 	})
 }
