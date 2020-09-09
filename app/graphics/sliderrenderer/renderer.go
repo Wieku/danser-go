@@ -133,7 +133,7 @@ func EndRendererMerge() {
 	batch.End()
 }
 
-func drawSlider(sprite *sprites.Sprite, stackOffset bmath.Vector2f, text texture.Texture, color mgl32.Vec4, prev mgl32.Vec4, projection mgl32.Mat4) {
+func drawSlider(sprite *sprites.Sprite, stackOffset bmath.Vector2f, scale float32, text texture.Texture, color mgl32.Vec4, prev mgl32.Vec4, projection mgl32.Mat4) {
 	colorShader.SetUniform("projection", projection)
 	colorShader.SetUniform("col_border", color)
 	if settings.Objects.EnableCustomSliderBorderGradientOffset {
@@ -147,7 +147,7 @@ func drawSlider(sprite *sprites.Sprite, stackOffset bmath.Vector2f, text texture
 	colorShader.SetUniform("tex", int32(0))
 	colorShader.SetUniform("position", mgl32.Vec2{sprite.GetPosition().X32() + stackOffset.X, sprite.GetPosition().Y32() + stackOffset.Y})
 	colorShader.SetUniform("size", mgl32.Vec2{sprite.GetScale().X32() * float32(text.GetWidth()), sprite.GetScale().Y32() * float32(text.GetHeight())})
-	colorShader.SetUniform("cutoff", float32(1.0/settings.Beat.BeatScale))
+	colorShader.SetUniform("cutoff", scale/float32(settings.Beat.BeatScale))
 
 	colorVAO.Draw()
 }

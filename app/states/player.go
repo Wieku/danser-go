@@ -392,7 +392,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 			ov.SetMusic(musicPlayer)
 		}
-		musicPlayer.SetPosition(1 * 30)
+		//musicPlayer.SetPosition(1 * 30)
 		discord.SetDuration(int64(musicPlayer.GetLength() * 1000 / settings.SPEED))
 		if player.overlay == nil {
 			discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -772,7 +772,7 @@ func (pl *Player) Draw(delta float64) {
 							sliderrenderer.BeginRendererMerge()
 						}
 
-						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j])
+						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j], float32(scale1))
 					}
 				}
 			}
@@ -811,7 +811,7 @@ func (pl *Player) Draw(delta float64) {
 								sliderrenderer.BeginRenderer()
 							}
 
-							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j])
+							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j], float32(scale1))
 						}
 					}
 				}

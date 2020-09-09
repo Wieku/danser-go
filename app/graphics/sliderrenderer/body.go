@@ -171,8 +171,8 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	body.previousEnd = endInstance
 }
 
-func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset bmath.Vector2f, color mgl32.Vec4, prev mgl32.Vec4) {
-	drawSlider(body.bodySprite, stackOffset, body.framebuffer.Texture(), color, prev, projection)
+func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset bmath.Vector2f, scale float32, color mgl32.Vec4, prev mgl32.Vec4) {
+	drawSlider(body.bodySprite, stackOffset, scale, body.framebuffer.Texture(), color, prev, projection)
 }
 
 func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
