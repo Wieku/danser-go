@@ -1,4 +1,4 @@
-package slider
+package sliderrenderer
 
 import (
 	"github.com/wieku/danser-go/app/bmath"

@@ -2,7 +2,6 @@ package states
 
 import (
 	"fmt"
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
@@ -10,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
+	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/effects"
@@ -32,31 +32,30 @@ import (
 )
 
 type Player struct {
-	font           *font.Font
-	bMap           *beatmap.BeatMap
-	queue2         []objects.BaseObject
-	processed      []objects.Renderable
-	sliderRenderer *render.SliderRenderer
-	bloomEffect    *effects.BloomEffect
-	lastTime       int64
-	progressMsF    float64
-	progressMs     int64
-	batch          *batches.SpriteBatch
-	controller     dance.Controller
-	background     *components.Background
-	BgScl          bmath.Vector2d
-	Scl            float64
-	SclA           float64
-	CS             float64
-	fadeOut        float64
-	fadeIn         float64
-	entry          float64
-	start          bool
-	mus            bool
-	musicPlayer    *bass.Track
-	rotation       float64
-	profiler       *frame.Counter
-	profilerU      *frame.Counter
+	font        *font.Font
+	bMap        *beatmap.BeatMap
+	queue2      []objects.BaseObject
+	processed   []objects.Renderable
+	bloomEffect *effects.BloomEffect
+	lastTime    int64
+	progressMsF float64
+	progressMs  int64
+	batch       *batches.SpriteBatch
+	controller  dance.Controller
+	background  *components.Background
+	BgScl       bmath.Vector2d
+	Scl         float64
+	SclA        float64
+	CS          float64
+	fadeOut     float64
+	fadeIn      float64
+	entry       float64
+	start       bool
+	mus         bool
+	musicPlayer *bass.Track
+	rotation    float64
+	profiler    *frame.Counter
+	profilerU   *frame.Counter
 
 	camera         *bmath.Camera
 	camera1        *bmath.Camera
@@ -121,9 +120,7 @@ var hsvDir = 1
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
 	render.LoadTextures()
-	render.SetupSlider()
 	player.batch = batches.NewSpriteBatch()
-	player.sliderRenderer = render.NewSliderRenderer()
 	player.font = font.GetFont("Exo 2 Bold")
 
 	discord.SetMap(beatMap)
@@ -133,7 +130,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	log.Println("Playing:", player.mapFullName)
 
 	player.CS = beatMap.Diff.CircleRadius * settings.Objects.CSMult
-	render.CS = player.CS
 
 	var err error
 
@@ -183,8 +179,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller = controller
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
-		//player.overlay = components.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
-		player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
+
+		if settings.PLAYERS == 1 {
+			player.overlay = components.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
+		} else {
+			player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
+		}
 	} else {
 		player.controller = dance.NewGenericController()
 		player.controller.SetBeatMap(player.bMap)
@@ -196,14 +196,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	copy(player.queue2, player.bMap.Queue)
 
-	if !settings.Objects.SliderDynamicLoad {
-		for _, p := range player.queue2 {
-			if s, ok := p.(*objects.Slider); ok {
-				s.InitCurve(player.sliderRenderer)
-			}
-		}
-	}
-
 	log.Println("Track:", beatMap.Audio)
 
 	player.Scl = 1
@@ -213,7 +205,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider = glider.NewGlider(0.0)
 	player.blurGlider = glider.NewGlider(0.0)
 	player.fxGlider = glider.NewGlider(0.0)
-	player.cursorGlider = glider.NewGlider(0.0)
+	if _, ok := player.overlay.(*components.ScoreOverlay); !ok {
+		player.cursorGlider = glider.NewGlider(0.0)
+	} else {
+		player.cursorGlider = glider.NewGlider(1.0)
+	}
 	player.playersGlider = glider.NewGlider(0.0)
 
 	tmS := float64(player.queue2[0].GetBasicData().StartTime)
@@ -222,7 +218,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider.AddEvent(-1500, -1000, 1.0-settings.Playfield.BackgroundInDim)
 	player.blurGlider.AddEvent(-1500, -1000, settings.Playfield.BackgroundInBlur)
 	player.fxGlider.AddEvent(-1500, -1000, 1.0-settings.Playfield.SpectrumInDim)
-	player.cursorGlider.AddEvent(-1500, -1000, 0.0)
+	if _, ok := player.overlay.(*components.ScoreOverlay); !ok {
+		player.cursorGlider.AddEvent(-1500, -1000, 0.0)
+	}
 	player.playersGlider.AddEvent(-1500, -1000, 1.0)
 
 	player.dimGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.BackgroundDim)
@@ -245,7 +243,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.oGlider = glider.NewGlider(-36)
 	player.flashGlider = glider.NewGlider(1)
 	player.danserGlider = glider.NewGlider(0.0)
-	player.danserGlider.AddEventS(105640, 105867, 0.0, 1.0)
+	player.danserGlider.AddEventS(151562, 151856, 0.0, 1.0)
 	//player.danserGlider.AddEventS(187000, 189000, 0.0, 1.0)
 	player.resnadGlider = glider.NewGlider(0.0)
 	player.resnadGlider.AddEventS(221432, 226542, 0.0, 1.0)
@@ -394,7 +392,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 			ov.SetMusic(musicPlayer)
 		}
-		//musicPlayer.SetPosition(1*60)
+		musicPlayer.SetPosition(1 * 30)
 		discord.SetDuration(int64(musicPlayer.GetLength() * 1000 / settings.SPEED))
 		if player.overlay == nil {
 			discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -561,11 +559,9 @@ func (pl *Player) Draw(delta float64) {
 	tim := qpc.GetNanoTime()
 	timMs := float64(tim-pl.lastTime) / 1000000.0
 
-	pl.profiler.PutSample(timMs)
 	fps := pl.profiler.GetFPS()
 
 	if pl.start {
-
 		if fps > 58 && timMs > 18 {
 			log.Println(fmt.Sprintf("Slow frame detected! Frame time: %.3fms | Av. frame time: %.3fms", timMs, 1000.0/fps))
 		}
@@ -579,16 +575,12 @@ func (pl *Player) Draw(delta float64) {
 		}
 
 	}
-
+	pl.profiler.PutSample(timMs)
 	pl.lastTime = tim
 
 	if len(pl.queue2) > 0 {
 		for i := 0; i < len(pl.queue2); i++ {
 			if p := pl.queue2[i]; p.GetBasicData().StartTime-15000 <= pl.progressMs {
-				if s, ok := p.(*objects.Slider); ok {
-					s.InitCurve(pl.sliderRenderer)
-				}
-
 				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.Diff.Preempt) <= pl.progressMs {
 
 					pl.processed = append(pl.processed, p.(objects.Renderable))
@@ -612,9 +604,6 @@ func (pl *Player) Draw(delta float64) {
 		pl.cursorGlider.UpdateD(timMs)
 		pl.playersGlider.UpdateD(timMs)
 	}
-
-	render.CS = pl.CS
-	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
 	bgAlpha := pl.dimGlider.GetValue()
 	blurVal := 0.0
@@ -745,12 +734,9 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
 
-		//for j := 0; j < settings.DIVIDES; j++ {
-
 		pl.batch.SetCamera(cameras[0])
 
 		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
-		//}
 
 		pl.batch.End()
 	}
@@ -764,11 +750,16 @@ func (pl *Player) Draw(delta float64) {
 
 	if pl.start && settings.Playfield.DrawObjects {
 
+		for i := len(pl.processed) - 1; i >= 0; i-- {
+			if s, ok := pl.processed[i].(*objects.Slider); ok {
+				s.DrawBodyBase(pl.progressMs, cameras[0])
+			}
+		}
+
 		if settings.Objects.SliderMerge {
-			pl.sliderRenderer.Begin()
+			enabled := false
 
 			for j := 0; j < settings.DIVIDES; j++ {
-				pl.sliderRenderer.SetCamera(cameras[j])
 				ind := j - 1
 				if ind < 0 {
 					ind = settings.DIVIDES - 1
@@ -776,13 +767,18 @@ func (pl *Player) Draw(delta float64) {
 
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s, ok := pl.processed[i].(*objects.Slider); ok {
-						pl.sliderRenderer.SetScale(scale1)
-						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer, pl.batch)
+						if !enabled {
+							enabled = true
+							sliderrenderer.BeginRendererMerge()
+						}
+
+						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j])
 					}
 				}
 			}
-
-			pl.sliderRenderer.EndAndRender()
+			if enabled {
+				sliderrenderer.EndRendererMerge()
+			}
 		}
 
 		pl.batch.Begin()
@@ -793,35 +789,35 @@ func (pl *Player) Draw(delta float64) {
 			pl.batch.SetAdditive(false)
 		}
 
-		pl.batch.SetScale(render.CS*scale1, render.CS*scale1)
+		pl.batch.SetScale(scale1, scale1)
 
 		for j := 0; j < settings.DIVIDES; j++ {
-			if !settings.Objects.SliderMerge {
-				pl.sliderRenderer.SetCamera(cameras[j])
-			}
 			pl.batch.SetCamera(cameras[j])
 			ind := j - 1
 			if ind < 0 {
 				ind = settings.DIVIDES - 1
 			}
 
+			pl.batch.Flush()
+
 			if !settings.Objects.SliderMerge {
+				enabled := false
+
 				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
 					if i < len(pl.processed) {
 						if s, ok := pl.processed[i].(*objects.Slider); ok {
-							pl.batch.Flush()
-							if settings.DIVIDES > 1 {
-								pl.sliderRenderer.Begin()
+							if !enabled {
+								enabled = true
+								sliderrenderer.BeginRenderer()
 							}
 
-							pl.sliderRenderer.SetScale(scale1)
-							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], pl.sliderRenderer, pl.batch)
-
-							if settings.DIVIDES > 1 {
-								pl.sliderRenderer.EndAndRender()
-							}
+							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j])
 						}
 					}
+				}
+
+				if enabled {
+					sliderrenderer.EndRenderer()
 				}
 			}
 
@@ -873,8 +869,6 @@ func (pl *Player) Draw(delta float64) {
 		g.UpdateRenderer()
 	}
 
-	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-	gl.BlendEquation(gl.FUNC_ADD)
 	pl.batch.SetAdditive(false)
 	render.BeginCursorRender()
 	for j := 0; j < settings.DIVIDES; j++ {

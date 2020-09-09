@@ -8,9 +8,11 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
+	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"io/ioutil"
+	"log"
 	"math"
 	"sync"
 )
@@ -18,6 +20,10 @@ import (
 var cursorShader *shader.RShader = nil
 var cursorFbo *buffer.Framebuffer = nil
 var cursorSpaceFbo *buffer.Framebuffer = nil
+
+var fboShader *shader.Shader
+var fboSlice *buffer.VertexSlice
+
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
 
@@ -38,6 +44,32 @@ func initCursor() {
 	cursorSpaceFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	cursorSpaceFbo.Texture().Bind(18)
 	osuRect = Camera.GetWorldRect()
+
+	fvert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	ffrag, _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
+
+	var err error
+
+	fboShader, err = shader.NewShader(shader.AttrFormat{
+		{Name: "in_position", Type: shader.Vec3},
+		{Name: "in_tex_coord", Type: shader.Vec2},
+	}, shader.AttrFormat{{Name: "tex", Type: shader.Int}}, string(fvert), string(ffrag))
+
+	if err != nil {
+		log.Println("FboPass: " + err.Error())
+	}
+
+	fboSlice = buffer.MakeVertexSlice(fboShader, 6, 6)
+	fboSlice.Begin()
+	fboSlice.SetVertexData([]float32{
+		-1, -1, 0, 0, 0,
+		1, -1, 0, 1, 0,
+		-1, 1, 0, 0, 1,
+		1, -1, 0, 1, 0,
+		1, 1, 0, 1, 1,
+		-1, 1, 0, 0, 1,
+	})
+	fboSlice.End()
 }
 
 type Cursor struct {
@@ -111,7 +143,7 @@ func NewCursor() *Cursor {
 	vao.Unbind()
 
 	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100), vertices: make([]float32, length*3)}
-	cursor.vecSize = 10
+	cursor.vecSize = 3
 	return cursor
 }
 
@@ -121,6 +153,7 @@ func (cr *Cursor) SetPos(pt bmath.Vector2f) {
 	if settings.Cursor.BounceOnEdges {
 		for {
 			ok1, ok2 := false, false
+
 			if tmp.X < osuRect.MinX {
 				tmp.X = 2*osuRect.MinX - tmp.X
 			} else if tmp.X > osuRect.MaxX {
@@ -198,15 +231,11 @@ func (cr *Cursor) Update(tim float64) {
 			cr.removeCounter = 0
 			dirtyLocal = true
 		} else if times > 0 {
-			if times < len(cr.Points) {
-				cr.Points = cr.Points[times:]
-				cr.PointsC = cr.PointsC[times:]
-				cr.removeCounter -= float64(times)
-			} else {
-				cr.Points = cr.Points[len(cr.Points):]
-				cr.PointsC = cr.PointsC[len(cr.PointsC):]
-				cr.removeCounter = 0
-			}
+			times = bmath.MinI(times, len(cr.Points))
+
+			cr.Points = cr.Points[times:]
+			cr.PointsC = cr.PointsC[times:]
+			cr.removeCounter -= float64(times)
 
 			dirtyLocal = true
 		}
@@ -215,9 +244,9 @@ func (cr *Cursor) Update(tim float64) {
 	if dirtyLocal {
 		cr.mutex.Lock()
 
-		if len(cr.vertices) < len(cr.Points)*6*cr.vecSize {
-			cr.vertices = make([]float32, len(cr.Points)*6*cr.vecSize)
-		}
+		//if len(cr.vertices) < len(cr.Points)*cr.vecSize {
+		//	cr.vertices = make([]float32, len(cr.Points)*cr.vecSize)
+		//}
 
 		for i, o := range cr.Points {
 			inv := float32(len(cr.Points) - i - 1)
@@ -259,8 +288,12 @@ func BeginCursorRender() {
 	if useAdditive {
 		cursorSpaceFbo.Begin()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
 	}
+
+	blend.Push()
+	blend.Enable()
+	blend.SetFunctionSeparate(blend.SrcAlpha, blend.OneMinusSrcAlpha, blend.One, blend.OneMinusSrcAlpha)
 }
 
 func EndCursorRender() {
@@ -274,6 +307,8 @@ func EndCursorRender() {
 		fboSlice.EndDraw()
 		fboShader.End()
 	}
+
+	blend.Pop()
 }
 
 func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, hueshift float64) {
@@ -291,10 +326,8 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	if useAdditive {
 		cursorFbo.Begin()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
 	}
-
-	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
 	siz := settings.Cursor.CursorSize
 
@@ -362,7 +395,9 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	if useAdditive {
 		cursorFbo.End()
 
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE)
+		blend.Push()
+		blend.Enable()
+		blend.SetFunction(blend.SrcAlpha, blend.One)
 
 		fboShader.Begin()
 		fboShader.SetUniformAttr(0, int32(30))
@@ -370,6 +405,8 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 		fboSlice.Draw()
 		fboSlice.EndDraw()
 		fboShader.End()
+
+		blend.Pop()
 	}
 
 }

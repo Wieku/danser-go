@@ -1,9 +1,9 @@
 package batches
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -105,7 +105,10 @@ func (batch *SpriteBatch) Begin() {
 	batch.vao.Begin()
 	batch.ibo.Bind()
 
-	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	blend.Push()
+	blend.Enable()
+	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
+
 	if batch.texture != nil && batch.texture.GetLocation() == 0 {
 		batch.texture.Bind(0)
 	}
@@ -193,7 +196,8 @@ func (batch *SpriteBatch) End() {
 	batch.vao.End()
 
 	batch.shader.End()
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+	blend.Pop()
 }
 
 func (batch *SpriteBatch) SetColor(r, g, b, a float64) {

@@ -1,22 +1,18 @@
 package objects
 
 import (
-	"github.com/faiface/mainthread"
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
+	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
-	"github.com/wieku/danser-go/framework/math/math32"
 	"log"
 	"math"
 	"sort"
@@ -25,7 +21,6 @@ import (
 )
 
 const followBaseScale = 2.14
-const maxSliderPoints = 10000
 
 type PathLine struct {
 	Time1 int64
@@ -77,12 +72,11 @@ type Slider struct {
 
 	startCircle *Circle
 
-	vao                  *buffer.VertexArrayObject
 	created              bool
 	discreteCurve        []bmath.Vector2f
 	startAngle, endAngle float64
-	sliderSnakeIn        *glider.Glider
-	sliderSnakeOut       *glider.Glider
+	sliderSnakeTail      *glider.Glider
+	sliderSnakeHead      *glider.Glider
 	fade                 *glider.Glider
 	bodyFade             *glider.Glider
 	fadeFollow           *glider.Glider
@@ -92,16 +86,10 @@ type Slider struct {
 	topLeft     bmath.Vector2f
 	bottomRight bmath.Vector2f
 
-	topLeftScreen      bmath.Vector2f
-	bottomRightScreen  bmath.Vector2f
-	framebuffer        *buffer.Framebuffer
-	disposed           bool
-	diff               *difficulty.Difficulty
-	prevIn             int
-	prevOut            int
-	bodySprite         *sprites.Sprite
-	topLeftScreenE     bmath.Vector2f
-	bottomRightScreenE bmath.Vector2f
+	topLeftScreen     bmath.Vector2f
+	bottomRightScreen bmath.Vector2f
+	diff              *difficulty.Difficulty
+	body              *sliderrenderer.Body
 }
 
 func NewSlider(data []string) *Slider {
@@ -157,8 +145,8 @@ func NewSlider(data []string) *Slider {
 	slider.bodyFade = glider.NewGlider(1)
 	//slider.fadeCircle = animation.NewGlider(1)
 	//slider.fadeApproach = animation.NewGlider(1)
-	slider.sliderSnakeIn = glider.NewGlider(1)
-	slider.sliderSnakeOut = glider.NewGlider(0)
+	slider.sliderSnakeTail = glider.NewGlider(1)
+	slider.sliderSnakeHead = glider.NewGlider(0)
 	return slider
 }
 
@@ -398,20 +386,24 @@ func (self *Slider) UpdateStacking() {
 
 func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.diff = diff
-	self.sliderSnakeIn = glider.NewGlider(0)
-	self.sliderSnakeOut = glider.NewGlider(0)
+	self.sliderSnakeTail = glider.NewGlider(0)
+	self.sliderSnakeHead = glider.NewGlider(0)
 
 	slSnInS := float64(self.objData.StartTime) - diff.Preempt
 	slSnInE := float64(self.objData.StartTime) - (diff.Preempt - difficulty.HitFadeIn) + self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
 
 	if settings.Objects.SliderSnakeIn {
-		self.sliderSnakeIn.AddEvent(slSnInS, slSnInE, 1)
+		self.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
 	} else {
-		self.sliderSnakeIn.SetValue(1)
+		self.sliderSnakeTail.SetValue(1)
 	}
 
 	if settings.Objects.SliderSnakeOut {
-		self.sliderSnakeOut.AddEvent(float64(self.objData.EndTime)-self.partLen, float64(self.objData.EndTime), 1)
+		if self.repeat%2 == 1 {
+			self.sliderSnakeHead.AddEvent(float64(self.objData.EndTime)-self.partLen, float64(self.objData.EndTime), 1)
+		} else {
+			self.sliderSnakeTail.AddEvent(float64(self.objData.EndTime)-self.partLen, float64(self.objData.EndTime), 0)
+		}
 	}
 
 	self.fade = glider.NewGlider(0)
@@ -474,27 +466,6 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.fadeFollow = glider.NewGlider(0)
 	self.scaleFollow = glider.NewGlider(0)
 
-	/*self.fadeFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+60), float64(self.objData.EndTime)), 0, 1)
-	self.fadeFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0)
-
-	self.scaleFollow.AddEventS(float64(self.objData.StartTime), math.Min(float64(self.objData.StartTime+180), float64(self.objData.EndTime)), 0.5*followBaseScale, 1*followBaseScale)
-	self.scaleFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1*followBaseScale, 0.8*followBaseScale)
-
-	for j, p := range self.ScorePoints {
-		if j < 1 {
-			continue
-		}
-
-		fade := 200.0
-		delay := fade
-		if len(self.ScorePoints) >= 2 {
-			delay = math.Min(fade, float64(p.Time-self.ScorePoints[j-1].Time))
-			ratio := delay / fade
-			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1-ratio*0.1)*followBaseScale)
-		}
-
-	}*/
-
 	for _, p := range self.TickPoints {
 		a := float64((p.Time-self.objData.StartTime)/2+self.objData.StartTime) - diff.Preempt*2/3
 
@@ -517,39 +488,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	}
 
-}
-
-func (self *Slider) GetCurve() []bmath.Vector2f {
-	length := float64(self.multiCurve.GetLength())
-	lod := math.Min(math.Ceil(length*float64(settings.Objects.SliderPathLOD)/100.0), maxSliderPoints)
-	if lod > 0 {
-		t0 := float32(1.0 / lod)
-		points := make([]bmath.Vector2f, 0)
-		t := float32(0.0)
-		for i := 0; i <= int(lod); i += 1 {
-			point := self.multiCurve.PointAt(t).Add(self.objData.StackOffset)
-			if i == 0 {
-				self.topLeft = point.Copy()
-				self.bottomRight = point.Copy()
-			}
-			self.topLeft.X = math32.Min(self.topLeft.X, point.X)
-			self.topLeft.Y = math32.Min(self.topLeft.Y, point.Y)
-			self.bottomRight.X = math32.Max(self.bottomRight.X, point.X)
-			self.bottomRight.Y = math32.Max(self.bottomRight.Y, point.Y)
-
-			multiplier := float32(1.0)
-			if settings.Objects.SliderDistortions {
-				multiplier = 3.0 //larger allowable area, we want to see distorted sliders "fully"
-			}
-
-			if point.X >= -bmath.OsuWidth*multiplier && point.X <= bmath.OsuWidth*2*multiplier && point.Y >= -bmath.OsuHeight*multiplier && point.Y <= bmath.OsuHeight*2*multiplier {
-				points = append(points, point)
-			}
-			t += t0
-		}
-		return points
-	}
-	return make([]bmath.Vector2f, 0)
+	self.body = sliderrenderer.NewBody(self.multiCurve, float32(self.diff.CircleRadius))
 }
 
 func (self *Slider) IsRetarded() bool {
@@ -557,7 +496,7 @@ func (self *Slider) IsRetarded() bool {
 }
 
 func (self *Slider) Update(time int64) bool {
-	self.sliderSnakeOut.Update(float64(time))
+	self.sliderSnakeHead.Update(float64(time))
 
 	if time < self.objData.EndTime {
 		times := int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat)))
@@ -683,163 +622,18 @@ func (self *Slider) GetPosition() bmath.Vector2f {
 	return self.Pos
 }
 
-func (self *Slider) InitCurve(renderer *render.SliderRenderer) {
-	if !self.created {
-		self.created = true
-		go func() {
-			self.discreteCurve = self.GetCurve()
-			//var data []float32
-			//data, self.divides = renderer.GetShape(self.discreteCurve)
-			mainthread.CallNonBlock(func() {
-				self.vao = renderer.UploadMesh(self.discreteCurve)
-				//runtime.KeepAlive(data)
-			})
-		}()
-	}
+func (self *Slider) DrawBodyBase(time int64, projection mgl32.Mat4) {
+	self.sliderSnakeTail.Update(float64(time))
+	self.sliderSnakeHead.Update(float64(time))
+
+	self.body.DrawBase(self.sliderSnakeHead.GetValue(), self.sliderSnakeTail.GetValue(), projection)
 }
 
-func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, renderer *render.SliderRenderer, batch *batches.SpriteBatch) {
-	self.sliderSnakeIn.Update(float64(time))
+func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, projection mgl32.Mat4) {
 	self.bodyFade.Update(float64(time))
-
-	in := 0
-	out := int(self.sliderSnakeIn.GetValue() * float64(len(self.discreteCurve)))
-
-	if int64(math.Min(float64(time-self.objData.StartTime)/self.partLen+1, float64(self.repeat))) == self.repeat {
-		if (self.repeat % 2) == 1 {
-			in = int(math.Ceil(self.sliderSnakeOut.GetValue() * (float64(len(self.discreteCurve)) - 1)))
-		} else {
-			out = int(math.Floor((1.0 - self.sliderSnakeOut.GetValue()) * (float64(len(self.discreteCurve)) - 1)))
-		}
-	}
-
-	if out < in {
-		in, out = out, in
-	}
-
 	colorAlpha := self.bodyFade.GetValue()
 
-	if self.vao != nil {
-
-		if self.framebuffer == nil && !self.disposed {
-
-			multX := 1.0
-			multY := 1.0
-
-			aspect := settings.Graphics.GetAspectRatio()
-
-			if aspect > 1 {
-				multY = aspect
-			} else {
-				multX = 1.0 / aspect
-			}
-
-			tLW := renderer.GetCamera().Inv().Mul4x1(mgl32.Vec4{float32(-multX), float32(multY), 0.0, 1.0})
-			bRW := renderer.GetCamera().Inv().Mul4x1(mgl32.Vec4{float32(multX), float32(-multY), 0.0, 1.0})
-
-			self.topLeftScreenE.X = math32.Max(tLW.X(), self.topLeft.X-float32(self.diff.CircleRadius)*1.2)
-			self.topLeftScreenE.Y = math32.Max(tLW.Y(), self.topLeft.Y-float32(self.diff.CircleRadius)*1.2)
-
-			self.bottomRightScreenE.X = math32.Min(bRW.X(), self.bottomRight.X+float32(self.diff.CircleRadius)*1.2)
-			self.bottomRightScreenE.Y = math32.Min(bRW.Y(), self.bottomRight.Y+float32(self.diff.CircleRadius)*1.2)
-
-			tLS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.topLeftScreenE.X, self.topLeftScreenE.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-			bRS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.bottomRightScreenE.X, self.bottomRightScreenE.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-
-			self.topLeftScreen = bmath.NewVec2f(tLS.X(), tLS.Y()).Mult(bmath.NewVec2f(float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())))
-			self.bottomRightScreen = bmath.NewVec2f(bRS.X(), bRS.Y()).Mult(bmath.NewVec2f(float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())))
-
-			dimensions := self.bottomRightScreen.Sub(self.topLeftScreen).Abs()
-			self.framebuffer = buffer.NewFrame(int(dimensions.X), int(dimensions.Y), true, true)
-			tex := self.framebuffer.Texture().GetRegion()
-			self.bodySprite = sprites.NewSpriteSingle(&tex, 0, self.bottomRightScreenE.Sub(self.topLeftScreenE).Scl(0.5).Add(self.topLeftScreenE).Copy64(), bmath.Origin.Centre)
-			self.bodySprite.SetScale(float64((self.bottomRightScreenE.X - self.topLeftScreenE.X) / dimensions.X))
-			self.bodySprite.SetVFlip(true)
-		}
-
-		drawSlider := func() {
-			//subVao := self.vao.Slice(in*self.divides*3, out*self.divides*3)
-			//subVao.BeginDraw()
-
-			scaleX := 1.0
-			scaleY := 1.0
-
-			if settings.Objects.SliderDistortions {
-				tLS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.topLeft.X, self.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-				bRS := renderer.GetCamera().Mul4x1(mgl32.Vec4{self.bottomRight.X, self.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-
-				wS := float32(32768 / (settings.Graphics.GetWidthF()))
-				hS := float32(32768 / (settings.Graphics.GetHeightF()))
-
-				if -tLS.X()+bRS.X() > wS {
-					scaleX = float64(wS / (-tLS.X() + bRS.X()))
-				}
-
-				if tLS.Y()-bRS.Y() > hS {
-					scaleY = float64(hS / (tLS.Y() - bRS.Y()))
-				}
-			}
-
-			renderer.SetDistort(scaleX, scaleY)
-
-			self.vao.Bind()
-			self.vao.DrawInstanced(in, out-in)
-			self.vao.Unbind()
-			//subVao.Draw()
-			//subVao.EndDraw()
-		}
-
-		if settings.Objects.SliderMerge /*|| settings.DIVIDES > 1*/ {
-			renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
-			drawSlider()
-		} else {
-			if in != self.prevIn || out != self.prevOut {
-				gl.Disable(gl.BLEND)
-				gl.Enable(gl.DEPTH_TEST)
-				gl.DepthMask(true)
-				gl.DepthFunc(gl.LESS)
-
-				self.framebuffer.Begin()
-
-				gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-				gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-				dimensions := self.bottomRightScreen.Sub(self.topLeftScreen).Abs()
-
-				gl.Viewport(0, 0, int32(dimensions.X), int32(dimensions.Y))
-
-				oldCam := renderer.GetCamera()
-
-				renderer.BeginShader()
-
-				//log.Println(self.topLeftScreenE.X, self.bottomRightScreenE.X, self.bottomRightScreenE.Y, self.topLeftScreenE.Y)
-				renderer.SetCamera(mgl32.Ortho(self.topLeftScreenE.X, self.bottomRightScreenE.X, self.bottomRightScreenE.Y, self.topLeftScreenE.Y, 1, -1) /*.Mul4(mgl32.Translate3D(self.topLeftScreenE.X + (self.bottomRightScreenE.X-self.topLeftScreenE.X)/2, self.topLeftScreenE.Y + (self.bottomRightScreenE.Y-self.topLeftScreenE.Y)/2, 0))*/)
-
-				renderer.SetColor(mgl32.Vec4{color[0], color[1], color[2], 1}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, 1})
-				drawSlider()
-
-				renderer.SetCamera(oldCam)
-				renderer.EndShader()
-
-				self.framebuffer.End()
-				gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
-				gl.Disable(gl.DEPTH_TEST)
-				gl.DepthMask(false)
-				gl.Enable(gl.BLEND)
-				//
-				gl.BlendEquation(gl.FUNC_ADD)
-				gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-
-				self.prevIn = in
-				self.prevOut = out
-			}
-
-			batch.SetColor(1, 1, 1, 1)
-			self.bodySprite.SetAlpha(colorAlpha)
-			self.bodySprite.Draw(time, batch)
-		}
-
-	}
+	self.body.DrawNormal(projection, mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
 }
 
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
@@ -875,7 +669,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 					if p.fade.GetValue() >= 0.001 {
 						if i == 1 {
 
-							out := int(self.sliderSnakeIn.GetValue() * float64(len(self.discreteCurve)-1))
+							out := int(self.sliderSnakeTail.GetValue() * float64(len(self.discreteCurve)-1))
 							batch.SetTranslation(self.discreteCurve[out].Copy64())
 							if out == 0 {
 								batch.SetRotation(self.startAngle)
@@ -890,7 +684,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 							batch.SetRotation(self.startAngle + math.Pi)
 						}
 						batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
-						batch.SetColor(1, 1, 1, alpha*self.sliderSnakeIn.GetValue()*p.fade.GetValue())
+						batch.SetColor(1, 1, 1, alpha*self.sliderSnakeTail.GetValue()*p.fade.GetValue())
 						batch.DrawUnit(*render.SliderReverse)
 					}
 				}
@@ -965,16 +759,16 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	batch.SetSubScale(1, 1)
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
-		if self.vao != nil {
-			if self.framebuffer != nil && !self.disposed {
-				self.framebuffer.Dispose()
-				self.disposed = true
-			}
-			if settings.Objects.SliderDynamicUnload {
-				//self.vao.Delete()
-				self.vao.Dispose()
-			}
-		}
+		//if self.vao != nil {
+		//	if self.framebuffer != nil && !self.disposed {
+		//		self.framebuffer.Dispose()
+		//		self.disposed = true
+		//	}
+		//	if settings.Objects.SliderDynamicUnload {
+		//		//self.vao.Delete()
+		//		self.vao.Dispose()
+		//	}
+		//}
 		return true
 	}
 	return false

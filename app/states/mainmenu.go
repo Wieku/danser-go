@@ -102,7 +102,6 @@ type MainMenu struct {
 func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 	player := new(MainMenu)
 	render.LoadTextures()
-	render.SetupSlider()
 	player.batch = batches.NewSpriteBatch()
 
 	player.font = font.GetFont("Exo 2 Bold")
