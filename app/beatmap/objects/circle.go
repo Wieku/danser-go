@@ -225,7 +225,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 
 		if time < self.objData.StartTime {
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65, strconv.Itoa(int(self.objData.ComboNumber)))
+				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65*self.diff.CircleRadius, strconv.Itoa(int(self.objData.ComboNumber)))
 			}
 			batch.SetTranslation(self.objData.StartPos.Copy64())
 		}
