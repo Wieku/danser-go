@@ -25,6 +25,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
 	"github.com/wieku/danser-go/framework/qpc"
+	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
 	"path/filepath"
@@ -853,12 +854,9 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
 
-		//for j := 0; j < settings.DIVIDES; j++ {
-
 		pl.batch.SetCamera(cameras[0])
 
 		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
-		//}
 
 		pl.batch.End()
 	}
@@ -907,6 +905,7 @@ func (pl *Player) Draw(delta float64) {
 	if pl.overlay != nil {
 		pl.batch.Begin()
 		pl.batch.SetScale(1, 1)
+
 		if !pl.overlay.NormalBeforeCursor() {
 			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
 		}
@@ -929,43 +928,73 @@ func (pl *Player) Draw(delta float64) {
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
 		padDown := 4.0 * (settings.Graphics.GetHeightF() / 1080.0)
-		shift := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
+		//shift := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
 		size := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
 
 		if settings.DEBUG {
+			drawShadowed := func(pos float64, text string) {
+				pl.batch.SetColor(0, 0, 0, 0.5)
+				pl.font.DrawMonospaced(pl.batch, 0-size*0.05, (size+padDown)*pos+padDown/2-size*0.05, size, text)
+
+				pl.batch.SetColor(1, 1, 1, 1)
+				pl.font.DrawMonospaced(pl.batch, 0, (size+padDown)*pos+padDown/2, size, text)
+			}
+
+			pl.batch.SetColor(0, 0, 0, 1)
+			pl.font.Draw(pl.batch, 0-size*1.5*0.1, settings.Graphics.GetHeightF()-size*1.5-size*1.5*0.1, size*1.5, pl.mapFullName)
+
+			pl.batch.SetColor(1, 1, 1, 1)
 			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, pl.mapFullName)
 
-			time := int(pl.musicPlayer.GetPosition())
+			drawWithBackground := func(pos float64, text string) {
+				pl.batch.SetColor(0, 0, 0, 0.8)
+
+				width := pl.font.GetWidthMonospaced(size, text)
+
+				pl.batch.SetTranslation(bmath.NewVec2d(width/2, settings.Graphics.GetHeightF()-(size+padDown)*(pos-0.5)))
+				pl.batch.SetSubScale(width/2, (size+padDown)/2)
+				pl.batch.DrawUnit(render.Pixel.GetRegion())
+
+				pl.batch.SetColor(1, 1, 1, 1)
+				pl.font.DrawMonospaced(pl.batch, 0, settings.Graphics.GetHeightF()-(size+padDown)*pos+padDown/2, size, text)
+			}
+
+			drawWithBackground(3, fmt.Sprintf("VSync: %t", settings.Graphics.VSync))
+			drawWithBackground(4, fmt.Sprintf("Blur: %t", settings.Playfield.BlurEnable))
+			drawWithBackground(5, fmt.Sprintf("Bloom: %t", settings.Playfield.BloomEnabled))
+
+			drawWithBackground(6, fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
+			drawWithBackground(7, fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
+			drawWithBackground(8, fmt.Sprintf("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds)))
+			drawWithBackground(9, fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
+			drawWithBackground(10, fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
+			drawWithBackground(11, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
+
+			currentTime := int(pl.musicPlayer.GetPosition())
 			totalTime := int(pl.musicPlayer.GetLength())
 			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
 
-			translate := func(b bool) string {
-				if b {
-					return "on"
-				}
-				return "off"
-			}
-
-			pl.font.Draw(pl.batch, 0, padDown+shift*4, size, fmt.Sprintf("Blur %s", translate(settings.Playfield.BlurEnable)))
-			pl.font.Draw(pl.batch, 0, padDown+shift*3, size, fmt.Sprintf("Bloom %s", translate(settings.Playfield.BloomEnabled)))
-			pl.font.Draw(pl.batch, 0, padDown+shift*2, size, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", time/60, time%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			pl.font.Draw(pl.batch, 0, padDown+shift, size, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
+			drawShadowed(2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
+			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
 
 			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
-				pl.font.Draw(pl.batch, 0, padDown, size, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", storyboard.GetProcessedSprites(), pl.storyboardLoad, storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
+				drawShadowed(0, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", storyboard.GetProcessedSprites(), pl.storyboardLoad, storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
 			} else {
-				pl.font.Draw(pl.batch, 0, padDown, size, "No storyboard")
+				drawShadowed(0, "No storyboard")
 			}
-			vSync := "VSync " + translate(settings.Graphics.VSync)
-			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidth(size, vSync), padDown+shift*2, size, vSync)
-
 		}
 
 		if settings.DEBUG || settings.Graphics.ShowFPS {
-			fpsText := fmt.Sprintf("%0.0ffps (%0.2fms)", pl.fpsC, 1000/pl.fpsC)
-			tpsText := fmt.Sprintf("%0.0ftps (%0.2fms)", pl.fpsU, 1000/pl.fpsU)
-			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidth(size, fpsText), padDown+shift, size, fpsText)
-			pl.font.Draw(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidth(size, tpsText), padDown, size, tpsText)
+			drawShadowed := func(pos float64, text string) {
+				pl.batch.SetColor(0, 0, 0, 0.5)
+				pl.font.DrawMonospaced(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidthMonospaced(size, text)-size*0.05, (size+padDown)*pos+padDown/2-size*0.05, size, text)
+
+				pl.batch.SetColor(1, 1, 1, 1)
+				pl.font.DrawMonospaced(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidthMonospaced(size, text), (size+padDown)*pos+padDown/2, size, text)
+			}
+
+			drawShadowed(1, fmt.Sprintf("%0.0ffps (%0.2fms)", pl.fpsC, 1000/pl.fpsC))
+			drawShadowed(0, fmt.Sprintf("%0.0ftps (%0.2fms)", pl.fpsU, 1000/pl.fpsU))
 		}
 
 		pl.batch.End()
