@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"unicode"
 )
 
 var fonts map[string]*Font
@@ -55,7 +56,7 @@ func LoadFont(reader io.Reader) *Font {
 	font := new(Font)
 	font.min = rune(32)
 	font.max = rune(127)
-	font.initialSize = 64.0
+	font.initialSize = 100.0
 	font.glyphs = make(map[rune]*glyphData) //, font.max-font.min+1)
 	font.kernTable = make(map[rune]map[rune]float64)
 	font.atlas = texture.NewTextureAtlas(1024, 4)
@@ -150,14 +151,18 @@ func LoadFont(reader io.Reader) *Font {
 		bearingH := float64(gBnd.Min.X) / 64
 		font.glyphs[i-font.min] = &glyphData{*region, advance, bearingH, bearingV}
 	}
+
 	font.biggest = font.glyphs['9'].advance
-	log.Println(ttf.Name(truetype.NameIDFontFullName), "loaded!")
+
 	fonts[ttf.Name(truetype.NameIDFontFullName)] = font
+
+	log.Println(ttf.Name(truetype.NameIDFontFullName), "loaded!")
+
 	return font
 }
 
-func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
-	xpad := x
+func (font *Font) drawInternal(renderer *batches.SpriteBatch, x, y float64, size float64, text string, monospaced bool) {
+	advance := x
 
 	scale := size / font.initialSize
 
@@ -167,88 +172,72 @@ func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64
 			continue
 		}
 
-		kerning := 0.0
-
-		if i > 0 && font.kernTable != nil {
-			kerning = font.kernTable[rune(text[i-1])][c]
+		if i > 0 && font.kernTable != nil && !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1])))) {
+			advance += font.kernTable[rune(text[i-1])][c] * scale * renderer.GetScale().X
 		}
 
 		renderer.SetSubScale(scale, scale)
-		renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX-kerning+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
+
+		tr := bmath.NewVec2d(char.bearingX+float64(char.region.Width)/2, float64(char.region.Height)/2-char.bearingY).Scl(scale).Mult(renderer.GetScale()).AddS(advance, y)
+
+		renderer.SetTranslation(tr)
+
 		renderer.DrawTexture(char.region)
-		xpad += scale * renderer.GetScale().X * (char.advance - kerning)
 
+		xAdv := char.advance
+
+		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
+			xAdv = font.biggest
+		}
+
+		advance += scale * renderer.GetScale().X * xAdv
 	}
 }
 
-func (font *Font) DrawMonospaced(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
-	xpad := x
-
-	scale := size / font.initialSize
-
-	for _, c := range text {
-		char := font.glyphs[c-font.min]
-		if char == nil {
-			continue
-		}
-
-		renderer.SetSubScale(scale, scale)
-		if c == '.' || c == ',' || c == '%' {
-			renderer.SetTranslation(bmath.NewVec2d(xpad+(char.bearingX+float64(char.region.Width)/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
-			renderer.DrawTexture(char.region)
-			xpad += scale * renderer.GetScale().X * (char.advance)
-		} else if c == '1' {
-			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(float64(char.advance)))*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
-			renderer.DrawTexture(char.region)
-			xpad += scale * renderer.GetScale().X * font.biggest
-		} else {
-			renderer.SetTranslation(bmath.NewVec2d(xpad+(font.biggest-(char.bearingX+float64(char.advance))/2)*scale*renderer.GetScale().X, y+(float64(char.region.Height)/2-char.bearingY)*scale*renderer.GetScale().Y))
-			renderer.DrawTexture(char.region)
-			xpad += scale * renderer.GetScale().X * font.biggest
-		}
-
-	}
-}
-
-func (font *Font) GetWidth(size float64, text string) float64 {
-	scale := size / font.initialSize
-	xpad := 0.0
-	for i, c := range text {
-		char := font.glyphs[c-font.min]
-		if char == nil {
-			continue
-		}
-
-		kerning := 0.0
-		if i > 0 && font.kernTable != nil {
-			kerning = font.kernTable[rune(text[i-1])][c]
-		}
-
-		xpad += scale * (char.advance - kerning)
-	}
-	return xpad
-}
-
-func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
-	scale := size / font.initialSize
-	xpad := 0.0
-	for _, c := range text {
-		char := font.glyphs[c-font.min]
-		if char == nil {
-			continue
-		}
-
-		if c == '.' || c == ',' || c == '%' {
-			xpad += scale * char.advance
-		} else {
-			xpad += scale * font.biggest
-		}
-
-	}
-	return xpad
+func (font *Font) Draw(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
+	font.drawInternal(renderer, x, y, size, text, false)
 }
 
 func (font *Font) DrawCentered(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
 	xpad := font.GetWidth(size, text) * renderer.GetScale().X
 	font.Draw(renderer, x-(xpad)/2, y, size, text)
+}
+
+func (font *Font) DrawMonospaced(renderer *batches.SpriteBatch, x, y float64, size float64, text string) {
+	font.drawInternal(renderer, x, y, size, text, true)
+}
+
+func (font *Font) getWidthInternal(size float64, text string, monospaced bool) float64 {
+	advance := 0.0
+
+	scale := size / font.initialSize
+
+	for i, c := range text {
+		char := font.glyphs[c-font.min]
+		if char == nil {
+			continue
+		}
+
+		if i > 0 && font.kernTable != nil && !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1])))) {
+			advance += font.kernTable[rune(text[i-1])][c] * scale
+		}
+
+		xAdv := char.advance
+
+		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
+			xAdv = font.biggest
+		}
+
+		advance += scale * xAdv
+	}
+
+	return advance
+}
+
+func (font *Font) GetWidth(size float64, text string) float64 {
+	return font.getWidthInternal(size, text, false)
+}
+
+func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
+	return font.getWidthInternal(size, text, true)
 }
