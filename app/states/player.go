@@ -124,7 +124,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.batch = batches.NewSpriteBatch()
 	player.font = font.GetFont("Exo 2 Bold")
 
-	discord.SetMap(beatMap)
+	discord.SetMap(beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
@@ -393,8 +393,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 			ov.SetMusic(musicPlayer)
 		}
-		//musicPlayer.SetPosition(1 * 30)
-		discord.SetDuration(int64(musicPlayer.GetLength() * 1000 / settings.SPEED))
+		//musicPlayer.SetPosition(4 * 60)
+		discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
 		if player.overlay == nil {
 			discord.UpdateDance(settings.TAG, settings.DIVIDES)
 		}

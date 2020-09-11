@@ -2,7 +2,6 @@ package discord
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/rich-go/client"
 	"log"
@@ -11,13 +10,14 @@ import (
 
 const appId = "658093518396588032"
 
-var startTime time.Time = time.Now()
-var endTime time.Time = time.Now()
+var queue chan func()
+var connected bool
+
+var startTime = time.Now()
+var endTime = time.Now()
 var mapString string
 
-var queue chan func()
-
-var connected bool
+var lastSentActivity = "Idle"
 
 func Connect() {
 	if !settings.General.DiscordPresenceOn {
@@ -33,14 +33,15 @@ func Connect() {
 	connected = true
 
 	queue = make(chan func())
+
 	go func() {
 		for {
 			f, keepOpen := <-queue
-			if keepOpen {
-				f()
-				continue
+			if !keepOpen {
+				break
 			}
-			break
+
+			f()
 		}
 	}()
 }
@@ -48,44 +49,23 @@ func Connect() {
 func SetDuration(duration int64) {
 	startTime = time.Now()
 	endTime = time.Now().Add(time.Duration(duration) * time.Millisecond)
+
+	sendActivity(lastSentActivity)
 }
 
-func SetMap(beatMap *beatmap.BeatMap) {
-	mapString = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
+func SetMap(artist, title, version string) {
+	mapString = fmt.Sprintf("%s - %s [%s]", artist, title, version)
+
+	sendActivity(lastSentActivity)
 }
 
-func UpdateKnockout(alive, players int) {
+func sendActivity(state string) {
 	if !connected {
 		return
 	}
 
 	queue <- func() {
-		err := client.SetActivity(client.Activity{
-			State:      fmt.Sprintf("Watching knockout (%d of %d alive)", alive, players),
-			Details:    mapString,
-			LargeImage: "danser-logo",
-			Timestamps: &client.Timestamps{
-				Start: &startTime,
-				End:   &endTime,
-			},
-		})
-		if err != nil {
-			log.Println("Can't send activity")
-		}
-	}
-}
-
-func UpdatePlay(name string) {
-	if !connected {
-		return
-	}
-
-	state := "Clicking circles"
-	if name != "" {
-		state = fmt.Sprintf("Watching %s", name)
-	}
-
-	queue <- func() {
+		lastSentActivity = state
 		err := client.SetActivity(client.Activity{
 			State:      state,
 			Details:    mapString,
@@ -101,11 +81,20 @@ func UpdatePlay(name string) {
 	}
 }
 
-func UpdateDance(tag, divides int) {
-	if !connected {
-		return
+func UpdateKnockout(alive, players int) {
+	sendActivity(fmt.Sprintf("Watching knockout (%d of %d alive)", alive, players))
+}
+
+func UpdatePlay(name string) {
+	state := "Clicking circles"
+	if name != "" {
+		state = fmt.Sprintf("Watching %s", name)
 	}
 
+	sendActivity(state)
+}
+
+func UpdateDance(tag, divides int) {
 	statusText := "Watching "
 	if tag > 1 {
 		statusText += fmt.Sprintf("TAG%d ", tag)
@@ -119,20 +108,7 @@ func UpdateDance(tag, divides int) {
 		statusText += "cursor dance"
 	}
 
-	queue <- func() {
-		err := client.SetActivity(client.Activity{
-			State:      statusText,
-			Details:    mapString,
-			LargeImage: "danser-logo",
-			Timestamps: &client.Timestamps{
-				Start: &startTime,
-				End:   &endTime,
-			},
-		})
-		if err != nil {
-			log.Println("Can't send activity")
-		}
-	}
+	sendActivity(statusText)
 }
 
 func ClearActivity() {
@@ -141,6 +117,8 @@ func ClearActivity() {
 	}
 
 	queue <- func() {
+		lastSentActivity = "Idle"
+
 		err := client.ClearActivity()
 		if err != nil {
 			log.Println("Can't clear activity")
@@ -152,8 +130,12 @@ func Disconnect() {
 	if !connected {
 		return
 	}
+
 	ClearActivity()
+
 	connected = false
+
 	close(queue)
+
 	client.Logout()
 }
