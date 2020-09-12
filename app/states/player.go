@@ -54,7 +54,6 @@ type Player struct {
 	start       bool
 	mus         bool
 	musicPlayer *bass.Track
-	rotation    float64
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
 
@@ -632,16 +631,6 @@ func (pl *Player) Draw(delta float64) {
 		settings.Objects.Colors.Update(timMs)
 		settings.Objects.CustomSliderBorderColor.Update(timMs)
 		settings.Cursor.Colors.Update(timMs)
-		if settings.Playfield.RotationEnabled {
-			pl.rotation += settings.Playfield.RotationSpeed / 1000.0 * timMs
-			for pl.rotation > 360.0 {
-				pl.rotation -= 360.0
-			}
-
-			for pl.rotation < 0.0 {
-				pl.rotation += 360.0
-			}
-		}
 	}
 
 	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
@@ -654,11 +643,6 @@ func (pl *Player) Draw(delta float64) {
 
 	scale1 := pl.Scl
 	scale2 := pl.Scl
-	if settings.Playfield.RotationEnabled {
-		rotationRad := (pl.rotation + settings.Playfield.BaseRotation) * math.Pi / 180.0
-		pl.camera.SetRotation(-rotationRad)
-		pl.camera.Update()
-	}
 
 	if !settings.Objects.ScaleToTheBeat {
 		scale1 = 1

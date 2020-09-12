@@ -26,9 +26,6 @@ func initPlayfield() *playfield {
 		UnblurToTheBeat:      true,
 		UnblurFill:           0.8,
 		KiaiFactor:           1.1,
-		BaseRotation:         0,
-		RotationEnabled:      false,
-		RotationSpeed:        2,
 		BloomEnabled:         true,
 		BloomToTheBeat:       true,
 		BloomBeatAddition:    0.3,
@@ -63,9 +60,6 @@ type playfield struct {
 	UnblurToTheBeat      bool    //true, background blur varies accoriding to music power
 	UnblurFill           float64 //0.8, if blur is set to 0.6, then on full beat blur will be equal to 0.12
 	KiaiFactor           float64 //1.2, scale and flash factor during Kiai
-	BaseRotation         float64 //0, base rotation of playfield
-	RotationEnabled      bool    //false
-	RotationSpeed        float64 //2, degrees per second
 	BloomEnabled         bool
 	BloomToTheBeat       bool
 	BloomBeatAddition    float64
