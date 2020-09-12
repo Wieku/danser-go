@@ -3,7 +3,6 @@ package states
 import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
@@ -50,9 +49,7 @@ type Player struct {
 	CS          float64
 	fadeOut     float64
 	fadeIn      float64
-	entry       float64
 	start       bool
-	mus         bool
 	musicPlayer *bass.Track
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
@@ -67,24 +64,13 @@ type Player struct {
 	playersGlider  *glider.Glider
 	unfold         *glider.Glider
 	counter        float64
-	fpsC           float64
-	fpsU           float64
 	storyboardLoad float64
 	mapFullName    string
 	Epi            *texture.TextureRegion
 	epiGlider      *glider.Glider
 	overlay        components.Overlay
 	velocity       float64
-	hGlider        *glider.Glider
-	vGlider        *glider.Glider
-	oGlider        *glider.Glider
-	flashGlider    *glider.Glider
-	danserGlider   *glider.Glider
-	resnadGlider   *glider.Glider
 	blur           *effects.BlurEffect
-	lastFromQueue  objects.BaseObject
-	x              float64
-	y              float64
 
 	currentBeatVal float64
 	lastBeatLength float64
@@ -101,21 +87,6 @@ type Player struct {
 	cookieSize float64
 	visualiser *drawables.Visualiser
 }
-
-type hsv struct {
-	h, s, v float64
-}
-
-var hsvarray = []hsv{
-	hsv{3, 0.88, 0.79},
-	hsv{295, 0.85, 0.82},
-	hsv{251, 0.80, 0.73},
-	hsv{209, 0.85, 0.82},
-	hsv{165, 0.85, 0.78},
-}
-
-var hsvindex = 0
-var hsvDir = 1
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
@@ -248,16 +219,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.progressMsF = startOffset
 
-	player.hGlider = glider.NewGlider(1)
-	player.vGlider = glider.NewGlider(1)
-	player.oGlider = glider.NewGlider(-36)
-	player.flashGlider = glider.NewGlider(1)
-	player.danserGlider = glider.NewGlider(0.0)
-	player.danserGlider.AddEventS(151562, 151856, 0.0, 1.0)
-	//player.danserGlider.AddEventS(187000, 189000, 0.0, 1.0)
-	player.resnadGlider = glider.NewGlider(0.0)
-	player.resnadGlider.AddEventS(221432, 226542, 0.0, 1.0)
-
 	player.unfold = glider.NewGlider(1)
 
 	for _, p := range beatMap.Pauses {
@@ -284,77 +245,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.background.SetTrack(musicPlayer)
 	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
 	player.visualiser.SetTrack(musicPlayer)
-
-	audio.AddListener(func(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64) {
-		//_, isSlider := player.bMap.HitObjects[objNum].(*objects.Slider)
-		startTime := player.progressMsF
-		endTime := player.progressMsF + 500
-		/*if isSlider{
-			startTime = float64(s.GetBasicData().StartTime)
-			endTime = float64(s.GetBasicData().EndTime)
-		}*/
-		if index == 2 && hitsoundIndex == 3 {
-			if hsvDir < 0 {
-				hsvindex--
-			} else {
-				hsvindex++
-			}
-			if hsvindex > 4 {
-				hsvindex = 0
-			} else if hsvindex < 0 {
-				hsvindex = 4
-			}
-			col := hsvarray[hsvindex]
-			/*settings.Cursor.Colors.BaseColor.Hue = col.h
-			settings.Objects.Colors.BaseColor.Hue = col.h
-			settings.Cursor.Colors.BaseColor.Value = col.v
-			settings.Objects.Colors.BaseColor.Value = col.v*/
-			//player.hGlider.Reset()
-			//player.hGlider.AddEvent(startTime, endTime, col.h)
-			//player.vGlider.Reset()
-			//player.vGlider.AddEvent(startTime, endTime, col.v)
-			player.flashGlider.Reset()
-			player.flashGlider.AddEventS(startTime, endTime, 0.0, col.s)
-			//println("hat", sampleSet, index)
-		} // else if hitsoundIndex == 1 && player.bMap.HitObjects[objNum].GetBasicData().NewCombo {
-		//	//prev := hsvarray[hsvindex]
-		//	/*if hsvDir < 0 {
-		//		hsvindex--
-		//	} else {
-		//		hsvindex++
-		//	}*/
-		//	hsvindex++
-		//	if hsvindex > 4 {
-		//		hsvindex = 0
-		//	} else if hsvindex < 0 {
-		//		hsvindex = 4
-		//	}
-		//
-		//	hsvDir *= -1.0
-		//
-		//	col := hsvarray[hsvindex]
-		//	/*settings.Cursor.Colors.BaseColor.Hue = col.h
-		//	settings.Objects.Colors.BaseColor.Hue = col.h
-		//	settings.Cursor.Colors.BaseColor.Value = col.v
-		//	settings.Objects.Colors.BaseColor.Value = col.v*/
-		//	//println("clap", sampleSet, index)
-		//
-		//	player.hGlider.Reset()
-		//	player.hGlider.AddEvent(startTime, endTime, col.h)
-		//	player.vGlider.Reset()
-		//	player.vGlider.AddEvent(startTime, endTime, col.v)
-		//
-		//	player.oGlider.Reset()
-		//	if hsvDir > 0 {
-		//		player.oGlider.AddEvent(startTime, endTime, 0.0)
-		//	} else {
-		//		player.oGlider.AddEvent(startTime, endTime, -36)
-		//	}
-		//
-		//	/*player.flashGlider.Reset()
-		//	player.flashGlider.AddEvent(startTime, endTime, col.s)*/
-		//}
-	})
 
 	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
 
@@ -425,23 +315,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.cursorGlider.Update(player.progressMsF)
 			player.playersGlider.Update(player.progressMsF)
 			player.unfold.Update(player.progressMsF)
-			player.hGlider.Update(player.progressMsF)
-			player.vGlider.Update(player.progressMsF)
-			player.flashGlider.Update(player.progressMsF)
-			player.danserGlider.Update(player.progressMsF)
-			player.resnadGlider.Update(player.progressMsF)
-			player.oGlider.Update(player.progressMsF)
-			/*settings.Objects.Colors.BaseColor.Hue = player.hGlider.GetValue()
-			settings.Cursor.Colors.BaseColor.Hue = player.hGlider.GetValue()
-
-			settings.Objects.Colors.BaseColor.Value = player.vGlider.GetValue()
-			settings.Cursor.Colors.BaseColor.Value = player.vGlider.GetValue()
-
-			settings.Objects.Colors.BaseColor.Saturation = player.flashGlider.GetValue()
-			settings.Cursor.Colors.BaseColor.Saturation = player.flashGlider.GetValue()
-
-			settings.Objects.Colors.HueOffset = player.oGlider.GetValue()
-			settings.Cursor.Colors.HueOffset = player.oGlider.GetValue()*/
 
 			lastT = currtime
 			limiter.Sync()
@@ -490,7 +363,7 @@ func (pl *Player) Show() {
 
 }
 
-func (pl *Player) Draw(delta float64) {
+func (pl *Player) Draw(float64) {
 	if pl.lastTime <= 0 {
 		pl.lastTime = qpc.GetNanoTime()
 	}
@@ -583,8 +456,6 @@ func (pl *Player) Draw(delta float64) {
 	pl.counter += timMs
 
 	if pl.counter >= 1000.0/60 {
-		pl.fpsC = pl.profiler.GetFPS()
-		pl.fpsU = pl.profilerU.GetFPS()
 
 		pl.vol = pl.musicPlayer.GetLevelCombined()
 		pl.volAverage = pl.volAverage*0.9 + pl.vol*0.1
@@ -808,14 +679,6 @@ func (pl *Player) Draw(delta float64) {
 			col1 := colors1[baseIndex]
 			col2 := colors1[ind]
 
-			/*if i == 0 {
-				col1[3] *= float32(pl.danserGlider.GetValue())
-				col2[3] *= float32(pl.danserGlider.GetValue())
-			}*/ /* else if i == 1 {
-				col1[3] *= float32(pl.resnadGlider.GetValue())
-				col2[3] *= float32(pl.resnadGlider.GetValue())
-			}*/
-
 			g.DrawM(scale2, pl.batch, col1, col2, hshifts[baseIndex])
 		}
 
@@ -914,8 +777,11 @@ func (pl *Player) Draw(delta float64) {
 				pl.font.DrawMonospaced(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidthMonospaced(size, text), (size+padDown)*pos+padDown/2, size, text)
 			}
 
-			drawShadowed(1, fmt.Sprintf("%0.0ffps (%0.2fms)", pl.fpsC, 1000/pl.fpsC))
-			drawShadowed(0, fmt.Sprintf("%0.0ftps (%0.2fms)", pl.fpsU, 1000/pl.fpsU))
+			fpsC := pl.profiler.GetFPS()
+			fpsU := pl.profilerU.GetFPS()
+
+			drawShadowed(1, fmt.Sprintf("%0.0ffps (%0.2fms)", fpsC, 1000/fpsC))
+			drawShadowed(0, fmt.Sprintf("%0.0ftps (%0.2fms)", fpsU, 1000/fpsU))
 		}
 
 		pl.batch.End()
