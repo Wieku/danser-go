@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render/batches"
+	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -12,17 +13,19 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"io/ioutil"
-	"log"
 	"math"
 	"sync"
 )
 
 var cursorShader *shader.RShader = nil
-var cursorFbo *buffer.Framebuffer = nil
-var cursorSpaceFbo *buffer.Framebuffer = nil
 
-var fboShader *shader.Shader
-var fboSlice *buffer.VertexSlice
+var cursorFbo *buffer.Framebuffer = nil
+var cursorFBOSprite *sprites.Sprite
+
+var cursorSpaceFbo *buffer.Framebuffer = nil
+var cursorSpaceFBOSprite *sprites.Sprite
+
+var fboBatch *batches.SpriteBatch
 
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
@@ -30,7 +33,6 @@ var osuRect bmath.Rectangle
 var useAdditive = false
 
 func initCursor() {
-
 	if settings.Cursor.TrailStyle < 1 || settings.Cursor.TrailStyle > 4 {
 		panic("Wrong cursor trail type")
 	}
@@ -40,36 +42,17 @@ func initCursor() {
 	cursorShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
 	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
-	cursorFbo.Texture().Bind(30)
+	region := cursorFbo.Texture().GetRegion()
+	cursorFBOSprite = sprites.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+
 	cursorSpaceFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
-	cursorSpaceFbo.Texture().Bind(18)
+	regionSpace := cursorSpaceFbo.Texture().GetRegion()
+	cursorSpaceFBOSprite = sprites.NewSpriteSingle(&regionSpace, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+
+	fboBatch = batches.NewSpriteBatchSize(1)
+	fboBatch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
+
 	osuRect = Camera.GetWorldRect()
-
-	fvert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
-	ffrag, _ := ioutil.ReadFile("assets/shaders/fbopass.fsh")
-
-	var err error
-
-	fboShader, err = shader.NewShader(shader.AttrFormat{
-		{Name: "in_position", Type: shader.Vec3},
-		{Name: "in_tex_coord", Type: shader.Vec2},
-	}, shader.AttrFormat{{Name: "tex", Type: shader.Int}}, string(fvert), string(ffrag))
-
-	if err != nil {
-		log.Println("FboPass: " + err.Error())
-	}
-
-	fboSlice = buffer.MakeVertexSlice(fboShader, 6, 6)
-	fboSlice.Begin()
-	fboSlice.SetVertexData([]float32{
-		-1, -1, 0, 0, 0,
-		1, -1, 0, 1, 0,
-		-1, 1, 0, 0, 1,
-		1, -1, 0, 1, 0,
-		1, 1, 0, 1, 1,
-		-1, 1, 0, 0, 1,
-	})
-	fboSlice.End()
 }
 
 type Cursor struct {
@@ -105,7 +88,6 @@ func NewCursor() *Cursor {
 	}
 
 	length := int(math.Ceil(float64(settings.Cursor.TrailMaxLength) / settings.Cursor.TrailDensity))
-	//vao := buffer.MakeVertexSlice(cursorShader, length, length)
 
 	vao := buffer.NewVertexArrayObject()
 
@@ -144,6 +126,7 @@ func NewCursor() *Cursor {
 
 	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100), vertices: make([]float32, length*3)}
 	cursor.vecSize = 3
+
 	return cursor
 }
 
@@ -183,11 +166,11 @@ func (cr *Cursor) SetScreenPos(pt bmath.Vector2f) {
 	cr.SetPos(Camera.Unproject(pt.Copy64()).Copy32())
 }
 
-func (cr *Cursor) Update(tim float64) {
-	tim = math.Abs(tim)
+func (cr *Cursor) Update(delta float64) {
+	delta = math.Abs(delta)
 
 	if settings.Cursor.TrailStyle == 3 {
-		cr.hueBase += settings.Cursor.Style23Speed / 360.0 * tim
+		cr.hueBase += settings.Cursor.Style23Speed / 360.0 * delta
 		if cr.hueBase > 1.0 {
 			cr.hueBase -= 1.0
 		} else if cr.hueBase < 0 {
@@ -221,7 +204,7 @@ func (cr *Cursor) Update(tim float64) {
 	}
 
 	if len(cr.Points) > 0 {
-		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / tim) * settings.Cursor.TrailRemoveSpeed
+		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / delta) * settings.Cursor.TrailRemoveSpeed
 		times := int(math.Floor(cr.removeCounter))
 		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) / float64(density))
 
@@ -243,10 +226,6 @@ func (cr *Cursor) Update(tim float64) {
 
 	if dirtyLocal {
 		cr.mutex.Lock()
-
-		//if len(cr.vertices) < len(cr.Points)*cr.vecSize {
-		//	cr.vertices = make([]float32, len(cr.Points)*cr.vecSize)
-		//}
 
 		for i, o := range cr.Points {
 			inv := float32(len(cr.Points) - i - 1)
@@ -299,13 +278,10 @@ func BeginCursorRender() {
 func EndCursorRender() {
 	if useAdditive {
 		cursorSpaceFbo.End()
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-		fboShader.Begin()
-		fboShader.SetUniformAttr(0, int32(18))
-		fboSlice.BeginDraw()
-		fboSlice.Draw()
-		fboSlice.EndDraw()
-		fboShader.End()
+
+		fboBatch.Begin()
+		cursorSpaceFBOSprite.Draw(0, fboBatch)
+		fboBatch.End()
 	}
 
 	blend.Pop()
@@ -316,8 +292,6 @@ func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl3
 }
 
 func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
-	gl.Disable(gl.DEPTH_TEST)
-
 	if settings.Cursor.TrailStyle > 1 {
 		color = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
 		color2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
@@ -395,18 +369,16 @@ func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl
 	if useAdditive {
 		cursorFbo.End()
 
+		fboBatch.Begin()
+
 		blend.Push()
-		blend.Enable()
 		blend.SetFunction(blend.SrcAlpha, blend.One)
 
-		fboShader.Begin()
-		fboShader.SetUniformAttr(0, int32(30))
-		fboSlice.BeginDraw()
-		fboSlice.Draw()
-		fboSlice.EndDraw()
-		fboShader.End()
+		cursorFBOSprite.Draw(0, fboBatch)
+		fboBatch.Flush()
 
 		blend.Pop()
-	}
 
+		fboBatch.End()
+	}
 }
