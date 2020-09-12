@@ -55,7 +55,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 		panic(err)
 	}
 
-	shader := shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+	rShader := shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
 	vao := buffer.NewVertexArrayObject()
 
@@ -67,7 +67,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	})
 
 	vao.Bind()
-	vao.Attach(shader)
+	vao.Attach(rShader)
 	vao.Unbind()
 
 	ibo := buffer.NewIndexBufferObject(maxSprites * 6)
@@ -77,6 +77,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	indices := make([]uint16, maxSprites*6)
 
 	index := uint16(0)
+
 	for i := 0; i < maxSprites*6; i += 6 {
 		indices[i] = index
 		indices[i+1] = index + 1
@@ -96,7 +97,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	data := make([]float32, 0, defaultBatchSize*4*vertexSize)
 
 	return &SpriteBatch{
-		shader:     shader,
+		shader:     rShader,
 		color:      mgl32.Vec4{1, 1, 1, 1},
 		Projection: mgl32.Ident4(),
 		scale:      bmath.NewVec2d(1, 1),
@@ -112,9 +113,11 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 
 func (batch *SpriteBatch) Begin() {
 	if batch.drawing {
-		panic("Batching is already began")
+		panic("Batching has already begun")
 	}
+
 	batch.drawing = true
+
 	batch.shader.Bind()
 	batch.shader.SetUniform("proj", batch.Projection)
 
@@ -124,10 +127,6 @@ func (batch *SpriteBatch) Begin() {
 	blend.Push()
 	blend.Enable()
 	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
-
-	if batch.texture != nil && batch.texture.GetLocation() == 0 {
-		batch.texture.Bind(0)
-	}
 }
 
 func (batch *SpriteBatch) bind(texture texture.Texture) {
@@ -135,14 +134,11 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 		if batch.texture.GetID() == texture.GetID() {
 			return
 		}
+
 		batch.Flush()
 	}
 
-	if texture.GetLocation() == 0 {
-		texture.Bind(0)
-	}
 	batch.texture = texture
-	batch.shader.SetUniform("tex", int32(texture.GetLocation()))
 }
 
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
@@ -157,7 +153,6 @@ func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 }
 
 func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d, color mgl32.Vec4, texture texture.TextureRegion) {
-
 	batch.bind(texture.Texture)
 
 	batch.addVertex(vec00, mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
@@ -174,6 +169,12 @@ func (batch *SpriteBatch) Flush() {
 	if batch.currentSize == 0 {
 		return
 	}
+
+	if batch.texture.GetLocation() == 0 {
+		batch.texture.Bind(0)
+	}
+
+	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
 
 	batch.vao.SetData("default", 0, batch.data)
 
@@ -205,9 +206,11 @@ func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, colo
 
 func (batch *SpriteBatch) End() {
 	if !batch.drawing {
-		panic("Batching is already ended")
+		panic("Batching has already ended")
 	}
+
 	batch.drawing = false
+
 	batch.Flush()
 
 	batch.ibo.Unbind()
@@ -275,6 +278,7 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
 	newScale := bmath.NewVec2d(scale.X*float64(texture.Width)/2*batch.scale.X*batch.subscale.X, scale.Y*float64(texture.Height)/2*batch.scale.Y*batch.subscale.Y)
 	newPosition := position.Add(batch.position)
+
 	if storyboard {
 		newPosition = bmath.NewVec2d(position.X-64, position.Y-48)
 	}
@@ -299,6 +303,10 @@ func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
 }
 
 func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
+	if batch.Projection == camera {
+		return
+	}
+
 	if batch.drawing {
 		batch.Flush()
 	}
