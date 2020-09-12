@@ -117,7 +117,8 @@ func (sched *SmoothScheduler) Update(time int64) {
 		}
 
 		if move && sched.startTime >= time {
-			sched.cursor.SetPos(sched.curve.PointAt(float32(time-sched.endTime) / float32(sched.startTime-sched.endTime)))
+			t := bmath.ClampF32(float32(time-sched.endTime)/float32(sched.startTime-sched.endTime), 0, 1)
+			sched.cursor.SetPos(sched.curve.PointAt(t))
 		}
 
 	}

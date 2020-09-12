@@ -29,7 +29,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 
 	var midP bmath.Vector2f
 
-	if math32.Abs(startPos.Sub(endPos).X) < math32.Abs(startPos.Sub(endPos).X) {
+	if math32.Abs(startPos.Sub(endPos).X) < math32.Abs(startPos.Sub(startPos).X) {
 		midP = bmath.NewVec2f(endPos.X, startPos.Y)
 	} else {
 		midP = bmath.NewVec2f(startPos.X, endPos.Y)

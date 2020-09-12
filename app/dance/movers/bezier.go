@@ -89,7 +89,8 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm *BezierMover) Update(time int64) bmath.Vector2f {
-	return bm.bz.PointAt(float32(time-bm.endTime) / float32(bm.beginTime-bm.endTime))
+	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.beginTime-bm.endTime), 0, 1)
+	return bm.bz.PointAt(t)
 }
 
 func (bm *BezierMover) GetEndTime() int64 {

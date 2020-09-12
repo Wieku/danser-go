@@ -142,8 +142,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm *AngleOffsetMover) Update(time int64) bmath.Vector2f {
-	t := float32(time-bm.endTime) / float32(bm.startTime-bm.endTime)
-	t = bmath.ClampF32(t, 0, 1)
+	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }
 

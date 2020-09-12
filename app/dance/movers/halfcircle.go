@@ -46,7 +46,8 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm *HalfCircleMover) Update(time int64) bmath.Vector2f {
-	return bm.ca.PointAt(float32(time-bm.endTime) / float32(bm.startTime-bm.endTime))
+	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
+	return bm.ca.PointAt(t)
 }
 
 func (bm *HalfCircleMover) GetEndTime() int64 {

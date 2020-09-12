@@ -228,8 +228,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append(controller.replays, RpData{settings.Knockout.DanserName /*"HD"*/, "HD", difficulty.Hidden, 100, 0, 0, osu.NONE})
-		controller.controllers = append(controller.controllers, control)
+		controller.replays = append([]RpData{{settings.Knockout.DanserName /*"HD"*/, "HD", difficulty.Hidden, 100, 0, 0, osu.NONE}}, controller.replays...)
+		controller.controllers = append([]*subControl{control}, controller.controllers...)
 	}
 
 	settings.PLAYERS = len(controller.replays)

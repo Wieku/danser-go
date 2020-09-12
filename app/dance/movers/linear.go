@@ -34,8 +34,7 @@ func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
 }
 
 func (bm LinearMover) Update(time int64) bmath.Vector2f {
-	t := float64(time-bm.endTime) / float64(bm.beginTime-bm.endTime)
-	t = bmath.ClampF64(t, 0, 1)
+	t := bmath.ClampF64(float64(time-bm.endTime)/float64(bm.beginTime-bm.endTime), 0, 1)
 	return bm.line.PointAt(float32(easing.OutQuad(t)))
 }
 
