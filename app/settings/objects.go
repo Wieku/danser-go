@@ -34,8 +34,6 @@ func initObjects() *objects {
 		SliderSnakeInMult:             0.0,
 		SliderSnakeOut:                true,
 		SliderMerge:                   true,
-		SliderDynamicLoad:             true,
-		SliderDynamicUnload:           true,
 		SliderDistortions:             true,
 		DrawFollowPoints:              true,
 		WhiteFollowPoints:             true,
@@ -79,8 +77,6 @@ type objects struct {
 	SliderSnakeInMult                      float64
 	SliderSnakeOut                         bool
 	SliderMerge                            bool
-	SliderDynamicLoad                      bool
-	SliderDynamicUnload                    bool
 	SliderDistortions                      bool    //true, osu!stable slider distortions on aspire maps
 	DrawFollowPoints                       bool    //true
 	WhiteFollowPoints                      bool    //true
