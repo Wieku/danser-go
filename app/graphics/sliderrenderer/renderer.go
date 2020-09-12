@@ -78,7 +78,7 @@ func InitRenderer() {
 	framebuffer = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, true)
 	region := framebuffer.Texture().GetRegion()
 	fboSprite = sprites.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
-	batch = batches.NewSpriteBatch()
+	batch = batches.NewSpriteBatchSize(1)
 	batch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
 }
 

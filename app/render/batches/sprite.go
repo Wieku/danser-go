@@ -1,8 +1,10 @@
 package batches
 
 import (
+	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
@@ -10,10 +12,10 @@ import (
 	"io/ioutil"
 )
 
-const batchSize = 2000
+const defaultBatchSize = 2000
 
 type SpriteBatch struct {
-	shader     *shader.Shader
+	shader     *shader.RShader
 	additive   bool
 	color      mgl32.Vec4
 	Projection mgl32.Mat4
@@ -25,43 +27,57 @@ type SpriteBatch struct {
 	transform mgl32.Mat4
 	texture   texture.Texture
 
+	vertexSize  int
 	data        []float32
-	vao         *buffer.VertexSlice
+	vao         *buffer.VertexArrayObject
 	ibo         *buffer.IndexBufferObject
 	currentSize int
 	drawing     bool
+	maxSprites  int
 }
 
 func NewSpriteBatch() *SpriteBatch {
-	circleVertexFormat := shader.AttrFormat{
-		{Name: "in_position", Type: shader.Vec2},
-		{Name: "in_tex_coord", Type: shader.Vec3},
-		{Name: "in_color", Type: shader.Vec4},
-		{Name: "in_additive", Type: shader.Float},
+	return NewSpriteBatchSize(defaultBatchSize)
+}
+
+func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
+	if maxSprites*6 > 0xFFFF {
+		panic(fmt.Sprintf("SpriteBatch size is too big, maximum sprites allowed: 10922, given: %d", maxSprites))
 	}
 
-	circleUniformFormat := shader.AttrFormat{
-		{Name: "proj", Type: shader.Mat4},
-		{Name: "tex", Type: shader.Int},
-	}
-	vert, _ := ioutil.ReadFile("assets/shaders/sprite.vsh")
-	frag, _ := ioutil.ReadFile("assets/shaders/sprite.fsh")
-
-	var err error
-	shader, err := shader.NewShader(circleVertexFormat, circleUniformFormat, string(vert), string(frag))
-
+	vert, err := ioutil.ReadFile("assets/shaders/sprite.vsh")
 	if err != nil {
-		panic("Sprite: " + err.Error())
+		panic(err)
 	}
 
-	ibo := buffer.NewIndexBufferObject(batchSize * 6)
+	frag, err := ioutil.ReadFile("assets/shaders/sprite.fsh")
+	if err != nil {
+		panic(err)
+	}
+
+	shader := shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+
+	vao := buffer.NewVertexArrayObject()
+
+	vao.AddVBO("default", maxSprites*4, 0, attribute.Format{
+		{Name: "in_position", Type: attribute.Vec2},
+		{Name: "in_tex_coord", Type: attribute.Vec3},
+		{Name: "in_color", Type: attribute.Vec4},
+		{Name: "in_additive", Type: attribute.Float},
+	})
+
+	vao.Bind()
+	vao.Attach(shader)
+	vao.Unbind()
+
+	ibo := buffer.NewIndexBufferObject(maxSprites * 6)
 
 	ibo.Bind()
 
-	indices := make([]uint16, batchSize*6)
+	indices := make([]uint16, maxSprites*6)
 
 	index := uint16(0)
-	for i := 0; i < batchSize*6; i += 6 {
+	for i := 0; i < maxSprites*6; i += 6 {
 		indices[i] = index
 		indices[i+1] = index + 1
 		indices[i+2] = index + 2
@@ -76,22 +92,22 @@ func NewSpriteBatch() *SpriteBatch {
 
 	ibo.Unbind()
 
+	vertexSize := vao.GetVBOFormat("default").Size() / 4
+	data := make([]float32, 0, defaultBatchSize*4*vertexSize)
+
 	return &SpriteBatch{
-		shader,
-		false,
-		mgl32.Vec4{1, 1, 1, 1},
-		mgl32.Ident4(),
-		bmath.NewVec2d(0, 0),
-		bmath.NewVec2d(1, 1),
-		bmath.NewVec2d(1, 1),
-		0,
-		mgl32.Ident4(),
-		nil,
-		make([]float32, batchSize*4*10),
-		buffer.MakeVertexSlice(shader, batchSize*4, batchSize*4),
-		ibo,
-		0,
-		false}
+		shader:     shader,
+		color:      mgl32.Vec4{1, 1, 1, 1},
+		Projection: mgl32.Ident4(),
+		scale:      bmath.NewVec2d(1, 1),
+		subscale:   bmath.NewVec2d(1, 1),
+		transform:  mgl32.Ident4(),
+		vertexSize: vertexSize,
+		data:       data,
+		vao:        vao,
+		ibo:        ibo,
+		maxSprites: maxSprites,
+	}
 }
 
 func (batch *SpriteBatch) Begin() {
@@ -99,10 +115,10 @@ func (batch *SpriteBatch) Begin() {
 		panic("Batching is already began")
 	}
 	batch.drawing = true
-	batch.shader.Begin()
-	batch.shader.SetUniformAttr(0, batch.Projection)
+	batch.shader.Bind()
+	batch.shader.SetUniform("proj", batch.Projection)
 
-	batch.vao.Begin()
+	batch.vao.Bind()
 	batch.ibo.Bind()
 
 	blend.Push()
@@ -126,7 +142,7 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 		texture.Bind(0)
 	}
 	batch.texture = texture
-	batch.shader.SetUniformAttr(1, int32(texture.GetLocation()))
+	batch.shader.SetUniform("tex", int32(texture.GetLocation()))
 }
 
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
@@ -149,7 +165,7 @@ func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d,
 	batch.addVertex(vec11, mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
 	batch.addVertex(vec01, mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
 
-	if batch.currentSize >= len(batch.data)-1 {
+	if batch.currentSize/4 >= batch.maxSprites {
 		batch.Flush()
 	}
 }
@@ -159,15 +175,12 @@ func (batch *SpriteBatch) Flush() {
 		return
 	}
 
-	subVao := batch.vao.Slice(0, batch.currentSize/10)
-	//subVao.Begin()
-	subVao.SetVertexData(batch.data[:batch.currentSize])
+	batch.vao.SetData("default", 0, batch.data)
 
-	batch.ibo.DrawPart(0, batch.currentSize/10/4*6)
-	//batch.ibo.Unbind()
+	batch.ibo.DrawPart(0, batch.currentSize/4*6)
 
-	//subVao.End()
 	batch.currentSize = 0
+	batch.data = batch.data[:0]
 }
 
 func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, color mgl32.Vec4) {
@@ -175,14 +188,19 @@ func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, colo
 	if batch.additive {
 		add = 0
 	}
-	fillArray(batch.data, batch.currentSize, vx.X32(), vx.Y32(), texCoord.X(), texCoord.Y(), texCoord.Z(), color.X(), color.Y(), color.Z(), color.W(), float32(add))
-	batch.currentSize += 10
-}
 
-func fillArray(dst []float32, index int, values ...float32) {
-	for i, j := range values {
-		dst[index+i] = j
-	}
+	batch.data = append(batch.data, vx.X32())
+	batch.data = append(batch.data, vx.Y32())
+	batch.data = append(batch.data, texCoord.X())
+	batch.data = append(batch.data, texCoord.Y())
+	batch.data = append(batch.data, texCoord.Z())
+	batch.data = append(batch.data, color.X())
+	batch.data = append(batch.data, color.Y())
+	batch.data = append(batch.data, color.Z())
+	batch.data = append(batch.data, color.W())
+	batch.data = append(batch.data, float32(add))
+
+	batch.currentSize++
 }
 
 func (batch *SpriteBatch) End() {
@@ -193,9 +211,9 @@ func (batch *SpriteBatch) End() {
 	batch.Flush()
 
 	batch.ibo.Unbind()
-	batch.vao.End()
+	batch.vao.Unbind()
 
-	batch.shader.End()
+	batch.shader.Unbind()
 
 	blend.Pop()
 }
@@ -280,21 +298,6 @@ func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
 
-/*func (batch *SpriteBatch) DrawUnitR(unit int) {
-	shader.SetUniformAttr(1, int32(unit))
-	vao.Draw()
-}*/
-
-/*func (batch *SpriteBatch) DrawSeparate(vec bmath.Vector2d, unit int) {
-	transf := (batch.position.Mul4(mgl32.Translate3D(float32(vec.X), float32(vec.Y), 0))).Mul4(batch.scale)
-	shader.SetUniformAttr(3, transf)
-	shader.SetUniformAttr(1, int32(unit))
-
-	vao.Draw()
-
-	shader.SetUniformAttr(3, batch.transform)
-}*/
-
 func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
 	if batch.drawing {
 		batch.Flush()
@@ -302,6 +305,6 @@ func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
 
 	batch.Projection = camera
 	if batch.drawing {
-		batch.shader.SetUniformAttr(0, batch.Projection)
+		batch.shader.SetUniform("proj", batch.Projection)
 	}
 }
