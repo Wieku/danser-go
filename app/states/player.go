@@ -120,7 +120,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	player.background = components.NewBackground(beatMap, 0.1, true)
+	player.background = components.NewBackground(beatMap)
 
 	player.camera = bmath.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
@@ -188,17 +188,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset := -settings.Playfield.LeadInHold*1000 - 1000
 
-	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.BackgroundInDim)
-	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.BackgroundInBlur)
-	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.SpectrumInDim)
+	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
+	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
+	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
 	if _, ok := player.overlay.(*components.ScoreOverlay); !ok {
 		player.cursorGlider.AddEvent(startOffset-500, startOffset, 0.0)
 	}
 	player.playersGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
-	player.dimGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.BackgroundDim)
-	player.blurGlider.AddEvent(tmS-750, tmS-250, settings.Playfield.BackgroundBlur)
-	player.fxGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.SpectrumDim)
+	player.dimGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.Background.Dim.Normal)
+	player.blurGlider.AddEvent(tmS-750, tmS-250, settings.Playfield.Background.Blur.Values.Normal)
+	player.fxGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.Logo.Dim.Normal)
 	player.cursorGlider.AddEvent(tmS-750, tmS-250, 1.0)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
@@ -209,10 +209,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.epiGlider = glider.NewGlider(0)
 
-	if settings.Playfield.ShowWarning {
-		startOffset -= 5000
+	if settings.Playfield.Seizure.Enabled {
+		am := math.Max(1000, settings.Playfield.Seizure.Duration*1000)
+		startOffset -= am
 		player.epiGlider.AddEvent(startOffset, startOffset+500, 1.0)
-		player.epiGlider.AddEvent(startOffset+4500, startOffset+5000, 0.0)
+		player.epiGlider.AddEvent(startOffset+am-500, startOffset+am, 0.0)
 	}
 
 	startOffset -= settings.Playfield.LeadInTime * 1000
@@ -228,16 +229,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			continue
 		}
 
-		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.BackgroundDimBreaks)
-		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.BackgroundBlurBreaks)
-		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.SpectrumDimBreaks)
+		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Background.Dim.Breaks)
+		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.Background.Blur.Values.Breaks)
+		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
 		if !settings.Cursor.ShowCursorsOnBreaks {
 			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
 		}
 
-		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.BackgroundDim)
-		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.BackgroundBlur)
-		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.SpectrumDim)
+		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Background.Dim.Normal)
+		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.Background.Blur.Values.Normal)
+		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Logo.Dim.Normal)
 		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
 	}
 
@@ -271,7 +272,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 					ov.SetMusic(musicPlayer)
 				}
-				//musicPlayer.SetPosition(4 * 60)
+				//musicPlayer.SetPosition(1 * 60)
 				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
 				if player.overlay == nil {
 					discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -328,7 +329,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			musicPlayer.Update()
 			//log.Println(musicPlayer.GetBeat())
-			player.SclA = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
+			player.Scl = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
 
 			fft := musicPlayer.GetFFT()
 
@@ -345,7 +346,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.velocity *= 1.0 - 0.05
 
-			player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
+			//player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
 
 			//log.Println(player.velocity)
 
@@ -418,23 +419,15 @@ func (pl *Player) Draw(float64) {
 	}
 
 	bgAlpha := pl.dimGlider.GetValue()
-	blurVal := 0.0
 
 	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
 	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
 
-	if settings.Playfield.BlurEnable {
-		blurVal = pl.blurGlider.GetValue()
-		if settings.Playfield.UnblurToTheBeat {
-			blurVal -= settings.Playfield.UnblurFill * (blurVal) * (pl.Scl - 1.0) / (settings.Audio.BeatScale * 0.4)
-		}
-	}
-
-	if settings.Playfield.FlashToTheBeat {
+	if settings.Playfield.Background.FlashToTheBeat {
 		bgAlpha *= pl.Scl
 	}
 
-	pl.background.Draw(pl.progressMs, pl.batch, blurVal, bgAlpha, cameras1[0])
+	pl.background.Draw(pl.progressMs, pl.batch, pl.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
 	if pl.fxGlider.GetValue() > 0.01 || pl.epiGlider.GetValue() > 0.01 {
 		pl.batch.Begin()
@@ -536,10 +529,10 @@ func (pl *Player) Draw(float64) {
 		pl.batch.End()
 	}
 
-	if settings.Playfield.BloomEnabled {
+	if settings.Playfield.Bloom.Enabled {
 		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.BloomBeatAddition*(pl.Scl-1.0)/(settings.Audio.BeatScale*0.4))
+		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.Bloom.BloomBeatAddition*(pl.Scl-1.0)/(settings.Audio.BeatScale*0.4))
 		pl.bloomEffect.Begin()
 	}
 
@@ -703,7 +696,7 @@ func (pl *Player) Draw(float64) {
 		pl.batch.End()
 	}
 
-	if settings.Playfield.BloomEnabled {
+	if settings.Playfield.Bloom.Enabled {
 		pl.bloomEffect.EndAndRender()
 	}
 
@@ -746,8 +739,8 @@ func (pl *Player) Draw(float64) {
 			}
 
 			drawWithBackground(3, fmt.Sprintf("VSync: %t", settings.Graphics.VSync))
-			drawWithBackground(4, fmt.Sprintf("Blur: %t", settings.Playfield.BlurEnable))
-			drawWithBackground(5, fmt.Sprintf("Bloom: %t", settings.Playfield.BloomEnabled))
+			drawWithBackground(4, fmt.Sprintf("Blur: %t", settings.Playfield.Background.Blur.Enabled))
+			drawWithBackground(5, fmt.Sprintf("Bloom: %t", settings.Playfield.Bloom.Enabled))
 
 			drawWithBackground(6, fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
 			drawWithBackground(7, fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
