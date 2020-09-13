@@ -195,6 +195,7 @@ func run() {
 			glfw.PollEvents()
 
 			gl.Enable(gl.MULTISAMPLE)
+			gl.Enable(gl.SCISSOR_TEST)
 			gl.Disable(gl.DITHER)
 
 			viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
