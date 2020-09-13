@@ -11,7 +11,7 @@ func initGraphics() *graphics {
 		Fullscreen:   true,
 		VSync:        false,
 		FPSCap:       1000,
-		MSAA:         16,
+		MSAA:         4,
 		ShowFPS:      false,
 	}
 }
