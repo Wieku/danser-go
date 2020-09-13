@@ -23,6 +23,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
+	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
@@ -429,22 +430,23 @@ func (pl *Player) Draw(float64) {
 
 	pl.background.Draw(pl.progressMs, pl.batch, pl.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
-	if pl.fxGlider.GetValue() > 0.01 || pl.epiGlider.GetValue() > 0.01 {
+	if pl.epiGlider.GetValue() > 0.01 {
 		pl.batch.Begin()
-		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
+		pl.batch.ResetTransform()
+		pl.batch.SetColor(1, 1, 1, pl.epiGlider.GetValue())
 		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		if pl.epiGlider.GetValue() > 0.01 {
-			scl := (settings.Graphics.GetWidthF() / float64(pl.Epi.Width)) / 2 * 0.66
-			pl.batch.SetScale(scl, scl)
-			pl.batch.SetColor(1, 1, 1, pl.epiGlider.GetValue())
-			pl.batch.DrawTexture(*pl.Epi)
-			pl.batch.SetScale(1.0, -1.0)
-			s := "Support me on ko-fi.com/wiekus"
-			width := pl.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
-			pl.font.Draw(pl.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
-		}
+		scl := scaling.Fit.Apply(float32(pl.Epi.Width), float32(pl.Epi.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
+		scl = scl.Scl(0.5).Scl(0.66)
+		pl.batch.SetScale(scl.X64(), scl.Y64())
+		pl.batch.DrawUnit(*pl.Epi)
 
+		pl.batch.SetScale(1.0, -1.0)
+		s := "Support me on ko-fi.com/wiekus"
+		width := pl.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
+		pl.font.Draw(pl.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
+
+		pl.batch.ResetTransform()
 		pl.batch.End()
 	}
 
@@ -471,15 +473,24 @@ func (pl *Player) Draw(float64) {
 
 	if pl.fxGlider.GetValue() > 0.01 {
 		pl.batch.Begin()
-		pl.visualiser.SetStartDistance(pl.cookieSize * 0.5)
-		pl.visualiser.Draw(pl.progressMsF, pl.batch)
+		pl.batch.ResetTransform()
+		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
+		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+
+		innerCircleScale := 1.05 - easing.OutQuad(pl.progress)*0.05
+		outerCircleScale := 1.05 + easing.OutQuad(pl.progress)*0.03
+
+		if settings.Playfield.Logo.DrawSpectrum {
+			pl.visualiser.SetStartDistance(pl.cookieSize * 0.5 * innerCircleScale)
+			pl.visualiser.Draw(pl.progressMsF, pl.batch)
+		}
 
 		pl.batch.SetColor(1, 1, 1, pl.Scl*pl.fxGlider.GetValue())
 
 		scl := (pl.cookieSize / 2048.0) * 1.05
 
-		pl.LogoS1.SetScale((1.05 - easing.OutQuad(pl.progress)*0.05) * scl)
-		pl.LogoS2.SetScale((1.05 + easing.OutQuad(pl.progress)*0.03) * scl)
+		pl.LogoS1.SetScale(innerCircleScale * scl)
+		pl.LogoS2.SetScale(outerCircleScale * scl)
 
 		alpha := 0.3
 		if pl.bMap.Timings.Current.Kiai {
@@ -490,6 +501,7 @@ func (pl *Player) Draw(float64) {
 
 		pl.LogoS1.UpdateAndDraw(pl.progressMs, pl.batch)
 		pl.LogoS2.UpdateAndDraw(pl.progressMs, pl.batch)
+		pl.batch.ResetTransform()
 		pl.batch.End()
 	}
 
