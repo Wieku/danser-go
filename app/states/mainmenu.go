@@ -225,7 +225,7 @@ func NewMainMenu(beatMap *beatmap.BeatMap) *MainMenu {
 
 			player.bMap.Update(int64(player.progressMsF))
 
-			player.background.Update(int64(player.progressMsF), 0, 0)
+			player.background.Update(player.progressMsF, 0, 0)
 			player.visualiser.Update(player.progressMsF)
 			player.triangles.Update(player.progressMsF)
 
