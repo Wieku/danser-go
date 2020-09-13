@@ -2,6 +2,7 @@ package effects
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"io/ioutil"
@@ -90,15 +91,19 @@ func (effect *BloomEffect) SetPower(power float64) {
 func (effect *BloomEffect) Begin() {
 	effect.fbo.Begin()
 	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
 }
 
 func (effect *BloomEffect) EndAndRender() {
 	effect.fbo.End()
 
+	blend.Push()
+	blend.Enable()
+	blend.SetFunction(blend.SrcAlpha, blend.OneMinusSrcAlpha)
+
 	effect.blurEffect.Begin()
 	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	effect.colFilter.Begin()
 	effect.colFilter.SetUniformAttr(0, int32(0))
@@ -112,7 +117,7 @@ func (effect *BloomEffect) EndAndRender() {
 
 	effect.colFilter.End()
 
-	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
 
 	texture := effect.blurEffect.EndAndProcess()
 
@@ -131,5 +136,5 @@ func (effect *BloomEffect) EndAndRender() {
 
 	effect.combineShader.End()
 
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	blend.Pop()
 }
