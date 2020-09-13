@@ -22,18 +22,21 @@ import (
 )
 
 type Background struct {
-	blur       *effects.BlurEffect
-	scale      bmath.Vector2d
-	position   bmath.Vector2d
-	background *texture.TextureRegion
-	storyboard *storyboard.Storyboard
-	lastTime   float64
-	bMap       *beatmap.BeatMap
-	triangles  *drawables.Triangles
+	blur           *effects.BlurEffect
+	scale          bmath.Vector2d
+	position       bmath.Vector2d
+	background     *texture.TextureRegion
+	storyboard     *storyboard.Storyboard
+	lastTime       float64
+	bMap           *beatmap.BeatMap
+	triangles      *drawables.Triangles
+	blurVal        float64
+	blurredTexture texture.Texture
 }
 
 func NewBackground(beatMap *beatmap.BeatMap) *Background {
 	bg := new(Background)
+	bg.blurVal = -1
 	bg.bMap = beatMap
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
@@ -101,83 +104,97 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 		return
 	}
 
-	batch.Begin()
-	batch.ResetTransform()
-	batch.SetAdditive(false)
+	needsRedraw := bg.storyboard != nil || !settings.Playfield.Background.Blur.Enabled
 
-	if settings.Playfield.Background.Blur.Enabled {
-		batch.SetColor(1, 1, 1, 1)
-
-		bg.blur.SetBlur(blurVal, blurVal)
-		bg.blur.Begin()
-	} else {
-		batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+	if bg.blurVal != blurVal {
+		needsRedraw = true
+		bg.blurVal = blurVal
 	}
 
-	bgScaling := scaling.Fill
-
-	if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
-		v1 := project(bmath.NewVec2d(256-320, 192+240), camera)
-		v2 := project(bmath.NewVec2d(256+320, 192-240), camera)
-
-		viewport.PushScissorPos(int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32()))
-
-		bgScaling = scaling.Fit
-	}
-
-	if bg.background != nil && (bg.storyboard == nil || !bg.storyboard.BGFileUsed()) {
-		batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-		size := bgScaling.Apply(float32(bg.background.Width), float32(bg.background.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
-
-		if !settings.Playfield.Background.Blur.Enabled {
-			batch.SetTranslation(bg.position.Mult(bmath.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
-			size = size.Scl(float32(1 + settings.Playfield.Background.Parallax.Amount))
-		}
-
-		batch.SetScale(size.X64(), size.Y64())
-		batch.DrawUnit(*bg.background)
-	}
-
-	if bg.storyboard != nil {
-		batch.SetScale(1, 1)
-		batch.SetTranslation(bmath.NewVec2d(0, 0))
-
-		cam := camera
-		if !settings.Playfield.Background.Blur.Enabled {
-			scale := float32(1 + settings.Playfield.Background.Parallax.Amount)
-			cam = mgl32.Translate3D(bg.position.X32(), -bg.position.Y32(), 0).Mul4(mgl32.Scale3D(scale, scale, 1)).Mul4(cam)
-		}
-
-		batch.SetCamera(cam)
-
-		bg.storyboard.Draw(time, batch)
-	}
-
-	batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-	batch.SetTranslation(bg.position.Mult(bmath.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
-	batch.SetScale(1+settings.Playfield.Background.Parallax.Amount, 1+settings.Playfield.Background.Parallax.Amount)
-	//bg.triangles.Draw(float64(time), batch)
-
-	if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
-		viewport.PopScissor()
-	}
-
-	if settings.Playfield.Background.Blur.Enabled {
-		batch.End()
-
-		blurredTexture := bg.blur.EndAndProcess()
-
+	if needsRedraw {
 		batch.Begin()
+		batch.ResetTransform()
+		batch.SetAdditive(false)
+
+		if settings.Playfield.Background.Blur.Enabled {
+			batch.SetColor(1, 1, 1, 1)
+
+			bg.blur.SetBlur(blurVal, blurVal)
+			bg.blur.Begin()
+		} else {
+			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+		}
+
+		bgScaling := scaling.Fill
+
+		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
+			v1 := project(bmath.NewVec2d(256-320, 192+240), camera)
+			v2 := project(bmath.NewVec2d(256+320, 192-240), camera)
+
+			viewport.PushScissorPos(int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32()))
+
+			bgScaling = scaling.Fit
+		}
+
+		if bg.background != nil && (bg.storyboard == nil || !bg.storyboard.BGFileUsed()) {
+			batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+			size := bgScaling.Apply(float32(bg.background.Width), float32(bg.background.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
+
+			if !settings.Playfield.Background.Blur.Enabled {
+				batch.SetTranslation(bg.position.Mult(bmath.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
+				size = size.Scl(float32(1 + settings.Playfield.Background.Parallax.Amount))
+			}
+
+			batch.SetScale(size.X64(), size.Y64())
+			batch.DrawUnit(*bg.background)
+		}
+
+		if bg.storyboard != nil {
+			batch.SetScale(1, 1)
+			batch.SetTranslation(bmath.NewVec2d(0, 0))
+
+			cam := camera
+			if !settings.Playfield.Background.Blur.Enabled {
+				scale := float32(1 + settings.Playfield.Background.Parallax.Amount)
+				cam = mgl32.Translate3D(bg.position.X32(), -bg.position.Y32(), 0).Mul4(mgl32.Scale3D(scale, scale, 1)).Mul4(cam)
+			}
+
+			batch.SetCamera(cam)
+
+			bg.storyboard.Draw(time, batch)
+		}
+
+		batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+		batch.SetTranslation(bg.position.Mult(bmath.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
+		batch.SetScale(1+settings.Playfield.Background.Parallax.Amount, 1+settings.Playfield.Background.Parallax.Amount)
+		//bg.triangles.Draw(float64(time), batch)
+
+		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
+			viewport.PopScissor()
+		}
+
+		batch.End()
+		batch.SetColor(1, 1, 1, 1)
+		batch.ResetTransform()
+
+		if settings.Playfield.Background.Blur.Enabled {
+			bg.blurredTexture = bg.blur.EndAndProcess()
+		}
+	}
+
+	if settings.Playfield.Background.Blur.Enabled && bg.blurredTexture != nil {
+		batch.Begin()
+		batch.ResetTransform()
+		batch.SetAdditive(false)
 		batch.SetColor(1, 1, 1, bgAlpha)
 		batch.SetCamera(mgl32.Ortho(-1, 1, -1, 1, 1, -1))
 		batch.SetTranslation(bg.position)
 		batch.SetScale(1+settings.Playfield.Background.Parallax.Amount, 1+settings.Playfield.Background.Parallax.Amount)
-		batch.DrawUnit(blurredTexture.GetRegion())
+		batch.DrawUnit(bg.blurredTexture.GetRegion())
+		batch.End()
+		batch.SetColor(1, 1, 1, 1)
+		batch.ResetTransform()
 	}
-
-	batch.End()
-	batch.SetColor(1, 1, 1, 1)
-	batch.ResetTransform()
 }
 
 func (bg *Background) DrawOverlay(time int64, batch *batches.SpriteBatch, bgAlpha float64, camera mgl32.Mat4) {
