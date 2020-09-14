@@ -111,6 +111,8 @@ func (vao *VertexArrayObject) SetData(name string, offset int, data []float32) {
 	holder.vbo.Bind()
 	holder.vbo.SetData(offset, data)
 	holder.vbo.Unbind()
+
+	statistic.Add(statistic.VertexUpload, int64(len(data)*4/holder.format.Size()))
 }
 
 func (vao *VertexArrayObject) Draw() {
