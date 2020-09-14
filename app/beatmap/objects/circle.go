@@ -28,6 +28,8 @@ type Circle struct {
 	approachCircle   *sprites.Sprite
 	sprites          []*sprites.Sprite
 	diff             *difficulty.Difficulty
+	lastTime         int64
+	silent           bool
 }
 
 func NewCircle(data []string) *Circle {
@@ -56,6 +58,7 @@ func DummyCircleInherit(pos bmath.Vector2f, time int64, inherit bool, inheritSta
 	circle.objData.SliderPoint = inherit
 	circle.objData.SliderPointStart = inheritStart
 	circle.objData.SliderPointEnd = inheritEnd
+	circle.silent = true
 	return circle
 }
 
@@ -64,11 +67,20 @@ func (self Circle) GetBasicData() *basicData {
 }
 
 func (self *Circle) Update(time int64) bool {
-
-	if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-		self.Arm(true, time)
+	if !self.silent && ((!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1) && (self.lastTime < self.objData.StartTime && time >= self.objData.StartTime) {
+		self.Arm(true, self.objData.StartTime)
 		self.PlaySound()
 	}
+
+	for _, s := range self.sprites {
+		s.Update(time)
+	}
+
+	if self.textFade != nil {
+		self.textFade.Update(float64(time))
+	}
+
+	self.lastTime = time
 
 	return true
 }
@@ -198,10 +210,6 @@ func (self *Circle) GetPosition() bmath.Vector2f {
 func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(bmath.NewVec2d(0, 0))
-	self.hitCircle.Update(time)
-	self.hitCircleOverlay.Update(time)
-	self.approachCircle.Update(time)
-	self.textFade.Update(float64(time))
 
 	alpha := 1.0
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -245,7 +253,6 @@ func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.Sp
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(bmath.NewVec2d(0, 0))
 	batch.SetColor(1, 1, 1, 1)
-	self.approachCircle.Update(time)
 	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 	self.approachCircle.Draw(time, batch)
 }

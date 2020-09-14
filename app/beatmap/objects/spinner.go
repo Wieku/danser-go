@@ -17,12 +17,13 @@ import (
 const rpms = 0.00795
 
 type Spinner struct {
-	objData *basicData
-	Timings *Timings
-	sample  int
-	rad     float32
-	pos     bmath.Vector2f
-	fade    *glider.Glider
+	objData  *basicData
+	Timings  *Timings
+	sample   int
+	rad      float32
+	pos      bmath.Vector2f
+	fade     *glider.Glider
+	lastTime int64
 }
 
 func NewSpinner(data []string) *Spinner {
@@ -61,7 +62,9 @@ func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 }
 
 func (self *Spinner) Update(time int64) bool {
-	if time < self.objData.EndTime {
+	self.fade.Update(float64(time))
+
+	if time >= self.objData.StartTime && time <= self.objData.EndTime {
 		self.rad = rpms * float32(time-self.objData.StartTime) * 2 * math32.Pi
 
 		//frad := float32(easing.InQuad(float64(1.0 - math32.Abs((math32.Mod(self.rad, math32.Pi/2)-math32.Pi/4)/(math32.Pi/4)))))
@@ -73,26 +76,30 @@ func (self *Spinner) Update(time int64) bool {
 
 		//self.pos = self.pos.Scl(-6 - 2*math32.Sin(float32(time-self.objData.StartTime)/2000*2*math32.Pi)).Add(self.objData.StartPos)
 		self.GetBasicData().EndPos = self.pos
-		return false
 	}
 
-	index := self.objData.customIndex
+	if self.lastTime < self.objData.EndTime && time >= self.objData.EndTime {
+		index := self.objData.customIndex
 
-	if index == 0 {
-		index = self.Timings.Current.SampleIndex
+		point := self.Timings.GetPoint(self.objData.EndTime)
+
+		if index == 0 {
+			index = point.SampleIndex
+		}
+
+		if self.objData.sampleSet == 0 {
+			audio.PlaySample(point.SampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
+		} else {
+			audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, point.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
+		}
 	}
 
-	if self.objData.sampleSet == 0 {
-		audio.PlaySample(self.Timings.Current.SampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
-	} else {
-		audio.PlaySample(self.objData.sampleSet, self.objData.additionSet, self.sample, index, self.Timings.Current.SampleVolume, self.objData.Number, self.GetBasicData().StartPos.X64())
-	}
+	self.lastTime = time
 
 	return true
 }
 
 func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
-	self.fade.Update(float64(time))
 
 	batch.SetTranslation(self.objData.StartPos.Copy64())
 
