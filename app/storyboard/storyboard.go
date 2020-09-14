@@ -8,7 +8,9 @@ import (
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/qpc"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,16 +19,20 @@ import (
 )
 
 type Storyboard struct {
-	textures   map[string]*texture.TextureRegion
-	atlas      *texture.TextureAtlas
-	background *StoryboardLayer
-	pass       *StoryboardLayer
-	foreground *StoryboardLayer
-	overlay    *StoryboardLayer
-	zIndex     int64
-	bgFile     string
-	bgFileUsed bool
-	widescreen bool
+	textures    map[string]*texture.TextureRegion
+	atlas       *texture.TextureAtlas
+	background  *StoryboardLayer
+	pass        *StoryboardLayer
+	foreground  *StoryboardLayer
+	overlay     *StoryboardLayer
+	zIndex      int64
+	bgFile      string
+	bgFileUsed  bool
+	widescreen  bool
+	shouldRun   bool
+	currentTime int64
+	limiter     *frame.Limiter
+	counter     *frame.Counter
 }
 
 func getSection(line string) string {
@@ -154,6 +160,10 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	log.Println("Storyboard loaded")
 
+	storyboard.currentTime = -1000000
+	storyboard.limiter = frame.NewLimiter(1000)
+	storyboard.counter = frame.NewCounter()
+
 	return storyboard
 }
 
@@ -247,6 +257,38 @@ func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureReg
 	return texture1
 }
 
+func (storyboard *Storyboard) StartThread() {
+	storyboard.shouldRun = true
+	go func() {
+		lastTime := qpc.GetMilliTimeF()
+		for storyboard.shouldRun {
+			time := qpc.GetMilliTimeF()
+			storyboard.counter.PutSample(time - lastTime)
+			lastTime = time
+
+			storyboard.Update(storyboard.currentTime)
+
+			storyboard.limiter.Sync()
+		}
+	}()
+}
+
+func (storyboard *Storyboard) StopThread() {
+	storyboard.shouldRun = false
+}
+
+func (storyboard *Storyboard) IsThreadRunning() bool {
+	return storyboard.shouldRun
+}
+
+func (storyboard *Storyboard) UpdateTime(time int64) {
+	storyboard.currentTime = time
+}
+
+func (storyboard *Storyboard) GetFPS() float64 {
+	return storyboard.counter.GetFPS()
+}
+
 func (storyboard *Storyboard) Update(time int64) {
 	storyboard.background.Update(time)
 	storyboard.pass.Update(time)
@@ -264,8 +306,12 @@ func (storyboard *Storyboard) DrawOverlay(time int64, batch *batches.SpriteBatch
 	storyboard.overlay.Draw(time, batch)
 }
 
+func (storyboard *Storyboard) GetRenderedSprites() int {
+	return storyboard.background.GetNumRendered() + storyboard.pass.GetNumRendered() + storyboard.foreground.GetNumRendered() + storyboard.overlay.GetNumRendered()
+}
+
 func (storyboard *Storyboard) GetProcessedSprites() int {
-	return storyboard.background.visibleObjects + storyboard.pass.visibleObjects + storyboard.foreground.visibleObjects + storyboard.overlay.visibleObjects
+	return storyboard.background.GetNumProcessed() + storyboard.pass.GetNumProcessed() + storyboard.foreground.GetNumProcessed() + storyboard.overlay.GetNumProcessed()
 }
 
 func (storyboard *Storyboard) GetQueueSprites() int {

@@ -82,9 +82,22 @@ func (layer *StoryboardLayer) Update(time int64) {
 	layer.mutex.Unlock()
 }
 
+func (layer *StoryboardLayer) GetNumRendered() (sum int) {
+	for i := 0; i < layer.visibleObjects; i++ {
+		if layer.drawArray[i] != nil && layer.drawArray[i].GetAlpha() >= 0.01 {
+			sum++
+		}
+	}
+	return
+}
+
+func (layer *StoryboardLayer) GetNumProcessed() int {
+	return len(layer.spriteProcessed)
+}
+
 func (layer *StoryboardLayer) GetLoad() (sum float64) {
 	for i := 0; i < layer.visibleObjects; i++ {
-		if layer.drawArray[i] != nil {
+		if layer.drawArray[i] != nil && layer.drawArray[i].GetAlpha() >= 0.01 {
 			sum += layer.drawArray[i].GetLoad()
 		}
 	}

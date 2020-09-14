@@ -55,23 +55,24 @@ type Player struct {
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
 
-	camera         *bmath.Camera
-	camera1        *bmath.Camera
-	scamera        *bmath.Camera
-	dimGlider      *glider.Glider
-	blurGlider     *glider.Glider
-	fxGlider       *glider.Glider
-	cursorGlider   *glider.Glider
-	playersGlider  *glider.Glider
-	unfold         *glider.Glider
-	counter        float64
-	storyboardLoad float64
-	mapFullName    string
-	Epi            *texture.TextureRegion
-	epiGlider      *glider.Glider
-	overlay        components.Overlay
-	velocity       float64
-	blur           *effects.BlurEffect
+	camera          *bmath.Camera
+	camera1         *bmath.Camera
+	scamera         *bmath.Camera
+	dimGlider       *glider.Glider
+	blurGlider      *glider.Glider
+	fxGlider        *glider.Glider
+	cursorGlider    *glider.Glider
+	playersGlider   *glider.Glider
+	unfold          *glider.Glider
+	counter         float64
+	storyboardLoad  float64
+	storyboardDrawn int
+	mapFullName     string
+	Epi             *texture.TextureRegion
+	epiGlider       *glider.Glider
+	overlay         components.Overlay
+	velocity        float64
+	blur            *effects.BlurEffect
 
 	currentBeatVal float64
 	lastBeatLength float64
@@ -233,6 +234,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Background.Dim.Breaks)
 		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.Background.Blur.Values.Breaks)
 		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
+
 		if !settings.Cursor.ShowCursorsOnBreaks {
 			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
 		}
@@ -273,7 +275,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 					ov.SetMusic(musicPlayer)
 				}
-				//musicPlayer.SetPosition(1 * 60)
+				musicPlayer.SetPosition(2*60 + 20)
 				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
 				if player.overlay == nil {
 					discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -330,7 +332,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			musicPlayer.Update()
 			//log.Println(musicPlayer.GetBeat())
-			player.Scl = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
+			//player.Scl = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
 
 			fft := musicPlayer.GetFFT()
 
@@ -347,7 +349,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.velocity *= 1.0 - 0.05
 
-			//player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
+			player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
 
 			//log.Println(player.velocity)
 
@@ -460,6 +462,7 @@ func (pl *Player) Draw(float64) {
 		pl.counter -= 1000.0 / 60
 		if pl.background.GetStoryboard() != nil {
 			pl.storyboardLoad = pl.background.GetStoryboard().GetLoad()
+			pl.storyboardDrawn = pl.background.GetStoryboard().GetRenderedSprites()
 		}
 	}
 
@@ -737,6 +740,13 @@ func (pl *Player) Draw(float64) {
 			pl.batch.SetColor(1, 1, 1, 1)
 			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, pl.mapFullName)
 
+			type tx struct {
+				pos  float64
+				text string
+			}
+
+			var queue []tx
+
 			drawWithBackground := func(pos float64, text string) {
 				pl.batch.SetColor(0, 0, 0, 0.8)
 
@@ -746,8 +756,7 @@ func (pl *Player) Draw(float64) {
 				pl.batch.SetSubScale(width/2, (size+padDown)/2)
 				pl.batch.DrawUnit(render.Pixel.GetRegion())
 
-				pl.batch.SetColor(1, 1, 1, 1)
-				pl.font.DrawMonospaced(pl.batch, 0, settings.Graphics.GetHeightF()-(size+padDown)*pos+padDown/2, size, text)
+				queue = append(queue, tx{pos, text})
 			}
 
 			drawWithBackground(3, fmt.Sprintf("VSync: %t", settings.Graphics.VSync))
@@ -761,6 +770,16 @@ func (pl *Player) Draw(float64) {
 			drawWithBackground(10, fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
 			drawWithBackground(11, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
 
+			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
+				drawWithBackground(12, fmt.Sprintf("SB sprites: %d", pl.storyboardDrawn))
+				drawWithBackground(13, fmt.Sprintf("SB load: %.2f", pl.storyboardLoad))
+			}
+
+			for _, t := range queue {
+				pl.batch.SetColor(1, 1, 1, 1)
+				pl.font.DrawMonospaced(pl.batch, 0, settings.Graphics.GetHeightF()-(size+padDown)*t.pos+padDown/2, size, t.text)
+			}
+
 			currentTime := int(pl.musicPlayer.GetPosition())
 			totalTime := int(pl.musicPlayer.GetLength())
 			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
@@ -769,7 +788,7 @@ func (pl *Player) Draw(float64) {
 			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
 
 			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
-				drawShadowed(0, fmt.Sprintf("%d storyboard sprites (%0.2fx load), %d in queue (%d total)", storyboard.GetProcessedSprites(), pl.storyboardLoad, storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
+				drawShadowed(0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", pl.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
 			} else {
 				drawShadowed(0, "No storyboard")
 			}
@@ -787,11 +806,20 @@ func (pl *Player) Draw(float64) {
 			fpsC := pl.profiler.GetFPS()
 			fpsU := pl.profilerU.GetFPS()
 
-			drawShadowed(1, fmt.Sprintf("%0.0ffps (%0.2fms)", fpsC, 1000/fpsC))
-			drawShadowed(0, fmt.Sprintf("%0.0ftps (%0.2fms)", fpsU, 1000/fpsU))
+			off := 0.0
+			if pl.background.GetStoryboard() != nil {
+				off = 1.0
+			}
+
+			drawShadowed(1+off, fmt.Sprintf("%0.0ffps (%0.2fms)", fpsC, 1000/fpsC))
+			drawShadowed(0+off, fmt.Sprintf("%0.0fups (%0.2fms)", fpsU, 1000/fpsU))
+
+			if pl.background.GetStoryboard() != nil {
+				fpsS := pl.background.GetStoryboard().GetFPS()
+				drawShadowed(0, fmt.Sprintf("%0.0fsps (%.2fms)", fpsS, 1000/fpsS))
+			}
 		}
 
 		pl.batch.End()
 	}
-
 }

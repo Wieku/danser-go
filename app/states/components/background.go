@@ -76,7 +76,10 @@ func (bg *Background) Update(time float64, x, y float64) {
 	}
 
 	if bg.storyboard != nil {
-		bg.storyboard.Update(int64(time))
+		if !bg.storyboard.IsThreadRunning() {
+			bg.storyboard.StartThread()
+		}
+		bg.storyboard.UpdateTime(int64(time))
 	}
 
 	bg.triangles.Update(time)
