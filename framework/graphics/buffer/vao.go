@@ -60,6 +60,14 @@ func (vao *VertexArrayObject) AddVBO(name string, maxVertices int, divisor int, 
 	vao.vbos[name] = holder
 }
 
+func (vao *VertexArrayObject) GetVBOFormat(name string) attribute.Format {
+	if holder, exists := vao.vbos[name]; exists {
+		return holder.format
+	}
+
+	panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
+}
+
 func (vao *VertexArrayObject) Attach(s *shader.RShader) {
 	currentVAO := history.GetCurrent(gl.VERTEX_ARRAY_BINDING)
 	if currentVAO != vao.handle {
