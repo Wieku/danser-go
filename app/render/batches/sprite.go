@@ -28,13 +28,14 @@ type SpriteBatch struct {
 	transform mgl32.Mat4
 	texture   texture.Texture
 
-	vertexSize  int
-	data        []float32
-	vao         *buffer.VertexArrayObject
-	ibo         *buffer.IndexBufferObject
-	currentSize int
-	drawing     bool
-	maxSprites  int
+	vertexSize    int
+	data          []float32
+	vao           *buffer.VertexArrayObject
+	ibo           *buffer.IndexBufferObject
+	currentSize   int
+	currentFloats int
+	drawing       bool
+	maxSprites    int
 }
 
 func NewSpriteBatch() *SpriteBatch {
@@ -95,7 +96,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	ibo.Unbind()
 
 	vertexSize := vao.GetVBOFormat("default").Size() / 4
-	data := make([]float32, 0, defaultBatchSize*4*vertexSize)
+	data := make([]float32, defaultBatchSize*4*vertexSize)
 
 	return &SpriteBatch{
 		shader:     rShader,
@@ -203,12 +204,12 @@ func (batch *SpriteBatch) Flush() {
 
 	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
 
-	batch.vao.SetData("default", 0, batch.data)
+	batch.vao.SetData("default", 0, batch.data[:batch.currentFloats])
 
 	batch.ibo.DrawPart(0, batch.currentSize/4*6)
 
 	batch.currentSize = 0
-	batch.data = batch.data[:0]
+	batch.currentFloats = 0
 }
 
 func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, color mgl32.Vec4) {
@@ -217,16 +218,18 @@ func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, colo
 		add = 0
 	}
 
-	batch.data = append(batch.data, vx.X32())
-	batch.data = append(batch.data, vx.Y32())
-	batch.data = append(batch.data, texCoord.X())
-	batch.data = append(batch.data, texCoord.Y())
-	batch.data = append(batch.data, texCoord.Z())
-	batch.data = append(batch.data, color.X())
-	batch.data = append(batch.data, color.Y())
-	batch.data = append(batch.data, color.Z())
-	batch.data = append(batch.data, color.W())
-	batch.data = append(batch.data, float32(add))
+	batch.data[batch.currentFloats] = vx.X32()
+	batch.data[batch.currentFloats+1] = vx.Y32()
+	batch.data[batch.currentFloats+2] = texCoord.X()
+	batch.data[batch.currentFloats+3] = texCoord.Y()
+	batch.data[batch.currentFloats+4] = texCoord.Z()
+	batch.data[batch.currentFloats+5] = color.X()
+	batch.data[batch.currentFloats+6] = color.Y()
+	batch.data[batch.currentFloats+7] = color.Z()
+	batch.data[batch.currentFloats+8] = color.W()
+	batch.data[batch.currentFloats+9] = float32(add)
+
+	batch.currentFloats += batch.vertexSize
 
 	batch.currentSize++
 }
