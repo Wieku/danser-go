@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"io/ioutil"
+	"math"
 )
 
 const defaultBatchSize = 2000
@@ -144,10 +145,36 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 	newScale := batch.scale.Mult(batch.subscale)
 
-	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
-	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
-	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
-	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	cos := math.Cos(batch.rotation)
+	sin := math.Sin(batch.rotation)
+
+	vec00 := bmath.NewVec2d(-1, -1)
+	vec00.X = vec00.X * newScale.X
+	vec00.Y = vec00.Y * newScale.Y
+	vec00.X, vec00.Y = vec00.X*cos-vec00.Y*sin, vec00.X*sin+vec00.Y*cos
+	vec00.X += batch.position.X
+	vec00.Y += batch.position.Y
+
+	vec10 := bmath.NewVec2d(1, -1)
+	vec10.X = vec10.X * newScale.X
+	vec10.Y = vec10.Y * newScale.Y
+	vec10.X, vec10.Y = vec10.X*cos-vec10.Y*sin, vec10.X*sin+vec10.Y*cos
+	vec10.X += batch.position.X
+	vec10.Y += batch.position.Y
+
+	vec11 := bmath.NewVec2d(1, 1)
+	vec11.X = vec11.X * newScale.X
+	vec11.Y = vec11.Y * newScale.Y
+	vec11.X, vec11.Y = vec11.X*cos-vec11.Y*sin, vec11.X*sin+vec11.Y*cos
+	vec11.X += batch.position.X
+	vec11.Y += batch.position.Y
+
+	vec01 := bmath.NewVec2d(-1, 1)
+	vec01.X = vec01.X * newScale.X
+	vec01.Y = vec01.Y * newScale.Y
+	vec01.X, vec01.Y = vec01.X*cos-vec01.Y*sin, vec01.X*sin+vec01.Y*cos
+	vec01.X += batch.position.X
+	vec01.Y += batch.position.Y
 
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
@@ -267,10 +294,36 @@ func (batch *SpriteBatch) SetAdditive(additive bool) {
 func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 	newScale := bmath.NewVec2d(batch.scale.X*batch.subscale.X*float64(texture.Width)/2, batch.scale.Y*batch.subscale.Y*float64(texture.Height)/2)
 
-	vec00 := bmath.NewVec2d(-1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
-	vec10 := bmath.NewVec2d(1, -1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
-	vec11 := bmath.NewVec2d(1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
-	vec01 := bmath.NewVec2d(-1, 1).Mult(newScale).Rotate(batch.rotation).Add(batch.position)
+	cos := math.Cos(batch.rotation)
+	sin := math.Sin(batch.rotation)
+
+	vec00 := bmath.NewVec2d(-1, -1)
+	vec00.X = vec00.X * newScale.X
+	vec00.Y = vec00.Y * newScale.Y
+	vec00.X, vec00.Y = vec00.X*cos-vec00.Y*sin, vec00.X*sin+vec00.Y*cos
+	vec00.X += batch.position.X
+	vec00.Y += batch.position.Y
+
+	vec10 := bmath.NewVec2d(1, -1)
+	vec10.X = vec10.X * newScale.X
+	vec10.Y = vec10.Y * newScale.Y
+	vec10.X, vec10.Y = vec10.X*cos-vec10.Y*sin, vec10.X*sin+vec10.Y*cos
+	vec10.X += batch.position.X
+	vec10.Y += batch.position.Y
+
+	vec11 := bmath.NewVec2d(1, 1)
+	vec11.X = vec11.X * newScale.X
+	vec11.Y = vec11.Y * newScale.Y
+	vec11.X, vec11.Y = vec11.X*cos-vec11.Y*sin, vec11.X*sin+vec11.Y*cos
+	vec11.X += batch.position.X
+	vec11.Y += batch.position.Y
+
+	vec01 := bmath.NewVec2d(-1, 1)
+	vec01.X = vec01.X * newScale.X
+	vec01.Y = vec01.Y * newScale.Y
+	vec01.X, vec01.Y = vec01.X*cos-vec01.Y*sin, vec01.X*sin+vec01.Y*cos
+	vec01.X += batch.position.X
+	vec01.Y += batch.position.Y
 
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
 }
@@ -283,10 +336,36 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, f
 		newPosition = bmath.NewVec2d(position.X-64, position.Y-48)
 	}
 
-	vec00 := bmath.NewVec2d(-1, -1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
-	vec10 := bmath.NewVec2d(1, -1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
-	vec11 := bmath.NewVec2d(1, 1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
-	vec01 := bmath.NewVec2d(-1, 1).Mult(flip).Sub(origin).Mult(newScale).Rotate(rotation).Add(newPosition)
+	cos := math.Cos(rotation)
+	sin := math.Sin(rotation)
+
+	vec00 := bmath.NewVec2d(-1, -1)
+	vec00.X = ((vec00.X * flip.X) - origin.X) * newScale.X
+	vec00.Y = ((vec00.Y * flip.Y) - origin.Y) * newScale.Y
+	vec00.X, vec00.Y = vec00.X*cos-vec00.Y*sin, vec00.X*sin+vec00.Y*cos
+	vec00.X += newPosition.X
+	vec00.Y += newPosition.Y
+
+	vec10 := bmath.NewVec2d(1, -1)
+	vec10.X = ((vec10.X * flip.X) - origin.X) * newScale.X
+	vec10.Y = ((vec10.Y * flip.Y) - origin.Y) * newScale.Y
+	vec10.X, vec10.Y = vec10.X*cos-vec10.Y*sin, vec10.X*sin+vec10.Y*cos
+	vec10.X += newPosition.X
+	vec10.Y += newPosition.Y
+
+	vec11 := bmath.NewVec2d(1, 1)
+	vec11.X = ((vec11.X * flip.X) - origin.X) * newScale.X
+	vec11.Y = ((vec11.Y * flip.Y) - origin.Y) * newScale.Y
+	vec11.X, vec11.Y = vec11.X*cos-vec11.Y*sin, vec11.X*sin+vec11.Y*cos
+	vec11.X += newPosition.X
+	vec11.Y += newPosition.Y
+
+	vec01 := bmath.NewVec2d(-1, 1)
+	vec01.X = ((vec01.X * flip.X) - origin.X) * newScale.X
+	vec01.Y = ((vec01.Y * flip.Y) - origin.Y) * newScale.Y
+	vec01.X, vec01.Y = vec01.X*cos-vec01.Y*sin, vec01.X*sin+vec01.Y*cos
+	vec01.X += newPosition.X
+	vec01.Y += newPosition.Y
 
 	batch.SetAdditive(additive)
 	batch.DrawUnitSep(vec00, vec10, vec11, vec01, mgl32.Vec4{color.X() * batch.color.X(), color.Y() * batch.color.Y(), color.Z() * batch.color.Z(), color.W() * batch.color.W()}, texture)
