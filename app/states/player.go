@@ -275,7 +275,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 					ov.SetMusic(musicPlayer)
 				}
-				musicPlayer.SetPosition(2*60 + 20)
+				//musicPlayer.SetPosition(2*60)
 				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
 				if player.overlay == nil {
 					discord.UpdateDance(settings.TAG, settings.DIVIDES)
