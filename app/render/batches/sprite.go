@@ -61,9 +61,25 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 
 	vao := buffer.NewVertexArrayObject()
 
-	vao.AddVBO("default", maxSprites*4, 0, attribute.Format{
+	vao.AddVBO("default", 4, 0, attribute.Format{
+		{Name: "base_pos", Type: attribute.Vec2},
+		{Name: "base_uv", Type: attribute.Vec2},
+	})
+
+	vao.SetData("default", 0, []float32{
+		-1, -1, 0, 2,
+		1, -1, 1, 2,
+		1, 1, 1, 3,
+		-1, 1, 0, 3,
+	})
+
+	vao.AddVBO("sprites", maxSprites, 1, attribute.Format{
+		{Name: "in_origin", Type: attribute.Vec2},
+		{Name: "in_scale", Type: attribute.Vec2},
 		{Name: "in_position", Type: attribute.Vec2},
-		{Name: "in_tex_coord", Type: attribute.Vec3},
+		{Name: "in_rotation", Type: attribute.Float},
+		{Name: "in_uvs", Type: attribute.Vec4},
+		{Name: "in_layer", Type: attribute.Float},
 		{Name: "in_color", Type: attribute.Vec4},
 		{Name: "in_additive", Type: attribute.Float},
 	})
@@ -72,31 +88,19 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	vao.Attach(rShader)
 	vao.Unbind()
 
-	ibo := buffer.NewIndexBufferObject(maxSprites * 6)
+	ibo := buffer.NewIndexBufferObject(6)
 
 	ibo.Bind()
 
-	indices := make([]uint16, maxSprites*6)
-
-	index := uint16(0)
-
-	for i := 0; i < maxSprites*6; i += 6 {
-		indices[i] = index
-		indices[i+1] = index + 1
-		indices[i+2] = index + 2
-
-		indices[i+3] = index + 2
-		indices[i+4] = index + 3
-		indices[i+5] = index
-
-		index += 4
-	}
-	ibo.SetData(0, indices)
+	ibo.SetData(0, []uint16{
+		0, 1, 2, 2, 3, 0,
+	})
 
 	ibo.Unbind()
 
-	vertexSize := vao.GetVBOFormat("default").Size() / 4
-	data := make([]float32, defaultBatchSize*4*vertexSize)
+	vertexSize := vao.GetVBOFormat("sprites").Size() / 4
+
+	data := make([]float32, maxSprites*vertexSize)
 
 	return &SpriteBatch{
 		shader:     rShader,
@@ -144,51 +148,57 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 }
 
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
-	newScale := batch.scale.Mult(batch.subscale)
-
-	cos := math.Cos(batch.rotation)
-	sin := math.Sin(batch.rotation)
-
-	vec00 := bmath.NewVec2d(-1, -1)
-	vec00.X = vec00.X * newScale.X
-	vec00.Y = vec00.Y * newScale.Y
-	vec00.X, vec00.Y = vec00.X*cos-vec00.Y*sin, vec00.X*sin+vec00.Y*cos
-	vec00.X += batch.position.X
-	vec00.Y += batch.position.Y
-
-	vec10 := bmath.NewVec2d(1, -1)
-	vec10.X = vec10.X * newScale.X
-	vec10.Y = vec10.Y * newScale.Y
-	vec10.X, vec10.Y = vec10.X*cos-vec10.Y*sin, vec10.X*sin+vec10.Y*cos
-	vec10.X += batch.position.X
-	vec10.Y += batch.position.Y
-
-	vec11 := bmath.NewVec2d(1, 1)
-	vec11.X = vec11.X * newScale.X
-	vec11.Y = vec11.Y * newScale.Y
-	vec11.X, vec11.Y = vec11.X*cos-vec11.Y*sin, vec11.X*sin+vec11.Y*cos
-	vec11.X += batch.position.X
-	vec11.Y += batch.position.Y
-
-	vec01 := bmath.NewVec2d(-1, 1)
-	vec01.X = vec01.X * newScale.X
-	vec01.Y = vec01.Y * newScale.Y
-	vec01.X, vec01.Y = vec01.X*cos-vec01.Y*sin, vec01.X*sin+vec01.Y*cos
-	vec01.X += batch.position.X
-	vec01.Y += batch.position.Y
-
-	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
-}
-
-func (batch *SpriteBatch) DrawUnitSep(vec00, vec10, vec11, vec01 bmath.Vector2d, color mgl32.Vec4, texture texture.TextureRegion) {
 	batch.bind(texture.Texture)
 
-	batch.addVertex(vec00, mgl32.Vec3{texture.U1, texture.V1, float32(texture.Layer)}, color)
-	batch.addVertex(vec10, mgl32.Vec3{texture.U2, texture.V1, float32(texture.Layer)}, color)
-	batch.addVertex(vec11, mgl32.Vec3{texture.U2, texture.V2, float32(texture.Layer)}, color)
-	batch.addVertex(vec01, mgl32.Vec3{texture.U1, texture.V2, float32(texture.Layer)}, color)
+	scaleX := float32(batch.scale.X * batch.subscale.X)
+	scaleY := float32(batch.scale.Y * batch.subscale.Y)
 
-	if batch.currentSize/4 >= batch.maxSprites {
+	posX := float32(batch.position.X)
+	posY := float32(batch.position.Y)
+
+	rot := float32(math.Mod(batch.rotation, math.Pi*2))
+
+	u1 := texture.U1
+	u2 := texture.U2
+	v1 := texture.V1
+	v2 := texture.V2
+
+	layer := float32(texture.Layer)
+
+	r := batch.color.X()
+	g := batch.color.Y()
+	b := batch.color.Z()
+	a := batch.color.W()
+
+	add := float32(1)
+	if batch.additive {
+		add = 0
+	}
+
+	idx := batch.currentFloats
+
+	batch.data[idx] = 0
+	batch.data[idx+1] = 0
+	batch.data[idx+2] = scaleX
+	batch.data[idx+3] = scaleY
+	batch.data[idx+4] = posX
+	batch.data[idx+5] = posY
+	batch.data[idx+6] = rot
+	batch.data[idx+7] = u1
+	batch.data[idx+8] = u2
+	batch.data[idx+9] = v1
+	batch.data[idx+10] = v2
+	batch.data[idx+11] = layer
+	batch.data[idx+12] = r
+	batch.data[idx+13] = g
+	batch.data[idx+14] = b
+	batch.data[idx+15] = a
+	batch.data[idx+16] = add
+
+	batch.currentFloats += batch.vertexSize
+	batch.currentSize++
+
+	if batch.currentSize >= batch.maxSprites {
 		batch.Flush()
 	}
 }
@@ -204,34 +214,12 @@ func (batch *SpriteBatch) Flush() {
 
 	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
 
-	batch.vao.SetData("default", 0, batch.data[:batch.currentFloats])
+	batch.vao.SetData("sprites", 0, batch.data[:batch.currentFloats])
 
-	batch.ibo.DrawPart(0, batch.currentSize/4*6)
+	batch.ibo.DrawInstanced(0, batch.currentSize)
 
 	batch.currentSize = 0
 	batch.currentFloats = 0
-}
-
-func (batch *SpriteBatch) addVertex(vx bmath.Vector2d, texCoord mgl32.Vec3, color mgl32.Vec4) {
-	add := 1
-	if batch.additive {
-		add = 0
-	}
-
-	batch.data[batch.currentFloats] = vx.X32()
-	batch.data[batch.currentFloats+1] = vx.Y32()
-	batch.data[batch.currentFloats+2] = texCoord.X()
-	batch.data[batch.currentFloats+3] = texCoord.Y()
-	batch.data[batch.currentFloats+4] = texCoord.Z()
-	batch.data[batch.currentFloats+5] = color.X()
-	batch.data[batch.currentFloats+6] = color.Y()
-	batch.data[batch.currentFloats+7] = color.Z()
-	batch.data[batch.currentFloats+8] = color.W()
-	batch.data[batch.currentFloats+9] = float32(add)
-
-	batch.currentFloats += batch.vertexSize
-
-	batch.currentSize++
 }
 
 func (batch *SpriteBatch) End() {
@@ -295,93 +283,128 @@ func (batch *SpriteBatch) SetAdditive(additive bool) {
 }
 
 func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
-	newScale := bmath.NewVec2d(batch.scale.X*batch.subscale.X*float64(texture.Width)/2, batch.scale.Y*batch.subscale.Y*float64(texture.Height)/2)
+	batch.bind(texture.Texture)
 
-	cos := math.Cos(batch.rotation)
-	sin := math.Sin(batch.rotation)
+	scaleX := float32(float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
+	scaleY := float32(float64(texture.Height) / 2 * batch.scale.Y * batch.subscale.Y)
 
-	vec00 := bmath.NewVec2d(-1, -1)
-	vec00.X = vec00.X * newScale.X
-	vec00.Y = vec00.Y * newScale.Y
-	vec00.X, vec00.Y = vec00.X*cos-vec00.Y*sin, vec00.X*sin+vec00.Y*cos
-	vec00.X += batch.position.X
-	vec00.Y += batch.position.Y
+	posX := float32(batch.position.X)
+	posY := float32(batch.position.Y)
 
-	vec10 := bmath.NewVec2d(1, -1)
-	vec10.X = vec10.X * newScale.X
-	vec10.Y = vec10.Y * newScale.Y
-	vec10.X, vec10.Y = vec10.X*cos-vec10.Y*sin, vec10.X*sin+vec10.Y*cos
-	vec10.X += batch.position.X
-	vec10.Y += batch.position.Y
+	rot := float32(math.Mod(batch.rotation, math.Pi*2))
 
-	vec11 := bmath.NewVec2d(1, 1)
-	vec11.X = vec11.X * newScale.X
-	vec11.Y = vec11.Y * newScale.Y
-	vec11.X, vec11.Y = vec11.X*cos-vec11.Y*sin, vec11.X*sin+vec11.Y*cos
-	vec11.X += batch.position.X
-	vec11.Y += batch.position.Y
+	u1 := texture.U1
+	u2 := texture.U2
+	v1 := texture.V1
+	v2 := texture.V2
 
-	vec01 := bmath.NewVec2d(-1, 1)
-	vec01.X = vec01.X * newScale.X
-	vec01.Y = vec01.Y * newScale.Y
-	vec01.X, vec01.Y = vec01.X*cos-vec01.Y*sin, vec01.X*sin+vec01.Y*cos
-	vec01.X += batch.position.X
-	vec01.Y += batch.position.Y
+	layer := float32(texture.Layer)
 
-	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
+	r := batch.color.X()
+	g := batch.color.Y()
+	b := batch.color.Z()
+	a := batch.color.W()
+
+	add := float32(1)
+	if batch.additive {
+		add = 0
+	}
+
+	idx := batch.currentFloats
+
+	batch.data[idx] = 0
+	batch.data[idx+1] = 0
+	batch.data[idx+2] = scaleX
+	batch.data[idx+3] = scaleY
+	batch.data[idx+4] = posX
+	batch.data[idx+5] = posY
+	batch.data[idx+6] = rot
+	batch.data[idx+7] = u1
+	batch.data[idx+8] = u2
+	batch.data[idx+9] = v1
+	batch.data[idx+10] = v2
+	batch.data[idx+11] = layer
+	batch.data[idx+12] = r
+	batch.data[idx+13] = g
+	batch.data[idx+14] = b
+	batch.data[idx+15] = a
+	batch.data[idx+16] = add
+
+	batch.currentFloats += batch.vertexSize
+	batch.currentSize++
+
+	if batch.currentSize >= batch.maxSprites {
+		batch.Flush()
+	}
 }
 
 func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
-	newScale := bmath.NewVec2d(scale.X*float64(texture.Width)/2*batch.scale.X*batch.subscale.X, scale.Y*float64(texture.Height)/2*batch.scale.Y*batch.subscale.Y)
-	newPosition := position.Add(batch.position)
+	batch.bind(texture.Texture)
+
+	scaleX := float32(scale.X * float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
+	scaleY := float32(scale.Y * float64(texture.Height) / 2 * batch.scale.Y * batch.subscale.Y)
+
+	posX := float32(position.X + batch.position.X)
+	posY := float32(position.Y + batch.position.Y)
 
 	if storyboard {
-		newPosition = bmath.NewVec2d(position.X-64, position.Y-48)
+		posX -= 64
+		posY -= 48
 	}
 
-	cos := math.Cos(rotation)
-	sin := math.Sin(rotation)
+	rot := float32(math.Mod(rotation, math.Pi*2))
 
-	vec00 := bmath.NewVec2d(-1, -1)
-	vec00.X = ((vec00.X * flip.X) - origin.X) * newScale.X
-	vec00.Y = ((vec00.Y * flip.Y) - origin.Y) * newScale.Y
-	vec00.X, vec00.Y = vec00.X*cos-vec00.Y*sin, vec00.X*sin+vec00.Y*cos
-	vec00.X += newPosition.X
-	vec00.Y += newPosition.Y
+	u1 := texture.U1
+	u2 := texture.U2
+	v1 := texture.V1
+	v2 := texture.V2
 
-	vec10 := bmath.NewVec2d(1, -1)
-	vec10.X = ((vec10.X * flip.X) - origin.X) * newScale.X
-	vec10.Y = ((vec10.Y * flip.Y) - origin.Y) * newScale.Y
-	vec10.X, vec10.Y = vec10.X*cos-vec10.Y*sin, vec10.X*sin+vec10.Y*cos
-	vec10.X += newPosition.X
-	vec10.Y += newPosition.Y
+	layer := float32(texture.Layer)
 
-	vec11 := bmath.NewVec2d(1, 1)
-	vec11.X = ((vec11.X * flip.X) - origin.X) * newScale.X
-	vec11.Y = ((vec11.Y * flip.Y) - origin.Y) * newScale.Y
-	vec11.X, vec11.Y = vec11.X*cos-vec11.Y*sin, vec11.X*sin+vec11.Y*cos
-	vec11.X += newPosition.X
-	vec11.Y += newPosition.Y
+	if flip.X < 0 {
+		u1, u2 = u2, u1
+	}
 
-	vec01 := bmath.NewVec2d(-1, 1)
-	vec01.X = ((vec01.X * flip.X) - origin.X) * newScale.X
-	vec01.Y = ((vec01.Y * flip.Y) - origin.Y) * newScale.Y
-	vec01.X, vec01.Y = vec01.X*cos-vec01.Y*sin, vec01.X*sin+vec01.Y*cos
-	vec01.X += newPosition.X
-	vec01.Y += newPosition.Y
+	if flip.Y < 0 {
+		v1, v2 = v2, v1
+	}
 
-	batch.SetAdditive(additive)
-	batch.DrawUnitSep(vec00, vec10, vec11, vec01, mgl32.Vec4{color.X() * batch.color.X(), color.Y() * batch.color.Y(), color.Z() * batch.color.Z(), color.W() * batch.color.W()}, texture)
-	batch.SetAdditive(false)
-}
+	r := color.X() * batch.color.X()
+	g := color.Y() * batch.color.Y()
+	b := color.Z() * batch.color.Z()
+	a := color.W() * batch.color.W()
 
-func (batch *SpriteBatch) DrawUnscaled(texture texture.TextureRegion) {
-	vec00 := bmath.NewVec2d(-1, -1).Add(batch.position)
-	vec10 := bmath.NewVec2d(1, -1).Add(batch.position)
-	vec11 := bmath.NewVec2d(1, 1).Add(batch.position)
-	vec01 := bmath.NewVec2d(-1, 1).Add(batch.position)
+	add := float32(1)
+	if additive {
+		add = 0
+	}
 
-	batch.DrawUnitSep(vec00, vec10, vec11, vec01, batch.color, texture)
+	idx := batch.currentFloats
+
+	batch.data[idx] = origin.X32()
+	batch.data[idx+1] = origin.Y32()
+	batch.data[idx+2] = scaleX
+	batch.data[idx+3] = scaleY
+	batch.data[idx+4] = posX
+	batch.data[idx+5] = posY
+	batch.data[idx+6] = rot
+	batch.data[idx+7] = u1
+	batch.data[idx+8] = u2
+	batch.data[idx+9] = v1
+	batch.data[idx+10] = v2
+	batch.data[idx+11] = layer
+	batch.data[idx+12] = r
+	batch.data[idx+13] = g
+	batch.data[idx+14] = b
+	batch.data[idx+15] = a
+	batch.data[idx+16] = add
+
+	batch.currentFloats += batch.vertexSize
+	batch.currentSize++
+
+	if batch.currentSize >= batch.maxSprites {
+		batch.Flush()
+	}
 }
 
 func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
