@@ -67,20 +67,21 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	})
 
 	vao.SetData("default", 0, []float32{
-		-1, -1, 0, 2,
-		1, -1, 1, 2,
-		1, 1, 1, 3,
-		-1, 1, 0, 3,
+		-1, -1, 0, 0,
+		1, -1, 1, 0,
+		1, 1, 1, 1,
+		-1, 1, 0, 1,
 	})
 
 	vao.AddVBO("sprites", maxSprites, 1, attribute.Format{
-		{Name: "in_origin", Type: attribute.Vec2},
+		{Name: "in_origin", Type: attribute.Vec2Packed},
 		{Name: "in_scale", Type: attribute.Vec2},
 		{Name: "in_position", Type: attribute.Vec2},
 		{Name: "in_rotation", Type: attribute.Float},
-		{Name: "in_uvs", Type: attribute.Vec4},
+		{Name: "in_u", Type: attribute.Vec2Packed},
+		{Name: "in_v", Type: attribute.Vec2Packed},
 		{Name: "in_layer", Type: attribute.Float},
-		{Name: "in_color", Type: attribute.Vec4},
+		{Name: "in_color", Type: attribute.ColorPacked},
 		{Name: "in_additive", Type: attribute.Float},
 	})
 
@@ -177,23 +178,17 @@ func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 
 	idx := batch.currentFloats
 
-	batch.data[idx] = 0
-	batch.data[idx+1] = 0
-	batch.data[idx+2] = scaleX
-	batch.data[idx+3] = scaleY
-	batch.data[idx+4] = posX
-	batch.data[idx+5] = posY
-	batch.data[idx+6] = rot
-	batch.data[idx+7] = u1
-	batch.data[idx+8] = u2
-	batch.data[idx+9] = v1
-	batch.data[idx+10] = v2
-	batch.data[idx+11] = layer
-	batch.data[idx+12] = r
-	batch.data[idx+13] = g
-	batch.data[idx+14] = b
-	batch.data[idx+15] = a
-	batch.data[idx+16] = add
+	batch.data[idx] = packUV(0.5, 0.5)
+	batch.data[idx+1] = scaleX
+	batch.data[idx+2] = scaleY
+	batch.data[idx+3] = posX
+	batch.data[idx+4] = posY
+	batch.data[idx+5] = rot
+	batch.data[idx+6] = packUV(u1, u2)
+	batch.data[idx+7] = packUV(v1, v2)
+	batch.data[idx+8] = layer
+	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+10] = add
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -312,23 +307,17 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 
 	idx := batch.currentFloats
 
-	batch.data[idx] = 0
-	batch.data[idx+1] = 0
-	batch.data[idx+2] = scaleX
-	batch.data[idx+3] = scaleY
-	batch.data[idx+4] = posX
-	batch.data[idx+5] = posY
-	batch.data[idx+6] = rot
-	batch.data[idx+7] = u1
-	batch.data[idx+8] = u2
-	batch.data[idx+9] = v1
-	batch.data[idx+10] = v2
-	batch.data[idx+11] = layer
-	batch.data[idx+12] = r
-	batch.data[idx+13] = g
-	batch.data[idx+14] = b
-	batch.data[idx+15] = a
-	batch.data[idx+16] = add
+	batch.data[idx] = packUV(0.5, 0.5)
+	batch.data[idx+1] = scaleX
+	batch.data[idx+2] = scaleY
+	batch.data[idx+3] = posX
+	batch.data[idx+4] = posY
+	batch.data[idx+5] = rot
+	batch.data[idx+6] = packUV(u1, u2)
+	batch.data[idx+7] = packUV(v1, v2)
+	batch.data[idx+8] = layer
+	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+10] = add
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -381,23 +370,17 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, f
 
 	idx := batch.currentFloats
 
-	batch.data[idx] = origin.X32()
-	batch.data[idx+1] = origin.Y32()
-	batch.data[idx+2] = scaleX
-	batch.data[idx+3] = scaleY
-	batch.data[idx+4] = posX
-	batch.data[idx+5] = posY
-	batch.data[idx+6] = rot
-	batch.data[idx+7] = u1
-	batch.data[idx+8] = u2
-	batch.data[idx+9] = v1
-	batch.data[idx+10] = v2
-	batch.data[idx+11] = layer
-	batch.data[idx+12] = r
-	batch.data[idx+13] = g
-	batch.data[idx+14] = b
-	batch.data[idx+15] = a
-	batch.data[idx+16] = add
+	batch.data[idx] = packUV(origin.X32()*0.5+0.5, origin.Y32()*0.5+0.5)
+	batch.data[idx+1] = scaleX
+	batch.data[idx+2] = scaleY
+	batch.data[idx+3] = posX
+	batch.data[idx+4] = posY
+	batch.data[idx+5] = rot
+	batch.data[idx+6] = packUV(u1, u2)
+	batch.data[idx+7] = packUV(v1, v2)
+	batch.data[idx+8] = layer
+	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+10] = add
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -420,4 +403,20 @@ func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
 	if batch.drawing {
 		batch.shader.SetUniform("proj", batch.Projection)
 	}
+}
+
+func pack(r, g, b, a float32) float32 {
+	rI := uint32(r * 255)
+	gI := uint32(g * 255)
+	bI := uint32(b * 255)
+	aI := uint32(a * 255)
+
+	return math.Float32frombits(aI<<24 | bI<<16 | gI<<8 | rI)
+}
+
+func packUV(c1, c2 float32) float32 {
+	c1I := uint32(c1 * 0xffff)
+	c2I := uint32(c2 * 0xffff)
+
+	return math.Float32frombits(c2I<<16 | c1I)
 }

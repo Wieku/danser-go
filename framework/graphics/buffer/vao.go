@@ -85,12 +85,13 @@ func (vao *VertexArrayObject) Attach(s *shader.RShader) {
 
 			gl.VertexAttribPointer(
 				uint32(location),
-				int32(attr.Type.Size()/4),
-				gl.FLOAT,
-				false,
+				int32(attr.Type.Components()),
+				uint32(attr.Type.InternalType()),
+				attr.Type.Normalize(),
 				int32(holder.format.Size()),
 				gl.PtrOffset(offset),
 			)
+
 			gl.VertexAttribDivisor(uint32(location), uint32(holder.divisor))
 			gl.EnableVertexAttribArray(uint32(location))
 
