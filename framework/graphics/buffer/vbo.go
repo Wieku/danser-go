@@ -49,7 +49,7 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 		panic(fmt.Sprintf("Data exceeds VBO's capacity. Data length: %d, offset: %d, capacity: %d", len(data), offset, vbo.capacity))
 	}
 
-	gl.BufferSubData(gl.ARRAY_BUFFER, offset, len(data)*4, gl.Ptr(data))
+	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, len(data)*4, gl.Ptr(data))
 }
 
 func (vbo *VertexBufferObject) Bind() {
@@ -63,7 +63,7 @@ func (vbo *VertexBufferObject) Bind() {
 
 	vbo.bound = true
 
-	history.Push(gl.ARRAY_BUFFER)
+	history.Push(gl.ARRAY_BUFFER_BINDING)
 
 	statistic.Increment(statistic.VBOBinds)
 
@@ -77,7 +77,7 @@ func (vbo *VertexBufferObject) Unbind() {
 
 	vbo.bound = false
 
-	handle := history.Pop(gl.ARRAY_BUFFER)
+	handle := history.Pop(gl.ARRAY_BUFFER_BINDING)
 
 	if handle > 0 {
 		statistic.Increment(statistic.VBOBinds)
