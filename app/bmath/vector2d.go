@@ -97,8 +97,13 @@ func (v Vector2d) AngleR() float64 {
 }
 
 func (v Vector2d) Nor() Vector2d {
-	len := v.Len()
-	return Vector2d{v.X / len, v.Y / len}
+	length := v.Len()
+
+	if length == 0 {
+		return Vector2d{v.X, v.Y}
+	}
+
+	return Vector2d{v.X / length, v.Y / length}
 }
 
 func (v Vector2d) AngleRV(v1 Vector2d) float64 {

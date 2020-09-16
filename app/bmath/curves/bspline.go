@@ -66,7 +66,8 @@ func NewBSpline(points1 []bmath.Vector2f, timing []int64) *BSpline {
 	secondMul := float32(1.0)
 
 	spline.subPoints = append(spline.subPoints, points[0], points[0].Add(d[0].SclOrDenorm(firstMul)))
-	for i := 1; i < len(points)-2; i++ {
+
+	for i := 1; i < n-1; i++ {
 		if converted[i] > 600 {
 			secondMul = converted[i] / 2
 		} else {
@@ -76,6 +77,7 @@ func NewBSpline(points1 []bmath.Vector2f, timing []int64) *BSpline {
 		spline.subPoints = append(spline.subPoints, points[i].Sub(d[i].SclOrDenorm(firstMul)), points[i], points[i].Add(d[i].SclOrDenorm(secondMul)))
 		firstMul = secondMul
 	}
+
 	spline.subPoints = append(spline.subPoints, points[len(points)-3].Sub(d[n-1].SclOrDenorm(firstMul)), points[len(points)-3])
 
 	spline.ApproxLength = spline.timing[len(spline.timing)-1]
