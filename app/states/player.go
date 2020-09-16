@@ -665,35 +665,38 @@ func (pl *Player) Draw(float64) {
 
 	pl.background.DrawOverlay(pl.progressMs, pl.batch, bgAlpha, cameras1[0])
 
-	for _, g := range pl.controller.GetCursors() {
-		g.UpdateRenderer()
-	}
-
-	pl.batch.SetAdditive(false)
-	render.BeginCursorRender()
-	for j := 0; j < settings.DIVIDES; j++ {
-
-		pl.batch.SetCamera(cameras[j])
-
-		for i, g := range pl.controller.GetCursors() {
-			if pl.overlay != nil && pl.overlay.IsBroken(g) {
-				continue
-			}
-
-			baseIndex := j*len(pl.controller.GetCursors()) + i
-			ind := baseIndex - 1
-			if ind < 0 {
-				ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
-			}
-
-			col1 := colors1[baseIndex]
-			col2 := colors1[ind]
-
-			g.DrawM(scale2, pl.batch, col1, col2, hshifts[baseIndex])
+	if settings.Playfield.DrawCursors {
+		for _, g := range pl.controller.GetCursors() {
+			g.UpdateRenderer()
 		}
 
+		pl.batch.SetAdditive(false)
+		render.BeginCursorRender()
+		for j := 0; j < settings.DIVIDES; j++ {
+
+			pl.batch.SetCamera(cameras[j])
+
+			for i, g := range pl.controller.GetCursors() {
+				if pl.overlay != nil && pl.overlay.IsBroken(g) {
+					continue
+				}
+
+				baseIndex := j*len(pl.controller.GetCursors()) + i
+				ind := baseIndex - 1
+				if ind < 0 {
+					ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
+				}
+
+				col1 := colors1[baseIndex]
+				col2 := colors1[ind]
+
+				g.DrawM(scale2, pl.batch, col1, col2, hshifts[baseIndex])
+			}
+
+		}
+		render.EndCursorRender()
 	}
-	render.EndCursorRender()
+
 	pl.batch.SetAdditive(false)
 
 	if pl.overlay != nil {

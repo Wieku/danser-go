@@ -5,6 +5,7 @@ var Playfield = initPlayfield()
 func initPlayfield() *playfield {
 	return &playfield{
 		DrawObjects: true,
+		DrawCursors: true,
 		Scale:       1,
 		OsuShift:    false,
 		LeadInTime:  5,
@@ -56,6 +57,7 @@ func initPlayfield() *playfield {
 
 type playfield struct {
 	DrawObjects bool
+	DrawCursors bool
 	Scale       float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
 	OsuShift    bool    //false, offset the playfield like in osu!
 	LeadInTime  float64 //5
