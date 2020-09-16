@@ -12,7 +12,7 @@ import (
 )
 
 type vboHolder struct {
-	vbo     *VertexBufferObject
+	vbo     StreamingBuffer
 	divisor int
 	format  attribute.Format
 }
@@ -43,12 +43,38 @@ func NewVertexArrayObject() *VertexArrayObject {
 }
 
 func (vao *VertexArrayObject) AddVBO(name string, maxVertices int, divisor int, format attribute.Format) {
+	vao.addVBO(name, maxVertices, divisor, false, format)
+}
+
+func (vao *VertexArrayObject) AddMappedVBO(name string, maxVertices int, divisor int, format attribute.Format) {
+	vao.addVBO(name, maxVertices, divisor, true, format)
+}
+
+func (vao *VertexArrayObject) addVBO(name string, maxVertices int, divisor int, mapped bool, format attribute.Format) {
 	if _, exists := vao.vbos[name]; exists {
 		panic(fmt.Sprintf("VBO with name \"%s\" already exists", name))
 	}
 
 	holder := &vboHolder{
-		vbo:     NewVertexBufferObject(maxVertices*format.Size()/4, DynamicDraw),
+		vbo:     NewVertexBufferObject(maxVertices*format.Size()/4, mapped, DynamicDraw),
+		divisor: divisor,
+		format:  format,
+	}
+
+	if divisor == 0 {
+		vao.capacity = maxVertices
+	}
+
+	vao.vbos[name] = holder
+}
+
+func (vao *VertexArrayObject) AddPersistentVBO(name string, maxVertices int, divisor int, format attribute.Format) {
+	if _, exists := vao.vbos[name]; exists {
+		panic(fmt.Sprintf("VBO with name \"%s\" already exists", name))
+	}
+
+	holder := &vboHolder{
+		vbo:     NewPersistentBufferObject(maxVertices * format.Size() / 4),
 		divisor: divisor,
 		format:  format,
 	}
@@ -114,6 +140,26 @@ func (vao *VertexArrayObject) SetData(name string, offset int, data []float32) {
 	holder.vbo.Unbind()
 
 	statistic.Add(statistic.VertexUpload, int64(len(data)*4/holder.format.Size()))
+}
+
+func (vao *VertexArrayObject) MapVBO(name string, size int) MemoryChunk {
+	holder, exists := vao.vbos[name]
+	if !exists {
+		panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
+	}
+
+	return holder.vbo.Map(size)
+}
+
+func (vao *VertexArrayObject) UnmapVBO(name string, offset int, size int) {
+	holder, exists := vao.vbos[name]
+	if !exists {
+		panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
+	}
+
+	holder.vbo.Bind()
+	holder.vbo.Unmap(offset, size)
+	holder.vbo.Unbind()
 }
 
 func (vao *VertexArrayObject) Draw() {

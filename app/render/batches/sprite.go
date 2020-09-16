@@ -36,6 +36,7 @@ type SpriteBatch struct {
 	currentFloats int
 	drawing       bool
 	maxSprites    int
+	chunkOffset   int
 }
 
 func NewSpriteBatch() *SpriteBatch {
@@ -73,7 +74,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 		-1, 1, 0, 1,
 	})
 
-	vao.AddVBO("sprites", maxSprites, 1, attribute.Format{
+	vao.AddMappedVBO("sprites", maxSprites, 1, attribute.Format{
 		{Name: "in_origin", Type: attribute.Vec2Packed},
 		{Name: "in_scale", Type: attribute.Vec2},
 		{Name: "in_position", Type: attribute.Vec2},
@@ -101,20 +102,21 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 
 	vertexSize := vao.GetVBOFormat("sprites").Size() / 4
 
-	data := make([]float32, maxSprites*vertexSize)
+	chunk := vao.MapVBO("sprites", maxSprites*vertexSize)
 
 	return &SpriteBatch{
-		shader:     rShader,
-		color:      mgl32.Vec4{1, 1, 1, 1},
-		Projection: mgl32.Ident4(),
-		scale:      bmath.NewVec2d(1, 1),
-		subscale:   bmath.NewVec2d(1, 1),
-		transform:  mgl32.Ident4(),
-		vertexSize: vertexSize,
-		data:       data,
-		vao:        vao,
-		ibo:        ibo,
-		maxSprites: maxSprites,
+		shader:      rShader,
+		color:       mgl32.Vec4{1, 1, 1, 1},
+		Projection:  mgl32.Ident4(),
+		scale:       bmath.NewVec2d(1, 1),
+		subscale:    bmath.NewVec2d(1, 1),
+		transform:   mgl32.Ident4(),
+		vertexSize:  vertexSize,
+		data:        chunk.Data,
+		chunkOffset: chunk.Offset,
+		vao:         vao,
+		ibo:         ibo,
+		maxSprites:  maxSprites,
 	}
 }
 
@@ -209,9 +211,15 @@ func (batch *SpriteBatch) Flush() {
 
 	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
 
-	batch.vao.SetData("sprites", 0, batch.data[:batch.currentFloats])
+	//batch.vao.SetData("sprites", 0, batch.data[:batch.currentFloats])
+	batch.vao.UnmapVBO("sprites", 0, batch.currentFloats)
 
-	batch.ibo.DrawInstanced(0, batch.currentSize)
+	batch.ibo.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
+
+	nextChunk := batch.vao.MapVBO("sprites", batch.maxSprites*batch.vertexSize)
+
+	batch.data = nextChunk.Data
+	batch.chunkOffset = nextChunk.Offset
 
 	batch.currentSize = 0
 	batch.currentFloats = 0
