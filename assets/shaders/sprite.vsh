@@ -23,14 +23,14 @@ out float additive;
 
 void main()
 {
+    vec2 bPos = (base_pos - (in_origin * 2 - 1)) * in_scale;
+
     float cs = cos(in_rotation);
     float sn = sin(in_rotation);
 
-    vec2 bPos = (base_pos - (in_origin * 2 - 1)) * in_scale;
-
     vec2 rPos = vec2(cs * bPos.x - sn * bPos.y, sn * bPos.x + cs * bPos.y);
 
-    sPos += in_position;
+    rPos += in_position;
 
     gl_Position = proj * vec4(rPos, 0.0, 1.0);
 
