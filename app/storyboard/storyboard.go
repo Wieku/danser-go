@@ -161,7 +161,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	log.Println("Storyboard loaded")
 
 	storyboard.currentTime = -1000000
-	storyboard.limiter = frame.NewLimiter(500)
+	storyboard.limiter = frame.NewLimiter(10000)
 	storyboard.counter = frame.NewCounter()
 
 	return storyboard
