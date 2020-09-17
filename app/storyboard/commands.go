@@ -2,6 +2,7 @@ package storyboard
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"log"
@@ -199,6 +200,61 @@ func (command *Command) Init(obj Object) {
 
 	copy(command.val, command.sections[0])
 	command.Apply(obj)
+}
+
+func (command *Command) GenerateTransformations() []*animation.Transformation {
+	if command.command == "P" {
+		switch command.custom {
+		case "H":
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.HorizontalFlip, float64(command.start), float64(command.end))}
+		case "V":
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.VerticalFlip, float64(command.start), float64(command.end))}
+		case "A":
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.Additive, float64(command.start), float64(command.end))}
+		}
+	}
+
+	var transformations []*animation.Transformation
+
+	nSections := bmath.MaxI(1, int(command.numSections))
+
+	for section := 0; section < nSections; section++ {
+		start := float64(command.start + int64(section)*command.sectionTime)
+		end := float64(command.start + int64(section+1)*command.sectionTime)
+		nextSection := (section + 1) % int(command.numSections+1)
+		switch command.command {
+		case "F":
+			transformations = append(transformations, animation.NewSingleTransform(animation.Fade, command.easing, start, end, command.sections[section][0], command.sections[nextSection][0]))
+		case "R":
+			transformations = append(transformations, animation.NewSingleTransform(animation.Rotate, command.easing, start, end, command.sections[section][0], command.sections[nextSection][0]))
+		case "S":
+			transformations = append(transformations, animation.NewSingleTransform(animation.Scale, command.easing, start, end, command.sections[section][0], command.sections[nextSection][0]))
+		case "V":
+			transformations = append(transformations, animation.NewVectorTransform(animation.ScaleVector, command.easing, start, end, command.sections[section][0], command.sections[section][1], command.sections[nextSection][0], command.sections[nextSection][1]))
+		case "M":
+			transformations = append(transformations, animation.NewVectorTransform(animation.Move, command.easing, start, end, command.sections[section][0], command.sections[section][1], command.sections[nextSection][0], command.sections[nextSection][1]))
+		case "MX":
+			transformations = append(transformations, animation.NewSingleTransform(animation.MoveX, command.easing, start, end, command.sections[section][0], command.sections[nextSection][0]))
+			break
+		case "MY":
+			transformations = append(transformations, animation.NewSingleTransform(animation.MoveY, command.easing, start, end, command.sections[section][0], command.sections[nextSection][0]))
+			break
+		case "C":
+			color1 := bmath.Color{
+				R: command.sections[section][0],
+				G: command.sections[section][1],
+				B: command.sections[section][2],
+			}
+			color2 := bmath.Color{
+				R: command.sections[nextSection][0],
+				G: command.sections[nextSection][1],
+				B: command.sections[nextSection][2],
+			}
+			transformations = append(transformations, animation.NewColorTransform(animation.Color3, command.easing, start, end, color1, color2))
+		}
+	}
+
+	return transformations
 }
 
 //TODO: TRIGGER command

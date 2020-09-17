@@ -1,40 +1,50 @@
 package storyboard
 
 import (
+	"github.com/wieku/danser-go/app/animation"
+	"math"
 	"strconv"
 )
 
-type Loop struct {
-	start, end, repeats int64
-	transformations     *Transformations
+type LoopProcessor struct {
+	start, repeats int64
+	transforms     []*animation.Transformation
 }
 
-func NewLoop(data []string, object Object) *Loop {
-	loop := &Loop{transformations: NewTransformations(object)}
+func NewLoopProcessor(data []string) *LoopProcessor {
+	loop := new(LoopProcessor)
 	loop.start, _ = strconv.ParseInt(data[1], 10, 64)
 	loop.repeats, _ = strconv.ParseInt(data[2], 10, 64)
 	return loop
 }
 
-func (loop *Loop) Add(command *Command) {
-	loop.transformations.Add(command)
-	loop.end = loop.start + loop.transformations.startTime + loop.repeats*(loop.transformations.endTime-loop.transformations.startTime)
+func (loop *LoopProcessor) Add(command *Command) {
+	loop.transforms = append(loop.transforms, command.GenerateTransformations()...)
 }
 
-func (loop *Loop) Update(time int64) {
-	sTime := int64(0)
-	if time-loop.start > loop.transformations.endTime {
-		sTime = loop.transformations.startTime
+func (loop *LoopProcessor) Unwind() []*animation.Transformation {
+	var transforms []*animation.Transformation
+
+	startTime := math.MaxFloat64
+	endTime := -math.MaxFloat64
+
+	for _, t := range loop.transforms {
+		startTime = math.Min(startTime, t.GetStartTime())
+		endTime = math.Max(endTime, t.GetEndTime())
 	}
 
-	local := (time - loop.start - sTime) % (loop.transformations.endTime - sTime)
-	if time >= loop.end {
-		local = loop.transformations.endTime - sTime
+	transTime := endTime - startTime
+
+	for i := int64(0); i < loop.repeats; i++ {
+		partStart := float64(loop.start) + float64(i)*transTime
+		if i > 0 {
+			partStart -= startTime
+		}
+
+		for _, t := range loop.transforms {
+			transforms = append(transforms, t.Clone(partStart+t.GetStartTime(), partStart+t.GetEndTime()))
+		}
 	}
 
-	loop.transformations.Update(sTime + local)
-}
-
-func (loop *Loop) Finalize() {
-	loop.transformations.Finalize()
+	return transforms
 }

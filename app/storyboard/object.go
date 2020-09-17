@@ -2,10 +2,12 @@ package storyboard
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"math"
+	"sort"
 	"strings"
 	"unicode"
 )
@@ -54,8 +56,7 @@ type Sprite struct {
 	loopForever                bool
 	currentFrame               int
 	transform                  *Transformations
-	loopQueue                  []*Loop
-	loopProcessed              []*Loop
+	transforms                 []*animation.Transformation
 	startTime, endTime, zIndex int64
 	position                   bmath.Vector2d
 	origin                     bmath.Vector2d
@@ -66,6 +67,8 @@ type Sprite struct {
 	dirty                      bool
 	additive                   bool
 	firstupdate                bool
+	lastFinished               int
+	subCommands                []string
 }
 
 func cutWhites(text string) (string, int) {
@@ -80,9 +83,13 @@ func cutWhites(text string) (string, int) {
 
 func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever bool, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
 	sprite := &Sprite{texture: texture, frameDelay: frameDelay, loopForever: loopForever, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
+	sprite.lastFinished = -1
 	sprite.transform = NewTransformations(sprite)
+	sprite.subCommands = subCommands
+	sprite.startTime = math.MaxInt64
+	sprite.endTime = math.MinInt64
 
-	var currentLoop *Loop = nil
+	var currentLoop *LoopProcessor = nil
 	loopDepth := -1
 
 	for _, subCommand := range subCommands {
@@ -96,18 +103,19 @@ func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever
 
 		if removed == 1 {
 			if currentLoop != nil {
-				currentLoop.Finalize()
-				sprite.loopQueue = append(sprite.loopQueue, currentLoop)
+				sprite.transforms = append(sprite.transforms, currentLoop.Unwind()...)
+
+				currentLoop = nil
 				loopDepth = -1
 			}
 			if command[0] != "L" {
-				sprite.transform.Add(NewCommand(command))
+				sprite.transforms = append(sprite.transforms, NewCommand(command).GenerateTransformations()...)
 			}
 		}
 
 		if command[0] == "L" {
 
-			currentLoop = NewLoop(command, sprite)
+			currentLoop = NewLoopProcessor(command)
 
 			loopDepth = removed + 1
 
@@ -117,23 +125,34 @@ func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever
 	}
 
 	if currentLoop != nil {
-		currentLoop.Finalize()
-		sprite.loopQueue = append(sprite.loopQueue, currentLoop)
+		sprite.transforms = append(sprite.transforms, currentLoop.Unwind()...)
+
+		currentLoop = nil
 		loopDepth = -1
 	}
 
-	sprite.transform.Finalize()
+	sort.SliceStable(sprite.transforms, func(i, j int) bool {
+		return sprite.transforms[i].GetStartTime() < sprite.transforms[j].GetStartTime()
+	})
 
-	sprite.startTime = sprite.transform.startTime
-	sprite.endTime = sprite.transform.endTime
+	ex := make(map[animation.TransformationType]int)
 
-	for _, loop := range sprite.loopQueue {
-		if loop.start < sprite.startTime {
-			sprite.startTime = loop.start
+	for _, t := range sprite.transforms {
+		if int64(t.GetStartTime()) < sprite.startTime {
+			sprite.startTime = int64(t.GetStartTime())
 		}
 
-		if loop.end > sprite.endTime {
-			sprite.endTime = loop.end
+		if int64(t.GetEndTime()) > sprite.endTime {
+			sprite.endTime = int64(t.GetEndTime())
+		}
+
+		if t.GetType() == animation.Additive || t.GetType() == animation.HorizontalFlip || t.GetType() == animation.VerticalFlip {
+			continue
+		}
+
+		if _, applied := ex[t.GetType()]; !applied {
+			sprite.updateTransform(t, t.GetStartTime()-1)
+			ex[t.GetType()] = 1
 		}
 	}
 
@@ -159,28 +178,75 @@ func (sprite *Sprite) Update(time int64) {
 		}
 	}
 
-	sprite.transform.Update(time)
-
-	for i := 0; i < len(sprite.loopQueue); i++ {
-		c := sprite.loopQueue[i]
-		if c.start <= time {
-			sprite.loopProcessed = append(sprite.loopProcessed, c)
-			sprite.loopQueue = append(sprite.loopQueue[:i], sprite.loopQueue[i+1:]...)
-			i--
+	for i := sprite.lastFinished + 1; i < len(sprite.transforms); i++ {
+		transform := sprite.transforms[i]
+		if float64(time) < transform.GetStartTime() {
+			break
 		}
-	}
 
-	for i := 0; i < len(sprite.loopProcessed); i++ {
-		c := sprite.loopProcessed[i]
-		c.Update(time)
+		sprite.updateTransform(transform, float64(time))
 
-		if time > c.end {
-			sprite.loopProcessed = append(sprite.loopProcessed[:i], sprite.loopProcessed[i+1:]...)
+		if float64(time) >= transform.GetEndTime() {
+			copy(sprite.transforms[i:], sprite.transforms[i+1:])
+			sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
 			i--
 		}
 	}
 
 	sprite.firstupdate = true
+}
+
+func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) {
+	switch transform.GetType() {
+	case animation.Fade, animation.Scale, animation.Rotate, animation.MoveX, animation.MoveY:
+		value := transform.GetSingle(time)
+		switch transform.GetType() {
+		case animation.Fade:
+			sprite.color.A = value
+		case animation.Scale:
+			sprite.scale.X = value
+			sprite.scale.Y = value
+		case animation.Rotate:
+			sprite.rotation = value
+		case animation.MoveX:
+			sprite.position.X = value
+		case animation.MoveY:
+			sprite.position.Y = value
+		}
+	case animation.Move, animation.ScaleVector:
+		x, y := transform.GetDouble(time)
+		switch transform.GetType() {
+		case animation.Move:
+			sprite.position.X = x
+			sprite.position.Y = y
+		case animation.ScaleVector:
+			sprite.scale.X = x
+			sprite.scale.Y = y
+		}
+	case animation.Additive, animation.HorizontalFlip, animation.VerticalFlip:
+		value := transform.GetBoolean(time)
+		va1 := 1.0
+		if value {
+			va1 = -1
+		}
+		switch transform.GetType() {
+		case animation.Additive:
+			sprite.additive = value
+		case animation.HorizontalFlip:
+			sprite.flip.X = va1
+		case animation.VerticalFlip:
+			sprite.flip.Y = va1
+		}
+
+	case animation.Color3, animation.Color4:
+		color := transform.GetColor(time)
+		sprite.color.R = color.R
+		sprite.color.G = color.G
+		sprite.color.B = color.B
+		if transform.GetType() == animation.Color4 {
+			sprite.color.A = color.A
+		}
+	}
 }
 
 func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
@@ -192,7 +258,7 @@ func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
 	if alpha > 1.001 {
 		alpha -= math.Ceil(sprite.color.A) - 1
 	}
-	//log.Println(sprite.currentFrame)
+
 	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs(), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], true)
 }
 
