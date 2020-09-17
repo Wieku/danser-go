@@ -204,7 +204,7 @@ func (s *RShader) Bind() {
 	gl.UseProgram(s.handle)
 }
 
-// End unbinds the Shader program and restores the previous one.
+// Unbind unbinds the Shader program and restores the previous one.
 func (s *RShader) Unbind() {
 	if s.disposed || !s.bound {
 		return

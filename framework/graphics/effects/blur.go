@@ -105,14 +105,14 @@ func kernelSize(sigma float32) int {
 }
 
 func (effect *BlurEffect) Begin() {
-	effect.fbo1.Begin()
+	effect.fbo1.Bind()
 	gl.ClearColor(0, 0, 0, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gl.Viewport(0, 0, int32(effect.fbo1.Texture().GetWidth()), int32(effect.fbo1.Texture().GetHeight()))
 }
 
 func (effect *BlurEffect) EndAndProcess() texture.Texture {
-	effect.fbo1.End()
+	effect.fbo1.Unbind()
 
 	effect.blurShader.Bind()
 	effect.blurShader.SetUniform("tex", int32(0))
@@ -123,7 +123,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 
 	effect.vao.Bind()
 
-	effect.fbo2.Begin()
+	effect.fbo2.Bind()
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -131,9 +131,9 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 
 	effect.vao.Draw()
 
-	effect.fbo2.End()
+	effect.fbo2.Unbind()
 
-	effect.fbo1.Begin()
+	effect.fbo1.Bind()
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -142,7 +142,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.blurShader.SetUniform("direction", mgl32.Vec2{0, 1})
 	effect.vao.Draw()
 
-	effect.fbo1.End()
+	effect.fbo1.Unbind()
 
 	effect.vao.Unbind()
 	effect.blurShader.Unbind()

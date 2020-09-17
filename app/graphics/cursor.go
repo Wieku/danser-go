@@ -265,7 +265,7 @@ func BeginCursorRender() {
 	useAdditive = settings.Cursor.AdditiveBlending && (settings.PLAYERS > 1 || settings.DIVIDES > 1 || settings.TAG > 1)
 
 	if useAdditive {
-		cursorSpaceFbo.Begin()
+		cursorSpaceFbo.Bind()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 	}
@@ -277,7 +277,7 @@ func BeginCursorRender() {
 
 func EndCursorRender() {
 	if useAdditive {
-		cursorSpaceFbo.End()
+		cursorSpaceFbo.Unbind()
 
 		fboBatch.Begin()
 		cursorSpaceFBOSprite.Draw(0, fboBatch)
@@ -298,7 +298,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 	}
 
 	if useAdditive {
-		cursorFbo.Begin()
+		cursorFbo.Bind()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 	}
@@ -367,7 +367,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 	batch.End()
 
 	if useAdditive {
-		cursorFbo.End()
+		cursorFbo.Unbind()
 
 		fboBatch.Begin()
 

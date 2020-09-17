@@ -109,7 +109,7 @@ func BeginRendererMerge() {
 	gl.DepthMask(true)
 	gl.DepthFunc(gl.LESS)
 
-	framebuffer.Begin()
+	framebuffer.Bind()
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -121,7 +121,7 @@ func BeginRendererMerge() {
 func EndRendererMerge() {
 	blend.Pop()
 
-	framebuffer.End()
+	framebuffer.Unbind()
 
 	gl.Disable(gl.DEPTH_TEST)
 	gl.DepthMask(false)

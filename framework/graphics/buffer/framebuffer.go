@@ -30,7 +30,7 @@ func NewFrame(width, height int, smooth, depth bool) *Framebuffer {
 
 	gl.GenFramebuffers(1, &f.obj)
 
-	f.Begin()
+	f.Bind()
 	f.tex.Bind(0)
 	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
 
@@ -42,7 +42,7 @@ func NewFrame(width, height int, smooth, depth bool) *Framebuffer {
 		gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer)
 	}
 
-	f.End()
+	f.Unbind()
 
 	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
 
@@ -56,11 +56,11 @@ func NewFrameDepth(width, height int, smooth bool) *Framebuffer {
 
 	gl.GenFramebuffers(1, &f.obj)
 
-	f.Begin()
+	f.Bind()
 	f.tex.Bind(0)
 	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, f.tex.GetID(), 0, 0)
 
-	f.End()
+	f.Unbind()
 
 	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
 
@@ -85,7 +85,7 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 
 	gl.GenFramebuffers(1, &f.obj)
 
-	f.Begin()
+	f.Bind()
 
 	gl.GenTextures(1, &f.helperTexture)
 	gl.BindTexture(gl.TEXTURE_2D_MULTISAMPLE, f.helperTexture)
@@ -102,7 +102,7 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 		f.depth = depthRenderBuffer
 	}
 
-	f.End()
+	f.Unbind()
 
 	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
 
@@ -134,15 +134,15 @@ func (f *Framebuffer) ID() uint32 {
 	return f.obj
 }
 
-// Begin binds the Framebuffer. All draw operations will target this Framebuffer until End is called.
-func (f *Framebuffer) Begin() {
+// Bind binds the Framebuffer. All draw operations will target this Framebuffer until Unbind is called.
+func (f *Framebuffer) Bind() {
 	history.Push(gl.FRAMEBUFFER_BINDING)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.obj)
 	statistic.Increment(statistic.FBOBinds)
 }
 
-// End unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
-func (f *Framebuffer) End() {
+// Unbind unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
+func (f *Framebuffer) Unbind() {
 	if f.multisampled {
 		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, f.obj)
 		gl.ReadBuffer(gl.COLOR_ATTACHMENT0)

@@ -88,13 +88,13 @@ func (effect *BloomEffect) SetPower(power float64) {
 }
 
 func (effect *BloomEffect) Begin() {
-	effect.fbo.Begin()
+	effect.fbo.Bind()
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 }
 
 func (effect *BloomEffect) EndAndRender() {
-	effect.fbo.End()
+	effect.fbo.Unbind()
 
 	blend.Push()
 	blend.Enable()

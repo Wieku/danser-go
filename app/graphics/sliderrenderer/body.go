@@ -134,7 +134,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 		return
 	}
 
-	body.framebuffer.Begin()
+	body.framebuffer.Bind()
 
 	blend.Push()
 	blend.Disable()
@@ -159,7 +159,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 
 	sliderShader.Unbind()
 
-	body.framebuffer.End()
+	body.framebuffer.Unbind()
 
 	viewport.Pop()
 
