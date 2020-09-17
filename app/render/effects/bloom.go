@@ -2,6 +2,7 @@ package effects
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
@@ -9,52 +10,46 @@ import (
 )
 
 type BloomEffect struct {
-	colFilter     *shader.Shader
-	combineShader *shader.Shader
+	colFilter     *shader.RShader
+	combineShader *shader.RShader
 	fbo           *buffer.Framebuffer
 
 	blurEffect *BlurEffect
 
 	blur, threshold, power float64
-	fboSlice               *buffer.VertexSlice
+	fboSlice               *buffer.VertexArrayObject
 }
 
 func NewBloomEffect(width, height int) *BloomEffect {
-	effect := &BloomEffect{}
-	vertexFormat := shader.AttrFormat{
-		{Name: "in_position", Type: shader.Vec3},
-		{Name: "in_tex_coord", Type: shader.Vec2},
-	}
+	effect := new(BloomEffect)
 
-	uniformFormat := shader.AttrFormat{
-		{Name: "tex", Type: shader.Int},
-		{Name: "threshold", Type: shader.Float},
-	}
-
-	var err error
-	vert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
-	frag, _ := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
-	effect.colFilter, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
-
+	vert, err := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	if err != nil {
-		panic("BloomFilter: " + err.Error())
+		panic(err)
 	}
 
-	uniformFormat = shader.AttrFormat{
-		{Name: "tex", Type: shader.Int},
-		{Name: "tex2", Type: shader.Int},
-		{Name: "power", Type: shader.Float},
-	}
-	frag, _ = ioutil.ReadFile("assets/shaders/combine.fsh")
-	effect.combineShader, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
-
+	frag, err := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
 	if err != nil {
-		panic("BloomCombine: " + err.Error())
+		panic(err)
 	}
 
-	effect.fboSlice = buffer.MakeVertexSlice(effect.colFilter, 6, 6)
-	effect.fboSlice.Begin()
-	effect.fboSlice.SetVertexData([]float32{
+	effect.colFilter = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+
+	frag, err = ioutil.ReadFile("assets/shaders/combine.fsh")
+	if err != nil {
+		panic(err)
+	}
+
+	effect.combineShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+
+	effect.fboSlice = buffer.NewVertexArrayObject()
+
+	effect.fboSlice.AddVBO("default", 6, 0, attribute.Format{
+		{Name: "in_position", Type: attribute.Vec3},
+		{Name: "in_tex_coord", Type: attribute.Vec2},
+	})
+
+	effect.fboSlice.SetData("default", 0, []float32{
 		-1, -1, 0, 0, 0,
 		1, -1, 0, 1, 0,
 		-1, 1, 0, 0, 1,
@@ -62,7 +57,10 @@ func NewBloomEffect(width, height int) *BloomEffect {
 		1, 1, 0, 1, 1,
 		-1, 1, 0, 0, 1,
 	})
-	effect.fboSlice.End()
+
+	effect.fboSlice.Bind()
+	effect.fboSlice.Attach(effect.colFilter)
+	effect.fboSlice.Unbind()
 
 	effect.fbo = buffer.NewFrame(width, height, true, false)
 
@@ -72,6 +70,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 
 	effect.blurEffect = NewBlurEffect(width, height)
 	effect.blurEffect.SetBlur(effect.blur, effect.blur)
+
 	return effect
 }
 
@@ -105,36 +104,34 @@ func (effect *BloomEffect) EndAndRender() {
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	effect.colFilter.Begin()
-	effect.colFilter.SetUniformAttr(0, int32(0))
-	effect.colFilter.SetUniformAttr(1, float32(effect.threshold))
+	effect.colFilter.Bind()
+	effect.colFilter.SetUniform("tex", int32(0))
+	effect.colFilter.SetUniform("threshold", float32(effect.threshold))
 
 	effect.fbo.Texture().Bind(0)
 
-	effect.fboSlice.Begin()
+	effect.fboSlice.Bind()
 	effect.fboSlice.Draw()
-	effect.fboSlice.End()
 
-	effect.colFilter.End()
+	effect.colFilter.Unbind()
 
 	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
 
 	texture := effect.blurEffect.EndAndProcess()
 
-	effect.combineShader.Begin()
-	effect.combineShader.SetUniformAttr(0, int32(0))
-	effect.combineShader.SetUniformAttr(1, int32(1))
-	effect.combineShader.SetUniformAttr(2, float32(effect.power))
+	effect.combineShader.Bind()
+	effect.combineShader.SetUniform("tex", int32(0))
+	effect.combineShader.SetUniform("tex2", int32(1))
+	effect.combineShader.SetUniform("power", float32(effect.power))
 
 	effect.fbo.Texture().Bind(0)
 
 	texture.Bind(1)
 
-	effect.fboSlice.Begin()
 	effect.fboSlice.Draw()
-	effect.fboSlice.End()
+	effect.fboSlice.Unbind()
 
-	effect.combineShader.End()
+	effect.combineShader.Unbind()
 
 	blend.Pop()
 }
