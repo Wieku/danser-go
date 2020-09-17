@@ -101,7 +101,7 @@ func (glider *Glider) Update(time float64) {
 			if glider.startValue == glider.current.targetValue {
 				glider.value = glider.current.targetValue
 			}
-			//glider.updateCurrent(time)
+			glider.updateCurrent(time)
 			glider.eventqueue = glider.eventqueue[1:]
 			i--
 		}
