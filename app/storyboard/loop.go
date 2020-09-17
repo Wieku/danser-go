@@ -2,6 +2,7 @@ package storyboard
 
 import (
 	"github.com/wieku/danser-go/framework/math/animation"
+	"log"
 	"math"
 	"strconv"
 )
@@ -13,13 +14,26 @@ type LoopProcessor struct {
 
 func NewLoopProcessor(data []string) *LoopProcessor {
 	loop := new(LoopProcessor)
-	loop.start, _ = strconv.ParseInt(data[1], 10, 64)
-	loop.repeats, _ = strconv.ParseInt(data[2], 10, 64)
+
+	var err error
+
+	loop.start, err = strconv.ParseInt(data[1], 10, 64)
+	if err != nil {
+		log.Println("Failed to parse: ", data)
+		panic(err)
+	}
+
+	loop.repeats, err = strconv.ParseInt(data[2], 10, 64)
+	if err != nil {
+		log.Println("Failed to parse: ", data)
+		panic(err)
+	}
+
 	return loop
 }
 
-func (loop *LoopProcessor) Add(command *Command) {
-	loop.transforms = append(loop.transforms, command.GenerateTransformations()...)
+func (loop *LoopProcessor) Add(command []string) {
+	loop.transforms = append(loop.transforms, parseCommand(command)...)
 }
 
 func (loop *LoopProcessor) Unwind() []*animation.Transformation {
@@ -33,10 +47,10 @@ func (loop *LoopProcessor) Unwind() []*animation.Transformation {
 		endTime = math.Max(endTime, t.GetEndTime())
 	}
 
-	transTime := endTime - startTime
+	iterationTime := endTime - startTime
 
 	for i := int64(0); i < loop.repeats; i++ {
-		partStart := float64(loop.start) + float64(i)*transTime
+		partStart := float64(loop.start) + float64(i)*iterationTime
 		if i > 0 {
 			partStart -= startTime
 		}
