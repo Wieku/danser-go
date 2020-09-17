@@ -7,10 +7,10 @@ import (
 )
 
 type StoryboardLayer struct {
-	spriteQueue     []Object
-	spriteProcessed []Object
-	drawArray       []Object
-	interArray      []Object
+	spriteQueue     []*sprite.Sprite
+	spriteProcessed []*sprite.Sprite
+	drawArray       []*sprite.Sprite
+	interArray      []*sprite.Sprite
 	visibleObjects  int
 	interObjects    int
 	allSprites      int
@@ -21,7 +21,7 @@ func NewStoryboardLayer() *StoryboardLayer {
 	return &StoryboardLayer{mutex: &sync.Mutex{}}
 }
 
-func (layer *StoryboardLayer) Add(object Object) {
+func (layer *StoryboardLayer) Add(object *sprite.Sprite) {
 	layer.spriteQueue = append(layer.spriteQueue, object)
 }
 
@@ -30,8 +30,8 @@ func (layer *StoryboardLayer) FinishLoading() {
 		return layer.spriteQueue[i].GetStartTime() < layer.spriteQueue[j].GetStartTime()
 	})
 	layer.allSprites = len(layer.spriteQueue)
-	layer.drawArray = make([]Object, len(layer.spriteQueue))
-	layer.interArray = make([]Object, len(layer.spriteQueue))
+	layer.drawArray = make([]*sprite.Sprite, len(layer.spriteQueue))
+	layer.interArray = make([]*sprite.Sprite, len(layer.spriteQueue))
 }
 
 func (layer *StoryboardLayer) Update(time int64) {
@@ -39,7 +39,7 @@ func (layer *StoryboardLayer) Update(time int64) {
 
 	for i := 0; i < len(layer.spriteQueue); i++ {
 		c := layer.spriteQueue[i]
-		if time < c.GetStartTime() {
+		if float64(time) < c.GetStartTime() {
 			break
 		}
 
@@ -51,7 +51,7 @@ func (layer *StoryboardLayer) Update(time int64) {
 			s := layer.spriteQueue[i]
 
 			n := sort.Search(len(layer.spriteProcessed), func(j int) bool {
-				return s.GetZIndex() < layer.spriteProcessed[j].GetZIndex()
+				return s.GetDepth() < layer.spriteProcessed[j].GetDepth()
 			})
 
 			layer.spriteProcessed = append(layer.spriteProcessed, nil) //allocate bigger array in case when len=cap
@@ -67,7 +67,7 @@ func (layer *StoryboardLayer) Update(time int64) {
 		c := layer.spriteProcessed[i]
 		c.Update(time)
 
-		if time >= c.GetEndTime() {
+		if float64(time) >= c.GetEndTime() {
 			copy(layer.spriteProcessed[i:], layer.spriteProcessed[i+1:])
 			layer.spriteProcessed = layer.spriteProcessed[:len(layer.spriteProcessed)-1]
 			i--

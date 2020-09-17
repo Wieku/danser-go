@@ -1,11 +1,9 @@
 package storyboard
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
-	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"strconv"
@@ -149,58 +147,6 @@ func (command *Command) Update(time int64) {
 			command.val[i] = command.sections[section][i] + t*(command.sections[section+1][i]-command.sections[section][i])
 		}
 	}
-}
-
-func (command *Command) Apply(obj Object) {
-	switch command.command {
-	case "F":
-		obj.SetAlpha(command.val[0])
-		break
-	case "R":
-		obj.SetRotation(command.val[0])
-		break
-	case "S":
-		obj.SetScale(vector.NewVec2d(command.val[0], command.val[0]))
-		break
-	case "V":
-		obj.SetScale(vector.NewVec2d(command.val[0], command.val[1]))
-		break
-	case "M":
-		obj.SetPosition(vector.NewVec2d(command.val[0], command.val[1]))
-		break
-	case "MX":
-		obj.SetPosition(vector.NewVec2d(command.val[0], obj.GetPosition().Y))
-		break
-	case "MY":
-		obj.SetPosition(vector.NewVec2d(obj.GetPosition().X, command.val[0]))
-		break
-	case "C":
-		obj.SetColor(mgl32.Vec3{float32(command.val[0]), float32(command.val[1]), float32(command.val[2])})
-		break
-	case "P":
-		switch command.custom {
-		case "H":
-			obj.SetHFlip(command.val[0] == 1)
-			break
-		case "V":
-			obj.SetVFlip(command.val[0] == 1)
-			break
-		case "A":
-			obj.SetAdditive(command.val[0] == 1)
-			break
-		}
-		break
-	}
-}
-
-func (command *Command) Init(obj Object) {
-
-	if command.command == "P" {
-		return
-	}
-
-	copy(command.val, command.sections[0])
-	command.Apply(obj)
 }
 
 func (command *Command) GenerateTransformations() []*animation.Transformation {
