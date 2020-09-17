@@ -51,7 +51,7 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 	size := (minSize + rand.Float64()*(maxSize-minSize)) * settings.Graphics.GetHeightF() / 768
 	position := bmath.NewVec2d((rand.Float64()-0.5)*settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()/2+size)
 	sprite := sprites.NewSpriteSingle(render.Triangle, size, position, bmath.NewVec2d(0, 0))
-	if vis.colorPalette == nil {
+	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
 		sprite.SetColor(bmath.Color{rand.Float64(), rand.Float64(), rand.Float64(), 1})
 	} else {
 		col := vis.colorPalette[rand.Intn(len(vis.colorPalette))]
