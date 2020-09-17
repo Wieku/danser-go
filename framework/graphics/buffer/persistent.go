@@ -136,9 +136,6 @@ func (vbo *PersistentBufferObject) Unbind() {
 func (vbo *PersistentBufferObject) Dispose() {
 	if !vbo.disposed {
 		mainthread.CallNonBlock(func() {
-			vbo.Bind()
-			gl.UnmapBuffer(gl.ARRAY_BUFFER)
-			vbo.Unbind()
 			gl.DeleteBuffers(1, &vbo.handle)
 		})
 	}
