@@ -2,9 +2,9 @@ package sprite
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/animation"
 	"math"
 	"sort"
 )

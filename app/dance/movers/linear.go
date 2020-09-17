@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
-	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 )
 
 type LinearMover struct {

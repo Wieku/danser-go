@@ -1,7 +1,7 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser-go/app/animation"
+	"github.com/wieku/danser-go/framework/math/animation"
 	"math"
 	"strconv"
 )

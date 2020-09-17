@@ -14,8 +14,8 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
-	"github.com/wieku/danser-go/framework/math/easing"
-	"github.com/wieku/danser-go/framework/math/glider"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"math"
 	"math/rand"
 	"strconv"
@@ -38,11 +38,11 @@ type Overlay interface {
 
 type PseudoSprite struct {
 	texture   *texture.TextureRegion
-	fade      *glider.Glider
-	scale     *glider.Glider
-	rotate    *glider.Glider
-	slideDown *glider.Glider
-	toRemove  *glider.Glider
+	fade      *animation.Glider
+	scale     *animation.Glider
+	rotate    *animation.Glider
+	slideDown *animation.Glider
+	toRemove  *animation.Glider
 	position  bmath.Vector2d
 }
 
@@ -59,16 +59,16 @@ func newSprite(time int64, result osu.HitResult, position bmath.Vector2d) *Pseud
 		return nil
 	}
 
-	sprite.fade = glider.NewGlider(0.0)
+	sprite.fade = animation.NewGlider(0.0)
 	sprite.fade.AddEventS(float64(time), float64(time+FadeIn), 0.0, 1.0)
 	sprite.fade.AddEventS(float64(time+PostEmpt), float64(time+PostEmpt+FadeOut), 1.0, 0.0)
 
-	sprite.scale = glider.NewGlider(0.0)
+	sprite.scale = animation.NewGlider(0.0)
 	sprite.scale.AddEventS(float64(time), float64(time+FadeIn*0.8), 0.6, 1.1)
 	sprite.scale.AddEventS(float64(time+FadeIn), float64(time+FadeIn*1.2), 1.1, 0.9)
 	sprite.scale.AddEventS(float64(time+FadeIn*1.2), float64(time+FadeIn*1.4), 0.9, 1.0)
 
-	sprite.rotate = glider.NewGlider(0.0)
+	sprite.rotate = animation.NewGlider(0.0)
 
 	if result == osu.HitResults.Miss {
 		rotation := rand.Float64()*0.3 - 0.15
@@ -76,13 +76,13 @@ func newSprite(time int64, result osu.HitResult, position bmath.Vector2d) *Pseud
 		sprite.rotate.AddEventS(float64(time+FadeIn), float64(time+PostEmpt+FadeOut), rotation, rotation*2)
 	}
 
-	sprite.slideDown = glider.NewGlider(0.0)
+	sprite.slideDown = animation.NewGlider(0.0)
 
 	if result == osu.HitResults.Miss {
 		sprite.slideDown.AddEventS(float64(time), float64(time+PostEmpt+FadeOut), -5, 40)
 	}
 
-	sprite.toRemove = glider.NewGlider(0.0)
+	sprite.toRemove = animation.NewGlider(0.0)
 	sprite.toRemove.AddEventS(float64(time+PostEmpt+FadeOut), float64(time+PostEmpt+FadeOut), 0, 1)
 	sprite.position = position
 	return sprite
@@ -116,18 +116,18 @@ type ScoreOverlay struct {
 	combo          int64
 	newCombo       int64
 	maxCombo       int64
-	newComboScale  *glider.Glider
-	newComboScaleB *glider.Glider
-	newComboFadeB  *glider.Glider
-	leftScale      *glider.Glider
+	newComboScale  *animation.Glider
+	newComboScaleB *animation.Glider
+	newComboFadeB  *animation.Glider
+	leftScale      *animation.Glider
 	lastLeft       bool
 	lastLeftC      int64
-	rightScale     *glider.Glider
+	rightScale     *animation.Glider
 	lastRight      bool
 	lastRightC     int64
 	oldScore       int64
-	scoreGlider    *glider.Glider
-	ppGlider       *glider.Glider
+	scoreGlider    *animation.Glider
+	ppGlider       *animation.Glider
 	ruleset        *osu.OsuRuleSet
 	cursor         *render.Cursor
 	sprites        []*PseudoSprite
@@ -143,13 +143,13 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
 	overlay.font = font.GetFont("Exo 2 Bold")
-	overlay.newComboScale = glider.NewGlider(1)
-	overlay.newComboScaleB = glider.NewGlider(1)
-	overlay.newComboFadeB = glider.NewGlider(1)
-	overlay.leftScale = glider.NewGlider(0.9)
-	overlay.rightScale = glider.NewGlider(0.9)
-	overlay.scoreGlider = glider.NewGlider(0)
-	overlay.ppGlider = glider.NewGlider(0)
+	overlay.newComboScale = animation.NewGlider(1)
+	overlay.newComboScaleB = animation.NewGlider(1)
+	overlay.newComboFadeB = animation.NewGlider(1)
+	overlay.leftScale = animation.NewGlider(0.9)
+	overlay.rightScale = animation.NewGlider(0.9)
+	overlay.scoreGlider = animation.NewGlider(0)
+	overlay.ppGlider = animation.NewGlider(0)
 	overlay.combobreak = bass.NewSample("assets/sounds/combobreak.wav")
 
 	discord.UpdatePlay(cursor.Name)

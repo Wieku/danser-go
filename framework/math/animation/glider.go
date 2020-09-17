@@ -1,7 +1,7 @@
-package glider
+package animation
 
 import (
-	"github.com/wieku/danser-go/framework/math/easing"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"math"
 	"sort"
 )

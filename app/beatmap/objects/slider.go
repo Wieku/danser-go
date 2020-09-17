@@ -11,8 +11,8 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
-	"github.com/wieku/danser-go/framework/math/easing"
-	"github.com/wieku/danser-go/framework/math/glider"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"log"
 	"math"
 	"sort"
@@ -31,18 +31,18 @@ type PathLine struct {
 type TickPoint struct {
 	Time      int64
 	Pos       bmath.Vector2f
-	fade      *glider.Glider
-	scale     *glider.Glider
+	fade      *animation.Glider
+	scale     *animation.Glider
 	IsReverse bool
 }
 
 type reversePoint struct {
-	fade  *glider.Glider
-	pulse *glider.Glider
+	fade  *animation.Glider
+	pulse *animation.Glider
 }
 
 func newReverse() (point *reversePoint) {
-	point = &reversePoint{glider.NewGlider(0), glider.NewGlider(1)}
+	point = &reversePoint{animation.NewGlider(0), animation.NewGlider(1)}
 	point.fade.SetEasing(easing.OutQuad)
 	point.pulse.SetEasing(easing.OutQuad)
 	return
@@ -68,12 +68,12 @@ type Slider struct {
 	startCircle *Circle
 
 	startAngle, endAngle float64
-	sliderSnakeTail      *glider.Glider
-	sliderSnakeHead      *glider.Glider
-	fade                 *glider.Glider
-	bodyFade             *glider.Glider
-	fadeFollow           *glider.Glider
-	scaleFollow          *glider.Glider
+	sliderSnakeTail      *animation.Glider
+	sliderSnakeHead      *animation.Glider
+	fade                 *animation.Glider
+	bodyFade             *animation.Glider
+	fadeFollow           *animation.Glider
+	scaleFollow          *animation.Glider
 	reversePoints        [2][]*reversePoint
 
 	diff     *difficulty.Difficulty
@@ -128,12 +128,12 @@ func NewSlider(data []string) *Slider {
 
 	slider.objData.parseExtras(data, 10)
 
-	slider.fade = glider.NewGlider(1)
-	slider.bodyFade = glider.NewGlider(1)
+	slider.fade = animation.NewGlider(1)
+	slider.bodyFade = animation.NewGlider(1)
 	//slider.fadeCircle = animation.NewGlider(1)
 	//slider.fadeApproach = animation.NewGlider(1)
-	slider.sliderSnakeTail = glider.NewGlider(1)
-	slider.sliderSnakeHead = glider.NewGlider(0)
+	slider.sliderSnakeTail = animation.NewGlider(1)
+	slider.sliderSnakeHead = animation.NewGlider(0)
 	return slider
 }
 
@@ -276,7 +276,7 @@ func (self *Slider) SetTiming(timings *Timings) {
 
 				scoreTime := self.GetBasicData().StartTime + int64(float64(float32(scoringLengthTotal)*1000)/velocity)
 
-				point := TickPoint{scoreTime, self.GetPointAt(scoreTime), glider.NewGlider(0.0), glider.NewGlider(0.0), false}
+				point := TickPoint{scoreTime, self.GetPointAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false}
 				self.TickPoints = append(self.TickPoints, point)
 				self.ScorePoints = append(self.ScorePoints, point)
 
@@ -332,8 +332,8 @@ func (self *Slider) UpdateStacking() {
 
 func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.diff = diff
-	self.sliderSnakeTail = glider.NewGlider(0)
-	self.sliderSnakeHead = glider.NewGlider(0)
+	self.sliderSnakeTail = animation.NewGlider(0)
+	self.sliderSnakeHead = animation.NewGlider(0)
 
 	slSnInS := float64(self.objData.StartTime) - diff.Preempt
 	slSnInE := float64(self.objData.StartTime) - (diff.Preempt - difficulty.HitFadeIn) + self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
@@ -352,10 +352,10 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		}
 	}
 
-	self.fade = glider.NewGlider(0)
+	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
 
-	self.bodyFade = glider.NewGlider(0)
+	self.bodyFade = animation.NewGlider(0)
 	self.bodyFade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
 
 	if diff.CheckModActive(difficulty.Hidden) {
@@ -409,8 +409,8 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		self.reversePoints[1] = append(self.reversePoints[1], arrow)
 	}
 
-	self.fadeFollow = glider.NewGlider(0)
-	self.scaleFollow = glider.NewGlider(0)
+	self.fadeFollow = animation.NewGlider(0)
+	self.scaleFollow = animation.NewGlider(0)
 
 	for _, p := range self.TickPoints {
 		a := float64((p.Time-self.objData.StartTime)/2+self.objData.StartTime) - diff.Preempt*2/3

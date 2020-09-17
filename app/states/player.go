@@ -20,8 +20,8 @@ import (
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
-	"github.com/wieku/danser-go/framework/math/easing"
-	"github.com/wieku/danser-go/framework/math/glider"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -57,18 +57,18 @@ type Player struct {
 	camera          *bmath.Camera
 	camera1         *bmath.Camera
 	scamera         *bmath.Camera
-	dimGlider       *glider.Glider
-	blurGlider      *glider.Glider
-	fxGlider        *glider.Glider
-	cursorGlider    *glider.Glider
-	playersGlider   *glider.Glider
-	unfold          *glider.Glider
+	dimGlider       *animation.Glider
+	blurGlider      *animation.Glider
+	fxGlider        *animation.Glider
+	cursorGlider    *animation.Glider
+	playersGlider   *animation.Glider
+	unfold          *animation.Glider
 	counter         float64
 	storyboardLoad  float64
 	storyboardDrawn int
 	mapFullName     string
 	Epi             *texture.TextureRegion
-	epiGlider       *glider.Glider
+	epiGlider       *animation.Glider
 	overlay         components.Overlay
 	velocity        float64
 	blur            *effects.BlurEffect
@@ -174,15 +174,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
-	player.dimGlider = glider.NewGlider(0.0)
-	player.blurGlider = glider.NewGlider(0.0)
-	player.fxGlider = glider.NewGlider(0.0)
+	player.dimGlider = animation.NewGlider(0.0)
+	player.blurGlider = animation.NewGlider(0.0)
+	player.fxGlider = animation.NewGlider(0.0)
 	if _, ok := player.overlay.(*components.ScoreOverlay); !ok {
-		player.cursorGlider = glider.NewGlider(0.0)
+		player.cursorGlider = animation.NewGlider(0.0)
 	} else {
-		player.cursorGlider = glider.NewGlider(1.0)
+		player.cursorGlider = animation.NewGlider(1.0)
 	}
-	player.playersGlider = glider.NewGlider(0.0)
+	player.playersGlider = animation.NewGlider(0.0)
 
 	tmS := float64(player.queue2[0].GetBasicData().StartTime)
 	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
@@ -208,7 +208,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 	player.playersGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
-	player.epiGlider = glider.NewGlider(0)
+	player.epiGlider = animation.NewGlider(0)
 
 	if settings.Playfield.Seizure.Enabled {
 		am := math.Max(1000, settings.Playfield.Seizure.Duration*1000)
@@ -221,7 +221,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.progressMsF = startOffset
 
-	player.unfold = glider.NewGlider(1)
+	player.unfold = animation.NewGlider(1)
 
 	for _, p := range beatMap.Pauses {
 		bd := p.GetBasicData()
