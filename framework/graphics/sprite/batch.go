@@ -335,7 +335,7 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 	}
 }
 
-func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, flip vector.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
+func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
 	batch.bind(texture.Texture)
 
 	scaleX := float32(scale.X * float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
@@ -343,11 +343,6 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, 
 
 	posX := float32(position.X + batch.position.X)
 	posY := float32(position.Y + batch.position.Y)
-
-	if storyboard {
-		posX -= 64
-		posY -= 48
-	}
 
 	rot := float32(math.Mod(rotation, math.Pi*2))
 
@@ -358,11 +353,11 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, 
 
 	layer := float32(texture.Layer)
 
-	if flip.X < 0 {
+	if flipX {
 		u1, u2 = u2, u1
 	}
 
-	if flip.Y < 0 {
+	if flipY {
 		v1, v2 = v2, v1
 	}
 

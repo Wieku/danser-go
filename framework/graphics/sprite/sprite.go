@@ -28,7 +28,8 @@ type Sprite struct {
 	positionRelative vector.Vector2d
 	origin           vector.Vector2d
 	scale            vector.Vector2d
-	flip             vector.Vector2d
+	flipX            bool
+	flipY            bool
 	rotation         float64
 	color            bmath.Color
 	additive         bool
@@ -39,14 +40,14 @@ type Sprite struct {
 
 func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	return sprite
 }
 
 func NewSpriteSingleCentered(tex *texture.TextureRegion, size vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
@@ -54,14 +55,14 @@ func NewSpriteSingleCentered(tex *texture.TextureRegion, size vector.Vector2d) *
 
 func NewSpriteSingleOrigin(tex *texture.TextureRegion, size vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
 }
 
 func NewAnimation(textures []*texture.TextureRegion, frameDelay float64, loopForever bool, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
-	sprite := &Sprite{texture: textures, frameDelay: frameDelay, loopForever: loopForever, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: frameDelay, loopForever: loopForever, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	return sprite
 }
@@ -126,17 +127,13 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 		}
 	case animation.Additive, animation.HorizontalFlip, animation.VerticalFlip:
 		value := transform.GetBoolean(float64(time))
-		va1 := 1.0
-		if value {
-			va1 = -1
-		}
 		switch transform.GetType() {
 		case animation.Additive:
 			sprite.additive = value
 		case animation.HorizontalFlip:
-			sprite.flip.X = va1
+			sprite.flipX = value
 		case animation.VerticalFlip:
-			sprite.flip.Y = va1
+			sprite.flipY = value
 		}
 
 	case animation.Color3, animation.Color4:
@@ -246,7 +243,7 @@ func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
 		scaleY = sprite.scaleTo.Y
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], false)
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame])
 }
 
 func (sprite *Sprite) GetPosition() vector.Vector2d {
@@ -295,19 +292,11 @@ func (sprite *Sprite) SetAlpha(alpha float64) {
 }
 
 func (sprite *Sprite) SetHFlip(on bool) {
-	j := 1.0
-	if on {
-		j = -1
-	}
-	sprite.flip.X = j
+	sprite.flipX = on
 }
 
 func (sprite *Sprite) SetVFlip(on bool) {
-	j := 1.0
-	if on {
-		j = -1
-	}
-	sprite.flip.Y = j
+	sprite.flipY = on
 }
 
 func (sprite *Sprite) SetAdditive(on bool) {

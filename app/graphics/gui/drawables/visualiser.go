@@ -76,7 +76,6 @@ func (vis *Visualiser) Update(time float64) {
 func (vis *Visualiser) Draw(time float64, batch *sprite.SpriteBatch) {
 	origin := vector.NewVec2d(-1, 0)
 
-	flip := vector.NewVec2d(1, 1)
 	color := mgl32.Vec4{1, 1, 1, 0.3}
 	region := graphics.Pixel.GetRegion()
 	for i := 0; i < 5; i++ {
@@ -84,7 +83,7 @@ func (vis *Visualiser) Draw(time float64, batch *sprite.SpriteBatch) {
 			rotation := (float64(i)/5 + float64(j)/float64(vis.bars)) * 2 * math.Pi
 			position := vector.NewVec2dRad(rotation, vis.startDistance).Add(vis.Position)
 			scale := vector.NewVec2d(vis.barLength*v, float64(2*math.Pi*vis.startDistance)/float64(vis.bars))
-			batch.DrawStObject(position, origin, scale, flip, rotation, color, false, region, false)
+			batch.DrawStObject(position, origin, scale, false, false, rotation, color, false, region)
 		}
 	}
 }
