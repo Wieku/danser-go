@@ -8,8 +8,8 @@ import (
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
 	"math"
@@ -23,10 +23,10 @@ type Circle struct {
 
 	textFade *glider.Glider
 
-	hitCircle        *sprites.Sprite
-	hitCircleOverlay *sprites.Sprite
-	approachCircle   *sprites.Sprite
-	sprites          []*sprites.Sprite
+	hitCircle        *sprite.Sprite
+	hitCircleOverlay *sprite.Sprite
+	approachCircle   *sprite.Sprite
+	sprites          []*sprite.Sprite
 	diff             *difficulty.Difficulty
 	lastTime         int64
 	silent           bool
@@ -113,9 +113,9 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.textFade = glider.NewGlider(0)
 
-	self.hitCircle = sprites.NewSpriteSingleCentered(render.Circle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.hitCircleOverlay = sprites.NewSpriteSingleCentered(render.CircleOverlay, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.approachCircle = sprites.NewSpriteSingleCentered(render.ApproachCircle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircle = sprite.NewSpriteSingleCentered(render.Circle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircleOverlay = sprite.NewSpriteSingleCentered(render.CircleOverlay, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.approachCircle = sprite.NewSpriteSingleCentered(render.ApproachCircle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
 
 	self.sprites = append(self.sprites, self.hitCircle)
 	self.sprites = append(self.sprites, self.hitCircleOverlay)
@@ -128,7 +128,7 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	self.approachCircle.SetPosition(self.objData.StartPos.Copy64())
 	self.approachCircle.SetAlpha(0)
 
-	circles := []*sprites.Sprite{self.hitCircle, self.hitCircleOverlay}
+	circles := []*sprite.Sprite{self.hitCircle, self.hitCircleOverlay}
 
 	for _, t := range circles {
 		if diff.CheckModActive(difficulty.Hidden) {

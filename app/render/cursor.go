@@ -5,13 +5,13 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"io/ioutil"
 	"math"
 	"sync"
@@ -20,10 +20,10 @@ import (
 var cursorShader *shader.RShader = nil
 
 var cursorFbo *buffer.Framebuffer = nil
-var cursorFBOSprite *sprites.Sprite
+var cursorFBOSprite *sprite.Sprite
 
 var cursorSpaceFbo *buffer.Framebuffer = nil
-var cursorSpaceFBOSprite *sprites.Sprite
+var cursorSpaceFBOSprite *sprite.Sprite
 
 var fboBatch *batches.SpriteBatch
 
@@ -43,11 +43,11 @@ func initCursor() {
 
 	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	region := cursorFbo.Texture().GetRegion()
-	cursorFBOSprite = sprites.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+	cursorFBOSprite = sprite.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 
 	cursorSpaceFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	regionSpace := cursorSpaceFbo.Texture().GetRegion()
-	cursorSpaceFBOSprite = sprites.NewSpriteSingle(&regionSpace, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+	cursorSpaceFBOSprite = sprite.NewSpriteSingle(&regionSpace, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 
 	fboBatch = batches.NewSpriteBatchSize(1)
 	fboBatch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))

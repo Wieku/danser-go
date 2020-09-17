@@ -14,12 +14,12 @@ import (
 	"github.com/wieku/danser-go/app/render/effects"
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/render/gui/drawables"
-	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
@@ -81,8 +81,8 @@ type Player struct {
 	lastBeatProg   int64
 
 	progress, lastProgress float64
-	LogoS1                 *sprites.Sprite
-	LogoS2                 *sprites.Sprite
+	LogoS1                 *sprite.Sprite
+	LogoS2                 *sprite.Sprite
 
 	vol        float64
 	volAverage float64
@@ -107,8 +107,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	var err error
 
 	LogoT, err := utils.LoadTextureToAtlas(render.Atlas, "assets/textures/coinbig.png")
-	player.LogoS1 = sprites.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
-	player.LogoS2 = sprites.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
+	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
+	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 
 	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
 		player.cookieSize = 0.5 * settings.Graphics.GetHeightF()

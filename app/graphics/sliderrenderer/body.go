@@ -5,11 +5,11 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
-	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"math"
@@ -19,7 +19,7 @@ const maxSliderPoints = 10000
 
 type Body struct {
 	framebuffer    *buffer.Framebuffer
-	bodySprite     *sprites.Sprite
+	bodySprite     *sprite.Sprite
 	vao            *buffer.VertexArrayObject
 	baseProjection mgl32.Mat4
 
@@ -221,7 +221,7 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	tex := body.framebuffer.Texture().GetRegion()
 
-	body.bodySprite = sprites.NewSpriteSingle(&tex, 0, bottomRightScreenE.Sub(topLeftScreenE).Scl(0.5).Add(topLeftScreenE).Copy64(), bmath.Origin.Centre)
+	body.bodySprite = sprite.NewSpriteSingle(&tex, 0, bottomRightScreenE.Sub(topLeftScreenE).Scl(0.5).Add(topLeftScreenE).Copy64(), bmath.Origin.Centre)
 	body.bodySprite.SetScale(float64((bottomRightScreenE.X - topLeftScreenE.X) / dimensions.X))
 	body.bodySprite.SetVFlip(true)
 

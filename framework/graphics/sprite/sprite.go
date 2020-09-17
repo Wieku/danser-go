@@ -1,4 +1,4 @@
-package sprites
+package sprite
 
 import (
 	"github.com/go-gl/mathgl/mgl32"

@@ -4,9 +4,9 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/render/batches"
-	"github.com/wieku/danser-go/app/render/sprites"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"math"
 	"math/rand"
 	"sort"
@@ -21,7 +21,7 @@ const bars = 20
 const maxTriangles = 40
 
 type Triangles struct {
-	triangles    []*sprites.Sprite
+	triangles    []*sprite.Sprite
 	lastTime     float64
 	counter      float64
 	velocity     float64
@@ -31,7 +31,7 @@ type Triangles struct {
 }
 
 func NewTriangles(colors []bmath.Color) *Triangles {
-	visualiser := &Triangles{triangles: make([]*sprites.Sprite, 0), velocity: 100}
+	visualiser := &Triangles{triangles: make([]*sprite.Sprite, 0), velocity: 100}
 	visualiser.colorPalette = colors
 
 	for i := 0; i < maxTriangles; i++ {
@@ -50,7 +50,7 @@ func (vis *Triangles) SetTrack(track *bass.Track) {
 func (vis *Triangles) AddTriangle(onscreen bool) {
 	size := (minSize + rand.Float64()*(maxSize-minSize)) * settings.Graphics.GetHeightF() / 768
 	position := bmath.NewVec2d((rand.Float64()-0.5)*settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()/2+size)
-	sprite := sprites.NewSpriteSingle(render.Triangle, size, position, bmath.NewVec2d(0, 0))
+	sprite := sprite.NewSpriteSingle(render.Triangle, size, position, bmath.NewVec2d(0, 0))
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
 		sprite.SetColor(bmath.Color{rand.Float64(), rand.Float64(), rand.Float64(), 1})
 	} else {
