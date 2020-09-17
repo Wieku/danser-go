@@ -535,6 +535,7 @@ func (pl *Player) Draw(float64) {
 
 	if pl.overlay != nil {
 		pl.batch.Begin()
+		pl.batch.ResetTransform()
 		pl.batch.SetScale(1, 1)
 
 		pl.batch.SetCamera(cameras[0])

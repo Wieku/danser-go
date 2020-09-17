@@ -18,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/glider"
 	"math"
 	"math/rand"
+	"strconv"
 )
 
 const (
@@ -133,6 +134,8 @@ type ScoreOverlay struct {
 	combobreak     *bass.Sample
 	music          *bass.Track
 	nextEnd        int64
+	countLeft      int
+	countRight     int
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverlay {
@@ -231,6 +234,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	if !overlay.lastLeft && left {
 		overlay.leftScale.AddEventSEase(float64(time), float64(time+100), 0.9, 0.65, easing.InQuad)
 		overlay.lastLeftC = time + 100
+		overlay.countLeft++
 	}
 
 	if overlay.lastLeft && !left {
@@ -244,6 +248,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	if !overlay.lastRight && right {
 		overlay.rightScale.AddEventSEase(float64(time), float64(time+100), 0.9, 0.65, easing.InQuad)
 		overlay.lastRightC = time + 100
+		overlay.countRight++
 	}
 
 	if overlay.lastRight && !right {
@@ -351,7 +356,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.
 
 	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*32, accText), settings.Graphics.GetHeightF()-scale*70-scale*32/2-scale*4, scale*32, accText)
 	batch.SetScale(1, 1)
-	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*30, ppText)*1.1, 35+scale*30/2, scale*30, ppText)
+	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*30, ppText)*1.1, 45*scale+scale*30/2, scale*30, ppText)
 	batch.SetScale(1, -1)
 
 	scll := scale / 20 * settings.Graphics.GetHeightF()
@@ -362,15 +367,30 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.
 	batch.SetColor(0.2, 0.2, 0.2, 1)
 	batch.DrawUnit(render.Pixel.GetRegion())
 
+	counterScl := 0.8 * scll / 2
+
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scll/2, settings.Graphics.GetHeightF()/2+scll/2))
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetSubScale(overlay.leftScale.GetValue(), overlay.leftScale.GetValue())
 	batch.DrawUnit(render.Pixel.GetRegion())
+	leftT := strconv.Itoa(overlay.countLeft)
+	len1 := overlay.font.GetWidthMonospaced(counterScl*overlay.leftScale.GetValue(), leftT)
+	batch.SetColor(0.8, 0.8, 0.8, 1)
+	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-scll/2-len1/2*1.15, settings.Graphics.GetHeightF()/2+scll/2-counterScl/3*overlay.leftScale.GetValue()*1.15, 0.8*overlay.leftScale.GetValue(), leftT)
+	batch.SetColor(0, 0, 0, 1)
+	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-scll/2-len1/2, settings.Graphics.GetHeightF()/2+scll/2-counterScl/3*overlay.leftScale.GetValue(), 0.8*overlay.leftScale.GetValue(), leftT)
 
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scll/2, settings.Graphics.GetHeightF()/2-scll/2))
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetSubScale(overlay.rightScale.GetValue(), overlay.rightScale.GetValue())
 	batch.DrawUnit(render.Pixel.GetRegion())
+	rightT := strconv.Itoa(overlay.countRight)
+	len2 := overlay.font.GetWidthMonospaced(counterScl*overlay.rightScale.GetValue(), rightT)
+
+	batch.SetColor(0.8, 0.8, 0.8, 1)
+	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-scll/2-len2/2*1.15, settings.Graphics.GetHeightF()/2-scll/2-counterScl/3*overlay.rightScale.GetValue()*1.15, 0.8*overlay.rightScale.GetValue(), rightT)
+	batch.SetColor(0, 0, 0, 1)
+	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-scll/2-len2/2, settings.Graphics.GetHeightF()/2-scll/2-counterScl/3*overlay.rightScale.GetValue(), 0.8*overlay.rightScale.GetValue(), rightT)
 }
 
 func (overlay *ScoreOverlay) IsBroken(cursor *render.Cursor) bool {
