@@ -2,7 +2,6 @@ package animation
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
-	"math"
 )
 
 type TransformationType int64
@@ -30,7 +29,15 @@ const (
 )
 
 func timeClamp(start, end, time float64) float64 {
-	return math.Max(0, math.Min(1.0, (time-start)/(end-start)))
+	if time < start {
+		return 0.0
+	}
+
+	if time >= end {
+		return 1.0
+	}
+
+	return bmath.ClampF64((time-start)/(end-start), 0, 1)
 }
 
 type Transformation struct {
@@ -57,6 +64,7 @@ func NewSingleTransform(transformationType TransformationType, easing func(float
 	transformation := &Transformation{transformationType: transformationType, startTime: startTime, endTime: endTime, easing: easing}
 	transformation.startValues[0] = startValue
 	transformation.endValues[0] = endValue
+
 	return transformation
 }
 
@@ -70,6 +78,7 @@ func NewVectorTransform(transformationType TransformationType, easing func(float
 	transformation.startValues[1] = startValueY
 	transformation.endValues[0] = endValueX
 	transformation.endValues[1] = endValueY
+
 	return transformation
 }
 
@@ -83,11 +92,12 @@ func NewVectorTransformV(transformationType TransformationType, easing func(floa
 	transformation.startValues[1] = start.Y
 	transformation.endValues[0] = end.X
 	transformation.endValues[1] = end.Y
+
 	return transformation
 }
 
 func NewColorTransform(transformationType TransformationType, easing func(float64) float64, startTime, endTime float64, start, end bmath.Color) *Transformation {
-	if transformationType&(ScaleVector|Move) == 0 {
+	if transformationType&(Color3|Color4) == 0 {
 		panic("Wrong TransformationType used!")
 	}
 
@@ -101,10 +111,9 @@ func NewColorTransform(transformationType TransformationType, easing func(float6
 	transformation.endValues[1] = end.G
 	transformation.endValues[2] = end.B
 	transformation.endValues[3] = end.A
+
 	return transformation
 }
-
-//Missing color
 
 func (t *Transformation) GetStatus(time float64) TransformationStatus {
 	if time < t.startTime {
@@ -112,6 +121,7 @@ func (t *Transformation) GetStatus(time float64) TransformationStatus {
 	} else if time >= t.endTime {
 		return Ended
 	}
+
 	return Going
 }
 
@@ -138,6 +148,7 @@ func (t *Transformation) GetBoolean(time float64) bool {
 
 func (t *Transformation) GetColor(time float64) bmath.Color {
 	progress := t.getProgress(time)
+
 	return bmath.Color{
 		R: t.startValues[0] + progress*(t.endValues[0]-t.startValues[0]),
 		G: t.startValues[1] + progress*(t.endValues[1]-t.startValues[1]),
@@ -156,4 +167,15 @@ func (t *Transformation) GetEndTime() float64 {
 
 func (t *Transformation) GetType() TransformationType {
 	return t.transformationType
+}
+
+func (t *Transformation) Clone(startTime, endTime float64) *Transformation {
+	return &Transformation{
+		transformationType: t.transformationType,
+		startValues:        [4]float64{t.startValues[0], t.startValues[1], t.startValues[2], t.startValues[3]},
+		endValues:          [4]float64{t.endValues[0], t.endValues[1], t.endValues[2], t.endValues[3]},
+		easing:             t.easing,
+		startTime:          startTime,
+		endTime:            endTime,
+	}
 }

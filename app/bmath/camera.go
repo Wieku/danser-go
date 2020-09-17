@@ -167,6 +167,7 @@ func (camera Camera) Unproject(screenPos Vector2d) Vector2d {
 
 func (camera Camera) Project(worldPos Vector2d) Vector2d {
 	res := camera.projectionView.Mul4x1(mgl32.Vec4{worldPos.X32(), worldPos.Y32(), 0.0, 1.0}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+	//midX := camera.screenRect.MaxX-camera.screenRect.MinX
 	return NewVec2f(camera.screenRect.MinX+res[0]*(camera.screenRect.MaxX-camera.screenRect.MinX), camera.screenRect.MinY+res[1]*(camera.screenRect.MaxY-camera.screenRect.MinY)).Copy64()
 }
 
