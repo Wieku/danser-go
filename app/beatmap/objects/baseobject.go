@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	om "github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/render/batches"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"strconv"
 	"strings"
 )
@@ -19,8 +19,8 @@ type BaseObject interface {
 }
 
 type Renderable interface {
-	Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool
-	DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch)
+	Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool
+	DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch)
 }
 
 type basicData struct {

@@ -4,8 +4,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"math"
 )
 
@@ -73,7 +73,7 @@ func (vis *Visualiser) Update(time float64) {
 	vis.lastTime = time
 }
 
-func (vis *Visualiser) Draw(time float64, batch *batches.SpriteBatch) {
+func (vis *Visualiser) Draw(time float64, batch *sprite.SpriteBatch) {
 	origin := bmath.NewVec2d(-1, 0)
 
 	flip := bmath.NewVec2d(1, 1)

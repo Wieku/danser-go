@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
@@ -296,13 +296,13 @@ func (storyboard *Storyboard) Update(time int64) {
 	storyboard.overlay.Update(time)
 }
 
-func (storyboard *Storyboard) Draw(time int64, batch *batches.SpriteBatch) {
+func (storyboard *Storyboard) Draw(time int64, batch *sprite.SpriteBatch) {
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
 	storyboard.foreground.Draw(time, batch)
 }
 
-func (storyboard *Storyboard) DrawOverlay(time int64, batch *batches.SpriteBatch) {
+func (storyboard *Storyboard) DrawOverlay(time int64, batch *sprite.SpriteBatch) {
 	storyboard.overlay.Draw(time, batch)
 }
 

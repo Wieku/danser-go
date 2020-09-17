@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -24,7 +23,7 @@ var colorVAO *buffer.VertexArrayObject
 var framebuffer *buffer.Framebuffer
 
 var fboSprite *sprite.Sprite
-var batch *batches.SpriteBatch
+var batch *sprite.SpriteBatch
 
 func InitRenderer() {
 
@@ -78,7 +77,7 @@ func InitRenderer() {
 	framebuffer = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, true)
 	region := framebuffer.Texture().GetRegion()
 	fboSprite = sprite.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
-	batch = batches.NewSpriteBatchSize(1)
+	batch = sprite.NewSpriteBatchSize(1)
 	batch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
 }
 

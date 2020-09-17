@@ -6,13 +6,13 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/effects"
 	"github.com/wieku/danser-go/app/render/gui/drawables"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/storyboard"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/scaling"
@@ -102,7 +102,7 @@ func project(pos bmath.Vector2d, camera mgl32.Mat4) bmath.Vector2d {
 	return bmath.NewVec2d((float64(res[0])/2+0.5)*settings.Graphics.GetWidthF(), float64((res[1])/2+0.5)*settings.Graphics.GetWidthF())
 }
 
-func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
+func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
 	if bgAlpha < 0.01 {
 		return
 	}
@@ -200,7 +200,7 @@ func (bg *Background) Draw(time int64, batch *batches.SpriteBatch, blurVal, bgAl
 	}
 }
 
-func (bg *Background) DrawOverlay(time int64, batch *batches.SpriteBatch, bgAlpha float64, camera mgl32.Mat4) {
+func (bg *Background) DrawOverlay(time int64, batch *sprite.SpriteBatch, bgAlpha float64, camera mgl32.Mat4) {
 	if bgAlpha < 0.01 || bg.storyboard == nil {
 		return
 	}

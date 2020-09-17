@@ -7,7 +7,6 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/easing"
@@ -207,7 +206,7 @@ func (self *Circle) GetPosition() bmath.Vector2f {
 	return self.objData.StartPos
 }
 
-func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
+func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(bmath.NewVec2d(0, 0))
 
@@ -249,7 +248,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	return false
 }
 
-func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(bmath.NewVec2d(0, 0))
 	batch.SetColor(1, 1, 1, 1)

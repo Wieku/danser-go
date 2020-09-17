@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -25,7 +24,7 @@ var cursorFBOSprite *sprite.Sprite
 var cursorSpaceFbo *buffer.Framebuffer = nil
 var cursorSpaceFBOSprite *sprite.Sprite
 
-var fboBatch *batches.SpriteBatch
+var fboBatch *sprite.SpriteBatch
 
 var Camera *bmath.Camera
 var osuRect bmath.Rectangle
@@ -49,7 +48,7 @@ func initCursor() {
 	regionSpace := cursorSpaceFbo.Texture().GetRegion()
 	cursorSpaceFBOSprite = sprite.NewSpriteSingle(&regionSpace, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 
-	fboBatch = batches.NewSpriteBatchSize(1)
+	fboBatch = sprite.NewSpriteBatchSize(1)
 	fboBatch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
 
 	osuRect = Camera.GetWorldRect()
@@ -287,11 +286,11 @@ func EndCursorRender() {
 	blend.Pop()
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, hueshift float64) {
+func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color mgl32.Vec4, hueshift float64) {
 	cursor.DrawM(scale, batch, color, color, hueshift)
 }
 
-func (cursor *Cursor) DrawM(scale float64, batch *batches.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
+func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
 	if settings.Cursor.TrailStyle > 1 {
 		color = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
 		color2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}

@@ -1,7 +1,7 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser-go/app/render/batches"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"sort"
 	"sync"
 )
@@ -104,7 +104,7 @@ func (layer *StoryboardLayer) GetLoad() (sum float64) {
 	return
 }
 
-func (layer *StoryboardLayer) Draw(time int64, batch *batches.SpriteBatch) {
+func (layer *StoryboardLayer) Draw(time int64, batch *sprite.SpriteBatch) {
 	layer.mutex.Lock()
 
 	layer.visibleObjects = layer.interObjects

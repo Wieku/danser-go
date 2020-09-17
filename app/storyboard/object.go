@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render/batches"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"math"
 	"sort"
@@ -23,7 +23,7 @@ type color struct {
 
 type Object interface {
 	Update(time int64)
-	Draw(time int64, batch *batches.SpriteBatch)
+	Draw(time int64, batch *sprite.SpriteBatch)
 	GetLoad() float64
 	GetStartTime() int64
 	GetEndTime() int64
@@ -249,7 +249,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 	}
 }
 
-func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
+func (sprite *Sprite) Draw(time int64, batch *sprite.SpriteBatch) {
 	if !sprite.firstupdate || sprite.color.A < 0.01 {
 		return
 	}

@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/animation"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"math"
 	"sort"
@@ -247,12 +246,12 @@ func (sprite *Sprite) ShowForever(value bool) {
 	sprite.showForever = value
 }
 
-func (sprite *Sprite) UpdateAndDraw(time int64, batch *batches.SpriteBatch) {
+func (sprite *Sprite) UpdateAndDraw(time int64, batch *SpriteBatch) {
 	sprite.Update(time)
 	sprite.Draw(time, batch)
 }
 
-func (sprite *Sprite) Draw(time int64, batch *batches.SpriteBatch) {
+func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
 	if (!sprite.showForever && float64(time) < sprite.startTime && float64(time) >= sprite.endTime) || sprite.color.A < 0.01 {
 		return
 	}

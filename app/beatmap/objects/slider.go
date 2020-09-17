@@ -8,9 +8,9 @@ import (
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
 	"log"
@@ -583,7 +583,7 @@ func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, pr
 	self.body.DrawNormal(projection, self.objData.StackOffset, scale, mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
 }
 
-func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) bool {
+func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
 	if len(self.scorePath) == 0 {
 		return true
 	}
@@ -707,7 +707,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *batches.SpriteBatc
 	return false
 }
 
-func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *batches.SpriteBatch) {
+func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {
 	if len(self.scorePath) == 0 {
 		return
 	}

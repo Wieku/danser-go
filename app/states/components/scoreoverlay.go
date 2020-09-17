@@ -8,11 +8,11 @@ import (
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
@@ -29,9 +29,9 @@ const (
 
 type Overlay interface {
 	Update(int64)
-	DrawBeforeObjects(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64)
-	DrawNormal(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64)
-	DrawHUD(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64)
+	DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
+	DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
+	DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
 	IsBroken(cursor *render.Cursor) bool
 	NormalBeforeCursor() bool
 }
@@ -96,7 +96,7 @@ func (sprite *PseudoSprite) Update(time int64) {
 	sprite.slideDown.Update(float64(time))
 }
 
-func (sprite *PseudoSprite) Draw(batch *batches.SpriteBatch) bool {
+func (sprite *PseudoSprite) Draw(batch *sprite.SpriteBatch) bool {
 	batch.SetColor(1, 1, 1, sprite.fade.GetValue())
 	batch.SetRotation(sprite.rotate.GetValue())
 	proportions := float64(sprite.texture.Width) / float64(sprite.texture.Height)
@@ -272,7 +272,7 @@ func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	cs := overlay.ruleset.GetBeatMap().Diff.CircleRadius
 	sizeX := 512 + cs*2
 	sizeY := 384 + cs*2
@@ -298,7 +298,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batches.SpriteBatch, color
 	batch.SetScale(1, 1)
 }
 
-func (overlay *ScoreOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	batch.SetScale(1, 1)
 	for i := 0; i < len(overlay.sprites); i++ {
 		s := overlay.sprites[i]
@@ -310,7 +310,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl
 	}
 }
 
-func (overlay *ScoreOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	scale := settings.Graphics.GetHeightF() / 1080.0
 	batch.SetScale(1, -1)
 	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue())

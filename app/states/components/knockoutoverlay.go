@@ -7,10 +7,10 @@ import (
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/easing"
 	"github.com/wieku/danser-go/framework/math/glider"
 	"log"
@@ -252,7 +252,7 @@ func (overlay *KnockoutOverlay) Update(time int64) {
 	overlay.lastTime = time
 }
 
-func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	cs := overlay.controller.GetBeatMap().Diff.CircleRadius
 	sizeX := 512 + cs*2
 	sizeY := 384 + cs*2
@@ -278,7 +278,7 @@ func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *batches.SpriteBatch, co
 	batch.SetScale(1, 1)
 }
 
-func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	scl := /*settings.Graphics.GetHeightF() * 0.9*(900.0/1080.0)*/ 384.0 * (1080.0 / 900.0 * 0.9) / (51)
 	batch.SetScale(1, -1)
 	rescale := /*384.0/512.0 * (1080.0/settings.Graphics.GetHeightF())*/ 1.0
@@ -335,7 +335,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batches.SpriteBatch, colors []
 	batch.SetScale(1, 1)
 }
 
-func (overlay *KnockoutOverlay) DrawHUD(batch *batches.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *KnockoutOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	controller := overlay.controller
 	replays := controller.GetReplays()
 

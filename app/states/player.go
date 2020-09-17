@@ -10,7 +10,6 @@ import (
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/effects"
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/render/gui/drawables"
@@ -41,7 +40,7 @@ type Player struct {
 	lastTime    int64
 	progressMsF float64
 	progressMs  int64
-	batch       *batches.SpriteBatch
+	batch       *sprite.SpriteBatch
 	controller  dance.Controller
 	background  *components.Background
 	BgScl       bmath.Vector2d
@@ -93,7 +92,7 @@ type Player struct {
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
 	render.LoadTextures()
-	player.batch = batches.NewSpriteBatch()
+	player.batch = sprite.NewSpriteBatch()
 	player.font = font.GetFont("Exo 2 Bold")
 
 	discord.SetMap(beatMap.Artist, beatMap.Name, beatMap.Difficulty)

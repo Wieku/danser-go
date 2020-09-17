@@ -3,7 +3,6 @@ package drawables
 import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -119,7 +118,7 @@ func (vis *Triangles) Update(time float64) {
 	vis.lastTime = time
 }
 
-func (vis *Triangles) Draw(time float64, batch *batches.SpriteBatch) {
+func (vis *Triangles) Draw(time float64, batch *sprite.SpriteBatch) {
 	for _, t := range vis.triangles {
 		t.Draw(int64(time), batch)
 	}

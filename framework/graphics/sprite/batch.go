@@ -1,4 +1,4 @@
-package batches
+package sprite
 
 import (
 	"fmt"
