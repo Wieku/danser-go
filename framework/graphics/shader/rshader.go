@@ -100,7 +100,9 @@ func (s *RShader) fetchUniforms() {
 		gl.GetProgramiv(s.handle, gl.ACTIVE_UNIFORM_MAX_LENGTH, &maxLength)
 
 		var length, size int32
+
 		var xtype uint32
+
 		var nameB = make([]uint8, maxLength)
 
 		gl.GetActiveUniform(s.handle, uint32(i), maxLength, &length, &size, &xtype, &nameB[0])

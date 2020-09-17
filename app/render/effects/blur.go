@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -12,42 +13,40 @@ import (
 )
 
 type BlurEffect struct {
-	blurShader *shader.Shader
+	blurShader *shader.RShader
 	fbo1       *buffer.Framebuffer
 	fbo2       *buffer.Framebuffer
 	kernelSize mgl32.Vec2
 	sigma      mgl32.Vec2
 	size       mgl32.Vec2
-	fboSlice   *buffer.VertexSlice
+	vao        *buffer.VertexArrayObject
 }
 
 func NewBlurEffect(width, height int) *BlurEffect {
-	effect := &BlurEffect{}
-	vertexFormat := shader.AttrFormat{
-		{Name: "in_position", Type: shader.Vec3},
-		{Name: "in_tex_coord", Type: shader.Vec2},
-	}
+	effect := new(BlurEffect)
+	effect.size = mgl32.Vec2{float32(width), float32(height)}
+	effect.SetBlur(0, 0)
 
-	uniformFormat := shader.AttrFormat{
-		{Name: "tex", Type: shader.Int},
-		{Name: "kernelSize", Type: shader.Vec2},
-		{Name: "direction", Type: shader.Vec2},
-		{Name: "sigma", Type: shader.Vec2},
-		{Name: "size", Type: shader.Vec2},
-	}
-
-	var err error
-	vert, _ := ioutil.ReadFile("assets/shaders/fbopass.vsh")
-	frag, _ := ioutil.ReadFile("assets/shaders/blur.fsh")
-	effect.blurShader, err = shader.NewShader(vertexFormat, uniformFormat, string(vert), string(frag))
-
+	vert, err := ioutil.ReadFile("assets/shaders/fbopass.vsh")
 	if err != nil {
-		panic("Blur: " + err.Error())
+		panic(err)
 	}
 
-	effect.fboSlice = buffer.MakeVertexSlice(effect.blurShader, 6, 6)
-	effect.fboSlice.Begin()
-	effect.fboSlice.SetVertexData([]float32{
+	frag, err := ioutil.ReadFile("assets/shaders/blur.fsh")
+	if err != nil {
+		panic(err)
+	}
+
+	effect.blurShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+
+	effect.vao = buffer.NewVertexArrayObject()
+
+	effect.vao.AddVBO("default", 6, 0, attribute.Format{
+		{Name: "in_position", Type: attribute.Vec3},
+		{Name: "in_tex_coord", Type: attribute.Vec2},
+	})
+
+	effect.vao.SetData("default", 0, []float32{
 		-1, -1, 0, 0, 0,
 		1, -1, 0, 1, 0,
 		-1, 1, 0, 0, 1,
@@ -55,25 +54,30 @@ func NewBlurEffect(width, height int) *BlurEffect {
 		1, 1, 0, 1, 1,
 		-1, 1, 0, 0, 1,
 	})
-	effect.fboSlice.End()
+
+	effect.vao.Bind()
+	effect.vao.Attach(effect.blurShader)
+	effect.vao.Unbind()
 
 	effect.fbo1 = buffer.NewFrame(width, height, true, false)
 	effect.fbo2 = buffer.NewFrame(width, height, true, false)
-	effect.SetBlur(0, 0)
-	effect.size = mgl32.Vec2{float32(width), float32(height)}
+
 	return effect
 }
 
 func (effect *BlurEffect) SetBlur(blurX, blurY float64) {
 	sigmaX, sigmaY := float32(blurX)*25, float32(blurY)*25
+
 	kX := kernelSize(sigmaX)
 	if kX == 0 {
 		sigmaX = 1.0
 	}
+
 	kY := kernelSize(sigmaY)
 	if kY == 0 {
 		sigmaY = 1.0
 	}
+
 	effect.kernelSize = mgl32.Vec2{float32(kX), float32(kY)}
 	effect.sigma = mgl32.Vec2{sigmaX, sigmaY}
 }
@@ -87,7 +91,9 @@ func kernelSize(sigma float32) int {
 	if sigma == 0 {
 		return 0
 	}
+
 	baseG := gauss(0, sigma) * 0.1
+
 	max := 200
 
 	for i := 1; i <= max; i++ {
@@ -108,14 +114,14 @@ func (effect *BlurEffect) Begin() {
 func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo1.End()
 
-	effect.blurShader.Begin()
-	effect.blurShader.SetUniformAttr(0, int32(0))
-	effect.blurShader.SetUniformAttr(1, effect.kernelSize)
-	effect.blurShader.SetUniformAttr(2, mgl32.Vec2{1, 0})
-	effect.blurShader.SetUniformAttr(3, effect.sigma)
-	effect.blurShader.SetUniformAttr(4, effect.size)
+	effect.blurShader.Bind()
+	effect.blurShader.SetUniform("tex", int32(0))
+	effect.blurShader.SetUniform("kernelSize", effect.kernelSize)
+	effect.blurShader.SetUniform("direction", mgl32.Vec2{1, 0})
+	effect.blurShader.SetUniform("sigma", effect.sigma)
+	effect.blurShader.SetUniform("size", effect.size)
 
-	effect.fboSlice.Begin()
+	effect.vao.Bind()
 
 	effect.fbo2.Begin()
 	gl.ClearColor(0, 0, 0, 0)
@@ -123,7 +129,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 
 	effect.fbo1.Texture().Bind(0)
 
-	effect.fboSlice.Draw()
+	effect.vao.Draw()
 
 	effect.fbo2.End()
 
@@ -133,13 +139,13 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 
 	effect.fbo2.Texture().Bind(0)
 
-	effect.blurShader.SetUniformAttr(2, mgl32.Vec2{0, 1})
-	effect.fboSlice.Draw()
+	effect.blurShader.SetUniform("direction", mgl32.Vec2{0, 1})
+	effect.vao.Draw()
 
 	effect.fbo1.End()
 
-	effect.fboSlice.End()
-	effect.blurShader.End()
+	effect.vao.Unbind()
+	effect.blurShader.Unbind()
 	gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
 	return effect.fbo1.Texture()
 }

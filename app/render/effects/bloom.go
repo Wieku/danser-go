@@ -10,14 +10,14 @@ import (
 )
 
 type BloomEffect struct {
-	colFilter     *shader.RShader
+	filterShader  *shader.RShader
 	combineShader *shader.RShader
 	fbo           *buffer.Framebuffer
 
 	blurEffect *BlurEffect
 
 	blur, threshold, power float64
-	fboSlice               *buffer.VertexArrayObject
+	vao                    *buffer.VertexArrayObject
 }
 
 func NewBloomEffect(width, height int) *BloomEffect {
@@ -33,7 +33,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 		panic(err)
 	}
 
-	effect.colFilter = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+	effect.filterShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
 	frag, err = ioutil.ReadFile("assets/shaders/combine.fsh")
 	if err != nil {
@@ -42,14 +42,14 @@ func NewBloomEffect(width, height int) *BloomEffect {
 
 	effect.combineShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
-	effect.fboSlice = buffer.NewVertexArrayObject()
+	effect.vao = buffer.NewVertexArrayObject()
 
-	effect.fboSlice.AddVBO("default", 6, 0, attribute.Format{
+	effect.vao.AddVBO("default", 6, 0, attribute.Format{
 		{Name: "in_position", Type: attribute.Vec3},
 		{Name: "in_tex_coord", Type: attribute.Vec2},
 	})
 
-	effect.fboSlice.SetData("default", 0, []float32{
+	effect.vao.SetData("default", 0, []float32{
 		-1, -1, 0, 0, 0,
 		1, -1, 0, 1, 0,
 		-1, 1, 0, 0, 1,
@@ -58,9 +58,9 @@ func NewBloomEffect(width, height int) *BloomEffect {
 		-1, 1, 0, 0, 1,
 	})
 
-	effect.fboSlice.Bind()
-	effect.fboSlice.Attach(effect.colFilter)
-	effect.fboSlice.Unbind()
+	effect.vao.Bind()
+	effect.vao.Attach(effect.filterShader)
+	effect.vao.Unbind()
 
 	effect.fbo = buffer.NewFrame(width, height, true, false)
 
@@ -104,16 +104,16 @@ func (effect *BloomEffect) EndAndRender() {
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	effect.colFilter.Bind()
-	effect.colFilter.SetUniform("tex", int32(0))
-	effect.colFilter.SetUniform("threshold", float32(effect.threshold))
+	effect.filterShader.Bind()
+	effect.filterShader.SetUniform("tex", int32(0))
+	effect.filterShader.SetUniform("threshold", float32(effect.threshold))
 
 	effect.fbo.Texture().Bind(0)
 
-	effect.fboSlice.Bind()
-	effect.fboSlice.Draw()
+	effect.vao.Bind()
+	effect.vao.Draw()
 
-	effect.colFilter.Unbind()
+	effect.filterShader.Unbind()
 
 	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
 
@@ -128,8 +128,8 @@ func (effect *BloomEffect) EndAndRender() {
 
 	texture.Bind(1)
 
-	effect.fboSlice.Draw()
-	effect.fboSlice.Unbind()
+	effect.vao.Draw()
+	effect.vao.Unbind()
 
 	effect.combineShader.Unbind()
 
