@@ -8,10 +8,10 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
+	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/graphics/font"
+	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
-	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/font"
-	"github.com/wieku/danser-go/app/render/gui/drawables"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
@@ -91,7 +91,7 @@ type Player struct {
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
-	render.LoadTextures()
+	graphics.LoadTextures()
 	player.batch = sprite.NewSpriteBatch()
 	player.font = font.GetFont("Exo 2 Bold")
 
@@ -105,7 +105,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	var err error
 
-	LogoT, err := utils.LoadTextureToAtlas(render.Atlas, "assets/textures/coinbig.png")
+	LogoT, err := utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/coinbig.png")
 	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
 
@@ -115,7 +115,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cookieSize = 0.5 * settings.Graphics.GetWidthF()
 	}
 
-	player.Epi, err = utils.LoadTextureToAtlas(render.Atlas, "assets/textures/warning.png")
+	player.Epi, err = utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/warning.png")
 
 	if err != nil {
 		log.Println(err)
@@ -137,7 +137,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.scamera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 	player.scamera.Update()
 
-	render.Camera = player.camera
+	graphics.Camera = player.camera
 
 	player.bMap.Reset()
 	if settings.PLAY {
@@ -671,7 +671,7 @@ func (pl *Player) Draw(float64) {
 		}
 
 		pl.batch.SetAdditive(false)
-		render.BeginCursorRender()
+		graphics.BeginCursorRender()
 		for j := 0; j < settings.DIVIDES; j++ {
 
 			pl.batch.SetCamera(cameras[j])
@@ -694,7 +694,7 @@ func (pl *Player) Draw(float64) {
 			}
 
 		}
-		render.EndCursorRender()
+		graphics.EndCursorRender()
 	}
 
 	pl.batch.SetAdditive(false)
@@ -757,7 +757,7 @@ func (pl *Player) Draw(float64) {
 
 				pl.batch.SetTranslation(bmath.NewVec2d(width/2, settings.Graphics.GetHeightF()-(size+padDown)*(pos-0.5)))
 				pl.batch.SetSubScale(width/2, (size+padDown)/2)
-				pl.batch.DrawUnit(render.Pixel.GetRegion())
+				pl.batch.DrawUnit(graphics.Pixel.GetRegion())
 
 				queue = append(queue, tx{pos, text})
 			}

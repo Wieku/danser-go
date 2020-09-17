@@ -5,7 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -116,14 +116,14 @@ func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatc
 	batch.SetRotation(float64(self.rad))
 	batch.SetSubScale(20*10, 20*10)
 
-	batch.DrawUnit(*render.SpinnerMiddle)
-	batch.DrawUnit(*render.SpinnerMiddle2)
+	batch.DrawUnit(*graphics.SpinnerMiddle)
+	batch.DrawUnit(*graphics.SpinnerMiddle2)
 
 	scl := 16 + math.Min(220, math.Max(0, (1.0-float64(time-self.objData.StartTime)/float64(self.objData.EndTime-self.objData.StartTime))*220))
 
 	batch.SetSubScale(scl, scl)
 
-	batch.DrawUnit(*render.SpinnerAC)
+	batch.DrawUnit(*graphics.SpinnerAC)
 
 	batch.SetSubScale(1, 1)
 	batch.SetRotation(0)

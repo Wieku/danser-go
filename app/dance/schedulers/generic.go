@@ -4,13 +4,13 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance/movers"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"math/rand"
 )
 
 type GenericScheduler struct {
-	cursor   *render.Cursor
+	cursor   *graphics.Cursor
 	queue    []objects.BaseObject
 	mover    movers.MultiPointMover
 	lastLeft bool
@@ -22,7 +22,7 @@ func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
 	return &GenericScheduler{mover: mover()}
 }
 
-func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *render.Cursor) {
+func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor) {
 	sched.cursor = cursor
 	sched.queue = objs
 	sched.mover.Reset()

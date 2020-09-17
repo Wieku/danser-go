@@ -4,13 +4,13 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"math/rand"
 )
 
 type SmoothScheduler struct {
-	cursor             *render.Cursor
+	cursor             *graphics.Cursor
 	queue              []objects.BaseObject
 	curve              *curves.BSpline
 	endTime, startTime int64
@@ -23,7 +23,7 @@ func NewSmoothScheduler() Scheduler {
 	return &SmoothScheduler{}
 }
 
-func (sched *SmoothScheduler) Init(objs []objects.BaseObject, cursor *render.Cursor) {
+func (sched *SmoothScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor) {
 	sched.cursor = cursor
 	sched.queue = append([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2f(100, 100), 0)}, objs...)
 	/*sched.queue = PreprocessQueue(0, sched.queue, settings.Dance.SliderDance)*/

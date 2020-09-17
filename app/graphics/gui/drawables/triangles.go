@@ -2,7 +2,7 @@ package drawables
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -49,7 +49,7 @@ func (vis *Triangles) SetTrack(track *bass.Track) {
 func (vis *Triangles) AddTriangle(onscreen bool) {
 	size := (minSize + rand.Float64()*(maxSize-minSize)) * settings.Graphics.GetHeightF() / 768
 	position := bmath.NewVec2d((rand.Float64()-0.5)*settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()/2+size)
-	sprite := sprite.NewSpriteSingle(render.Triangle, size, position, bmath.NewVec2d(0, 0))
+	sprite := sprite.NewSpriteSingle(graphics.Triangle, size, position, bmath.NewVec2d(0, 0))
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
 		sprite.SetColor(bmath.Color{rand.Float64(), rand.Float64(), rand.Float64(), 1})
 	} else {
@@ -58,7 +58,7 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 	}
 
 	sprite.SetVFlip(rand.Float64() >= 0.5)
-	sprite.SetScale(size / float64(render.Triangle.Height))
+	sprite.SetScale(size / float64(graphics.Triangle.Height))
 	sprite.SetAlpha(0.65) //0.5+rand.Float64()*0.5)
 	if onscreen {
 		sprite.SetPosition(bmath.NewVec2d(sprite.GetPosition().X, -(rand.Float64()-0.5)*(settings.Graphics.GetHeightF()+size)))
@@ -97,9 +97,9 @@ func (vis *Triangles) Update(time float64) {
 	for i := 0; i < len(vis.triangles); i++ {
 		t := vis.triangles[i]
 		t.Update(int64(time))
-		scale := (t.GetScale().Y * float64(render.Triangle.Width)) / maxSize / (settings.Graphics.GetHeightF() / 768)
+		scale := (t.GetScale().Y * float64(graphics.Triangle.Width)) / maxSize / (settings.Graphics.GetHeightF() / 768)
 		t.SetPosition(t.GetPosition().AddS(0, -delta/16*velocity*(0.2+(1.0-scale*0.8)*separation)*settings.Graphics.GetHeightF()/768))
-		if t.GetPosition().Y < -settings.Graphics.GetHeightF()/2-t.GetScale().Y*float64(render.Triangle.Width)/2 {
+		if t.GetPosition().Y < -settings.Graphics.GetHeightF()/2-t.GetScale().Y*float64(graphics.Triangle.Width)/2 {
 			vis.triangles = append(vis.triangles[:i], vis.triangles[i+1:]...)
 			i--
 			toAdd++

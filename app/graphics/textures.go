@@ -1,7 +1,7 @@
-package render
+package graphics
 
 import (
-	"github.com/wieku/danser-go/app/render/font"
+	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 )

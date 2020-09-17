@@ -5,14 +5,14 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 )
 
 type PlayerController struct {
 	bMap     *beatmap.BeatMap
-	cursors  []*render.Cursor
+	cursors  []*graphics.Cursor
 	window   *glfw.Window
 	ruleset  *osu.OsuRuleSet
 	lastTime int64
@@ -31,7 +31,7 @@ func (controller *PlayerController) SetBeatMap(beatMap *beatmap.BeatMap) {
 }
 
 func (controller *PlayerController) InitCursors() {
-	controller.cursors = []*render.Cursor{render.NewCursor()}
+	controller.cursors = []*graphics.Cursor{graphics.NewCursor()}
 	controller.cursors[0].IsPlayer = true
 	controller.window = glfw.GetCurrentContext()
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{difficulty.None})
@@ -92,6 +92,6 @@ func (controller *PlayerController) GetRuleset() *osu.OsuRuleSet {
 	return controller.ruleset
 }
 
-func (controller *PlayerController) GetCursors() []*render.Cursor {
+func (controller *PlayerController) GetCursors() []*graphics.Cursor {
 	return controller.cursors
 }

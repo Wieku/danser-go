@@ -5,7 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -111,9 +111,9 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.textFade = animation.NewGlider(0)
 
-	self.hitCircle = sprite.NewSpriteSingleCentered(render.Circle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.hitCircleOverlay = sprite.NewSpriteSingleCentered(render.CircleOverlay, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.approachCircle = sprite.NewSpriteSingleCentered(render.ApproachCircle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircle = sprite.NewSpriteSingleCentered(graphics.Circle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircleOverlay = sprite.NewSpriteSingleCentered(graphics.CircleOverlay, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.approachCircle = sprite.NewSpriteSingleCentered(graphics.ApproachCircle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
 
 	self.sprites = append(self.sprites, self.hitCircle)
 	self.sprites = append(self.sprites, self.hitCircleOverlay)
@@ -233,7 +233,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 		if time < self.objData.StartTime {
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				render.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65*self.diff.CircleRadius, strconv.Itoa(int(self.objData.ComboNumber)))
+				graphics.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65*self.diff.CircleRadius, strconv.Itoa(int(self.objData.ComboNumber)))
 			}
 		}
 	}

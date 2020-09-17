@@ -6,9 +6,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/discord"
+	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/input"
-	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
@@ -32,7 +32,7 @@ type Overlay interface {
 	DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
 	DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
 	DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
-	IsBroken(cursor *render.Cursor) bool
+	IsBroken(cursor *graphics.Cursor) bool
 	NormalBeforeCursor() bool
 }
 
@@ -50,11 +50,11 @@ func newSprite(time int64, result osu.HitResult, position bmath.Vector2d) *Pseud
 	sprite := new(PseudoSprite)
 	switch result {
 	case osu.HitResults.Hit100:
-		sprite.texture = render.Hit100
+		sprite.texture = graphics.Hit100
 	case osu.HitResults.Hit50:
-		sprite.texture = render.Hit50
+		sprite.texture = graphics.Hit50
 	case osu.HitResults.Miss:
-		sprite.texture = render.Hit0
+		sprite.texture = graphics.Hit0
 	default:
 		return nil
 	}
@@ -129,7 +129,7 @@ type ScoreOverlay struct {
 	scoreGlider    *animation.Glider
 	ppGlider       *animation.Glider
 	ruleset        *osu.OsuRuleSet
-	cursor         *render.Cursor
+	cursor         *graphics.Cursor
 	sprites        []*PseudoSprite
 	combobreak     *bass.Sample
 	music          *bass.Track
@@ -138,7 +138,7 @@ type ScoreOverlay struct {
 	countRight     int
 }
 
-func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverlay {
+func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
 	overlay := new(ScoreOverlay)
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
@@ -154,7 +154,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *render.Cursor) *ScoreOverl
 
 	discord.UpdatePlay(cursor.Name)
 
-	ruleset.SetListener(func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
+	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position bmath.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
 
 		if result == osu.HitResults.Hit100 || result == osu.HitResults.Hit50 || result == osu.HitResults.Miss {
 			overlay.sprites = append(overlay.sprites, newSprite(time, result, position))
@@ -280,21 +280,21 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 	batch.SetScale(sizeX/2, sizeY/2)
 	batch.SetColor(0, 0, 0, 0.8)
 	batch.SetTranslation(bmath.NewVec2d(256, 192)) //bg
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetScale(sizeX/2, 0.3)
 	batch.SetTranslation(bmath.NewVec2d(256, -cs)) //top line
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 
 	batch.SetTranslation(bmath.NewVec2d(256, 384+cs)) //bottom line
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 
 	batch.SetScale(0.3, sizeY/2)
 	batch.SetTranslation(bmath.NewVec2d(-cs, 192)) //left line
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 	batch.SetTranslation(bmath.NewVec2d(512+cs, 192)) //right line
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 	batch.SetScale(1, 1)
 }
 
@@ -314,9 +314,9 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	scale := settings.Graphics.GetHeightF() / 1080.0
 	batch.SetScale(1, -1)
 	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue())
-	render.Score.Draw(batch, 0, scale*80*overlay.newComboScaleB.GetValue()/2, scale*80*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
+	graphics.Score.Draw(batch, 0, scale*80*overlay.newComboScaleB.GetValue()/2, scale*80*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
 	batch.SetColor(1, 1, 1, 1)
-	render.Score.Draw(batch, 0, scale*80*overlay.newComboScale.GetValue()/2, scale*80*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
+	graphics.Score.Draw(batch, 0, scale*80*overlay.newComboScale.GetValue()/2, scale*80*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
 
 	acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
 
@@ -325,7 +325,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	scoreText := fmt.Sprintf("%08d", int64(overlay.scoreGlider.GetValue()))
 	ppText := fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue())
 
-	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*70, scoreText), settings.Graphics.GetHeightF()-scale*70/2, scale*70, scoreText)
+	graphics.Score.Draw(batch, settings.Graphics.GetWidthF()-graphics.Score.GetWidth(scale*70, scoreText), settings.Graphics.GetHeightF()-scale*70/2, scale*70, scoreText)
 
 	hObjects := overlay.ruleset.GetBeatMap().HitObjects
 
@@ -342,7 +342,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 	batch.SetSubScale(scale*150*progress, scale*3)
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()+scale*(-5-300+progress*150), settings.Graphics.GetHeightF()-scale*(70+1.5)))
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetSubScale(1, 2)
@@ -351,10 +351,10 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scale*32*5.1, settings.Graphics.GetHeightF()-scale*70-scale*32/2-scale*4))
 	_, _, _, grade := overlay.ruleset.GetResults(overlay.cursor)
 	if grade != osu.NONE {
-		batch.DrawUnit(*render.GradeTexture[int64(grade)])
+		batch.DrawUnit(*graphics.GradeTexture[int64(grade)])
 	}
 
-	render.Score.Draw(batch, settings.Graphics.GetWidthF()-render.Score.GetWidth(scale*32, accText), settings.Graphics.GetHeightF()-scale*70-scale*32/2-scale*4, scale*32, accText)
+	graphics.Score.Draw(batch, settings.Graphics.GetWidthF()-graphics.Score.GetWidth(scale*32, accText), settings.Graphics.GetHeightF()-scale*70-scale*32/2-scale*4, scale*32, accText)
 	batch.SetScale(1, 1)
 	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scale*30, ppText)*1.1, 45*scale+scale*30/2, scale*30, ppText)
 	batch.SetScale(1, -1)
@@ -365,14 +365,14 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.SetScale(scll/2, scll/2)
 	batch.SetSubScale(1, 2)
 	batch.SetColor(0.2, 0.2, 0.2, 1)
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 
 	counterScl := 0.8 * scll / 2
 
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scll/2, settings.Graphics.GetHeightF()/2+scll/2))
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetSubScale(overlay.leftScale.GetValue(), overlay.leftScale.GetValue())
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 	leftT := strconv.Itoa(overlay.countLeft)
 	len1 := overlay.font.GetWidthMonospaced(counterScl*overlay.leftScale.GetValue(), leftT)
 	batch.SetColor(0.8, 0.8, 0.8, 1)
@@ -383,7 +383,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.SetTranslation(bmath.NewVec2d(settings.Graphics.GetWidthF()-scll/2, settings.Graphics.GetHeightF()/2-scll/2))
 	batch.SetColor(1, 1, 1, 1)
 	batch.SetSubScale(overlay.rightScale.GetValue(), overlay.rightScale.GetValue())
-	batch.DrawUnit(render.Pixel.GetRegion())
+	batch.DrawUnit(graphics.Pixel.GetRegion())
 	rightT := strconv.Itoa(overlay.countRight)
 	len2 := overlay.font.GetWidthMonospaced(counterScl*overlay.rightScale.GetValue(), rightT)
 
@@ -393,7 +393,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-scll/2-len2/2, settings.Graphics.GetHeightF()/2-scll/2-counterScl/3*overlay.rightScale.GetValue(), 0.8*overlay.rightScale.GetValue(), rightT)
 }
 
-func (overlay *ScoreOverlay) IsBroken(cursor *render.Cursor) bool {
+func (overlay *ScoreOverlay) IsBroken(cursor *graphics.Cursor) bool {
 	return false
 }
 

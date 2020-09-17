@@ -6,7 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -61,7 +61,7 @@ func NewSubControl() *subControl {
 type ReplayController struct {
 	bMap        *beatmap.BeatMap
 	replays     []RpData
-	cursors     []*render.Cursor
+	cursors     []*graphics.Cursor
 	controllers []*subControl
 	ruleset     *osu.OsuRuleSet
 	lastTime    int64
@@ -296,7 +296,7 @@ func (controller *ReplayController) InitCursors() {
 
 			controller.cursors = append(controller.cursors, cursors...)
 		} else {
-			crsr := render.NewCursor()
+			crsr := graphics.NewCursor()
 			crsr.Name = controller.replays[i].Name
 			controller.cursors = append(controller.cursors, crsr)
 		}
@@ -417,7 +417,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 }
 
-func (controller *ReplayController) GetCursors() []*render.Cursor {
+func (controller *ReplayController) GetCursors() []*graphics.Cursor {
 	return controller.cursors
 }
 

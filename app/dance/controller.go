@@ -5,7 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"strings"
 )
@@ -14,7 +14,7 @@ type Controller interface {
 	SetBeatMap(beatMap *beatmap.BeatMap)
 	InitCursors()
 	Update(time int64, delta float64)
-	GetCursors() []*render.Cursor
+	GetCursors() []*graphics.Cursor
 }
 
 var useSmooth = false
@@ -45,7 +45,7 @@ func SetMover(name string) {
 
 type GenericController struct {
 	bMap       *beatmap.BeatMap
-	cursors    []*render.Cursor
+	cursors    []*graphics.Cursor
 	schedulers []schedulers.Scheduler
 }
 
@@ -58,11 +58,11 @@ func (controller *GenericController) SetBeatMap(beatMap *beatmap.BeatMap) {
 }
 
 func (controller *GenericController) InitCursors() {
-	controller.cursors = make([]*render.Cursor, settings.TAG)
+	controller.cursors = make([]*graphics.Cursor, settings.TAG)
 	controller.schedulers = make([]schedulers.Scheduler, settings.TAG)
 
 	for i := range controller.cursors {
-		controller.cursors[i] = render.NewCursor()
+		controller.cursors[i] = graphics.NewCursor()
 		if useSmooth {
 			controller.schedulers[i] = schedulers.NewSmoothScheduler()
 		} else {
@@ -102,6 +102,6 @@ func (controller *GenericController) Update(time int64, delta float64) {
 	}
 }
 
-func (controller *GenericController) GetCursors() []*render.Cursor {
+func (controller *GenericController) GetCursors() []*graphics.Cursor {
 	return controller.cursors
 }

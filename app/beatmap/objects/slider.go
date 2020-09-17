@@ -6,8 +6,8 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
-	"github.com/wieku/danser-go/app/render"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -619,7 +619,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 						batch.SetSubScale(p.pulse.GetValue()*self.diff.CircleRadius, p.pulse.GetValue()*self.diff.CircleRadius)
 						batch.SetColor(1, 1, 1, alpha*p.fade.GetValue())
-						batch.DrawUnit(*render.SliderReverse)
+						batch.DrawUnit(*graphics.SliderReverse)
 					}
 				}
 			}
@@ -647,7 +647,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
 						}
 
-						batch.DrawUnit(*render.SliderTick)
+						batch.DrawUnit(*graphics.SliderTick)
 					}
 				}
 			}
@@ -660,28 +660,28 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 			batch.SetColor(1, 1, 1, alpha)
 			batch.SetSubScale(self.diff.CircleRadius, self.diff.CircleRadius)
 			batch.SetTranslation(self.Pos.Copy64())
-			batch.DrawUnit(*render.SliderBall)
+			batch.DrawUnit(*graphics.SliderBall)
 		}
 
 		if settings.Objects.DrawSliderFollowCircle {
 			batch.SetTranslation(self.Pos.Copy64())
 			batch.SetSubScale(self.scaleFollow.GetValue()*self.diff.CircleRadius, self.scaleFollow.GetValue()*self.diff.CircleRadius)
 			batch.SetColor(1, 1, 1, self.fadeFollow.GetValue())
-			batch.DrawUnit(*render.SliderFollow)
+			batch.DrawUnit(*graphics.SliderFollow)
 		}
 
 	} else {
 		batch.SetSubScale(self.diff.CircleRadius, self.diff.CircleRadius)
 		if time < self.objData.StartTime {
 			batch.SetTranslation(self.objData.StartPos.Copy64())
-			batch.DrawUnit(*render.CircleFull)
+			batch.DrawUnit(*graphics.CircleFull)
 		} else if time < self.objData.EndTime {
 			batch.SetTranslation(self.Pos.Copy64())
 
 			if settings.Objects.ForceSliderBallTexture {
-				batch.DrawUnit(*render.SliderBall)
+				batch.DrawUnit(*graphics.SliderBall)
 			} else {
-				batch.DrawUnit(*render.CircleFull)
+				batch.DrawUnit(*graphics.CircleFull)
 			}
 		}
 	}

@@ -5,8 +5,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render"
-	"github.com/wieku/danser-go/app/render/gui/drawables"
+	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/storyboard"
 	"github.com/wieku/danser-go/app/utils"
@@ -41,7 +41,7 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	var err error
-	bg.background, err = utils.LoadTextureToAtlas(render.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+	bg.background, err = utils.LoadTextureToAtlas(graphics.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 	if err != nil {
 		log.Println(err)
 	}

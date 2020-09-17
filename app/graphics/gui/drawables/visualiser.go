@@ -3,7 +3,7 @@ package drawables
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"math"
@@ -78,7 +78,7 @@ func (vis *Visualiser) Draw(time float64, batch *sprite.SpriteBatch) {
 
 	flip := bmath.NewVec2d(1, 1)
 	color := mgl32.Vec4{1, 1, 1, 0.3}
-	region := render.Pixel.GetRegion()
+	region := graphics.Pixel.GetRegion()
 	for i := 0; i < 5; i++ {
 		for j, v := range vis.fft {
 			rotation := (float64(i)/5 + float64(j)/float64(vis.bars)) * 2 * math.Pi

@@ -8,7 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/render"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"log"
 	"math"
@@ -98,7 +98,7 @@ type hitobject interface {
 }
 
 type difficultyPlayer struct {
-	cursor          *render.Cursor
+	cursor          *graphics.Cursor
 	diff            *difficulty.Difficulty
 	DoubleClick     bool
 	alreadyStolen   bool
@@ -130,7 +130,7 @@ type subSet struct {
 
 type OsuRuleSet struct {
 	beatMap         *beatmap.BeatMap
-	cursors         map[*render.Cursor]*subSet
+	cursors         map[*graphics.Cursor]*subSet
 	scoreMultiplier float64
 
 	ended bool
@@ -140,11 +140,11 @@ type OsuRuleSet struct {
 
 	queue       []hitobject
 	processed   []hitobject
-	listener    func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
+	listener    func(cursor *graphics.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
 	endlistener func(time int64, number int64)
 }
 
-func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
+func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
 	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.DiffCalc)
@@ -170,7 +170,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*render.Cursor, mods []di
 	drainTime := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime-beatMap.HitObjects[0].GetBasicData().StartTime-pauses) / 1000
 	ruleset.scoreMultiplier = math.Round((beatMap.Diff.GetHPDrain() + beatMap.Diff.GetOD() + beatMap.Diff.GetCS() + bmath.ClampF64(float64(len(beatMap.HitObjects))/drainTime*8, 0, 16)) / 38 * 5)
 
-	ruleset.cursors = make(map[*render.Cursor]*subSet)
+	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
 	var diffPlayers []*difficultyPlayer
 
@@ -253,7 +253,7 @@ func (set *OsuRuleSet) Update(time int64) {
 	}
 
 	if len(set.queue) == 0 && len(set.processed) == 0 && !set.ended {
-		cs := make([]*render.Cursor, 0)
+		cs := make([]*graphics.Cursor, 0)
 		for c := range set.cursors {
 			cs = append(cs, c)
 		}
@@ -310,7 +310,7 @@ func humanize(number int64) string {
 	return humanized
 }
 
-func (set *OsuRuleSet) UpdateClickFor(cursor *render.Cursor, time int64) {
+func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 	player := set.cursors[cursor].player
 
 	player.alreadyStolen = false
@@ -352,7 +352,7 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *render.Cursor, time int64) {
 	}
 }
 
-func (set *OsuRuleSet) UpdateNormalFor(cursor *render.Cursor, time int64) {
+func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64) {
 	player := set.cursors[cursor].player
 
 	//wasSliderAlready := false
@@ -378,7 +378,7 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *render.Cursor, time int64) {
 	}
 }
 
-func (set *OsuRuleSet) UpdatePostFor(cursor *render.Cursor, time int64) {
+func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
 	//player := set.cursors[cursor].player
 	//
 	//if len(set.processed) > 0 {
@@ -390,7 +390,7 @@ func (set *OsuRuleSet) UpdatePostFor(cursor *render.Cursor, time int64) {
 	//}
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *render.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
+func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
 	if result == HitResults.Ignore {
 		return
 	}
@@ -506,7 +506,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 	return Click
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *render.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
+func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
 	set.listener = listener
 }
 
@@ -514,7 +514,7 @@ func (set *OsuRuleSet) SetEndListener(endlistener func(time int64, number int64)
 	set.endlistener = endlistener
 }
 
-func (set *OsuRuleSet) GetResults(cursor *render.Cursor) (float64, int64, int64, Grade) {
+func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {
 	subSet := set.cursors[cursor]
 	return subSet.accuracy, subSet.maxCombo, subSet.score, subSet.grade
 }
