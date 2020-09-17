@@ -26,7 +26,6 @@ type Storyboard struct {
 	foreground  *StoryboardLayer
 	overlay     *StoryboardLayer
 	zIndex      int64
-	bgFile      string
 	bgFileUsed  bool
 	widescreen  bool
 	shouldRun   bool
@@ -106,7 +105,6 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 			case "256", "Variables":
 				split := strings.Split(line, "=")
 				variables[split[0]] = split[1]
-				break
 			case "32", "Events":
 				if strings.ContainsRune(line, '$') {
 					for k, v := range variables {
@@ -117,7 +115,6 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 				}
 
 				if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
-
 					if currentSprite != "" {
 						counter++
 						storyboard.loadSprite(path, currentSprite, commands)
@@ -226,16 +223,12 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		switch spl[1] {
 		case "0", "Background":
 			storyboard.background.Add(sprite)
-			break
 		case "2", "Pass":
 			storyboard.pass.Add(sprite)
-			break
 		case "3", "Foreground":
 			storyboard.foreground.Add(sprite)
-			break
 		case "4", "Overlay":
 			storyboard.overlay.Add(sprite)
-			break
 		}
 	}
 }
@@ -265,9 +258,13 @@ func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureReg
 }
 
 func (storyboard *Storyboard) StartThread() {
-	storyboard.shouldRun = true
+	if storyboard.shouldRun {
+		return
+	}
+
 	go func() {
 		lastTime := qpc.GetMilliTimeF()
+
 		for storyboard.shouldRun {
 			time := qpc.GetMilliTimeF()
 			storyboard.counter.PutSample(time - lastTime)
@@ -278,6 +275,8 @@ func (storyboard *Storyboard) StartThread() {
 			storyboard.limiter.Sync()
 		}
 	}()
+
+	storyboard.shouldRun = true
 }
 
 func (storyboard *Storyboard) StopThread() {
