@@ -6,12 +6,13 @@ import (
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
 type AngleOffsetMover struct {
 	lastAngle          float32
-	lastPoint          bmath.Vector2f
+	lastPoint          vector.Vector2f
 	bz                 *curves.Bezier
 	startTime, endTime int64
 	invert             float32
@@ -24,7 +25,7 @@ func NewAngleOffsetMover() MultiPointMover {
 func (bm *AngleOffsetMover) Reset() {
 	bm.lastAngle = 0
 	bm.invert = 1
-	bm.lastPoint = bmath.NewVec2f(0, 0)
+	bm.lastPoint = vector.NewVec2f(0, 0)
 }
 
 func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
@@ -41,7 +42,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 	s1, ok1 := end.(*objects.Slider)
 	s2, ok2 := start.(*objects.Slider)
 
-	var points []bmath.Vector2f
+	var points []vector.Vector2f
 
 	scaledDistance := distance * float32(settings.Dance.Flower.DistanceMult)
 	newAngle := float32(settings.Dance.Flower.AngleOffset) * math32.Pi / 180.0
@@ -57,34 +58,34 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 				bm.lastAngle += math.Pi
 			}
 
-			pt1 := bmath.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
+			pt1 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
 
 			if ok1 {
-				pt1 = bmath.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
+				pt1 = vector.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
 			}
 
 			if !ok2 {
 				angle := bm.lastAngle - newAngle*bm.invert
-				pt2 := bmath.NewVec2fRad(angle, scaledDistance).Add(startPos)
+				pt2 := vector.NewVec2fRad(angle, scaledDistance).Add(startPos)
 				if math.Abs(float64(startTime-endTime)) > 1 {
 					bm.lastAngle = angle
 				}
-				points = []bmath.Vector2f{endPos, pt1, pt2, startPos}
+				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			} else {
-				pt2 := bmath.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
-				points = []bmath.Vector2f{endPos, pt1, pt2, startPos}
+				pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
+				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			}
 
 		} else {
-			points = []bmath.Vector2f{endPos, startPos}
+			points = []vector.Vector2f{endPos, startPos}
 		}
 	} else if ok1 && ok2 {
 		bm.invert = -1 * bm.invert
 
-		pt1 := bmath.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
-		pt2 := bmath.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
 
-		points = []bmath.Vector2f{endPos, pt1, pt2, startPos}
+		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else if ok1 {
 		bm.invert = -1 * bm.invert
 		if math.Abs(float64(startTime-endTime)) > 1 {
@@ -93,19 +94,19 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 			bm.lastAngle = s1.GetEndAngle() + math.Pi
 		}
 
-		pt1 := bmath.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
-		pt2 := bmath.NewVec2fRad(bm.lastAngle, scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(startPos)
 
-		points = []bmath.Vector2f{endPos, pt1, pt2, startPos}
+		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else if ok2 {
 		if math.Abs(float64(startTime-endTime)) > 1 {
 			bm.lastAngle += math.Pi
 		}
 
-		pt1 := bmath.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
-		pt2 := bmath.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
 
-		points = []bmath.Vector2f{endPos, pt1, pt2, startPos}
+		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else {
 		if settings.Dance.Flower.UseNewStyle {
 			if math.Abs(float64(startTime-endTime)) > 1 && bmath.AngleBetween32(endPos, bm.lastPoint, startPos) >= float32(settings.Dance.Flower.AngleOffset)*math32.Pi/180.0 {
@@ -121,8 +122,8 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 			angle = bm.lastAngle
 		}
 
-		pt1 := bmath.NewVec2fRad(bm.lastAngle+math.Pi, scaledDistance).Add(endPos)
-		pt2 := bmath.NewVec2fRad(angle, scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(bm.lastAngle+math.Pi, scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(angle, scaledDistance).Add(startPos)
 
 		if scaledDistance > 2 {
 			bm.lastAngle = angle
@@ -132,7 +133,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 			bm.invert = -1 * bm.invert
 		}
 
-		points = []bmath.Vector2f{endPos, pt1, pt2, startPos}
+		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	}
 
 	bm.bz = curves.NewBezierNA(points)
@@ -141,7 +142,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 	bm.lastPoint = endPos
 }
 
-func (bm *AngleOffsetMover) Update(time int64) bmath.Vector2f {
+func (bm *AngleOffsetMover) Update(time int64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }

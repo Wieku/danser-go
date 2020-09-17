@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"strconv"
@@ -159,19 +160,19 @@ func (command *Command) Apply(obj Object) {
 		obj.SetRotation(command.val[0])
 		break
 	case "S":
-		obj.SetScale(bmath.NewVec2d(command.val[0], command.val[0]))
+		obj.SetScale(vector.NewVec2d(command.val[0], command.val[0]))
 		break
 	case "V":
-		obj.SetScale(bmath.NewVec2d(command.val[0], command.val[1]))
+		obj.SetScale(vector.NewVec2d(command.val[0], command.val[1]))
 		break
 	case "M":
-		obj.SetPosition(bmath.NewVec2d(command.val[0], command.val[1]))
+		obj.SetPosition(vector.NewVec2d(command.val[0], command.val[1]))
 		break
 	case "MX":
-		obj.SetPosition(bmath.NewVec2d(command.val[0], obj.GetPosition().Y))
+		obj.SetPosition(vector.NewVec2d(command.val[0], obj.GetPosition().Y))
 		break
 	case "MY":
-		obj.SetPosition(bmath.NewVec2d(obj.GetPosition().X, command.val[0]))
+		obj.SetPosition(vector.NewVec2d(obj.GetPosition().X, command.val[0]))
 		break
 	case "C":
 		obj.SetColor(mgl32.Vec3{float32(command.val[0]), float32(command.val[1]), float32(command.val[2])})

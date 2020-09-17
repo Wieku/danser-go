@@ -1,8 +1,10 @@
 package curves
 
-import "github.com/wieku/danser-go/app/bmath"
+import (
+	"github.com/wieku/danser-go/framework/math/vector"
+)
 
-func ApproximateCircularArc(pt1, pt2, pt3 bmath.Vector2f, detail float32) []Linear {
+func ApproximateCircularArc(pt1, pt2, pt3 vector.Vector2f, detail float32) []Linear {
 	arc := NewCirArc(pt1, pt2, pt3)
 
 	if arc.Unstable {
@@ -20,7 +22,7 @@ func ApproximateCircularArc(pt1, pt2, pt3 bmath.Vector2f, detail float32) []Line
 	return lines
 }
 
-func ApproximateCatmullRom(points []bmath.Vector2f, detail int) []Linear {
+func ApproximateCatmullRom(points []vector.Vector2f, detail int) []Linear {
 	catmull := NewCatmull(points)
 
 	lines := make([]Linear, detail)
@@ -32,7 +34,7 @@ func ApproximateCatmullRom(points []bmath.Vector2f, detail int) []Linear {
 	return lines
 }
 
-func ApproximateBezier(points []bmath.Vector2f) []Linear {
+func ApproximateBezier(points []vector.Vector2f) []Linear {
 	extracted := NewBezierApproximator(points).CreateBezier()
 
 	lines := make([]Linear, len(extracted)-1)

@@ -3,11 +3,11 @@ package dance
 import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type PlayerController struct {
@@ -60,7 +60,7 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 	controller.bMap.Update(time)
 
 	if controller.window != nil {
-		controller.cursors[0].SetScreenPos(bmath.NewVec2d(controller.window.GetCursorPos()).Copy32())
+		controller.cursors[0].SetScreenPos(vector.NewVec2d(controller.window.GetCursorPos()).Copy32())
 
 		mouseEnabled := !settings.Input.MouseButtonsDisabled
 

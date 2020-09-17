@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 )
 
@@ -76,7 +77,7 @@ func InitRenderer() {
 
 	framebuffer = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, true)
 	region := framebuffer.Texture().GetRegion()
-	fboSprite = sprite.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+	fboSprite = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 	batch = sprite.NewSpriteBatchSize(1)
 	batch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
 }
@@ -132,7 +133,7 @@ func EndRendererMerge() {
 	batch.End()
 }
 
-func drawSlider(sprite *sprite.Sprite, stackOffset bmath.Vector2f, scale float32, text texture.Texture, color mgl32.Vec4, prev mgl32.Vec4, projection mgl32.Mat4) {
+func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float32, text texture.Texture, color mgl32.Vec4, prev mgl32.Vec4, projection mgl32.Mat4) {
 	colorShader.SetUniform("projection", projection)
 	colorShader.SetUniform("col_border", color)
 	if settings.Objects.EnableCustomSliderBorderGradientOffset {

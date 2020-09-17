@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
@@ -45,7 +46,7 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 }
 
-func (bm *HalfCircleMover) Update(time int64) bmath.Vector2f {
+func (bm *HalfCircleMover) Update(time int64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.ca.PointAt(t)
 }

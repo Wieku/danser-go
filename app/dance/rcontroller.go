@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
 	"math"
@@ -359,7 +360,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 						mY = 384 - mY
 					}
 
-					controller.cursors[i].SetPos(bmath.NewVec2f(frame.MosueX, mY))
+					controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, mY))
 					controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick || frame.KeyPressed.Key1
 					controller.cursors[i].RightButton = frame.KeyPressed.RightClick || frame.KeyPressed.Key2
 					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
@@ -393,7 +394,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 						mY = 384 - mY
 					}
 
-					controller.cursors[i].SetPos(bmath.NewVec2f(mX, mY))
+					controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
 					controller.cursors[i].IsReplayFrame = false
 					//controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 				}

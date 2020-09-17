@@ -1,15 +1,15 @@
 package sliderrenderer
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 func createUnitCircle(segments int) []float32 {
-	points := make([]bmath.Vector2f, segments+1)
+	points := make([]vector.Vector2f, segments+1)
 
 	for i := 0; i <= segments; i++ {
-		points[i] = bmath.NewVec2fRad(float32(i)/float32(segments)*2*math32.Pi, 1)
+		points[i] = vector.NewVec2fRad(float32(i)/float32(segments)*2*math32.Pi, 1)
 	}
 
 	unitCircle := make([]float32, 9*segments)

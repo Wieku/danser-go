@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"math"
 	"sync"
@@ -42,11 +43,11 @@ func initCursor() {
 
 	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	region := cursorFbo.Texture().GetRegion()
-	cursorFBOSprite = sprite.NewSpriteSingle(&region, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+	cursorFBOSprite = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 
 	cursorSpaceFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	regionSpace := cursorSpaceFbo.Texture().GetRegion()
-	cursorSpaceFBOSprite = sprite.NewSpriteSingle(&regionSpace, 0, bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
+	cursorSpaceFBOSprite = sprite.NewSpriteSingle(&regionSpace, 0, vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 
 	fboBatch = sprite.NewSpriteBatchSize(1)
 	fboBatch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
@@ -55,7 +56,7 @@ func initCursor() {
 }
 
 type Cursor struct {
-	Points        []bmath.Vector2f
+	Points        []vector.Vector2f
 	PointsC       []float64
 	removeCounter float64
 
@@ -64,10 +65,10 @@ type Cursor struct {
 	IsPlayer                bool
 	LastFrameTime           int64 //
 	CurrentFrameTime        int64 //
-	Position                bmath.Vector2f
-	LastPos                 bmath.Vector2f
-	VaoPos                  bmath.Vector2f
-	RendPos                 bmath.Vector2f
+	Position                vector.Vector2f
+	LastPos                 vector.Vector2f
+	VaoPos                  vector.Vector2f
+	RendPos                 vector.Vector2f
 
 	Name string
 
@@ -123,13 +124,13 @@ func NewCursor() *Cursor {
 	vao.Attach(cursorShader)
 	vao.Unbind()
 
-	cursor := &Cursor{LastPos: bmath.NewVec2f(100, 100), Position: bmath.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: bmath.NewVec2f(100, 100), vertices: make([]float32, length*3)}
+	cursor := &Cursor{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, length*3)}
 	cursor.vecSize = 3
 
 	return cursor
 }
 
-func (cr *Cursor) SetPos(pt bmath.Vector2f) {
+func (cr *Cursor) SetPos(pt vector.Vector2f) {
 	tmp := pt
 
 	if settings.Cursor.BounceOnEdges {
@@ -161,7 +162,7 @@ func (cr *Cursor) SetPos(pt bmath.Vector2f) {
 	cr.Position = tmp
 }
 
-func (cr *Cursor) SetScreenPos(pt bmath.Vector2f) {
+func (cr *Cursor) SetScreenPos(pt vector.Vector2f) {
 	cr.SetPos(Camera.Unproject(pt.Copy64()).Copy32())
 }
 

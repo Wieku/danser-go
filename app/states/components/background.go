@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/scaling"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"path/filepath"
@@ -23,8 +24,8 @@ import (
 
 type Background struct {
 	blur           *effects.BlurEffect
-	scale          bmath.Vector2d
-	position       bmath.Vector2d
+	scale          vector.Vector2d
+	position       vector.Vector2d
 	background     *texture.TextureRegion
 	storyboard     *storyboard.Storyboard
 	lastTime       float64
@@ -97,9 +98,9 @@ func (bg *Background) Update(time float64, x, y float64) {
 	bg.lastTime = time
 }
 
-func project(pos bmath.Vector2d, camera mgl32.Mat4) bmath.Vector2d {
+func project(pos vector.Vector2d, camera mgl32.Mat4) vector.Vector2d {
 	res := camera.Mul4x1(mgl32.Vec4{pos.X32(), pos.Y32(), 0.0, 1.0})
-	return bmath.NewVec2d((float64(res[0])/2+0.5)*settings.Graphics.GetWidthF(), float64((res[1])/2+0.5)*settings.Graphics.GetWidthF())
+	return vector.NewVec2d((float64(res[0])/2+0.5)*settings.Graphics.GetWidthF(), float64((res[1])/2+0.5)*settings.Graphics.GetWidthF())
 }
 
 func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
@@ -131,8 +132,8 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 		bgScaling := scaling.Fill
 
 		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
-			v1 := project(bmath.NewVec2d(256-320, 192+240), camera)
-			v2 := project(bmath.NewVec2d(256+320, 192-240), camera)
+			v1 := project(vector.NewVec2d(256-320, 192+240), camera)
+			v2 := project(vector.NewVec2d(256+320, 192-240), camera)
 
 			viewport.PushScissorPos(int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32()))
 
@@ -144,7 +145,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 			size := bgScaling.Apply(float32(bg.background.Width), float32(bg.background.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
 
 			if !settings.Playfield.Background.Blur.Enabled {
-				batch.SetTranslation(bg.position.Mult(bmath.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
+				batch.SetTranslation(bg.position.Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
 				size = size.Scl(float32(1 + settings.Playfield.Background.Parallax.Amount))
 			}
 
@@ -154,7 +155,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 
 		if bg.storyboard != nil {
 			batch.SetScale(1, 1)
-			batch.SetTranslation(bmath.NewVec2d(0, 0))
+			batch.SetTranslation(vector.NewVec2d(0, 0))
 
 			cam := camera
 			if !settings.Playfield.Background.Blur.Enabled {
@@ -168,7 +169,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 		}
 
 		batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-		batch.SetTranslation(bg.position.Mult(bmath.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
+		batch.SetTranslation(bg.position.Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
 		batch.SetScale(1+settings.Playfield.Background.Parallax.Amount, 1+settings.Playfield.Background.Parallax.Amount)
 		//bg.triangles.Draw(float64(time), batch)
 
@@ -206,8 +207,8 @@ func (bg *Background) DrawOverlay(time int64, batch *sprite.SpriteBatch, bgAlpha
 	}
 
 	if !bg.storyboard.IsWideScreen() {
-		v1 := project(bmath.NewVec2d(256-320, 192+240), camera)
-		v2 := project(bmath.NewVec2d(256+320, 192-240), camera)
+		v1 := project(vector.NewVec2d(256-320, 192+240), camera)
+		v2 := project(vector.NewVec2d(256+320, 192-240), camera)
 
 		viewport.PushScissorPos(int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32()))
 	}

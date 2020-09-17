@@ -1,5 +1,7 @@
 package bmath
 
+import "github.com/wieku/danser-go/framework/math/vector"
+
 var Origin = struct {
 	TopLeft,
 	Centre,
@@ -9,20 +11,20 @@ var Origin = struct {
 	TopCentre,
 	CentreRight,
 	BottomLeft,
-	BottomRight Vector2d
+	BottomRight vector.Vector2d
 }{
-	NewVec2d(-1, -1),
-	NewVec2d(0, 0),
-	NewVec2d(-1, 0),
-	NewVec2d(1, -1),
-	NewVec2d(0, 1),
-	NewVec2d(0, -1),
-	NewVec2d(1, 0),
-	NewVec2d(-1, 1),
-	NewVec2d(1, 1),
+	vector.NewVec2d(-1, -1),
+	vector.NewVec2d(0, 0),
+	vector.NewVec2d(-1, 0),
+	vector.NewVec2d(1, -1),
+	vector.NewVec2d(0, 1),
+	vector.NewVec2d(0, -1),
+	vector.NewVec2d(1, 0),
+	vector.NewVec2d(-1, 1),
+	vector.NewVec2d(1, 1),
 }
 
 type Transform struct {
-	Position, Origin, Scale Vector2d
+	Position, Origin, Scale vector.Vector2d
 	Rotation                float64
 }

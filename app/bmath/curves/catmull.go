@@ -1,16 +1,16 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type Catmull struct {
-	points       []bmath.Vector2f
+	points       []vector.Vector2f
 	ApproxLength float32
 }
 
-func NewCatmull(points []bmath.Vector2f) Catmull {
+func NewCatmull(points []vector.Vector2f) Catmull {
 
 	if len(points) != 4 {
 		panic("4 points are needed to create centripetal catmull rom")
@@ -29,15 +29,15 @@ func NewCatmull(points []bmath.Vector2f) Catmull {
 	return *cm
 }
 
-func (cm Catmull) PointAt(t float32) bmath.Vector2f {
+func (cm Catmull) PointAt(t float32) vector.Vector2f {
 	return findPoint(cm.points[0], cm.points[1], cm.points[2], cm.points[3], t)
 }
 
-func findPoint(vec1, vec2, vec3, vec4 bmath.Vector2f, t float32) bmath.Vector2f {
+func findPoint(vec1, vec2, vec3, vec4 vector.Vector2f, t float32) vector.Vector2f {
 	t2 := t * t
 	t3 := t * t2
 
-	return bmath.NewVec2f(0.5*(2*vec2.X+(-vec1.X+vec3.X)*t+(2*vec1.X-5*vec2.X+4*vec3.X-vec4.X)*t2+(-vec1.X+3*vec2.X-3*vec3.X+vec4.X)*t3),
+	return vector.NewVec2f(0.5*(2*vec2.X+(-vec1.X+vec3.X)*t+(2*vec1.X-5*vec2.X+4*vec3.X-vec4.X)*t2+(-vec1.X+3*vec2.X-3*vec3.X+vec4.X)*t3),
 		0.5*(2*vec2.Y+(-vec1.Y+vec3.Y)*t+(2*vec1.Y-5*vec2.Y+4*vec3.Y-vec4.Y)*t2+(-vec1.Y+3*vec2.Y-3*vec3.Y+vec4.Y)*t3))
 }
 

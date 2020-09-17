@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type LinearMover struct {
@@ -33,7 +34,7 @@ func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
 	bm.beginTime = startTime
 }
 
-func (bm LinearMover) Update(time int64) bmath.Vector2f {
+func (bm LinearMover) Update(time int64) vector.Vector2f {
 	t := bmath.ClampF64(float64(time-bm.endTime)/float64(bm.beginTime-bm.endTime), 0, 1)
 	return bm.line.PointAt(float32(easing.OutQuad(t)))
 }

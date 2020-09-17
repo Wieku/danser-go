@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
@@ -27,9 +28,9 @@ type Body struct {
 	previousStart int
 	previousEnd   int
 
-	topLeft     bmath.Vector2f
-	bottomRight bmath.Vector2f
-	points      []bmath.Vector2f
+	topLeft     vector.Vector2f
+	bottomRight vector.Vector2f
+	points      []vector.Vector2f
 
 	radius float32
 
@@ -171,7 +172,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	body.previousEnd = endInstance
 }
 
-func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset bmath.Vector2f, scale float32, color mgl32.Vec4, prev mgl32.Vec4) {
+func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset vector.Vector2f, scale float32, color mgl32.Vec4, prev mgl32.Vec4) {
 	drawSlider(body.bodySprite, stackOffset, scale, body.framebuffer.Texture(), color, prev, projection)
 }
 
@@ -201,8 +202,8 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	tLW := invProjView.Mul4x1(mgl32.Vec4{-multiplierX, multiplierY, 0.0, 1.0})
 	bRW := invProjView.Mul4x1(mgl32.Vec4{multiplierX, -multiplierY, 0.0, 1.0})
 
-	var topLeftScreenE bmath.Vector2f
-	var bottomRightScreenE bmath.Vector2f
+	var topLeftScreenE vector.Vector2f
+	var bottomRightScreenE vector.Vector2f
 
 	topLeftScreenE.X = math32.Max(tLW.X(), body.topLeft.X-body.radius*float32(settings.Audio.BeatScale))
 	topLeftScreenE.Y = math32.Max(tLW.Y(), body.topLeft.Y-body.radius*float32(settings.Audio.BeatScale))
@@ -213,8 +214,8 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	tLS := baseProjView.Mul4x1(mgl32.Vec4{topLeftScreenE.X, topLeftScreenE.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 	bRS := baseProjView.Mul4x1(mgl32.Vec4{bottomRightScreenE.X, bottomRightScreenE.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 
-	topLeftScreen := bmath.NewVec2f(tLS.X(), tLS.Y()).Mult(bmath.NewVec2f(float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())))
-	bottomRightScreen := bmath.NewVec2f(bRS.X(), bRS.Y()).Mult(bmath.NewVec2f(float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())))
+	topLeftScreen := vector.NewVec2f(tLS.X(), tLS.Y()).Mult(vector.NewVec2f(float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())))
+	bottomRightScreen := vector.NewVec2f(bRS.X(), bRS.Y()).Mult(vector.NewVec2f(float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())))
 
 	dimensions := bottomRightScreen.Sub(topLeftScreen).Abs()
 	body.framebuffer = buffer.NewFrameDepth(int(dimensions.X), int(dimensions.Y), true)

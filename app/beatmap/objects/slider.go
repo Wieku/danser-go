@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"sort"
@@ -30,7 +31,7 @@ type PathLine struct {
 
 type TickPoint struct {
 	Time      int64
-	Pos       bmath.Vector2f
+	Pos       vector.Vector2f
 	fade      *animation.Glider
 	scale     *animation.Glider
 	IsReverse bool
@@ -60,7 +61,7 @@ type Slider struct {
 	sampleSets   []int
 	additionSets []int
 	samples      []int
-	Pos          bmath.Vector2f
+	Pos          vector.Vector2f
 	TickPoints   []TickPoint
 	TickReverse  []TickPoint
 	ScorePoints  []TickPoint
@@ -88,13 +89,13 @@ func NewSlider(data []string) *Slider {
 	slider.repeat, _ = strconv.ParseInt(data[6], 10, 64)
 
 	list := strings.Split(data[5], "|")
-	points := []bmath.Vector2f{slider.objData.StartPos}
+	points := []vector.Vector2f{slider.objData.StartPos}
 
 	for i := 1; i < len(list); i++ {
 		list2 := strings.Split(list[i], ":")
 		x, _ := strconv.ParseFloat(list2[0], 32)
 		y, _ := strconv.ParseFloat(list2[1], 32)
-		points = append(points, bmath.NewVec2f(float32(x), float32(y)))
+		points = append(points, vector.NewVec2f(float32(x), float32(y)))
 	}
 
 	slider.multiCurve = curves.NewMultiCurve(list[0], points, slider.pixelLength)
@@ -141,7 +142,7 @@ func (self Slider) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self Slider) GetHalf() bmath.Vector2f {
+func (self Slider) GetHalf() vector.Vector2f {
 	return self.multiCurve.PointAt(0.5).Add(self.objData.StackOffset)
 }
 
@@ -157,7 +158,7 @@ func (self Slider) GetPartLen() float32 {
 	return float32(20.0) / float32(self.Timings.GetSliderTimeP(self.TPoint, self.pixelLength)) * float32(self.pixelLength)
 }
 
-func (self Slider) GetPointAt(time int64) bmath.Vector2f {
+func (self Slider) GetPointAt(time int64) vector.Vector2f {
 	if self.IsRetarded() {
 		return self.objData.StartPos
 	}
@@ -170,7 +171,7 @@ func (self Slider) GetPointAt(time int64) bmath.Vector2f {
 
 	clamped := bmath.ClampI64(time, pLine.Time1, pLine.Time2)
 
-	var pos bmath.Vector2f
+	var pos vector.Vector2f
 	if pLine.Time2 == pLine.Time1 {
 		pos = pLine.Line.Point2
 	} else {
@@ -551,10 +552,10 @@ func (self *Slider) PlayTick() {
 }
 
 func (self *Slider) playSample(sampleSet, additionSet, sample int) {
-	self.playSampleT(sampleSet, additionSet, sampleSet, self.Timings.Current, bmath.NewVec2f(0, 0))
+	self.playSampleT(sampleSet, additionSet, sampleSet, self.Timings.Current, vector.NewVec2f(0, 0))
 }
 
-func (self *Slider) playSampleT(sampleSet, additionSet, sample int, point TimingPoint, pos bmath.Vector2f) {
+func (self *Slider) playSampleT(sampleSet, additionSet, sample int, point TimingPoint, pos vector.Vector2f) {
 	if sampleSet == 0 {
 		sampleSet = self.objData.sampleSet
 		if sampleSet == 0 {
@@ -569,7 +570,7 @@ func (self *Slider) playSampleT(sampleSet, additionSet, sample int, point Timing
 	audio.PlaySample(sampleSet, additionSet, sample, point.SampleIndex, point.SampleVolume, self.objData.Number, pos.X64())
 }
 
-func (self *Slider) GetPosition() bmath.Vector2f {
+func (self *Slider) GetPosition() vector.Vector2f {
 	return self.Pos
 }
 
@@ -689,7 +690,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	self.startCircle.Draw(time, color, batch)
 
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(bmath.NewVec2d(0, 0))
+	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
 		//if self.vao != nil {

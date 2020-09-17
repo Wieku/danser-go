@@ -22,6 +22,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
 	"image"
 	"log"
@@ -161,7 +162,7 @@ func run() {
 		batch.SetColor(1, 1, 1, 1)
 		camera := bmath.NewCamera()
 		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
-		camera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
+		camera.SetOrigin(vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 

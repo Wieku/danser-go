@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math/rand"
 )
 
@@ -25,7 +26,7 @@ func NewSmoothScheduler() Scheduler {
 
 func (sched *SmoothScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor) {
 	sched.cursor = cursor
-	sched.queue = append([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2f(100, 100), 0)}, objs...)
+	sched.queue = append([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, objs...)
 	/*sched.queue = PreprocessQueue(0, sched.queue, settings.Dance.SliderDance)*/
 	for i := 0; i < len(sched.queue); i++ {
 		sched.queue = PreprocessQueue(i, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
@@ -132,13 +133,13 @@ func max(a, b int64) int64 {
 }
 
 func (sched *SmoothScheduler) InitCurve(index int) {
-	points := make([]bmath.Vector2f, 0)
+	points := make([]vector.Vector2f, 0)
 	timing := make([]int64, 0)
 	var endTime, startTime int64
 	for i := index; i < len(sched.queue); i++ {
 		if i == index {
 			if s, ok := sched.queue[i].(*objects.Slider); ok {
-				points = append(points, s.GetBasicData().EndPos, bmath.NewVec2fRad(s.GetEndAngle(), s.GetBasicData().EndPos.Dst(sched.queue[i+1].GetBasicData().StartPos)*0.7).Add(s.GetBasicData().EndPos))
+				points = append(points, s.GetBasicData().EndPos, vector.NewVec2fRad(s.GetEndAngle(), s.GetBasicData().EndPos.Dst(sched.queue[i+1].GetBasicData().StartPos)*0.7).Add(s.GetBasicData().EndPos))
 				//timing = append(timing, s.GetBasicData().EndTime)
 			}
 			if s, ok := sched.queue[i].(*objects.Circle); ok {
@@ -166,7 +167,7 @@ func (sched *SmoothScheduler) InitCurve(index int) {
 		if ok || i == len(sched.queue)-1 {
 			if s, ok := sched.queue[i].(*objects.Slider); ok {
 				timing = append(timing, s.GetBasicData().StartTime)
-				points = append(points, bmath.NewVec2fRad(s.GetStartAngle(), s.GetBasicData().StartPos.Dst(sched.queue[i-1].GetBasicData().EndPos)*0.7).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
+				points = append(points, vector.NewVec2fRad(s.GetStartAngle(), s.GetBasicData().StartPos.Dst(sched.queue[i-1].GetBasicData().EndPos)*0.7).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
 			}
 			if s, ok := sched.queue[i].(*objects.Circle); ok {
 				timing = append(timing, s.GetBasicData().StartTime)

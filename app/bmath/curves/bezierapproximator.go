@@ -1,7 +1,7 @@
 package curves
 
 import (
-	math2 "github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"sync"
 )
 
@@ -12,24 +12,24 @@ const BEZIER_QUANTIZATIONSQ = BEZIER_QUANTIZATION * BEZIER_QUANTIZATION
 
 // ItemStack the stack of Items
 type ItemStack struct {
-	items [][]math2.Vector2f
+	items [][]vector.Vector2f
 	lock  sync.RWMutex
 }
 
 // New creates a new ItemStack
 func NewStack() *ItemStack {
-	return &ItemStack{items: make([][]math2.Vector2f, 0)}
+	return &ItemStack{items: make([][]vector.Vector2f, 0)}
 }
 
 // Push adds an Item to the top of the stack
-func (s *ItemStack) Push(t []math2.Vector2f) {
+func (s *ItemStack) Push(t []vector.Vector2f) {
 	s.lock.Lock()
 	s.items = append(s.items, t)
 	s.lock.Unlock()
 }
 
 // Pop removes an Item from the top of the stack
-func (s *ItemStack) Pop() []math2.Vector2f {
+func (s *ItemStack) Pop() []vector.Vector2f {
 	s.lock.Lock()
 	item := s.items[len(s.items)-1]
 	s.items = s.items[0 : len(s.items)-1]
@@ -43,13 +43,13 @@ func (s *ItemStack) Count() int {
 
 type BezierApproximator struct {
 	count              int
-	controlPoints      []math2.Vector2f
-	subdivisionBuffer1 []math2.Vector2f
-	subdivisionBuffer2 []math2.Vector2f
+	controlPoints      []vector.Vector2f
+	subdivisionBuffer1 []vector.Vector2f
+	subdivisionBuffer2 []vector.Vector2f
 }
 
-func NewBezierApproximator(controlPoints []math2.Vector2f) *BezierApproximator {
-	return &BezierApproximator{count: len(controlPoints), controlPoints: controlPoints, subdivisionBuffer1: make([]math2.Vector2f, len(controlPoints)), subdivisionBuffer2: make([]math2.Vector2f, len(controlPoints)*2-1)}
+func NewBezierApproximator(controlPoints []vector.Vector2f) *BezierApproximator {
+	return &BezierApproximator{count: len(controlPoints), controlPoints: controlPoints, subdivisionBuffer1: make([]vector.Vector2f, len(controlPoints)), subdivisionBuffer2: make([]vector.Vector2f, len(controlPoints)*2-1)}
 }
 
 /// <summary>
@@ -60,7 +60,7 @@ func NewBezierApproximator(controlPoints []math2.Vector2f) *BezierApproximator {
 /// </summary>
 /// <param name="controlPoints">The control points to check for flatness.</param>
 /// <returns>Whether the control points are flat enough.</returns>
-func IsFlatEnough(controlPoints []math2.Vector2f) bool {
+func IsFlatEnough(controlPoints []vector.Vector2f) bool {
 	for i := 1; i < len(controlPoints)-1; i++ {
 		if controlPoints[i-1].Sub(controlPoints[i].Scl(2)).Add(controlPoints[i+1]).LenSq() > BEZIER_QUANTIZATIONSQ {
 			return false
@@ -78,7 +78,7 @@ func IsFlatEnough(controlPoints []math2.Vector2f) bool {
 /// <param name="controlPoints">The control points to split.</param>
 /// <param name="l">Output: The control points corresponding to the left half of the curve.</param>
 /// <param name="r">Output: The control points corresponding to the right half of the curve.</param>
-func (approximator *BezierApproximator) Subdivide(controlPoints, l, r []math2.Vector2f) {
+func (approximator *BezierApproximator) Subdivide(controlPoints, l, r []vector.Vector2f) {
 	midpoints := approximator.subdivisionBuffer1
 
 	for i := 0; i < approximator.count; i++ {
@@ -102,7 +102,7 @@ func (approximator *BezierApproximator) Subdivide(controlPoints, l, r []math2.Ve
 /// </summary>
 /// <param name="controlPoints">The control points describing the bezier curve to be approximated.</param>
 /// <param name="output">The points representing the resulting piecewise-linear approximation.</param>
-func (approximator *BezierApproximator) Approximate(controlPoints []math2.Vector2f, output *[]math2.Vector2f) {
+func (approximator *BezierApproximator) Approximate(controlPoints []vector.Vector2f, output *[]vector.Vector2f) {
 	l := approximator.subdivisionBuffer2
 	r := approximator.subdivisionBuffer1
 
@@ -127,8 +127,8 @@ func (approximator *BezierApproximator) Approximate(controlPoints []math2.Vector
 /// </summary>
 /// <param name="controlPoints">The control points describing the curve.</param>
 /// <returns>A list of vectors representing the piecewise-linear approximation.</returns>
-func (approximator *BezierApproximator) CreateBezier() []math2.Vector2f {
-	output := make([]math2.Vector2f, 0)
+func (approximator *BezierApproximator) CreateBezier() []vector.Vector2f {
+	output := make([]vector.Vector2f, 0)
 
 	if approximator.count == 0 {
 		return output
@@ -143,7 +143,7 @@ func (approximator *BezierApproximator) CreateBezier() []math2.Vector2f {
 	// <a href="https://en.wikipedia.org/wiki/Depth-first_search">Depth-first search</a>
 	// over the tree resulting from the subdivisions we make.)
 
-	nCP := make([]math2.Vector2f, len(approximator.controlPoints))
+	nCP := make([]vector.Vector2f, len(approximator.controlPoints))
 
 	copy(nCP, approximator.controlPoints)
 
@@ -165,11 +165,11 @@ func (approximator *BezierApproximator) CreateBezier() []math2.Vector2f {
 
 		// If we do not yet have a sufficiently "flat" (in other words, detailed) approximation we keep
 		// subdividing the curve we are currently operating on.
-		var rightChild []math2.Vector2f = nil
+		var rightChild []vector.Vector2f = nil
 		if freeBuffers.Count() > 0 {
 			rightChild = freeBuffers.Pop()
 		} else {
-			rightChild = make([]math2.Vector2f, approximator.count)
+			rightChild = make([]vector.Vector2f, approximator.count)
 		}
 
 		approximator.Subdivide(parent, leftChild, rightChild)

@@ -1,4 +1,4 @@
-package bmath
+package vector
 
 import (
 	"fmt"

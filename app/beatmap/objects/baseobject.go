@@ -2,9 +2,9 @@ package objects
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	om "github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"strconv"
 	"strings"
 )
@@ -15,7 +15,7 @@ type BaseObject interface {
 	SetTiming(timings *Timings)
 	UpdateStacking()
 	SetDifficulty(difficulty *difficulty.Difficulty)
-	GetPosition() om.Vector2f
+	GetPosition() vector.Vector2f
 }
 
 type Renderable interface {
@@ -24,9 +24,9 @@ type Renderable interface {
 }
 
 type basicData struct {
-	StartPos, EndPos   om.Vector2f
+	StartPos, EndPos   vector.Vector2f
 	StartTime, EndTime int64
-	StackOffset        om.Vector2f
+	StackOffset        vector.Vector2f
 	StackIndex         int64
 	Number             int64
 	SliderPoint        bool
@@ -47,7 +47,7 @@ func commonParse(data []string) *basicData {
 	y, _ := strconv.ParseFloat(data[1], 32)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
-	return &basicData{StartPos: om.NewVec2f(float32(x), float32(y)), StartTime: time, Number: -1, NewCombo: (objType & 4) == 4}
+	return &basicData{StartPos: vector.NewVec2f(float32(x), float32(y)), StartTime: time, Number: -1, NewCombo: (objType & 4) == 4}
 }
 
 func (bData *basicData) parseExtras(data []string, extraIndex int) {

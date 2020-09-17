@@ -2,6 +2,7 @@ package bmath
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 const OsuWidth = 512.0
@@ -19,17 +20,17 @@ type Camera struct {
 	invProjectionView mgl32.Mat4
 
 	viewDirty bool
-	origin    Vector2d
-	position  Vector2d
+	origin    vector.Vector2d
+	position  vector.Vector2d
 	rotation  float64
-	scale     Vector2d
+	scale     vector.Vector2d
 
 	rebuildCache bool
 	cache        []mgl32.Mat4
 }
 
 func NewCamera() *Camera {
-	return &Camera{scale: NewVec2d(1, 1)}
+	return &Camera{scale: vector.NewVec2d(1, 1)}
 }
 
 func (camera *Camera) SetViewport(width, height int, yDown bool) {
@@ -68,9 +69,9 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bo
 	}
 
 	camera.SetViewport(width, height, true)
-	camera.SetOrigin(NewVec2d(OsuWidth/2, OsuHeight/2))
-	camera.SetPosition(NewVec2d(0, shift).Scl(scl))
-	camera.SetScale(NewVec2d(scl, scl))
+	camera.SetOrigin(vector.NewVec2d(OsuWidth/2, OsuHeight/2))
+	camera.SetPosition(vector.NewVec2d(0, shift).Scl(scl))
+	camera.SetScale(vector.NewVec2d(scl, scl))
 	camera.Update()
 
 	camera.rebuildCache = true
@@ -92,17 +93,17 @@ func (camera *Camera) calculateView() {
 	camera.view = mgl32.Translate3D(camera.position.X32(), camera.position.Y32(), 0).Mul4(mgl32.HomogRotate3DZ(float32(camera.rotation))).Mul4(mgl32.Scale3D(camera.scale.X32(), camera.scale.Y32(), 1)).Mul4(mgl32.Translate3D(camera.origin.X32(), camera.origin.Y32(), 0))
 }
 
-func (camera *Camera) SetPosition(pos Vector2d) {
+func (camera *Camera) SetPosition(pos vector.Vector2d) {
 	camera.position = pos
 	camera.viewDirty = true
 }
 
-func (camera *Camera) SetOrigin(pos Vector2d) {
+func (camera *Camera) SetOrigin(pos vector.Vector2d) {
 	camera.origin = pos.Scl(-1)
 	camera.viewDirty = true
 }
 
-func (camera *Camera) SetScale(scale Vector2d) {
+func (camera *Camera) SetScale(scale vector.Vector2d) {
 	camera.scale = scale
 	camera.viewDirty = true
 }
@@ -117,12 +118,12 @@ func (camera *Camera) Rotate(rad float64) {
 	camera.viewDirty = true
 }
 
-func (camera *Camera) Translate(pos Vector2d) {
+func (camera *Camera) Translate(pos vector.Vector2d) {
 	camera.position = camera.position.Add(pos)
 	camera.viewDirty = true
 }
 
-func (camera *Camera) Scale(scale Vector2d) {
+func (camera *Camera) Scale(scale vector.Vector2d) {
 	camera.scale = camera.scale.Mult(scale)
 	camera.viewDirty = true
 }
@@ -160,15 +161,15 @@ func (camera Camera) GetProjectionView() mgl32.Mat4 {
 	return camera.projectionView
 }
 
-func (camera Camera) Unproject(screenPos Vector2d) Vector2d {
+func (camera Camera) Unproject(screenPos vector.Vector2d) vector.Vector2d {
 	res := camera.invProjectionView.Mul4x1(mgl32.Vec4{(screenPos.X32() + camera.screenRect.MinX) / camera.screenRect.MaxX, -(screenPos.Y32() + camera.screenRect.MaxY) / camera.screenRect.MinY, 0.0, 1.0})
-	return NewVec2d(float64(res[0]), float64(res[1]))
+	return vector.NewVec2d(float64(res[0]), float64(res[1]))
 }
 
-func (camera Camera) Project(worldPos Vector2d) Vector2d {
+func (camera Camera) Project(worldPos vector.Vector2d) vector.Vector2d {
 	res := camera.projectionView.Mul4x1(mgl32.Vec4{worldPos.X32(), worldPos.Y32(), 0.0, 1.0}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 	//midX := camera.screenRect.MaxX-camera.screenRect.MinX
-	return NewVec2f(camera.screenRect.MinX+res[0]*(camera.screenRect.MaxX-camera.screenRect.MinX), camera.screenRect.MinY+res[1]*(camera.screenRect.MaxY-camera.screenRect.MinY)).Copy64()
+	return vector.NewVec2f(camera.screenRect.MinX+res[0]*(camera.screenRect.MaxX-camera.screenRect.MinX), camera.screenRect.MinY+res[1]*(camera.screenRect.MaxY-camera.screenRect.MinY)).Copy64()
 }
 
 func (camera Camera) GetWorldRect() Rectangle {

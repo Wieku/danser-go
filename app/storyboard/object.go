@@ -2,10 +2,10 @@ package storyboard
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sort"
 	"strings"
@@ -29,11 +29,11 @@ type Object interface {
 	GetEndTime() int64
 	GetZIndex() int64
 
-	GetPosition() bmath.Vector2d
-	SetPosition(vec bmath.Vector2d)
+	GetPosition() vector.Vector2d
+	SetPosition(vec vector.Vector2d)
 
-	GetScale() bmath.Vector2d
-	SetScale(vec bmath.Vector2d)
+	GetScale() vector.Vector2d
+	SetScale(vec vector.Vector2d)
 
 	GetRotation() float64
 	SetRotation(rad float64)
@@ -58,10 +58,10 @@ type Sprite struct {
 	transform                  *Transformations
 	transforms                 []*animation.Transformation
 	startTime, endTime, zIndex int64
-	position                   bmath.Vector2d
-	origin                     bmath.Vector2d
-	scale                      bmath.Vector2d
-	flip                       bmath.Vector2d
+	position                   vector.Vector2d
+	origin                     vector.Vector2d
+	scale                      vector.Vector2d
+	flip                       vector.Vector2d
 	rotation                   float64
 	color                      color
 	dirty                      bool
@@ -81,8 +81,8 @@ func cutWhites(text string) (string, int) {
 	return text, 0
 }
 
-func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever bool, zIndex int64, position bmath.Vector2d, origin bmath.Vector2d, subCommands []string) *Sprite {
-	sprite := &Sprite{texture: texture, frameDelay: frameDelay, loopForever: loopForever, zIndex: zIndex, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
+func NewSprite(texture []*texture.TextureRegion, frameDelay float64, loopForever bool, zIndex int64, position vector.Vector2d, origin vector.Vector2d, subCommands []string) *Sprite {
+	sprite := &Sprite{texture: texture, frameDelay: frameDelay, loopForever: loopForever, zIndex: zIndex, position: position, origin: origin, scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: color{1, 1, 1, 1}}
 	sprite.lastFinished = -1
 	sprite.transform = NewTransformations(sprite)
 	sprite.subCommands = subCommands
@@ -262,20 +262,20 @@ func (sprite *Sprite) Draw(time int64, batch *sprite.SpriteBatch) {
 	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs(), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], true)
 }
 
-func (sprite *Sprite) GetPosition() bmath.Vector2d {
+func (sprite *Sprite) GetPosition() vector.Vector2d {
 	return sprite.position
 }
 
-func (sprite *Sprite) SetPosition(vec bmath.Vector2d) {
+func (sprite *Sprite) SetPosition(vec vector.Vector2d) {
 	sprite.position = vec
 	sprite.dirty = true
 }
 
-func (sprite *Sprite) GetScale() bmath.Vector2d {
+func (sprite *Sprite) GetScale() vector.Vector2d {
 	return sprite.scale
 }
 
-func (sprite *Sprite) SetScale(vec bmath.Vector2d) {
+func (sprite *Sprite) SetScale(vec vector.Vector2d) {
 	sprite.scale = vec
 	sprite.dirty = true
 }

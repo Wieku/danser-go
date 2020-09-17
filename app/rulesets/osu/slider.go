@@ -2,8 +2,8 @@ package osu
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
@@ -38,7 +38,7 @@ type Slider struct {
 	fadeStartRelative float64
 	lastTime          int64
 	lastSliderTime    int64
-	sliderPosition    bmath.Vector2f
+	sliderPosition    vector.Vector2f
 }
 
 func (slider *Slider) GetNumber() int64 {

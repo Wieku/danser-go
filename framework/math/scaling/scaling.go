@@ -1,6 +1,8 @@
 package scaling
 
-import "github.com/wieku/danser-go/app/bmath"
+import (
+	"github.com/wieku/danser-go/framework/math/vector"
+)
 
 type Scaling int
 
@@ -38,8 +40,8 @@ const (
 
 // Returns the size of the source scaled to the target. Note the same Vector2 instance is always returned and should never be
 // cached.
-func (s Scaling) Apply(sourceX, sourceY, targetX, targetY float32) bmath.Vector2f {
-	var res bmath.Vector2f
+func (s Scaling) Apply(sourceX, sourceY, targetX, targetY float32) vector.Vector2f {
+	var res vector.Vector2f
 
 	switch s {
 	case Fit:

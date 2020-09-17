@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
 )
@@ -42,11 +43,11 @@ func NewCircle(data []string) *Circle {
 	return circle
 }
 
-func DummyCircle(pos bmath.Vector2f, time int64) *Circle {
+func DummyCircle(pos vector.Vector2f, time int64) *Circle {
 	return DummyCircleInherit(pos, time, false, false, false)
 }
 
-func DummyCircleInherit(pos bmath.Vector2f, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
+func DummyCircleInherit(pos vector.Vector2f, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
 	circle := &Circle{objData: &basicData{}}
 	circle.objData.StartPos = pos
 	circle.objData.EndPos = pos
@@ -111,9 +112,9 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.textFade = animation.NewGlider(0)
 
-	self.hitCircle = sprite.NewSpriteSingleCentered(graphics.Circle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.hitCircleOverlay = sprite.NewSpriteSingleCentered(graphics.CircleOverlay, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.approachCircle = sprite.NewSpriteSingleCentered(graphics.ApproachCircle, bmath.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircle = sprite.NewSpriteSingleCentered(graphics.Circle, vector.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircleOverlay = sprite.NewSpriteSingleCentered(graphics.CircleOverlay, vector.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.approachCircle = sprite.NewSpriteSingleCentered(graphics.ApproachCircle, vector.NewVec2d(2, 2).Scl(diff.CircleRadius))
 
 	self.sprites = append(self.sprites, self.hitCircle)
 	self.sprites = append(self.sprites, self.hitCircleOverlay)
@@ -201,13 +202,13 @@ func (self *Circle) UpdateStacking() {
 
 }
 
-func (self *Circle) GetPosition() bmath.Vector2f {
+func (self *Circle) GetPosition() vector.Vector2f {
 	return self.objData.StartPos
 }
 
 func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(bmath.NewVec2d(0, 0))
+	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	alpha := 1.0
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -239,7 +240,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	}
 
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(bmath.NewVec2d(0, 0))
+	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	if time >= self.objData.StartTime && self.hitCircle.GetAlpha() <= 0.001 {
 		return true
@@ -249,7 +250,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(bmath.NewVec2d(0, 0))
+	batch.SetTranslation(vector.NewVec2d(0, 0))
 	batch.SetColor(1, 1, 1, 1)
 	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 	self.approachCircle.Draw(time, batch)

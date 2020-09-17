@@ -23,6 +23,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/scaling"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
@@ -43,7 +44,7 @@ type Player struct {
 	batch       *sprite.SpriteBatch
 	controller  dance.Controller
 	background  *components.Background
-	BgScl       bmath.Vector2d
+	BgScl       vector.Vector2d
 	Scl         float64
 	SclA        float64
 	CS          float64
@@ -106,8 +107,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	var err error
 
 	LogoT, err := utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/coinbig.png")
-	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
-	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, bmath.NewVec2d(0, 0), bmath.NewVec2d(0, 0))
+	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
+	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
 
 	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
 		player.cookieSize = 0.5 * settings.Graphics.GetHeightF()
@@ -134,7 +135,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.scamera = bmath.NewCamera()
 	player.scamera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
-	player.scamera.SetOrigin(bmath.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
+	player.scamera.SetOrigin(vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 	player.scamera.Update()
 
 	graphics.Camera = player.camera
@@ -246,7 +247,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 	player.background.SetTrack(musicPlayer)
-	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, bmath.NewVec2d(0, 0))
+	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, vector.NewVec2d(0, 0))
 	player.visualiser.SetTrack(musicPlayer)
 
 	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
@@ -309,7 +310,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			cursorPosition := player.controller.GetCursors()[0].Position
 
-			offset := player.camera.Project(cursorPosition.Copy64()).Mult(bmath.NewVec2d(2/settings.Graphics.GetWidthF(), 2/settings.Graphics.GetHeightF()))
+			offset := player.camera.Project(cursorPosition.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), 2/settings.Graphics.GetHeightF()))
 
 			player.background.Update(player.progressMsF, offset.X, offset.Y)
 
@@ -755,7 +756,7 @@ func (pl *Player) Draw(float64) {
 
 				width := pl.font.GetWidthMonospaced(size, text)
 
-				pl.batch.SetTranslation(bmath.NewVec2d(width/2, settings.Graphics.GetHeightF()-(size+padDown)*(pos-0.5)))
+				pl.batch.SetTranslation(vector.NewVec2d(width/2, settings.Graphics.GetHeightF()-(size+padDown)*(pos-0.5)))
 				pl.batch.SetSubScale(width/2, (size+padDown)/2)
 				pl.batch.DrawUnit(graphics.Pixel.GetRegion())
 

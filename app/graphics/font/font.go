@@ -3,9 +3,9 @@ package font
 import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/vector"
 	font2 "golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 	"image"
@@ -178,7 +178,7 @@ func (font *Font) drawInternal(renderer *sprite.SpriteBatch, x, y float64, size 
 
 		renderer.SetSubScale(scale, scale)
 
-		tr := bmath.NewVec2d(char.bearingX+float64(char.region.Width)/2, float64(char.region.Height)/2-char.bearingY).Scl(scale).Mult(renderer.GetScale()).AddS(advance, y)
+		tr := vector.NewVec2d(char.bearingX+float64(char.region.Width)/2, float64(char.region.Height)/2-char.bearingY).Scl(scale).Mult(renderer.GetScale()).AddS(advance, y)
 
 		renderer.SetTranslation(tr)
 

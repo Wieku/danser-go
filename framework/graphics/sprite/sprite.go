@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sort"
 )
@@ -23,40 +24,40 @@ type Sprite struct {
 
 	startTime, endTime, depth float64
 
-	position         bmath.Vector2d
-	positionRelative bmath.Vector2d
-	origin           bmath.Vector2d
-	scale            bmath.Vector2d
-	flip             bmath.Vector2d
+	position         vector.Vector2d
+	positionRelative vector.Vector2d
+	origin           vector.Vector2d
+	scale            vector.Vector2d
+	flip             vector.Vector2d
 	rotation         float64
 	color            bmath.Color
 	dirty            bool
 	additive         bool
 	showForever      bool
 
-	scaleTo bmath.Vector2d
+	scaleTo vector.Vector2d
 }
 
-func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position bmath.Vector2d, origin bmath.Vector2d) *Sprite {
+func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	return sprite
 }
 
-func NewSpriteSingleCentered(tex *texture.TextureRegion, size bmath.Vector2d) *Sprite {
+func NewSpriteSingleCentered(tex *texture.TextureRegion, size vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: bmath.NewVec2d(0, 0), scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
-	sprite.scaleTo = bmath.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
+	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
 }
 
-func NewSpriteSingleOrigin(tex *texture.TextureRegion, size bmath.Vector2d, origin bmath.Vector2d) *Sprite {
+func NewSpriteSingleOrigin(tex *texture.TextureRegion, size vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: bmath.NewVec2d(1, 1), flip: bmath.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{texture: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), flip: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
-	sprite.scaleTo = bmath.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
+	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
 }
 
@@ -271,19 +272,19 @@ func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
 		scaleY = sprite.scaleTo.Y
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs().Mult(bmath.NewVec2d(scaleX, scaleY)), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], false)
+	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flip, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame], false)
 }
 
-func (sprite *Sprite) GetPosition() bmath.Vector2d {
+func (sprite *Sprite) GetPosition() vector.Vector2d {
 	return sprite.position
 }
 
-func (sprite *Sprite) SetPosition(vec bmath.Vector2d) {
+func (sprite *Sprite) SetPosition(vec vector.Vector2d) {
 	sprite.position = vec
 	sprite.dirty = true
 }
 
-func (sprite *Sprite) GetScale() bmath.Vector2d {
+func (sprite *Sprite) GetScale() vector.Vector2d {
 	return sprite.scale
 }
 
@@ -293,7 +294,7 @@ func (sprite *Sprite) SetScale(scale float64) {
 	sprite.dirty = true
 }
 
-func (sprite *Sprite) SetScaleV(vec bmath.Vector2d) {
+func (sprite *Sprite) SetScaleV(vec vector.Vector2d) {
 	sprite.scale = vec
 	sprite.dirty = true
 }

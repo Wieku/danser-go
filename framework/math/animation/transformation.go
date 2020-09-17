@@ -2,6 +2,7 @@ package animation
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type TransformationType int64
@@ -82,7 +83,7 @@ func NewVectorTransform(transformationType TransformationType, easing func(float
 	return transformation
 }
 
-func NewVectorTransformV(transformationType TransformationType, easing func(float64) float64, startTime, endTime float64, start, end bmath.Vector2d) *Transformation {
+func NewVectorTransformV(transformationType TransformationType, easing func(float64) float64, startTime, endTime float64, start, end vector.Vector2d) *Transformation {
 	if transformationType&(ScaleVector|Move) == 0 {
 		panic("Wrong TransformationType used!")
 	}
@@ -138,8 +139,8 @@ func (t *Transformation) GetDouble(time float64) (float64, float64) {
 	return t.startValues[0] + progress*(t.endValues[0]-t.startValues[0]), t.startValues[1] + progress*(t.endValues[1]-t.startValues[1])
 }
 
-func (t *Transformation) GetVector(time float64) bmath.Vector2d {
-	return bmath.NewVec2d(t.GetDouble(time))
+func (t *Transformation) GetVector(time float64) vector.Vector2d {
+	return vector.NewVec2d(t.GetDouble(time))
 }
 
 func (t *Transformation) GetBoolean(time float64) bool {

@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
 	"os"
@@ -175,7 +175,7 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 	x, _ := strconv.ParseFloat(spl[4], 64)
 	y, _ := strconv.ParseFloat(spl[5], 64)
 
-	pos := bmath.NewVec2d(x, y)
+	pos := vector.NewVec2d(x, y)
 
 	image := strings.Replace(spl[3], `"`, "", -1)
 

@@ -1,22 +1,22 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type BSpline struct {
-	points       []bmath.Vector2f
+	points       []vector.Vector2f
 	timing       []float32
-	subPoints    []bmath.Vector2f
+	subPoints    []vector.Vector2f
 	path         []*Bezier
 	ApproxLength float32
 }
 
-func NewBSpline(points1 []bmath.Vector2f, timing []int64) *BSpline {
+func NewBSpline(points1 []vector.Vector2f, timing []int64) *BSpline {
 
 	pointsLen := len(points1)
 
-	points := make([]bmath.Vector2f, 0)
+	points := make([]vector.Vector2f, 0)
 
 	points = append(points, points1[0])
 	points = append(points, points1[2:pointsLen-2]...)
@@ -31,11 +31,11 @@ func NewBSpline(points1 []bmath.Vector2f, timing []int64) *BSpline {
 
 	n := len(points) - 2
 
-	d := make([]bmath.Vector2f, n)
+	d := make([]vector.Vector2f, n)
 	d[0] = points[n].Sub(points[0])
 	d[n-1] = points[n+1].Sub(points[n-1]).Scl(-1)
 
-	A := make([]bmath.Vector2f, len(points))
+	A := make([]vector.Vector2f, len(points))
 	Bi := make([]float32, len(points))
 
 	Bi[1] = -0.25
@@ -90,7 +90,7 @@ func NewBSpline(points1 []bmath.Vector2f, timing []int64) *BSpline {
 	return spline
 }
 
-func (spline *BSpline) PointAt(t float32) bmath.Vector2f {
+func (spline *BSpline) PointAt(t float32) vector.Vector2f {
 	desiredWidth := spline.ApproxLength * t
 
 	lineI := len(spline.timing) - 2

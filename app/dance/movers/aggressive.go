@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
@@ -37,14 +38,14 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 		newAngle = s.GetEndAngle()
 	}
 
-	points := []bmath.Vector2f{endPos, bmath.NewVec2fRad(newAngle, scaledDistance).Add(endPos)}
+	points := []vector.Vector2f{endPos, vector.NewVec2fRad(newAngle, scaledDistance).Add(endPos)}
 
 	if scaledDistance > 1 {
 		bm.lastAngle = points[1].AngleRV(startPos)
 	}
 
 	if s, ok := start.(*objects.Slider); ok {
-		points = append(points, bmath.NewVec2fRad(s.GetStartAngle(), scaledDistance).Add(startPos))
+		points = append(points, vector.NewVec2fRad(s.GetStartAngle(), scaledDistance).Add(startPos))
 	}
 
 	points = append(points, startPos)
@@ -54,7 +55,7 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 	bm.startTime = startTime
 }
 
-func (bm *AggressiveMover) Update(time int64) bmath.Vector2f {
+func (bm *AggressiveMover) Update(time int64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }

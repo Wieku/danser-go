@@ -3,14 +3,15 @@ package curves
 import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type Bezier struct {
-	points       []bmath.Vector2f
+	points       []vector.Vector2f
 	ApproxLength float32
 }
 
-func NewBezier(points []bmath.Vector2f) *Bezier {
+func NewBezier(points []vector.Vector2f) *Bezier {
 	bz := &Bezier{points: points}
 
 	pointLength := float32(0.0)
@@ -27,13 +28,13 @@ func NewBezier(points []bmath.Vector2f) *Bezier {
 	return bz
 }
 
-func NewBezierNA(points []bmath.Vector2f) *Bezier {
+func NewBezierNA(points []vector.Vector2f) *Bezier {
 	bz := &Bezier{points: points}
 	bz.ApproxLength = 0.0
 	return bz
 }
 
-func (bz *Bezier) PointAt(t float32) bmath.Vector2f {
+func (bz *Bezier) PointAt(t float32) vector.Vector2f {
 	x := float32(0.0)
 	y := float32(0.0)
 	n := len(bz.points) - 1
@@ -42,7 +43,7 @@ func (bz *Bezier) PointAt(t float32) bmath.Vector2f {
 		x += bz.points[i].X * b
 		y += bz.points[i].Y * b
 	}
-	return bmath.NewVec2f(x, y)
+	return vector.NewVec2f(x, y)
 }
 
 func (bz Bezier) GetLength() float32 {

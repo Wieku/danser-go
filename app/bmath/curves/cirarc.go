@@ -1,19 +1,19 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
 type CirArc struct {
-	pt1, pt2, pt3                  bmath.Vector2f
-	centre                         bmath.Vector2f
+	pt1, pt2, pt3                  vector.Vector2f
+	centre                         vector.Vector2f
 	startAngle, totalAngle, r, dir float32
 	Unstable                       bool
 }
 
-func NewCirArc(pt1, pt2, pt3 bmath.Vector2f) *CirArc {
+func NewCirArc(pt1, pt2, pt3 vector.Vector2f) *CirArc {
 	arc := &CirArc{pt1: pt1, pt2: pt2, pt3: pt3}
 
 	aSq := pt2.DstSq(pt3)
@@ -52,7 +52,7 @@ func NewCirArc(pt1, pt2, pt3 bmath.Vector2f) *CirArc {
 	totalAngle := end - start
 
 	aToC := pt3.Sub(pt1)
-	aToC = bmath.NewVec2f(aToC.Y, -aToC.X)
+	aToC = vector.NewVec2f(aToC.Y, -aToC.X)
 	if aToC.Dot(pt2.Sub(pt1)) < 0 {
 		dir = -dir
 		totalAngle = 2*math.Pi - totalAngle
@@ -67,8 +67,8 @@ func NewCirArc(pt1, pt2, pt3 bmath.Vector2f) *CirArc {
 	return arc
 }
 
-func (arc *CirArc) PointAt(t float32) bmath.Vector2f {
-	return bmath.NewVec2fRad(arc.startAngle+arc.dir*t*arc.totalAngle, arc.r).Add(arc.centre)
+func (arc *CirArc) PointAt(t float32) vector.Vector2f {
+	return vector.NewVec2fRad(arc.startAngle+arc.dir*t*arc.totalAngle, arc.r).Add(arc.centre)
 }
 
 func (arc *CirArc) GetLength() float32 {

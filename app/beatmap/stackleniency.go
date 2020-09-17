@@ -2,8 +2,8 @@ package beatmap
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
@@ -141,7 +141,7 @@ func calculateStackLeniency(b *BeatMap) {
 	for _, v := range hitObjects {
 		if !isSpinnerBreak(v) {
 			sc := -float32(v.GetBasicData().StackIndex) * float32(b.Diff.CircleRadius) / 10
-			v.GetBasicData().StackOffset = bmath.NewVec2f(sc, sc)
+			v.GetBasicData().StackOffset = vector.NewVec2f(sc, sc)
 			v.GetBasicData().StartPos = v.GetBasicData().StartPos.Add(v.GetBasicData().StackOffset)
 			v.GetBasicData().EndPos = v.GetBasicData().EndPos.Add(v.GetBasicData().StackOffset)
 			v.UpdateStacking()

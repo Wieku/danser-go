@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"os"
@@ -140,7 +141,7 @@ type OsuRuleSet struct {
 
 	queue       []hitobject
 	processed   []hitobject
-	listener    func(cursor *graphics.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
+	listener    func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
 	endlistener func(time int64, number int64)
 }
 
@@ -465,7 +466,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo))
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, bmath.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total /**1.00013679674*/ /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
+		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total /**1.00013679674*/ /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
@@ -506,7 +507,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficulty
 	return Click
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position bmath.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
+func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
 	set.listener = listener
 }
 

@@ -3,13 +3,13 @@ package objects
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
 )
@@ -21,7 +21,7 @@ type Spinner struct {
 	Timings  *Timings
 	sample   int
 	rad      float32
-	pos      bmath.Vector2f
+	pos      vector.Vector2f
 	fade     *animation.Glider
 	lastTime int64
 }
@@ -45,7 +45,7 @@ func (self *Spinner) GetBasicData() *basicData {
 	return self.objData
 }
 
-func (self *Spinner) GetPosition() bmath.Vector2f {
+func (self *Spinner) GetPosition() vector.Vector2f {
 	return self.pos
 }
 
@@ -69,7 +69,7 @@ func (self *Spinner) Update(time int64) bool {
 
 		//frad := float32(easing.InQuad(float64(1.0 - math32.Abs((math32.Mod(self.rad, math32.Pi/2)-math32.Pi/4)/(math32.Pi/4)))))
 		a := self.rad - math32.Pi/2*math32.Round(self.rad*2/math32.Pi)
-		self.pos = bmath.NewVec2fRad(self.rad*1.1, 100/math32.Cos(a) /*+ frad * (50 * (math32.Sqrt(2) - 1))*/).Add(self.objData.StartPos)
+		self.pos = vector.NewVec2fRad(self.rad*1.1, 100/math32.Cos(a) /*+ frad * (50 * (math32.Sqrt(2) - 1))*/).Add(self.objData.StartPos)
 
 		//self.pos.X = 16 * math32.Pow(math32.Sin(self.rad), 3)
 		//self.pos.Y = 13*math32.Cos(self.rad) - 5*math32.Cos(2*self.rad) - 2*math32.Cos(3*self.rad) - math32.Cos(4*self.rad)

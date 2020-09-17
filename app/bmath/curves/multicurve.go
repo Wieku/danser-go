@@ -2,6 +2,7 @@ package curves
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"sort"
 )
 
@@ -11,10 +12,10 @@ type MultiCurve struct {
 	sections   []float32
 	lines      []Linear
 	length     float32
-	firstPoint bmath.Vector2f
+	firstPoint vector.Vector2f
 }
 
-func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *MultiCurve {
+func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) *MultiCurve {
 	lines := make([]Linear, 0)
 
 	if len(points) < 3 {
@@ -49,7 +50,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *
 	case "C":
 
 		if points[0] != points[1] {
-			points = append([]bmath.Vector2f{points[0]}, points...)
+			points = append([]vector.Vector2f{points[0]}, points...)
 		}
 
 		if points[len(points)-1] != points[len(points)-2] {
@@ -103,7 +104,7 @@ func NewMultiCurve(typ string, points []bmath.Vector2f, desiredLength float64) *
 	return &MultiCurve{sections, lines, length, firstPoint}
 }
 
-func (mCurve *MultiCurve) PointAt(t float32) bmath.Vector2f {
+func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
 	if len(mCurve.lines) == 0 {
 		return mCurve.firstPoint
 	}

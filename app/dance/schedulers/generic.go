@@ -2,10 +2,10 @@ package schedulers
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math/rand"
 )
 
@@ -43,7 +43,7 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.
 		}
 	}
 
-	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(bmath.NewVec2f(100, 100), 0), sched.queue[0]})
+	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0), sched.queue[0]})
 }
 
 func (sched *GenericScheduler) Update(time int64) {

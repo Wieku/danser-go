@@ -3,12 +3,12 @@ package sprite
 import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"math"
 )
@@ -20,9 +20,9 @@ type SpriteBatch struct {
 	additive   bool
 	color      mgl32.Vec4
 	Projection mgl32.Mat4
-	position   bmath.Vector2d
-	scale      bmath.Vector2d
-	subscale   bmath.Vector2d
+	position   vector.Vector2d
+	scale      vector.Vector2d
+	subscale   vector.Vector2d
 	rotation   float64
 
 	transform mgl32.Mat4
@@ -108,8 +108,8 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 		shader:      rShader,
 		color:       mgl32.Vec4{1, 1, 1, 1},
 		Projection:  mgl32.Ident4(),
-		scale:       bmath.NewVec2d(1, 1),
-		subscale:    bmath.NewVec2d(1, 1),
+		scale:       vector.NewVec2d(1, 1),
+		subscale:    vector.NewVec2d(1, 1),
 		transform:   mgl32.Ident4(),
 		vertexSize:  vertexSize,
 		data:        chunk.Data,
@@ -250,7 +250,7 @@ func (batch *SpriteBatch) SetColorM(color mgl32.Vec4) {
 	batch.color = color
 }
 
-func (batch *SpriteBatch) SetTranslation(vec bmath.Vector2d) {
+func (batch *SpriteBatch) SetTranslation(vec vector.Vector2d) {
 	batch.position = vec
 }
 
@@ -263,21 +263,21 @@ func (batch *SpriteBatch) GetRotation() float64 {
 }
 
 func (batch *SpriteBatch) SetScale(scaleX, scaleY float64) {
-	batch.scale = bmath.NewVec2d(scaleX, scaleY)
+	batch.scale = vector.NewVec2d(scaleX, scaleY)
 }
 
-func (batch *SpriteBatch) GetScale() bmath.Vector2d {
+func (batch *SpriteBatch) GetScale() vector.Vector2d {
 	return batch.scale
 }
 
 func (batch *SpriteBatch) SetSubScale(scaleX, scaleY float64) {
-	batch.subscale = bmath.NewVec2d(scaleX, scaleY)
+	batch.subscale = vector.NewVec2d(scaleX, scaleY)
 }
 
 func (batch *SpriteBatch) ResetTransform() {
-	batch.scale = bmath.NewVec2d(1, 1)
-	batch.subscale = bmath.NewVec2d(1, 1)
-	batch.position = bmath.NewVec2d(0, 0)
+	batch.scale = vector.NewVec2d(1, 1)
+	batch.subscale = vector.NewVec2d(1, 1)
+	batch.position = vector.NewVec2d(0, 0)
 	batch.rotation = 0
 }
 
@@ -335,7 +335,7 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 	}
 }
 
-func (batch *SpriteBatch) DrawStObject(position, origin, scale bmath.Vector2d, flip bmath.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
+func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, flip vector.Vector2d, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion, storyboard bool) {
 	batch.bind(texture.Texture)
 
 	scaleX := float32(scale.X * float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
