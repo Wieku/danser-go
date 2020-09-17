@@ -12,7 +12,6 @@ import (
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/input"
-	"github.com/wieku/danser-go/app/render/batches"
 	"github.com/wieku/danser-go/app/render/font"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states"
@@ -21,6 +20,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/blend"
+	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/statistic"
 	"image"
@@ -156,7 +156,7 @@ func run() {
 		gl.ClearColor(0, 0, 0, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		batch := batches.NewSpriteBatch()
+		batch := sprite.NewSpriteBatch()
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
 		camera := bmath.NewCamera()
