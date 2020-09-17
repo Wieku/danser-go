@@ -194,7 +194,10 @@ func run() {
 			statistic.Reset()
 			glfw.PollEvents()
 
-			gl.Enable(gl.MULTISAMPLE)
+			if settings.Graphics.MSAA > 0 {
+				gl.Enable(gl.MULTISAMPLE)
+			}
+
 			gl.Enable(gl.SCISSOR_TEST)
 			gl.Disable(gl.DITHER)
 
