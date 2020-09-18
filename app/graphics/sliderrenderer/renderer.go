@@ -114,8 +114,7 @@ func BeginRendererMerge() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	blend.Push()
-	blend.Enable()
-	blend.SetFunctionSeparate(blend.SrcAlpha, blend.OneMinusSrcAlpha, blend.One, blend.OneMinusSrcAlpha)
+	blend.Disable()
 }
 
 func EndRendererMerge() {
