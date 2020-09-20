@@ -160,6 +160,8 @@ func (vao *VertexArrayObject) UnmapVBO(name string, offset int, size int) {
 	holder.vbo.Bind()
 	holder.vbo.Unmap(offset, size)
 	holder.vbo.Unbind()
+
+	statistic.Add(statistic.VertexUpload, int64(size*4/holder.format.Size()))
 }
 
 func (vao *VertexArrayObject) Draw() {

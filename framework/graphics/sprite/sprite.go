@@ -73,13 +73,12 @@ func (sprite *Sprite) Update(time int64) {
 	if len(sprite.texture) > 1 {
 		frame := int(math.Floor((float64(time) - sprite.startTime) / sprite.frameDelay))
 		if !sprite.loopForever {
-			if frame >= len(sprite.texture) {
-				frame = len(sprite.texture) - 1
-			}
-			sprite.currentFrame = frame
+			frame = bmath.MinI(frame, len(sprite.texture)-1)
 		} else {
-			sprite.currentFrame = frame % len(sprite.texture)
+			frame = frame % len(sprite.texture)
 		}
+
+		sprite.currentFrame = frame
 	}
 
 	for i := 0; i < len(sprite.transforms); i++ {
