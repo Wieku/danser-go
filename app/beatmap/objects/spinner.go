@@ -58,7 +58,7 @@ func (self *Spinner) UpdateStacking() {}
 func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	self.fade = animation.NewGlider(0)
 	self.fade.AddEvent(float64(self.objData.StartTime)-diff.Preempt, float64(self.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
-	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeIn, 0)
+	self.fade.AddEvent(float64(self.objData.EndTime), float64(self.objData.EndTime)+difficulty.HitFadeOut, 0)
 }
 
 func (self *Spinner) Update(time int64) bool {
