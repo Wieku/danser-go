@@ -32,7 +32,7 @@ func Connect() {
 
 	connected = true
 
-	queue = make(chan func())
+	queue = make(chan func(), 100)
 
 	go func() {
 		for {
