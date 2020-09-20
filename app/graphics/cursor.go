@@ -87,7 +87,7 @@ func NewCursor() *Cursor {
 		initCursor()
 	}
 
-	length := int(math.Ceil(float64(settings.Cursor.TrailMaxLength) / settings.Cursor.TrailDensity))
+	points := int(math.Ceil(float64(settings.Cursor.TrailMaxLength) * settings.Cursor.TrailDensity))
 
 	vao := buffer.NewVertexArrayObject()
 
@@ -112,7 +112,7 @@ func NewCursor() *Cursor {
 
 	vao.AddVBO(
 		"points",
-		length,
+		points,
 		1,
 		attribute.Format{
 			{Name: "in_mid", Type: attribute.Vec2},
@@ -124,7 +124,7 @@ func NewCursor() *Cursor {
 	vao.Attach(cursorShader)
 	vao.Unbind()
 
-	cursor := &Cursor{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, length*3)}
+	cursor := &Cursor{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3)}
 	cursor.vecSize = 3
 
 	return cursor
@@ -206,7 +206,7 @@ func (cr *Cursor) Update(delta float64) {
 	if len(cr.Points) > 0 {
 		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / delta) * settings.Cursor.TrailRemoveSpeed
 		times := int(math.Floor(cr.removeCounter))
-		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) / float64(density))
+		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) * float64(density))
 
 		if len(cr.Points) > lengthAdjusted {
 			cr.Points = cr.Points[len(cr.Points)-lengthAdjusted:]
