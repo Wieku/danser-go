@@ -14,6 +14,8 @@ func initKnockout() *knockout {
 		MaxPlayers:         50,
 		BubbleMinimumCombo: 200,
 		RevivePlayersAtEnd: false,
+		MinCursorSize:      3.0,
+		MaxCursorSize:      7.0,
 		AddDanser:          false,
 		DanserName:         "danser",
 	}
@@ -44,6 +46,12 @@ type knockout struct {
 
 	// Whether knocked out players should appear on map end
 	RevivePlayersAtEnd bool
+
+	//Minimum cursor size (when all players are alive)
+	MinCursorSize float64
+
+	//Maximum cursor size (when there is only 1 player left)
+	MaxCursorSize float64
 
 	// Self explanatory
 	AddDanser  bool

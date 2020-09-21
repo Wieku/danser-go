@@ -326,12 +326,12 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []m
 			overlay.deathBubbles = append(overlay.deathBubbles[:i], overlay.deathBubbles[i+1:]...)
 			i--
 		}
-
 	}
-	minSize := 3.0
-	maxSize := 7.0
+
+	minSize := settings.Knockout.MinCursorSize
+	maxSize := settings.Knockout.MaxCursorSize
 	settings.Cursor.CursorSize = minSize + (maxSize-minSize)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
-	//settings.Cursor.TrailScale = 1.0 - 0.95 * (settings.Cursor.CursorSize-minSize) / (maxSize-minSize)
+
 	batch.SetScale(1, 1)
 }
 
