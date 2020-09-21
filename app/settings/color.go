@@ -38,7 +38,7 @@ func (cl *color) Update(delta float64) {
 func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 	flashOffset := 0.0
 	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Audio.BeatScale)
+		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
 	}
 	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
 
@@ -62,7 +62,7 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 func (cl *color) GetColorsH(divides int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
 	flashOffset := 0.0
 	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (0.4 * Audio.BeatScale)
+		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
 	}
 	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
 
