@@ -29,6 +29,7 @@ import (
 	"log"
 	"math"
 	"path/filepath"
+	"runtime"
 	"time"
 )
 
@@ -169,6 +170,52 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	copy(player.queue2, player.bMap.Queue)
 
+	player.followpoints = storyboard.NewStoryboardLayer()
+
+	prempt := 400.0
+	postmt := 240.0
+	lineDist := 32.0
+
+	for i := 1; i < len(player.queue2); i++ {
+		_, ok1 := player.queue2[i-1].(*objects.Spinner)
+		_, ok2 := player.queue2[i].(*objects.Spinner)
+		if ok1 || ok2 || player.queue2[i].GetBasicData().NewCombo {
+			continue
+		}
+
+		prevTime := float64(player.queue2[i-1].GetBasicData().EndTime)
+		prevPos := player.queue2[i-1].GetBasicData().EndPos.Copy64()
+
+		nextTime := float64(player.queue2[i].GetBasicData().StartTime)
+		nextPos := player.queue2[i].GetBasicData().StartPos.Copy64()
+
+		vec := nextPos.Sub(prevPos)
+		duration := nextTime - prevTime
+		distance := vec.Len()
+		rotation := vec.AngleR()
+
+		for prog := lineDist * 1.5; prog < distance-lineDist; prog += lineDist {
+			t := prog / distance
+
+			tStart := prevTime + t*duration - prempt
+			tEnd := prevTime + t*duration
+
+			pos := prevPos.Add(vec.Scl(t))
+
+			sprite := sprite.NewSpriteSingle(graphics.FollowPoint, 0, pos, bmath.Origin.Centre)
+			sprite.SetRotation(rotation)
+			sprite.ShowForever(false)
+
+			sprite.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tStart, tStart+postmt, 0, 1))
+			sprite.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tEnd, tEnd+postmt, 1, 0))
+			sprite.AdjustTimesToTransformations()
+			sprite.SetAlpha(0)
+			player.followpoints.Add(sprite)
+		}
+	}
+
+	player.followpoints.FinishLoading()
+
 	log.Println("Track:", beatMap.Audio)
 
 	player.Scl = 1
@@ -255,6 +302,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.profilerU = frame.NewCounter()
 	limiter := frame.NewLimiter(10000)
 	go func() {
+		runtime.LockOSThread()
+
 		var lastT = qpc.GetNanoTime()
 
 		for {
@@ -275,7 +324,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 					ov.SetMusic(musicPlayer)
 				}
-				//musicPlayer.SetPosition(2*60)
+				//musicPlayer.SetPosition(40)
 				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
 				if player.overlay == nil {
 					discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -298,7 +347,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			if bTime != player.lastBeatLength {
 				player.lastBeatLength = bTime
 				player.lastBeatStart = float64(player.bMap.Timings.Current.Time)
-				player.lastBeatProg = -1
+				player.lastBeatProg = int64((player.progressMsF-player.lastBeatStart)/player.lastBeatLength) - 1
 			}
 
 			if int64(float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength) > player.lastBeatProg {
@@ -308,11 +357,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
 			player.visualiser.Update(player.progressMsF)
 
-			cursorPosition := player.controller.GetCursors()[0].Position
+			//cursorPosition := player.controller.GetCursors()[0].Position
 
-			offset := player.camera.Project(cursorPosition.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), 2/settings.Graphics.GetHeightF()))
+			//offset := player.camera.Project(cursorPosition.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF()))
 
-			player.background.Update(player.progressMsF, offset.X, offset.Y)
+			player.background.Update(player.progressMsF, 0, 0) //offset.X, offset.Y)
+
+			player.followpoints.Update(int64(player.progressMsF))
 
 			player.epiGlider.Update(player.progressMsF)
 			player.dimGlider.Update(player.progressMsF)
@@ -345,7 +396,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			//oldVelocity := player.velocity
 
-			player.velocity = math.Max(player.velocity, boost*1.5)
+			player.velocity = math.Min(math.Max(player.velocity, math.Max(0, (boost*1.5/6)-0.5)/0.5), 1)
 
 			player.velocity *= 1.0 - 0.05
 
@@ -432,6 +483,34 @@ func (pl *Player) Draw(float64) {
 
 	pl.background.Draw(pl.progressMs, pl.batch, pl.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
+	if pl.start {
+		settings.Objects.Colors.Update(timMs)
+		settings.Objects.CustomSliderBorderColor.Update(timMs)
+		settings.Cursor.Colors.Update(timMs)
+	}
+
+	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors2 := colors
+
+	if settings.Objects.EnableCustomSliderBorderColor {
+		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	}
+
+	if pl.overlay != nil {
+		pl.batch.Begin()
+		pl.batch.ResetTransform()
+		pl.batch.SetScale(1, 1)
+
+		pl.batch.SetCamera(cameras[0])
+
+		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
+
+		pl.batch.End()
+		pl.batch.ResetTransform()
+		pl.batch.SetColor(1, 1, 1, 1)
+	}
+
 	if pl.epiGlider.GetValue() > 0.01 {
 		pl.batch.Begin()
 		pl.batch.ResetTransform()
@@ -450,6 +529,7 @@ func (pl *Player) Draw(float64) {
 
 		pl.batch.ResetTransform()
 		pl.batch.End()
+		pl.batch.SetColor(1, 1, 1, 1)
 	}
 
 	pl.counter += timMs
@@ -488,7 +568,7 @@ func (pl *Player) Draw(float64) {
 			pl.visualiser.Draw(pl.progressMsF, pl.batch)
 		}
 
-		pl.batch.SetColor(1, 1, 1, pl.Scl*pl.fxGlider.GetValue())
+		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
 
 		scl := (pl.cookieSize / 2048.0) * 1.05
 
@@ -508,20 +588,6 @@ func (pl *Player) Draw(float64) {
 		pl.batch.End()
 	}
 
-	if pl.start {
-		settings.Objects.Colors.Update(timMs)
-		settings.Objects.CustomSliderBorderColor.Update(timMs)
-		settings.Cursor.Colors.Update(timMs)
-	}
-
-	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
-	colors2 := colors
-
-	if settings.Objects.EnableCustomSliderBorderColor {
-		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	}
-
 	scale1 := pl.Scl
 	scale2 := pl.Scl
 
@@ -531,18 +597,6 @@ func (pl *Player) Draw(float64) {
 
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
-	}
-
-	if pl.overlay != nil {
-		pl.batch.Begin()
-		pl.batch.ResetTransform()
-		pl.batch.SetScale(1, 1)
-
-		pl.batch.SetCamera(cameras[0])
-
-		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
-
-		pl.batch.End()
 	}
 
 	if settings.Playfield.Bloom.Enabled {
