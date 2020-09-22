@@ -7,7 +7,6 @@ import (
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
-	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
@@ -34,7 +33,8 @@ type Body struct {
 
 	radius float32
 
-	disposed bool
+	disposed         bool
+	distortionMatrix mgl32.Mat4
 }
 
 func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
@@ -44,6 +44,7 @@ func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
 
 	body := new(Body)
 
+	body.distortionMatrix = mgl32.Ident4()
 	body.radius = hitCircleRadius
 	body.previousStart = -1
 
@@ -135,17 +136,14 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	}
 
 	body.framebuffer.Bind()
+	viewport.Push(int(body.framebuffer.Texture().GetWidth()), int(body.framebuffer.Texture().GetHeight()))
 
-	blend.Push()
-	blend.Disable()
-
+	//TODO: Make depth manager
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthMask(true)
 	gl.DepthFunc(gl.LESS)
 
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
-
-	viewport.Push(int(body.framebuffer.Texture().GetWidth()), int(body.framebuffer.Texture().GetHeight()))
 
 	sliderShader.Bind()
 
@@ -161,12 +159,10 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 
 	body.framebuffer.Unbind()
 
-	viewport.Pop()
-
 	gl.Disable(gl.DEPTH_TEST)
 	gl.DepthMask(false)
 
-	blend.Pop()
+	viewport.Pop()
 
 	body.previousStart = startInstance
 	body.previousEnd = endInstance
