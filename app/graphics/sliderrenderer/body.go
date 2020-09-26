@@ -179,6 +179,28 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	invProjView := baseProjView.Inv()
 
+	scaleX := 1.0
+	scaleY := 1.0
+
+	if settings.Objects.SliderDistortions {
+		tLS := baseProjView.Mul4x1(mgl32.Vec4{body.topLeft.X, body.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+		bRS := baseProjView.Mul4x1(mgl32.Vec4{body.bottomRight.X, body.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+
+		wS := float32(32768 / (settings.Graphics.GetWidthF()))
+		hS := float32(32768 / (settings.Graphics.GetHeightF()))
+
+		if -tLS.X()+bRS.X() > wS {
+			scaleX = float64(wS / (-tLS.X() + bRS.X()))
+		}
+
+		if bRS.Y() < -hS {
+			scaleY = float64(-hS / bRS.Y())
+		}
+	}
+
+	tS := invProjView.Mul4x1(mgl32.Vec4{-1, 1, 0.0, 1.0})
+	body.distortionMatrix = mgl32.Translate3D(tS.X(), tS.Y(), 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(-tS.X(), -tS.Y(), 0))
+
 	multiplierX := float32(1.0)
 	multiplierY := float32(1.0)
 
@@ -204,6 +226,10 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	topLeftScreenE.X = math32.Max(tLW.X(), body.topLeft.X-body.radius*float32(settings.Audio.BeatScale))
 	topLeftScreenE.Y = math32.Max(tLW.Y(), body.topLeft.Y-body.radius*float32(settings.Audio.BeatScale))
 
+	// make upper left part of fbo bigger to fit distorted sliders
+	topLeftScreenE.X = (topLeftScreenE.X-tLW.X())*float32(scaleX) + tLW.X()
+	topLeftScreenE.Y = (topLeftScreenE.Y-tLW.Y())*float32(scaleY) + tLW.Y()
+
 	bottomRightScreenE.X = math32.Min(bRW.X(), body.bottomRight.X+body.radius*float32(settings.Audio.BeatScale))
 	bottomRightScreenE.Y = math32.Min(bRW.Y(), body.bottomRight.Y+body.radius*float32(settings.Audio.BeatScale))
 
@@ -223,26 +249,4 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	body.bodySprite.SetVFlip(true)
 
 	body.baseProjection = mgl32.Ortho(topLeftScreenE.X, bottomRightScreenE.X, bottomRightScreenE.Y, topLeftScreenE.Y, 1, -1)
-
-	scaleX := 1.0
-	scaleY := 1.0
-
-	if settings.Objects.SliderDistortions {
-		tLS := baseProjView.Mul4x1(mgl32.Vec4{body.topLeft.X, body.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-		bRS := baseProjView.Mul4x1(mgl32.Vec4{body.bottomRight.X, body.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-
-		wS := float32(32768 / (settings.Graphics.GetWidthF()))
-		hS := float32(32768 / (settings.Graphics.GetHeightF()))
-
-		if -tLS.X()+bRS.X() > wS {
-			scaleX = float64(wS / (-tLS.X() + bRS.X()))
-		}
-
-		if bRS.Y() < -hS {
-			scaleY = float64(-hS / bRS.Y())
-		}
-	}
-
-	tS := invProjView.Mul4x1(mgl32.Vec4{-1, 1, 0.0, 1.0})
-	body.distortionMatrix = mgl32.Translate3D(tS.X(), tS.Y(), 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(-tS.X(), -tS.Y(), 0))
 }
