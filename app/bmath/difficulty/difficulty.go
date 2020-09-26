@@ -2,9 +2,14 @@ package difficulty
 
 import "math"
 
-const HitFadeIn = 400
-const HitFadeOut = 240
-const HittableRange = 400
+const (
+	HitFadeIn     = 400
+	HitFadeOut    = 240
+	HittableRange = 400
+	ResultFadeIn  = 120
+	ResultFadeOut = 600
+	PostEmpt      = 500
+)
 
 type Difficulty struct {
 	hpDrain, cs, od, ar float64
