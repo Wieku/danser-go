@@ -13,6 +13,8 @@ var ApproachCircle *texture.TextureRegion
 var CircleFull *texture.TextureRegion
 var CircleOverlay *texture.TextureRegion
 
+var FollowPoint *texture.TextureRegion
+
 var SliderTick *texture.TextureRegion
 var SliderBall *texture.TextureRegion
 var SliderReverse *texture.TextureRegion
@@ -56,6 +58,8 @@ func LoadTextures() {
 	ApproachCircle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/approachcircle.png")
 	CircleFull, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle-full.png")
 	CircleOverlay, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircleoverlay.png")
+
+	FollowPoint, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/followpoint-1.png")
 
 	SliderTick, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderscorepoint.png")
 	SliderBall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderball.png")
