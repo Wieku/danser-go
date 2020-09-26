@@ -369,6 +369,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.startCircle = DummyCircle(self.objData.StartPos, self.objData.StartTime)
 	self.startCircle.objData.ComboNumber = self.objData.ComboNumber
+	self.startCircle.objData.ComboSet = self.objData.ComboSet
 	self.startCircle.objData.Number = self.objData.Number
 	self.startCircle.SetDifficulty(diff)
 
@@ -703,8 +704,12 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 		//		self.vao.Dispose()
 		//	}
 		//}
+		if self.body != nil {
+			self.body.Dispose()
+		}
 		return true
 	}
+
 	return false
 }
 
@@ -712,5 +717,6 @@ func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.Spr
 	if len(self.scorePath) == 0 {
 		return
 	}
+
 	self.startCircle.DrawApproach(time, color, batch)
 }

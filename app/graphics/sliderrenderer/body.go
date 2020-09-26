@@ -250,3 +250,12 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	body.baseProjection = mgl32.Ortho(topLeftScreenE.X, bottomRightScreenE.X, bottomRightScreenE.Y, topLeftScreenE.Y, 1, -1)
 }
+
+func (body *Body) Dispose() {
+	if body.disposed {
+		return
+	}
+
+	body.disposed = true
+	body.framebuffer.Dispose()
+}
