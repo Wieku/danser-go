@@ -21,10 +21,10 @@ import (
 type Storyboard struct {
 	textures    map[string]*texture.TextureRegion
 	atlas       *texture.TextureAtlas
-	background  *StoryboardLayer
-	pass        *StoryboardLayer
-	foreground  *StoryboardLayer
-	overlay     *StoryboardLayer
+	background  *sprite.SpriteManager
+	pass        *sprite.SpriteManager
+	foreground  *sprite.SpriteManager
+	overlay     *sprite.SpriteManager
 	zIndex      int64
 	bgFileUsed  bool
 	widescreen  bool
@@ -32,6 +32,7 @@ type Storyboard struct {
 	currentTime int64
 	limiter     *frame.Limiter
 	counter     *frame.Counter
+	numSprites  int
 }
 
 func getSection(line string) string {
@@ -61,7 +62,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", fix(beatMap.Artist), fix(beatMap.Name), fix(beatMap.Creator)))}
 
-	storyboard := &Storyboard{zIndex: -1, background: NewStoryboardLayer(), pass: NewStoryboardLayer(), foreground: NewStoryboardLayer(), overlay: NewStoryboardLayer(), atlas: nil}
+	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
 
 	var currentSection string
@@ -144,11 +145,6 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		return nil
 	}
 
-	storyboard.background.FinishLoading()
-	storyboard.pass.FinishLoading()
-	storyboard.foreground.FinishLoading()
-	storyboard.overlay.FinishLoading()
-
 	for k := range storyboard.textures {
 		if k == beatMap.Bg {
 			storyboard.bgFileUsed = true
@@ -230,6 +226,8 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		case "4", "Overlay":
 			storyboard.overlay.Add(sprite)
 		}
+
+		storyboard.numSprites++
 	}
 }
 
@@ -325,11 +323,11 @@ func (storyboard *Storyboard) GetProcessedSprites() int {
 }
 
 func (storyboard *Storyboard) GetQueueSprites() int {
-	return len(storyboard.background.spriteQueue) + len(storyboard.pass.spriteQueue) + len(storyboard.foreground.spriteQueue) + len(storyboard.overlay.spriteQueue)
+	return storyboard.background.GetNumInQueue() + storyboard.pass.GetNumInQueue() + storyboard.foreground.GetNumInQueue() + storyboard.overlay.GetNumInQueue()
 }
 
 func (storyboard *Storyboard) GetTotalSprites() int {
-	return storyboard.background.allSprites + storyboard.pass.allSprites + storyboard.foreground.allSprites + storyboard.overlay.allSprites
+	return storyboard.numSprites
 }
 
 func (storyboard *Storyboard) GetLoad() float64 {

@@ -89,6 +89,9 @@ type Player struct {
 	volAverage float64
 	cookieSize float64
 	visualiser *drawables.Visualiser
+
+	followpoints *sprite.SpriteManager
+	hudGlider    *animation.Glider
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -170,7 +173,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	copy(player.queue2, player.bMap.Queue)
 
-	player.followpoints = storyboard.NewStoryboardLayer()
+	player.followpoints = sprite.NewSpriteManager()
 
 	prempt := 400.0
 	postmt := 240.0
@@ -214,14 +217,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	}
 
-	player.followpoints.FinishLoading()
-
 	log.Println("Track:", beatMap.Audio)
 
 	player.Scl = 1
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
+	player.hudGlider = animation.NewGlider(1.0)
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)
 	player.fxGlider = animation.NewGlider(0.0)
@@ -256,6 +258,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 	player.playersGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
+	player.hudGlider.AddEvent(tmE, tmE+1000, 0.0)
+
 	player.epiGlider = animation.NewGlider(0)
 
 	if settings.Playfield.Seizure.Enabled {
@@ -278,6 +282,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			continue
 		}
 
+		player.hudGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0.0)
 		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Background.Dim.Breaks)
 		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.Background.Blur.Values.Breaks)
 		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
@@ -286,6 +291,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
 		}
 
+		player.hudGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0)
 		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Background.Dim.Normal)
 		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.Background.Blur.Values.Normal)
 		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Logo.Dim.Normal)
@@ -371,6 +377,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.fxGlider.Update(player.progressMsF)
 			player.cursorGlider.Update(player.progressMsF)
 			player.playersGlider.Update(player.progressMsF)
+			player.hudGlider.Update(player.progressMsF)
 			player.unfold.Update(player.progressMsF)
 
 			lastT = currtime
@@ -504,7 +511,7 @@ func (pl *Player) Draw(float64) {
 
 		pl.batch.SetCamera(cameras[0])
 
-		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
+		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 
 		pl.batch.End()
 		pl.batch.ResetTransform()
@@ -608,6 +615,19 @@ func (pl *Player) Draw(float64) {
 
 	if settings.Playfield.DrawObjects {
 
+		pl.batch.Begin()
+		pl.batch.ResetTransform()
+		pl.batch.SetColor(1, 1, 1, 1)
+		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
+
+		for j := 0; j < settings.DIVIDES; j++ {
+			pl.batch.SetCamera(cameras[j])
+			pl.followpoints.Draw(pl.progressMs, pl.batch)
+		}
+
+		pl.batch.Flush()
+		pl.batch.SetScale(1, 1)
+
 		for i := len(pl.processed) - 1; i >= 0; i-- {
 			if s, ok := pl.processed[i].(*objects.Slider); ok {
 				s.DrawBodyBase(pl.progressMs, cameras[0])
@@ -638,8 +658,6 @@ func (pl *Player) Draw(float64) {
 				sliderrenderer.EndRendererMerge()
 			}
 		}
-
-		pl.batch.Begin()
 
 		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 			pl.batch.SetAdditive(true)
@@ -713,7 +731,7 @@ func (pl *Player) Draw(float64) {
 
 		pl.batch.SetCamera(cameras[0])
 
-		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*0.8)
+		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 
 		pl.batch.End()
 	}
@@ -759,12 +777,12 @@ func (pl *Player) Draw(float64) {
 		pl.batch.SetScale(1, 1)
 
 		if !pl.overlay.NormalBeforeCursor() {
-			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue())
+			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 		}
 
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
-		pl.overlay.DrawHUD(pl.batch, colors1, pl.playersGlider.GetValue())
+		pl.overlay.DrawHUD(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 
 		pl.batch.End()
 	}
