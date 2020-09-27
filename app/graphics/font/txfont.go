@@ -3,15 +3,16 @@ package font
 import (
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"math"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 func LoadTextureFont(path, name string, min, max rune, atlas *texture.TextureAtlas) *Font {
 	font := new(Font)
-	font.min = min
-	font.max = max
-	font.glyphs = make(map[rune]*glyphData) //, font.max-font.min+1)
+
+	font.glyphs = make(map[rune]*glyphData)
 
 	font.atlas = atlas
 
@@ -25,7 +26,11 @@ func LoadTextureFont(path, name string, min, max rune, atlas *texture.TextureAtl
 			font.initialSize = float64(region.Height)
 		}
 
-		font.glyphs[i-font.min] = &glyphData{*region, float64(region.Width), 0, float64(region.Height) / 2}
+		font.glyphs[i] = &glyphData{region, float64(region.Width), 0, float64(region.Height) / 2}
+
+		if unicode.IsDigit(i) {
+			font.biggest = math.Max(font.biggest, float64(region.Width))
+		}
 	}
 
 	return font
@@ -34,20 +39,6 @@ func LoadTextureFont(path, name string, min, max rune, atlas *texture.TextureAtl
 func LoadTextureFontMap(path, name string, chars map[string]rune, atlas *texture.TextureAtlas) *Font {
 	font := new(Font)
 
-	min := rune(10000)
-	max := rune(0)
-
-	for _, v := range chars {
-		if v < min {
-			min = v
-		}
-		if v > max {
-			max = v
-		}
-	}
-
-	font.min = min
-	font.max = max
 	font.glyphs = make(map[rune]*glyphData) //, font.max-font.min+1)
 
 	font.atlas = atlas
@@ -62,7 +53,34 @@ func LoadTextureFontMap(path, name string, chars map[string]rune, atlas *texture
 			font.initialSize = float64(region.Height)
 		}
 
-		font.glyphs[v-font.min] = &glyphData{*region, float64(region.Width), 0, float64(region.Height) / 2}
+		font.glyphs[v] = &glyphData{region, float64(region.Width), 0, float64(region.Height) / 2}
+		if unicode.IsDigit(v) {
+			font.biggest = math.Max(font.biggest, float64(region.Width))
+		}
+	}
+
+	return font
+}
+
+func LoadTextureFontMap2(chars map[rune]*texture.TextureRegion) *Font {
+	font := new(Font)
+
+	font.glyphs = make(map[rune]*glyphData)
+
+	for c, r := range chars {
+		if r == nil {
+			continue
+		}
+
+		if float64(r.Height) > font.initialSize {
+			font.initialSize = float64(r.Height)
+		}
+
+		font.glyphs[c] = &glyphData{r, float64(r.Width), 0, float64(r.Height) / 2}
+
+		if unicode.IsDigit(c) {
+			font.biggest = math.Max(font.biggest, float64(r.Width))
+		}
 	}
 
 	return font
