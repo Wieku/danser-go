@@ -84,6 +84,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 		{Name: "in_layer", Type: attribute.Float},
 		{Name: "in_color", Type: attribute.ColorPacked},
 		{Name: "in_additive", Type: attribute.Float},
+		{Name: "in_msdf", Type: attribute.Float},
 	})
 
 	vao.Bind()
@@ -151,6 +152,10 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 }
 
 func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
+	if texture.Texture == nil {
+		return
+	}
+
 	batch.bind(texture.Texture)
 
 	scaleX := float32(batch.scale.X * batch.subscale.X)
@@ -191,6 +196,7 @@ func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
 	batch.data[idx+8] = layer
 	batch.data[idx+9] = pack(r, g, b, a)
 	batch.data[idx+10] = add
+	batch.data[idx+11] = 0
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -286,6 +292,10 @@ func (batch *SpriteBatch) SetAdditive(additive bool) {
 }
 
 func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
+	if texture.Texture == nil {
+		return
+	}
+
 	batch.bind(texture.Texture)
 
 	scaleX := float32(float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
@@ -326,6 +336,62 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 	batch.data[idx+8] = layer
 	batch.data[idx+9] = pack(r, g, b, a)
 	batch.data[idx+10] = add
+	batch.data[idx+11] = 0
+
+	batch.currentFloats += batch.vertexSize
+	batch.currentSize++
+
+	if batch.currentSize >= batch.maxSprites {
+		batch.Flush()
+	}
+}
+
+func (batch *SpriteBatch) DrawTextureMSDF(texture texture.TextureRegion) {
+	if texture.Texture == nil {
+		return
+	}
+
+	batch.bind(texture.Texture)
+
+	scaleX := float32(float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
+	scaleY := float32(float64(texture.Height) / 2 * batch.scale.Y * batch.subscale.Y)
+
+	posX := float32(batch.position.X)
+	posY := float32(batch.position.Y)
+
+	rot := float32(math.Mod(batch.rotation, math.Pi*2))
+
+	u1 := texture.U1
+	u2 := texture.U2
+	v1 := texture.V1
+	v2 := texture.V2
+
+	layer := float32(texture.Layer)
+
+	r := batch.color.X()
+	g := batch.color.Y()
+	b := batch.color.Z()
+	a := batch.color.W()
+
+	add := float32(1)
+	if batch.additive {
+		add = 0
+	}
+
+	idx := batch.currentFloats
+
+	batch.data[idx] = packUV(0.5, 0.5)
+	batch.data[idx+1] = scaleX
+	batch.data[idx+2] = scaleY
+	batch.data[idx+3] = posX
+	batch.data[idx+4] = posY
+	batch.data[idx+5] = rot
+	batch.data[idx+6] = packUV(u1, u2)
+	batch.data[idx+7] = packUV(v1, v2)
+	batch.data[idx+8] = layer
+	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+10] = add
+	batch.data[idx+11] = 1
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -336,6 +402,10 @@ func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
 }
 
 func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
+	if texture.Texture == nil {
+		return
+	}
+
 	batch.bind(texture.Texture)
 
 	scaleX := float32(scale.X * float64(texture.Width) / 2 * batch.scale.X * batch.subscale.X)
@@ -384,6 +454,7 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, 
 	batch.data[idx+8] = layer
 	batch.data[idx+9] = pack(r, g, b, a)
 	batch.data[idx+10] = add
+	batch.data[idx+11] = 0
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++

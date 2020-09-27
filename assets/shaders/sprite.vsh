@@ -14,12 +14,14 @@ in float in_layer;
 
 in vec4 in_color;
 in float in_additive;
+in float in_msdf;
 
 uniform mat4 proj;
 
 out vec4 col_tint;
 out vec3 tex_coord;
 out float additive;
+out float msdf;
 
 void main()
 {
@@ -37,4 +39,5 @@ void main()
     tex_coord = vec3(in_u[int(base_uv.x)], in_v[int(base_uv.y)], in_layer);
     col_tint = in_color;
     additive = in_additive;
+    msdf = in_msdf;
 }
