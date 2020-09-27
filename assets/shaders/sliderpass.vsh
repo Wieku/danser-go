@@ -8,5 +8,5 @@ uniform float scale;
 uniform mat4 distort;
 
 void main() {
-    gl_Position = distort * projection * vec4(scale * in_position.xy + center, in_position.z, 1.0);
+    gl_Position = projection * distort * vec4(scale * in_position.xy + center, in_position.z, 1.0);
 }

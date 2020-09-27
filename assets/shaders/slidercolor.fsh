@@ -1,4 +1,5 @@
 #version 330
+precision highp float;
 
 #define borderStart 0.06640625f // 34/512
 #define baseBorderWidth 0.126953125f // 65/512
