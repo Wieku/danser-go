@@ -25,10 +25,10 @@ type TextureAtlas struct {
 }
 
 func NewTextureAtlas(size, mipmaps int) *TextureAtlas {
-	return NewTextureAtlasFormat(size, RGBA, mipmaps)
+	return NewTextureAtlasFormat(size, RGBA, mipmaps, 1)
 }
 
-func NewTextureAtlasFormat(size int, format Format, mipmaps int) *TextureAtlas {
+func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *TextureAtlas {
 	texture := new(TextureAtlas)
 	texture.subTextures = make(map[string]*TextureRegion)
 	texture.emptySpaces = make(map[int32][]rectangle)
@@ -41,7 +41,7 @@ func NewTextureAtlasFormat(size int, format Format, mipmaps int) *TextureAtlas {
 		size = int(siz)
 	}
 
-	texture.store = newStore(1, size, size, format, mipmaps)
+	texture.store = newStore(layers, size, size, format, mipmaps)
 	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(size), int32(size), 0}
 	texture.padding = 1 << uint(texture.store.mipmaps)
 
