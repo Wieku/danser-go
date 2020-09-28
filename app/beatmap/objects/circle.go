@@ -175,7 +175,7 @@ func (self *Circle) Arm(clicked bool, time int64) {
 
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
 		self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
-		self.textFade.AddEventS(startTime, endTime, 1.0, 0.0)
+		self.textFade.AddEventS(startTime, startTime+60, 1.0, 0.0)
 	} else {
 		endTime := startTime + 60
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, self.hitCircle.GetAlpha(), 0.0))
@@ -239,13 +239,10 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		self.hitCircleOverlay.Draw(time, batch)
 
-		batch.SetColor(1, 1, 1, alpha*self.textFade.GetValue())
-
-		if time < self.objData.StartTime {
-			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				fnt := skin.GetFont("default")
-				fnt.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(self.objData.ComboNumber)))
-			}
+		if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
+			fnt := skin.GetFont("default")
+			batch.SetColor(1, 1, 1, alpha*self.textFade.GetValue())
+			fnt.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(self.objData.ComboNumber)))
 		}
 	}
 
