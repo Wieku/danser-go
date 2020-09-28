@@ -14,11 +14,13 @@ type spinnerstate struct {
 	lastRotationCount    int64
 	scoringRotationCount int64
 	rotationCountF       float64
+	rotationCountFD      float64
 	frameVariance        float64
 	theoreticalVelocity  float64
 	currentVelocity      float64
 	finished             bool
 	zeroCount            int64
+	rpm                  float64
 }
 
 type Spinner struct {
@@ -28,6 +30,7 @@ type Spinner struct {
 	state             map[*difficultyPlayer]*spinnerstate
 	fadeStartRelative float64
 	maxAcceleration   float64
+	lastTime          int64
 }
 
 func (spinner *Spinner) GetNumber() int64 {
@@ -66,85 +69,109 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 	spinnerPosition := spinner.hitSpinner.GetBasicData().StartPos
 
 	state := spinner.state[player]
-	timeDiff := time - player.cursor.LastFrameTime
+	timeDiff := float64(time - player.cursor.LastFrameTime)
+	if player.cursor.LastFrameTime == 0 {
+		timeDiff = FrameTime
+	}
 
 	if !state.finished {
 		numFinishedTotal++
-		if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+		if player.cursor.IsReplayFrame && time > spinner.hitSpinner.GetBasicData().StartTime && time < spinner.hitSpinner.GetBasicData().EndTime {
+			decay1 := math.Pow(0.9, timeDiff/FrameTime)
+			state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(state.currentVelocity)*1000)/(math.Pi*2)*60
 
-			if timeDiff > 0 {
+			mouseAngle := float64(player.cursor.Position.Sub(spinnerPosition).AngleR())
 
-				mouseAngle := float64(player.cursor.Position.Sub(spinnerPosition).AngleR())
+			angleDiff := mouseAngle - state.lastAngle
 
-				angleDiff := mouseAngle - state.lastAngle
+			if mouseAngle-state.lastAngle < -math.Pi {
+				angleDiff = (2 * math.Pi) + mouseAngle - state.lastAngle
+			} else if state.lastAngle-mouseAngle < -math.Pi {
+				angleDiff = (-2 * math.Pi) - state.lastAngle + mouseAngle
+			}
 
-				if mouseAngle-state.lastAngle < -math.Pi {
-					angleDiff = (2 * math.Pi) + mouseAngle - state.lastAngle
-				} else if state.lastAngle-mouseAngle < -math.Pi {
-					angleDiff = (-2 * math.Pi) - state.lastAngle + mouseAngle
+			decay := math.Pow(0.999, timeDiff)
+			state.frameVariance = decay*state.frameVariance + (1-decay)*timeDiff
+
+			if angleDiff == 0 {
+				state.zeroCount += 1
+
+				if state.zeroCount < 2 {
+					state.theoreticalVelocity /= 3
+				} else {
+					state.theoreticalVelocity = 0
+				}
+			} else {
+				state.zeroCount = 0
+
+				if !player.gameDownState || time < spinner.hitSpinner.GetBasicData().StartTime || time > spinner.hitSpinner.GetBasicData().EndTime {
+					angleDiff = 0
 				}
 
-				decay := math.Pow(0.999, float64(timeDiff))
-				state.frameVariance = decay*state.frameVariance + (1-decay)*float64(timeDiff)
-
-				if angleDiff == 0 {
-					state.zeroCount += 1
-
-					if state.zeroCount < 2 {
-						state.theoreticalVelocity /= 3
+				if math.Abs(angleDiff) < math.Pi {
+					if player.diff.GetModifiedTime(state.frameVariance) > FrameTime*1.04 {
+						state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(timeDiff)
 					} else {
-						state.theoreticalVelocity = 0
+						state.theoreticalVelocity = angleDiff / FrameTime
 					}
 				} else {
-					state.zeroCount = 0
-
-					if !player.gameDownState || time < spinner.hitSpinner.GetBasicData().StartTime || time > spinner.hitSpinner.GetBasicData().EndTime {
-						angleDiff = 0
-					}
-
-					if math.Abs(angleDiff) < math.Pi {
-						if player.diff.GetModifiedTime(state.frameVariance) > FrameTime*1.04 {
-							state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(float64(timeDiff))
-						} else {
-							state.theoreticalVelocity = angleDiff / FrameTime
-						}
-					} else {
-						state.theoreticalVelocity = 0
-					}
+					state.theoreticalVelocity = 0
 				}
+			}
 
-				state.lastAngle = mouseAngle
+			state.lastAngle = mouseAngle
 
-				maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * float64(timeDiff))
+			maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * timeDiff)
 
-				if state.theoreticalVelocity > state.currentVelocity {
-					state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, maxAccelThisFrame)
+			if state.theoreticalVelocity > state.currentVelocity {
+				state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, maxAccelThisFrame)
+			} else {
+				state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, -maxAccelThisFrame)
+			}
+
+			state.currentVelocity = math.Max(-0.05, math.Min(state.currentVelocity, 0.05))
+
+			if len(spinner.players) == 1 {
+				if state.currentVelocity == 0 {
+					spinner.hitSpinner.StopSpinSample()
 				} else {
-					state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, -maxAccelThisFrame)
+					spinner.hitSpinner.StartSpinSample()
+				}
+			}
+
+			rotationAddition := state.currentVelocity * timeDiff
+
+			state.rotationCountFD += rotationAddition
+			state.rotationCountF += math.Abs(rotationAddition / math.Pi)
+
+			spinner.hitSpinner.SetRotation(player.diff.GetModifiedTime(state.rotationCountFD))
+			spinner.hitSpinner.SetRPM(player.diff.GetModifiedTime(state.rpm))
+
+			state.rotationCount = int64(state.rotationCountF)
+
+			if state.rotationCount != state.lastRotationCount {
+
+				state.scoringRotationCount++
+
+				spinner.hitSpinner.UpdateCompletion(float64(state.scoringRotationCount) / float64(state.requirement))
+
+				if state.scoringRotationCount == state.requirement && len(spinner.players) == 1 {
+					spinner.hitSpinner.Clear()
 				}
 
-				state.currentVelocity = math.Max(-0.05, math.Min(state.currentVelocity, 0.05))
-
-				rotationAddition := state.currentVelocity * float64(timeDiff)
-
-				state.rotationCountF += math.Abs(rotationAddition / math.Pi)
-				state.rotationCount = int64(state.rotationCountF)
-
-				if state.rotationCount != state.lastRotationCount {
-
-					state.scoringRotationCount++
-
-					if state.scoringRotationCount > state.requirement+3 && (state.scoringRotationCount-(state.requirement+3))%2 == 0 {
-						spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerBonus, true, ComboResults.Hold)
-					} else if state.scoringRotationCount > 1 && state.scoringRotationCount%2 == 0 {
-						spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerScore, true, ComboResults.Hold)
-					} else if state.scoringRotationCount > 1 {
-						//hp inpact in the future
+				if state.scoringRotationCount > state.requirement+3 && (state.scoringRotationCount-(state.requirement+3))%2 == 0 {
+					if len(spinner.players) == 1 {
+						spinner.hitSpinner.Bonus()
 					}
 
-					state.lastRotationCount = state.rotationCount
+					spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerBonus, true, ComboResults.Hold)
+				} else if state.scoringRotationCount > 1 && state.scoringRotationCount%2 == 0 {
+					spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, HitResults.SpinnerScore, true, ComboResults.Hold)
+				} else if state.scoringRotationCount > 1 {
+					//hp inpact in the future
 				}
 
+				state.lastRotationCount = state.rotationCount
 			}
 		}
 	}
@@ -176,6 +203,10 @@ func (spinner *Spinner) UpdatePost(time int64) bool {
 
 				if hit != HitResults.Miss {
 					combo = ComboResults.Increase
+				}
+
+				if len(spinner.players) == 1 {
+					spinner.hitSpinner.StopSpinSample()
 				}
 
 				spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)

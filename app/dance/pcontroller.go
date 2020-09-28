@@ -16,7 +16,7 @@ type PlayerController struct {
 	window   *glfw.Window
 	ruleset  *osu.OsuRuleSet
 	lastTime int64
-	counter  int64
+	counter  float64
 
 	leftClick  bool
 	rightClick bool
@@ -68,22 +68,20 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 		controller.cursors[0].RightButton = controller.rightClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
 	}
 
-	controller.counter += time - controller.lastTime
+	controller.counter += float64(time - controller.lastTime)
 
-	if controller.counter >= 12 {
-		controller.cursors[0].LastFrameTime = time - 12
-		controller.cursors[0].CurrentFrameTime = time
+	if controller.counter >= 1000.0/60 {
 		controller.cursors[0].IsReplayFrame = true
-		controller.counter -= 12
+		controller.counter -= 1000.0 / 60
 	} else {
 		controller.cursors[0].IsReplayFrame = false
 	}
 
-	controller.lastTime = time
-
 	controller.ruleset.UpdateClickFor(controller.cursors[0], time)
 	controller.ruleset.UpdateNormalFor(controller.cursors[0], time)
 	controller.ruleset.Update(time)
+
+	controller.lastTime = time
 
 	controller.cursors[0].Update(delta)
 }
