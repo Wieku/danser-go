@@ -26,6 +26,9 @@ func Init() {
 	// Update BASS more frequently
 	C.BASS_SetConfig(C.BASS_CONFIG_DEV_PERIOD, C.DWORD(5))
 
+	// BASS_CONFIG_MP3_OLDGAPS
+	C.BASS_SetConfig(C.DWORD(68), C.DWORD(1))
+
 	if C.BASS_Init(C.int(-1), C.DWORD(44100), C.DWORD(0), nil, nil) != 0 {
 		log.Println("BASS Initialized!")
 	} else {
