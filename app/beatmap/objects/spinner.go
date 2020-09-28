@@ -127,6 +127,7 @@ func (self *Spinner) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatc
 
 	batch.SetSubScale(1, 1)
 	batch.SetRotation(0)
+	batch.SetTranslation(vector.NewVec2d(0, 0))
 	batch.SetScale(scale.X, scale.Y)
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.01 {

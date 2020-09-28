@@ -5,8 +5,8 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -112,9 +112,9 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.textFade = animation.NewGlider(0)
 
-	self.hitCircle = sprite.NewSpriteSingleCentered(graphics.Circle, vector.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.hitCircleOverlay = sprite.NewSpriteSingleCentered(graphics.CircleOverlay, vector.NewVec2d(2, 2).Scl(diff.CircleRadius))
-	self.approachCircle = sprite.NewSpriteSingleCentered(graphics.ApproachCircle, vector.NewVec2d(2, 2).Scl(diff.CircleRadius))
+	self.hitCircle = sprite.NewSpriteSingle(skin.GetTexture("hitcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	self.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTexture("hitcircleoverlay"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	self.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 
 	self.sprites = append(self.sprites, self.hitCircle)
 	self.sprites = append(self.sprites, self.hitCircleOverlay)
@@ -214,7 +214,16 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= settings.Objects.MandalaTexturesAlpha
 	}
+
 	batch.SetColor(1, 1, 1, alpha)
+
+	//if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
+	//	cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	//	r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+	//	self.hitCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
+	//} else {
+	//	self.hitCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+	//}
 
 	self.hitCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 
@@ -234,7 +243,8 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 		if time < self.objData.StartTime {
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				graphics.Combo.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.65*self.diff.CircleRadius, strconv.Itoa(int(self.objData.ComboNumber)))
+				fnt := skin.GetFont("default")
+				fnt.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(self.objData.ComboNumber)))
 			}
 		}
 	}
@@ -252,6 +262,15 @@ func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.Spr
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 	batch.SetColor(1, 1, 1, 1)
+
+	//if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
+	//	cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	//	r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+	//	self.approachCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
+	//} else {
+	//	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+	//}
 	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+
 	self.approachCircle.Draw(time, batch)
 }

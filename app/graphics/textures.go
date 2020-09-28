@@ -1,24 +1,11 @@
 package graphics
 
 import (
-	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 )
 
 var Atlas *texture.TextureAtlas
-
-var Circle *texture.TextureRegion
-var ApproachCircle *texture.TextureRegion
-var CircleFull *texture.TextureRegion
-var CircleOverlay *texture.TextureRegion
-
-var FollowPoint *texture.TextureRegion
-
-var SliderTick *texture.TextureRegion
-var SliderBall *texture.TextureRegion
-var SliderReverse *texture.TextureRegion
-var SliderFollow *texture.TextureRegion
 
 var CursorTex *texture.TextureRegion
 var CursorTop *texture.TextureRegion
@@ -30,8 +17,6 @@ var SpinnerAC *texture.TextureRegion
 
 var Pixel *texture.TextureSingle
 var Triangle *texture.TextureRegion
-var Combo *font.Font
-var Score *font.Font
 
 var RankingD *texture.TextureRegion
 var RankingC *texture.TextureRegion
@@ -54,18 +39,6 @@ func LoadTextures() {
 	Atlas = texture.NewTextureAtlas(4096, 4)
 	Atlas.Bind(16)
 
-	Circle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle.png")
-	ApproachCircle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/approachcircle.png")
-	CircleFull, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircle-full.png")
-	CircleOverlay, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hitcircleoverlay.png")
-
-	FollowPoint, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/followpoint-1.png")
-
-	SliderTick, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderscorepoint.png")
-	SliderBall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderball.png")
-	SliderReverse, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/reversearrow.png")
-	SliderFollow, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/sliderfollowcircle.png")
-
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
 
@@ -85,8 +58,8 @@ func LoadTextures() {
 	GradeTexture = map[int64]*texture.TextureRegion{0: RankingD, 1: RankingC, 2: RankingB, 3: RankingA, 4: RankingS, 5: RankingSH, 6: RankingSS, 7: RankingSSH}
 
 	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit0-0.png")
-	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit50.png")
-	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit100.png")
+	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit50-0.png")
+	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit100-0.png")
 	OvButton, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton.png")
 	OvButtonE, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton-e.png")
 
@@ -95,23 +68,4 @@ func LoadTextures() {
 	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
 	Pixel = texture.NewTextureSingle(1, 1, 0)
 	Pixel.SetData(0, 0, 1, 1, []byte{0xFF, 0xFF, 0xFF, 0xFF})
-	Combo = font.LoadTextureFont("assets/textures/default-.png", "Numbers", '0', '9', Atlas)
-
-	dict := make(map[string]rune)
-	dict["0"] = '0'
-	dict["1"] = '1'
-	dict["2"] = '2'
-	dict["3"] = '3'
-	dict["4"] = '4'
-	dict["5"] = '5'
-	dict["6"] = '6'
-	dict["7"] = '7'
-	dict["8"] = '8'
-	dict["9"] = '9'
-	dict["comma"] = ','
-	dict["dot"] = '.'
-	dict["percent"] = '%'
-	dict["x"] = 'x'
-
-	Score = font.LoadTextureFontMap("assets/textures/score-.png", "Numbers", dict, Atlas)
 }

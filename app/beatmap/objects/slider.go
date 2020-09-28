@@ -6,13 +6,14 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
-	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -20,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-const followBaseScale = 2.14
 
 type PathLine struct {
 	Time1 int64
@@ -73,13 +72,16 @@ type Slider struct {
 	sliderSnakeHead      *animation.Glider
 	fade                 *animation.Glider
 	bodyFade             *animation.Glider
-	fadeFollow           *animation.Glider
-	scaleFollow          *animation.Glider
-	reversePoints        [2][]*reversePoint
+	//fadeFollow           *animation.Glider
+	//scaleFollow          *animation.Glider
+	reversePoints [2][]*reversePoint
 
 	diff     *difficulty.Difficulty
 	body     *sliderrenderer.Body
 	lastTime int64
+
+	ball     *sprite.Sprite
+	follower *sprite.Sprite
 }
 
 func NewSlider(data []string) *Slider {
@@ -373,6 +375,21 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.startCircle.objData.Number = self.objData.Number
 	self.startCircle.SetDifficulty(diff)
 
+	sixty := 1000.0 / 60
+	frameDelay := math.Max(150/self.Timings.GetVelocity(self.TPoint)*sixty, sixty)
+
+	self.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+
+	if len(self.scorePath) > 0 {
+		angle := self.scorePath[0].Line.GetStartAngle()
+		self.ball.SetVFlip(angle > -math32.Pi/2 && angle < math32.Pi/2)
+	}
+
+	followerFrames := skin.GetFrames("sliderfollowcircle", true)
+
+	self.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	self.follower.SetAlpha(0.0)
+
 	for i := int64(2); i < self.repeat; i += 2 {
 		arrow := newReverse()
 
@@ -410,9 +427,6 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 		self.reversePoints[1] = append(self.reversePoints[1], arrow)
 	}
-
-	self.fadeFollow = animation.NewGlider(0)
-	self.scaleFollow = animation.NewGlider(0)
 
 	for _, p := range self.TickPoints {
 		a := float64((p.Time-self.objData.StartTime)/2+self.objData.StartTime) - diff.Preempt*2/3
@@ -473,10 +487,16 @@ func (self *Slider) Update(time int64) bool {
 		self.startCircle.Update(time)
 	}
 
+	if self.ball != nil {
+		self.ball.Update(time)
+	}
+
+	if self.follower != nil {
+		self.follower.Update(time)
+	}
+
 	self.fade.Update(float64(time))
 	self.bodyFade.Update(float64(time))
-	self.fadeFollow.Update(float64(time))
-	self.scaleFollow.Update(float64(time))
 
 	for i := 0; i < 2; i++ {
 		for j := 0; j < len(self.reversePoints[i]); j++ {
@@ -490,7 +510,24 @@ func (self *Slider) Update(time int64) bool {
 		p.scale.Update(float64(time))
 	}
 
-	self.Pos = self.GetPointAt(time)
+	pos := self.GetPointAt(time)
+
+	if time-self.lastTime > 0 && time >= self.objData.StartTime {
+		angle := pos.AngleRV(self.Pos)
+
+		reversed := int(float64(time-self.objData.StartTime)/self.partLen)%2 == 1
+
+		if reversed {
+			angle -= math32.Pi
+		}
+
+		if self.ball != nil {
+			self.ball.SetHFlip(reversed)
+			self.ball.SetRotation(float64(angle))
+		}
+	}
+
+	self.Pos = pos
 
 	self.lastTime = time
 
@@ -502,12 +539,12 @@ func (self *Slider) ArmStart(clicked bool, time int64) {
 }
 
 func (self *Slider) InitSlide(time int64) {
-	self.fadeFollow.Reset()
-	self.scaleFollow.Reset()
+	self.follower.ClearTransformations()
 
 	startTime := float64(time)
-	self.fadeFollow.AddEventS(startTime, math.Min(startTime+60, float64(self.objData.EndTime)), 0, 1)
-	self.scaleFollow.AddEventS(startTime, math.Min(startTime+180, float64(self.objData.EndTime)), 0.5*followBaseScale, 1*followBaseScale)
+
+	self.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(startTime+60, float64(self.objData.EndTime)), 0, 1))
+	self.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, math.Min(startTime+180, float64(self.objData.EndTime)), 0.5, 1))
 
 	for j, p := range self.ScorePoints {
 		if j < 1 || p.Time < time {
@@ -519,18 +556,17 @@ func (self *Slider) InitSlide(time int64) {
 		if len(self.ScorePoints) >= 2 {
 			delay = math.Min(fade, float64(p.Time-self.ScorePoints[j-1].Time))
 			ratio := delay / fade
-			self.scaleFollow.AddEventS(float64(p.Time), float64(p.Time)+delay, 1.1*followBaseScale, (1.1-ratio*0.1)*followBaseScale)
-		}
 
+			self.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(p.Time), float64(p.Time)+delay, 1.1, 1.1-ratio*0.1))
+		}
 	}
 
-	self.scaleFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1*followBaseScale, 0.8*followBaseScale)
-	self.fadeFollow.AddEventS(float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0)
+	self.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0))
+	self.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0.8))
 }
 
 func (self *Slider) KillSlide(time int64) {
-	self.fadeFollow.Reset()
-	self.scaleFollow.Reset()
+	self.follower.ClearTransformations()
 
 	nextPoint := self.objData.EndTime
 	for _, p := range self.ScorePoints {
@@ -540,8 +576,8 @@ func (self *Slider) KillSlide(time int64) {
 		}
 	}
 
-	self.fadeFollow.AddEventS(float64(nextPoint-100), float64(nextPoint), 1, 0)
-	self.scaleFollow.AddEventS(float64(nextPoint-100), float64(nextPoint), 1, 2)
+	self.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(nextPoint-100), float64(nextPoint), 1, 0))
+	self.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(nextPoint-100), float64(nextPoint), 1, 2))
 }
 
 func (self *Slider) PlayEdgeSample(index int) {
@@ -608,6 +644,8 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 			tailPos := self.multiCurve.PointAt(float32(self.sliderSnakeTail.GetValue()))
 			tailAngle := self.multiCurve.GetEndAngleAt(float32(self.sliderSnakeTail.GetValue())) + math.Pi
 
+			arrow := skin.GetTexture("reversearrow")
+
 			for i := 0; i < 2; i++ {
 				for _, p := range self.reversePoints[i] {
 					if p.fade.GetValue() >= 0.001 {
@@ -619,9 +657,9 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 							batch.SetRotation(float64(headAngle))
 						}
 
-						batch.SetSubScale(p.pulse.GetValue()*self.diff.CircleRadius, p.pulse.GetValue()*self.diff.CircleRadius)
+						batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
 						batch.SetColor(1, 1, 1, alpha*p.fade.GetValue())
-						batch.DrawUnit(*graphics.SliderReverse)
+						batch.DrawTexture(*arrow)
 					}
 				}
 			}
@@ -636,12 +674,14 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 			if settings.Objects.DrawFollowPoints {
 				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
 
+				scorePoint := skin.GetTexture("sliderscorepoint")
+
 				for _, p := range self.TickPoints {
 					al := p.fade.GetValue()
 
 					if al > 0.001 {
 						batch.SetTranslation(p.Pos.Copy64())
-						batch.SetSubScale(1.0/5*p.scale.GetValue()*self.diff.CircleRadius, 1.0/5*p.scale.GetValue()*self.diff.CircleRadius)
+						batch.SetSubScale(p.scale.GetValue(), p.scale.GetValue())
 
 						if settings.Objects.WhiteFollowPoints {
 							batch.SetColor(1, 1, 1, alpha*al)
@@ -649,7 +689,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
 						}
 
-						batch.DrawUnit(*graphics.SliderTick)
+						batch.DrawTexture(*scorePoint)
 					}
 				}
 			}
@@ -659,32 +699,18 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 		if time >= self.objData.StartTime && time <= self.objData.EndTime {
-			batch.SetColor(1, 1, 1, alpha)
-			batch.SetSubScale(self.diff.CircleRadius, self.diff.CircleRadius)
-			batch.SetTranslation(self.Pos.Copy64())
-			batch.DrawUnit(*graphics.SliderBall)
+			self.drawBall(time, batch, alpha, true)
 		}
 
-		if settings.Objects.DrawSliderFollowCircle {
+		if settings.Objects.DrawSliderFollowCircle && self.follower != nil {
 			batch.SetTranslation(self.Pos.Copy64())
-			batch.SetSubScale(self.scaleFollow.GetValue()*self.diff.CircleRadius, self.scaleFollow.GetValue()*self.diff.CircleRadius)
-			batch.SetColor(1, 1, 1, self.fadeFollow.GetValue())
-			batch.DrawUnit(*graphics.SliderFollow)
+			batch.SetColor(1, 1, 1, alpha)
+			self.follower.Draw(time, batch)
 		}
 
 	} else {
-		batch.SetSubScale(self.diff.CircleRadius, self.diff.CircleRadius)
-		if time < self.objData.StartTime {
-			batch.SetTranslation(self.objData.StartPos.Copy64())
-			batch.DrawUnit(*graphics.CircleFull)
-		} else if time < self.objData.EndTime {
-			batch.SetTranslation(self.Pos.Copy64())
-
-			if settings.Objects.ForceSliderBallTexture {
-				batch.DrawUnit(*graphics.SliderBall)
-			} else {
-				batch.DrawUnit(*graphics.CircleFull)
-			}
+		if time >= self.objData.StartTime && time <= self.objData.EndTime {
+			self.drawBall(time, batch, alpha, settings.Objects.ForceSliderBallTexture)
 		}
 	}
 
@@ -694,16 +720,6 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
-		//if self.vao != nil {
-		//	if self.framebuffer != nil && !self.disposed {
-		//		self.framebuffer.Dispose()
-		//		self.disposed = true
-		//	}
-		//	if settings.Objects.SliderDynamicUnload {
-		//		//self.vao.Delete()
-		//		self.vao.Dispose()
-		//	}
-		//}
 		if self.body != nil {
 			self.body.Dispose()
 		}
@@ -711,6 +727,37 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	}
 
 	return false
+}
+
+func (self *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha float64, useBallTexture bool) {
+	batch.SetColor(1, 1, 1, alpha)
+	batch.SetTranslation(self.Pos.Copy64())
+
+	isB := skin.GetTexture("sliderb") != nil && useBallTexture
+
+	if !isB {
+		batch.SetColor(0.1, 0.1, 0.1, alpha)
+		batch.DrawTexture(*skin.GetTexture("sliderb-nd"))
+	}
+
+	batch.SetColor(1, 1, 1, alpha)
+	//cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	//r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+	//batch.SetColor(float64(r), float64(g), float64(b), alpha)
+
+	if useBallTexture {
+		self.ball.Draw(time, batch)
+	} else {
+		batch.DrawTexture(*skin.GetTexture("hitcircle-full"))
+	}
+
+	batch.SetColor(1, 1, 1, alpha)
+
+	if !isB {
+		batch.SetAdditive(true)
+		batch.DrawTexture(*skin.GetTexture("sliderb-spec"))
+		batch.SetAdditive(false)
+	}
 }
 
 func (self *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {

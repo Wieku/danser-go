@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
@@ -175,7 +176,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.followpoints = sprite.NewSpriteManager()
 
-	prempt := 400.0
+	prempt := 800.0
 	postmt := 240.0
 	lineDist := 32.0
 
@@ -205,7 +206,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			pos := prevPos.Add(vec.Scl(t))
 
-			sprite := sprite.NewSpriteSingle(graphics.FollowPoint, 0, pos, bmath.Origin.Centre)
+			textures := skin.GetFrames("followpoint", true)
+
+			sprite := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, bmath.Origin.Centre)
 			sprite.SetRotation(rotation)
 			sprite.ShowForever(false)
 
@@ -282,7 +285,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			continue
 		}
 
-		player.hudGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0.0)
+		//player.hudGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0.0)
 		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Background.Dim.Breaks)
 		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.Background.Blur.Values.Breaks)
 		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
@@ -291,7 +294,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
 		}
 
-		player.hudGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0)
+		//player.hudGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0)
 		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Background.Dim.Normal)
 		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.Background.Blur.Values.Normal)
 		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Logo.Dim.Normal)
@@ -665,7 +668,7 @@ func (pl *Player) Draw(float64) {
 			pl.batch.SetAdditive(false)
 		}
 
-		pl.batch.SetScale(scale1, scale1)
+		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
 
 		for j := 0; j < settings.DIVIDES; j++ {
 			pl.batch.SetCamera(cameras[j])
