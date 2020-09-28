@@ -701,7 +701,8 @@ func (pl *Player) Draw(float64) {
 			}
 
 			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-				if i < len(pl.processed) {
+				_, sp := pl.processed[i].(*objects.Spinner)
+				if i < len(pl.processed) && (!sp || j == 0) {
 					res := pl.processed[i].Draw(pl.progressMs, colors[j], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
