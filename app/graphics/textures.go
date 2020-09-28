@@ -11,10 +11,6 @@ var CursorTex *texture.TextureRegion
 var CursorTop *texture.TextureRegion
 var CursorTrail *texture.TextureSingle
 
-var SpinnerMiddle *texture.TextureRegion
-var SpinnerMiddle2 *texture.TextureRegion
-var SpinnerAC *texture.TextureRegion
-
 var Pixel *texture.TextureSingle
 var Triangle *texture.TextureRegion
 
@@ -41,10 +37,6 @@ func LoadTextures() {
 
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
-
-	SpinnerMiddle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner-middle.png")
-	SpinnerMiddle2, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner-middle2.png")
-	SpinnerAC, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/spinner-approachcircle.png")
 
 	RankingD, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-d-small.png")
 	RankingC, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-c-small.png")
