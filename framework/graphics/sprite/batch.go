@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/statistic"
 	"io/ioutil"
 	"math"
 )
@@ -221,6 +222,8 @@ func (batch *SpriteBatch) Flush() {
 	batch.vao.UnmapVBO("sprites", 0, batch.currentFloats)
 
 	batch.ibo.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
+
+	statistic.Add(statistic.SpritesDrawn, int64(batch.currentSize))
 
 	nextChunk := batch.vao.MapVBO("sprites", batch.maxSprites*batch.vertexSize)
 

@@ -10,4 +10,5 @@ const (
 	DrawCalls
 	VerticesDrawn
 	VertexUpload
+	SpritesDrawn
 )
