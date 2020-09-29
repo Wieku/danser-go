@@ -115,7 +115,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 			relative := int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime)))
 
 			if relative < player.diff.Hit50 {
-				hit = HitResults.Slider30
+				hit = HitResults.SliderStart
 				state.startScored = true
 				combo = ComboResults.Increase
 			}

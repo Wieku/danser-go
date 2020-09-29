@@ -48,10 +48,11 @@ var HitResults = struct {
 	Hit300,
 	Slider10,
 	Slider30,
+	SliderStart,
 	SliderMiss,
 	SpinnerBonus,
 	SpinnerScore HitResult
-}{-1, 0, 50, 100, 300, 10, 30, -2, 1100, -3}
+}{-1, 0, 50, 100, 300, 10, 30, 40, -2, 1100, -3}
 
 func (result HitResult) String() string {
 	switch result {
@@ -406,6 +407,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 		if result == HitResults.SpinnerScore {
 			increase = 100
+		}
+
+		if result == HitResults.SliderStart {
+			increase = int64(HitResults.Slider30)
 		}
 
 		if raw {
