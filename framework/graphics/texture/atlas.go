@@ -57,8 +57,9 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 
 	texture.Bind(texture.store.binding)
 
-	if int(texture.GetWidth()) < width || int(texture.GetHeight()) < height {
-		log.Panicf("Texture is too big! Atlas size: %dx%d, texture size: %dx%d", texture.GetWidth(), texture.GetHeight(), width, height)
+	if int(texture.GetWidth()) <= width || int(texture.GetHeight()) <= height {
+		log.Printf("Texture is too big! Atlas size: %dx%d, texture size: %dx%d", texture.GetWidth(), texture.GetHeight(), width, height)
+		return nil
 	}
 
 	imBounds := rectangle{0, 0, width + texture.padding, height + texture.padding}
