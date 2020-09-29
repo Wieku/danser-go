@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/audio"
+	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/discord"
@@ -89,7 +91,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.ppGlider.SetEasing(easing.OutQuint)
 
-	overlay.combobreak = bass.NewSample("assets/sounds/combobreak.wav")
+	overlay.combobreak = audio.LoadSample("assets/sounds/combobreak")
 
 	for _, p := range ruleset.GetBeatMap().Pauses {
 		bd := p.GetBasicData()
