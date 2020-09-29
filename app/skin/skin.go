@@ -23,6 +23,9 @@ var atlas *texture.TextureAtlas
 var textureCache = make(map[string]*texture.TextureRegion)
 var animationCache = make(map[string][]*texture.TextureRegion)
 
+//dead-locking single textures to not get swept by GC
+var singleTextures = make(map[string]*texture.TextureSingle)
+
 var fontCache = make(map[string]*font.Font)
 
 var CurrentSkin string
@@ -128,9 +131,24 @@ func loadTexture(name string) *texture.TextureRegion {
 	}
 
 	if region != nil {
+		// Upload this texture in GL thread
 		mainthread.CallNonBlock(func() {
 			checkAtlas()
+
 			rg := atlas.AddTexture(name, image.Bounds().Dx(), image.Bounds().Dy(), image.Pix)
+
+			// If texture is too big load it separately
+			if rg == nil {
+				tx := texture.NewTextureSingle(image.Bounds().Dx(), image.Bounds().Dy(), 0)
+				tx.Bind(0)
+				tx.SetData(0, 0, image.Bounds().Dx(), image.Bounds().Dy(), image.Pix)
+				reg := tx.GetRegion()
+
+				singleTextures[name] = tx
+
+				rg = &reg
+			}
+
 			region.Texture = rg.Texture
 			region.Layer = rg.Layer
 			region.U1 = rg.U1
