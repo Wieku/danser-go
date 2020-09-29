@@ -324,7 +324,9 @@ func (self *Spinner) Clear() {
 }
 
 func (self *Spinner) Bonus() {
-	self.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(self.lastTime), float64(self.lastTime+difficulty.HitFadeOut), bmath.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
+	if self.glow != nil {
+		self.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(self.lastTime), float64(self.lastTime+difficulty.HitFadeOut), bmath.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
+	}
 
 	self.spinnerbonus.Play()
 
