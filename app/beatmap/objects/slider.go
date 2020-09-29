@@ -733,9 +733,9 @@ func (self *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha float6
 	batch.SetColor(1, 1, 1, alpha)
 	batch.SetTranslation(self.Pos.Copy64())
 
-	isB := skin.GetTexture("sliderb") != nil && useBallTexture
+	isB := skin.GetTexture("sliderb") == nil && useBallTexture
 
-	if !isB {
+	if isB && skin.GetTexture("sliderb-nd") != nil {
 		batch.SetColor(0.1, 0.1, 0.1, alpha)
 		batch.DrawTexture(*skin.GetTexture("sliderb-nd"))
 	}
@@ -753,7 +753,7 @@ func (self *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha float6
 
 	batch.SetColor(1, 1, 1, alpha)
 
-	if !isB {
+	if isB && skin.GetTexture("sliderb-spec") != nil {
 		batch.SetAdditive(true)
 		batch.DrawTexture(*skin.GetTexture("sliderb-spec"))
 		batch.SetAdditive(false)
