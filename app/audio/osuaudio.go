@@ -34,23 +34,23 @@ func AddListener(function func(sampleSet int, hitsoundIndex, index int, volume f
 }
 
 func LoadSamples() {
-	Samples[0][0] = bass.NewSample("assets/sounds/normal-hitnormal.wav")
-	Samples[0][1] = bass.NewSample("assets/sounds/normal-hitwhistle.wav")
-	Samples[0][2] = bass.NewSample("assets/sounds/normal-hitfinish.wav")
-	Samples[0][3] = bass.NewSample("assets/sounds/normal-hitclap.wav")
-	Samples[0][4] = bass.NewSample("assets/sounds/normal-slidertick.wav")
+	Samples[0][0] = LoadSample("assets/sounds/normal-hitnormal")
+	Samples[0][1] = LoadSample("assets/sounds/normal-hitwhistle")
+	Samples[0][2] = LoadSample("assets/sounds/normal-hitfinish")
+	Samples[0][3] = LoadSample("assets/sounds/normal-hitclap")
+	Samples[0][4] = LoadSample("assets/sounds/normal-slidertick")
 
-	Samples[1][0] = bass.NewSample("assets/sounds/soft-hitnormal.wav")
-	Samples[1][1] = bass.NewSample("assets/sounds/soft-hitwhistle.wav")
-	Samples[1][2] = bass.NewSample("assets/sounds/soft-hitfinish.wav")
-	Samples[1][3] = bass.NewSample("assets/sounds/soft-hitclap.wav")
-	Samples[1][4] = bass.NewSample("assets/sounds/soft-slidertick.wav")
+	Samples[1][0] = LoadSample("assets/sounds/soft-hitnormal")
+	Samples[1][1] = LoadSample("assets/sounds/soft-hitwhistle")
+	Samples[1][2] = LoadSample("assets/sounds/soft-hitfinish")
+	Samples[1][3] = LoadSample("assets/sounds/soft-hitclap")
+	Samples[1][4] = LoadSample("assets/sounds/soft-slidertick")
 
-	Samples[2][0] = bass.NewSample("assets/sounds/drum-hitnormal.wav")
-	Samples[2][1] = bass.NewSample("assets/sounds/drum-hitwhistle.wav")
-	Samples[2][2] = bass.NewSample("assets/sounds/drum-hitfinish.wav")
-	Samples[2][3] = bass.NewSample("assets/sounds/drum-hitclap.wav")
-	Samples[2][4] = bass.NewSample("assets/sounds/drum-slidertick.wav")
+	Samples[2][0] = LoadSample("assets/sounds/drum-hitnormal")
+	Samples[2][1] = LoadSample("assets/sounds/drum-hitwhistle")
+	Samples[2][2] = LoadSample("assets/sounds/drum-hitfinish")
+	Samples[2][3] = LoadSample("assets/sounds/drum-hitclap")
+	Samples[2][4] = LoadSample("assets/sounds/drum-slidertick")
 }
 
 func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64, xPos float64) {
@@ -153,4 +153,36 @@ func LoadBeatmapSamples(dir string) {
 
 		return nil
 	})
+}
+
+func LoadSample(name string) *bass.Sample {
+	if sam := bass.NewSample(name + ".wav"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSample(name + ".ogg"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSample(name + ".mp3"); sam != nil {
+		return sam
+	}
+
+	return nil
+}
+
+func LoadSampleLoop(name string) *bass.Sample {
+	if sam := bass.NewSampleLoop(name + ".wav"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSampleLoop(name + ".ogg"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSampleLoop(name + ".mp3"); sam != nil {
+		return sam
+	}
+
+	return nil
 }
