@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sort"
@@ -34,6 +35,10 @@ type Sprite struct {
 	color            bmath.Color
 	additive         bool
 	showForever      bool
+
+	cutX      float64
+	cutY      float64
+	cutOrigin vector.Vector2d
 
 	scaleTo vector.Vector2d
 }
@@ -242,7 +247,36 @@ func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
 		scaleY = sprite.scaleTo.Y
 	}
 
-	batch.DrawStObject(sprite.position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, *sprite.texture[sprite.currentFrame])
+	region := *sprite.texture[sprite.currentFrame]
+	position := sprite.position
+
+	if sprite.cutX > 0.0 {
+		if math.Abs(sprite.origin.X-sprite.cutOrigin.X) > 0 {
+			position.X -= sprite.origin.X * float64(region.Width) * sprite.cutX
+		}
+
+		ratio := float32(1 - sprite.cutX)
+		middle := float32(sprite.cutOrigin.X)/2*math32.Abs(region.U2-region.U1) + (region.U1+region.U2)/2
+
+		region.Width = int32(float32(region.Width) * ratio)
+		region.U1 = (region.U1-middle)*ratio + middle
+		region.U2 = (region.U2-middle)*ratio + middle
+	}
+
+	if sprite.cutY > 0.0 {
+		if math.Abs(sprite.origin.Y-sprite.cutOrigin.Y) > 0 {
+			position.Y -= sprite.origin.Y * float64(region.Height) * sprite.cutY
+		}
+
+		ratio := float32(1 - sprite.cutY)
+		middle := float32(sprite.cutOrigin.Y)/2*math32.Abs(region.V2-region.V1) + (region.V1+region.V2)/2
+
+		region.Height = int32(float32(region.Height) * ratio)
+		region.V1 = (region.V1-middle)*ratio + middle
+		region.V2 = (region.V2-middle)*ratio + middle
+	}
+
+	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, region)
 }
 
 func (sprite *Sprite) GetPosition() vector.Vector2d {
@@ -296,6 +330,18 @@ func (sprite *Sprite) SetHFlip(on bool) {
 
 func (sprite *Sprite) SetVFlip(on bool) {
 	sprite.flipY = on
+}
+
+func (sprite *Sprite) SetCutX(cutX float64) {
+	sprite.cutX = cutX
+}
+
+func (sprite *Sprite) SetCutY(cutY float64) {
+	sprite.cutY = cutY
+}
+
+func (sprite *Sprite) SetCutOrigin(origin vector.Vector2d) {
+	sprite.cutOrigin = origin
 }
 
 func (sprite *Sprite) SetAdditive(on bool) {
