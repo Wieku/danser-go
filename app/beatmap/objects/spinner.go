@@ -152,7 +152,7 @@ func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	self.bonusFade = animation.NewGlider(0.0)
 	self.bonusScale = animation.NewGlider(0.0)
 
-	self.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(self.ScaledWidth/2-139, self.ScaledHeight-256), bmath.Origin.TopLeft)
+	self.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(self.ScaledWidth/2-139, self.ScaledHeight-56), bmath.Origin.TopLeft)
 }
 
 func (self *Spinner) Update(time int64) bool {
