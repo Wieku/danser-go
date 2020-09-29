@@ -306,7 +306,7 @@ func (self *Spinner) UpdateCompletion(completion float64) {
 
 func (self *Spinner) StartSpinSample() {
 	if self.loopSample == 0 {
-		self.loopSample = bass.NewSampleLoop("assets/sounds/spinnerspin").Play()
+		self.loopSample = audio.LoadSampleLoop("assets/sounds/spinnerspin").Play()
 	} else {
 		bass.PlaySample(self.loopSample)
 	}
