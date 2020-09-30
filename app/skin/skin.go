@@ -61,7 +61,18 @@ func GetFont(name string) *font.Font {
 	chars['%'] = GetTexture(name + "-percent")
 	chars['x'] = GetTexture(name + "-x")
 
-	fnt := font.LoadTextureFontMap2(chars)
+	overlap := 0.0
+
+	switch name {
+	case "default":
+		overlap = 3
+	case "score":
+		overlap = 3
+	case "combo":
+		overlap = 3
+	}
+
+	fnt := font.LoadTextureFontMap2(chars, overlap)
 
 	fontCache[name] = fnt
 
