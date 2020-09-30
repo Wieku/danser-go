@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type RpData struct {
@@ -122,7 +123,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 				mxCombo := replayD.MaxCombo
 
-				controller.replays = append(controller.replays, RpData{replayD.Username + "Ç" /*strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1)*/, "", difficulty.Hidden, 100, 0, int64(mxCombo), osu.NONE})
+				controller.replays = append(controller.replays, RpData{replayD.Username + string(unicode.MaxRune), difficulty.Modifier(replayD.Mods).String(), difficulty.Modifier(replayD.Mods), 100, 0, int64(mxCombo), osu.NONE})
 				controller.controllers = append(controller.controllers, control)
 
 				log.Println("Expected score:", replayD.Score)
