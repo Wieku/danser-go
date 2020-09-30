@@ -37,11 +37,12 @@ func Connect() {
 	go func() {
 		for {
 			f, keepOpen := <-queue
+
+			f()
+
 			if !keepOpen {
 				break
 			}
-
-			f()
 		}
 	}()
 }
@@ -131,7 +132,10 @@ func Disconnect() {
 		return
 	}
 
-	ClearActivity()
+	err := client.ClearActivity()
+	if err != nil {
+		log.Println("Can't clear activity")
+	}
 
 	connected = false
 
