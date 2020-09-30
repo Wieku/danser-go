@@ -169,8 +169,12 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		pauses += p.GetBasicData().EndTime - p.GetBasicData().StartTime
 	}
 
-	drainTime := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime-beatMap.HitObjects[0].GetBasicData().StartTime-pauses) / 1000
-	ruleset.scoreMultiplier = math.Round((beatMap.Diff.GetHPDrain() + beatMap.Diff.GetOD() + beatMap.Diff.GetCS() + bmath.ClampF64(float64(len(beatMap.HitObjects))/drainTime*8, 0, 16)) / 38 * 5)
+	drainTime := float32((beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime - beatMap.HitObjects[0].GetBasicData().StartTime - pauses) / 1000)
+
+	// HACK HACK HACK:
+	// apparently .NET Framework treats doubles differently than other runtimes
+	// so we need to subtract a small amount from the value to have proper scoreMultiplier in edge cases (like 4.5 before rounding)
+	ruleset.scoreMultiplier = math.Round(float64((float32(beatMap.Diff.GetHPDrain())+float32(beatMap.Diff.GetOD())+float32(beatMap.Diff.GetCS())+bmath.ClampF32(float32(len(beatMap.HitObjects))/drainTime*8, 0, 16))/38*5) - 0.0000001)
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
@@ -471,11 +475,26 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo))
 
 	if set.listener != nil {
-		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total /**1.00013679674*/ /** 1.00050243137 */ /** 1.00018787323*/ /** 1.02046696933*/ /**1.02730112005*/, subSet.score)
+		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
 	}
 
 	if len(set.cursors) == 1 {
-		log.Println("Got:", fmt.Sprintf("%3s", result), "Combo:", fmt.Sprintf("%4d", subSet.combo), "Max Combo:", fmt.Sprintf("%4d", subSet.maxCombo), "Score:", fmt.Sprintf("%9d", subSet.score), "Acc:", fmt.Sprintf("%3.2f%%", subSet.accuracy), subSet.hits, "from:", number, "at:", time, "pos:", x, y)
+		log.Println(fmt.Sprintf(
+			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f",
+			result,
+			subSet.combo,
+			subSet.maxCombo,
+			subSet.score,
+			subSet.accuracy,
+			subSet.hits[300],
+			subSet.hits[100],
+			subSet.hits[50],
+			subSet.hits[0],
+			number,
+			time,
+			x,
+			y,
+		))
 	}
 }
 
