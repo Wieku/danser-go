@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
 	"path/filepath"
@@ -23,7 +24,6 @@ const (
 
 var atlas *texture.TextureAtlas
 
-//var textureCache = make(map[string]*texture.TextureRegion)
 var animationCache = make(map[string][]*texture.TextureRegion)
 
 var skinCache = make(map[string]*texture.TextureRegion)
@@ -35,6 +35,9 @@ var sourceCache = make(map[*texture.TextureRegion]Source)
 var singleTextures = make(map[string]*texture.TextureSingle)
 
 var fontCache = make(map[string]*font.Font)
+
+var sampleCache = make(map[string]*bass.Sample)
+var loopCache = make(map[string]*bass.Sample)
 
 var CurrentSkin = "default"
 
@@ -107,7 +110,7 @@ func GetFont(name string) *font.Font {
 	chars['%'] = GetTexture(prefix + "-percent")
 	chars['x'] = GetTexture(prefix + "-x")
 
-	fnt := font.LoadTextureFontMap2(chars, overlap*2)
+	fnt := font.LoadTextureFontMap2(chars, overlap)
 
 	fontCache[name] = fnt
 
@@ -270,4 +273,78 @@ func loadTexture(name string) *texture.TextureRegion {
 	}
 
 	return region
+}
+
+func GetSample(name string) *bass.Sample {
+	checkInit()
+	if sample, exists := sampleCache[name]; exists {
+		return sample
+	}
+
+	var sample *bass.Sample
+
+	if CurrentSkin != "default" {
+		sample = tryLoad(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name))
+	}
+
+	if sample == nil {
+		sample = tryLoad(filepath.Join("assets", "default-skin", name))
+	}
+
+	sampleCache[name] = sample
+
+	return sample
+}
+
+func tryLoad(basePath string) *bass.Sample {
+	if sam := bass.NewSample(basePath + ".wav"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSample(basePath + ".ogg"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSample(basePath + ".mp3"); sam != nil {
+		return sam
+	}
+
+	return nil
+}
+
+func GetSampleLoop(name string) *bass.Sample {
+	checkInit()
+	if sample, exists := loopCache[name]; exists {
+		return sample
+	}
+
+	var sample *bass.Sample
+
+	if CurrentSkin != "default" {
+		sample = tryLoadLoop(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name))
+	}
+
+	if sample == nil {
+		sample = tryLoadLoop(filepath.Join("assets", "default-skin", name))
+	}
+
+	loopCache[name] = sample
+
+	return sample
+}
+
+func tryLoadLoop(basePath string) *bass.Sample {
+	if sam := bass.NewSampleLoop(basePath + ".wav"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSampleLoop(basePath + ".ogg"); sam != nil {
+		return sam
+	}
+
+	if sam := bass.NewSampleLoop(basePath + ".mp3"); sam != nil {
+		return sam
+	}
+
+	return nil
 }

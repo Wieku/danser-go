@@ -104,7 +104,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.bgDim = animation.NewGlider(1)
 
-	overlay.combobreak = audio.LoadSample("assets/default-skin/combobreak")
+	overlay.combobreak = audio.LoadSample("combobreak")
 
 	for _, p := range ruleset.GetBeatMap().Pauses {
 		bd := p.GetBasicData()

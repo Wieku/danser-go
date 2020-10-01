@@ -2,6 +2,7 @@ package audio
 
 import (
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
 	"os"
 	"path/filepath"
@@ -34,23 +35,23 @@ func AddListener(function func(sampleSet int, hitsoundIndex, index int, volume f
 }
 
 func LoadSamples() {
-	Samples[0][0] = LoadSample("assets/default-skin/normal-hitnormal")
-	Samples[0][1] = LoadSample("assets/default-skin/normal-hitwhistle")
-	Samples[0][2] = LoadSample("assets/default-skin/normal-hitfinish")
-	Samples[0][3] = LoadSample("assets/default-skin/normal-hitclap")
-	Samples[0][4] = LoadSample("assets/default-skin/normal-slidertick")
+	Samples[0][0] = LoadSample("normal-hitnormal")
+	Samples[0][1] = LoadSample("normal-hitwhistle")
+	Samples[0][2] = LoadSample("normal-hitfinish")
+	Samples[0][3] = LoadSample("normal-hitclap")
+	Samples[0][4] = LoadSample("normal-slidertick")
 
-	Samples[1][0] = LoadSample("assets/default-skin/soft-hitnormal")
-	Samples[1][1] = LoadSample("assets/default-skin/soft-hitwhistle")
-	Samples[1][2] = LoadSample("assets/default-skin/soft-hitfinish")
-	Samples[1][3] = LoadSample("assets/default-skin/soft-hitclap")
-	Samples[1][4] = LoadSample("assets/default-skin/soft-slidertick")
+	Samples[1][0] = LoadSample("soft-hitnormal")
+	Samples[1][1] = LoadSample("soft-hitwhistle")
+	Samples[1][2] = LoadSample("soft-hitfinish")
+	Samples[1][3] = LoadSample("soft-hitclap")
+	Samples[1][4] = LoadSample("soft-slidertick")
 
-	Samples[2][0] = LoadSample("assets/default-skin/drum-hitnormal")
-	Samples[2][1] = LoadSample("assets/default-skin/drum-hitwhistle")
-	Samples[2][2] = LoadSample("assets/default-skin/drum-hitfinish")
-	Samples[2][3] = LoadSample("assets/default-skin/drum-hitclap")
-	Samples[2][4] = LoadSample("assets/default-skin/drum-slidertick")
+	Samples[2][0] = LoadSample("drum-hitnormal")
+	Samples[2][1] = LoadSample("drum-hitwhistle")
+	Samples[2][2] = LoadSample("drum-hitfinish")
+	Samples[2][3] = LoadSample("drum-hitclap")
+	Samples[2][4] = LoadSample("drum-slidertick")
 }
 
 func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64, xPos float64) {
@@ -156,33 +157,9 @@ func LoadBeatmapSamples(dir string) {
 }
 
 func LoadSample(name string) *bass.Sample {
-	if sam := bass.NewSample(name + ".wav"); sam != nil {
-		return sam
-	}
-
-	if sam := bass.NewSample(name + ".ogg"); sam != nil {
-		return sam
-	}
-
-	if sam := bass.NewSample(name + ".mp3"); sam != nil {
-		return sam
-	}
-
-	return nil
+	return skin.GetSample(name)
 }
 
 func LoadSampleLoop(name string) *bass.Sample {
-	if sam := bass.NewSampleLoop(name + ".wav"); sam != nil {
-		return sam
-	}
-
-	if sam := bass.NewSampleLoop(name + ".ogg"); sam != nil {
-		return sam
-	}
-
-	if sam := bass.NewSampleLoop(name + ".mp3"); sam != nil {
-		return sam
-	}
-
-	return nil
+	return skin.GetSampleLoop(name)
 }
