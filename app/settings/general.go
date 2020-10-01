@@ -9,16 +9,17 @@ import (
 var General = initGeneral()
 
 func initGeneral() *general {
-	osuDir := ""
+	osuBaseDir := ""
 	if runtime.GOOS == "windows" {
-		osuDir = filepath.Join(os.Getenv("localappdata"), "osu!", "Songs")
+		osuBaseDir = filepath.Join(os.Getenv("localappdata"), "osu!")
 	} else {
 		dir, _ := os.UserHomeDir()
-		osuDir = filepath.Join(dir, ".osu", "Songs")
+		osuBaseDir = filepath.Join(dir, ".osu")
 	}
 
 	return &general{
-		OsuSongsDir:       osuDir,
+		OsuSongsDir:       filepath.Join(osuBaseDir, "Songs"),
+		OsuSkinsDir:       filepath.Join(osuBaseDir, "Skins"),
 		DiscordPresenceOn: true,
 	}
 }
@@ -27,6 +28,9 @@ type general struct {
 
 	// Directory that contains osu! songs,
 	OsuSongsDir string
+
+	// Directory that contains osu! skins,
+	OsuSkinsDir string
 
 	// Whether discord should show that danser is on
 	DiscordPresenceOn bool
