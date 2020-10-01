@@ -3,6 +3,7 @@ package skin
 import (
 	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/graphics/font"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"path/filepath"
@@ -20,22 +21,21 @@ const (
 )
 
 var atlas *texture.TextureAtlas
-var textureCache = make(map[string]*texture.TextureRegion)
+
+//var textureCache = make(map[string]*texture.TextureRegion)
 var animationCache = make(map[string][]*texture.TextureRegion)
+
+var skinCache = make(map[string]*texture.TextureRegion)
+var defaultCache = make(map[string]*texture.TextureRegion)
+
+var sourceCache = make(map[*texture.TextureRegion]Source)
 
 //dead-locking single textures to not get swept by GC
 var singleTextures = make(map[string]*texture.TextureSingle)
 
 var fontCache = make(map[string]*font.Font)
 
-var CurrentSkin string
-
-func checkAtlas() {
-	if atlas == nil {
-		atlas = texture.NewTextureAtlas(2048, 0)
-		atlas.Bind(27)
-	}
-}
+var CurrentSkin string = "default"
 
 func GetFont(name string) *font.Font {
 	if fnt, exists := fontCache[name]; exists {
@@ -80,15 +80,49 @@ func GetFont(name string) *font.Font {
 }
 
 func GetTexture(name string) *texture.TextureRegion {
-	if rg, exists := textureCache[name]; exists {
+	return GetTextureSource(name, ALL)
+}
+
+func GetTextureSource(name string, source Source) *texture.TextureRegion {
+
+	source = source & (^BEATMAP)
+
+	if CurrentSkin == "default" {
+		source = source & (^SKIN)
+	}
+
+	if source&SKIN > 0 {
+		if rg, exists := skinCache[name]; exists {
+			if rg != nil {
+				return rg
+			}
+		} else {
+			rg := loadTexture(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name+".png"))
+			skinCache[name] = rg
+
+			if rg != nil {
+				sourceCache[rg] = SKIN
+				return rg
+			}
+		}
+	}
+
+	if source&LOCAL > 0 {
+		if rg, exists := defaultCache[name]; exists {
+			return rg
+		}
+
+		rg := loadTexture(filepath.Join("assets", "default-skin", name+".png"))
+		defaultCache[name] = rg
+
+		if rg != nil {
+			sourceCache[rg] = LOCAL
+		}
+
 		return rg
 	}
 
-	rg := loadTexture(name + ".png")
-
-	textureCache[name] = rg
-
-	return rg
+	return nil
 }
 
 func GetFrames(name string, useDash bool) []*texture.TextureRegion {
@@ -104,12 +138,14 @@ func GetFrames(name string, useDash bool) []*texture.TextureRegion {
 	textures := make([]*texture.TextureRegion, 0)
 
 	spTexture := GetTexture(name)
-	frame := loadTexture(name + dash + "0.png")
+	frame := GetTexture(name + dash + "0")
 
-	if frame != nil {
+	if frame != nil && frame == getMostSpecific(frame, spTexture) {
+		source := sourceCache[frame]
+
 		for i := 1; frame != nil; i++ {
 			textures = append(textures, frame)
-			frame = loadTexture(name + dash + strconv.Itoa(i) + ".png")
+			frame = GetTextureSource(name+dash+strconv.Itoa(i), source)
 		}
 	} else if spTexture != nil {
 		textures = append(textures, spTexture)
@@ -120,6 +156,34 @@ func GetFrames(name string, useDash bool) []*texture.TextureRegion {
 	return textures
 }
 
+func getMostSpecific(rg1, rg2 *texture.TextureRegion) *texture.TextureRegion {
+	if rg1 == nil {
+		return rg2
+	}
+
+	if rg2 == nil {
+		return rg1
+	}
+
+	rg1S := sourceCache[rg1]
+	rg2S := sourceCache[rg2]
+
+	if rg1S == BEATMAP ||
+		rg1S == SKIN && rg2S != BEATMAP ||
+		rg1S == LOCAL && rg2S != BEATMAP && rg2S != SKIN {
+		return rg1
+	}
+
+	return rg2
+}
+
+func checkAtlas() {
+	if atlas == nil {
+		atlas = texture.NewTextureAtlas(2048, 0)
+		atlas.Bind(27)
+	}
+}
+
 func loadTexture(name string) *texture.TextureRegion {
 	ext := filepath.Ext(name)
 
@@ -127,9 +191,9 @@ func loadTexture(name string) *texture.TextureRegion {
 
 	var region *texture.TextureRegion
 
-	image, err := utils.LoadImage(filepath.Join("assets", "default-skin", x2Name))
+	image, err := utils.LoadImage(x2Name)
 	if err != nil {
-		image, err = utils.LoadImage(filepath.Join("assets", "default-skin", name))
+		image, err = utils.LoadImage(name)
 		if err == nil {
 			region = &texture.TextureRegion{}
 			region.Width = int32(image.Bounds().Dx())
