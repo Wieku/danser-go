@@ -848,10 +848,11 @@ func (pl *Player) Draw(float64) {
 			drawWithBackground(9, fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
 			drawWithBackground(10, fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
 			drawWithBackground(11, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
+			drawWithBackground(12, fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
 
 			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
-				drawWithBackground(12, fmt.Sprintf("SB sprites: %d", pl.storyboardDrawn))
-				drawWithBackground(13, fmt.Sprintf("SB load: %.2f", pl.storyboardLoad))
+				drawWithBackground(13, fmt.Sprintf("SB sprites: %d", pl.storyboardDrawn))
+				drawWithBackground(14, fmt.Sprintf("SB load: %.2f", pl.storyboardLoad))
 			}
 
 			for _, t := range queue {
@@ -890,12 +891,22 @@ func (pl *Player) Draw(float64) {
 				off = 1.0
 			}
 
-			drawShadowed(1+off, fmt.Sprintf("%0.0ffps (%0.2fms)", fpsC, 1000/fpsC))
-			drawShadowed(0+off, fmt.Sprintf("%0.0fups (%0.2fms)", fpsU, 1000/fpsU))
+			drawFPS := fmt.Sprintf("%0.0ffps (%0.2fms)", fpsC, 1000/fpsC)
+			updateFPS := fmt.Sprintf("%0.0ffps (%0.2fms)", fpsU, 1000/fpsU)
+			sbFPS := ""
 
 			if pl.background.GetStoryboard() != nil {
 				fpsS := pl.background.GetStoryboard().GetFPS()
-				drawShadowed(0, fmt.Sprintf("%0.0fsps (%.2fms)", fpsS, 1000/fpsS))
+				sbFPS = fmt.Sprintf("%0.0ffps (%0.2fms)", fpsS, 1000/fpsS)
+			}
+
+			shift := strconv.Itoa(bmath.MaxI(len(drawFPS), bmath.MaxI(len(updateFPS), len(sbFPS))))
+
+			drawShadowed(1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
+			drawShadowed(0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))
+
+			if pl.background.GetStoryboard() != nil {
+				drawShadowed(0, fmt.Sprintf("Storyboard: %"+shift+"s", sbFPS))
 			}
 		}
 
