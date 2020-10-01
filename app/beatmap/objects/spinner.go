@@ -148,7 +148,7 @@ func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.sprites.Add(self.spin)
 
-	self.spinnerbonus = audio.LoadSample("assets/sounds/spinnerbonus")
+	self.spinnerbonus = audio.LoadSample("assets/default-skin/spinnerbonus")
 	self.bonusFade = animation.NewGlider(0.0)
 	self.bonusScale = animation.NewGlider(0.0)
 
@@ -324,7 +324,7 @@ func (self *Spinner) UpdateCompletion(completion float64) {
 
 func (self *Spinner) StartSpinSample() {
 	if self.loopSample == 0 {
-		self.loopSample = audio.LoadSampleLoop("assets/sounds/spinnerspin").Play()
+		self.loopSample = audio.LoadSampleLoop("assets/default-skin/spinnerspin").Play()
 	} else {
 		bass.PlaySample(self.loopSample)
 	}

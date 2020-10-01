@@ -127,9 +127,9 @@ func loadTexture(name string) *texture.TextureRegion {
 
 	var region *texture.TextureRegion
 
-	image, err := utils.LoadImage(filepath.Join("assets", "textures", x2Name))
+	image, err := utils.LoadImage(filepath.Join("assets", "default-skin", x2Name))
 	if err != nil {
-		image, err = utils.LoadImage(filepath.Join("assets", "textures", name))
+		image, err = utils.LoadImage(filepath.Join("assets", "default-skin", name))
 		if err == nil {
 			region = &texture.TextureRegion{}
 			region.Width = int32(image.Bounds().Dx())

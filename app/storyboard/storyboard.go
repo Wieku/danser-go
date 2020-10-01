@@ -235,7 +235,7 @@ func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureReg
 	var texture1 *texture.TextureRegion
 
 	if texture1 = storyboard.textures[image]; texture1 == nil {
-		nrgba, err := utils.LoadImage("assets/textures" + string(os.PathSeparator) + image)
+		nrgba, err := utils.LoadImage("assets/default-skin" + string(os.PathSeparator) + image)
 		if err != nil {
 			nrgba, err = utils.LoadImage(path + string(os.PathSeparator) + image)
 		}

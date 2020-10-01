@@ -38,20 +38,20 @@ func LoadTextures() {
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
 
-	RankingD, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-d-small.png")
-	RankingC, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-c-small.png")
-	RankingB, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-b-small.png")
-	RankingA, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-a-small.png")
-	RankingS, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-s-small.png")
-	RankingSH, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-sh-small.png")
-	RankingSS, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-x-small.png")
-	RankingSSH, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ranking-xh-small.png")
+	RankingD, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-d-small.png")
+	RankingC, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-c-small.png")
+	RankingB, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-b-small.png")
+	RankingA, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-a-small.png")
+	RankingS, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-s-small.png")
+	RankingSH, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-sh-small.png")
+	RankingSS, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-x-small.png")
+	RankingSSH, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/ranking-xh-small.png")
 
 	GradeTexture = map[int64]*texture.TextureRegion{0: RankingD, 1: RankingC, 2: RankingB, 3: RankingA, 4: RankingS, 5: RankingSH, 6: RankingSS, 7: RankingSSH}
 
-	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit0-0.png")
-	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit50.png")
-	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit100.png")
+	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit0-0.png")
+	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit50.png")
+	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit100.png")
 	OvButton, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton.png")
 	OvButtonE, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton-e.png")
 

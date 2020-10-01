@@ -34,23 +34,23 @@ func AddListener(function func(sampleSet int, hitsoundIndex, index int, volume f
 }
 
 func LoadSamples() {
-	Samples[0][0] = LoadSample("assets/sounds/normal-hitnormal")
-	Samples[0][1] = LoadSample("assets/sounds/normal-hitwhistle")
-	Samples[0][2] = LoadSample("assets/sounds/normal-hitfinish")
-	Samples[0][3] = LoadSample("assets/sounds/normal-hitclap")
-	Samples[0][4] = LoadSample("assets/sounds/normal-slidertick")
+	Samples[0][0] = LoadSample("assets/default-skin/normal-hitnormal")
+	Samples[0][1] = LoadSample("assets/default-skin/normal-hitwhistle")
+	Samples[0][2] = LoadSample("assets/default-skin/normal-hitfinish")
+	Samples[0][3] = LoadSample("assets/default-skin/normal-hitclap")
+	Samples[0][4] = LoadSample("assets/default-skin/normal-slidertick")
 
-	Samples[1][0] = LoadSample("assets/sounds/soft-hitnormal")
-	Samples[1][1] = LoadSample("assets/sounds/soft-hitwhistle")
-	Samples[1][2] = LoadSample("assets/sounds/soft-hitfinish")
-	Samples[1][3] = LoadSample("assets/sounds/soft-hitclap")
-	Samples[1][4] = LoadSample("assets/sounds/soft-slidertick")
+	Samples[1][0] = LoadSample("assets/default-skin/soft-hitnormal")
+	Samples[1][1] = LoadSample("assets/default-skin/soft-hitwhistle")
+	Samples[1][2] = LoadSample("assets/default-skin/soft-hitfinish")
+	Samples[1][3] = LoadSample("assets/default-skin/soft-hitclap")
+	Samples[1][4] = LoadSample("assets/default-skin/soft-slidertick")
 
-	Samples[2][0] = LoadSample("assets/sounds/drum-hitnormal")
-	Samples[2][1] = LoadSample("assets/sounds/drum-hitwhistle")
-	Samples[2][2] = LoadSample("assets/sounds/drum-hitfinish")
-	Samples[2][3] = LoadSample("assets/sounds/drum-hitclap")
-	Samples[2][4] = LoadSample("assets/sounds/drum-slidertick")
+	Samples[2][0] = LoadSample("assets/default-skin/drum-hitnormal")
+	Samples[2][1] = LoadSample("assets/default-skin/drum-hitwhistle")
+	Samples[2][2] = LoadSample("assets/default-skin/drum-hitfinish")
+	Samples[2][3] = LoadSample("assets/default-skin/drum-hitclap")
+	Samples[2][4] = LoadSample("assets/default-skin/drum-slidertick")
 }
 
 func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, objNum int64, xPos float64) {
