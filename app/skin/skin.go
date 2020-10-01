@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,44 +36,78 @@ var singleTextures = make(map[string]*texture.TextureSingle)
 
 var fontCache = make(map[string]*font.Font)
 
-var CurrentSkin string = "default"
+var CurrentSkin = "default"
+
+var info *SkinInfo
+
+func fallback() {
+	CurrentSkin = "default"
+	info = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"))
+}
+
+func checkInit() {
+	if info != nil {
+		return
+	}
+
+	CurrentSkin = settings.Skin.CurrentSkin
+
+	if CurrentSkin == "default" {
+		fallback()
+	} else {
+		info = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
+		err := recover()
+		if err != nil {
+			log.Println(CurrentSkin, "is corrupted, falling back to default...")
+			fallback()
+		}
+	}
+}
+
+func GetInfo() *SkinInfo {
+	checkInit()
+	return info
+}
 
 func GetFont(name string) *font.Font {
+	checkInit()
+
 	if fnt, exists := fontCache[name]; exists {
 		return fnt
 	}
 
-	if name == "combo" && GetTexture(name+"-0") == nil {
-		return GetFont("score")
+	overlap := 0.0
+
+	prefix := name
+
+	switch name {
+	case "default":
+		prefix = info.HitCirclePrefix
+		overlap = info.HitCircleOverlap
+	case "score":
+		prefix = info.ScorePrefix
+		overlap = info.ScoreOverlap
+	case "combo":
+		prefix = info.ComboPrefix
+		overlap = info.ComboOverlap
 	}
 
-	if name == "scoreentry" && GetTexture(name+"-0") == nil {
+	if name == "scoreentry" && GetTexture(prefix+"-0") == nil {
 		return nil
 	}
 
 	chars := make(map[rune]*texture.TextureRegion)
 
 	for i := '0'; i <= '9'; i++ {
-		chars[i] = GetTexture(name + "-" + string(i))
+		chars[i] = GetTexture(prefix + "-" + string(i))
 	}
 
-	chars[','] = GetTexture(name + "-comma")
-	chars['.'] = GetTexture(name + "-dot")
-	chars['%'] = GetTexture(name + "-percent")
-	chars['x'] = GetTexture(name + "-x")
+	chars[','] = GetTexture(prefix + "-comma")
+	chars['.'] = GetTexture(prefix + "-dot")
+	chars['%'] = GetTexture(prefix + "-percent")
+	chars['x'] = GetTexture(prefix + "-x")
 
-	overlap := 0.0
-
-	switch name {
-	case "default":
-		overlap = 3
-	case "score":
-		overlap = 3
-	case "combo":
-		overlap = 3
-	}
-
-	fnt := font.LoadTextureFontMap2(chars, overlap)
+	fnt := font.LoadTextureFontMap2(chars, overlap*2)
 
 	fontCache[name] = fnt
 
@@ -84,6 +119,7 @@ func GetTexture(name string) *texture.TextureRegion {
 }
 
 func GetTextureSource(name string, source Source) *texture.TextureRegion {
+	checkInit()
 
 	source = source & (^BEATMAP)
 

@@ -277,7 +277,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.errorDisplay.Add(middle)
 
-	overlay.triangle = sprite.NewSpriteSingle(skin.GetTexture("triangle-small"), 2.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-12*errorScale), bmath.Origin.BottomCentre)
+	overlay.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-12*errorScale), bmath.Origin.BottomCentre)
 	overlay.triangle.SetScaleV(vector.NewVec2d(errorScale/8, errorScale/8))
 	overlay.triangle.SetAlpha(0.8)
 
