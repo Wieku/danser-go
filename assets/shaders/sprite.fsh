@@ -16,7 +16,7 @@ float median(float r, float g, float b) {
 void main() {
     vec4 in_color = texture(tex, tex_coord);
 
-	if (msdf > 0) {
+	if (msdf > 0.5) {
 		float sigDist = median(in_color.r, in_color.g, in_color.b);
 		float w = fwidth(sigDist);
 		float opacity = smoothstep(0.5 - w, 0.5 + w, sigDist);

@@ -706,7 +706,6 @@ func (pl *Player) Draw(float64) {
 					res := pl.processed[i].Draw(pl.progressMs, colors[j], pl.batch)
 					if res {
 						pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
-						i++
 					}
 				}
 			}
