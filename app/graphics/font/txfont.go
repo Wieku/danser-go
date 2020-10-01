@@ -67,7 +67,7 @@ func LoadTextureFontMap2(chars map[rune]*texture.TextureRegion, overlap float64)
 
 	font.glyphs = make(map[rune]*glyphData)
 	font.kernTable = make(map[rune]map[rune]float64)
-
+	font.kernMonospaced = true
 	for c, r := range chars {
 		if r == nil {
 			continue
