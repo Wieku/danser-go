@@ -123,8 +123,8 @@ func (self *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 		self.middle.ResetValuesToTransforms()
 
 	} else {
-		self.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(self.ScaledWidth/2-512, 46-24), bmath.Origin.TopLeft)
-		self.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 1.0, vector.NewVec2d(self.ScaledWidth/2-512, 46), bmath.Origin.TopLeft)
+		self.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(self.ScaledWidth/2, 46.5+350.4), bmath.Origin.Centre)
+		self.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 1.0, vector.NewVec2d(self.ScaledWidth/2-512, 46.5), bmath.Origin.TopLeft)
 		self.metre.SetCutOrigin(bmath.Origin.BottomCentre)
 
 		self.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 2.0, self.objData.StartPos.Copy64(), bmath.Origin.Centre)
