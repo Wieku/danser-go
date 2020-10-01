@@ -55,7 +55,7 @@ func run() {
 		creatorS := flag.String("c", "", "")
 
 		settingsVersion := flag.Int("settings", 0, "")
-		cursors := flag.Int("cursors", 2, "")
+		cursors := flag.Int("cursors", 1, "")
 		tag := flag.Int("tag", 1, "")
 		knockout := flag.Bool("knockout", false, "")
 		speed := flag.Float64("speed", 1.0, "")
