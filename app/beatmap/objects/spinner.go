@@ -160,21 +160,39 @@ func (self *Spinner) Update(time int64) bool {
 
 	if time >= self.objData.StartTime && time <= self.objData.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-			self.rad = rpms * float32(time-self.objData.StartTime) * 2 * math32.Pi
+
+			rRPMS := rpms * bmath.ClampF32(float32(time-self.objData.StartTime)/500, 0.0, 1.0)
+
+			self.rad = rRPMS * float32(time-self.objData.StartTime) * 2 * math32.Pi
+
+			self.rpm = float64(rRPMS) * 1000 * 60
+
+			self.SetRotation(float64(self.rad))
+
+			self.UpdateCompletion(float64(time-self.objData.StartTime) / float64(self.objData.EndTime-self.objData.StartTime))
+
+			if self.lastTime < self.objData.StartTime {
+				self.StartSpinSample()
+			}
 		}
 
 		//frad := float32(easing.InQuad(float64(1.0 - math32.Abs((math32.Mod(self.rad, math32.Pi/2)-math32.Pi/4)/(math32.Pi/4)))))
-		a := self.rad - math32.Pi/2*math32.Round(self.rad*2/math32.Pi)
-		self.pos = vector.NewVec2fRad(self.rad*1.1, 100/math32.Cos(a) /*+ frad * (50 * (math32.Sqrt(2) - 1))*/).Add(self.objData.StartPos)
+		//a := self.rad - math32.Pi/2*math32.Round(self.rad*2/math32.Pi)
+		//self.pos = vector.NewVec2fRad(self.rad*1.1, 100/math32.Cos(a) /*+ frad * (50 * (math32.Sqrt(2) - 1))*/).Add(self.objData.StartPos)
 
 		//self.pos.X = 16 * math32.Pow(math32.Sin(self.rad), 3)
 		//self.pos.Y = 13*math32.Cos(self.rad) - 5*math32.Cos(2*self.rad) - 2*math32.Cos(3*self.rad) - math32.Cos(4*self.rad)
 
 		//self.pos = self.pos.Scl(-6 - 2*math32.Sin(float32(time-self.objData.StartTime)/2000*2*math32.Pi)).Add(self.objData.StartPos)
-		self.GetBasicData().EndPos = self.pos
+		//self.GetBasicData().EndPos = self.pos
 	}
 
 	if self.lastTime < self.objData.EndTime && time >= self.objData.EndTime {
+		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
+			self.StopSpinSample()
+			self.Clear()
+		}
+
 		index := self.objData.customIndex
 
 		point := self.Timings.GetPoint(self.objData.EndTime)

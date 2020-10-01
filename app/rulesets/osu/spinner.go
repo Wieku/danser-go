@@ -144,8 +144,10 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			state.rotationCountFD += rotationAddition
 			state.rotationCountF += math.Abs(rotationAddition / math.Pi)
 
-			spinner.hitSpinner.SetRotation(player.diff.GetModifiedTime(state.rotationCountFD))
-			spinner.hitSpinner.SetRPM(player.diff.GetModifiedTime(state.rpm))
+			if len(spinner.players) == 1 {
+				spinner.hitSpinner.SetRotation(player.diff.GetModifiedTime(state.rotationCountFD))
+				spinner.hitSpinner.SetRPM(player.diff.GetModifiedTime(state.rpm))
+			}
 
 			state.rotationCount = int64(state.rotationCountF)
 
@@ -153,7 +155,9 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 				state.scoringRotationCount++
 
-				spinner.hitSpinner.UpdateCompletion(float64(state.scoringRotationCount) / float64(state.requirement))
+				if len(spinner.players) == 1 {
+					spinner.hitSpinner.UpdateCompletion(float64(state.scoringRotationCount) / float64(state.requirement))
+				}
 
 				if state.scoringRotationCount == state.requirement && len(spinner.players) == 1 {
 					spinner.hitSpinner.Clear()
