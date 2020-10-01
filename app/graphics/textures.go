@@ -50,8 +50,8 @@ func LoadTextures() {
 	GradeTexture = map[int64]*texture.TextureRegion{0: RankingD, 1: RankingC, 2: RankingB, 3: RankingA, 4: RankingS, 5: RankingSH, 6: RankingSS, 7: RankingSSH}
 
 	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit0-0.png")
-	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit50-0.png")
-	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit100-0.png")
+	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit50.png")
+	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/hit100.png")
 	OvButton, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton.png")
 	OvButtonE, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton-e.png")
 

@@ -292,9 +292,12 @@ func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color mgl32
 }
 
 func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
+	colorD := color
+	colorD2 := color2
+
 	if settings.Cursor.TrailStyle > 1 {
-		color = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
-		color2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
+		colorD = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
+		colorD2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
 	}
 
 	if useAdditive {
@@ -307,6 +310,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 
 	if settings.Cursor.EnableCustomTrailGlowOffset {
 		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
+		colorD2 = color2
 	}
 
 	cursorShader.Bind()
@@ -330,7 +334,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 	if settings.Cursor.EnableTrailGlow {
 		cursorScl = float32(siz * (12.0 / 18) * scale)
 		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
-		cursorShader.SetUniform("col_tint", color2)
+		cursorShader.SetUniform("col_tint", colorD2)
 		cursorShader.SetUniform("scale", float32(siz*(16.0/18)*scale*settings.Cursor.TrailScale))
 		cursorShader.SetUniform("endScale", float32(settings.Cursor.GlowEndScale))
 		if settings.Cursor.TrailStyle > 1 {
@@ -342,7 +346,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 	if settings.Cursor.TrailStyle > 1 {
 		cursorShader.SetUniform("hueshift", float32(hueshift/360))
 	}
-	cursorShader.SetUniform("col_tint", color)
+	cursorShader.SetUniform("col_tint", colorD)
 	cursorShader.SetUniform("scale", cursorScl*float32(settings.Cursor.TrailScale))
 	cursorShader.SetUniform("points", float32(len(cursor.Points))*innerLengthMult)
 	cursorShader.SetUniform("endScale", float32(settings.Cursor.TrailEndScale))
