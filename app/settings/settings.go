@@ -5,6 +5,7 @@ type fileformat struct {
 	Graphics  *graphics
 	Audio     *audio
 	Input     *input
+	Skin      *skin
 	Cursor    *cursor
 	Objects   *objects
 	Playfield *playfield
