@@ -523,7 +523,7 @@ func (self *Slider) Update(time int64) bool {
 		}
 
 		if self.ball != nil {
-			self.ball.SetHFlip(reversed)
+			self.ball.SetHFlip(skin.GetInfo().SliderBallFlip && reversed)
 			self.ball.SetRotation(float64(angle))
 		}
 	}
