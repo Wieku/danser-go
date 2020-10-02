@@ -187,6 +187,8 @@ func (self *Spinner) Update(time int64) bool {
 		//self.GetBasicData().EndPos = self.pos
 	}
 
+	self.pos = self.objData.StartPos
+
 	if self.lastTime < self.objData.EndTime && time >= self.objData.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 			self.StopSpinSample()
