@@ -5,7 +5,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -132,14 +131,14 @@ func EndRendererMerge() {
 	batch.End()
 }
 
-func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float32, text texture.Texture, color mgl32.Vec4, prev mgl32.Vec4, projection mgl32.Mat4) {
+func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float32, text texture.Texture, bodyInner, bodyOuter, borderInner, borderOuter mgl32.Vec4, projection mgl32.Mat4) {
 	colorShader.SetUniform("projection", projection)
-	colorShader.SetUniform("col_border", color)
-	if settings.Objects.EnableCustomSliderBorderGradientOffset {
-		colorShader.SetUniform("col_border1", utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset))
-	} else {
-		colorShader.SetUniform("col_border1", prev)
-	}
+
+	colorShader.SetUniform("col_border", borderInner)
+	colorShader.SetUniform("col_border1", borderOuter)
+
+	colorShader.SetUniform("col_body", bodyInner)
+	colorShader.SetUniform("col_body1", bodyOuter)
 
 	text.Bind(0)
 

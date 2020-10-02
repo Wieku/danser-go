@@ -9,8 +9,12 @@ precision highp float;
 
 #define slope (maxBorderWidth - baseBorderWidth) / 9
 
-uniform vec4 col_border;
 uniform vec4 col_border1;
+uniform vec4 col_border;
+
+uniform vec4 col_body1;
+uniform vec4 col_body;
+
 uniform sampler2DArray tex;
 
 uniform float cutoff;
@@ -37,8 +41,9 @@ void main()
     vec4 borderColorOuter = col_border1;
     vec4 borderColorInner = col_border;
     vec4 outerShadow = vec4(vec3(0.0), 0.5 * distance_inv / borderStart * borderColorInner.a);
-    vec4 bodyColorOuter = vec4(vec3(0.05), borderColorInner.a);
-    vec4 bodyColorInner = vec4(vec3(0.2), borderColorInner.a);
+
+    vec4 bodyColorOuter = col_body1;
+    vec4 bodyColorInner = col_body;
 
     float borderWidthScaled = borderWidth < 0 ? borderWidth * baseBorderWidth : (borderWidth - 1.0f) * slope + baseBorderWidth;
     float borderMid = borderStart + borderWidthScaled / 2;

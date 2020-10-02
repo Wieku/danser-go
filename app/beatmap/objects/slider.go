@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
@@ -618,7 +619,39 @@ func (self *Slider) DrawBodyBase(time int64, projection mgl32.Mat4) {
 func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, projection mgl32.Mat4, scale float32) {
 	colorAlpha := self.bodyFade.GetValue()
 
-	self.body.DrawNormal(projection, self.objData.StackOffset, scale, mgl32.Vec4{color[0], color[1], color[2], float32(colorAlpha /** 0.15*/)}, mgl32.Vec4{color1[0], color1[1], color1[2] /*1.0, 1.0, 1.0*/, float32(colorAlpha)})
+	bodyInner := mgl32.Vec4{color.X(), color.Y(), color.Z(), float32(colorAlpha)}
+	bodyOuter := mgl32.Vec4{color1.X(), color1.Y(), color1.Z(), float32(colorAlpha)}
+	borderInner := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * 0.2}
+	borderOuter := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * 0.2}
+
+	if settings.Skin.UseColorsFromSkin {
+		borderOuter = skin.GetInfo().SliderBorder.ToVec4()
+		borderInner = borderOuter
+
+		borderOuter[3] = float32(colorAlpha)
+		borderInner[3] = float32(colorAlpha)
+
+		var baseTrack color2.Color
+
+		if skin.GetInfo().SliderTrackOverride != nil {
+			baseTrack = *skin.GetInfo().SliderTrackOverride
+		} else {
+			baseTrack = skin.GetInfo().ComboColors[int(self.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
+		}
+
+		bodyOuter[0] = baseTrack.R / 1.1
+		bodyOuter[1] = baseTrack.G / 1.1
+		bodyOuter[2] = baseTrack.B / 1.1
+
+		bodyInner[0] = baseTrack.R + (1-baseTrack.R)*0.25
+		bodyInner[1] = baseTrack.G + (1-baseTrack.G)*0.25
+		bodyInner[2] = baseTrack.B + (1-baseTrack.B)*0.25
+	} else if settings.Objects.EnableCustomSliderBorderGradientOffset {
+		borderOuter = utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset)
+		borderOuter[3] = float32(colorAlpha)
+	}
+
+	self.body.DrawNormal(projection, self.objData.StackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
 
 func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
@@ -721,8 +754,11 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 	if time >= self.objData.EndTime && self.fade.GetValue() <= 0.001 {
 		if self.body != nil {
-			self.body.Dispose()
+			if !settings.Graphics.VSync {
+				self.body.Dispose()
+			}
 		}
+
 		return true
 	}
 
