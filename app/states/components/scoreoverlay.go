@@ -551,6 +551,9 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 	overlay.keyOverlay.Draw(overlay.lastTime, batch)
 
+	col := skin.GetInfo().InputOverlayText
+	batch.SetColor(float64(col.R), float64(col.G), float64(col.B), alpha)
+
 	for i := 0; i < 4; i++ {
 		posX := overlay.ScaledWidth - 24
 		posY := overlay.ScaledHeight/2 - 40 + 30 + float64(i)*47.5
@@ -570,7 +573,6 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
 			texLen := overlay.font.GetWidthMonospaced(scale*14, text)
 
-			batch.SetColor(1, 1, 1, alpha)
 			batch.SetScale(1, -1)
 			overlay.font.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
 		} else {
