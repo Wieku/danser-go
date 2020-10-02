@@ -619,10 +619,10 @@ func (self *Slider) DrawBodyBase(time int64, projection mgl32.Mat4) {
 func (self *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, projection mgl32.Mat4, scale float32) {
 	colorAlpha := self.bodyFade.GetValue()
 
-	bodyInner := mgl32.Vec4{color.X(), color.Y(), color.Z(), float32(colorAlpha)}
-	bodyOuter := mgl32.Vec4{color1.X(), color1.Y(), color1.Z(), float32(colorAlpha)}
-	borderInner := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * 0.2}
-	borderOuter := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * 0.2}
+	borderInner := mgl32.Vec4{color.X(), color.Y(), color.Z(), float32(colorAlpha)}
+	borderOuter := mgl32.Vec4{color1.X(), color1.Y(), color1.Z(), float32(colorAlpha)}
+	bodyInner := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * 0.2}
+	bodyOuter := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * 0.2}
 
 	if settings.Skin.UseColorsFromSkin {
 		borderOuter = skin.GetInfo().SliderBorder.ToVec4()
