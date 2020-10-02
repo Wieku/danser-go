@@ -30,7 +30,7 @@ func initObjects() *objects {
 		ObjectsSize:                   -1,
 		CSMult:                        1.0,
 		ScaleToTheBeat:                false,
-		SliderLOD:                     30,
+		SliderLOD:                     50,
 		SliderPathLOD:                 50,
 		SliderSnakeIn:                 true,
 		SliderSnakeInMult:             0.0,
