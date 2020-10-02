@@ -80,6 +80,7 @@ type ScoreOverlay struct {
 	errorCurrent     float64
 	triangle         *sprite.Sprite
 	errorDisplayFade *animation.Glider
+	skip             *sprite.Sprite
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -283,6 +284,16 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.errorDisplay.Add(overlay.triangle)
 
+	start := overlay.ruleset.GetBeatMap().HitObjects[0].GetBasicData().StartTime - 2000
+
+	if start > 2000 {
+		skipFrames := skin.GetFrames("play-skip", true)
+		overlay.skip = sprite.NewAnimation(skipFrames, skin.GetInfo().GetFrameTime(len(skipFrames)), true, 0.0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight), bmath.Origin.BottomRight)
+		overlay.skip.SetAlpha(0.0)
+		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, 0, 500, 0.0, 0.6))
+		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(start), float64(start+300), 0.6, 0.0))
+	}
+
 	return overlay
 }
 
@@ -310,7 +321,7 @@ func (overlay *ScoreOverlay) AddResult(time int64, result osu.HitResult, positio
 
 	frames := skin.GetFrames(tex, true)
 
-	sprite := sprite.NewAnimation(frames, 1000.0/60, false, -float64(time), position, bmath.Origin.Centre)
+	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, -float64(time), position, bmath.Origin.Centre)
 
 	fadeIn := float64(time + difficulty.ResultFadeIn)
 	postEmpt := float64(time + difficulty.PostEmpt)
@@ -410,6 +421,10 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	overlay.keyOverlay.Update(time)
 	overlay.bgDim.Update(float64(time))
 
+	if overlay.skip != nil {
+		overlay.skip.Update(time)
+	}
+
 	overlay.lastTime = time
 }
 
@@ -457,13 +472,20 @@ func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl3
 
 	overlay.errorDisplay.Draw(overlay.lastTime, batch)
 
+	batch.SetColor(1, 1, 1, alpha)
+
+	if overlay.skip != nil {
+		overlay.skip.Draw(overlay.lastTime, batch)
+	}
+
 	batch.SetCamera(prev)
 }
 
 func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
-	batch.SetScale(1, 1)
+	batch.ResetTransform()
+	batch.SetColor(1, 1, 1, alpha)
 
 	fntSize := overlay.scoreFont.GetSize()
 	cmbSize := overlay.comboFont.GetSize()
