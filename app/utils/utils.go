@@ -1,6 +1,6 @@
 package utils
 
-// #cgo LDFLAGS: -lm
+// #cgo LDFLAGS: -lm -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
 // #define STB_IMAGE_IMPLEMENTATION
 // #define STBI_FAILURE_USERMSG
 // #include "stb_image.h"
@@ -59,6 +59,26 @@ func LoadImage(path string) (*image.RGBA, error) {
 	}
 
 	return rgba, nil
+}
+
+func LoadImageN(path string) (*image.NRGBA, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	rgba, err := LoadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return &image.NRGBA{
+		Pix:    rgba.Pix,
+		Stride: rgba.Stride,
+		Rect:   rgba.Bounds(),
+	}, nil
 }
 
 func LoadTexture(path string) (*texture.TextureSingle, error) {

@@ -152,10 +152,10 @@ func run() {
 
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 		input.Win = win
-		icon, _ := utils.LoadImage("assets/textures/dansercoin.png")
-		icon2, _ := utils.LoadImage("assets/textures/dansercoin48.png")
-		icon3, _ := utils.LoadImage("assets/textures/dansercoin24.png")
-		icon4, _ := utils.LoadImage("assets/textures/dansercoin16.png")
+		icon, _ := utils.LoadImageN("assets/textures/dansercoin.png")
+		icon2, _ := utils.LoadImageN("assets/textures/dansercoin48.png")
+		icon3, _ := utils.LoadImageN("assets/textures/dansercoin24.png")
+		icon4, _ := utils.LoadImageN("assets/textures/dansercoin16.png")
 		win.SetIcon([]image.Image{icon, icon2, icon3, icon4})
 
 		win.MakeContextCurrent()
