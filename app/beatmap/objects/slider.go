@@ -776,7 +776,13 @@ func (self *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha float6
 		batch.DrawTexture(*skin.GetTexture("sliderb-nd"))
 	}
 
-	batch.SetColor(1, 1, 1, alpha)
+	if settings.Skin.UseColorsFromSkin && skin.GetInfo().SliderBallTint {
+		color := skin.GetInfo().ComboColors[int(self.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
+		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
+	} else {
+		batch.SetColor(1, 1, 1, alpha)
+	}
+
 	//cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
 	//r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 	//batch.SetColor(float64(r), float64(g), float64(b), alpha)
