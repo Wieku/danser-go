@@ -253,7 +253,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 		batch.SetSubScale(1, 1)
 		batch.SetTranslation(vector.NewVec2d(0, 0))
-
+		batch.SetColor(1, 1, 1, alpha)
 		if skin.GetInfo().HitCircleOverlayAboveNumber {
 			self.hitCircleOverlay.Draw(time, batch)
 		}
