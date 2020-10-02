@@ -237,12 +237,21 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	}*/
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
-		self.hitCircleOverlay.Draw(time, batch)
+		if !skin.GetInfo().HitCircleOverlayAboveNumber {
+			self.hitCircleOverlay.Draw(time, batch)
+		}
 
 		if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 			fnt := skin.GetFont("default")
 			batch.SetColor(1, 1, 1, alpha*self.textFade.GetValue())
 			fnt.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(self.objData.ComboNumber)))
+		}
+
+		batch.SetSubScale(1, 1)
+		batch.SetTranslation(vector.NewVec2d(0, 0))
+
+		if skin.GetInfo().HitCircleOverlayAboveNumber {
+			self.hitCircleOverlay.Draw(time, batch)
 		}
 	}
 
