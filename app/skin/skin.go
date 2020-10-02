@@ -249,7 +249,11 @@ func loadTexture(name string) *texture.TextureRegion {
 		mainthread.CallNonBlock(func() {
 			checkAtlas()
 
-			rg := atlas.AddTexture(name, image.Bounds().Dx(), image.Bounds().Dy(), image.Pix)
+			var rg *texture.TextureRegion
+
+			if image.Bounds().Dx() <= 1000 && image.Bounds().Dy() <= 1000 {
+				rg = atlas.AddTexture(name, image.Bounds().Dx(), image.Bounds().Dy(), image.Pix)
+			}
 
 			// If texture is too big load it separately
 			if rg == nil {
