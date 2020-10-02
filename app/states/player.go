@@ -367,11 +367,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
 			player.visualiser.Update(player.progressMsF)
 
-			//cursorPosition := player.controller.GetCursors()[0].Position
+			cursorPosition := player.controller.GetCursors()[0].Position
 
-			//offset := player.camera.Project(cursorPosition.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF()))
+			offset := player.camera.Project(cursorPosition.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF()))
 
-			player.background.Update(player.progressMsF, 0, 0) //offset.X, offset.Y)
+			player.background.Update(player.progressMsF, offset.X, offset.Y)
 
 			player.followpoints.Update(int64(player.progressMsF))
 

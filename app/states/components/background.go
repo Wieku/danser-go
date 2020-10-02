@@ -33,6 +33,7 @@ type Background struct {
 	triangles      *drawables.Triangles
 	blurVal        float64
 	blurredTexture texture.Texture
+	scaling        scaling.Scaling
 }
 
 func NewBackground(beatMap *beatmap.BeatMap) *Background {
@@ -55,14 +56,25 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 		}
 	}
 
-	imag, _ := utils.LoadImage(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+	imag, err := utils.LoadImage(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 
-	cItems, _ := prominentcolor.KmeansWithAll(5, imag, prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
-	newCol := make([]bmath.Color, len(cItems))
+	newCol := make([]bmath.Color, 0)
 
-	for i := 0; i < len(cItems); i++ {
-		newCol[i] = bmath.Color{float64(cItems[i].Color.R) / 255, float64(cItems[i].Color.G) / 255, float64(cItems[i].Color.B) / 255, 1}
+	if err == nil {
+		cItems, _ := prominentcolor.KmeansWithAll(5, imag, prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
+		newCol = make([]bmath.Color, len(cItems))
+
+		for i := 0; i < len(cItems); i++ {
+			r, g, b := float64(cItems[i].Color.R)/255, float64(cItems[i].Color.G)/255, float64(cItems[i].Color.B)/255
+
+			r = (1-r)*0.9 + r
+			g = (1-g)*0.9 + g
+			b = (1-b)*0.9 + b
+
+			newCol[i] = bmath.Color{r, g, b, 1}
+		}
 	}
+
 	bg.triangles = drawables.NewTriangles(newCol)
 	return bg
 }
@@ -85,8 +97,10 @@ func (bg *Background) Update(time float64, x, y float64) {
 
 	bg.triangles.Update(time)
 
-	x = bmath.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
-	y = bmath.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+	if settings.Playfield.Background.Parallax.Amount > 0.0001 {
+		x = bmath.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		y = bmath.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+	}
 
 	delta := math.Abs(time - bg.lastTime)
 
@@ -110,7 +124,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 
 	needsRedraw := bg.storyboard != nil || !settings.Playfield.Background.Blur.Enabled
 
-	if bg.blurVal != blurVal {
+	if math.Abs(bg.blurVal-blurVal) > 0.001 {
 		needsRedraw = true
 		bg.blurVal = blurVal
 	}
@@ -129,7 +143,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
 		}
 
-		bgScaling := scaling.Fill
+		bg.scaling = scaling.Fill
 
 		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
 			v1 := project(vector.NewVec2d(256-320, 192+240), camera)
@@ -137,15 +151,15 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 
 			viewport.PushScissorPos(int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32()))
 
-			bgScaling = scaling.Fit
+			bg.scaling = scaling.Fit
 		}
 
 		if bg.background != nil && (bg.storyboard == nil || !bg.storyboard.BGFileUsed()) {
 			batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-			size := bgScaling.Apply(float32(bg.background.Width), float32(bg.background.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
+			size := bg.scaling.Apply(float32(bg.background.Width), float32(bg.background.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
 
 			if !settings.Playfield.Background.Blur.Enabled {
-				batch.SetTranslation(bg.position.Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
+				batch.SetTranslation(bg.position.Mult(vector.NewVec2d(1, -1)).Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
 				size = size.Scl(float32(1 + settings.Playfield.Background.Parallax.Amount))
 			}
 
@@ -160,7 +174,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 			cam := camera
 			if !settings.Playfield.Background.Blur.Enabled {
 				scale := float32(1 + settings.Playfield.Background.Parallax.Amount)
-				cam = mgl32.Translate3D(bg.position.X32(), -bg.position.Y32(), 0).Mul4(mgl32.Scale3D(scale, scale, 1)).Mul4(cam)
+				cam = mgl32.Translate3D(bg.position.X32(), bg.position.Y32(), 0).Mul4(mgl32.Scale3D(scale, scale, 1)).Mul4(cam)
 			}
 
 			batch.SetCamera(cam)
@@ -168,9 +182,9 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 			bg.storyboard.Draw(time, batch)
 		}
 
-		batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-		batch.SetTranslation(bg.position.Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
-		batch.SetScale(1+settings.Playfield.Background.Parallax.Amount, 1+settings.Playfield.Background.Parallax.Amount)
+		//batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+		//batch.SetTranslation(bg.position.Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
+		//batch.SetScale(1+settings.Playfield.Background.Parallax.Amount, 1+settings.Playfield.Background.Parallax.Amount)
 		//bg.triangles.Draw(float64(time), batch)
 
 		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
