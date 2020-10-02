@@ -97,17 +97,20 @@ func (bg *Background) Update(time float64, x, y float64) {
 
 	bg.triangles.Update(time)
 
+	pX := 0.0
+	pY := 0.0
+
 	if settings.Playfield.Background.Parallax.Amount > 0.0001 {
-		x = bmath.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
-		y = bmath.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		pX = bmath.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		pY = bmath.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
 	}
 
 	delta := math.Abs(time - bg.lastTime)
 
 	p := math.Pow(1-settings.Playfield.Background.Parallax.Speed, delta/100)
 
-	bg.position.X = x*(1-p) + p*bg.position.X
-	bg.position.Y = y*(1-p) + p*bg.position.Y
+	bg.position.X = pX*(1-p) + p*bg.position.X
+	bg.position.Y = pY*(1-p) + p*bg.position.Y
 
 	bg.lastTime = time
 }
