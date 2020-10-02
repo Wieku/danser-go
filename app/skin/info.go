@@ -76,6 +76,14 @@ func newDefaultInfo() *SkinInfo {
 	}
 }
 
+func (info *SkinInfo) GetFrameTime(frames int) float64 {
+	if info.AnimationFramerate > 0 {
+		return 1000.0 / info.AnimationFramerate
+	}
+
+	return 1000.0 / float64(frames)
+}
+
 func tokenize(line, delimiter string) []string {
 	line = strings.TrimSpace(line)
 
