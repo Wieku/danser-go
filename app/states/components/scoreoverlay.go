@@ -98,7 +98,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.newComboFadeB = animation.NewGlider(1)
 
 	overlay.scoreGlider = animation.NewGlider(0)
-	overlay.scoreGlider.SetEasing(easing.OutQuint)
+	overlay.scoreGlider.SetEasing(easing.OutQuad)
 
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.ppGlider.SetEasing(easing.OutQuint)
@@ -504,7 +504,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 	//region Score+progress+accuracy
 
-	scoreText := fmt.Sprintf("%08d", int64(overlay.scoreGlider.GetValue()))
+	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
 	overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
 
 	acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
