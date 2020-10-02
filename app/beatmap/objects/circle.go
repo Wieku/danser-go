@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
@@ -217,15 +218,18 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 	batch.SetColor(1, 1, 1, alpha)
 
-	//if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
-	//	cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
-	//	r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-	//	self.hitCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
-	//} else {
-	//	self.hitCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
-	//}
-
-	self.hitCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+	//TODO: REDO THIS
+	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
+		color := skin.GetInfo().ComboColors[int(self.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
+		self.hitCircle.SetColor(bmath.Color{R: float64(color.R), G: float64(color.G), B: float64(color.B), A: 1.0})
+	} else if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
+		cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
+		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+		self.hitCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
+	} else {
+		self.hitCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+	}
+	//self.hitCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 
 	self.hitCircle.Draw(time, batch)
 
@@ -269,14 +273,17 @@ func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.Spr
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 	batch.SetColor(1, 1, 1, 1)
 
-	//if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
-	//	cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
-	//	r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-	//	self.approachCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
-	//} else {
-	//	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
-	//}
-	self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
+		color := skin.GetInfo().ComboColors[int(self.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
+		self.approachCircle.SetColor(bmath.Color{R: float64(color.R), G: float64(color.G), B: float64(color.B), A: 1.0})
+	} else if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
+		cHSV := settings.Objects.ComboColors[int(self.objData.ComboSet)%len(settings.Objects.ComboColors)]
+		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+		self.approachCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
+	} else {
+		self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
+	}
+	//self.approachCircle.SetColor(bmath.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 
 	self.approachCircle.Draw(time, batch)
 }

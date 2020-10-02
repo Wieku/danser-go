@@ -4,10 +4,12 @@ var Skin = initSkin()
 
 func initSkin() *skin {
 	return &skin{
-		CurrentSkin: "default",
+		CurrentSkin:       "default",
+		UseColorsFromSkin: false,
 	}
 }
 
 type skin struct {
-	CurrentSkin string
+	CurrentSkin       string
+	UseColorsFromSkin bool
 }

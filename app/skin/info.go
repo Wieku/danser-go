@@ -33,7 +33,7 @@ type SkinInfo struct {
 
 	SliderBallTint      bool
 	SliderBallFlip      bool
-	SliderBorder        *color.Color
+	SliderBorder        color.Color
 	SliderTrackOverride *color.Color
 
 	InputOverlayText color.Color
@@ -63,7 +63,7 @@ func newDefaultInfo() *SkinInfo {
 		ComboColors:                 []color.Color{},
 		SliderBallTint:              false,
 		SliderBallFlip:              false,
-		SliderBorder:                nil,
+		SliderBorder:                color.NewL(1),
 		SliderTrackOverride:         nil,
 		InputOverlayText:            color.NewL(1),
 		HitCirclePrefix:             "default",
@@ -171,8 +171,7 @@ func LoadInfo(path string) *SkinInfo {
 		case "SliderBallFlip":
 			info.SliderBallFlip = tokenized[1] == "1"
 		case "SliderBorder":
-			col := ParseColor(tokenized[1], tokenized[0])
-			info.SliderBorder = &col
+			info.SliderBorder = ParseColor(tokenized[1], tokenized[0])
 		case "SliderTrackOverride":
 			col := ParseColor(tokenized[1], tokenized[0])
 			info.SliderTrackOverride = &col
@@ -187,7 +186,7 @@ func LoadInfo(path string) *SkinInfo {
 		case "ScorePrefix":
 			info.ScorePrefix = tokenized[1]
 		case "ScoreOverlap":
-			info.HitCircleOverlap = ParseFloat(tokenized[1], tokenized[0])
+			info.ScoreOverlap = ParseFloat(tokenized[1], tokenized[0])
 		case "ComboPrefix":
 			info.ComboPrefix = tokenized[1]
 		case "ComboOverlap":
