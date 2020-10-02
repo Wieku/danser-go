@@ -26,7 +26,7 @@ func NewTextureSingleFormat(width, height int, format Format, mipmaps int) *Text
 	return texture
 }
 
-func LoadTextureSingle(img *image.NRGBA, mipmaps int) *TextureSingle {
+func LoadTextureSingle(img *image.RGBA, mipmaps int) *TextureSingle {
 	texture := NewTextureSingle(img.Bounds().Dx(), img.Bounds().Dy(), mipmaps)
 	texture.SetData(0, 0, img.Bounds().Dx(), img.Bounds().Dy(), img.Pix)
 	return texture
