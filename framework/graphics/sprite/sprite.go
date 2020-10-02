@@ -75,7 +75,7 @@ func NewAnimation(textures []*texture.TextureRegion, frameDelay float64, loopFor
 func (sprite *Sprite) Update(time int64) {
 	sprite.currentFrame = 0
 
-	if sprite.texture != nil && len(sprite.texture) > 1 {
+	if sprite.texture != nil && len(sprite.texture) > 1 && float64(time) >= sprite.startTime {
 		frame := int(math.Floor((float64(time) - sprite.startTime) / sprite.frameDelay))
 		if !sprite.loopForever {
 			frame = bmath.MinI(frame, len(sprite.texture)-1)
@@ -228,11 +228,11 @@ func (sprite *Sprite) UpdateAndDraw(time int64, batch *SpriteBatch) {
 }
 
 func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
-	if sprite.texture == nil || sprite.texture[sprite.currentFrame] == nil {
+	if (!sprite.showForever && float64(time) < sprite.startTime && float64(time) >= sprite.endTime) || sprite.color.A < 0.01 {
 		return
 	}
 
-	if (!sprite.showForever && float64(time) < sprite.startTime && float64(time) >= sprite.endTime) || sprite.color.A < 0.01 {
+	if sprite.texture == nil || sprite.texture[sprite.currentFrame] == nil {
 		return
 	}
 
