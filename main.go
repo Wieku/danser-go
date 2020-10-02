@@ -67,9 +67,11 @@ func run() {
 
 		flag.Parse()
 
+		closeAfterSettingsLoad := false
+
 		if (*artist + *title + *difficulty + *creator + *artistS + *titleS + *difficultyS + *creatorS) == "" {
 			log.Println("No beatmap specified, closing...")
-			os.Exit(0)
+			closeAfterSettingsLoad = true
 		}
 
 		settings.DEBUG = *debug
@@ -84,29 +86,31 @@ func run() {
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
-		discord.Connect()
-
 		player = nil
 		var beatMap *beatmap.BeatMap = nil
 
-		database.Init()
-		beatmaps := database.LoadBeatmaps()
+		if !closeAfterSettingsLoad {
+			database.Init()
+			beatmaps := database.LoadBeatmaps()
 
-		for _, b := range beatmaps {
-			if (*artist == "" || *artist == b.Artist) && (*artistS == "" || *artistS == b.Artist) &&
-				(*title == "" || *title == b.Name) && (*titleS == "" || *titleS == b.Name) &&
-				(*difficulty == "" || *difficulty == b.Difficulty) && (*difficultyS == "" || *difficultyS == b.Difficulty) &&
-				(*creator == "" || *creator == b.Creator) && (*creatorS == "" || *creatorS == b.Creator) {
-				beatMap = b
-				beatMap.UpdatePlayStats()
-				database.UpdatePlayStats(beatMap)
-				break
+			for _, b := range beatmaps {
+				if (*artist == "" || *artist == b.Artist) && (*artistS == "" || *artistS == b.Artist) &&
+					(*title == "" || *title == b.Name) && (*titleS == "" || *titleS == b.Name) &&
+					(*difficulty == "" || *difficulty == b.Difficulty) && (*difficultyS == "" || *difficultyS == b.Difficulty) &&
+					(*creator == "" || *creator == b.Creator) && (*creatorS == "" || *creatorS == b.Creator) {
+					beatMap = b
+					beatMap.UpdatePlayStats()
+					database.UpdatePlayStats(beatMap)
+					break
+				}
 			}
-		}
 
-		if beatMap == nil {
-			log.Println("Beatmap not found, closing...")
-			os.Exit(0)
+			if beatMap == nil {
+				log.Println("Beatmap not found, closing...")
+				closeAfterSettingsLoad = true
+			} else {
+				discord.Connect()
+			}
 		}
 
 		glfw.Init()
@@ -125,6 +129,10 @@ func run() {
 		if newSettings {
 			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
 			settings.Save()
+		}
+
+		if closeAfterSettingsLoad {
+			os.Exit(0)
 		}
 
 		if settings.Graphics.Fullscreen {
