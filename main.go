@@ -116,6 +116,21 @@ func run() {
 			}
 
 			if beatMap == nil {
+				log.Println("Beatmap with exact parameters not found, searching partially...")
+				for _, b := range beatmaps {
+					if (*artist == "" || strings.Contains(strings.ToLower(b.Artist), strings.ToLower(*artist))) &&
+						(*title == "" || strings.Contains(strings.ToLower(b.Name), strings.ToLower(*title))) &&
+						(*difficulty == "" || strings.Contains(strings.ToLower(b.Difficulty), strings.ToLower(*difficulty))) &&
+						(*creator == "" || strings.Contains(strings.ToLower(b.Creator), strings.ToLower(*creator))) {
+						beatMap = b
+						beatMap.UpdatePlayStats()
+						database.UpdatePlayStats(beatMap)
+						break
+					}
+				}
+			}
+
+			if beatMap == nil {
 				log.Println("Beatmap not found, closing...")
 				closeAfterSettingsLoad = true
 			} else {
