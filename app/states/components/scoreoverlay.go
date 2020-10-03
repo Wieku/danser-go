@@ -225,9 +225,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.keyOverlay.Add(keyBg)
 
 	for i := 0; i < 4; i++ {
-		posY := overlay.ScaledHeight/2 - 40 + 30 + float64(i)*47.5
+		posY := overlay.ScaledHeight/2 - 40 + (30+float64(i)*47.5)*settings.Gameplay.KeyOverlayScale
 
-		key := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-key"), 1, vector.NewVec2d(overlay.ScaledWidth-24, posY), bmath.Origin.Centre)
+		key := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-key"), 1, vector.NewVec2d(overlay.ScaledWidth-24*settings.Gameplay.KeyOverlayScale, posY), bmath.Origin.Centre)
 		key.ShowForever(true)
 
 		overlay.keys = append(overlay.keys, key)
@@ -492,26 +492,25 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 	//region Combo rendering
 
-	comboAlpha := settings.Gameplay.ComboOpacity
+	if comboAlpha := settings.Gameplay.ComboOpacity; comboAlpha > 0.001 && settings.Gameplay.ShowCombo {
+		cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboScale
 
-	cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboScale
+		batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
 
-	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
+		shiftL := overlay.comboSlide.GetValue() * overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
 
-	shiftL := overlay.comboSlide.GetValue() * overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
-
-	overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScaleB.GetValue()/2, cmbSize*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
-	batch.SetColor(1, 1, 1, alpha*comboAlpha)
-	overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScale.GetValue()/2, cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
+		overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScaleB.GetValue()/2, cmbSize*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
+		batch.SetColor(1, 1, 1, alpha*comboAlpha)
+		overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScale.GetValue()/2, cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
+	}
 
 	//endregion
 
 	//region Score+progress+accuracy
 
-	scoreScale := settings.Gameplay.ScoreScale
-	scoreAlpha := settings.Gameplay.ScoreOpacity
+	if scoreAlpha := settings.Gameplay.ScoreOpacity; scoreAlpha > 0.001 && settings.Gameplay.ShowScore {
+		scoreScale := settings.Gameplay.ScoreScale
 
-	if scoreAlpha > 0.001 {
 		batch.ResetTransform()
 		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
@@ -567,38 +566,44 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	//endregion
 
 	batch.ResetTransform()
-	batch.SetColor(1, 1, 1, alpha)
 
-	overlay.keyOverlay.Draw(overlay.lastTime, batch)
+	if keyAlpha := settings.Gameplay.KeyOverlayOpacity; keyAlpha > 0.001 && settings.Gameplay.ShowKeyOverlay {
+		keyScale := settings.Gameplay.KeyOverlayScale
 
-	col := skin.GetInfo().InputOverlayText
-	batch.SetColor(float64(col.R), float64(col.G), float64(col.B), alpha)
+		batch.SetColor(1, 1, 1, alpha*keyAlpha)
+		batch.SetScale(keyScale, keyScale)
 
-	for i := 0; i < 4; i++ {
-		posX := overlay.ScaledWidth - 24
-		posY := overlay.ScaledHeight/2 - 40 + 30 + float64(i)*47.5
-		scale := overlay.keys[i].GetScale().Y
+		overlay.keyOverlay.Draw(overlay.lastTime, batch)
 
-		text := strconv.Itoa(overlay.keyCounters[i])
+		col := skin.GetInfo().InputOverlayText
+		batch.SetColor(float64(col.R), float64(col.G), float64(col.B), alpha*keyAlpha)
 
-		if overlay.keyCounters[i] == 0 {
-			text = "K"
-			if i > 1 {
-				text = "M"
+		for i := 0; i < 4; i++ {
+			posX := overlay.ScaledWidth - 24*keyScale
+			posY := overlay.ScaledHeight/2 - 40 + (30+float64(i)*47.5)*keyScale
+			scale := overlay.keys[i].GetScale().Y * keyScale
+
+			text := strconv.Itoa(overlay.keyCounters[i])
+
+			if overlay.keyCounters[i] == 0 {
+				text = "K"
+				if i > 1 {
+					text = "M"
+				}
+
+				text += strconv.Itoa(i%2 + 1)
 			}
 
-			text += strconv.Itoa(i%2 + 1)
-		}
+			if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
+				texLen := overlay.font.GetWidthMonospaced(scale*14, text)
 
-		if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
-			texLen := overlay.font.GetWidthMonospaced(scale*14, text)
-
-			batch.SetScale(1, -1)
-			overlay.font.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
-		} else {
-			siz := scale * overlay.scoreEFont.GetSize()
-			batch.SetScale(1, 1)
-			overlay.scoreEFont.DrawCentered(batch, posX, posY, siz, text)
+				batch.SetScale(1, -1)
+				overlay.font.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
+			} else {
+				siz := scale * overlay.scoreEFont.GetSize()
+				batch.SetScale(1, 1)
+				overlay.scoreEFont.DrawCentered(batch, posX, posY, siz, text)
+			}
 		}
 	}
 
