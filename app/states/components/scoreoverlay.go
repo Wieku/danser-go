@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-const errorScale = 1.0
+const errorBaseScale = 1.5
 
 var colors = []bmath.Color{{0.2, 0.8, 1, 1}, {0.44, 0.98, 0.18, 1}, {0.85, 0.68, 0.27, 1}}
 
@@ -147,8 +147,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			timeDiffA := int64(math.Abs(timeDiff))
 
 			pixel := graphics.Pixel.GetRegion()
-			middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(overlay.ScaledWidth/2+timeDiff*errorScale, overlay.ScaledHeight-10*errorScale), bmath.Origin.Centre)
-			middle.SetScaleV(vector.NewVec2d(1.5*errorScale, 20*errorScale))
+			scale := settings.Gameplay.HitErrorMeterScale
+			middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(overlay.ScaledWidth/2+timeDiff*errorBaseScale*scale, overlay.ScaledHeight-10*errorBaseScale*scale), bmath.Origin.Centre)
+			middle.SetScaleV(vector.NewVec2d(1.5, 20).Scl(errorBaseScale * scale))
 			middle.SetAdditive(true)
 
 			var col bmath.Color
@@ -171,7 +172,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.errorCurrent = overlay.errorCurrent*0.8 + timeDiff*0.2
 
 			overlay.triangle.ClearTransformations()
-			overlay.triangle.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.OutQuad, float64(time), float64(time+800), overlay.triangle.GetPosition().X, overlay.ScaledWidth/2+overlay.errorCurrent))
+			overlay.triangle.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.OutQuad, float64(time), float64(time+800), overlay.triangle.GetPosition().X, overlay.ScaledWidth/2+overlay.errorCurrent*scale))
 
 			overlay.errorDisplayFade.Reset()
 			overlay.errorDisplayFade.SetValue(1.0)
@@ -240,14 +241,14 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	sum := ruleset.GetBeatMap().Diff.Hit50
 
 	pixel := graphics.Pixel.GetRegion()
-	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-10*errorScale), bmath.Origin.Centre)
-	bg.SetScaleV(vector.NewVec2d(float64(sum)*2*errorScale, 20*errorScale))
+	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-10*errorBaseScale), bmath.Origin.Centre)
+	bg.SetScaleV(vector.NewVec2d(float64(sum)*2*errorBaseScale, 20*errorBaseScale))
 	bg.SetColor(bmath.Color{0, 0, 0, 1})
 	bg.SetAlpha(0.8)
 	overlay.errorDisplay.Add(bg)
 
 	vals := []float64{float64(ruleset.GetBeatMap().Diff.Hit300), float64(ruleset.GetBeatMap().Diff.Hit100), float64(ruleset.GetBeatMap().Diff.Hit50)}
-
+	scale := errorBaseScale * settings.Gameplay.HitErrorMeterScale
 	for i, v := range vals {
 		pos := 0.0
 		width := v
@@ -257,29 +258,29 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			width -= vals[i-1]
 		}
 
-		left := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(overlay.ScaledWidth/2-pos*errorScale, overlay.ScaledHeight-10*errorScale), bmath.Origin.CentreRight)
-		left.SetScaleV(vector.NewVec2d(width*errorScale, 4*errorScale))
+		left := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(overlay.ScaledWidth/2-pos*scale, overlay.ScaledHeight-10*scale), bmath.Origin.CentreRight)
+		left.SetScaleV(vector.NewVec2d(width*scale, 4*scale))
 		left.SetColor(colors[i])
 		left.SetAlpha(0.8)
 
 		overlay.errorDisplay.Add(left)
 
-		right := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(overlay.ScaledWidth/2+pos*errorScale, overlay.ScaledHeight-10*errorScale), bmath.Origin.CentreLeft)
-		right.SetScaleV(vector.NewVec2d(width*errorScale, 4*errorScale))
+		right := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(overlay.ScaledWidth/2+pos*scale, overlay.ScaledHeight-10*scale), bmath.Origin.CentreLeft)
+		right.SetScaleV(vector.NewVec2d(width*scale, 4*scale))
 		right.SetColor(colors[i])
 		right.SetAlpha(0.8)
 
 		overlay.errorDisplay.Add(right)
 	}
 
-	middle := sprite.NewSpriteSingle(&pixel, 2.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-10*errorScale), bmath.Origin.Centre)
-	middle.SetScaleV(vector.NewVec2d(2*errorScale, 20*errorScale))
+	middle := sprite.NewSpriteSingle(&pixel, 2.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-10*scale), bmath.Origin.Centre)
+	middle.SetScaleV(vector.NewVec2d(2*scale, 20*scale))
 	middle.SetAlpha(0.8)
 
 	overlay.errorDisplay.Add(middle)
 
-	overlay.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-12*errorScale), bmath.Origin.BottomCentre)
-	overlay.triangle.SetScaleV(vector.NewVec2d(errorScale/8, errorScale/8))
+	overlay.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-12*scale), bmath.Origin.BottomCentre)
+	overlay.triangle.SetScaleV(vector.NewVec2d(scale/8, scale/8))
 	overlay.triangle.SetAlpha(0.8)
 
 	overlay.errorDisplay.Add(overlay.triangle)
@@ -468,9 +469,11 @@ func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl3
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.SetScale(1, 1)
-	batch.SetColor(1, 1, 1, overlay.errorDisplayFade.GetValue())
 
-	overlay.errorDisplay.Draw(overlay.lastTime, batch)
+	if meterAlpha := settings.Gameplay.HitErrorMeterOpacity; meterAlpha > 0.001 && settings.Gameplay.ShowHitErrorMeter {
+		batch.SetColor(1, 1, 1, overlay.errorDisplayFade.GetValue()*meterAlpha)
+		overlay.errorDisplay.Draw(overlay.lastTime, batch)
+	}
 
 	batch.SetColor(1, 1, 1, alpha)
 
