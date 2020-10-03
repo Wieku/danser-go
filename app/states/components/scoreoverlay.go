@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-const errorScale = 2.0
+const errorScale = 1.0
 
 var colors = []bmath.Color{{0.2, 0.8, 1, 1}, {0.44, 0.98, 0.18, 1}, {0.85, 0.68, 0.27, 1}}
 
@@ -487,7 +487,6 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
 
-	fntSize := overlay.scoreFont.GetSize()
 	cmbSize := overlay.comboFont.GetSize()
 
 	//region Combo rendering
@@ -504,44 +503,56 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 	//region Score+progress+accuracy
 
-	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
-	overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
+	scoreScale := settings.Gameplay.ScoreScale
+	scoreAlpha := settings.Gameplay.ScoreOpacity
 
-	acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
-	accText := fmt.Sprintf("%0.2f%%", acc)
-	overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.45, accText), 9+fntSize+fntSize*0.45/2, fntSize*0.45, accText)
+	if scoreAlpha > 0.001 {
+		batch.ResetTransform()
+		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
-	if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
-		gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+		fntSize := overlay.scoreFont.GetSize() * scoreScale
 
-		text := skin.GetTexture("ranking-" + gText + "-small")
+		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
 
-		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.45, "100.00%")-float64(text.Width)/2, 9+fntSize+fntSize*0.45/2))
-		batch.DrawTexture(*text)
+		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
+		accText := fmt.Sprintf("%0.2f%%", acc)
+		overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, accText), 9*scoreScale+fntSize+fntSize*0.6/2, fntSize*0.6, accText)
+
+		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
+			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+
+			text := skin.GetTexture("ranking-" + gText + "-small")
+
+			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, "100.00%")-float64(text.Width)/2*scoreScale, 9*scoreScale+fntSize+fntSize*0.6/2))
+			batch.SetSubScale(scoreScale, scoreScale)
+			batch.DrawTexture(*text)
+		}
+
+		hObjects := overlay.ruleset.GetBeatMap().HitObjects
+
+		startTime := float64(hObjects[0].GetBasicData().StartTime)
+		endTime := float64(hObjects[len(hObjects)-1].GetBasicData().EndTime)
+		musicPos := 0.0
+		if overlay.music != nil {
+			musicPos = overlay.music.GetPosition() * 1000
+		}
+
+		progress := math.Min(1.0, math.Max(0.0, (musicPos-startTime)/(endTime-startTime)))
+		//log.Println(progress)
+		batch.SetColor(0.2, 0.6, 0.2, alpha*0.8*scoreAlpha)
+
+		batch.SetSubScale(100*progress*scoreScale, 3*scoreScale)
+		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-5-200+progress*100)*scoreScale, fntSize+4*scoreScale))
+		batch.DrawUnit(graphics.Pixel.GetRegion())
+
+		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
+		batch.SetSubScale(1, 1)
+
+		batch.SetScale(1, -1)
+		overlay.font.DrawMonospaced(batch, 0, 150, 40, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
 	}
 
-	hObjects := overlay.ruleset.GetBeatMap().HitObjects
-
-	startTime := float64(hObjects[0].GetBasicData().StartTime)
-	endTime := float64(hObjects[len(hObjects)-1].GetBasicData().EndTime)
-	musicPos := 0.0
-	if overlay.music != nil {
-		musicPos = overlay.music.GetPosition() * 1000
-	}
-
-	progress := math.Min(1.0, math.Max(0.0, (musicPos-startTime)/(endTime-startTime)))
-	//log.Println(progress)
-	batch.SetColor(0.2, 0.6, 0.2, alpha*0.8)
-
-	batch.SetSubScale(100*progress, 3)
-	batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth-5-200+progress*100, fntSize+4))
-	batch.DrawUnit(graphics.Pixel.GetRegion())
-
-	batch.SetColor(1, 1, 1, alpha)
-	batch.SetSubScale(1, 1)
-
-	batch.SetScale(1, -1)
-	overlay.font.DrawMonospaced(batch, 0, 150, fntSize*0.7, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
 	batch.SetScale(1, 1)
 
 	//endregion
