@@ -545,13 +545,13 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		batch.SetSubScale(100*progress*scoreScale, 3*scoreScale)
 		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-5-200+progress*100)*scoreScale, fntSize+4*scoreScale))
 		batch.DrawUnit(graphics.Pixel.GetRegion())
-
-		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
-		batch.SetSubScale(1, 1)
-
-		batch.SetScale(1, -1)
-		overlay.font.DrawMonospaced(batch, 0, 150, 40, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
 	}
+
+	batch.SetColor(1, 1, 1, alpha)
+	batch.SetScale(1, -1)
+	batch.SetSubScale(1, 1)
+
+	overlay.font.DrawMonospaced(batch, 0, 150, 40, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
 
 	batch.SetScale(1, 1)
 
