@@ -179,19 +179,19 @@ func (cr *Cursor) Update(delta float64) {
 	}
 
 	points := cr.Position.Dst(cr.LastPos)
-	density := float32(1.0 / settings.Cursor.TrailDensity)
+	distance := float32(1.0 / settings.Cursor.TrailDensity)
 
 	dirtyLocal := false
 
-	if int(points/density) > 0 {
+	if int(points/distance) > 0 {
 		temp := cr.LastPos
-		for i := density; i < points; i += density {
+		for i := distance; i < points; i += distance {
 			temp = cr.Position.Sub(cr.LastPos).Scl(i / points).Add(cr.LastPos)
 			cr.Points = append(cr.Points, temp)
 			cr.PointsC = append(cr.PointsC, cr.hueBase)
 
 			if settings.Cursor.TrailStyle == 2 {
-				cr.hueBase += settings.Cursor.Style23Speed / 360.0 * float64(density)
+				cr.hueBase += settings.Cursor.Style23Speed / 360.0 * float64(distance)
 				if cr.hueBase > 1.0 {
 					cr.hueBase -= 1.0
 				} else if cr.hueBase < 0 {
@@ -206,7 +206,7 @@ func (cr *Cursor) Update(delta float64) {
 	if len(cr.Points) > 0 {
 		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / delta) * settings.Cursor.TrailRemoveSpeed
 		times := int(math.Floor(cr.removeCounter))
-		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) * float64(density))
+		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) * settings.Cursor.TrailDensity)
 
 		if len(cr.Points) > lengthAdjusted {
 			cr.Points = cr.Points[len(cr.Points)-lengthAdjusted:]
