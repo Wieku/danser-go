@@ -487,16 +487,18 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
 
-	cmbSize := overlay.comboFont.GetSize()
-
 	//region Combo rendering
 
-	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha)
+	comboAlpha := settings.Gameplay.ComboOpacity
+
+	cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboScale
+
+	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
 
 	shiftL := overlay.comboSlide.GetValue() * overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
 
 	overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScaleB.GetValue()/2, cmbSize*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
-	batch.SetColor(1, 1, 1, alpha)
+	batch.SetColor(1, 1, 1, alpha*comboAlpha)
 	overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScale.GetValue()/2, cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
 
 	//endregion
@@ -546,6 +548,10 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-5-200+progress*100)*scoreScale, fntSize+4*scoreScale))
 		batch.DrawUnit(graphics.Pixel.GetRegion())
 	}
+
+	//endregion
+
+	//region pp
 
 	batch.SetColor(1, 1, 1, alpha)
 	batch.SetScale(1, -1)
