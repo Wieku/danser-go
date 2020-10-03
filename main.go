@@ -29,6 +29,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 const (
@@ -103,10 +104,10 @@ func run() {
 			beatmaps := database.LoadBeatmaps()
 
 			for _, b := range beatmaps {
-				if (*artist == "" || *artist == b.Artist) &&
-					(*title == "" || *title == b.Name) &&
-					(*difficulty == "" || *difficulty == b.Difficulty) &&
-					(*creator == "" || *creator == b.Creator) {
+				if (*artist == "" || strings.EqualFold(*artist, b.Artist)) &&
+					(*title == "" || strings.EqualFold(*title, b.Name)) &&
+					(*difficulty == "" || strings.EqualFold(*difficulty, b.Difficulty)) &&
+					(*creator == "" || strings.EqualFold(*creator, b.Creator)) {
 					beatMap = b
 					beatMap.UpdatePlayStats()
 					database.UpdatePlayStats(beatMap)
