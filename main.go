@@ -31,6 +31,15 @@ import (
 	"runtime"
 )
 
+const (
+	base           = "Specify the"
+	artistDesc     = base + " artist of a song"
+	titleDesc      = base + " title of a song"
+	creatorDesc    = base + " creator of a map"
+	difficultyDesc = base + " difficulty(version) of a map"
+	shorthand      = " (shorthand)"
+)
+
 var player *states.Player
 var pressed = false
 var pressedM = false
@@ -42,34 +51,34 @@ func run() {
 
 	mainthread.Call(func() {
 
-		artist := flag.String("artist", "", "")
-		artistS := flag.String("a", "", "")
+		artist := flag.String("artist", "", artistDesc)
+		flag.StringVar(artist, "a", "", artistDesc+shorthand)
 
-		title := flag.String("title", "", "")
-		titleS := flag.String("t", "", "")
+		title := flag.String("title", "", titleDesc)
+		flag.StringVar(title, "t", "", titleDesc+shorthand)
 
-		difficulty := flag.String("difficulty", "", "")
-		difficultyS := flag.String("d", "", "")
+		difficulty := flag.String("difficulty", "", difficultyDesc)
+		flag.StringVar(difficulty, "d", "", difficultyDesc+shorthand)
 
-		creator := flag.String("creator", "", "")
-		creatorS := flag.String("c", "", "")
+		creator := flag.String("creator", "", creatorDesc)
+		flag.StringVar(creator, "c", "", creatorDesc+shorthand)
 
-		settingsVersion := flag.Int("settings", 0, "")
-		cursors := flag.Int("cursors", 1, "")
-		tag := flag.Int("tag", 1, "")
-		knockout := flag.Bool("knockout", false, "")
-		speed := flag.Float64("speed", 1.0, "")
-		pitch := flag.Float64("pitch", 1.0, "")
-		mover := flag.String("mover", "flower", "")
-		debug := flag.Bool("debug", false, "")
+		settingsVersion := flag.Int("settings", 0, "Specify settings version")
+		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
+		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
+		knockout := flag.Bool("knockout", false, "Use knockout feature")
+		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
+		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
+		mover := flag.String("mover", "flower", "It will be moved to settings")
+		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
 
-		play := flag.Bool("play", false, "")
+		play := flag.Bool("play", false, "Practice playing osu!standard maps")
 
 		flag.Parse()
 
 		closeAfterSettingsLoad := false
 
-		if (*artist + *title + *difficulty + *creator + *artistS + *titleS + *difficultyS + *creatorS) == "" {
+		if (*artist + *title + *difficulty + *creator) == "" {
 			log.Println("No beatmap specified, closing...")
 			closeAfterSettingsLoad = true
 		}
@@ -94,10 +103,10 @@ func run() {
 			beatmaps := database.LoadBeatmaps()
 
 			for _, b := range beatmaps {
-				if (*artist == "" || *artist == b.Artist) && (*artistS == "" || *artistS == b.Artist) &&
-					(*title == "" || *title == b.Name) && (*titleS == "" || *titleS == b.Name) &&
-					(*difficulty == "" || *difficulty == b.Difficulty) && (*difficultyS == "" || *difficultyS == b.Difficulty) &&
-					(*creator == "" || *creator == b.Creator) && (*creatorS == "" || *creatorS == b.Creator) {
+				if (*artist == "" || *artist == b.Artist) &&
+					(*title == "" || *title == b.Name) &&
+					(*difficulty == "" || *difficulty == b.Difficulty) &&
+					(*creator == "" || *creator == b.Creator) {
 					beatMap = b
 					beatMap.UpdatePlayStats()
 					database.UpdatePlayStats(beatMap)
