@@ -15,12 +15,13 @@ func initStorage() {
 		Graphics:  Graphics,
 		Audio:     Audio,
 		Input:     Input,
+		Gameplay:  Gameplay,
 		Skin:      Skin,
 		Cursor:    Cursor,
 		Objects:   Objects,
 		Playfield: Playfield,
 		Dance:     Dance,
-		Knockout:  Knockout,
+		Knockout:  nil,
 	}
 }
 
