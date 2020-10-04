@@ -16,6 +16,8 @@ import (
 	"strconv"
 )
 
+const defaultCircleName = "hit"
+
 type Circle struct {
 	objData *basicData
 	sample  int
@@ -30,6 +32,8 @@ type Circle struct {
 	diff             *difficulty.Difficulty
 	lastTime         int64
 	silent           bool
+	firstEndCircle   bool
+	textureName      string
 }
 
 func NewCircle(data []string) *Circle {
@@ -40,7 +44,7 @@ func NewCircle(data []string) *Circle {
 	circle.objData.EndTime = circle.objData.StartTime
 	circle.objData.EndPos = circle.objData.StartPos
 	circle.objData.parseExtras(data, 5)
-
+	circle.textureName = defaultCircleName
 	return circle
 }
 
@@ -59,6 +63,23 @@ func DummyCircleInherit(pos vector.Vector2f, time int64, inherit bool, inheritSt
 	circle.objData.SliderPointStart = inheritStart
 	circle.objData.SliderPointEnd = inheritEnd
 	circle.silent = true
+	circle.textureName = "sliderstart"
+	return circle
+}
+
+func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
+	circle := &Circle{objData: &basicData{}}
+	circle.objData.StartPos = pos
+	circle.objData.EndPos = pos
+	circle.objData.StartTime = time
+	circle.objData.EndTime = time
+	circle.objData.EndPos = circle.objData.StartPos
+	circle.objData.SliderPoint = inherit
+	circle.objData.SliderPointStart = inheritStart
+	circle.objData.SliderPointEnd = inheritEnd
+	circle.firstEndCircle = first
+	circle.silent = true
+	circle.textureName = "sliderend"
 	return circle
 }
 
@@ -113,19 +134,26 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.textFade = animation.NewGlider(0)
 
-	self.hitCircle = sprite.NewSpriteSingle(skin.GetTexture("hitcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
-	self.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTexture("hitcircleoverlay"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	defaul := skin.GetTexture(defaultCircleName + "circle")
+	named := skin.GetTexture(self.textureName + "circle")
+
+	name := self.textureName + "circle"
+
+	if named == nil || skin.GetMostSpecific(named, defaul) == defaul {
+		name = defaultCircleName + "circle"
+	}
+
+	self.hitCircle = sprite.NewSpriteSingle(skin.GetTexture(name), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	self.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTextureSource(name+"overlay", skin.GetSource(name)), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+
 	self.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 
 	self.sprites = append(self.sprites, self.hitCircle)
 	self.sprites = append(self.sprites, self.hitCircleOverlay)
 	self.sprites = append(self.sprites, self.approachCircle)
 
-	self.hitCircle.SetPosition(self.objData.StartPos.Copy64())
 	self.hitCircle.SetAlpha(0)
-	self.hitCircleOverlay.SetPosition(self.objData.StartPos.Copy64())
 	self.hitCircleOverlay.SetAlpha(0)
-	self.approachCircle.SetPosition(self.objData.StartPos.Copy64())
 	self.approachCircle.SetAlpha(0)
 
 	circles := []*sprite.Sprite{self.hitCircle, self.hitCircleOverlay}
@@ -209,7 +237,7 @@ func (self *Circle) GetPosition() vector.Vector2f {
 
 func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(vector.NewVec2d(0, 0))
+	batch.SetTranslation(self.objData.StartPos.Copy64())
 
 	alpha := 1.0
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
@@ -252,7 +280,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 		}
 
 		batch.SetSubScale(1, 1)
-		batch.SetTranslation(vector.NewVec2d(0, 0))
+		batch.SetTranslation(self.objData.StartPos.Copy64())
 		batch.SetColor(1, 1, 1, alpha)
 		if skin.GetInfo().HitCircleOverlayAboveNumber {
 			self.hitCircleOverlay.Draw(time, batch)
@@ -270,7 +298,7 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 func (self *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(vector.NewVec2d(0, 0))
+	batch.SetTranslation(self.objData.StartPos.Copy64())
 	batch.SetColor(1, 1, 1, 1)
 
 	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
