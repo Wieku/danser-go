@@ -592,7 +592,7 @@ func (self *Slider) KillSlide(time int64) {
 }
 
 func (self *Slider) PlayEdgeSample(index int) {
-	self.playSampleT(self.sampleSets[index], self.additionSets[index], self.samples[index], self.Timings.GetPoint(self.objData.StartTime+int64(float64(index)*self.partLen)), self.GetPointAt(self.objData.StartTime+int64(float64(index)*self.partLen)))
+	self.playSampleT(self.sampleSets[index], self.additionSets[index], self.samples[index], self.Timings.GetPoint(self.objData.StartTime+int64(float64(index)*self.partLen)+5), self.GetPointAt(self.objData.StartTime+int64(float64(index)*self.partLen)))
 }
 
 func (self *Slider) HitEdge(index int, time int64, isHit bool) {
