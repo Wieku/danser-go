@@ -22,6 +22,8 @@ type SkinInfo struct {
 	SpinnerFadePlayfield bool
 	SpinnerNoBlink       bool
 
+	LayeredHitSounds bool
+
 	//skipping combo bursts
 
 	//skipping cursor settings for now
@@ -60,6 +62,7 @@ func newDefaultInfo() *SkinInfo {
 		AnimationFramerate:          -1,
 		SpinnerFadePlayfield:        true,
 		SpinnerNoBlink:              false,
+		LayeredHitSounds:            false,
 		ComboColors:                 []color.Color{},
 		SliderBallTint:              false,
 		SliderBallFlip:              false,
@@ -172,6 +175,8 @@ func LoadInfo(path string) *SkinInfo {
 			info.SpinnerFadePlayfield = tokenized[1] == "1"
 		case "SpinnerNoBlink":
 			info.SpinnerNoBlink = tokenized[1] == "1"
+		case "LayeredHitSounds":
+			info.LayeredHitSounds = tokenized[1] == "1"
 		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
 			info.ComboColors = append(info.ComboColors, ParseColor(tokenized[1], tokenized[0]))
 		case "SliderBallTint":
