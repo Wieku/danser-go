@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
@@ -31,6 +32,7 @@ import (
 	"math"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -39,7 +41,7 @@ type Player struct {
 	font        *font.Font
 	bMap        *beatmap.BeatMap
 	queue2      []objects.BaseObject
-	processed   []objects.Renderable
+	processed   []*RenderableProxy
 	bloomEffect *effects.BloomEffect
 	lastTime    int64
 	progressMsF float64
@@ -94,6 +96,13 @@ type Player struct {
 
 	followpoints *sprite.SpriteManager
 	hudGlider    *animation.Glider
+}
+
+type RenderableProxy struct {
+	renderable   objects.Renderable
+	IsSliderBody bool
+	depth        int64
+	endTime      int64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -431,6 +440,17 @@ func (pl *Player) Show() {
 
 }
 
+func (pl *Player) AddProxy(proxy *RenderableProxy) {
+	n := sort.Search(len(pl.processed), func(j int) bool {
+		return proxy.depth < pl.processed[j].depth
+	})
+
+	pl.processed = append(pl.processed, nil) //allocate bigger array in case when len=cap
+	copy(pl.processed[n+1:], pl.processed[n:])
+
+	pl.processed[n] = proxy
+}
+
 func (pl *Player) Draw(float64) {
 	if pl.lastTime <= 0 {
 		pl.lastTime = qpc.GetNanoTime()
@@ -461,7 +481,30 @@ func (pl *Player) Draw(float64) {
 			if p := pl.queue2[i]; p.GetBasicData().StartTime-15000 <= pl.progressMs {
 				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.Diff.Preempt) <= pl.progressMs {
 
-					pl.processed = append(pl.processed, p.(objects.Renderable))
+					if _, ok := p.(*objects.Spinner); ok {
+						pl.AddProxy(&RenderableProxy{
+							renderable:   p.(objects.Renderable),
+							IsSliderBody: false,
+							depth:        math.MaxInt64,
+							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
+						})
+					} else {
+						pl.AddProxy(&RenderableProxy{
+							renderable:   p.(objects.Renderable),
+							IsSliderBody: false,
+							depth:        p.GetBasicData().StartTime,
+							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
+						})
+					}
+
+					if _, ok := p.(*objects.Slider); ok {
+						pl.AddProxy(&RenderableProxy{
+							renderable:   p.(objects.Renderable),
+							IsSliderBody: true,
+							depth:        p.GetBasicData().EndTime + 10,
+							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
+						})
+					}
 
 					pl.queue2 = pl.queue2[1:]
 					i--
@@ -633,7 +676,7 @@ func (pl *Player) Draw(float64) {
 		pl.batch.SetScale(1, 1)
 
 		for i := len(pl.processed) - 1; i >= 0; i-- {
-			if s, ok := pl.processed[i].(*objects.Slider); ok {
+			if s, ok := pl.processed[i].renderable.(*objects.Slider); ok && pl.processed[i].IsSliderBody {
 				s.DrawBodyBase(pl.progressMs, cameras[0])
 			}
 		}
@@ -648,7 +691,7 @@ func (pl *Player) Draw(float64) {
 				}
 
 				for i := len(pl.processed) - 1; i >= 0; i-- {
-					if s, ok := pl.processed[i].(*objects.Slider); ok {
+					if s, ok := pl.processed[i].renderable.(*objects.Slider); ok && pl.processed[i].IsSliderBody {
 						if !enabled {
 							enabled = true
 							sliderrenderer.BeginRendererMerge()
@@ -680,35 +723,41 @@ func (pl *Player) Draw(float64) {
 
 			pl.batch.Flush()
 
-			if !settings.Objects.SliderMerge {
-				enabled := false
+			enabled := false
 
-				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					if i < len(pl.processed) {
-						if s, ok := pl.processed[i].(*objects.Slider); ok {
-							if !enabled {
-								enabled = true
-								sliderrenderer.BeginRenderer()
-							}
+			for i := len(pl.processed) - 1; i >= 0; i-- {
+				proxy := pl.processed[i]
 
-							s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j], float32(scale1))
-						}
+				if !proxy.IsSliderBody {
+					if enabled && !settings.Objects.SliderMerge {
+						enabled = false
+
+						sliderrenderer.EndRenderer()
 					}
+
+					_, sp := pl.processed[i].renderable.(*objects.Spinner)
+					if !sp || j == 0 {
+						proxy.renderable.Draw(pl.progressMs, colors[j], pl.batch)
+					}
+				} else if !settings.Objects.SliderMerge {
+					if !enabled {
+						enabled = true
+
+						pl.batch.Flush()
+
+						sliderrenderer.BeginRenderer()
+					}
+
+					proxy.renderable.(*objects.Slider).DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j], float32(scale1))
 				}
 
-				if enabled {
-					sliderrenderer.EndRenderer()
+				if proxy.endTime <= pl.progressMs {
+					pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
 				}
 			}
 
-			for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-				_, sp := pl.processed[i].(*objects.Spinner)
-				if i < len(pl.processed) && (!sp || j == 0) {
-					res := pl.processed[i].Draw(pl.progressMs, colors[j], pl.batch)
-					if res {
-						pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
-					}
-				}
+			if enabled {
+				sliderrenderer.EndRenderer()
 			}
 		}
 
@@ -716,11 +765,10 @@ func (pl *Player) Draw(float64) {
 			pl.batch.Flush()
 
 			for j := 0; j < settings.DIVIDES; j++ {
-
 				pl.batch.SetCamera(cameras[j])
 
-				for i := len(pl.processed) - 1; i >= 0 && len(pl.processed) > 0; i-- {
-					pl.processed[i].DrawApproach(pl.progressMs, colors[j], pl.batch)
+				for i := len(pl.processed) - 1; i >= 0; i-- {
+					pl.processed[i].renderable.DrawApproach(pl.progressMs, colors[j], pl.batch)
 				}
 			}
 		}
@@ -748,9 +796,10 @@ func (pl *Player) Draw(float64) {
 		}
 
 		pl.batch.SetAdditive(false)
-		graphics.BeginCursorRender()
-		for j := 0; j < settings.DIVIDES; j++ {
 
+		graphics.BeginCursorRender()
+
+		for j := 0; j < settings.DIVIDES; j++ {
 			pl.batch.SetCamera(cameras[j])
 
 			for i, g := range pl.controller.GetCursors() {
@@ -769,8 +818,8 @@ func (pl *Player) Draw(float64) {
 
 				g.DrawM(scale2, pl.batch, col1, col2, hshifts[baseIndex])
 			}
-
 		}
+
 		graphics.EndCursorRender()
 	}
 
