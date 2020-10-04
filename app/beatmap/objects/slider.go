@@ -73,9 +73,6 @@ type Slider struct {
 	sliderSnakeHead      *animation.Glider
 	fade                 *animation.Glider
 	bodyFade             *animation.Glider
-	//fadeFollow           *animation.Glider
-	//scaleFollow          *animation.Glider
-	reversePoints [2][]*reversePoint
 
 	diff     *difficulty.Difficulty
 	body     *sliderrenderer.Body
@@ -83,6 +80,11 @@ type Slider struct {
 
 	ball     *sprite.Sprite
 	follower *sprite.Sprite
+
+	edges          []*Circle
+	endCircles     []*Circle
+	headEndCircles []*Circle
+	tailEndCircles []*Circle
 }
 
 func NewSlider(data []string) *Slider {
@@ -376,6 +378,8 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.startCircle.objData.Number = self.objData.Number
 	self.startCircle.SetDifficulty(diff)
 
+	self.edges = append(self.edges, self.startCircle)
+
 	sixty := 1000.0 / 60
 	frameDelay := math.Max(150/self.Timings.GetVelocity(self.TPoint)*sixty, sixty)
 
@@ -391,42 +395,28 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 	self.follower.SetAlpha(0.0)
 
-	for i := int64(2); i < self.repeat; i += 2 {
-		arrow := newReverse()
-
-		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
-		end := float64(self.objData.StartTime) + float64(i)*self.partLen
-
-		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
-		arrow.fade.AddEvent(end, end+300, 0)
-
-		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
-		for j := start; j < end; j += 300 {
-			arrow.pulse.AddEvent(j-0.1, j-0.1, 1.3)
-			arrow.pulse.AddEvent(j, j+math.Min(300, end-j), 1)
+	for i := int64(1); i <= self.repeat; i++ {
+		appearTime := self.objData.StartTime - int64(self.diff.Preempt)
+		circleTime := self.objData.StartTime + int64(self.partLen*float64(i))
+		if i > 1 {
+			appearTime = circleTime - int64(self.partLen*2)
 		}
 
-		self.reversePoints[0] = append(self.reversePoints[0], arrow)
-	}
+		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == self.repeat)
+		circle.objData.ComboNumber = self.objData.ComboNumber
+		circle.objData.ComboSet = self.objData.ComboSet
+		circle.objData.Number = self.objData.Number
+		circle.SetTiming(self.Timings)
+		circle.SetDifficulty(diff)
 
-	for i := int64(1); i < self.repeat; i += 2 {
-		arrow := newReverse()
+		self.endCircles = append(self.endCircles, circle)
+		self.edges = append(self.edges, circle)
 
-		start := float64(self.objData.StartTime) + float64(i-2)*self.partLen
-		end := float64(self.objData.StartTime) + float64(i)*self.partLen
-		if i == 1 {
-			start -= difficulty.HitFadeIn
+		if i%2 == 0 {
+			self.headEndCircles = append(self.headEndCircles, circle)
+		} else {
+			self.tailEndCircles = append(self.tailEndCircles, circle)
 		}
-
-		arrow.fade.AddEvent(start, start+math.Min(300, end-start), 1)
-		arrow.fade.AddEvent(end, end+300, 0)
-
-		arrow.pulse.AddEventS(end, end+300, 1, 1.4)
-		for subTime := start; subTime < end; subTime += 300 {
-			arrow.pulse.AddEventS(subTime, subTime+math.Min(300, end-subTime), 1.3, 1)
-		}
-
-		self.reversePoints[1] = append(self.reversePoints[1], arrow)
 	}
 
 	for _, p := range self.TickPoints {
@@ -465,11 +455,10 @@ func (self *Slider) Update(time int64) bool {
 			edgeTime := self.objData.StartTime + int64(float64(i)*self.partLen)
 
 			if self.lastTime < edgeTime && time >= edgeTime {
-				self.PlayEdgeSample(int(i))
+				self.HitEdge(int(i), time, true)
 
 				if i == 0 {
 					self.InitSlide(self.objData.StartTime)
-					self.ArmStart(true, self.objData.StartTime)
 				}
 			}
 		}
@@ -499,11 +488,22 @@ func (self *Slider) Update(time int64) bool {
 	self.fade.Update(float64(time))
 	self.bodyFade.Update(float64(time))
 
-	for i := 0; i < 2; i++ {
-		for j := 0; j < len(self.reversePoints[i]); j++ {
-			self.reversePoints[i][j].pulse.Update(float64(time))
-			self.reversePoints[i][j].fade.Update(float64(time))
-		}
+	headPos := self.multiCurve.PointAt(float32(self.sliderSnakeHead.GetValue()))
+	headAngle := self.multiCurve.GetStartAngleAt(float32(self.sliderSnakeHead.GetValue())) + math.Pi
+
+	for _, s := range self.headEndCircles {
+		s.ArrowRotation = float64(headAngle)
+		s.objData.StartPos = headPos
+		s.Update(time)
+	}
+
+	tailPos := self.multiCurve.PointAt(float32(self.sliderSnakeTail.GetValue()))
+	tailAngle := self.multiCurve.GetEndAngleAt(float32(self.sliderSnakeTail.GetValue())) + math.Pi
+
+	for _, s := range self.tailEndCircles {
+		s.ArrowRotation = float64(tailAngle)
+		s.objData.StartPos = tailPos
+		s.Update(time)
 	}
 
 	for _, p := range self.TickPoints {
@@ -583,6 +583,15 @@ func (self *Slider) KillSlide(time int64) {
 
 func (self *Slider) PlayEdgeSample(index int) {
 	self.playSampleT(self.sampleSets[index], self.additionSets[index], self.samples[index], self.Timings.GetPoint(self.objData.StartTime+int64(float64(index)*self.partLen)), self.GetPointAt(self.objData.StartTime+int64(float64(index)*self.partLen)))
+}
+
+func (self *Slider) HitEdge(index int, time int64, isHit bool) {
+	e := self.edges[index]
+	e.Arm(isHit, time)
+
+	if isHit {
+		self.PlayEdgeSample(index)
+	}
 }
 
 func (self *Slider) PlayTick() {
@@ -670,32 +679,8 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 
-		if settings.Objects.DrawReverseArrows {
-			headPos := self.multiCurve.PointAt(float32(self.sliderSnakeHead.GetValue()))
-			headAngle := self.multiCurve.GetStartAngleAt(float32(self.sliderSnakeHead.GetValue())) + math.Pi
-
-			tailPos := self.multiCurve.PointAt(float32(self.sliderSnakeTail.GetValue()))
-			tailAngle := self.multiCurve.GetEndAngleAt(float32(self.sliderSnakeTail.GetValue())) + math.Pi
-
-			arrow := skin.GetTexture("reversearrow")
-
-			for i := 0; i < 2; i++ {
-				for _, p := range self.reversePoints[i] {
-					if p.fade.GetValue() >= 0.001 {
-						if i == 1 {
-							batch.SetTranslation(tailPos.Copy64())
-							batch.SetRotation(float64(tailAngle))
-						} else {
-							batch.SetTranslation(headPos.Copy64())
-							batch.SetRotation(float64(headAngle))
-						}
-
-						batch.SetSubScale(p.pulse.GetValue(), p.pulse.GetValue())
-						batch.SetColor(1, 1, 1, alpha*p.fade.GetValue())
-						batch.DrawTexture(*arrow)
-					}
-				}
-			}
+		for i := len(self.endCircles) - 1; i >= 0; i-- {
+			self.endCircles[i].Draw(time, color, batch)
 		}
 
 		batch.SetTranslation(self.objData.StartPos.Copy64())

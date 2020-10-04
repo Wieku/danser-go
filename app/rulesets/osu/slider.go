@@ -122,10 +122,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 			if hit != HitResults.Ignore {
 				if len(slider.players) == 1 {
-					if hit != HitResults.SliderMiss {
-						slider.hitSlider.PlayEdgeSample(0)
-					}
-					slider.hitSlider.ArmStart(hit != HitResults.SliderMiss, time)
+					slider.hitSlider.HitEdge(0, time, hit != HitResults.SliderMiss)
 				}
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
@@ -220,7 +217,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 					if point.edgeNum == -1 {
 						slider.hitSlider.PlayTick()
 					} else {
-						slider.hitSlider.PlayEdgeSample(point.edgeNum)
+						slider.hitSlider.HitEdge(point.edgeNum, time, true)
 					}
 				}
 
@@ -287,7 +284,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 			rate := float64(state.scored) / float64(len(state.points)+1)
 
 			if rate > 0 && len(slider.players) == 1 {
-				slider.hitSlider.PlayEdgeSample(len(slider.hitSlider.TickReverse))
+				slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), time, true)
 			}
 
 			if rate == 1.0 {

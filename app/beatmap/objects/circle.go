@@ -28,12 +28,15 @@ type Circle struct {
 	hitCircle        *sprite.Sprite
 	hitCircleOverlay *sprite.Sprite
 	approachCircle   *sprite.Sprite
+	reverseArrow     *sprite.Sprite
 	sprites          []*sprite.Sprite
 	diff             *difficulty.Difficulty
 	lastTime         int64
 	silent           bool
 	firstEndCircle   bool
 	textureName      string
+	appearTime       int64
+	ArrowRotation    float64
 }
 
 func NewCircle(data []string) *Circle {
@@ -67,19 +70,19 @@ func DummyCircleInherit(pos vector.Vector2f, time int64, inherit bool, inheritSt
 	return circle
 }
 
-func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
+func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, last bool) *Circle {
 	circle := &Circle{objData: &basicData{}}
 	circle.objData.StartPos = pos
 	circle.objData.EndPos = pos
 	circle.objData.StartTime = time
 	circle.objData.EndTime = time
 	circle.objData.EndPos = circle.objData.StartPos
-	circle.objData.SliderPoint = inherit
-	circle.objData.SliderPointStart = inheritStart
-	circle.objData.SliderPointEnd = inheritEnd
+	circle.objData.SliderPoint = true
+	circle.objData.SliderPointEnd = last
 	circle.firstEndCircle = first
 	circle.silent = true
 	circle.textureName = "sliderend"
+	circle.appearTime = appearTime
 	return circle
 }
 
@@ -130,7 +133,13 @@ func (self *Circle) SetTiming(timings *Timings) {
 func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	self.diff = diff
 
-	startTime := float64(self.objData.StartTime)
+	startTime := float64(self.objData.StartTime) - diff.Preempt
+
+	if self.objData.SliderPoint {
+		startTime = float64(self.appearTime)
+	}
+
+	endTime := float64(self.objData.StartTime)
 
 	self.textFade = animation.NewGlider(0)
 
@@ -145,45 +154,60 @@ func (self *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	self.hitCircle = sprite.NewSpriteSingle(skin.GetTexture(name), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 	self.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTextureSource(name+"overlay", skin.GetSource(name)), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
-
 	self.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	self.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 
-	self.sprites = append(self.sprites, self.hitCircle)
-	self.sprites = append(self.sprites, self.hitCircleOverlay)
-	self.sprites = append(self.sprites, self.approachCircle)
+	self.sprites = append(self.sprites, self.hitCircle, self.hitCircleOverlay, self.approachCircle, self.reverseArrow)
 
 	self.hitCircle.SetAlpha(0)
 	self.hitCircleOverlay.SetAlpha(0)
 	self.approachCircle.SetAlpha(0)
+	self.reverseArrow.SetAlpha(0)
 
 	circles := []*sprite.Sprite{self.hitCircle, self.hitCircleOverlay}
 
 	for _, t := range circles {
 		if diff.CheckModActive(difficulty.Hidden) {
-			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, startTime-diff.Preempt*0.6, 0.0, 1.0))
-			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt*0.6, startTime-diff.Preempt*0.3, 1.0, 0.0))
+			if !self.objData.SliderPoint || self.objData.SliderPointStart || self.firstEndCircle {
+				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.Preempt*0.4, 0.0, 1.0))
+				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 1.0, 0.0))
+			}
 		} else {
-			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0))
-			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0))
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+difficulty.HitFadeIn, 0.0, 1.0))
+			if !self.objData.SliderPoint || self.objData.SliderPointStart {
+				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0))
+			} else {
+				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
+			}
 		}
 	}
 
+	self.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, startTime+150), 0.0, 1.0))
+	self.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
+
 	if diff.CheckModActive(difficulty.Hidden) {
-		self.textFade.AddEventS(startTime-diff.Preempt, startTime-diff.Preempt*0.6, 0.0, 1.0)
-		self.textFade.AddEventS(startTime-diff.Preempt*0.6, startTime-diff.Preempt*0.3, 1.0, 0.0)
+		self.textFade.AddEventS(startTime, startTime+diff.Preempt*0.4, 0.0, 1.0)
+		self.textFade.AddEventS(startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 1.0, 0.0)
 	} else {
-		self.textFade.AddEventS(startTime-diff.Preempt, startTime-diff.Preempt+difficulty.HitFadeIn, 0.0, 1.0)
-		self.textFade.AddEventS(startTime+float64(diff.Hit100), startTime+float64(diff.Hit50), 1.0, 0.0)
+		self.textFade.AddEventS(startTime, startTime+difficulty.HitFadeIn, 0.0, 1.0)
+		self.textFade.AddEventS(endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0)
 	}
 
 	if !diff.CheckModActive(difficulty.Hidden) || self.objData.Number == 0 {
-		self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt, math.Min(startTime, startTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
+		self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
+
 		if diff.CheckModActive(difficulty.Hidden) {
-			self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime-diff.Preempt*0.6, startTime-diff.Preempt*0.3, 0.9, 0.0))
+			self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 0.9, 0.0))
 		} else {
-			self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
+			self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
 		}
-		self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime-diff.Preempt, startTime, 4.0, 1.0))
+
+		self.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, endTime, 4.0, 1.0))
+	}
+
+	for t := startTime; t < endTime; t += 300 {
+		length := math.Min(300, endTime-t)
+		self.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, t, t+length, 1.3, 1.0))
 	}
 }
 
@@ -201,9 +225,11 @@ func (self *Circle) Arm(clicked bool, time int64) {
 		endTime := startTime + difficulty.HitFadeOut
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
 		self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
+		self.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
 
 		self.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
 		self.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
+		self.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
 		self.textFade.AddEventS(startTime, startTime+60, 1.0, 0.0)
 	} else {
 		endTime := startTime + 60
@@ -217,13 +243,12 @@ func (self *Circle) Shake(time int64) {
 	startTime := float64(time)
 	for _, s := range self.sprites {
 		s.ClearTransformationsOfType(animation.MoveX)
-		startPosX := float64(self.objData.StartPos.X)
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime, startTime+20, startPosX, startPosX+8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+20, startTime+40, startPosX+8, startPosX-8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+40, startTime+60, startPosX-8, startPosX+8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+60, startTime+80, startPosX+8, startPosX-8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+80, startTime+100, startPosX-8, startPosX+8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+100, startTime+120, startPosX+8, startPosX))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime, startTime+20, 0, 8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+20, startTime+40, 8, -8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+40, startTime+60, -8, 8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+60, startTime+80, 8, -8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+80, startTime+100, -8, 8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+100, startTime+120, 8, 0))
 	}
 }
 
@@ -273,10 +298,15 @@ func (self *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 			self.hitCircleOverlay.Draw(time, batch)
 		}
 
-		if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-			fnt := skin.GetFont("default")
-			batch.SetColor(1, 1, 1, alpha*self.textFade.GetValue())
-			fnt.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(self.objData.ComboNumber)))
+		if !self.objData.SliderPoint || self.objData.SliderPointStart {
+			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
+				fnt := skin.GetFont("default")
+				batch.SetColor(1, 1, 1, alpha*self.textFade.GetValue())
+				fnt.DrawCentered(batch, self.objData.StartPos.X64(), self.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(self.objData.ComboNumber)))
+			}
+		} else if !self.objData.SliderPointEnd {
+			self.reverseArrow.SetRotation(self.ArrowRotation)
+			self.reverseArrow.Draw(time, batch)
 		}
 
 		batch.SetSubScale(1, 1)
