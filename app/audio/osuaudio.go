@@ -159,7 +159,3 @@ func LoadBeatmapSamples(dir string) {
 func LoadSample(name string) *bass.Sample {
 	return skin.GetSample(name)
 }
-
-func LoadSampleLoop(name string) *bass.Sample {
-	return skin.GetSampleLoop(name)
-}

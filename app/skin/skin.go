@@ -38,7 +38,6 @@ var singleTextures = make(map[string]*texture.TextureSingle)
 var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
-var loopCache = make(map[string]*bass.Sample)
 
 var CurrentSkin = "default"
 
@@ -320,43 +319,6 @@ func tryLoad(basePath string) *bass.Sample {
 	}
 
 	if sam := bass.NewSample(basePath + ".mp3"); sam != nil {
-		return sam
-	}
-
-	return nil
-}
-
-func GetSampleLoop(name string) *bass.Sample {
-	checkInit()
-	if sample, exists := loopCache[name]; exists {
-		return sample
-	}
-
-	var sample *bass.Sample
-
-	if CurrentSkin != "default" {
-		sample = tryLoadLoop(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name))
-	}
-
-	if sample == nil {
-		sample = tryLoadLoop(filepath.Join("assets", "default-skin", name))
-	}
-
-	loopCache[name] = sample
-
-	return sample
-}
-
-func tryLoadLoop(basePath string) *bass.Sample {
-	if sam := bass.NewSampleLoop(basePath + ".wav"); sam != nil {
-		return sam
-	}
-
-	if sam := bass.NewSampleLoop(basePath + ".ogg"); sam != nil {
-		return sam
-	}
-
-	if sam := bass.NewSampleLoop(basePath + ".mp3"); sam != nil {
 		return sam
 	}
 
