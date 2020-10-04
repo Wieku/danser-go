@@ -50,21 +50,24 @@ func newReverse() (point *reversePoint) {
 }
 
 type Slider struct {
-	objData      *basicData
-	multiCurve   *curves.MultiCurve
-	scorePath    []PathLine
-	Timings      *Timings
-	TPoint       TimingPoint
-	pixelLength  float64
-	partLen      float64
-	repeat       int64
+	objData     *basicData
+	multiCurve  *curves.MultiCurve
+	scorePath   []PathLine
+	Timings     *Timings
+	TPoint      TimingPoint
+	pixelLength float64
+	partLen     float64
+	repeat      int64
+
 	sampleSets   []int
 	additionSets []int
 	samples      []int
-	Pos          vector.Vector2f
-	TickPoints   []TickPoint
-	TickReverse  []TickPoint
-	ScorePoints  []TickPoint
+	baseSample   int
+
+	Pos         vector.Vector2f
+	TickPoints  []TickPoint
+	TickReverse []TickPoint
+	ScorePoints []TickPoint
 
 	startCircle *Circle
 
@@ -112,6 +115,13 @@ func NewSlider(data []string) *Slider {
 	slider.samples = make([]int, slider.repeat+1)
 	slider.sampleSets = make([]int, slider.repeat+1)
 	slider.additionSets = make([]int, slider.repeat+1)
+
+	f, _ := strconv.ParseInt(data[4], 10, 64)
+	slider.baseSample = int(f)
+
+	for i := range slider.samples {
+		slider.samples[i] = slider.baseSample
+	}
 
 	if len(data) > 8 {
 		subData := strings.Split(data[8], "|")
