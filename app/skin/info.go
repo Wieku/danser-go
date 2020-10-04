@@ -62,7 +62,7 @@ func newDefaultInfo() *SkinInfo {
 		AnimationFramerate:          -1,
 		SpinnerFadePlayfield:        true,
 		SpinnerNoBlink:              false,
-		LayeredHitSounds:            false,
+		LayeredHitSounds:            true,
 		ComboColors:                 []color.Color{},
 		SliderBallTint:              false,
 		SliderBallFlip:              false,
