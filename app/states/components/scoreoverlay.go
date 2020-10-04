@@ -240,15 +240,17 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	sum := ruleset.GetBeatMap().Diff.Hit50
 
+	scale := errorBaseScale * settings.Gameplay.HitErrorMeterScale
+
 	pixel := graphics.Pixel.GetRegion()
 	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(overlay.ScaledWidth/2, overlay.ScaledHeight-10*errorBaseScale), bmath.Origin.Centre)
-	bg.SetScaleV(vector.NewVec2d(float64(sum)*2*errorBaseScale, 20*errorBaseScale))
+	bg.SetScaleV(vector.NewVec2d(float64(sum)*2*scale, 20*scale))
 	bg.SetColor(bmath.Color{0, 0, 0, 1})
 	bg.SetAlpha(0.8)
 	overlay.errorDisplay.Add(bg)
 
 	vals := []float64{float64(ruleset.GetBeatMap().Diff.Hit300), float64(ruleset.GetBeatMap().Diff.Hit100), float64(ruleset.GetBeatMap().Diff.Hit50)}
-	scale := errorBaseScale * settings.Gameplay.HitErrorMeterScale
+
 	for i, v := range vals {
 		pos := 0.0
 		width := v
@@ -470,8 +472,8 @@ func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl3
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.SetScale(1, 1)
 
-	if meterAlpha := settings.Gameplay.HitErrorMeterOpacity; meterAlpha > 0.001 && settings.Gameplay.ShowHitErrorMeter {
-		batch.SetColor(1, 1, 1, overlay.errorDisplayFade.GetValue()*meterAlpha)
+	if meterAlpha := settings.Gameplay.HitErrorMeterOpacity * overlay.errorDisplayFade.GetValue(); meterAlpha > 0.001 && settings.Gameplay.ShowHitErrorMeter {
+		batch.SetColor(1, 1, 1, meterAlpha)
 		overlay.errorDisplay.Draw(overlay.lastTime, batch)
 	}
 
