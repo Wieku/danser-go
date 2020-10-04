@@ -2,7 +2,7 @@ package bass
 
 /*
 #cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -L${SRCDIR}/../../ -L/usr/lib -Wl,-rpath,$ORIGIN -lbass -lbass_fx -lstdc++
+#cgo LDFLAGS: -static-libstdc++ -L${SRCDIR} -L${SRCDIR}/../../ -L/usr/lib -Wl,-rpath,$ORIGIN -lbass -lbass_fx -lstdc++
 #include "bass.h"
 #include "bass_fx.h"
 */
