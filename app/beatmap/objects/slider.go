@@ -88,6 +88,8 @@ type Slider struct {
 	endCircles     []*Circle
 	headEndCircles []*Circle
 	tailEndCircles []*Circle
+
+	isSliding bool
 }
 
 func NewSlider(data []string) *Slider {
@@ -538,6 +540,15 @@ func (self *Slider) Update(time int64) bool {
 		}
 	}
 
+	if self.lastTime < self.objData.EndTime && time >= self.objData.EndTime && self.isSliding {
+		self.StopSlideSamples()
+		self.isSliding = false
+	}
+
+	if self.isSliding {
+		self.PlaySlideSamples()
+	}
+
 	self.Pos = pos
 
 	self.lastTime = time
@@ -574,6 +585,8 @@ func (self *Slider) InitSlide(time int64) {
 
 	self.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0))
 	self.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(self.objData.EndTime), float64(self.objData.EndTime+200), 1, 0.8))
+
+	self.isSliding = true
 }
 
 func (self *Slider) KillSlide(time int64) {
@@ -589,6 +602,24 @@ func (self *Slider) KillSlide(time int64) {
 
 	self.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(nextPoint-100), float64(nextPoint), 1, 0))
 	self.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(nextPoint-100), float64(nextPoint), 1, 2))
+
+	self.isSliding = false
+	self.StopSlideSamples()
+}
+
+func (self *Slider) PlaySlideSamples() {
+	point := self.Timings.Current
+
+	sampleSet := self.objData.sampleSet
+	if sampleSet == 0 {
+		sampleSet = point.SampleSet
+	}
+
+	audio.PlaySliderLoops(sampleSet, self.objData.additionSet, self.baseSample, point.SampleIndex, point.SampleVolume, self.objData.Number, self.Pos.X64())
+}
+
+func (self *Slider) StopSlideSamples() {
+	audio.StopSliderLoops()
 }
 
 func (self *Slider) PlayEdgeSample(index int) {
