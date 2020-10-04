@@ -16,7 +16,8 @@ import (
 type Source int
 
 const (
-	LOCAL = Source(1 << iota)
+	UNKNOWN = Source(0)
+	LOCAL   = Source(1 << iota)
 	SKIN
 	BEATMAP
 	ALL = LOCAL | SKIN | BEATMAP
@@ -179,7 +180,7 @@ func GetFrames(name string, useDash bool) []*texture.TextureRegion {
 	spTexture := GetTexture(name)
 	frame := GetTexture(name + dash + "0")
 
-	if frame != nil && frame == getMostSpecific(frame, spTexture) {
+	if frame != nil && frame == GetMostSpecific(frame, spTexture) {
 		source := sourceCache[frame]
 
 		for i := 1; frame != nil; i++ {
@@ -195,7 +196,7 @@ func GetFrames(name string, useDash bool) []*texture.TextureRegion {
 	return textures
 }
 
-func getMostSpecific(rg1, rg2 *texture.TextureRegion) *texture.TextureRegion {
+func GetMostSpecific(rg1, rg2 *texture.TextureRegion) *texture.TextureRegion {
 	if rg1 == nil {
 		return rg2
 	}
@@ -214,6 +215,15 @@ func getMostSpecific(rg1, rg2 *texture.TextureRegion) *texture.TextureRegion {
 	}
 
 	return rg2
+}
+
+func GetSource(name string) Source {
+	tx := GetTexture(name)
+	if tx == nil {
+		return UNKNOWN
+	}
+
+	return sourceCache[tx]
 }
 
 func checkAtlas() {

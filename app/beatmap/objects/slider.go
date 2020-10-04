@@ -340,7 +340,7 @@ func (self *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	self.sliderSnakeHead = animation.NewGlider(0)
 
 	slSnInS := float64(self.objData.StartTime) - diff.Preempt
-	slSnInE := float64(self.objData.StartTime) - (diff.Preempt - difficulty.HitFadeIn) + self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
+	slSnInE := float64(self.objData.StartTime) - diff.Preempt*2/3 + self.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
 
 	if settings.Objects.SliderSnakeIn {
 		self.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
@@ -769,7 +769,7 @@ func (self *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha float6
 	batch.SetColor(1, 1, 1, alpha)
 	batch.SetTranslation(self.Pos.Copy64())
 
-	isB := skin.GetTexture("sliderb") == nil && useBallTexture
+	isB := skin.GetSource("sliderb") != skin.SKIN && useBallTexture
 
 	if isB && skin.GetTexture("sliderb-nd") != nil {
 		batch.SetColor(0.1, 0.1, 0.1, alpha)
