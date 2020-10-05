@@ -225,6 +225,14 @@ func GetSource(name string) Source {
 	return sourceCache[tx]
 }
 
+func GetSourceFromTexture(rg *texture.TextureRegion) Source {
+	if rg == nil {
+		return UNKNOWN
+	}
+
+	return sourceCache[rg]
+}
+
 func checkAtlas() {
 	if atlas == nil {
 		atlas = texture.NewTextureAtlas(2048, 0)

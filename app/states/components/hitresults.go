@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 	"math/rand"
 )
 
@@ -33,14 +34,18 @@ func NewHitResults(diff *difficulty.Difficulty) *HitResults {
 
 func (results *HitResults) AddResult(time int64, result osu.HitResult, position vector.Vector2d) {
 	var tex string
+	var particle string
 
 	switch result & osu.BaseHitsM {
 	case osu.Hit300:
 		tex = "hit300"
+		particle = "particle300"
 	case osu.Hit100:
 		tex = "hit100"
+		particle = "particle100"
 	case osu.Hit50:
 		tex = "hit50"
+		particle = "particle50"
 	case osu.Miss:
 		tex = "hit0"
 	}
@@ -58,7 +63,32 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 
 	frames := skin.GetFrames(tex, true)
 
-	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, -float64(time), position, bmath.Origin.Centre)
+	particles := false
+
+	if particle != "" && len(frames) > 0 {
+		particleTex := skin.GetTextureSource(particle, skin.GetSourceFromTexture(frames[0]))
+
+		if particleTex != nil {
+			particles = true
+
+			for i := 0; i < 150; i++ {
+				fadeOut := 500 + 700*rand.Float64()
+				direction := vector.NewVec2dRad(rand.Float64()*2*math.Pi, rand.Float64()*35)
+
+				sp := sprite.NewSpriteSingle(particleTex, float64(time), position, bmath.Origin.Centre)
+				sp.SetAdditive(true)
+				sp.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(time), float64(time)+fadeOut, 1.0, 0.0))
+				sp.AddTransform(animation.NewVectorTransformV(animation.Move, easing.OutQuad, float64(time), float64(time)+fadeOut, position, position.Add(direction)))
+				sp.ResetValuesToTransforms()
+				sp.AdjustTimesToTransformations()
+				sp.ShowForever(false)
+
+				results.manager.Add(sp)
+			}
+		}
+	}
+
+	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, float64(time)+1, position, bmath.Origin.Centre)
 
 	fadeIn := float64(time + difficulty.ResultFadeIn)
 	postEmpt := float64(time + difficulty.PostEmpt)
@@ -68,9 +98,13 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 	sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, postEmpt, fadeOut, 1.0, 0.0))
 
 	if len(frames) == 1 {
-		sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), float64(time+difficulty.ResultFadeIn*0.8), 0.6, 1.1))
-		sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, fadeIn, float64(time+difficulty.ResultFadeIn*1.2), 1.1, 0.9))
-		sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time+difficulty.ResultFadeIn*1.2), float64(time+difficulty.ResultFadeIn*1.4), 0.9, 1.0))
+		if particles {
+			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), fadeOut, 0.9, 1.05))
+		} else {
+			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), float64(time+difficulty.ResultFadeIn*0.8), 0.6, 1.1))
+			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, fadeIn, float64(time+difficulty.ResultFadeIn*1.2), 1.1, 0.9))
+			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time+difficulty.ResultFadeIn*1.2), float64(time+difficulty.ResultFadeIn*1.4), 0.9, 1.0))
+		}
 
 		if result == osu.Miss {
 			rotation := rand.Float64()*0.3 - 0.15
