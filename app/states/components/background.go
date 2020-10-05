@@ -100,7 +100,7 @@ func (bg *Background) Update(time float64, x, y float64) {
 	pX := 0.0
 	pY := 0.0
 
-	if settings.Playfield.Background.Parallax.Amount > 0.0001 {
+	if settings.Playfield.Background.Parallax.Amount > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) {
 		pX = bmath.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
 		pY = bmath.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
 	}
