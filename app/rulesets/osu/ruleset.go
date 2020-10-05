@@ -448,7 +448,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 		subSet.currentBad++
 	}
 
-	if int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].GetBasicData().NewCombo) {
+	if result&BaseHitsM > 0 && (int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].GetBasicData().NewCombo)) {
 		allClicked := true
 
 		// We don't want to give geki/katu if all objects in current combo weren't clicked
