@@ -121,7 +121,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
 
-		if result&(osu.Hit100|osu.Hit50|osu.Miss) > 0 {
+		if result&(osu.BaseHitsM) > 0 {
 			overlay.results.AddResult(time, result, position)
 		}
 
