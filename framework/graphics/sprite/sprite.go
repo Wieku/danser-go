@@ -232,7 +232,7 @@ func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
 		return
 	}
 
-	if sprite.texture == nil || sprite.texture[sprite.currentFrame] == nil {
+	if sprite.texture == nil || len(sprite.texture) == 0 || sprite.texture[sprite.currentFrame] == nil {
 		return
 	}
 

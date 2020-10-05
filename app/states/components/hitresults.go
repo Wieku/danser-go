@@ -47,9 +47,9 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 
 	switch result & osu.Additions {
 	case osu.KatuAddition:
-		tex = "k"
+		tex += "k"
 	case osu.GekiAddition:
-		tex = "g"
+		tex += "g"
 	}
 
 	if tex == "" {
