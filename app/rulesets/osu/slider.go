@@ -64,10 +64,10 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 
 		for _, point := range rSlider.ScorePoints {
 			if point.IsReverse {
-				slider.state[player].points = append(slider.state[player].points, tickpoint{point.Time, HitResults.Slider30, edgeNumber})
+				slider.state[player].points = append(slider.state[player].points, tickpoint{point.Time, SliderRepeat, edgeNumber})
 				edgeNumber++
 			} else {
-				slider.state[player].points = append(slider.state[player].points, tickpoint{point.Time, HitResults.Slider10, -1})
+				slider.state[player].points = append(slider.state[player].points, tickpoint{point.Time, SliderPoint, -1})
 			}
 		}
 
@@ -109,20 +109,20 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				state.downButton = player.mouseDownButton
 			}
 
-			hit := HitResults.SliderMiss
+			hit := SliderMiss
 			combo := ComboResults.Reset
 
 			relative := int64(math.Abs(float64(time - slider.hitSlider.GetBasicData().StartTime)))
 
 			if relative < player.diff.Hit50 {
-				hit = HitResults.SliderStart
+				hit = SliderStart
 				state.startScored = true
 				combo = ComboResults.Increase
 			}
 
-			if hit != HitResults.Ignore {
+			if hit != Ignore {
 				if len(slider.players) == 1 {
-					slider.hitSlider.HitEdge(0, time, hit != HitResults.SliderMiss)
+					slider.hitSlider.HitEdge(0, time, hit != SliderMiss)
 				}
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
@@ -230,7 +230,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 				}
 
 				state.missed++
-				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, combo)
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, combo)
 			}
 		}
 
@@ -260,7 +260,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 				slider.hitSlider.ArmStart(false, time)
 			}
 
-			slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, HitResults.SliderMiss, true, ComboResults.Reset)
+			slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, ComboResults.Reset)
 
 			if player.leftCond {
 				state.downButton = Left
@@ -278,7 +278,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 				state.scored++
 			}
 
-			hit := HitResults.Miss
+			hit := Miss
 			combo := ComboResults.Reset
 
 			rate := float64(state.scored) / float64(len(state.points)+1)
@@ -288,14 +288,14 @@ func (slider *Slider) UpdatePost(time int64) bool {
 			}
 
 			if rate == 1.0 {
-				hit = HitResults.Hit300
+				hit = Hit300
 			} else if rate >= 0.5 {
-				hit = HitResults.Hit100
+				hit = Hit100
 			} else if rate > 0 {
-				hit = HitResults.Hit50
+				hit = Hit50
 			}
 
-			if hit != HitResults.Miss {
+			if hit != Miss {
 				combo = ComboResults.Hold
 			}
 

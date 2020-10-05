@@ -34,13 +34,22 @@ func NewHitResults(diff *difficulty.Difficulty) *HitResults {
 func (results *HitResults) AddResult(time int64, result osu.HitResult, position vector.Vector2d) {
 	var tex string
 
-	switch result {
-	case osu.HitResults.Hit100:
+	switch result & osu.BaseHitsM {
+	case osu.Hit300:
+		tex = "hit300"
+	case osu.Hit100:
 		tex = "hit100"
-	case osu.HitResults.Hit50:
+	case osu.Hit50:
 		tex = "hit50"
-	case osu.HitResults.Miss:
+	case osu.Miss:
 		tex = "hit0"
+	}
+
+	switch result & osu.Additions {
+	case osu.KatuAddition:
+		tex = "k"
+	case osu.GekiAddition:
+		tex = "g"
 	}
 
 	if tex == "" {
@@ -63,7 +72,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 		sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, fadeIn, float64(time+difficulty.ResultFadeIn*1.2), 1.1, 0.9))
 		sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time+difficulty.ResultFadeIn*1.2), float64(time+difficulty.ResultFadeIn*1.4), 0.9, 1.0))
 
-		if result == osu.HitResults.Miss {
+		if result == osu.Miss {
 			rotation := rand.Float64()*0.3 - 0.15
 
 			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Rotate, easing.Linear, float64(time), fadeIn, 0.0, rotation))

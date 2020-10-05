@@ -69,20 +69,20 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 			if action == Click {
 
-				hit := HitResults.Miss
+				hit := Miss
 
 				relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))
 				if relative < player.diff.Hit300 {
-					hit = HitResults.Hit300
+					hit = Hit300
 				} else if relative < player.diff.Hit100 {
-					hit = HitResults.Hit100
+					hit = Hit100
 				} else if relative < player.diff.Hit50 {
-					hit = HitResults.Hit50
+					hit = Hit50
 				}
 
-				if hit != HitResults.Ignore {
+				if hit != Ignore {
 					combo := ComboResults.Increase
-					if hit == HitResults.Miss {
+					if hit == Miss {
 						combo = ComboResults.Reset
 					} else {
 						if len(circle.players) == 1 {
@@ -91,7 +91,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 					}
 
 					if len(circle.players) == 1 {
-						circle.hitCircle.Arm(hit != HitResults.Miss, time)
+						circle.hitCircle.Arm(hit != Miss, time)
 					}
 
 					circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
@@ -116,7 +116,7 @@ func (circle *Circle) UpdatePost(time int64) bool {
 			unfinished++
 
 			if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 {
-				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, HitResults.Miss, false, ComboResults.Reset)
+				circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, Miss, false, ComboResults.Reset)
 				if len(circle.players) == 1 {
 					circle.hitCircle.Arm(false, time)
 				}

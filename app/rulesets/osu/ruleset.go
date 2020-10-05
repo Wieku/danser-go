@@ -38,33 +38,6 @@ const (
 
 var GradesText = []string{"D", "C", "B", "A", "S", "SH", "SS", "SSH", "None"}
 
-type HitResult int64
-
-var HitResults = struct {
-	Ignore,
-	Miss,
-	Hit50,
-	Hit100,
-	Hit300,
-	Slider10,
-	Slider30,
-	SliderStart,
-	SliderMiss,
-	SpinnerBonus,
-	SpinnerScore HitResult
-}{-1, 0, 50, 100, 300, 10, 30, 40, -2, 1100, -3}
-
-func (result HitResult) String() string {
-	switch result {
-	case -2:
-		return "0"
-	case -3:
-		return "100"
-	default:
-		return strconv.Itoa(int(result))
-	}
-}
-
 type ClickAction int64
 
 const (
@@ -278,10 +251,10 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, humanize(set.cursors[c].score))
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].accuracy))
 			data = append(data, GradesText[set.cursors[c].grade])
-			data = append(data, humanize(set.cursors[c].hits[HitResults.Hit300]))
-			data = append(data, humanize(set.cursors[c].hits[HitResults.Hit100]))
-			data = append(data, humanize(set.cursors[c].hits[HitResults.Hit50]))
-			data = append(data, humanize(set.cursors[c].hits[HitResults.Miss]))
+			data = append(data, humanize(set.cursors[c].hits[Hit300]))
+			data = append(data, humanize(set.cursors[c].hits[Hit100]))
+			data = append(data, humanize(set.cursors[c].hits[Hit50]))
+			data = append(data, humanize(set.cursors[c].hits[Miss]))
 			data = append(data, humanize(set.cursors[c].combo))
 			data = append(data, humanize(set.cursors[c].maxCombo))
 			data = append(data, set.cursors[c].player.diff.Mods.String())
@@ -397,7 +370,7 @@ func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
 }
 
 func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
-	if result == HitResults.Ignore {
+	if result == Ignore {
 		return
 	}
 
@@ -405,17 +378,9 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 	combo := bmath.MaxI64(subSet.combo-1, 0)
 
-	if result != HitResults.SliderMiss {
+	if result != SliderMiss {
 
-		increase := int64(result)
-
-		if result == HitResults.SpinnerScore {
-			increase = 100
-		}
-
-		if result == HitResults.SliderStart {
-			increase = int64(HitResults.Slider30)
-		}
+		increase := result.ScoreValue()
 
 		if raw {
 			subSet.score += increase
@@ -424,13 +389,13 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 		}
 	}
 
-	if result == HitResults.Hit50 || result == HitResults.Hit100 || result == HitResults.Hit300 || result == HitResults.Miss {
-		subSet.rawScore += int64(result)
+	if result&BaseHitsM > 0 {
+		subSet.rawScore += result.ScoreValue()
 		subSet.hits[result]++
 		subSet.numObjects++
 	}
 
-	if comboResult == ComboResults.Reset || result == HitResults.Miss {
+	if comboResult == ComboResults.Reset || result == Miss {
 		subSet.combo = 0
 	} else if comboResult == ComboResults.Increase {
 		subSet.combo++
@@ -444,23 +409,23 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 		subSet.accuracy = 100 * float64(subSet.rawScore) / float64(subSet.numObjects*300)
 	}
 
-	ratio := float64(subSet.hits[HitResults.Hit300]) / float64(subSet.numObjects)
+	ratio := float64(subSet.hits[Hit300]) / float64(subSet.numObjects)
 
-	if subSet.hits[HitResults.Hit300] == subSet.numObjects {
+	if subSet.hits[Hit300] == subSet.numObjects {
 		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
 			subSet.grade = SSH
 		} else {
 			subSet.grade = SS
 		}
-	} else if ratio > 0.9 && float64(subSet.hits[HitResults.Hit50])/float64(subSet.numObjects) < 0.01 && subSet.hits[HitResults.Miss] == 0 {
+	} else if ratio > 0.9 && float64(subSet.hits[Hit50])/float64(subSet.numObjects) < 0.01 && subSet.hits[Miss] == 0 {
 		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
 			subSet.grade = SH
 		} else {
 			subSet.grade = S
 		}
-	} else if ratio > 0.8 && subSet.hits[HitResults.Miss] == 0 || ratio > 0.9 {
+	} else if ratio > 0.8 && subSet.hits[Miss] == 0 || ratio > 0.9 {
 		subSet.grade = A
-	} else if ratio > 0.7 && subSet.hits[HitResults.Miss] == 0 || ratio > 0.8 {
+	} else if ratio > 0.7 && subSet.hits[Miss] == 0 || ratio > 0.8 {
 		subSet.grade = B
 	} else if ratio > 0.6 {
 		subSet.grade = C
@@ -472,7 +437,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 	diff := set.oppDiffs[subSet.player.diff.Mods][index]
 
-	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[HitResults.Hit300]), int(subSet.hits[HitResults.Hit100]), int(subSet.hits[HitResults.Hit50]), int(subSet.hits[HitResults.Miss]), int(subSet.maxCombo))
+	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), int(subSet.maxCombo))
 
 	if set.listener != nil {
 		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
@@ -486,10 +451,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 			subSet.maxCombo,
 			subSet.score,
 			subSet.accuracy,
-			subSet.hits[300],
-			subSet.hits[100],
-			subSet.hits[50],
-			subSet.hits[0],
+			subSet.hits[Hit300],
+			subSet.hits[Hit100],
+			subSet.hits[Hit50],
+			subSet.hits[Miss],
 			number,
 			time,
 			x,

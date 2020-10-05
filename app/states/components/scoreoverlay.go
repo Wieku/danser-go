@@ -121,14 +121,14 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
 
-		if result == osu.HitResults.Hit100 || result == osu.HitResults.Hit50 || result == osu.HitResults.Miss {
+		if result&(osu.Hit100|osu.Hit50|osu.Miss) > 0 {
 			overlay.results.AddResult(time, result, position)
 		}
 
 		_, hC := ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
-		allowCircle := hC && (result == osu.HitResults.Hit300 || result == osu.HitResults.Hit100 || result == osu.HitResults.Hit50)
+		allowCircle := hC && (result&osu.BaseHits > 0)
 		_, sl := ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
-		allowSlider := sl && result == osu.HitResults.SliderStart
+		allowSlider := sl && result == osu.SliderStart
 
 		if allowCircle || allowSlider {
 			timeDiff := float64(time) - float64(ruleset.GetBeatMap().HitObjects[number].GetBasicData().StartTime)
@@ -298,10 +298,10 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 	sizeX := 512 + (cs+0.3)*2
 	sizeY := 384 + (cs+0.3)*2
 
-	batch.SetScale(sizeX/2, sizeY/2)
-	batch.SetColor(0, 0, 0, 0.8*alpha)
-	batch.SetTranslation(vector.NewVec2d(256, 192)) //bg
-	batch.DrawUnit(graphics.Pixel.GetRegion())
+	//batch.SetScale(sizeX/2, sizeY/2)
+	//batch.SetColor(0, 0, 0, 0.8*alpha)
+	//batch.SetTranslation(vector.NewVec2d(256, 192)) //bg
+	//batch.DrawUnit(graphics.Pixel.GetRegion())
 
 	batch.SetColor(1, 1, 1, alpha)
 	batch.SetScale(sizeX/2, 0.3)
