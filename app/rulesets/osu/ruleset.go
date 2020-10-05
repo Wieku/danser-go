@@ -101,6 +101,8 @@ type subSet struct {
 	diff          []oppai.DiffCalc
 	ppv2          *oppai.PPv2
 	hits          map[HitResult]int64
+	currentKatu   int
+	currentBad    int
 }
 
 type OsuRuleSet struct {
@@ -170,7 +172,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]] = diffs
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64)}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -439,6 +441,46 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), int(subSet.maxCombo))
 
+	switch result {
+	case Hit100:
+		subSet.currentKatu++
+	case Hit50, Miss:
+		subSet.currentBad++
+	}
+
+	if int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].GetBasicData().NewCombo) {
+		allClicked := true
+
+		// We don't want to give geki/katu if all objects in current combo weren't clicked
+		index := sort.Search(len(set.processed), func(i int) bool {
+			return set.processed[i].GetNumber() >= number
+		})
+
+		for i := index - 1; i >= 0; i-- {
+			obj := set.processed[i]
+
+			if !obj.IsHit(subSet.player) {
+				allClicked = false
+				break
+			}
+
+			if set.beatMap.HitObjects[obj.GetNumber()].GetBasicData().NewCombo {
+				break
+			}
+		}
+
+		if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
+			result |= GekiAddition
+		} else if subSet.currentBad == 0 && allClicked {
+			result |= KatuAddition
+		} else {
+			result |= MuAddition
+		}
+
+		subSet.currentBad = 0
+		subSet.currentKatu = 0
+	}
+
 	if set.listener != nil {
 		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
 	}
@@ -446,7 +488,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	if len(set.cursors) == 1 {
 		log.Println(fmt.Sprintf(
 			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f",
-			result,
+			result.ScoreValue(),
 			subSet.combo,
 			subSet.maxCombo,
 			subSet.score,
