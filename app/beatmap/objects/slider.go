@@ -710,7 +710,6 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 	}
 
 	alpha := self.fade.GetValue()
-	//alphaF := self.fadeCircle.GetValue()
 
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= settings.Objects.MandalaTexturesAlpha
@@ -720,16 +719,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 
-		for i := len(self.endCircles) - 1; i >= 0; i-- {
-			self.endCircles[i].Draw(time, color, batch)
-		}
-
-		batch.SetTranslation(self.objData.StartPos.Copy64())
-		batch.SetSubScale(1, 1)
-		batch.SetRotation(0)
-
 		if time < self.objData.EndTime {
-
 			if settings.Objects.DrawFollowPoints {
 				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
 
@@ -755,6 +745,11 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 		}
 
 		batch.SetSubScale(1, 1)
+
+		for i := len(self.endCircles) - 1; i >= 0; i-- {
+			self.endCircles[i].Draw(time, color, batch)
+		}
+
 		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 		if time >= self.objData.StartTime && time <= self.objData.EndTime {
@@ -773,6 +768,7 @@ func (self *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch
 		}
 	}
 
+	batch.SetColor(1, 1, 1, 1)
 	self.startCircle.Draw(time, color, batch)
 
 	batch.SetSubScale(1, 1)
