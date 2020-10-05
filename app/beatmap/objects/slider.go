@@ -500,7 +500,7 @@ func (slider *Slider) Update(time int64) bool {
 	slider.fade.Update(float64(time))
 	slider.bodyFade.Update(float64(time))
 
-	headPos := slider.multiCurve.PointAt(float32(slider.sliderSnakeHead.GetValue()))
+	headPos := slider.multiCurve.PointAt(float32(slider.sliderSnakeHead.GetValue())).Add(slider.objData.StackOffset)
 	headAngle := slider.multiCurve.GetStartAngleAt(float32(slider.sliderSnakeHead.GetValue())) + math.Pi
 
 	for _, s := range slider.headEndCircles {
@@ -509,7 +509,7 @@ func (slider *Slider) Update(time int64) bool {
 		s.Update(time)
 	}
 
-	tailPos := slider.multiCurve.PointAt(float32(slider.sliderSnakeTail.GetValue()))
+	tailPos := slider.multiCurve.PointAt(float32(slider.sliderSnakeTail.GetValue())).Add(slider.objData.StackOffset)
 	tailAngle := slider.multiCurve.GetEndAngleAt(float32(slider.sliderSnakeTail.GetValue())) + math.Pi
 
 	for _, s := range slider.tailEndCircles {
