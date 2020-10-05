@@ -69,6 +69,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 	spinnerPosition := spinner.hitSpinner.GetBasicData().StartPos
 
 	state := spinner.state[player]
+
 	timeDiff := float64(time - player.cursor.LastFrameTime)
 	if player.cursor.LastFrameTime == 0 {
 		timeDiff = FrameTime
@@ -76,6 +77,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 	if !state.finished {
 		numFinishedTotal++
+
 		if player.cursor.IsReplayFrame && time > spinner.hitSpinner.GetBasicData().StartTime && time < spinner.hitSpinner.GetBasicData().EndTime {
 			decay1 := math.Pow(0.9, timeDiff/FrameTime)
 			state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(state.currentVelocity)*1000)/(math.Pi*2)*60
@@ -193,7 +195,6 @@ func (spinner *Spinner) UpdatePost(time int64) bool {
 			numFinishedTotal++
 
 			if time >= spinner.hitSpinner.GetBasicData().EndTime {
-
 				hit := Miss
 				combo := ComboResults.Reset
 
@@ -211,11 +212,13 @@ func (spinner *Spinner) UpdatePost(time int64) bool {
 
 				if len(spinner.players) == 1 {
 					spinner.hitSpinner.StopSpinSample()
+					spinner.hitSpinner.Hit(time, hit != Miss)
 				}
 
 				spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)
 
 				state.finished = true
+
 				continue
 			}
 		}
@@ -224,8 +227,8 @@ func (spinner *Spinner) UpdatePost(time int64) bool {
 	return numFinishedTotal == 0
 }
 
-func (circle *Spinner) IsHit(pl *difficultyPlayer) bool {
-	return circle.state[pl].finished
+func (spinner *Spinner) IsHit(pl *difficultyPlayer) bool {
+	return spinner.state[pl].finished
 }
 
 func (spinner *Spinner) GetFadeTime() int64 {
