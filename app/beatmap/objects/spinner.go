@@ -37,8 +37,9 @@ type Spinner struct {
 	loopSample   bass.SubSample
 	completion   float64
 
-	newStyle bool
-	sprites  *sprite.SpriteManager
+	newStyle     bool
+	sprites      *sprite.SpriteManager
+	frontSprites *sprite.SpriteManager
 
 	glow     *sprite.Sprite
 	bottom   *sprite.Sprite
@@ -100,6 +101,7 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.fade.AddEvent(float64(spinner.objData.EndTime), float64(spinner.objData.EndTime)+difficulty.HitFadeOut, 0)
 
 	spinner.sprites = sprite.NewSpriteManager()
+	spinner.frontSprites = sprite.NewSpriteManager()
 
 	spinner.newStyle = skin.GetTexture("spinner-background") == nil
 
@@ -139,20 +141,22 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 	spinner.UpdateCompletion(0.0)
 
-	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, spinner.objData.StartPos.Copy64().SubS(0, 110), bmath.Origin.Centre)
+	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+240), bmath.Origin.Centre)
 	spinner.clear.SetAlpha(0.0)
 
-	spinner.sprites.Add(spinner.clear)
+	spinner.frontSprites.Add(spinner.clear)
 
-	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, spinner.objData.StartPos.Copy64().AddS(0, 110), bmath.Origin.Centre)
+	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+536), bmath.Origin.Centre)
 
-	spinner.sprites.Add(spinner.spin)
+	spinner.frontSprites.Add(spinner.spin)
 
 	spinner.spinnerbonus = audio.LoadSample("spinnerbonus")
 	spinner.bonusFade = animation.NewGlider(0.0)
 	spinner.bonusScale = animation.NewGlider(0.0)
 
 	spinner.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2-139, spinner.ScaledHeight-56), bmath.Origin.TopLeft)
+
+	spinner.frontSprites.Add(spinner.rpmBg)
 }
 
 func (spinner *Spinner) Update(time int64) bool {
@@ -199,7 +203,7 @@ func (spinner *Spinner) Update(time int64) bool {
 
 	spinner.sprites.Update(time)
 
-	spinner.rpmBg.Update(time)
+	spinner.frontSprites.Update(time)
 
 	spinner.bonusFade.Update(float64(time))
 	spinner.bonusScale.Update(float64(time))
@@ -253,7 +257,7 @@ func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteB
 
 	batch.SetCamera(mgl32.Ortho(0, float32(spinner.ScaledWidth), float32(spinner.ScaledHeight), 0, -1, 1))
 
-	spinner.rpmBg.Draw(time, batch)
+	spinner.frontSprites.Draw(time, batch)
 
 	rpmTxt := fmt.Sprintf("%d", int(spinner.rpm))
 	scoreFont.Draw(batch, spinner.ScaledWidth/2+139-scoreFont.GetWidth(scoreFont.GetSize(), rpmTxt), spinner.ScaledHeight-56+scoreFont.GetSize()/2, scoreFont.GetSize(), rpmTxt)
