@@ -21,24 +21,24 @@ func NewPause(data []string) *Pause {
 	return pause
 }
 
-func (self *Pause) GetBasicData() *basicData {
-	return self.objData
+func (pause *Pause) GetBasicData() *basicData {
+	return pause.objData
 }
 
-func (self *Pause) SetTiming(timings *Timings) {
-
-}
-
-func (self *Pause) UpdateStacking() {}
-
-func (self *Pause) SetDifficulty(diff *difficulty.Difficulty) {
+func (pause *Pause) SetTiming(timings *Timings) {
 
 }
 
-func (self *Pause) Update(time int64) bool {
-	return time >= self.objData.EndTime
+func (pause *Pause) UpdateStacking() {}
+
+func (pause *Pause) SetDifficulty(diff *difficulty.Difficulty) {
+
 }
 
-func (self *Pause) GetPosition() vector.Vector2f {
-	return self.objData.StartPos
+func (pause *Pause) Update(time int64) bool {
+	return time >= pause.objData.EndTime
+}
+
+func (pause *Pause) GetPosition() vector.Vector2f {
+	return pause.objData.StartPos
 }
