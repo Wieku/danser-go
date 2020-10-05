@@ -91,6 +91,10 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, float64(time)+1, position, bmath.Origin.Centre)
 
 	fadeIn := float64(time + difficulty.ResultFadeIn)
+	if particles {
+		fadeIn = float64(time + 80)
+	}
+
 	postEmpt := float64(time + difficulty.PostEmpt)
 	fadeOut := postEmpt + float64(difficulty.ResultFadeOut)
 
