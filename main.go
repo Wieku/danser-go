@@ -8,7 +8,6 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics/font"
@@ -72,7 +71,6 @@ func run() {
 		knockout := flag.Bool("knockout", false, "Use knockout feature")
 		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
 		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
-		mover := flag.String("mover", "flower", "It will be moved to settings")
 		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
 
 		play := flag.Bool("play", false, "Practice playing osu!standard maps")
@@ -93,8 +91,6 @@ func run() {
 		settings.TAG = *tag
 		settings.SPEED = *speed
 		settings.PITCH = *pitch
-		_ = mover
-		dance.SetMover(*mover)
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
