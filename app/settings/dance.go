@@ -4,6 +4,7 @@ var Dance *dance = initDance()
 
 func initDance() *dance {
 	return &dance{
+		Movers:            []string{"flower"},
 		SliderDance:       false,
 		RandomSliderDance: false,
 		TAGSliderDance:    false,
@@ -30,6 +31,7 @@ func initDance() *dance {
 }
 
 type dance struct {
+	Movers            []string
 	SliderDance       bool
 	RandomSliderDance bool
 	TAGSliderDance    bool

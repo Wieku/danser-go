@@ -17,32 +17,6 @@ type Controller interface {
 	GetCursors() []*graphics.Cursor
 }
 
-var useSmooth = false
-var Mover = movers.NewAngleOffsetMover
-
-func SetMover(name string) {
-	name = strings.ToLower(name)
-
-	if name == "bezier" {
-		Mover = movers.NewBezierMover
-	} else if name == "circular" {
-		Mover = movers.NewHalfCircleMover
-	} else if name == "linear" {
-		Mover = movers.NewLinearMover
-	} else if name == "axis" {
-		Mover = movers.NewAxisMover
-	} else if name == "aggressive" {
-		Mover = movers.NewAggressiveMover
-	} else {
-		Mover = movers.NewAngleOffsetMover
-	}
-
-	if name == "smooth" {
-		useSmooth = true
-	}
-
-}
-
 type GenericController struct {
 	bMap       *beatmap.BeatMap
 	cursors    []*graphics.Cursor
@@ -63,11 +37,29 @@ func (controller *GenericController) InitCursors() {
 
 	for i := range controller.cursors {
 		controller.cursors[i] = graphics.NewCursor()
-		if useSmooth {
-			controller.schedulers[i] = schedulers.NewSmoothScheduler()
-		} else {
-			controller.schedulers[i] = schedulers.NewGenericScheduler(Mover)
+
+		mover := strings.ToLower(settings.Dance.Movers[i%len(settings.Dance.Movers)])
+
+		var scheduler schedulers.Scheduler
+
+		switch mover {
+		case "smooth":
+			scheduler = schedulers.NewSmoothScheduler()
+		case "bezier":
+			scheduler = schedulers.NewGenericScheduler(movers.NewBezierMover)
+		case "circular":
+			scheduler = schedulers.NewGenericScheduler(movers.NewHalfCircleMover)
+		case "linear":
+			scheduler = schedulers.NewGenericScheduler(movers.NewLinearMover)
+		case "axis":
+			scheduler = schedulers.NewGenericScheduler(movers.NewAxisMover)
+		case "aggressive":
+			scheduler = schedulers.NewGenericScheduler(movers.NewAggressiveMover)
+		default:
+			scheduler = schedulers.NewGenericScheduler(movers.NewAngleOffsetMover)
 		}
+
+		controller.schedulers[i] = scheduler
 	}
 
 	type Queue struct {
@@ -92,7 +84,6 @@ func (controller *GenericController) InitCursors() {
 	for i := range controller.cursors {
 		controller.schedulers[i].Init(objs[i].objs, controller.cursors[i])
 	}
-
 }
 
 func (controller *GenericController) Update(time int64, delta float64) {
