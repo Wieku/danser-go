@@ -16,6 +16,8 @@ type SpinnerMover interface {
 
 func GetMoverByName(name string) SpinnerMover {
 	switch strings.ToLower(name) {
+	case "heart":
+		return NewHeartMover()
 	case "square":
 		return NewSquareMover()
 	default:
