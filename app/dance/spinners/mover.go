@@ -18,6 +18,8 @@ func GetMoverByName(name string) SpinnerMover {
 	switch strings.ToLower(name) {
 	case "heart":
 		return NewHeartMover()
+	case "triangle":
+		return NewTriangleMover()
 	case "square":
 		return NewSquareMover()
 	default:
