@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
@@ -376,11 +377,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
 			player.visualiser.Update(player.progressMsF)
 
-			cursorPosition := player.controller.GetCursors()[0].Position
+			var offset vector.Vector2d
 
-			offset := player.camera.Project(cursorPosition.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF()))
+			for _, c := range player.controller.GetCursors() {
+				offset = offset.Add(player.camera.Project(c.Position.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF())))
+			}
 
-			player.background.Update(player.progressMsF, offset.X, offset.Y)
+			offset = offset.Scl(1 / float64(len(player.controller.GetCursors())))
+
+			player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
 
 			player.followpoints.Update(int64(player.progressMsF))
 
@@ -843,6 +848,15 @@ func (pl *Player) Draw(float64) {
 	if settings.Playfield.Bloom.Enabled {
 		pl.bloomEffect.EndAndRender()
 	}
+
+	pl.batch.Begin()
+	pl.batch.SetColor(1, 1, 1, 1)
+	pl.batch.SetScale(1, 1)
+	pl.batch.SetCamera(pl.scamera.GetProjectionView())
+	size := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
+
+	pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size, size, build.VERSION)
+	pl.batch.End()
 
 	if settings.DEBUG || settings.Graphics.ShowFPS {
 		pl.batch.Begin()
