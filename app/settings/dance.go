@@ -4,11 +4,13 @@ var Dance *dance = initDance()
 
 func initDance() *dance {
 	return &dance{
-		Movers:            []string{"flower"},
-		SliderDance:       false,
-		RandomSliderDance: false,
-		TAGSliderDance:    false,
-		SliderDance2B:     true,
+		Movers:             []string{"flower"},
+		Spinners:           []string{"circle"},
+		DoSpinnersTogether: true,
+		SliderDance:        false,
+		RandomSliderDance:  false,
+		TAGSliderDance:     false,
+		SliderDance2B:      true,
 		Bezier: &bezier{
 			Aggressiveness:       60,
 			SliderAggressiveness: 3,
@@ -31,14 +33,16 @@ func initDance() *dance {
 }
 
 type dance struct {
-	Movers            []string
-	SliderDance       bool
-	RandomSliderDance bool
-	TAGSliderDance    bool
-	SliderDance2B     bool
-	Bezier            *bezier
-	Flower            *flower
-	HalfCircle        *circular
+	Movers             []string
+	Spinners           []string
+	DoSpinnersTogether bool
+	SliderDance        bool
+	RandomSliderDance  bool
+	TAGSliderDance     bool
+	SliderDance2B      bool
+	Bezier             *bezier
+	Flower             *flower
+	HalfCircle         *circular
 }
 
 type bezier struct {
