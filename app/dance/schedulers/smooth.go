@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/curves"
+	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -18,13 +19,16 @@ type SmoothScheduler struct {
 	lastLeft           bool
 	moving             bool
 	lastEnd            int64
+	lastTime           int64
+	spinnerMover       spinners.SpinnerMover
 }
 
 func NewSmoothScheduler() Scheduler {
 	return &SmoothScheduler{}
 }
 
-func (sched *SmoothScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor) {
+func (sched *SmoothScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
+	sched.spinnerMover = spinnerMover
 	sched.cursor = cursor
 	sched.queue = append([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, objs...)
 	/*sched.queue = PreprocessQueue(0, sched.queue, settings.Dance.SliderDance)*/
@@ -62,11 +66,11 @@ func (sched *SmoothScheduler) Update(time int64) {
 			move = false
 
 			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
-				if s, ok := sched.queue[i].(*objects.Slider); ok {
-					sched.cursor.SetPos(s.GetPosition())
+				if _, ok := g.(*objects.Spinner); ok {
+					sched.cursor.SetPos(sched.spinnerMover.GetPositionAt(time))
 				}
 
-				if s, ok := sched.queue[i].(*objects.Spinner); ok {
+				if s, ok := sched.queue[i].(*objects.Slider); ok {
 					sched.cursor.SetPos(s.GetPosition())
 				}
 
@@ -121,8 +125,9 @@ func (sched *SmoothScheduler) Update(time int64) {
 			t := bmath.ClampF32(float32(time-sched.endTime)/float32(sched.startTime-sched.endTime), 0, 1)
 			sched.cursor.SetPos(sched.curve.PointAt(t))
 		}
-
 	}
+
+	sched.lastTime = time
 }
 
 func max(a, b int64) int64 {
@@ -147,7 +152,7 @@ func (sched *SmoothScheduler) InitCurve(index int) {
 				//timing = append(timing, s.GetBasicData().StartTime)
 			}
 			if s, ok := sched.queue[i].(*objects.Spinner); ok {
-				points = append(points, s.GetBasicData().EndPos, sched.queue[i+1].GetBasicData().StartPos.Sub(s.GetBasicData().EndPos).Scl(0.333).Add(s.GetBasicData().EndPos))
+				points = append(points, sched.spinnerMover.GetPositionAt(s.GetBasicData().EndTime), sched.queue[i+1].GetBasicData().StartPos.Sub(s.GetBasicData().EndPos).Scl(0.333).Add(s.GetBasicData().EndPos))
 			}
 			timing = append(timing, max(sched.queue[i].GetBasicData().StartTime, sched.queue[i].GetBasicData().EndTime))
 			endTime = max(sched.queue[i].GetBasicData().StartTime, sched.queue[i].GetBasicData().EndTime)
@@ -175,8 +180,9 @@ func (sched *SmoothScheduler) InitCurve(index int) {
 			}
 
 			if s, ok := sched.queue[i].(*objects.Spinner); ok {
+				sched.spinnerMover.Init(s.GetBasicData().StartTime, s.GetBasicData().EndTime)
 				timing = append(timing, s.GetBasicData().StartTime)
-				points = append(points, sched.queue[i-1].GetBasicData().EndPos.Sub(s.GetBasicData().StartPos).Scl(0.333).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
+				points = append(points, sched.queue[i-1].GetBasicData().EndPos.Sub(sched.spinnerMover.GetPositionAt(s.GetBasicData().StartTime)).Scl(0.333).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
 			}
 
 			startTime = sched.queue[i].GetBasicData().StartTime

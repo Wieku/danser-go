@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
+	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"strings"
@@ -38,7 +39,10 @@ func (controller *GenericController) InitCursors() {
 	for i := range controller.cursors {
 		controller.cursors[i] = graphics.NewCursor()
 
-		mover := strings.ToLower(settings.Dance.Movers[i%len(settings.Dance.Movers)])
+		mover := "flower"
+		if len(settings.Dance.Movers) > 0 {
+			mover = strings.ToLower(settings.Dance.Movers[i%len(settings.Dance.Movers)])
+		}
 
 		var scheduler schedulers.Scheduler
 
@@ -77,12 +81,24 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	for j, o := range queue {
-		i := j % settings.TAG
-		objs[i].objs = append(objs[i].objs, o)
+		if _, ok := o.(*objects.Spinner); ok && settings.Dance.DoSpinnersTogether {
+			for i := range objs {
+				objs[i].objs = append(objs[i].objs, o)
+			}
+		} else {
+			i := j % settings.TAG
+			objs[i].objs = append(objs[i].objs, o)
+		}
 	}
 
 	for i := range controller.cursors {
-		controller.schedulers[i].Init(objs[i].objs, controller.cursors[i])
+
+		spinMover := "circle"
+		if len(settings.Dance.Spinners) > 0 {
+			spinMover = settings.Dance.Spinners[i%len(settings.Dance.Spinners)]
+		}
+
+		controller.schedulers[i].Init(objs[i].objs, controller.cursors[i], spinners.GetMoverByName(spinMover))
 	}
 }
 
