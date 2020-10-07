@@ -40,6 +40,7 @@ type textureStore struct {
 	binding                        uint
 	layers, width, height, mipmaps int32
 	format                         Format
+	min, mag                       Filter
 }
 
 func newStore(layerNum, width, height int, format Format, mipmaps int) *textureStore {
@@ -79,6 +80,9 @@ func (store *textureStore) Bind(loc uint) {
 }
 
 func (store *textureStore) SetFiltering(min, mag Filter) {
+	store.min = min
+	store.mag = mag
+
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, int32(min))
 	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, int32(mag))
 }

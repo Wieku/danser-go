@@ -18,7 +18,6 @@ func (rect rectangle) area() int {
 type TextureAtlas struct {
 	store       *textureStore
 	defRegion   TextureRegion
-	min, mag    Filter
 	padding     int
 	subTextures map[string]*TextureRegion
 	emptySpaces map[int32][]rectangle
@@ -132,7 +131,7 @@ func (texture *TextureAtlas) newLayer() {
 	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo)
 
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
-	dstStore.SetFiltering(texture.min, texture.mag)
+	dstStore.SetFiltering(texture.store.min, texture.store.mag)
 	dstStore.Bind(texture.store.binding)
 
 	for layer := int32(0); layer < layers-1; layer++ {
@@ -183,7 +182,6 @@ func (texture *TextureAtlas) GetLayers() int32 {
 }
 
 func (texture *TextureAtlas) SetFiltering(min, mag Filter) {
-	texture.min, texture.mag = min, mag
 	texture.store.SetFiltering(min, mag)
 }
 
