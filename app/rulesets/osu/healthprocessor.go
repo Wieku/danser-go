@@ -201,3 +201,7 @@ func (hp *HealthProcessor) Increase(amount float64) {
 	hp.HealthUncapped = math.Max(0.0, hp.HealthUncapped+amount)
 	hp.Health = bmath.ClampF64(hp.Health+amount, 0.0, MaxHp)
 }
+
+func (hp *HealthProcessor) ReducePassive(amount int64) {
+	hp.Increase(-hp.PassiveDrain * float64(amount))
+}
