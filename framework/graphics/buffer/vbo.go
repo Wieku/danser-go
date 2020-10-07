@@ -95,7 +95,7 @@ func (vbo *VertexBufferObject) Unmap(offset, size int) {
 		panic(fmt.Sprintf("Data exceeds VBO's capacity. Data length: %d, Offset: %d, capacity: %d", size, offset, vbo.capacity))
 	}
 
-	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, size*4, gl.Ptr(vbo.data))
+	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, size*4, gl.Ptr(vbo.data[offset:]))
 }
 
 func (vbo *VertexBufferObject) Bind() {

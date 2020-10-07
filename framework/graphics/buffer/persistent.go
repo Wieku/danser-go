@@ -61,7 +61,7 @@ func (vbo *PersistentBufferObject) SetData(offset int, data []float32) {
 		copy(vbo.data[offset:], data)
 	}
 
-	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, len(data)*4, gl.Ptr(data))
+	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, len(data)*4, gl.Ptr(data[offset:]))
 }
 
 func (vbo *PersistentBufferObject) Map(size int) MemoryChunk {
