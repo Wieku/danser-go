@@ -30,7 +30,6 @@ type Spinner struct {
 	state             map[*difficultyPlayer]*spinnerstate
 	fadeStartRelative float64
 	maxAcceleration   float64
-	lastTime          int64
 }
 
 func (spinner *Spinner) GetNumber() int64 {
@@ -154,7 +153,6 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			state.rotationCount = int64(state.rotationCountF)
 
 			if state.rotationCount != state.lastRotationCount {
-
 				state.scoringRotationCount++
 
 				if len(spinner.players) == 1 {
@@ -174,7 +172,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 				} else if state.scoringRotationCount > 1 && state.scoringRotationCount%2 == 0 {
 					spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, SpinnerPoints, true, ComboResults.Hold)
 				} else if state.scoringRotationCount > 1 {
-					//hp inpact in the future
+					spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinnerPosition.X, spinnerPosition.Y, SpinnerSpin, true, ComboResults.Hold)
 				}
 
 				state.lastRotationCount = state.rotationCount
