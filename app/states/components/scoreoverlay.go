@@ -73,6 +73,10 @@ type ScoreOverlay struct {
 	hitErrorMeter *HitErrorMeter
 
 	skip *sprite.Sprite
+
+	healthBackground *sprite.Sprite
+	healthBar        *sprite.Sprite
+	displayHp        float64
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -203,6 +207,18 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(start), float64(start+300), 0.6, 0.0))
 	}
 
+	overlay.healthBackground = sprite.NewSpriteSingle(skin.GetTexture("scorebar-bg"), 0, vector.NewVec2d(0, 0), bmath.Origin.TopLeft)
+
+	pos := vector.NewVec2d(4.8, 16)
+	if skin.GetTexture("scorebar-marker") != nil {
+		pos = vector.NewVec2d(12, 12.5)
+	}
+
+	barTextures := skin.GetFrames("scorebar-colour", true)
+
+	overlay.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, bmath.Origin.TopLeft)
+	overlay.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
+
 	return overlay
 }
 
@@ -244,6 +260,16 @@ func (overlay *ScoreOverlay) Update(time int64) {
 		overlay.nextEnd = math.MaxInt64
 	}
 
+	currentHp := overlay.ruleset.GetHP(overlay.cursor)
+
+	if overlay.displayHp < currentHp {
+		overlay.displayHp = math.Min(1.0, overlay.displayHp+math.Abs(currentHp-overlay.displayHp)/4*float64(time-overlay.lastTime))
+	} else if overlay.displayHp > currentHp {
+		overlay.displayHp = math.Max(0.0, overlay.displayHp-math.Abs(overlay.displayHp-currentHp)/6*float64(time-overlay.lastTime))
+	}
+
+	overlay.healthBar.SetCutX(1.0 - overlay.displayHp)
+
 	overlay.results.Update(float64(time))
 
 	overlay.hitErrorMeter.Update(float64(time))
@@ -280,6 +306,8 @@ func (overlay *ScoreOverlay) Update(time int64) {
 
 	overlay.keyOverlay.Update(time)
 	overlay.bgDim.Update(float64(time))
+	overlay.healthBackground.Update(time)
+	overlay.healthBar.Update(time)
 
 	if overlay.skip != nil {
 		overlay.skip.Update(time)
@@ -345,6 +373,9 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
+
+	overlay.healthBackground.Draw(overlay.lastTime, batch)
+	overlay.healthBar.Draw(overlay.lastTime, batch)
 
 	//region Combo rendering
 
