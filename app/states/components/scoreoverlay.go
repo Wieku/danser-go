@@ -174,7 +174,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.keyOverlay = sprite.NewSpriteManager()
 
-	keyBg := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-background"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight/2-40), bmath.Origin.TopLeft)
+	keyBg := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-background"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight/2-64), bmath.Origin.TopLeft)
 	keyBg.SetScaleV(vector.NewVec2d(1.05, 1))
 	keyBg.ShowForever(true)
 	keyBg.SetRotation(math.Pi / 2)
@@ -182,7 +182,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.keyOverlay.Add(keyBg)
 
 	for i := 0; i < 4; i++ {
-		posY := overlay.ScaledHeight/2 - 40 + (30+float64(i)*47.5)*settings.Gameplay.KeyOverlayScale
+		posY := overlay.ScaledHeight/2 - 64 + (30.4+float64(i)*47.2)*settings.Gameplay.KeyOverlayScale
 
 		key := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-key"), 1, vector.NewVec2d(overlay.ScaledWidth-24*settings.Gameplay.KeyOverlayScale, posY), bmath.Origin.Centre)
 		key.ShowForever(true)
@@ -377,7 +377,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
 		accText := fmt.Sprintf("%0.2f%%", acc)
-		overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, accText), 9*scoreScale+fntSize+fntSize*0.6/2, fntSize*0.6, accText)
+		overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, accText), fntSize+fntSize*0.6/2, fntSize*0.6, accText)
 
 		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
 			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
@@ -436,7 +436,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 		for i := 0; i < 4; i++ {
 			posX := overlay.ScaledWidth - 24*keyScale
-			posY := overlay.ScaledHeight/2 - 40 + (30+float64(i)*47.5)*keyScale
+			posY := overlay.ScaledHeight/2 - 64 + (30.4+float64(i)*47.2)*keyScale
 			scale := overlay.keys[i].GetScale().Y * keyScale
 
 			text := strconv.Itoa(overlay.keyCounters[i])
