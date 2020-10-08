@@ -12,7 +12,7 @@ type Buttons int64
 const Left = Buttons(1)
 const Right = Buttons(2)
 
-type objstateS struct {
+type sliderstate struct {
 	downButton  Buttons
 	isStartHit  bool
 	isHit       bool
@@ -34,7 +34,7 @@ type Slider struct {
 	ruleSet           *OsuRuleSet
 	hitSlider         *objects.Slider
 	players           []*difficultyPlayer
-	state             map[*difficultyPlayer]*objstateS
+	state             map[*difficultyPlayer]*sliderstate
 	fadeStartRelative float64
 	lastTime          int64
 	lastSliderTime    int64
@@ -49,7 +49,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 	slider.ruleSet = ruleSet
 	slider.hitSlider = object.(*objects.Slider)
 	slider.players = players
-	slider.state = make(map[*difficultyPlayer]*objstateS)
+	slider.state = make(map[*difficultyPlayer]*sliderstate)
 
 	rSlider := object.(*objects.Slider)
 
@@ -58,7 +58,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 
 	for _, player := range slider.players {
 		slider.fadeStartRelative = math.Min(slider.fadeStartRelative, player.diff.Preempt)
-		slider.state[player] = new(objstateS)
+		slider.state[player] = new(sliderstate)
 
 		edgeNumber := 1
 
@@ -73,9 +73,9 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.BaseObject, playe
 
 		if len(slider.state[player].points) > 0 {
 			slider.state[player].points[len(slider.state[player].points)-1].time = int64(math.Max(float64(slider.hitSlider.GetBasicData().StartTime+(slider.hitSlider.GetBasicData().EndTime-slider.hitSlider.GetBasicData().StartTime)/2), float64(slider.hitSlider.GetBasicData().EndTime-36))) //slider ends 36ms before the real end for scoring
+			slider.state[player].points[len(slider.state[player].points)-1].scoreGiven = SliderEnd
 		}
 	}
-
 }
 
 func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool {
@@ -83,6 +83,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 	xOffset := float32(0.0)
 	yOffset := float32(0.0)
+
 	if player.diff.Mods&difficulty.HardRock > 0 {
 		data := slider.hitSlider.GetBasicData()
 		xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
@@ -93,7 +94,6 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
 	if clicked && inRadius && !state.isStartHit && !state.isHit {
-
 		if player.leftCondE {
 			player.leftCondE = false
 		} else if player.rightCondE {
@@ -124,13 +124,12 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				if len(slider.players) == 1 {
 					slider.hitSlider.HitEdge(0, time, hit != SliderMiss)
 				}
+
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, true, combo)
 
 				state.isStartHit = true
 			}
-
 		}
-
 	}
 
 	return state.isStartHit
@@ -146,6 +145,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 	xOffset := float32(0.0)
 	yOffset := float32(0.0)
+
 	if player.diff.Mods&difficulty.HardRock > 0 {
 		data := slider.hitSlider.GetBasicData()
 		xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
@@ -153,7 +153,6 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 	}
 
 	if time >= slider.hitSlider.GetBasicData().StartTime && !state.isHit {
-
 		mouseDownAcceptable := false
 		mouseDownAcceptableSwap := player.gameDownState &&
 			!(player.lastButton == (Left|Right) &&
@@ -173,7 +172,6 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 				}
 
 				mouseDownAcceptable = true
-
 			} else if (player.mouseDownButton & state.downButton) > 0 {
 				mouseDownAcceptable = true
 			}
@@ -193,12 +191,14 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 		if allowable && !state.sliding {
 			state.sliding = true
 			state.slideStart = time
+
 			if len(slider.players) == 1 {
 				slider.hitSlider.InitSlide(time)
 			}
 		}
 
 		pointsPassed := int64(0)
+
 		for _, point := range state.points {
 			if point.time <= time {
 				pointsPassed++
@@ -208,7 +208,6 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 		}
 
 		if state.scored+state.missed < pointsPassed {
-
 			index := state.scored + state.missed
 			point := state.points[index]
 
@@ -222,6 +221,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 				}
 
 				state.scored++
+
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
 			} else {
 				combo := ComboResults.Reset
@@ -238,6 +238,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			if len(slider.players) == 1 {
 				slider.hitSlider.KillSlide(time)
 			}
+
 			state.sliding = false
 		}
 	}
@@ -302,9 +303,7 @@ func (slider *Slider) UpdatePost(time int64) bool {
 			slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
 
 			state.isHit = true
-
 		}
-
 	}
 
 	slider.lastTime = time
