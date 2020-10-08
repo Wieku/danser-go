@@ -103,6 +103,7 @@ type subSet struct {
 	hits          map[HitResult]int64
 	currentKatu   int
 	currentBad    int
+	hp            *HealthProcessor
 }
 
 type OsuRuleSet struct {
@@ -172,7 +173,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]] = diffs
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0}
+		hp := NewHealthProcessor(beatMap, diff)
+		hp.CalculateRate()
+		hp.ResetHp()
+
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -231,6 +236,10 @@ func (set *OsuRuleSet) Update(time int64) {
 
 			i--
 		}
+	}
+
+	for _, subSet := range set.cursors {
+		subSet.hp.Update(time)
 	}
 
 	if len(set.queue) == 0 && len(set.processed) == 0 && !set.ended {
@@ -481,6 +490,8 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 		subSet.currentKatu = 0
 	}
 
+	subSet.hp.AddResult(result)
+
 	if set.listener != nil {
 		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
 	}
@@ -549,6 +560,11 @@ func (set *OsuRuleSet) SetEndListener(endlistener func(time int64, number int64)
 func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {
 	subSet := set.cursors[cursor]
 	return subSet.accuracy, subSet.maxCombo, subSet.score, subSet.grade
+}
+
+func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
+	subSet := set.cursors[cursor]
+	return subSet.hp.Health / MaxHp
 }
 
 func (set *OsuRuleSet) GetBeatMap() *beatmap.BeatMap {
