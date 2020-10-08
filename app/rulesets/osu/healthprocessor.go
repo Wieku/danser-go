@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
+	"log"
 	"math"
 )
 
@@ -26,6 +27,10 @@ const (
 	MaxHp = 200.0
 )
 
+type drain struct {
+	start, end int64
+}
+
 type HealthProcessor struct {
 	beatMap *beatmap.BeatMap
 	diff    *difficulty.Difficulty
@@ -36,6 +41,9 @@ type HealthProcessor struct {
 
 	Health         float64
 	HealthUncapped float64
+
+	drains   []drain
+	lastTime int64
 }
 
 func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty) *HealthProcessor {
@@ -57,15 +65,16 @@ func (hp *HealthProcessor) CalculateRate() {
 
 	fail := true
 
+	breakCount := len(hp.beatMap.Pauses)
+
 	for fail {
-		hp.Health = MaxHp
+		hp.ResetHp()
 
 		lowestHp := hp.Health
 
 		lastTime := hp.beatMap.HitObjects[0].GetBasicData().StartTime - int64(hp.diff.Preempt)
 		fail = false
 
-		breakCount := len(hp.beatMap.Pauses)
 		breakNumber := 0
 
 		comboTooLowCount := 0
@@ -132,8 +141,7 @@ func (hp *HealthProcessor) CalculateRate() {
 			}
 		}
 
-		if !fail && hp.HealthUncapped < lowestHpEnd {
-			//Debug.Print("Song ends on " + currentHp + " - being more lenient");
+		if !fail && hp.Health < lowestHpEnd {
 			fail = true
 			hp.PassiveDrain *= 0.94
 			hp.HpMultiplierComboEnd *= 1.01
@@ -142,13 +150,38 @@ func (hp *HealthProcessor) CalculateRate() {
 
 		recovery := (hp.HealthUncapped - MaxHp) / float64(len(hp.beatMap.HitObjects))
 		if !fail && recovery < hpRecoveryAvailable {
-			//Debug.Print("Song has average " + recovery + " recovery - being more lenient");
 			fail = true
 			hp.PassiveDrain *= 0.96
 			hp.HpMultiplierComboEnd *= 1.02
 			hp.HpMultiplierNormal *= 1.01
 		}
 	}
+
+	log.Println("drainrate", hp.PassiveDrain/2*1000)
+	log.Println("normalmult", hp.HpMultiplierNormal)
+	log.Println("combomult", hp.HpMultiplierComboEnd)
+
+	breakNumber := 0
+	lastDrainStart := hp.beatMap.HitObjects[0].GetBasicData().StartTime - int64(hp.diff.Preempt)
+	lastDrainEnd := hp.beatMap.HitObjects[0].GetBasicData().StartTime - int64(hp.diff.Preempt)
+
+	for _, o := range hp.beatMap.HitObjects {
+
+		if breakCount > 0 && breakNumber < breakCount {
+			pause := hp.beatMap.Pauses[breakNumber]
+			if pause.GetBasicData().StartTime >= lastDrainEnd && pause.GetBasicData().EndTime <= o.GetBasicData().StartTime {
+				breakNumber++
+
+				hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
+
+				lastDrainStart = o.GetBasicData().StartTime
+			}
+		}
+
+		lastDrainEnd = o.GetBasicData().EndTime
+	}
+
+	hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
 
 	hp.ResetHp()
 }
@@ -204,4 +237,21 @@ func (hp *HealthProcessor) Increase(amount float64) {
 
 func (hp *HealthProcessor) ReducePassive(amount int64) {
 	hp.Increase(-hp.PassiveDrain * float64(amount))
+}
+
+func (hp *HealthProcessor) Update(time int64) {
+	drainTime := false
+
+	for _, d := range hp.drains {
+		if d.start <= time && d.end >= time {
+			drainTime = true
+			break
+		}
+	}
+
+	if drainTime {
+		hp.ReducePassive(time - hp.lastTime)
+	}
+
+	hp.lastTime = time
 }
