@@ -169,6 +169,10 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 }
 
 func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset vector.Vector2f, scale float32, bodyInner, bodyOuter, borderInner, borderOuter mgl32.Vec4) {
+	if body.framebuffer == nil || body.disposed {
+		return
+	}
+
 	drawSlider(body.bodySprite, stackOffset, scale, body.framebuffer.Texture(), bodyInner, bodyOuter, borderInner, borderOuter, projection)
 }
 
