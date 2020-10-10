@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unsafe"
 )
 
 const (
@@ -72,6 +73,8 @@ func run() {
 		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
 		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
 		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
+
+		gldebug := flag.Bool("gldebug", false, "Turns on OpenGL debug logging, may reduce performance heavily")
 
 		play := flag.Bool("play", false, "Practice playing osu!standard maps")
 
@@ -195,6 +198,23 @@ func run() {
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")
 		gl.Init()
+
+		if *gldebug {
+			gl.Enable(gl.DEBUG_OUTPUT)
+			gl.DebugMessageCallback(func(
+				source uint32,
+				gltype uint32,
+				id uint32,
+				severity uint32,
+				length int32,
+				message string,
+				userParam unsafe.Pointer) {
+				log.Println("GL:", message)
+			}, gl.Ptr(nil))
+
+			gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DONT_CARE, 0, nil, true)
+		}
+
 		gl.Enable(gl.BLEND)
 		gl.ClearColor(0, 0, 0, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
