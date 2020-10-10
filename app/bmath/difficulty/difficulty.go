@@ -19,6 +19,7 @@ type Difficulty struct {
 	Hit50               int64
 	Hit100              int64
 	Hit300              int64
+	HPMod               float64
 	SpinnerRatio        float64
 }
 
@@ -49,6 +50,7 @@ func (diff *Difficulty) calculate() {
 		hpDrain /= 2
 	}
 
+	diff.HPMod = hpDrain
 	diff.CircleRadius = DifficultyRate(cs, 54.4, 32, 9.6) * 1.00041 //some weird allowance osu has
 	diff.Preempt = DifficultyRate(ar, 1800, 1200, 450)
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
