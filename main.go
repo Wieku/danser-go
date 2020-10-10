@@ -65,7 +65,7 @@ func run() {
 		creator := flag.String("creator", "", creatorDesc)
 		flag.StringVar(creator, "c", "", creatorDesc+shorthand)
 
-		settingsVersion := flag.Int("settings", 0, "Specify settings version")
+		settingsVersion := flag.String("settings", "", "Specify settings version")
 		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
 		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
 		knockout := flag.Bool("knockout", false, "Use knockout feature")

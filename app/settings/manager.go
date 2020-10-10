@@ -3,7 +3,6 @@ package settings
 import (
 	"encoding/json"
 	"os"
-	"strconv"
 )
 
 var fileStorage *fileformat
@@ -21,16 +20,16 @@ func initStorage() {
 		Objects:   Objects,
 		Playfield: Playfield,
 		Dance:     Dance,
-		Knockout:  nil,
+		Knockout:  Knockout,
 	}
 }
 
-func LoadSettings(version int) bool {
+func LoadSettings(version string) bool {
 	initStorage()
 	fileName = "settings"
 
-	if version > 0 {
-		fileName += "-" + strconv.FormatInt(int64(version), 10)
+	if version != "" {
+		fileName += "-" + version
 	}
 	fileName += ".json"
 
