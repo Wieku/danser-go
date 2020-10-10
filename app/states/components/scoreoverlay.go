@@ -263,9 +263,9 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	currentHp := overlay.ruleset.GetHP(overlay.cursor)
 
 	if overlay.displayHp < currentHp {
-		overlay.displayHp = math.Min(1.0, overlay.displayHp+math.Abs(currentHp-overlay.displayHp)/4*float64(time-overlay.lastTime))
+		overlay.displayHp = math.Min(1.0, overlay.displayHp+math.Abs(currentHp-overlay.displayHp)/4*float64(time-overlay.lastTime)/16.667)
 	} else if overlay.displayHp > currentHp {
-		overlay.displayHp = math.Max(0.0, overlay.displayHp-math.Abs(overlay.displayHp-currentHp)/6*float64(time-overlay.lastTime))
+		overlay.displayHp = math.Max(0.0, overlay.displayHp-math.Abs(overlay.displayHp-currentHp)/6*float64(time-overlay.lastTime)/16.667)
 	}
 
 	overlay.healthBar.SetCutX(1.0 - overlay.displayHp)
