@@ -53,7 +53,6 @@ type Player struct {
 	BgScl       vector.Vector2d
 	Scl         float64
 	SclA        float64
-	CS          float64
 	fadeOut     float64
 	fadeIn      float64
 	start       bool
@@ -117,8 +116,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
-
-	player.CS = beatMap.Diff.CircleRadius * settings.Objects.CSMult
 
 	var err error
 

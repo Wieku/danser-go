@@ -27,8 +27,6 @@ func initObjects() *objects {
 		},
 		UseComboColors:                false,
 		ComboColors:                   []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
-		ObjectsSize:                   -1,
-		CSMult:                        1.0,
 		ScaleToTheBeat:                false,
 		SliderLOD:                     50,
 		SliderPathLOD:                 50,
@@ -72,11 +70,9 @@ type objects struct {
 	Colors                                 *color
 	UseComboColors                         bool
 	ComboColors                            []*hsv
-	ObjectsSize                            float64 //-1, objects radius in osu!pixels. If value is less than 0, beatmap's CS will be used
-	CSMult                                 float64 //1.2, if ObjectsSize is -1, then CS value will be multiplied by this
-	ScaleToTheBeat                         bool    //true, objects size is changing with music peak amplitude
-	SliderLOD                              int64   //30, number of triangles in a circle
-	SliderPathLOD                          int64   //50, int(pixelLength*(PathLOD/100)) => number of slider path points
+	ScaleToTheBeat                         bool  //true, objects size is changing with music peak amplitude
+	SliderLOD                              int64 //30, number of triangles in a circle
+	SliderPathLOD                          int64 //50, int(pixelLength*(PathLOD/100)) => number of slider path points
 	SliderSnakeIn                          bool
 	SliderSnakeInMult                      float64
 	SliderSnakeOut                         bool
