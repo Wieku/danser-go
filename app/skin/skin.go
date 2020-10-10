@@ -23,6 +23,8 @@ const (
 	ALL = LOCAL | SKIN | BEATMAP
 )
 
+const defaultName = "default"
+
 var atlas *texture.TextureAtlas
 
 var animationCache = make(map[string][]*texture.TextureRegion)
@@ -39,13 +41,20 @@ var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
 
-var CurrentSkin = "default"
+var CurrentSkin = defaultName
 
 var info *SkinInfo
 
 func fallback() {
-	CurrentSkin = "default"
-	info = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"))
+	CurrentSkin = defaultName
+
+	var err error
+	info, err = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"))
+
+	if err != nil {
+		log.Println("Default skin is corrupted! Please don't manipulate game's assets!")
+		panic(err)
+	}
 }
 
 func checkInit() {
@@ -55,11 +64,11 @@ func checkInit() {
 
 	CurrentSkin = settings.Skin.CurrentSkin
 
-	if CurrentSkin == "default" {
+	if CurrentSkin == defaultName {
 		fallback()
 	} else {
-		info = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
-		err := recover()
+		var err error
+		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
 		if err != nil {
 			log.Println(CurrentSkin, "is corrupted, falling back to default...")
 			fallback()
@@ -84,7 +93,7 @@ func GetFont(name string) *font.Font {
 	prefix := name
 
 	switch name {
-	case "default":
+	case defaultName:
 		prefix = info.HitCirclePrefix
 		overlap = info.HitCircleOverlap
 	case "score":
@@ -126,7 +135,7 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 
 	source = source & (^BEATMAP)
 
-	if CurrentSkin == "default" {
+	if CurrentSkin == defaultName {
 		source = source & (^SKIN)
 	}
 
@@ -304,7 +313,7 @@ func GetSample(name string) *bass.Sample {
 
 	var sample *bass.Sample
 
-	if CurrentSkin != "default" {
+	if CurrentSkin != defaultName {
 		sample = tryLoad(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name))
 	}
 

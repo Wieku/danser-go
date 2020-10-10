@@ -137,10 +137,10 @@ func ParseColor(text, errType string) color.Color {
 	return color
 }
 
-func LoadInfo(path string) *SkinInfo {
+func LoadInfo(path string) (*SkinInfo, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	defer file.Close()
@@ -207,5 +207,5 @@ func LoadInfo(path string) *SkinInfo {
 		}
 	}
 
-	return info
+	return info, nil
 }
