@@ -359,7 +359,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 
 	batch.Begin()
 
-	batch.SetTranslation(cursor.RendPos.Copy64())
+	batch.SetTranslation(cursor.Position.Copy64())
 	batch.SetScale(siz*scale, siz*scale)
 	batch.SetSubScale(1, 1)
 
