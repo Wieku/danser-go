@@ -726,7 +726,6 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
-
 		if time < slider.objData.EndTime {
 			if settings.Objects.DrawFollowPoints {
 				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
@@ -757,27 +756,20 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 		for i := len(slider.endCircles) - 1; i >= 0; i-- {
 			slider.endCircles[i].Draw(time, color, batch)
 		}
-
-		batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-
-		if time >= slider.objData.StartTime && time <= slider.objData.EndTime {
-			slider.drawBall(time, batch, alpha, true)
-		}
-
-		if settings.Objects.DrawSliderFollowCircle && slider.follower != nil {
-			batch.SetTranslation(slider.Pos.Copy64())
-			batch.SetColor(1, 1, 1, alpha)
-			slider.follower.Draw(time, batch)
-		}
-
-	} else {
-		if time >= slider.objData.StartTime && time <= slider.objData.EndTime {
-			slider.drawBall(time, batch, alpha, settings.Objects.ForceSliderBallTexture)
-		}
 	}
 
 	batch.SetColor(1, 1, 1, 1)
 	slider.startCircle.Draw(time, color, batch)
+
+	if time >= slider.objData.StartTime && time <= slider.objData.EndTime {
+		slider.drawBall(time, batch, alpha, settings.Objects.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.MandalaTexturesTrigger)
+	}
+
+	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawSliderFollowCircle && slider.follower != nil {
+		batch.SetTranslation(slider.Pos.Copy64())
+		batch.SetColor(1, 1, 1, alpha)
+		slider.follower.Draw(time, batch)
+	}
 
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
