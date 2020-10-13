@@ -696,8 +696,16 @@ func (slider *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, 
 		bodyInner[0] = baseTrack.R + (1-baseTrack.R)*0.25
 		bodyInner[1] = baseTrack.G + (1-baseTrack.G)*0.25
 		bodyInner[2] = baseTrack.B + (1-baseTrack.B)*0.25
+	} else if settings.Objects.UseComboColors && !settings.Objects.EnableCustomSliderBorderColor {
+		cHSV := settings.Objects.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.ComboColors)]
+		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+
+		borderInner[0], borderOuter[0] = r, r
+		borderInner[1], borderOuter[1] = g, g
+		borderInner[2], borderOuter[2] = b, b
 	} else if settings.Objects.EnableCustomSliderBorderGradientOffset {
 		borderOuter = utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset)
+		borderInner[3] = float32(colorAlpha)
 		borderOuter[3] = float32(colorAlpha)
 	}
 
@@ -802,7 +810,13 @@ func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha floa
 		color := skin.GetInfo().ComboColors[int(slider.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
 		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 	} else {
-		batch.SetColor(1, 1, 1, alpha)
+		if skin.GetInfo().SliderBallTint && settings.Objects.UseComboColors {
+			cHSV := settings.Objects.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.ComboColors)]
+			r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+			batch.SetColor(float64(r), float64(g), float64(b), alpha)
+		} else {
+			batch.SetColor(1, 1, 1, alpha)
+		}
 	}
 
 	//cHSV := settings.Objects.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.ComboColors)]
