@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/framework/math/color"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -56,14 +57,19 @@ type SkinInfo struct {
 
 func newDefaultInfo() *SkinInfo {
 	return &SkinInfo{
-		Name:                        "",
-		Author:                      "",
-		Version:                     2.7,
-		AnimationFramerate:          -1,
-		SpinnerFadePlayfield:        true,
-		SpinnerNoBlink:              false,
-		LayeredHitSounds:            true,
-		ComboColors:                 []color.Color{},
+		Name:                 "",
+		Author:               "",
+		Version:              2.7,
+		AnimationFramerate:   -1,
+		SpinnerFadePlayfield: true,
+		SpinnerNoBlink:       false,
+		LayeredHitSounds:     true,
+		ComboColors: []color.Color{
+			color.NewIRGB(255, 192, 0),
+			color.NewIRGB(0, 202, 0),
+			color.NewIRGB(18, 124, 255),
+			color.NewIRGB(242, 24, 57),
+		},
 		SliderBallTint:              false,
 		SliderBallFlip:              false,
 		SliderBorder:                color.NewL(1),
@@ -149,6 +155,13 @@ func LoadInfo(path string) (*SkinInfo, error) {
 
 	info := newDefaultInfo()
 
+	type colorI struct {
+		index int
+		color color.Color
+	}
+
+	colorsI := make([]colorI, 0)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -178,7 +191,11 @@ func LoadInfo(path string) (*SkinInfo, error) {
 		case "LayeredHitSounds":
 			info.LayeredHitSounds = tokenized[1] == "1"
 		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
-			info.ComboColors = append(info.ComboColors, ParseColor(tokenized[1], tokenized[0]))
+			index, _ := strconv.ParseInt(strings.TrimPrefix(tokenized[0], "Combo"), 10, 64)
+			colorsI = append(colorsI, colorI{
+				index: int(index),
+				color: ParseColor(tokenized[1], tokenized[0]),
+			})
 		case "SliderBallTint":
 			info.SliderBallTint = tokenized[1] == "1"
 		case "SliderBallFlip":
@@ -204,6 +221,18 @@ func LoadInfo(path string) (*SkinInfo, error) {
 			info.ComboPrefix = tokenized[1]
 		case "ComboOverlap":
 			info.ComboOverlap = ParseFloat(tokenized[1], tokenized[0])
+		}
+	}
+
+	if len(colorsI) > 0 {
+		sort.SliceStable(colorsI, func(i, j int) bool {
+			return colorsI[i].index <= colorsI[j].index
+		})
+
+		info.ComboColors = make([]color.Color, 0)
+
+		for _, c := range colorsI {
+			info.ComboColors = append(info.ComboColors, c.color)
 		}
 	}
 
