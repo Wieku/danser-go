@@ -396,29 +396,10 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	//region Score+progress+accuracy
 
 	if scoreAlpha := settings.Gameplay.ScoreOpacity; scoreAlpha > 0.001 && settings.Gameplay.ShowScore {
-		scoreScale := settings.Gameplay.ScoreScale
-
 		batch.ResetTransform()
-		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
+		scoreScale := settings.Gameplay.ScoreScale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale
-
-		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
-
-		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
-		accText := fmt.Sprintf("%0.2f%%", acc)
-		overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, accText), fntSize+fntSize*0.6/2, fntSize*0.6, accText)
-
-		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
-			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
-
-			text := skin.GetTexture("ranking-" + gText + "-small")
-
-			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, "100.00%")-float64(text.Width)/2*scoreScale, 9*scoreScale+fntSize+fntSize*0.6/2))
-			batch.SetSubScale(scoreScale, scoreScale)
-			batch.DrawTexture(*text)
-		}
 
 		hObjects := overlay.ruleset.GetBeatMap().HitObjects
 
@@ -434,8 +415,30 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		batch.SetColor(0.2, 0.6, 0.2, alpha*0.8*scoreAlpha)
 
 		batch.SetSubScale(100*progress*scoreScale, 3*scoreScale)
-		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-5-200+progress*100)*scoreScale, fntSize+4*scoreScale))
+		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-5-200+progress*100)*scoreScale, fntSize))
 		batch.DrawUnit(graphics.Pixel.GetRegion())
+
+		batch.ResetTransform()
+		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
+
+		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
+
+		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
+		accText := fmt.Sprintf("%0.2f%%", acc)
+		overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, accText), fntSize+fntSize*0.6/2, fntSize*0.6, accText)
+
+		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
+			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+
+			text := skin.GetTexture("ranking-" + gText + "-small")
+
+			aspect := float64(text.Width) / float64(text.Height)
+
+			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, "100.00%")-aspect/2*fntSize*0.6, fntSize+fntSize*0.6/2))
+			batch.SetSubScale(fntSize*aspect*0.6/2, fntSize*0.6/2)
+			batch.DrawUnit(*text)
+		}
 	}
 
 	//endregion
