@@ -16,6 +16,7 @@ func initGameplay() *gameplay {
 		ShowKeyOverlay:       true,
 		KeyOverlayScale:      1,
 		KeyOverlayOpacity:    1,
+		ProgressBar:          "Pie",
 	}
 }
 
@@ -35,4 +36,6 @@ type gameplay struct {
 	ShowKeyOverlay    bool
 	KeyOverlayScale   float64
 	KeyOverlayOpacity float64
+
+	ProgressBar string
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -77,6 +78,8 @@ type ScoreOverlay struct {
 	healthBackground *sprite.Sprite
 	healthBar        *sprite.Sprite
 	displayHp        float64
+
+	shapeRenderer *shape.Renderer
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -218,6 +221,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, bmath.Origin.TopLeft)
 	overlay.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
+
+	overlay.shapeRenderer = shape.NewRenderer()
 
 	return overlay
 }
@@ -374,6 +379,32 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
 
+	hObjects := overlay.ruleset.GetBeatMap().HitObjects
+
+	startTime := float64(hObjects[0].GetBasicData().StartTime)
+	endTime := float64(hObjects[len(hObjects)-1].GetBasicData().EndTime)
+	musicPos := 0.0
+	if overlay.music != nil {
+		musicPos = overlay.music.GetPosition() * 1000
+	}
+
+	progress := math.Min(1.0, math.Max(0.0, (musicPos-startTime)/(endTime-startTime)))
+
+	if scoreAlpha := settings.Gameplay.ScoreOpacity; scoreAlpha > 0.001 && settings.Gameplay.ShowScore && settings.Gameplay.ProgressBar == "Pie" {
+		scoreScale := settings.Gameplay.ScoreScale
+		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
+
+		rightOffset := -7.0
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
+		vAccOffset := 4.0
+
+		overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
+		overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
+		overlay.shapeRenderer.Begin()
+		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.625/2)), 16, 40, float32(progress))
+		overlay.shapeRenderer.End()
+	}
+
 	overlay.healthBackground.Draw(overlay.lastTime, batch)
 	overlay.healthBar.Draw(overlay.lastTime, batch)
 
@@ -399,34 +430,36 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		batch.ResetTransform()
 
 		scoreScale := settings.Gameplay.ScoreScale
-		fntSize := overlay.scoreFont.GetSize() * scoreScale
+		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
-		hObjects := overlay.ruleset.GetBeatMap().HitObjects
+		rightOffset := -7.0
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
+		vAccOffset := 4.0
 
-		startTime := float64(hObjects[0].GetBasicData().StartTime)
-		endTime := float64(hObjects[len(hObjects)-1].GetBasicData().EndTime)
-		musicPos := 0.0
-		if overlay.music != nil {
-			musicPos = overlay.music.GetPosition() * 1000
+		if settings.Gameplay.ProgressBar == "Pie" {
+			text := skin.GetTextureSource("circularmetre", skin.LOCAL)
+
+			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.625/2))
+			batch.DrawTexture(*text)
+
+			accOffset -= 44.8
+		} else {
+			batch.SetColor(0.2, 0.6, 0.2, alpha*0.8*scoreAlpha)
+
+			batch.SetSubScale(272*progress*scoreScale/2, 2.5*scoreScale)
+			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-12-272+progress*272/2)*scoreScale, fntSize))
+			batch.DrawUnit(graphics.Pixel.GetRegion())
 		}
-
-		progress := math.Min(1.0, math.Max(0.0, (musicPos-startTime)/(endTime-startTime)))
-		//log.Println(progress)
-		batch.SetColor(0.2, 0.6, 0.2, alpha*0.8*scoreAlpha)
-
-		batch.SetSubScale(100*progress*scoreScale, 3*scoreScale)
-		batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-5-200+progress*100)*scoreScale, fntSize))
-		batch.DrawUnit(graphics.Pixel.GetRegion())
 
 		batch.ResetTransform()
 		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
 		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
 
 		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
-		accText := fmt.Sprintf("%0.2f%%", acc)
-		overlay.scoreFont.Draw(batch, overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, accText), fntSize+fntSize*0.6/2, fntSize*0.6, accText)
+		accText := fmt.Sprintf("%5.2f%%", acc)
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, accText), fntSize+vAccOffset+fntSize*0.625/2, fntSize*0.6, accText)
 
 		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
 			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
@@ -435,7 +468,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 			aspect := float64(text.Width) / float64(text.Height)
 
-			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth-overlay.scoreFont.GetWidth(fntSize*0.6, "100.00%")-aspect/2*fntSize*0.6, fntSize+fntSize*0.6/2))
+			batch.SetTranslation(vector.NewVec2d(accOffset-aspect/2*fntSize*0.6, fntSize+vAccOffset+fntSize*0.625/2))
 			batch.SetSubScale(fntSize*aspect*0.6/2, fntSize*0.6/2)
 			batch.DrawUnit(*text)
 		}
