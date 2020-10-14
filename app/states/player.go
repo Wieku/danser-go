@@ -269,7 +269,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 	player.playersGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
-	player.hudGlider.AddEvent(tmE, tmE+1000, 0.0)
+	player.hudGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
 	player.epiGlider = animation.NewGlider(0)
 
@@ -669,9 +669,11 @@ func (pl *Player) Draw(float64) {
 		pl.batch.SetColor(1, 1, 1, 1)
 		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
 
-		for j := 0; j < settings.DIVIDES; j++ {
-			pl.batch.SetCamera(cameras[j])
-			pl.followpoints.Draw(pl.progressMs, pl.batch)
+		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
+			for j := 0; j < settings.DIVIDES; j++ {
+				pl.batch.SetCamera(cameras[j])
+				pl.followpoints.Draw(pl.progressMs, pl.batch)
+			}
 		}
 
 		pl.batch.Flush()
