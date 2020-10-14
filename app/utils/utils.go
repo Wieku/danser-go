@@ -1,106 +1,49 @@
 package utils
 
-// #cgo LDFLAGS: -lm -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
-// #define STB_IMAGE_IMPLEMENTATION
-// #define STBI_FAILURE_USERMSG
-// #include "stb_image.h"
-import "C"
-
 import (
 	"archive/zip"
-	"errors"
 	"fmt"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	_ "golang.org/x/image/bmp"
-	"image"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"unsafe"
 )
-
-func LoadFile(f *os.File) (*image.RGBA, error) {
-	bytes, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	var x, y C.int
-	data := C.stbi_load_from_memory((*C.stbi_uc)(&bytes[0]), C.int(len(bytes)), &x, &y, nil, 4)
-
-	if data == nil {
-		msg := C.GoString(C.stbi_failure_reason())
-		return nil, errors.New(msg)
-	}
-
-	defer C.stbi_image_free(unsafe.Pointer(data))
-
-	return &image.RGBA{
-		Pix:    C.GoBytes(unsafe.Pointer(data), y*x*4),
-		Stride: 4,
-		Rect:   image.Rect(0, 0, int(x), int(y)),
-	}, nil
-}
-
-func LoadImage(path string) (*image.RGBA, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	rgba, err := LoadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return rgba, nil
-}
-
-func LoadImageN(path string) (*image.NRGBA, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	rgba, err := LoadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return &image.NRGBA{
-		Pix:    rgba.Pix,
-		Stride: rgba.Stride,
-		Rect:   rgba.Bounds(),
-	}, nil
-}
 
 func LoadTexture(path string) (*texture.TextureSingle, error) {
 	log.Println("Loading texture:", path)
-	img, err := LoadImage(path)
+
+	img, err := texture.NewPixmapFileString(path)
+
 	if err == nil {
-		log.Println("Loading texture:", path)
-		tex := texture.LoadTextureSingle(img, 4)
+		defer img.Dispose()
+
+		tex := texture.NewTextureSingle(img.Width, img.Height, 0)
+		tex.Bind(0)
+		tex.SetData(0, 0, img.Width, img.Height, img.Data)
 
 		return tex, nil
 	}
+
 	log.Println("Failed to read a texture: ", err)
+
 	return nil, err
 }
 
 func LoadTextureToAtlas(atlas *texture.TextureAtlas, path string) (*texture.TextureRegion, error) {
 	log.Println("Loading texture into atlas:", path)
-	img, err := LoadImage(path)
+
+	img, err := texture.NewPixmapFileString(path)
+
 	if err == nil {
-		return atlas.AddTexture(path, img.Bounds().Dx(), img.Bounds().Dy(), img.Pix), nil
+		defer img.Dispose()
+		return atlas.AddTexture(path, img.Width, img.Height, img.Data), nil
 	}
+
 	log.Println("Failed to read a texture: ", err)
+
 	return nil, err
 }
 

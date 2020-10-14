@@ -20,6 +20,7 @@ import (
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -189,11 +190,18 @@ func run() {
 
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 		input.Win = win
-		icon, _ := utils.LoadImageN("assets/textures/dansercoin.png")
-		icon2, _ := utils.LoadImageN("assets/textures/dansercoin48.png")
-		icon3, _ := utils.LoadImageN("assets/textures/dansercoin24.png")
-		icon4, _ := utils.LoadImageN("assets/textures/dansercoin16.png")
-		win.SetIcon([]image.Image{icon, icon2, icon3, icon4})
+
+		icon, _ := texture.NewPixmapFileString("assets/textures/dansercoin.png")
+		icon2, _ := texture.NewPixmapFileString("assets/textures/dansercoin48.png")
+		icon3, _ := texture.NewPixmapFileString("assets/textures/dansercoin24.png")
+		icon4, _ := texture.NewPixmapFileString("assets/textures/dansercoin16.png")
+
+		win.SetIcon([]image.Image{icon.NRGBA(), icon2.NRGBA(), icon3.NRGBA(), icon4.NRGBA()})
+
+		icon.Dispose()
+		icon2.Dispose()
+		icon3.Dispose()
+		icon4.Dispose()
 
 		win.MakeContextCurrent()
 		log.Println("GLFW initialized!")

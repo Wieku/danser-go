@@ -4,7 +4,6 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
@@ -256,18 +255,18 @@ func loadTexture(name string) *texture.TextureRegion {
 
 	var region *texture.TextureRegion
 
-	image, err := utils.LoadImage(x2Name)
+	image, err := texture.NewPixmapFileString(x2Name)
 	if err != nil {
-		image, err = utils.LoadImage(name)
+		image, err = texture.NewPixmapFileString(name)
 		if err == nil {
 			region = &texture.TextureRegion{}
-			region.Width = int32(image.Bounds().Dx())
-			region.Height = int32(image.Bounds().Dy())
+			region.Width = int32(image.Width)
+			region.Height = int32(image.Height)
 		}
 	} else {
 		region = &texture.TextureRegion{}
-		region.Width = int32(image.Bounds().Dx() / 2)
-		region.Height = int32(image.Bounds().Dy() / 2)
+		region.Width = int32(image.Width / 2)
+		region.Height = int32(image.Height / 2)
 	}
 
 	if region != nil {
@@ -277,21 +276,23 @@ func loadTexture(name string) *texture.TextureRegion {
 
 			var rg *texture.TextureRegion
 
-			if image.Bounds().Dx() <= 1000 && image.Bounds().Dy() <= 1000 {
-				rg = atlas.AddTexture(name, image.Bounds().Dx(), image.Bounds().Dy(), image.Pix)
+			if image.Width <= 1000 && image.Height <= 1000 {
+				rg = atlas.AddTexture(name, image.Width, image.Height, image.Data)
 			}
 
 			// If texture is too big load it separately
 			if rg == nil {
-				tx := texture.NewTextureSingle(image.Bounds().Dx(), image.Bounds().Dy(), 0)
+				tx := texture.NewTextureSingle(image.Width, image.Height, 0)
 				tx.Bind(0)
-				tx.SetData(0, 0, image.Bounds().Dx(), image.Bounds().Dy(), image.Pix)
+				tx.SetData(0, 0, image.Width, image.Height, image.Data)
 				reg := tx.GetRegion()
 
 				singleTextures[name] = tx
 
 				rg = &reg
 			}
+
+			image.Dispose()
 
 			region.Texture = rg.Texture
 			region.Layer = rg.Layer

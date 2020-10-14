@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -235,20 +235,34 @@ func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureReg
 	var texture1 *texture.TextureRegion
 
 	if texture1 = storyboard.textures[image]; texture1 == nil {
-		nrgba, err := utils.LoadImage("assets/default-skin" + string(os.PathSeparator) + image)
-		if err != nil {
-			nrgba, err = utils.LoadImage(path + string(os.PathSeparator) + image)
-		}
-
-		if err != nil {
-			log.Println(err)
-		} else {
-			if storyboard.atlas == nil {
-				storyboard.atlas = texture.NewTextureAtlas(8192, 0)
-				storyboard.atlas.Bind(17)
-			}
-			texture1 = storyboard.atlas.AddTexture(image, nrgba.Bounds().Dx(), nrgba.Bounds().Dy(), nrgba.Pix)
+		if texture1 = skin.GetTexture(strings.TrimSuffix(image, filepath.Ext(image))); texture1 != nil {
 			storyboard.textures[image] = texture1
+		} else {
+			img, err := texture.NewPixmapFileString(path + string(os.PathSeparator) + image)
+
+			if err == nil {
+
+				if img.Width > 512 || img.Height > 512 {
+					tex := texture.NewTextureSingle(img.Width, img.Height, 0)
+					tex.Bind(0)
+					tex.SetData(0, 0, img.Width, img.Height, img.Data)
+					rg := tex.GetRegion()
+					texture1 = &rg
+				} else {
+					if storyboard.atlas == nil {
+						storyboard.atlas = texture.NewTextureAtlas(4096, 0)
+						storyboard.atlas.Bind(17)
+					}
+
+					texture1 = storyboard.atlas.AddTexture(image, img.Width, img.Height, img.Data)
+				}
+
+				img.Dispose()
+
+				storyboard.textures[image] = texture1
+			} else {
+				log.Println(err)
+			}
 		}
 	}
 

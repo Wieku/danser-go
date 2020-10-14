@@ -56,12 +56,12 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 		}
 	}
 
-	imag, err := utils.LoadImage(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+	imag, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 
 	newCol := make([]bmath.Color, 0)
 
 	if err == nil {
-		cItems, _ := prominentcolor.KmeansWithAll(5, imag, prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
+		cItems, _ := prominentcolor.KmeansWithAll(5, imag.NRGBA(), prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
 		newCol = make([]bmath.Color, len(cItems))
 
 		for i := 0; i < len(cItems); i++ {
