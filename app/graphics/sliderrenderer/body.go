@@ -49,7 +49,10 @@ func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
 	body.previousStart = -1
 
 	body.setupPoints(curve)
-	body.setupVAO()
+
+	if len(body.points) > 0 {
+		body.setupVAO()
+	}
 
 	return body
 }
@@ -116,6 +119,10 @@ func (body *Body) setupVAO() {
 }
 
 func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
+	if len(body.points) == 0 {
+		return
+	}
+
 	body.ensureFBO(baseProjView)
 
 	// Don't render to nonexistent framebuffer
@@ -169,7 +176,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 }
 
 func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset vector.Vector2f, scale float32, bodyInner, bodyOuter, borderInner, borderOuter mgl32.Vec4) {
-	if body.framebuffer == nil || body.disposed {
+	if body.framebuffer == nil || body.disposed || len(body.points) == 0 {
 		return
 	}
 
@@ -256,7 +263,7 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 }
 
 func (body *Body) Dispose() {
-	if body.disposed {
+	if body.disposed || body.framebuffer == nil {
 		return
 	}
 
