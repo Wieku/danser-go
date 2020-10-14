@@ -20,7 +20,6 @@ uniform sampler2DArray tex;
 uniform float cutoff;
 
 in vec2 tex_coord;
-//in float depth;
 
 out vec4 color;
 
@@ -45,7 +44,7 @@ void main()
     vec4 bodyColorOuter = col_body1;
     vec4 bodyColorInner = col_body;
 
-    float borderWidthScaled = borderWidth < 0 ? borderWidth * baseBorderWidth : (borderWidth - 1.0f) * slope + baseBorderWidth;
+    float borderWidthScaled = borderWidth < 1.0f ? borderWidth * baseBorderWidth : (borderWidth - 1.0f) * slope + baseBorderWidth;
     float borderMid = borderStart + borderWidthScaled / 2;
     float borderEnd = borderStart + borderWidthScaled;
 
