@@ -17,6 +17,22 @@ func initGameplay() *gameplay {
 		KeyOverlayScale:      1,
 		KeyOverlayOpacity:    1,
 		ProgressBar:          "Pie",
+		Boundaries: &boundaries{
+			Enabled:         true,
+			BorderThickness: 1,
+			BorderColor: &hsv{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			BorderOpacity: 1,
+			BackgroundColor: &hsv{
+				Hue:        0,
+				Saturation: 1,
+				Value:      0,
+			},
+			BackgroundOpacity: 0.5,
+		},
 	}
 }
 
@@ -38,4 +54,18 @@ type gameplay struct {
 	KeyOverlayOpacity float64
 
 	ProgressBar string
+
+	Boundaries *boundaries
+}
+
+type boundaries struct {
+	Enabled bool
+
+	BorderThickness float64
+
+	BorderColor   *hsv
+	BorderOpacity float64
+
+	BackgroundColor   *hsv
+	BackgroundOpacity float64
 }

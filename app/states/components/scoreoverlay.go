@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
@@ -326,30 +327,40 @@ func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 }
 
 func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
-	alpha *= overlay.bgDim.GetValue()
-	cs := overlay.ruleset.GetBeatMap().Diff.CircleRadius
-	sizeX := 512 + (cs+0.3)*2
-	sizeY := 384 + (cs+0.3)*2
+	if settings.Gameplay.Boundaries.Enabled {
+		thickness := float32(settings.Gameplay.Boundaries.BorderThickness)
+		alpha *= overlay.bgDim.GetValue()
+		cs := float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius)
 
-	//batch.SetScale(sizeX/2, sizeY/2)
-	//batch.SetColor(0, 0, 0, 0.8*alpha)
-	//batch.SetTranslation(vector.NewVec2d(256, 192)) //bg
-	//batch.DrawUnit(graphics.Pixel.GetRegion())
+		p1 := vector.NewVec2f(-cs, -cs)
+		p2 := vector.NewVec2f(512.0+cs, -cs)
+		p3 := vector.NewVec2f(512.0+cs, 384.0+cs)
+		p4 := vector.NewVec2f(-cs, 384.0+cs)
 
-	batch.SetColor(1, 1, 1, alpha)
-	batch.SetScale(sizeX/2, 0.3)
-	batch.SetTranslation(vector.NewVec2d(256, -cs)) //top line
-	batch.DrawUnit(graphics.Pixel.GetRegion())
+		overlay.shapeRenderer.SetCamera(batch.Projection)
+		overlay.shapeRenderer.Begin()
 
-	batch.SetTranslation(vector.NewVec2d(256, 384+cs)) //bottom line
-	batch.DrawUnit(graphics.Pixel.GetRegion())
+		if bAlpha := settings.Gameplay.Boundaries.BackgroundOpacity; bAlpha > 0.001 {
+			colHSV := settings.Gameplay.Boundaries.BackgroundColor
+			r, g, b := color.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
+			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
 
-	batch.SetScale(0.3, sizeY/2)
-	batch.SetTranslation(vector.NewVec2d(-cs, 192)) //left line
-	batch.DrawUnit(graphics.Pixel.GetRegion())
-	batch.SetTranslation(vector.NewVec2d(512+cs, 192)) //right line
-	batch.DrawUnit(graphics.Pixel.GetRegion())
-	batch.SetScale(1, 1)
+			overlay.shapeRenderer.DrawQuad(p1, p2, p3, p4)
+		}
+
+		if bAlpha := settings.Gameplay.Boundaries.BorderOpacity; bAlpha > 0.001 {
+			colHSV := settings.Gameplay.Boundaries.BorderColor
+			r, g, b := color.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
+			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
+
+			overlay.shapeRenderer.DrawLine(p1, p2, thickness)
+			overlay.shapeRenderer.DrawLine(p2, p3, thickness)
+			overlay.shapeRenderer.DrawLine(p3, p4, thickness)
+			overlay.shapeRenderer.DrawLine(p4, p1, thickness)
+		}
+
+		overlay.shapeRenderer.End()
+	}
 }
 
 func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
