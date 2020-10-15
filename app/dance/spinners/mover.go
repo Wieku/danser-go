@@ -22,6 +22,8 @@ func GetMoverByName(name string) SpinnerMover {
 		return NewTriangleMover()
 	case "square":
 		return NewSquareMover()
+	case "cube":
+		return NewCubeMover()
 	default:
 		return NewCircleMover()
 	}
