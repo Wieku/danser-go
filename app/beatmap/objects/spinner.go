@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
+	"math/rand"
 	"strconv"
 )
 
@@ -331,7 +332,13 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 
 		spinner.glow.SetAlpha(math.Min(1.0, completion))
 	} else if spinner.metre != nil {
-		spinner.metre.SetCutY(1.0 - math.Floor(math.Min(1.0, completion)*10)/10)
+		bars := int(math.Min(0.99, completion) * 10)
+
+		if skin.GetInfo().SpinnerNoBlink || rand.Float64() < math.Mod(completion*10, 1) {
+			bars++
+		}
+
+		spinner.metre.SetCutY(1.0 - float64(bars)/10)
 	}
 }
 
