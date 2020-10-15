@@ -356,7 +356,7 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, 
 	a := color.W() * batch.color.W()
 
 	add := float32(1)
-	if additive {
+	if additive || batch.additive {
 		add = 0
 	}
 
