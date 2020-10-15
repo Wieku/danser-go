@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -25,6 +26,8 @@ type Circle struct {
 
 	textFade *animation.Glider
 
+	hitCircleTexture *texture.TextureRegion
+	fullTexture      *texture.TextureRegion
 	hitCircle        *sprite.Sprite
 	hitCircleOverlay *sprite.Sprite
 	approachCircle   *sprite.Sprite
@@ -152,7 +155,10 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		name = defaultCircleName + "circle"
 	}
 
-	circle.hitCircle = sprite.NewSpriteSingle(skin.GetTexture(name), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	circle.hitCircleTexture = skin.GetTexture(name)
+	circle.fullTexture = skin.GetTexture("hitcircle-full")
+
+	circle.hitCircle = sprite.NewSpriteSingle(circle.hitCircleTexture, 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 	circle.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTextureSource(name+"overlay", skin.GetSource(name)), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 	circle.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
 	circle.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
@@ -267,6 +273,9 @@ func (circle *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	alpha := 1.0
 	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
 		alpha *= settings.Objects.MandalaTexturesAlpha
+		circle.hitCircle.Textures[0] = circle.fullTexture
+	} else {
+		circle.hitCircle.Textures[0] = circle.hitCircleTexture
 	}
 
 	batch.SetColor(1, 1, 1, alpha)
