@@ -238,6 +238,54 @@ func (renderer *Renderer) DrawLine(position1 vector.Vector2f, position2 vector.V
 	}
 }
 
+func (renderer *Renderer) DrawQuad(p1, p2, p3, p4 vector.Vector2f) {
+	add := float32(1)
+	if renderer.additive {
+		add = 0
+	}
+
+	colorPacked := renderer.color.PackFloat()
+
+	floats := renderer.currentFloats
+
+	renderer.vertices[floats] = p1.X
+	renderer.vertices[floats+1] = p1.Y
+	renderer.vertices[floats+2] = colorPacked
+	renderer.vertices[floats+3] = add
+
+	renderer.vertices[floats+4] = p2.X
+	renderer.vertices[floats+5] = p2.Y
+	renderer.vertices[floats+6] = colorPacked
+	renderer.vertices[floats+7] = add
+
+	renderer.vertices[floats+8] = p3.X
+	renderer.vertices[floats+9] = p3.Y
+	renderer.vertices[floats+10] = colorPacked
+	renderer.vertices[floats+11] = add
+
+	renderer.vertices[floats+12] = p3.X
+	renderer.vertices[floats+13] = p3.Y
+	renderer.vertices[floats+14] = colorPacked
+	renderer.vertices[floats+15] = add
+
+	renderer.vertices[floats+16] = p4.X
+	renderer.vertices[floats+17] = p4.Y
+	renderer.vertices[floats+18] = colorPacked
+	renderer.vertices[floats+19] = add
+
+	renderer.vertices[floats+20] = p1.X
+	renderer.vertices[floats+21] = p1.Y
+	renderer.vertices[floats+22] = colorPacked
+	renderer.vertices[floats+23] = add
+
+	renderer.currentFloats += 24
+	renderer.currentSize += 6
+
+	if renderer.currentSize >= renderer.maxSprites*3 {
+		renderer.Flush()
+	}
+}
+
 func (renderer *Renderer) DrawCircle(position vector.Vector2f, radius float32) {
 	renderer.DrawCircleProgress(position, radius, 1.0)
 }
@@ -260,7 +308,7 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 		add = 0
 	}
 
-	color := renderer.color.PackFloat()
+	colorPacked := renderer.color.PackFloat()
 
 	partRadius := 2 * math32.Pi / float32(sections)
 	targetRadius := 2 * math32.Pi * progress
@@ -273,12 +321,12 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 	for r := float32(0.0); r < targetRadius; r += partRadius {
 		renderer.vertices[floats] = position.X
 		renderer.vertices[floats+1] = position.Y
-		renderer.vertices[floats+2] = color
+		renderer.vertices[floats+2] = colorPacked
 		renderer.vertices[floats+3] = add
 
 		renderer.vertices[floats+4] = cx*radius + position.X
 		renderer.vertices[floats+5] = cy*radius + position.Y
-		renderer.vertices[floats+6] = color
+		renderer.vertices[floats+6] = colorPacked
 		renderer.vertices[floats+7] = add
 
 		rads := math32.Min(targetRadius, r+partRadius) - math32.Pi/2
@@ -288,7 +336,7 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 
 		renderer.vertices[floats+8] = cx*radius + position.X
 		renderer.vertices[floats+9] = cy*radius + position.Y
-		renderer.vertices[floats+10] = color
+		renderer.vertices[floats+10] = colorPacked
 		renderer.vertices[floats+11] = add
 
 		renderer.currentSize += 3
