@@ -200,6 +200,10 @@ func (renderer *Renderer) DrawLine(position1, position2 vector.Vector2f, thickne
 }
 
 func (renderer *Renderer) DrawQuad(p1, p2, p3, p4 vector.Vector2f) {
+	if renderer.color.A < 0.001 {
+		return
+	}
+
 	add := float32(1)
 	if renderer.additive {
 		add = 0
@@ -260,7 +264,7 @@ func (renderer *Renderer) DrawCircleProgress(position vector.Vector2f, radius fl
 }
 
 func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius float32, sections int, progress float32) {
-	if progress < 0.001 {
+	if progress < 0.001 || renderer.color.A < 0.001 {
 		return
 	}
 
