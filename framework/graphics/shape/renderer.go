@@ -179,6 +179,65 @@ func (renderer *Renderer) SetAdditive(additive bool) {
 	renderer.additive = additive
 }
 
+func (renderer *Renderer) DrawLine(position1 vector.Vector2f, position2 vector.Vector2f, thickness float32) {
+	if thickness < 0.001 {
+		return
+	}
+
+	add := float32(1)
+	if renderer.additive {
+		add = 0
+	}
+
+	color := renderer.color.PackFloat()
+
+	thickHalf := thickness / 2
+
+	angle := position1.AngleRV(position2)
+
+	offset1 := vector.NewVec2fRad(angle+math32.Pi/2, thickHalf)
+	offset2 := vector.NewVec2fRad(angle-math32.Pi/2, thickHalf)
+
+	floats := renderer.currentFloats
+
+	renderer.vertices[floats] = position1.X + offset1.X
+	renderer.vertices[floats+1] = position1.Y + offset1.Y
+	renderer.vertices[floats+2] = color
+	renderer.vertices[floats+3] = add
+
+	renderer.vertices[floats+4] = position1.X + offset2.X
+	renderer.vertices[floats+5] = position1.Y + offset2.Y
+	renderer.vertices[floats+6] = color
+	renderer.vertices[floats+7] = add
+
+	renderer.vertices[floats+8] = position2.X + offset2.X
+	renderer.vertices[floats+9] = position2.Y + offset2.Y
+	renderer.vertices[floats+10] = color
+	renderer.vertices[floats+11] = add
+
+	renderer.vertices[floats+12] = position2.X + offset2.X
+	renderer.vertices[floats+13] = position2.Y + offset2.Y
+	renderer.vertices[floats+14] = color
+	renderer.vertices[floats+15] = add
+
+	renderer.vertices[floats+16] = position2.X + offset1.X
+	renderer.vertices[floats+17] = position2.Y + offset1.Y
+	renderer.vertices[floats+18] = color
+	renderer.vertices[floats+19] = add
+
+	renderer.vertices[floats+20] = position1.X + offset1.X
+	renderer.vertices[floats+21] = position1.Y + offset1.Y
+	renderer.vertices[floats+22] = color
+	renderer.vertices[floats+23] = add
+
+	renderer.currentFloats += 24
+	renderer.currentSize += 6
+
+	if renderer.currentSize >= renderer.maxSprites*3 {
+		renderer.Flush()
+	}
+}
+
 func (renderer *Renderer) DrawCircle(position vector.Vector2f, radius float32) {
 	renderer.DrawCircleProgress(position, radius, 1.0)
 }
