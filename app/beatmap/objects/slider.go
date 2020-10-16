@@ -728,7 +728,7 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
 		if time < slider.objData.EndTime {
 			if settings.Objects.DrawScorePoints {
-				shifted := utils.GetColorShifted(color, settings.Objects.FollowPointColorOffset)
+				shifted := utils.GetColorShifted(color, settings.Objects.ScorePointColorOffset)
 
 				scorePoint := skin.GetTexture("sliderscorepoint")
 
