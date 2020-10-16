@@ -35,8 +35,8 @@ func initObjects() *objects {
 		SliderSnakeOut:                true,
 		SliderMerge:                   true,
 		SliderDistortions:             true,
-		DrawFollowPoints:              true,
-		WhiteFollowPoints:             true,
+		DrawScorePoints:               true,
+		WhiteScorePoints:              true,
 		FollowPointColorOffset:        0.0,
 		EnableCustomSliderBorderColor: false,
 		CustomSliderBorderColor: &color{
@@ -78,8 +78,8 @@ type objects struct {
 	SliderSnakeOut                         bool
 	SliderMerge                            bool
 	SliderDistortions                      bool    //true, osu!stable slider distortions on aspire maps
-	DrawFollowPoints                       bool    //true
-	WhiteFollowPoints                      bool    //true
+	DrawScorePoints                        bool    //true
+	WhiteScorePoints                       bool    //true
 	FollowPointColorOffset                 float64 //0.0, hue offset of the followpoint
 	EnableCustomSliderBorderColor          bool
 	CustomSliderBorderColor                *color
