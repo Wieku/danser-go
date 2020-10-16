@@ -405,14 +405,14 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		scoreScale := settings.Gameplay.ScoreScale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
-		rightOffset := -7.0
+		rightOffset := -9.6
 		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
-		vAccOffset := 4.0
+		vAccOffset := 4.8
 
 		overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
 		overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
 		overlay.shapeRenderer.Begin()
-		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.625/2)), 16, 40, float32(progress))
+		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16, 40, float32(progress))
 		overlay.shapeRenderer.End()
 	}
 
@@ -442,15 +442,14 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 		scoreScale := settings.Gameplay.ScoreScale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
-
-		rightOffset := -7.0
+		rightOffset := -9.6
 		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
-		vAccOffset := 4.0
+		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
 			text := skin.GetTextureSource("circularmetre", skin.LOCAL)
 
-			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.625/2))
+			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
 			batch.DrawTexture(*text)
 
 			accOffset -= 44.8
@@ -466,11 +465,18 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
 		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText)+skin.GetInfo().ScoreOverlap, fntSize/2, fntSize, scoreText)
 
 		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
-		accText := fmt.Sprintf("%5.2f%%", acc)
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, accText), fntSize+vAccOffset+fntSize*0.625/2, fntSize*0.6, accText)
+
+		var accText string
+		if acc == 100 {
+			accText = fmt.Sprintf("%5.1f%%", acc)
+		} else {
+			accText = fmt.Sprintf("%5.2f%%", acc)
+		}
+
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, accText)+skin.GetInfo().ScoreOverlap*0.6, fntSize+vAccOffset+fntSize*0.6/2, fntSize*0.6, accText)
 
 		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
 			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
@@ -479,7 +485,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.V
 
 			aspect := float64(text.Width) / float64(text.Height)
 
-			batch.SetTranslation(vector.NewVec2d(accOffset-aspect/2*fntSize*0.6, fntSize+vAccOffset+fntSize*0.625/2))
+			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
 			batch.SetSubScale(fntSize*aspect*0.6/2, fntSize*0.6/2)
 			batch.DrawUnit(*text)
 		}
