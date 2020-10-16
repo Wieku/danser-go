@@ -1,6 +1,6 @@
 package texture
 
-// #cgo LDFLAGS: -lm -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
+// #cgo LDFLAGS: -lm
 // #define STB_IMAGE_IMPLEMENTATION
 // #define STBI_FAILURE_USERMSG
 // #include "stb_image.h"
