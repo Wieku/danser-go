@@ -1,7 +1,7 @@
 package bass
 
 /*
-#include "bass_util.hpp"
+#include "bass_util.h"
 #include "bass.h"
 #include "bass_fx.h"
 */
