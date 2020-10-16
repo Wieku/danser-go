@@ -11,6 +11,7 @@ func initObjects() *objects {
 		DrawComboNumbers:       true,
 		DrawReverseArrows:      true,
 		DrawSliderFollowCircle: true,
+		DrawFollowPoints:       true,
 		LoadSpinners:           false,
 		Colors: &color{
 			EnableRainbow: true,
@@ -66,6 +67,7 @@ type objects struct {
 	DrawComboNumbers                       bool
 	DrawReverseArrows                      bool
 	DrawSliderFollowCircle                 bool
+	DrawFollowPoints                       bool
 	LoadSpinners                           bool
 	Colors                                 *color
 	UseComboColors                         bool

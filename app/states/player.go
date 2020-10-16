@@ -669,13 +669,12 @@ func (pl *Player) Draw(float64) {
 	}
 
 	if settings.Playfield.DrawObjects {
-
 		pl.batch.Begin()
 		pl.batch.ResetTransform()
 		pl.batch.SetColor(1, 1, 1, 1)
 		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
 
-		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
+		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawFollowPoints {
 			for j := 0; j < settings.DIVIDES; j++ {
 				pl.batch.SetCamera(cameras[j])
 				pl.followpoints.Draw(pl.progressMs, pl.batch)
