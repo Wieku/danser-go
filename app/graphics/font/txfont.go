@@ -66,8 +66,8 @@ func LoadTextureFontMap2(chars map[rune]*texture.TextureRegion, overlap float64)
 	font := new(Font)
 
 	font.glyphs = make(map[rune]*glyphData)
-	font.kernTable = make(map[rune]map[rune]float64)
-	font.kernMonospaced = true
+	font.overlap = overlap
+
 	for c, r := range chars {
 		if r == nil {
 			continue
@@ -82,19 +82,6 @@ func LoadTextureFontMap2(chars map[rune]*texture.TextureRegion, overlap float64)
 		if unicode.IsDigit(c) {
 			font.biggest = math.Max(font.biggest, float64(r.Width))
 		}
-
-		for c2, r2 := range chars {
-			if r2 == nil {
-				continue
-			}
-
-			if font.kernTable[c] == nil {
-				font.kernTable[c] = make(map[rune]float64)
-			}
-
-			font.kernTable[c][c2] = -overlap
-		}
-
 	}
 
 	return font

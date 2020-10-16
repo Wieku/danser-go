@@ -32,13 +32,13 @@ type glyphData struct {
 }
 
 type Font struct {
-	atlas          *texture.TextureAtlas
-	glyphs         map[rune]*glyphData
-	initialSize    float64
-	lineDist       float64
-	kernTable      map[rune]map[rune]float64
-	biggest        float64
-	kernMonospaced bool
+	atlas       *texture.TextureAtlas
+	glyphs      map[rune]*glyphData
+	initialSize float64
+	lineDist    float64
+	kernTable   map[rune]map[rune]float64
+	biggest     float64
+	overlap     float64
 }
 
 func LoadFont(reader io.Reader) *Font {
@@ -166,8 +166,12 @@ func (font *Font) drawInternal(renderer *sprite.SpriteBatch, x, y float64, size 
 			continue
 		}
 
-		if i > 0 && font.kernTable != nil && (font.kernMonospaced || !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1]))))) {
+		if i > 0 && font.kernTable != nil && !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1])))) {
 			advance += font.kernTable[rune(text[i-1])][c] * scale * renderer.GetScale().X
+		}
+
+		if i > 0 || monospaced {
+			advance -= font.overlap * scale * renderer.GetScale().X
 		}
 
 		renderer.SetSubScale(scale, scale)
@@ -218,8 +222,12 @@ func (font *Font) getWidthInternal(size float64, text string, monospaced bool) f
 			continue
 		}
 
-		if i > 0 && font.kernTable != nil && (font.kernMonospaced || !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1]))))) {
-			advance += font.kernTable[rune(text[i-1])][c] * scale
+		if i > 0 && font.kernTable != nil && !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1])))) {
+			advance += font.kernTable[rune(text[i-1])][c]
+		}
+
+		if i > 0 || monospaced {
+			advance -= font.overlap
 		}
 
 		xAdv := char.advance
@@ -228,10 +236,10 @@ func (font *Font) getWidthInternal(size float64, text string, monospaced bool) f
 			xAdv = font.biggest
 		}
 
-		advance += scale * xAdv
+		advance += xAdv
 	}
 
-	return advance
+	return advance * scale
 }
 
 func (font *Font) GetWidth(size float64, text string) float64 {
