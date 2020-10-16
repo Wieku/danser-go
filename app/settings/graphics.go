@@ -10,9 +10,9 @@ func initGraphics() *graphics {
 		WindowHeight: 720,
 		Fullscreen:   true,
 		VSync:        false,
-		FPSCap:       1000,
-		MSAA:         4,
-		ShowFPS:      false,
+		FPSCap:       0,
+		MSAA:         0,
+		ShowFPS:      true,
 	}
 }
 
