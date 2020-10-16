@@ -143,7 +143,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.camera.Update()
 
 	player.camera1 = bmath.NewCamera()
-	player.camera1.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, false)
+
+	sbScale := 1.0
+	if settings.Playfield.ScaleStoryboardWithPlayfield {
+		sbScale = settings.Playfield.Scale
+	}
+
+	player.camera1.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), sbScale, false)
 	player.camera1.Update()
 
 	player.scamera = bmath.NewCamera()

@@ -4,13 +4,14 @@ var Playfield = initPlayfield()
 
 func initPlayfield() *playfield {
 	return &playfield{
-		DrawObjects: true,
-		DrawCursors: true,
-		Scale:       1,
-		OsuShift:    false,
-		LeadInTime:  5,
-		LeadInHold:  2,
-		FadeOutTime: 5,
+		DrawObjects:                  true,
+		DrawCursors:                  true,
+		Scale:                        1,
+		OsuShift:                     false,
+		ScaleStoryboardWithPlayfield: false,
+		LeadInTime:                   5,
+		LeadInHold:                   2,
+		FadeOutTime:                  5,
 		Seizure: &seizure{
 			Enabled:  true,
 			Duration: 5,
@@ -56,17 +57,18 @@ func initPlayfield() *playfield {
 }
 
 type playfield struct {
-	DrawObjects bool
-	DrawCursors bool
-	Scale       float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
-	OsuShift    bool    //false, offset the playfield like in osu!
-	LeadInTime  float64 //5
-	LeadInHold  float64 //2
-	FadeOutTime float64 //5
-	Seizure     *seizure
-	Background  *background
-	Logo        *logo
-	Bloom       *bloom
+	DrawObjects                  bool
+	DrawCursors                  bool
+	Scale                        float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
+	OsuShift                     bool    //false, offset the playfield like in osu!
+	ScaleStoryboardWithPlayfield bool
+	LeadInTime                   float64 //5
+	LeadInHold                   float64 //2
+	FadeOutTime                  float64 //5
+	Seizure                      *seizure
+	Background                   *background
+	Logo                         *logo
+	Bloom                        *bloom
 }
 
 type seizure struct {
