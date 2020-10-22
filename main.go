@@ -79,6 +79,8 @@ func run() {
 
 		play := flag.Bool("play", false, "Practice playing osu!standard maps")
 
+		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
+
 		flag.Parse()
 
 		closeAfterSettingsLoad := false
@@ -95,6 +97,7 @@ func run() {
 		settings.TAG = *tag
 		settings.SPEED = *speed
 		settings.PITCH = *pitch
+		settings.SKIP = *skip
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 

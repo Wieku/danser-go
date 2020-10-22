@@ -96,6 +96,9 @@ type Player struct {
 
 	followpoints *sprite.SpriteManager
 	hudGlider    *animation.Glider
+
+	volumeGlider *animation.Glider
+	startPoint   float64
 }
 
 type RenderableProxy struct {
@@ -240,6 +243,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
+	player.volumeGlider = animation.NewGlider(1.0)
 	player.hudGlider = animation.NewGlider(1.0)
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)
@@ -254,7 +258,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	tmS := float64(player.queue2[0].GetBasicData().StartTime)
 	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
 
-	startOffset := -settings.Playfield.LeadInHold*1000 - 1000
+	startOffset := 0.0
+
+	if settings.SKIP {
+		startOffset = tmS
+		player.startPoint = tmS - beatMap.Diff.Preempt
+		player.volumeGlider.SetValue(0.0)
+		player.volumeGlider.AddEvent(tmS-beatMap.Diff.Preempt, tmS-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+	}
+
+	startOffset += -settings.Playfield.LeadInHold*1000 - beatMap.Diff.Preempt
 
 	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
 	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
@@ -276,6 +289,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.playersGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
 	player.hudGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
+
+	player.volumeGlider.AddEvent(tmE, tmE+settings.Playfield.FadeOutTime*1000, 0.0)
 
 	player.epiGlider = animation.NewGlider(0)
 
@@ -320,6 +335,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, vector.NewVec2d(0, 0))
 	player.visualiser.SetTrack(musicPlayer)
 
+	player.profiler = frame.NewCounter()
+	player.musicPlayer = musicPlayer
+
+	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+	player.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+
 	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
 
 	player.profilerU = frame.NewCounter()
@@ -340,18 +361,23 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
 			}
 
-			if player.progressMsF >= 0 && !player.start {
+			if player.progressMsF >= player.startPoint && !player.start {
 				musicPlayer.Play()
 				musicPlayer.SetTempo(settings.SPEED)
 				musicPlayer.SetPitch(settings.PITCH)
+
 				if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
 					ov.SetMusic(musicPlayer)
 				}
-				//musicPlayer.SetPosition(60)
+
+				musicPlayer.SetPosition(player.startPoint / 1000)
+
 				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
+
 				if player.overlay == nil {
 					discord.UpdateDance(settings.TAG, settings.DIVIDES)
 				}
+
 				player.start = true
 			}
 
@@ -401,6 +427,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.hudGlider.Update(player.progressMsF)
 			player.unfold.Update(player.progressMsF)
 
+			player.volumeGlider.Update(player.progressMsF)
+			player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
+
 			lastT = currtime
 			limiter.Sync()
 		}
@@ -435,11 +464,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			time.Sleep(15 * time.Millisecond)
 		}
 	}()
-	player.profiler = frame.NewCounter()
-	player.musicPlayer = musicPlayer
-
-	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-	player.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	return player
 }
@@ -521,17 +545,6 @@ func (pl *Player) Draw(float64) {
 				break
 			}
 		}
-	}
-
-	if len(pl.bMap.Queue) == 0 {
-		pl.fadeOut -= timMs / (settings.Playfield.FadeOutTime * 1000)
-		pl.fadeOut = math.Max(0.0, pl.fadeOut)
-		pl.musicPlayer.SetVolumeRelative(pl.fadeOut)
-		pl.dimGlider.UpdateD(timMs)
-		pl.blurGlider.UpdateD(timMs)
-		pl.fxGlider.UpdateD(timMs)
-		pl.cursorGlider.UpdateD(timMs)
-		pl.playersGlider.UpdateD(timMs)
 	}
 
 	bgAlpha := pl.dimGlider.GetValue()
