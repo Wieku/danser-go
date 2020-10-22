@@ -319,7 +319,9 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 
 	spinner.completion = completion
 
-	bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*completion)))
+	if skin.GetInfo().SpinnerFrequencyModulate {
+		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*completion)))
+	}
 
 	scale := 0.8 + math.Min(1.0, completion)*0.2
 

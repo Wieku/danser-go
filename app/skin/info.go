@@ -20,8 +20,9 @@ type SkinInfo struct {
 
 	AnimationFramerate float64
 
-	SpinnerFadePlayfield bool
-	SpinnerNoBlink       bool
+	SpinnerFadePlayfield     bool
+	SpinnerNoBlink           bool
+	SpinnerFrequencyModulate bool
 
 	LayeredHitSounds bool
 
@@ -57,13 +58,14 @@ type SkinInfo struct {
 
 func newDefaultInfo() *SkinInfo {
 	return &SkinInfo{
-		Name:                 "",
-		Author:               "",
-		Version:              2.7,
-		AnimationFramerate:   -1,
-		SpinnerFadePlayfield: true,
-		SpinnerNoBlink:       false,
-		LayeredHitSounds:     true,
+		Name:                     "",
+		Author:                   "",
+		Version:                  2.7,
+		AnimationFramerate:       -1,
+		SpinnerFadePlayfield:     true,
+		SpinnerNoBlink:           false,
+		SpinnerFrequencyModulate: true,
+		LayeredHitSounds:         true,
 		ComboColors: []color.Color{
 			color.NewIRGB(255, 192, 0),
 			color.NewIRGB(0, 202, 0),
@@ -188,6 +190,8 @@ func LoadInfo(path string) (*SkinInfo, error) {
 			info.SpinnerFadePlayfield = tokenized[1] == "1"
 		case "SpinnerNoBlink":
 			info.SpinnerNoBlink = tokenized[1] == "1"
+		case "SpinnerFrequencyModulate":
+			info.SpinnerFrequencyModulate = tokenized[1] == "1"
 		case "LayeredHitSounds":
 			info.LayeredHitSounds = tokenized[1] == "1"
 		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
