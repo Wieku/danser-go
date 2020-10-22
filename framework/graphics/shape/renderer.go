@@ -179,6 +179,20 @@ func (renderer *Renderer) SetAdditive(additive bool) {
 	renderer.additive = additive
 }
 
+func (renderer *Renderer) DrawPixelV(position vector.Vector2f, size float32) {
+	renderer.DrawPixel(position.X, position.Y, size)
+}
+
+func (renderer *Renderer) DrawPixel(x, y, size float32) {
+	if size < 0.001 {
+		return
+	}
+
+	r := size / 2
+
+	renderer.DrawQuad(x-r, y-r, x-r, y+r, x+r, y+r, x+r, y-r)
+}
+
 func (renderer *Renderer) DrawLineV(position1, position2 vector.Vector2f, thickness float32) {
 	renderer.DrawLine(position1.X, position1.Y, position2.X, position2.Y, thickness)
 }
