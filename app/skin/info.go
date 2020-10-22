@@ -39,6 +39,7 @@ type SkinInfo struct {
 	SliderBallFlip      bool
 	SliderBorder        color.Color
 	SliderTrackOverride *color.Color
+	SliderBall          *color.Color
 
 	InputOverlayText color.Color
 
@@ -209,6 +210,9 @@ func LoadInfo(path string) (*SkinInfo, error) {
 		case "SliderTrackOverride":
 			col := ParseColor(tokenized[1], tokenized[0])
 			info.SliderTrackOverride = &col
+		case "SliderBall":
+			col := ParseColor(tokenized[1], tokenized[0])
+			info.SliderBall = &col
 		case "InputOverlayText":
 			info.InputOverlayText = ParseColor(tokenized[1], tokenized[0])
 		case "HitCirclePrefix":
