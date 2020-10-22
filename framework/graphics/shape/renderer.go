@@ -179,27 +179,33 @@ func (renderer *Renderer) SetAdditive(additive bool) {
 	renderer.additive = additive
 }
 
-func (renderer *Renderer) DrawLine(position1, position2 vector.Vector2f, thickness float32) {
+func (renderer *Renderer) DrawLineV(position1, position2 vector.Vector2f, thickness float32) {
+	renderer.DrawLine(position1.X, position1.Y, position2.X, position2.Y, thickness)
+}
+
+func (renderer *Renderer) DrawLine(x1, y1, x2, y2, thickness float32) {
 	if thickness < 0.001 {
 		return
 	}
 
 	thickHalf := thickness / 2
 
-	angle := position1.AngleRV(position2)
+	dx := x2 - x1
+	dy := y2 - y1
 
-	offset1 := vector.NewVec2fRad(angle+math32.Pi/2, thickHalf)
-	offset2 := vector.NewVec2fRad(angle-math32.Pi/2, thickHalf)
+	length := math32.Sqrt(dx*dx + dy*dy)
 
-	p1 := position1.Add(offset1)
-	p2 := position1.Add(offset2)
-	p3 := position2.Add(offset2)
-	p4 := position2.Add(offset1)
+	tx := dy / length * thickHalf
+	ty := dx / length * thickHalf
 
-	renderer.DrawQuad(p1, p2, p3, p4)
+	renderer.DrawQuad(x1-tx, y1-ty, x1+tx, y1+ty, x2+tx, y2+ty, x2-tx, y2-ty)
 }
 
-func (renderer *Renderer) DrawQuad(p1, p2, p3, p4 vector.Vector2f) {
+func (renderer *Renderer) DrawQuadV(p1, p2, p3, p4 vector.Vector2f) {
+	renderer.DrawQuad(p1.X, p1.Y, p2.X, p2.Y, p3.X, p3.Y, p4.X, p4.Y)
+}
+
+func (renderer *Renderer) DrawQuad(x1, y1, x2, y2, x3, y3, x4, y4 float32) {
 	if renderer.color.A < 0.001 {
 		return
 	}
@@ -213,33 +219,33 @@ func (renderer *Renderer) DrawQuad(p1, p2, p3, p4 vector.Vector2f) {
 
 	floats := renderer.currentFloats
 
-	renderer.vertices[floats] = p1.X
-	renderer.vertices[floats+1] = p1.Y
+	renderer.vertices[floats] = x1
+	renderer.vertices[floats+1] = y1
 	renderer.vertices[floats+2] = colorPacked
 	renderer.vertices[floats+3] = add
 
-	renderer.vertices[floats+4] = p2.X
-	renderer.vertices[floats+5] = p2.Y
+	renderer.vertices[floats+4] = x2
+	renderer.vertices[floats+5] = y2
 	renderer.vertices[floats+6] = colorPacked
 	renderer.vertices[floats+7] = add
 
-	renderer.vertices[floats+8] = p3.X
-	renderer.vertices[floats+9] = p3.Y
+	renderer.vertices[floats+8] = x3
+	renderer.vertices[floats+9] = y3
 	renderer.vertices[floats+10] = colorPacked
 	renderer.vertices[floats+11] = add
 
-	renderer.vertices[floats+12] = p3.X
-	renderer.vertices[floats+13] = p3.Y
+	renderer.vertices[floats+12] = x3
+	renderer.vertices[floats+13] = y3
 	renderer.vertices[floats+14] = colorPacked
 	renderer.vertices[floats+15] = add
 
-	renderer.vertices[floats+16] = p4.X
-	renderer.vertices[floats+17] = p4.Y
+	renderer.vertices[floats+16] = x4
+	renderer.vertices[floats+17] = y4
 	renderer.vertices[floats+18] = colorPacked
 	renderer.vertices[floats+19] = add
 
-	renderer.vertices[floats+20] = p1.X
-	renderer.vertices[floats+21] = p1.Y
+	renderer.vertices[floats+20] = x1
+	renderer.vertices[floats+21] = y1
 	renderer.vertices[floats+22] = colorPacked
 	renderer.vertices[floats+23] = add
 
@@ -280,27 +286,30 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 
 	floats := renderer.currentFloats
 
-	cx := math32.Cos(-math32.Pi / 2)
-	cy := math32.Sin(-math32.Pi / 2)
+	cx := math32.Cos(-math32.Pi/2) * radius
+	cy := math32.Sin(-math32.Pi/2) * radius
+
+	x := position.X
+	y := position.Y
 
 	for r := float32(0.0); r < targetRadius; r += partRadius {
-		renderer.vertices[floats] = position.X
-		renderer.vertices[floats+1] = position.Y
+		renderer.vertices[floats] = x
+		renderer.vertices[floats+1] = y
 		renderer.vertices[floats+2] = colorPacked
 		renderer.vertices[floats+3] = add
 
-		renderer.vertices[floats+4] = cx*radius + position.X
-		renderer.vertices[floats+5] = cy*radius + position.Y
+		renderer.vertices[floats+4] = cx + x
+		renderer.vertices[floats+5] = cy + y
 		renderer.vertices[floats+6] = colorPacked
 		renderer.vertices[floats+7] = add
 
 		rads := math32.Min(targetRadius, r+partRadius) - math32.Pi/2
 
-		cx = math32.Cos(rads)
-		cy = math32.Sin(rads)
+		cx = math32.Cos(rads) * radius
+		cy = math32.Sin(rads) * radius
 
-		renderer.vertices[floats+8] = cx*radius + position.X
-		renderer.vertices[floats+9] = cy*radius + position.Y
+		renderer.vertices[floats+8] = cx + x
+		renderer.vertices[floats+9] = cy + y
 		renderer.vertices[floats+10] = colorPacked
 		renderer.vertices[floats+11] = add
 
