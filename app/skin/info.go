@@ -196,7 +196,7 @@ func LoadInfo(path string) (*SkinInfo, error) {
 				index: int(index),
 				color: ParseColor(tokenized[1], tokenized[0]),
 			})
-		case "SliderBallTint":
+		case "AllowSliderBallTint":
 			info.SliderBallTint = tokenized[1] == "1"
 		case "SliderBallFlip":
 			info.SliderBallFlip = tokenized[1] == "1"
