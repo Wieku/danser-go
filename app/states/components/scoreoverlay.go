@@ -332,11 +332,6 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 		alpha *= overlay.bgDim.GetValue()
 		cs := float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius)
 
-		p1 := vector.NewVec2f(-cs, -cs)
-		p2 := vector.NewVec2f(512.0+cs, -cs)
-		p3 := vector.NewVec2f(512.0+cs, 384.0+cs)
-		p4 := vector.NewVec2f(-cs, 384.0+cs)
-
 		overlay.shapeRenderer.SetCamera(batch.Projection)
 		overlay.shapeRenderer.Begin()
 
@@ -345,7 +340,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 			r, g, b := color.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
 			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
 
-			overlay.shapeRenderer.DrawQuadV(p1, p2, p3, p4)
+			overlay.shapeRenderer.DrawQuad(-cs, -cs, bmath.OsuWidth+cs, -cs, bmath.OsuWidth+cs, bmath.OsuHeight+cs, -cs, bmath.OsuHeight+cs)
 		}
 
 		if bAlpha := settings.Gameplay.Boundaries.BorderOpacity; bAlpha > 0.001 {
@@ -353,10 +348,14 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 			r, g, b := color.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
 			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
 
-			overlay.shapeRenderer.DrawLineV(p1, p2, thickness)
-			overlay.shapeRenderer.DrawLineV(p2, p3, thickness)
-			overlay.shapeRenderer.DrawLineV(p3, p4, thickness)
-			overlay.shapeRenderer.DrawLineV(p4, p1, thickness)
+			half := thickness / 2
+
+			cs += half
+
+			overlay.shapeRenderer.DrawLine(-cs-half, -cs, bmath.OsuWidth+cs+half, -cs, thickness)
+			overlay.shapeRenderer.DrawLine(-cs-half, bmath.OsuHeight+cs, bmath.OsuWidth+cs+half, bmath.OsuHeight+cs, thickness)
+			overlay.shapeRenderer.DrawLine(-cs, -cs+half, -cs, bmath.OsuHeight+cs-half, thickness)
+			overlay.shapeRenderer.DrawLine(bmath.OsuWidth+cs, -cs+half, bmath.OsuWidth+cs, bmath.OsuHeight+cs-half, thickness)
 		}
 
 		overlay.shapeRenderer.End()
