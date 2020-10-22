@@ -20,6 +20,7 @@ func initGameplay() *gameplay {
 		Boundaries: &boundaries{
 			Enabled:         true,
 			BorderThickness: 1,
+			BorderFill:      1,
 			BorderColor: &hsv{
 				Hue:        0,
 				Saturation: 0,
@@ -62,6 +63,7 @@ type boundaries struct {
 	Enabled bool
 
 	BorderThickness float64
+	BorderFill      float64
 
 	BorderColor   *hsv
 	BorderOpacity float64
