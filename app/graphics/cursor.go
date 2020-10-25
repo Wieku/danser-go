@@ -292,14 +292,6 @@ func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color mgl32
 }
 
 func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
-	colorD := color
-	colorD2 := color2
-
-	if settings.Cursor.TrailStyle > 1 {
-		colorD = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
-		colorD2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
-	}
-
 	if useAdditive {
 		cursorFbo.Bind()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
@@ -310,7 +302,19 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 
 	if settings.Cursor.EnableCustomTrailGlowOffset {
 		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
-		colorD2 = color2
+	}
+
+	if settings.Cursor.TrailStyle > 1 {
+		color = utils.GetColorShifted(color, cursor.hueBase*360)
+		color2 = utils.GetColorShifted(color2, cursor.hueBase*360)
+	}
+
+	colorD := color
+	colorD2 := color2
+
+	if settings.Cursor.TrailStyle > 1 {
+		colorD = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
+		colorD2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
 	}
 
 	cursorShader.Bind()
