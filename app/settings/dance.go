@@ -8,6 +8,7 @@ func initDance() *dance {
 		Spinners:           []string{"circle"},
 		DoSpinnersTogether: true,
 		SpinnerRadius:      100,
+		Battle:             false,
 		SliderDance:        false,
 		RandomSliderDance:  false,
 		TAGSliderDance:     false,
@@ -43,6 +44,7 @@ type dance struct {
 	Spinners           []string
 	DoSpinnersTogether bool
 	SpinnerRadius      float64
+	Battle             bool
 	SliderDance        bool
 	RandomSliderDance  bool
 	TAGSliderDance     bool
