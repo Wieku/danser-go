@@ -4,7 +4,7 @@ var Dance *dance = initDance()
 
 func initDance() *dance {
 	return &dance{
-		Movers:             []string{"flower"},
+		Movers:             []string{"spline"},
 		Spinners:           []string{"circle"},
 		DoSpinnersTogether: true,
 		SpinnerRadius:      100,
@@ -30,6 +30,11 @@ func initDance() *dance {
 			RadiusMultiplier: 1,
 			StreamTrigger:    130,
 		},
+		Spline: &spline{
+			RotationalForce: false,
+			StreamWobble:    true,
+			WobbleScale:     0.67,
+		},
 	}
 }
 
@@ -45,6 +50,7 @@ type dance struct {
 	Bezier             *bezier
 	Flower             *flower
 	HalfCircle         *circular
+	Spline             *spline
 }
 
 type bezier struct {
@@ -65,4 +71,10 @@ type flower struct {
 type circular struct {
 	RadiusMultiplier float64
 	StreamTrigger    int64
+}
+
+type spline struct {
+	RotationalForce bool
+	StreamWobble    bool
+	WobbleScale     float64
 }

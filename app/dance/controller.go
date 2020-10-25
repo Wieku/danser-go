@@ -47,7 +47,7 @@ func (controller *GenericController) InitCursors() {
 		var scheduler schedulers.Scheduler
 
 		switch mover {
-		case "smooth", "spline":
+		case "spline":
 			scheduler = schedulers.NewSmoothScheduler()
 		case "bezier":
 			scheduler = schedulers.NewGenericScheduler(movers.NewBezierMover)
