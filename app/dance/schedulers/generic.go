@@ -14,11 +14,9 @@ type GenericScheduler struct {
 	cursor       *graphics.Cursor
 	queue        []objects.BaseObject
 	mover        movers.MultiPointMover
-	lastLeft     bool
-	moving       bool
-	lastEnd      int64
 	lastTime     int64
 	spinnerMover spinners.SpinnerMover
+	input        *InputProcessor
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
@@ -29,17 +27,28 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.
 	sched.spinnerMover = spinnerMover
 	sched.cursor = cursor
 	sched.queue = objs
-	sched.mover.Reset()
-	sched.queue = PreprocessQueue(0, sched.queue, settings.Dance.SliderDance)
 
-	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0), sched.queue[0]})
+	sched.input = NewInputProcessor(objs, cursor)
+
+	sched.mover.Reset()
+
+	for i := 0; i < len(sched.queue); i++ {
+		sched.queue = PreprocessQueue(i, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
+	}
+
+	sched.queue = append([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, sched.queue...)
+
+	toRemove := sched.mover.SetObjects(sched.queue) - 1
+	sched.queue = sched.queue[toRemove:]
 }
 
 func (sched *GenericScheduler) Update(time int64) {
 	if len(sched.queue) > 0 {
 		move := true
+
 		for i := 0; i < len(sched.queue); i++ {
 			g := sched.queue[i]
+
 			if g.GetBasicData().StartTime > time {
 				break
 			}
@@ -56,41 +65,15 @@ func (sched *GenericScheduler) Update(time int64) {
 				} else {
 					sched.cursor.SetPos(g.GetPosition())
 				}
-
-				if !sched.moving {
-					//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
-					if !sched.lastLeft && g.GetBasicData().StartTime-sched.lastEnd < 130 {
-						sched.cursor.LeftButton = true
-						sched.lastLeft = true
-					} else {
-						sched.cursor.RightButton = true
-						sched.lastLeft = false
-					}
-					//}
-
-				}
-				sched.moving = true
-
 			} else if time > g.GetBasicData().EndTime {
-
-				sched.moving = false
-				//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd || g.GetBasicData().SliderPointStart {
-				sched.cursor.LeftButton = false
-				sched.cursor.RightButton = false
-				//}
-
-				if i < len(sched.queue)-1 {
-					sched.queue = append(sched.queue[:i], sched.queue[i+1:]...)
-				} else if i < len(sched.queue) {
-					sched.queue = sched.queue[:i]
-				}
-				i--
-
+				toRemove := 1
 				if i+1 < len(sched.queue) {
-					sched.queue = PreprocessQueue(i+1, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
-					sched.mover.SetObjects([]objects.BaseObject{g, sched.queue[i+1]})
+					toRemove = sched.mover.SetObjects(sched.queue[i:]) - 1
 				}
-				sched.lastEnd = g.GetBasicData().EndTime
+
+				sched.queue = append(sched.queue[:i], sched.queue[i+toRemove:]...)
+				i -= toRemove
+
 				move = true
 			}
 		}
@@ -98,8 +81,9 @@ func (sched *GenericScheduler) Update(time int64) {
 		if move && sched.mover.GetEndTime() >= time {
 			sched.cursor.SetPos(sched.mover.Update(time))
 		}
-
 	}
+
+	sched.input.Update(time)
 
 	sched.lastTime = time
 }

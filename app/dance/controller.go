@@ -107,7 +107,6 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	for i := range controller.cursors {
-
 		spinMover := "circle"
 		if len(settings.Dance.Spinners) > 0 {
 			spinMover = settings.Dance.Spinners[i%len(settings.Dance.Spinners)]
