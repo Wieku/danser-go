@@ -54,6 +54,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
 	if endPos == startPos {
 		if settings.Dance.Flower.LongJumpOnEqualPos {
 			scaledDistance = float32(startTime-endTime) * float32(settings.Dance.Flower.LongJumpMult)
+
 			if math.Abs(float64(startTime-endTime)) > 1 {
 				bm.lastAngle += math.Pi
 			}
@@ -67,15 +68,16 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
 			if !ok2 {
 				angle := bm.lastAngle - newAngle*bm.invert
 				pt2 := vector.NewVec2fRad(angle, scaledDistance).Add(startPos)
+
 				if math.Abs(float64(startTime-endTime)) > 1 {
 					bm.lastAngle = angle
 				}
+
 				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			} else {
 				pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
 				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			}
-
 		} else {
 			points = []vector.Vector2f{endPos, startPos}
 		}
@@ -108,12 +110,8 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else {
-		if settings.Dance.Flower.UseNewStyle {
-			if math.Abs(float64(startTime-endTime)) > 1 && bmath.AngleBetween32(endPos, bm.lastPoint, startPos) >= float32(settings.Dance.Flower.AngleOffset)*math32.Pi/180.0 {
-				bm.invert = -1 * bm.invert
-				newAngle = float32(settings.Dance.Flower.StreamAngleOffset) * math32.Pi / 180.0
-			}
-		} else if startTime-endTime < settings.Dance.Flower.StreamTrigger {
+		if math.Abs(float64(startTime-endTime)) > 1 && bmath.AngleBetween32(endPos, bm.lastPoint, startPos) >= float32(settings.Dance.Flower.AngleOffset)*math32.Pi/180.0 {
+			bm.invert = -1 * bm.invert
 			newAngle = float32(settings.Dance.Flower.StreamAngleOffset) * math32.Pi / 180.0
 		}
 
@@ -127,10 +125,6 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
 
 		if scaledDistance > 2 {
 			bm.lastAngle = angle
-		}
-
-		if !settings.Dance.Flower.UseNewStyle && startTime-endTime < settings.Dance.Flower.StreamTrigger && !(start.GetBasicData().SliderPoint && end.GetBasicData().SliderPoint) {
-			bm.invert = -1 * bm.invert
 		}
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}

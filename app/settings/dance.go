@@ -18,10 +18,8 @@ func initDance() *dance {
 			SliderAggressiveness: 3,
 		},
 		Flower: &flower{
-			UseNewStyle:        true,
 			AngleOffset:        90,
 			DistanceMult:       0.666,
-			StreamTrigger:      130,
 			StreamAngleOffset:  90,
 			LongJump:           -1,
 			LongJumpMult:       0.7,
@@ -60,10 +58,8 @@ type bezier struct {
 }
 
 type flower struct {
-	UseNewStyle        bool
 	AngleOffset        float64
 	DistanceMult       float64
-	StreamTrigger      int64
 	StreamAngleOffset  float64
 	LongJump           int64
 	LongJumpMult       float64
