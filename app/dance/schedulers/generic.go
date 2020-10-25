@@ -32,21 +32,6 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.
 	sched.mover.Reset()
 	sched.queue = PreprocessQueue(0, sched.queue, settings.Dance.SliderDance)
 
-	if settings.Dance.SliderDance2B {
-		for i := 0; i < len(sched.queue); i++ {
-			if s, ok := sched.queue[i].(*objects.Slider); ok {
-				sd := s.GetBasicData()
-				for j := i + 1; j < len(sched.queue); j++ {
-					od := sched.queue[j].GetBasicData()
-					if (od.StartTime > sd.StartTime && od.StartTime < sd.EndTime) || (od.EndTime > sd.StartTime && od.EndTime < sd.EndTime) {
-						sched.queue = PreprocessQueue(i, sched.queue, !settings.Dance.RandomSliderDance || rand.Intn(2) == 0)
-						break
-					}
-				}
-			}
-		}
-	}
-
 	sched.mover.SetObjects([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0), sched.queue[0]})
 }
 

@@ -42,22 +42,6 @@ func (sched *SmoothScheduler) Init(objs []objects.BaseObject, cursor *graphics.C
 		sched.queue = PreprocessQueue(i, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
-	if settings.Dance.SliderDance2B {
-		for i := 0; i < len(sched.queue); i++ {
-			if s, ok := sched.queue[i].(*objects.Slider); ok {
-				sd := s.GetBasicData()
-
-				for j := i + 1; j < len(sched.queue); j++ {
-					od := sched.queue[j].GetBasicData()
-					if (od.StartTime > sd.StartTime && od.StartTime < sd.EndTime) || (od.EndTime > sd.StartTime && od.EndTime < sd.EndTime) {
-						sched.queue = PreprocessQueue(i, sched.queue, true)
-						break
-					}
-				}
-			}
-		}
-	}
-
 	sched.InitCurve(0)
 }
 

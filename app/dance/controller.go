@@ -80,6 +80,21 @@ func (controller *GenericController) InitCursors() {
 		}
 	}
 
+	if settings.Dance.SliderDance2B {
+		for i := 0; i < len(queue); i++ {
+			if s, ok := queue[i].(*objects.Slider); ok {
+				sd := s.GetBasicData()
+				for j := i + 1; j < len(queue); j++ {
+					od := queue[j].GetBasicData()
+					if (od.StartTime > sd.StartTime && od.StartTime < sd.EndTime) || (od.EndTime > sd.StartTime && od.EndTime < sd.EndTime) {
+						queue = schedulers.PreprocessQueue(i, queue, true)
+						break
+					}
+				}
+			}
+		}
+	}
+
 	for j, o := range queue {
 		if _, ok := o.(*objects.Spinner); ok && settings.Dance.DoSpinnersTogether {
 			for i := range objs {
