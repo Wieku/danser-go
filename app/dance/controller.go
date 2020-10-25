@@ -48,7 +48,7 @@ func (controller *GenericController) InitCursors() {
 
 		switch mover {
 		case "spline":
-			scheduler = schedulers.NewSmoothScheduler()
+			scheduler = schedulers.NewGenericScheduler(movers.NewSplineMover)
 		case "bezier":
 			scheduler = schedulers.NewGenericScheduler(movers.NewBezierMover)
 		case "circular":
@@ -84,6 +84,7 @@ func (controller *GenericController) InitCursors() {
 		for i := 0; i < len(queue); i++ {
 			if s, ok := queue[i].(*objects.Slider); ok {
 				sd := s.GetBasicData()
+
 				for j := i + 1; j < len(queue); j++ {
 					od := queue[j].GetBasicData()
 					if (od.StartTime > sd.StartTime && od.StartTime < sd.EndTime) || (od.EndTime > sd.StartTime && od.EndTime < sd.EndTime) {

@@ -40,7 +40,7 @@ func (processor *InputProcessor) Update(time int64) {
 			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
 				if !processor.moving {
 					if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
-						if !processor.lastLeft && g.GetBasicData().StartTime-processor.lastEnd < 130 {
+						if !processor.lastLeft && g.GetBasicData().StartTime-processor.lastEnd < 260 {
 							processor.cursor.LeftButton = true
 							processor.lastLeft = true
 							processor.leftToRelease = false
@@ -52,7 +52,6 @@ func (processor *InputProcessor) Update(time int64) {
 							processor.lastRightClick = time
 						}
 					}
-
 				}
 
 				processor.moving = true

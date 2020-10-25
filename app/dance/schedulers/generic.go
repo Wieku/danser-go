@@ -72,7 +72,7 @@ func (sched *GenericScheduler) Update(time int64) {
 				}
 
 				sched.queue = append(sched.queue[:i], sched.queue[i+toRemove:]...)
-				i -= toRemove
+				i--
 
 				move = true
 			}
