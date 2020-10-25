@@ -30,7 +30,7 @@ func (bm *BezierMover) Reset() {
 	bm.previousSpeed = -1
 }
 
-func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
+func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
 	end := objs[0]
 	start := objs[1]
 	endPos := end.GetBasicData().EndPos
@@ -87,6 +87,8 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) {
 	bm.endTime = endTime
 	bm.beginTime = startTime
 	bm.previousSpeed = (dst + 1.0) / float32(startTime-endTime)
+
+	return 2
 }
 
 func (bm *BezierMover) Update(time int64) vector.Vector2f {

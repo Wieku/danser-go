@@ -23,7 +23,7 @@ func (bm *HalfCircleMover) Reset() {
 	bm.invert = -1
 }
 
-func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
+func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) int {
 	end := objs[0]
 	start := objs[1]
 
@@ -38,12 +38,14 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) {
 
 	if endPos == startPos {
 		bm.ca = curves.NewLinear(endPos, startPos)
-		return
+		return 2
 	}
 
 	point := endPos.Mid(startPos)
 	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(float32(settings.Dance.HalfCircle.RadiusMultiplier)).Add(point)
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
+
+	return 2
 }
 
 func (bm *HalfCircleMover) Update(time int64) vector.Vector2f {

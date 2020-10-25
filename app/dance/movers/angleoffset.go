@@ -28,7 +28,7 @@ func (bm *AngleOffsetMover) Reset() {
 	bm.lastPoint = vector.NewVec2f(0, 0)
 }
 
-func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
+func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
 	end := objs[0]
 	start := objs[1]
 
@@ -140,6 +140,8 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) {
 	bm.endTime = endTime
 	bm.startTime = startTime
 	bm.lastPoint = endPos
+
+	return 2
 }
 
 func (bm *AngleOffsetMover) Update(time int64) vector.Vector2f {

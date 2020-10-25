@@ -21,7 +21,7 @@ func (bm *AxisMover) Reset() {
 
 }
 
-func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
+func (bm *AxisMover) SetObjects(objs []objects.BaseObject) int {
 	end, start := objs[0], objs[1]
 	endPos := end.GetBasicData().EndPos
 	endTime := end.GetBasicData().EndTime
@@ -39,6 +39,8 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) {
 	bm.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos}, float64(endPos.Dst(midP)+midP.Dst(startPos)))
 	bm.endTime = endTime
 	bm.beginTime = startTime
+
+	return 2
 }
 
 func (bm AxisMover) Update(time int64) vector.Vector2f {

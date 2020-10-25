@@ -22,7 +22,7 @@ func (bm *AggressiveMover) Reset() {
 	bm.lastAngle = 0
 }
 
-func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
+func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) int {
 	end := objs[0]
 	start := objs[1]
 
@@ -53,6 +53,8 @@ func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) {
 	bm.bz = curves.NewBezierNA(points)
 	bm.endTime = endTime
 	bm.startTime = startTime
+
+	return 2
 }
 
 func (bm *AggressiveMover) Update(time int64) vector.Vector2f {

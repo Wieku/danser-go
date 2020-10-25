@@ -21,7 +21,7 @@ func (bm *LinearMover) Reset() {
 
 }
 
-func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
+func (bm *LinearMover) SetObjects(objs []objects.BaseObject) int {
 	end, start := objs[0], objs[1]
 	endPos := end.GetBasicData().EndPos
 	endTime := end.GetBasicData().EndTime
@@ -32,6 +32,8 @@ func (bm *LinearMover) SetObjects(objs []objects.BaseObject) {
 
 	bm.endTime = bmath.MaxI64(endTime, start.GetBasicData().StartTime-380)
 	bm.beginTime = startTime
+
+	return 2
 }
 
 func (bm LinearMover) Update(time int64) vector.Vector2f {
