@@ -101,6 +101,7 @@ type snaking struct {
 	In                 bool
 	Out                bool
 	DurationMultiplier float64
+	FadeMultiplier     float64
 }
 
 type objectcolors struct {

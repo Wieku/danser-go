@@ -353,8 +353,11 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeTail = animation.NewGlider(0)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
+	fadeMultiplier := 1.0 - bmath.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+	durationMultiplier := bmath.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+
 	slSnInS := float64(slider.objData.StartTime) - diff.Preempt
-	slSnInE := float64(slider.objData.StartTime) - diff.Preempt*2/3 + slider.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.Sliders.Snaking.DurationMultiplier)))
+	slSnInE := float64(slider.objData.StartTime) - diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
 
 	if settings.Objects.Sliders.Snaking.In {
 		slider.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
