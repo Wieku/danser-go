@@ -1,5 +1,6 @@
 package main
 
+import "C"
 import (
 	"flag"
 	"github.com/faiface/mainthread"
@@ -208,8 +209,34 @@ func run() {
 		icon4.Dispose()
 
 		win.MakeContextCurrent()
+
 		log.Println("GLFW initialized!")
+
 		gl.Init()
+
+		C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.RENDERER))))
+
+		glVendor := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VENDOR))))
+		glRenderer := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.RENDERER))))
+		glVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VERSION))))
+		glslVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.SHADING_LANGUAGE_VERSION))))
+
+		var extensions string
+
+		var numExtensions int32
+		gl.GetIntegerv(gl.NUM_EXTENSIONS, &numExtensions)
+
+		for i := int32(0); i < numExtensions; i++ {
+			extensions += C.GoString((*C.char)(unsafe.Pointer(gl.GetStringi(gl.EXTENSIONS, uint32(i)))))
+			extensions += " "
+		}
+
+		log.Println("GL Vendor:    ", glVendor)
+		log.Println("GL Renderer:  ", glRenderer)
+		log.Println("GL Version:   ", glVersion)
+		log.Println("GLSL Version: ", glslVersion)
+		log.Println("GL Extensions:", extensions)
+		log.Println("OpenGL initialized!")
 
 		if *gldebug {
 			gl.Enable(gl.DEBUG_OUTPUT)
