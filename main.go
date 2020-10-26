@@ -406,6 +406,8 @@ func main() {
 		}
 	}()
 
+	log.Println("Ran using:", os.Args)
+
 	setWorkingDirectory()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
