@@ -17,7 +17,6 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components"
 	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
@@ -888,15 +887,6 @@ func (pl *Player) Draw(float64) {
 	if settings.Playfield.Bloom.Enabled {
 		pl.bloomEffect.EndAndRender()
 	}
-
-	pl.batch.Begin()
-	pl.batch.SetColor(1, 1, 1, 1)
-	pl.batch.SetScale(1, 1)
-	pl.batch.SetCamera(pl.scamera.GetProjectionView())
-	size := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
-
-	pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size, size, build.VERSION)
-	pl.batch.End()
 
 	if settings.DEBUG || settings.Graphics.ShowFPS {
 		pl.batch.Begin()
