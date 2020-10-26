@@ -7,7 +7,6 @@ import (
 	"image/png"
 	"os"
 	"runtime"
-	"strconv"
 	"time"
 	"unsafe"
 )
@@ -33,9 +32,12 @@ func MakeScreenshot(win glfw.Window) {
 		runtime.KeepAlive(buff)
 		img.Pix = buff1
 		os.Mkdir("screenshots", 0644)
-		f, _ := os.OpenFile("screenshots/"+strconv.FormatInt(time.Now().UnixNano(), 10)+".png", os.O_WRONLY|os.O_CREATE, 0644)
-		defer f.Close()
-		png.Encode(f, img)
 
+		dateString := time.Now().Format("2006-01-02_15-04-05")
+		f, _ := os.OpenFile("screenshots/danser_"+dateString+".png", os.O_WRONLY|os.O_CREATE, 0644)
+
+		defer f.Close()
+
+		png.Encode(f, img)
 	}()
 }
