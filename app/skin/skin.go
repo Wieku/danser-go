@@ -1,6 +1,7 @@
 package skin
 
 import (
+	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/settings"
@@ -51,7 +52,7 @@ func fallback() {
 	info, err = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"))
 
 	if err != nil {
-		log.Println("Default skin is corrupted! Please don't manipulate game's assets!")
+		log.Println("SkinManager: Default skin is corrupted! Please don't manipulate game's assets!")
 		panic(err)
 	}
 }
@@ -63,16 +64,20 @@ func checkInit() {
 
 	CurrentSkin = settings.Skin.CurrentSkin
 
+	log.Println("SkinManager: Loading skin:", CurrentSkin)
+
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
 		var err error
 		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
 		if err != nil {
-			log.Println(CurrentSkin, "is corrupted, falling back to default...")
+			log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
 			fallback()
 		}
 	}
+
+	log.Println(fmt.Sprintf("SkinManager: Skin \"%s\" loaded.", CurrentSkin))
 }
 
 func GetInfo() *SkinInfo {
@@ -290,6 +295,8 @@ func loadTexture(name string) *texture.TextureRegion {
 				singleTextures[name] = tx
 
 				rg = &reg
+
+				log.Println("SkinManager: Texture uploaded as single texture:", name)
 			}
 
 			image.Dispose()
