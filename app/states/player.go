@@ -804,7 +804,9 @@ func (pl *Player) Draw(float64) {
 				pl.batch.SetCamera(cameras[j])
 
 				for i := len(pl.processed) - 1; i >= 0; i-- {
-					pl.processed[i].renderable.DrawApproach(pl.progressMs, colors[j], pl.batch)
+					if s := pl.processed[i]; !s.IsSliderBody {
+						s.renderable.DrawApproach(pl.progressMs, colors[j], pl.batch)
+					}
 				}
 			}
 		}
