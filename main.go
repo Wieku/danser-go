@@ -72,7 +72,7 @@ func run() {
 		settingsVersion := flag.String("settings", "", "Specify settings version")
 		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
 		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
-		knockout := flag.Bool("knockout", false, "Use knockout feature")
+		//knockout := flag.Bool("knockout", false, "Use knockout feature")
 		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
 		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
 		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
@@ -80,6 +80,7 @@ func run() {
 		gldebug := flag.Bool("gldebug", false, "Turns on OpenGL debug logging, may reduce performance heavily")
 
 		play := flag.Bool("play", false, "Practice playing osu!standard maps")
+		scrub := flag.Float64("scrub", 0, "Start at the given time in seconds")
 
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
 
@@ -93,13 +94,14 @@ func run() {
 		}
 
 		settings.DEBUG = *debug
-		settings.KNOCKOUT = *knockout
+		//settings.KNOCKOUT = *knockout
 		settings.PLAY = *play
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag
 		settings.SPEED = *speed
 		settings.PITCH = *pitch
 		settings.SKIP = *skip
+		settings.SCRUB = *scrub
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 

@@ -256,12 +256,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 	player.playersGlider = animation.NewGlider(0.0)
 
-	tmS := float64(player.queue2[0].GetBasicData().StartTime)
+	skipTime := 0.0
+	if settings.SKIP {
+		skipTime = float64(player.queue2[0].GetBasicData().StartTime)
+	}
+
+	tmS := math.Max(skipTime, settings.SCRUB*1000)
 	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
 
 	startOffset := 0.0
 
-	if settings.SKIP {
+	if settings.SKIP || settings.SCRUB > 0.01 {
 		startOffset = tmS
 		player.startPoint = tmS - beatMap.Diff.Preempt
 		player.volumeGlider.SetValue(0.0)
@@ -395,11 +400,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				player.start = true
 			}
 
-			if _, ok := player.controller.(*dance.GenericController); ok {
-				player.bMap.Update(int64(player.progressMsF))
-			}
+			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
+				if _, ok := player.controller.(*dance.GenericController); ok {
+					player.bMap.Update(int64(player.progressMsF))
+				}
 
-			player.controller.Update(int64(player.progressMsF), float64(currtime-lastT)/1000000)
+				player.controller.Update(int64(player.progressMsF), float64(currtime-lastT)/1000000)
+			}
 
 			if player.overlay != nil {
 				player.overlay.Update(int64(player.progressMsF))
