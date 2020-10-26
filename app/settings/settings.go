@@ -16,6 +16,7 @@ type fileformat struct {
 
 var DEBUG = false
 var PLAY = false
+var SKIP = false
 var KNOCKOUT = false
 var PLAYERS = 1
 var DIVIDES = 2
