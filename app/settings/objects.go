@@ -18,6 +18,7 @@ func initObjects() *objects {
 			SliderMerge:            false,
 			SliderDistortions:      true,
 			BorderWidth:            1.0,
+			BodyOpacity:            0.8,
 			Quality: &quality{
 				CircleLevelOfDetail: 50,
 				PathLevelOfDetail:   50,
@@ -87,6 +88,7 @@ type sliders struct {
 	SliderMerge            bool
 	SliderDistortions      bool //true, osu!stable slider distortions on aspire maps
 	BorderWidth            float64
+	BodyOpacity            float64
 	Quality                *quality
 	Snaking                *snaking
 }
