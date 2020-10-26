@@ -271,8 +271,8 @@ func (circle *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	batch.SetTranslation(circle.objData.StartPos.Copy64())
 
 	alpha := 1.0
-	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		alpha *= settings.Objects.MandalaTexturesAlpha
+	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
+		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
 		circle.hitCircle.Textures[0] = circle.fullTexture
 	} else {
 		circle.hitCircle.Textures[0] = circle.hitCircleTexture
@@ -284,8 +284,8 @@ func (circle *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
 		color := skin.GetInfo().ComboColors[int(circle.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
 		circle.hitCircle.SetColor(bmath.Color{R: float64(color.R), G: float64(color.G), B: float64(color.B), A: 1.0})
-	} else if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
-		cHSV := settings.Objects.ComboColors[int(circle.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
+		cHSV := settings.Objects.Colors.ComboColors[int(circle.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 		circle.hitCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
 	} else {
@@ -296,13 +296,13 @@ func (circle *Circle) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	circle.hitCircle.Draw(time, batch)
 
 	/*batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
+	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
 		batch.DrawUnit(*render.CircleFull)
 	} else {
 		batch.DrawUnit(*render.Circle)
 	}*/
 
-	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
+	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger {
 		if !skin.GetInfo().HitCircleOverlayAboveNumber {
 			circle.hitCircleOverlay.Draw(time, batch)
 		}
@@ -343,8 +343,8 @@ func (circle *Circle) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.S
 	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
 		color := skin.GetInfo().ComboColors[int(circle.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
 		circle.approachCircle.SetColor(bmath.Color{R: float64(color.R), G: float64(color.G), B: float64(color.B), A: 1.0})
-	} else if settings.Objects.UseComboColors && len(settings.Objects.ComboColors) > 0 {
-		cHSV := settings.Objects.ComboColors[int(circle.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
+		cHSV := settings.Objects.Colors.ComboColors[int(circle.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 		circle.approachCircle.SetColor(bmath.Color{R: float64(r), G: float64(g), B: float64(b), A: 1.0})
 	} else {

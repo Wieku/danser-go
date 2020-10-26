@@ -220,8 +220,8 @@ func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteB
 
 	alpha := spinner.fade.GetValue()
 
-	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		alpha *= settings.Objects.MandalaTexturesAlpha
+	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
+		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
 	}
 
 	batch.SetColor(1, 1, 1, alpha)

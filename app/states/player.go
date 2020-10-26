@@ -559,17 +559,17 @@ func (pl *Player) Draw(float64) {
 	pl.background.Draw(pl.progressMs, pl.batch, pl.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
 	if pl.start {
-		settings.Objects.Colors.Update(timMs)
-		settings.Objects.CustomSliderBorderColor.Update(timMs)
+		settings.Objects.Colors.Color.Update(timMs)
+		settings.Objects.Colors.CustomSliderBorderColor.Update(timMs)
 		settings.Cursor.Colors.Update(timMs)
 	}
 
-	colors := settings.Objects.Colors.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	colors := settings.Objects.Colors.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
 	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
 	colors2 := colors
 
-	if settings.Objects.EnableCustomSliderBorderColor {
-		colors2 = settings.Objects.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	if settings.Objects.Colors.EnableCustomSliderBorderColor {
+		colors2 = settings.Objects.Colors.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
 	}
 
 	if pl.overlay != nil {
@@ -687,7 +687,7 @@ func (pl *Player) Draw(float64) {
 		pl.batch.SetColor(1, 1, 1, 1)
 		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
 
-		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawFollowPoints {
+		if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawFollowPoints {
 			for j := 0; j < settings.DIVIDES; j++ {
 				pl.batch.SetCamera(cameras[j])
 				pl.followpoints.Draw(pl.progressMs, pl.batch)
@@ -728,7 +728,7 @@ func (pl *Player) Draw(float64) {
 			}
 		}
 
-		if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
+		if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
 			pl.batch.SetAdditive(true)
 		} else {
 			pl.batch.SetAdditive(false)
@@ -783,7 +783,7 @@ func (pl *Player) Draw(float64) {
 			}
 		}
 
-		if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
+		if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
 			pl.batch.Flush()
 
 			for j := 0; j < settings.DIVIDES; j++ {

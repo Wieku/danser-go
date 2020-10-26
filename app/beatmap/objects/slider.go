@@ -696,15 +696,15 @@ func (slider *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, 
 		bodyInner[0] = baseTrack.R + (1-baseTrack.R)*0.25
 		bodyInner[1] = baseTrack.G + (1-baseTrack.G)*0.25
 		bodyInner[2] = baseTrack.B + (1-baseTrack.B)*0.25
-	} else if settings.Objects.UseComboColors && !settings.Objects.EnableCustomSliderBorderColor {
-		cHSV := settings.Objects.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	} else if settings.Objects.Colors.UseComboColors && !settings.Objects.Colors.EnableCustomSliderBorderColor {
+		cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 
 		borderInner[0], borderOuter[0] = r, r
 		borderInner[1], borderOuter[1] = g, g
 		borderInner[2], borderOuter[2] = b, b
-	} else if settings.Objects.EnableCustomSliderBorderGradientOffset {
-		borderOuter = utils.GetColorShifted(color, settings.Objects.SliderBorderGradientOffset)
+	} else if settings.Objects.Colors.EnableCustomSliderBorderGradientOffset {
+		borderOuter = utils.GetColorShifted(color, settings.Objects.Colors.SliderBorderGradientOffset)
 		borderInner[3] = float32(colorAlpha)
 		borderOuter[3] = float32(colorAlpha)
 	}
@@ -719,16 +719,16 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 
 	alpha := slider.fade.GetValue()
 
-	if settings.DIVIDES >= settings.Objects.MandalaTexturesTrigger {
-		alpha *= settings.Objects.MandalaTexturesAlpha
+	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
+		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
 	}
 
 	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
 
-	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger {
+	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger {
 		if time < slider.objData.EndTime {
 			if settings.Objects.DrawScorePoints {
-				shifted := utils.GetColorShifted(color, settings.Objects.ScorePointColorOffset)
+				shifted := utils.GetColorShifted(color, settings.Objects.Colors.ScorePointColorOffset)
 
 				scorePoint := skin.GetTexture("sliderscorepoint")
 
@@ -739,7 +739,7 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 						batch.SetTranslation(p.Pos.Copy64())
 						batch.SetSubScale(p.scale.GetValue(), p.scale.GetValue())
 
-						if settings.Objects.WhiteScorePoints {
+						if settings.Objects.Colors.WhiteScorePoints || settings.Skin.UseColorsFromSkin {
 							batch.SetColor(1, 1, 1, alpha*al)
 						} else {
 							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
@@ -762,10 +762,10 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	slider.startCircle.Draw(time, color, batch)
 
 	if time >= slider.objData.StartTime && time <= slider.objData.EndTime {
-		slider.drawBall(time, batch, alpha, settings.Objects.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.MandalaTexturesTrigger)
+		slider.drawBall(time, batch, alpha, settings.Objects.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger)
 	}
 
-	if settings.DIVIDES < settings.Objects.MandalaTexturesTrigger && settings.Objects.DrawSliderFollowCircle && slider.follower != nil {
+	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawSliderFollowCircle && slider.follower != nil {
 		batch.SetTranslation(slider.Pos.Copy64())
 		batch.SetColor(1, 1, 1, alpha)
 		slider.follower.Draw(time, batch)
@@ -809,8 +809,8 @@ func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha floa
 
 		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 	} else {
-		if skin.GetInfo().SliderBallTint && settings.Objects.UseComboColors {
-			cHSV := settings.Objects.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.ComboColors)]
+		if skin.GetInfo().SliderBallTint && settings.Objects.Colors.UseComboColors {
+			cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 			r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 			batch.SetColor(float64(r), float64(g), float64(b), alpha)
 		} else {
@@ -818,7 +818,7 @@ func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha floa
 		}
 	}
 
-	//cHSV := settings.Objects.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.ComboColors)]
+	//cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 	//r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 	//batch.SetColor(float64(r), float64(g), float64(b), alpha)
 
