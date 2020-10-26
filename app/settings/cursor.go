@@ -32,7 +32,7 @@ func initCursor() *cursor {
 		TrailGlowOffset:             -36.0,
 		ScaleToCS:                   false,
 		CursorSize:                  18,
-		ScaleToTheBeat:              true,
+		ScaleToTheBeat:              false,
 		ShowCursorsOnBreaks:         true,
 		BounceOnEdges:               false,
 		TrailScale:                  1.0,

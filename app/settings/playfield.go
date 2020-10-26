@@ -18,7 +18,7 @@ func initPlayfield() *playfield {
 		},
 		Background: &background{
 			LoadStoryboards: true,
-			FlashToTheBeat:  true,
+			FlashToTheBeat:  false,
 			Dim: &dim{
 				Intro:  0,
 				Normal: 0.95,
@@ -29,7 +29,7 @@ func initPlayfield() *playfield {
 				Speed:  0.5,
 			},
 			Blur: &blur{
-				Enabled: true,
+				Enabled: false,
 				Values: &dim{
 					Intro:  0,
 					Normal: 0.6,
@@ -46,7 +46,7 @@ func initPlayfield() *playfield {
 			},
 		},
 		Bloom: &bloom{
-			Enabled:           true,
+			Enabled:           false,
 			BloomToTheBeat:    true,
 			BloomBeatAddition: 0.3,
 			Threshold:         0.0,

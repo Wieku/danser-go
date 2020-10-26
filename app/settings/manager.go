@@ -20,7 +20,7 @@ func initStorage() {
 		Objects:   Objects,
 		Playfield: Playfield,
 		Dance:     Dance,
-		Knockout:  Knockout,
+		Knockout:  nil,
 	}
 }
 
