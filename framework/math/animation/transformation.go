@@ -144,7 +144,7 @@ func (t *Transformation) GetVector(time float64) vector.Vector2d {
 }
 
 func (t *Transformation) GetBoolean(time float64) bool {
-	return time >= t.startTime && time < t.endTime
+	return t.startTime == t.endTime || time >= t.startTime && time < t.endTime
 }
 
 func (t *Transformation) GetColor(time float64) bmath.Color {

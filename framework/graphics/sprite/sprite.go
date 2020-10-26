@@ -207,12 +207,9 @@ func (sprite *Sprite) ResetValuesToTransforms() {
 	applied := make(map[animation.TransformationType]int)
 
 	for _, t := range sprite.transforms {
-		if t.GetType() == animation.Additive || t.GetType() == animation.HorizontalFlip || t.GetType() == animation.VerticalFlip {
-			continue
-		}
-
 		if _, exists := applied[t.GetType()]; !exists {
 			sprite.updateTransform(t, int64(t.GetStartTime()-1))
+
 			applied[t.GetType()] = 1
 		}
 	}
