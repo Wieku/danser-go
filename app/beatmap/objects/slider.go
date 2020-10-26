@@ -354,15 +354,15 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
 	slSnInS := float64(slider.objData.StartTime) - diff.Preempt
-	slSnInE := float64(slider.objData.StartTime) - diff.Preempt*2/3 + slider.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.SliderSnakeInMult)))
+	slSnInE := float64(slider.objData.StartTime) - diff.Preempt*2/3 + slider.partLen*(math.Max(0.0, math.Min(1.0, settings.Objects.Sliders.Snaking.DurationMultiplier)))
 
-	if settings.Objects.SliderSnakeIn {
+	if settings.Objects.Sliders.Snaking.In {
 		slider.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
 	} else {
 		slider.sliderSnakeTail.SetValue(1)
 	}
 
-	if settings.Objects.SliderSnakeOut {
+	if settings.Objects.Sliders.Snaking.Out {
 		if slider.repeat%2 == 1 {
 			slider.sliderSnakeHead.AddEvent(float64(slider.objData.EndTime)-slider.partLen, float64(slider.objData.EndTime), 1)
 		} else {
@@ -727,7 +727,7 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 
 	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger {
 		if time < slider.objData.EndTime {
-			if settings.Objects.DrawScorePoints {
+			if settings.Objects.Sliders.DrawScorePoints {
 				shifted := utils.GetColorShifted(color, settings.Objects.Colors.ScorePointColorOffset)
 
 				scorePoint := skin.GetTexture("sliderscorepoint")
@@ -753,8 +753,10 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 
 		batch.SetSubScale(1, 1)
 
-		for i := len(slider.endCircles) - 1; i >= 0; i-- {
-			slider.endCircles[i].Draw(time, color, batch)
+		if settings.Objects.Sliders.DrawEndCircles {
+			for i := len(slider.endCircles) - 1; i >= 0; i-- {
+				slider.endCircles[i].Draw(time, color, batch)
+			}
 		}
 	}
 
@@ -762,10 +764,10 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 	slider.startCircle.Draw(time, color, batch)
 
 	if time >= slider.objData.StartTime && time <= slider.objData.EndTime {
-		slider.drawBall(time, batch, alpha, settings.Objects.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger)
+		slider.drawBall(time, batch, alpha, settings.Objects.Sliders.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger)
 	}
 
-	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawSliderFollowCircle && slider.follower != nil {
+	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.Sliders.DrawSliderFollowCircle && slider.follower != nil {
 		batch.SetTranslation(slider.Pos.Copy64())
 		batch.SetColor(1, 1, 1, alpha)
 		slider.follower.Draw(time, batch)

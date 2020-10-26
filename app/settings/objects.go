@@ -4,23 +4,29 @@ var Objects = initObjects()
 
 func initObjects() *objects {
 	return &objects{
-		ForceSliderBallTexture: true,
-		DrawApproachCircles:    true,
-		DrawComboNumbers:       true,
-		DrawReverseArrows:      true,
-		DrawSliderFollowCircle: true,
-		DrawFollowPoints:       true,
-		LoadSpinners:           false,
-		ScaleToTheBeat:         false,
-		SliderLOD:              50,
-		SliderPathLOD:          50,
-		SliderSnakeIn:          true,
-		SliderSnakeInMult:      0.0,
-		SliderSnakeOut:         true,
-		SliderMerge:            true,
-		SliderDistortions:      true,
-		DrawScorePoints:        true,
-		StackEnabled:           true,
+		DrawApproachCircles: true,
+		DrawComboNumbers:    true,
+		DrawFollowPoints:    true,
+		LoadSpinners:        true,
+		ScaleToTheBeat:      false,
+		StackEnabled:        true,
+		Sliders: &sliders{
+			ForceSliderBallTexture: true,
+			DrawEndCircles:         true,
+			DrawSliderFollowCircle: true,
+			DrawScorePoints:        true,
+			SliderMerge:            false,
+			SliderDistortions:      true,
+			Quality: &quality{
+				CircleLevelOfDetail: 50,
+				PathLevelOfDetail:   50,
+			},
+			Snaking: &snaking{
+				In:                 true,
+				Out:                true,
+				DurationMultiplier: 0,
+			},
+		},
 		Colors: &objectcolors{
 			MandalaTexturesTrigger: 5,
 			MandalaTexturesAlpha:   0.3,
@@ -62,24 +68,39 @@ func initObjects() *objects {
 }
 
 type objects struct {
-	ForceSliderBallTexture bool //true, if this is disabled, mandala texture will be used for slider ball
-	DrawApproachCircles    bool //true
-	DrawComboNumbers       bool
-	DrawReverseArrows      bool
+	DrawApproachCircles bool //true
+	DrawComboNumbers    bool
+	DrawFollowPoints    bool
+	LoadSpinners        bool
+	ScaleToTheBeat      bool //true, objects size is changing with music peak amplitude
+	StackEnabled        bool //true, stack leniency
+	Sliders             *sliders
+	Colors              *objectcolors
+}
+
+type sliders struct {
+	ForceSliderBallTexture bool
+	DrawEndCircles         bool
 	DrawSliderFollowCircle bool
-	DrawFollowPoints       bool
-	LoadSpinners           bool
-	ScaleToTheBeat         bool  //true, objects size is changing with music peak amplitude
-	SliderLOD              int64 //30, number of triangles in a circle
-	SliderPathLOD          int64 //50, int(pixelLength*(PathLOD/100)) => number of slider path points
-	SliderSnakeIn          bool
-	SliderSnakeInMult      float64
-	SliderSnakeOut         bool
+	DrawScorePoints        bool //true
 	SliderMerge            bool
 	SliderDistortions      bool //true, osu!stable slider distortions on aspire maps
-	DrawScorePoints        bool //true
-	StackEnabled           bool //true, stack leniency
-	Colors                 *objectcolors
+	Quality                *quality
+	Snaking                *snaking
+}
+
+type quality struct {
+	// Quality of slider unit circle, 50 means that circle will have 50 sides
+	CircleLevelOfDetail int64 //30, number of triangles in a circle
+
+	//Quality of slider path, 50 means that unit circle will be placed every 2 osu!pixels (100/PathLevelOfDetail)
+	PathLevelOfDetail int64 //50, int(pixelLength*(PathLOD/100)) => number of slider path points
+}
+
+type snaking struct {
+	In                 bool
+	Out                bool
+	DurationMultiplier float64
 }
 
 type objectcolors struct {

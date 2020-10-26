@@ -703,7 +703,7 @@ func (pl *Player) Draw(float64) {
 			}
 		}
 
-		if settings.Objects.SliderMerge {
+		if settings.Objects.Sliders.SliderMerge {
 			enabled := false
 
 			for j := 0; j < settings.DIVIDES; j++ {
@@ -751,7 +751,7 @@ func (pl *Player) Draw(float64) {
 				proxy := pl.processed[i]
 
 				if !proxy.IsSliderBody {
-					if enabled && !settings.Objects.SliderMerge {
+					if enabled && !settings.Objects.Sliders.SliderMerge {
 						enabled = false
 
 						sliderrenderer.EndRenderer()
@@ -761,7 +761,7 @@ func (pl *Player) Draw(float64) {
 					if !sp || j == 0 {
 						proxy.renderable.Draw(pl.progressMs, colors[j], pl.batch)
 					}
-				} else if !settings.Objects.SliderMerge {
+				} else if !settings.Objects.Sliders.SliderMerge {
 					if !enabled {
 						enabled = true
 

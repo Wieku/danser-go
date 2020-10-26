@@ -59,7 +59,7 @@ func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
 
 func (body *Body) setupPoints(curve *curves.MultiCurve) {
 	length := curve.GetLength()
-	numPoints := math32.Min(math32.Ceil(length*float32(settings.Objects.SliderPathLOD)/100.0), maxSliderPoints)
+	numPoints := math32.Min(math32.Ceil(length*float32(settings.Objects.Sliders.Quality.PathLevelOfDetail)/100.0), maxSliderPoints)
 
 	if numPoints > 0 {
 		body.topLeft = curve.PointAt(0)
@@ -75,7 +75,7 @@ func (body *Body) setupPoints(curve *curves.MultiCurve) {
 			body.bottomRight.Y = math32.Max(body.bottomRight.Y, point.Y)
 
 			multiplier := float32(1.0)
-			if settings.Objects.SliderDistortions {
+			if settings.Objects.Sliders.SliderDistortions {
 				multiplier = 3.0 //larger allowable area, we want to see distorted sliders "fully"
 			}
 
@@ -92,7 +92,7 @@ func (body *Body) setupVAO() {
 
 	body.vao = buffer.NewVertexArrayObject()
 
-	unitCircle := createUnitCircle(int(settings.Objects.SliderLOD))
+	unitCircle := createUnitCircle(int(settings.Objects.Sliders.Quality.CircleLevelOfDetail))
 
 	body.vao.AddVBO("default", len(unitCircle)/3, 0, attribute.Format{
 		{Name: "in_position", Type: attribute.Vec3},
@@ -193,7 +193,7 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	scaleX := 1.0
 	scaleY := 1.0
 
-	if settings.Objects.SliderDistortions {
+	if settings.Objects.Sliders.SliderDistortions {
 		tLS := baseProjView.Mul4x1(mgl32.Vec4{body.topLeft.X, body.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 		bRS := baseProjView.Mul4x1(mgl32.Vec4{body.bottomRight.X, body.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 
