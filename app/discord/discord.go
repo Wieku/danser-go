@@ -38,7 +38,9 @@ func Connect() {
 		for {
 			f, keepOpen := <-queue
 
-			f()
+			if f != nil {
+				f()
+			}
 
 			if !keepOpen {
 				break

@@ -25,6 +25,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
 	"image"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -357,7 +358,27 @@ func setWorkingDirectory() {
 }
 
 func main() {
-	defer discord.Disconnect()
+	file, err := os.Create("danser.log")
+	if err != nil {
+		panic(err)
+	}
+
+	log.SetOutput(io.MultiWriter(os.Stdout, file))
+
+	defer func() {
+		discord.Disconnect()
+
+		if err := recover(); err != nil {
+			log.Println("panic:", err)
+
+			for _, s := range utils.GetPanicStackTrace() {
+				log.Println(s)
+			}
+
+			os.Exit(1)
+		}
+	}()
+
 	setWorkingDirectory()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000

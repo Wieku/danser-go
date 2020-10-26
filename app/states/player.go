@@ -31,6 +31,7 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -345,7 +346,20 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.profilerU = frame.NewCounter()
 	limiter := frame.NewLimiter(10000)
+
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Println("panic:", err)
+
+				for _, s := range utils.GetPanicStackTrace() {
+					log.Println(s)
+				}
+
+				os.Exit(1)
+			}
+		}()
+
 		runtime.LockOSThread()
 
 		var lastT = qpc.GetNanoTime()
