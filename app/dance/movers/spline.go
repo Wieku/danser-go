@@ -103,22 +103,24 @@ func (mover *SplineMover) SetObjects(objs []objects.BaseObject) int {
 							angle = float32(ang) * 90 / 180 * math32.Pi
 						}
 					}
-				} else if sq1 >= min && sq2 >= min && sq1 <= max && sq2 <= max && settings.Dance.Spline.StreamWobble {
+				} else if sq1 >= min && sq2 >= min && sq1 <= max && sq2 <= max && (settings.Dance.Spline.StreamWobble || settings.Dance.Spline.StreamHalfCircle) {
 					if stream {
 						angle *= -1
-					} else {
-						pp1 := points[len(points)-1]
 
-						shoeF := pp1.X*pos2.Y + pos2.X*pos3.Y + pos3.X*pp1.Y
-						shoeS := pp1.Y*pos2.X + pos2.Y*pos3.X + pos3.Y*pp1.X
+						if math32.Abs(angle) < 0.01 {
+							pp1 := points[len(points)-1]
 
-						sig := (shoeF - shoeS) > 0
+							shoeF := pp1.X*pos2.Y + pos2.X*pos3.Y + pos3.X*pp1.Y
+							shoeS := pp1.Y*pos2.X + pos2.Y*pos3.X + pos3.Y*pp1.X
 
-						angle = math32.Pi / 2
-						if !sig {
-							angle *= -1
+							sig := (shoeF - shoeS) > 0
+
+							angle = math32.Pi / 2
+							if sig {
+								angle *= -1
+							}
 						}
-
+					} else {
 						stream = true
 					}
 				} else {
@@ -130,14 +132,28 @@ func (mover *SplineMover) SetObjects(objs []objects.BaseObject) int {
 					mid := pos1.Mid(pos2)
 
 					scale := float32(1.0)
-					if stream {
+					if stream && !settings.Dance.Spline.StreamHalfCircle {
 						scale = float32(settings.Dance.Spline.WobbleScale)
 					}
 
-					p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
+					if stream && settings.Dance.Spline.StreamHalfCircle {
+						sign := -1
+						if angle < 0 {
+							sign = 1
+						}
 
-					points = append(points, p4)
-					timing = append(timing, (objs[i].GetBasicData().StartTime-objs[i-1].GetBasicData().StartTime)/2+objs[i-1].GetBasicData().StartTime)
+						for t := -2; t <= 2; t++ {
+							p4 := mid.Sub(pos1).Scl(scale).Rotate(angle + float32(sign*t)*math32.Pi/6).Add(mid)
+
+							points = append(points, p4)
+							timing = append(timing, (objs[i].GetBasicData().StartTime-objs[i-1].GetBasicData().StartTime)*(3+int64(t))/6+objs[i-1].GetBasicData().StartTime)
+						}
+					} else {
+						p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
+
+						points = append(points, p4)
+						timing = append(timing, (objs[i].GetBasicData().StartTime-objs[i-1].GetBasicData().StartTime)/2+objs[i-1].GetBasicData().StartTime)
+					}
 				}
 			}
 		}

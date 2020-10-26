@@ -30,9 +30,10 @@ func initDance() *dance {
 			StreamTrigger:    130,
 		},
 		Spline: &spline{
-			RotationalForce: false,
-			StreamWobble:    true,
-			WobbleScale:     0.67,
+			RotationalForce:  false,
+			StreamHalfCircle: true,
+			StreamWobble:     true,
+			WobbleScale:      0.67,
 		},
 	}
 }
@@ -72,7 +73,8 @@ type circular struct {
 }
 
 type spline struct {
-	RotationalForce bool
-	StreamWobble    bool
-	WobbleScale     float64
+	RotationalForce  bool
+	StreamHalfCircle bool
+	StreamWobble     bool
+	WobbleScale      float64
 }
