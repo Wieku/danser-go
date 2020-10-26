@@ -19,11 +19,11 @@ uniform sampler2DArray tex;
 
 uniform float cutoff;
 
+uniform float borderWidth;
+
 in vec2 tex_coord;
 
 out vec4 color;
-
-const float borderWidth = 1.0f;
 
 void main()
 {

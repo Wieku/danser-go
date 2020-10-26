@@ -17,6 +17,7 @@ func initObjects() *objects {
 			DrawScorePoints:        true,
 			SliderMerge:            false,
 			SliderDistortions:      true,
+			BorderWidth:            1.0,
 			Quality: &quality{
 				CircleLevelOfDetail: 50,
 				PathLevelOfDetail:   50,
@@ -85,6 +86,7 @@ type sliders struct {
 	DrawScorePoints        bool //true
 	SliderMerge            bool
 	SliderDistortions      bool //true, osu!stable slider distortions on aspire maps
+	BorderWidth            float64
 	Quality                *quality
 	Snaking                *snaking
 }
