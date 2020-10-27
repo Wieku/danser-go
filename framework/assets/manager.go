@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 var zipHeader = []byte{0x50, 0x4b, 0x03, 0x04}
@@ -38,9 +39,6 @@ func Init(_local bool) {
 		replaced := make([]byte, len(zipHeader)+len(data))
 		copy(replaced, zipHeader)
 		copy(replaced[4:], data[4:])
-
-		log.Println(data[:10])
-		log.Println(replaced[:10])
 
 		zipFile, err = zip.NewReader(bytes.NewReader(replaced), int64(len(replaced)))
 		if err != nil {
@@ -74,12 +72,19 @@ func getFile(path string) (io.ReadCloser, int64, error) {
 		return fS, stat.Size(), err
 	}
 
+	path = strings.ReplaceAll(path, "\\", "/")
+
 	if f, exists := files[path]; exists {
 		fS, err := f.Open()
 		return fS, int64(f.UncompressedSize64), err
 	}
 
 	return nil, 0, os.ErrNotExist
+}
+
+func Open(path string) (io.ReadCloser, error) {
+	file, _, err := getFile(path)
+	return file, err
 }
 
 func GetBytes(path string) ([]byte, error) {
