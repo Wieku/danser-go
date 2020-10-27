@@ -39,6 +39,15 @@ danser***.exe <arguments>
 ```
 
 ### Project
+
+#### Prerequisites
+
+* [64-bit go (1.15 at least)](https://golang.org/dl/)
+* gcc (Linux/MacOS), [mingw-w64](http://mingw-w64.org/) (Windows)
+* libgl (Linux/MacOS)
+
+#### Building and running the project
+
 You need to clone the repository first and enter it.
 
 If you're running it for the first time or when you made some changes type:
