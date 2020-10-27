@@ -34,7 +34,7 @@ func NewSample(path string) *Sample {
 
 func NewSampleData(data []byte) *Sample {
 	player := &Sample{}
-	player.channel = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.ulong(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
+	player.channel = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
 
 	return player
 }

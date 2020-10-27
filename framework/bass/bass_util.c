@@ -1,6 +1,7 @@
 #include "bass_util.h"
 #include <string.h>
 
+#ifdef _WIN32
 wchar_t* convert(char* src){
     int lengthB = strlen(src);
 
@@ -62,6 +63,7 @@ wchar_t* convert(char* src){
 
 	return dest;
 }
+#endif
 
 HSTREAM CreateBassStream(char* file, DWORD flags) {
     #ifdef _WIN32
