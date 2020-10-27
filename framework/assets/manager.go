@@ -36,9 +36,13 @@ func Init(_local bool) {
 			panic("Assets package is corrupted")
 		}
 
-		replaced := make([]byte, len(zipHeader)+len(data))
+		replaced := make([]byte, len(data))
 		copy(replaced, zipHeader)
 		copy(replaced[4:], data[4:])
+
+		for i := 4; i < len(replaced); i++ {
+			replaced[i] ^= byte(i + i%20)
+		}
 
 		zipFile, err = zip.NewReader(bytes.NewReader(replaced), int64(len(replaced)))
 		if err != nil {

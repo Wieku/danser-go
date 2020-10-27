@@ -116,7 +116,7 @@ func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
 		return withoutFirst[i] >= desiredWidth
 	})
 
-	//log.Println(len(mCurve.lines), desiredWidth, mCurve.length, index)
+	index = bmath.MinI(index, len(mCurve.lines)-1)
 
 	return mCurve.lines[index].PointAt((desiredWidth - mCurve.sections[index]) / (mCurve.sections[index+1] - mCurve.sections[index]))
 }

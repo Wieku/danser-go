@@ -158,7 +158,7 @@ func run() {
 			}
 		}
 
-		assets.Init(build.Stream != "Release")
+		assets.Init(build.Stream == "Dev")
 
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
