@@ -50,7 +50,7 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 	fileData := (*[1 << 30]uint8)(filePointer)[:_size:_size]
 
 	_, err := file.Read(fileData)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return nil, err
 	}
 
@@ -60,8 +60,7 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 	C.free(filePointer)
 
 	if data == nil {
-		msg := C.GoString(C.stbi_failure_reason())
-		return nil, errors.New(msg)
+		return nil, errors.New(C.GoString(C.stbi_failure_reason()))
 	}
 
 	pixmap := new(Pixmap)
