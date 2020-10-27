@@ -85,11 +85,10 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 }
 
 func parseEvents(line []string, beatMap *BeatMap) {
-	if line[0] == "0" {
-		beatMap.Bg += strings.Replace(line[2], "\"", "", -1)
-	}
-	if line[0] == "2" {
-		beatMap.PausesText += line[1] + "," + line[2]
+	switch line[0] {
+	case "Background", "0":
+		beatMap.Bg = strings.Replace(line[2], "\"", "", -1)
+	case "Break", "2":
 		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
 	}
 }
@@ -98,12 +97,6 @@ func parseHitObjects(line []string, beatMap *BeatMap) {
 	obj := objects.GetObject(line)
 
 	if obj != nil {
-		/*if o, ok := obj.(*objects.Slider); ok {
-			o.SetTiming(beatMap.Timings)
-		}
-		if o, ok := obj.(*objects.Circle); ok {
-			o.SetTiming(beatMap.Timings)
-		}*/
 		beatMap.HitObjects = append(beatMap.HitObjects, obj)
 	}
 }
@@ -138,7 +131,6 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 	var currentSection string
 	counter := 0
-	counter1 := 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -166,32 +158,21 @@ func ParseBeatMap(beatMap *BeatMap) error {
 			}
 		case "Events":
 			if arr := tokenize(line, ","); len(arr) > 1 {
-				if arr[0] == "2" {
-					if counter1 > 0 {
-						beatMap.PausesText += ","
-					}
-					counter1++
-				}
-
 				parseEvents(arr, beatMap)
 			}
 		case "TimingPoints":
 			if arr := tokenize(line, ","); len(arr) > 1 {
-				if counter > 0 {
-					beatMap.TimingPoints += "|"
-				}
+				beatMap.ParsePoint(line)
 				counter++
-
-				beatMap.TimingPoints += line
 			}
 		}
 	}
 
-	beatMap.LoadTimingPoints()
+	//beatMap.LoadTimingPoints()
 
 	file.Seek(0, 0)
 
-	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || beatMap.TimingPoints == "" {
+	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || counter == 0 {
 		return errors.New("corrupted file")
 	}
 
@@ -213,8 +194,40 @@ func ParseBeatMapFile(file *os.File) *BeatMap {
 	return beatMap
 }
 
-func ParseObjects(beatMap *BeatMap) {
+func ParseTimingPointsAndPauses(beatMap *BeatMap) {
+	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	defer file.Close()
 
+	if err != nil {
+		panic(err)
+	}
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 10*64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
+	var currentSection string
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		section := getSection(line)
+		if section != "" {
+			currentSection = section
+			continue
+		}
+
+		switch currentSection {
+		case "Events":
+			if arr := tokenize(line, ","); len(arr) > 1 {
+				beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(arr))
+			}
+		case "TimingPoints":
+			if arr := tokenize(line, ","); arr != nil {
+				beatMap.ParsePoint(line)
+			}
+		}
+	}
+}
+
+func ParseObjects(beatMap *BeatMap) {
 	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
 	defer file.Close()
 
@@ -272,5 +285,6 @@ func ParseObjects(beatMap *BeatMap) {
 	for _, obj := range beatMap.HitObjects {
 		obj.SetTiming(beatMap.Timings)
 	}
+
 	calculateStackLeniency(beatMap)
 }

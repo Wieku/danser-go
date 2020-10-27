@@ -287,6 +287,7 @@ func run() {
 		bass.Init()
 		audio.LoadSamples()
 
+		beatmap.ParseTimingPointsAndPauses(beatMap)
 		beatmap.ParseObjects(beatMap)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)

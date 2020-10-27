@@ -20,9 +20,9 @@ import (
 
 var dbFile *sql.DB
 
-var currentPreVersion = 20181111
+const databaseVersion = 20201027
 
-const databaseVersion = 20181111
+var currentPreVersion = databaseVersion
 
 type toRemove struct {
 	dir  string
@@ -37,9 +37,13 @@ func Init() {
 		panic(err)
 	}
 
-	_, err = dbFile.Exec(`CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, pauses TEXT, timingPoints TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);
-							CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
-							CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);`)
+	_, err = dbFile.Exec(`
+		PRAGMA main.auto_vacuum = FULL;
+		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);
+		CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
+		CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);
+		vacuum;
+	`)
 
 	if err != nil {
 		panic(err)
@@ -67,6 +71,25 @@ func Init() {
 	if currentPreVersion < 20181111 {
 		_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN hpdrain REAL;
 							 ALTER TABLE beatmaps ADD COLUMN od REAL;`)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if currentPreVersion < 20201027 {
+		_, err = dbFile.Exec(`
+			BEGIN TRANSACTION;
+			CREATE TEMPORARY TABLE beatmaps_backup(dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);
+			INSERT INTO beatmaps_backup SELECT dir, file, lastModified, title, titleUnicode, artist, artistUnicode, creator, version, source, tags, cs, ar, sliderMultiplier, sliderTickRate, audioFile, previewTime, sampleSet, stackLeniency, mode, bg, md5, dateAdded, playCount, lastPlayed, hpdrain, od FROM beatmaps;
+			DROP TABLE beatmaps;
+			CREATE TABLE beatmaps(dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);
+			INSERT INTO beatmaps SELECT * FROM beatmaps_backup;
+			DROP TABLE beatmaps_backup;
+			CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
+			COMMIT;
+			vacuum;
+		`)
 
 		if err != nil {
 			panic(err)
@@ -108,7 +131,12 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 		if strings.HasSuffix(f.Name(), ".osu") && filepath.Dir(filepath.Dir(path)) == filepath.Clean(searchDir) {
 			cachedTime := mod[filepath.Base(filepath.Dir(path))+"/"+f.Name()]
 			if cachedTime != f.ModTime().UnixNano()/1000000 {
-				removeBeatmap(filepath.Base(filepath.Dir(path)), f.Name())
+				if cachedTime > 0 {
+					removeBeatmap(filepath.Base(filepath.Dir(path)), f.Name())
+					log.Println("Found new beatmap version:", f.Name())
+				} else {
+					log.Println("New beatmap found:", f.Name())
+				}
 
 				file, err := os.Open(path)
 
@@ -248,8 +276,6 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.StackLeniency,
 				&mode,
 				&beatmap.Bg,
-				&beatmap.PausesText,
-				&beatmap.TimingPoints,
 				&beatmap.MD5,
 				&beatmap.TimeAdded,
 				&beatmap.PlayCount,
@@ -262,7 +288,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 			beatmap.Diff.SetHPDrain(hp)
 			beatmap.Diff.SetOD(od)
 
-			if beatmap.Name+beatmap.Artist+beatmap.Creator == "" || beatmap.TimingPoints == "" {
+			if beatmap.Name+beatmap.Artist+beatmap.Creator == "" {
 				log.Println("Corrupted cached beatmap found. Removing from database:", beatmap.File)
 				removeList = append(removeList, toRemove{beatmap.Dir, beatmap.File})
 				continue
@@ -272,8 +298,6 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 			if beatmaps[key] > 0 {
 				bMaps[beatmaps[key]-1] = beatmap
-				beatmap.LoadPauses()
-				beatmap.LoadTimingPoints()
 			}
 
 		}
@@ -282,7 +306,6 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 	for _, b := range removeList {
 		removeBeatmap(b.dir, b.file)
 	}
-
 }
 
 func updateBeatmaps(bMaps []*beatmap.BeatMap) {
@@ -290,7 +313,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	if err == nil {
 		var st *sql.Stmt
-		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
 		if err == nil {
 			for _, bMap := range bMaps {
@@ -315,8 +338,6 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.StackLeniency,
 					0,
 					bMap.Bg,
-					bMap.PausesText,
-					bMap.TimingPoints,
 					bMap.MD5,
 					bMap.TimeAdded,
 					bMap.PlayCount,
