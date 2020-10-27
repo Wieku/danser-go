@@ -177,7 +177,14 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 
 	log.Println("Loaded", len(allMaps), "total.")
 
-	return allMaps
+	result := make([]*beatmap.BeatMap, 0)
+	for _, b := range allMaps {
+		if b.Mode == 0 {
+			result = append(result, b)
+		}
+	}
+
+	return result
 }
 
 func UpdatePlayStats(beatmap *beatmap.BeatMap) {
@@ -247,7 +254,6 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 		for res.Next() {
 			beatmap := beatmap.NewBeatMap()
-			var mode int
 
 			var cs float64
 			var ar float64
@@ -274,7 +280,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.PreviewTime,
 				&beatmap.Timings.BaseSet,
 				&beatmap.StackLeniency,
-				&mode,
+				&beatmap.Mode,
 				&beatmap.Bg,
 				&beatmap.MD5,
 				&beatmap.TimeAdded,
@@ -336,7 +342,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.PreviewTime,
 					bMap.Timings.BaseSet,
 					bMap.StackLeniency,
-					0,
+					bMap.Mode,
 					bMap.Bg,
 					bMap.MD5,
 					bMap.TimeAdded,

@@ -19,6 +19,8 @@ type BeatMap struct {
 	Source        string
 	Tags          string
 
+	Mode int64
+
 	SliderMultiplier float64
 	StackLeniency    float64
 

@@ -16,9 +16,7 @@ import (
 func parseGeneral(line []string, beatMap *BeatMap) bool {
 	switch line[0] {
 	case "Mode":
-		if line[1] != "0" {
-			return true
-		}
+		beatMap.Mode, _ = strconv.ParseInt(line[1], 10, 64)
 	case "StackLeniency":
 		beatMap.StackLeniency, _ = strconv.ParseFloat(line[1], 64)
 		if math.IsNaN(beatMap.StackLeniency) {
@@ -128,6 +126,8 @@ func ParseBeatMap(beatMap *BeatMap) error {
 		return err
 	}
 	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 10*1024*1024)
+	scanner.Buffer(buf, cap(buf))
 
 	var currentSection string
 	counter := 0
@@ -202,8 +202,8 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 		panic(err)
 	}
 	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 10*64*1024)
-	scanner.Buffer(buf, 10*1024*1024)
+	buf := make([]byte, 0, 10*1024*1024)
+	scanner.Buffer(buf, cap(buf))
 	var currentSection string
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -235,8 +235,8 @@ func ParseObjects(beatMap *BeatMap) {
 		panic(err)
 	}
 	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 10*64*1024)
-	scanner.Buffer(buf, 10*1024*1024)
+	buf := make([]byte, 0, 10*1024*1024)
+	scanner.Buffer(buf, cap(buf))
 	var currentSection string
 	for scanner.Scan() {
 		line := scanner.Text()
