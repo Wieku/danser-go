@@ -49,8 +49,24 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 	filePointer := C.malloc(C.ulonglong(_size))
 	fileData := (*[1 << 30]uint8)(filePointer)[:_size:_size]
 
-	_, err := file.Read(fileData)
-	if err != nil && err != io.EOF {
+	var err error
+
+	var i, n int
+
+	for {
+		n, err = file.Read(fileData[i:])
+		i += n
+
+		if err != nil || i >= len(fileData) {
+			if err == io.EOF {
+				err = nil
+			}
+
+			break
+		}
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
