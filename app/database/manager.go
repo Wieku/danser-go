@@ -240,42 +240,40 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
 	}
 
-	if currentPreVersion < databaseVersion {
+	if currentPreVersion < 20181111 {
 		log.Println("Updating cached beatmaps")
 		tx, err := dbFile.Begin()
 		if err != nil {
 			panic(err)
 		}
 
-		if currentPreVersion < 20181111 {
-			var st *sql.Stmt
-			st, err = tx.Prepare("UPDATE beatmaps SET hpdrain = ?, od = ? WHERE dir = ? AND file = ?")
-			if err != nil {
-				panic(err)
-			}
+		var st *sql.Stmt
+		st, err = tx.Prepare("UPDATE beatmaps SET hpdrain = ?, od = ? WHERE dir = ? AND file = ?")
+		if err != nil {
+			panic(err)
+		}
 
-			for _, bMap := range bMaps {
-				err2 := beatmap.ParseBeatMap(bMap)
-				if err2 != nil {
-					log.Println("Corrupted cached beatmap found. Removing from database:", bMap.File)
-					removeList = append(removeList, toRemove{bMap.Dir, bMap.File})
-				} else {
-					_, err1 := st.Exec(
-						bMap.Diff.GetHPDrain(),
-						bMap.Diff.GetOD(),
-						bMap.Dir,
-						bMap.File)
+		for _, bMap := range bMaps {
+			err2 := beatmap.ParseBeatMap(bMap)
+			if err2 != nil {
+				log.Println("Corrupted cached beatmap found. Removing from database:", bMap.File)
+				removeList = append(removeList, toRemove{bMap.Dir, bMap.File})
+			} else {
+				_, err1 := st.Exec(
+					bMap.Diff.GetHPDrain(),
+					bMap.Diff.GetOD(),
+					bMap.Dir,
+					bMap.File)
 
-					if err1 != nil {
-						log.Println(err1)
-					}
+				if err1 != nil {
+					log.Println(err1)
 				}
 			}
+		}
 
-			err = st.Close()
-			if err != nil {
-				panic(err)
-			}
+		err = st.Close()
+		if err != nil {
+			panic(err)
 		}
 
 		err = tx.Commit()
