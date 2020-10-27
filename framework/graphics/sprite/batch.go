@@ -3,6 +3,7 @@ package sprite
 import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -10,7 +11,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
-	"io/ioutil"
 	"math"
 )
 
@@ -49,12 +49,12 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 		panic(fmt.Sprintf("SpriteBatch size is too big, maximum sprites allowed: 10922, given: %d", maxSprites))
 	}
 
-	vert, err := ioutil.ReadFile("assets/shaders/sprite.vsh")
+	vert, err := assets.GetString("assets/shaders/sprite.vsh")
 	if err != nil {
 		panic(err)
 	}
 
-	frag, err := ioutil.ReadFile("assets/shaders/sprite.fsh")
+	frag, err := assets.GetString("assets/shaders/sprite.fsh")
 	if err != nil {
 		panic(err)
 	}

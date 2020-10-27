@@ -17,11 +17,11 @@ import (
 	"github.com/wieku/danser-go/app/states"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
-	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -158,6 +158,8 @@ func run() {
 			}
 		}
 
+		assets.Init(build.Stream != "Release")
+
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
@@ -198,10 +200,13 @@ func run() {
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 		input.Win = win
 
-		icon, _ := texture.NewPixmapFileString("assets/textures/dansercoin.png")
-		icon2, _ := texture.NewPixmapFileString("assets/textures/dansercoin48.png")
-		icon3, _ := texture.NewPixmapFileString("assets/textures/dansercoin24.png")
-		icon4, _ := texture.NewPixmapFileString("assets/textures/dansercoin16.png")
+		icon, eee := assets.GetPixmap("assets/textures/dansercoin.png")
+		if eee != nil {
+			log.Println(eee)
+		}
+		icon2, _ := assets.GetPixmap("assets/textures/dansercoin48.png")
+		icon3, _ := assets.GetPixmap("assets/textures/dansercoin24.png")
+		icon4, _ := assets.GetPixmap("assets/textures/dansercoin16.png")
 
 		win.SetIcon([]image.Image{icon.NRGBA(), icon2.NRGBA(), icon3.NRGBA(), icon4.NRGBA()})
 
@@ -269,7 +274,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		file, _ := os.Open("assets/fonts/Exo2-Bold.ttf")
+		file, _ := assets.Open("assets/fonts/Exo2-Bold.ttf")
 		font := font.LoadFont(file)
 		file.Close()
 

@@ -2,11 +2,11 @@ package effects
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
-	"io/ioutil"
 )
 
 type BloomEffect struct {
@@ -23,19 +23,19 @@ type BloomEffect struct {
 func NewBloomEffect(width, height int) *BloomEffect {
 	effect := new(BloomEffect)
 
-	vert, err := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	vert, err := assets.GetString("assets/shaders/fbopass.vsh")
 	if err != nil {
 		panic(err)
 	}
 
-	frag, err := ioutil.ReadFile("assets/shaders/brightfilter.fsh")
+	frag, err := assets.GetString("assets/shaders/brightfilter.fsh")
 	if err != nil {
 		panic(err)
 	}
 
 	effect.filterShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
-	frag, err = ioutil.ReadFile("assets/shaders/combine.fsh")
+	frag, err = assets.GetString("assets/shaders/combine.fsh")
 	if err != nil {
 		panic(err)
 	}

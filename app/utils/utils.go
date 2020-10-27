@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/zip"
 	"fmt"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	_ "golang.org/x/image/bmp"
 	"io"
@@ -12,10 +13,18 @@ import (
 	"strings"
 )
 
+func getPixmap(name string) (*texture.Pixmap, error) {
+	if strings.HasPrefix(name, "assets") {
+		return assets.GetPixmap(name)
+	}
+
+	return texture.NewPixmapFileString(name)
+}
+
 func LoadTexture(path string) (*texture.TextureSingle, error) {
 	log.Println("Loading texture:", path)
 
-	img, err := texture.NewPixmapFileString(path)
+	img, err := getPixmap(path)
 
 	if err == nil {
 		defer img.Dispose()
@@ -35,7 +44,7 @@ func LoadTexture(path string) (*texture.TextureSingle, error) {
 func LoadTextureToAtlas(atlas *texture.TextureAtlas, path string) (*texture.TextureRegion, error) {
 	log.Println("Loading texture into atlas:", path)
 
-	img, err := texture.NewPixmapFileString(path)
+	img, err := getPixmap(path)
 
 	if err == nil {
 		defer img.Dispose()

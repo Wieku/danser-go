@@ -4,11 +4,11 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
-	"io/ioutil"
 	"math"
 )
 
@@ -27,12 +27,12 @@ func NewBlurEffect(width, height int) *BlurEffect {
 	effect.size = mgl32.Vec2{float32(width), float32(height)}
 	effect.SetBlur(0, 0)
 
-	vert, err := ioutil.ReadFile("assets/shaders/fbopass.vsh")
+	vert, err := assets.GetString("assets/shaders/fbopass.vsh")
 	if err != nil {
 		panic(err)
 	}
 
-	frag, err := ioutil.ReadFile("assets/shaders/blur.fsh")
+	frag, err := assets.GetString("assets/shaders/blur.fsh")
 	if err != nil {
 		panic(err)
 	}

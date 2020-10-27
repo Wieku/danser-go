@@ -3,7 +3,9 @@ package skin
 import (
 	"bufio"
 	"fmt"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/math/color"
+	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -147,7 +149,15 @@ func ParseColor(text, errType string) color.Color {
 }
 
 func LoadInfo(path string) (*SkinInfo, error) {
-	file, err := os.Open(path)
+	var file io.ReadCloser
+	var err error
+
+	if strings.HasPrefix(path, "assets") {
+		file, err = assets.Open(path)
+	} else {
+		file, err = os.Open(path)
+	}
+
 	if err != nil {
 		return nil, err
 	}

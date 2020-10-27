@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -12,7 +13,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"io/ioutil"
 )
 
 var sliderShader *shader.RShader
@@ -27,7 +27,7 @@ var batch *sprite.SpriteBatch
 
 func InitRenderer() {
 
-	passSource, err := ioutil.ReadFile("assets/shaders/sliderpass.vsh")
+	passSource, err := assets.GetString("assets/shaders/sliderpass.vsh")
 
 	if err != nil {
 		panic(err)
@@ -35,13 +35,13 @@ func InitRenderer() {
 
 	sliderShader = shader.NewRShader(shader.NewSource(string(passSource), shader.Vertex))
 
-	colorVSource, err := ioutil.ReadFile("assets/shaders/slidercolor.vsh")
+	colorVSource, err := assets.GetString("assets/shaders/slidercolor.vsh")
 
 	if err != nil {
 		panic(err)
 	}
 
-	colorFSource, err := ioutil.ReadFile("assets/shaders/slidercolor.fsh")
+	colorFSource, err := assets.GetString("assets/shaders/slidercolor.fsh")
 
 	if err != nil {
 		panic(err)

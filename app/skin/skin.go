@@ -5,6 +5,7 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
@@ -253,6 +254,14 @@ func checkAtlas() {
 	}
 }
 
+func getPixmap(name string) (*texture.Pixmap, error) {
+	if strings.HasPrefix(name, "assets") {
+		return assets.GetPixmap(name)
+	}
+
+	return texture.NewPixmapFileString(name)
+}
+
 func loadTexture(name string) *texture.TextureRegion {
 	ext := filepath.Ext(name)
 
@@ -260,9 +269,9 @@ func loadTexture(name string) *texture.TextureRegion {
 
 	var region *texture.TextureRegion
 
-	image, err := texture.NewPixmapFileString(x2Name)
+	image, err := getPixmap(x2Name)
 	if err != nil {
-		image, err = texture.NewPixmapFileString(name)
+		image, err = getPixmap(name)
 		if err == nil {
 			region = &texture.TextureRegion{}
 			region.Width = int32(image.Width)
@@ -334,16 +343,29 @@ func GetSample(name string) *bass.Sample {
 	return sample
 }
 
+func getSample(name string) *bass.Sample {
+	if strings.HasPrefix(name, "assets") {
+		data, err := assets.GetBytes(name)
+		if err != nil {
+			return nil
+		}
+
+		return bass.NewSampleData(data)
+	}
+
+	return bass.NewSample(name)
+}
+
 func tryLoad(basePath string) *bass.Sample {
-	if sam := bass.NewSample(basePath + ".wav"); sam != nil {
+	if sam := getSample(basePath + ".wav"); sam != nil {
 		return sam
 	}
 
-	if sam := bass.NewSample(basePath + ".ogg"); sam != nil {
+	if sam := getSample(basePath + ".ogg"); sam != nil {
 		return sam
 	}
 
-	if sam := bass.NewSample(basePath + ".mp3"); sam != nil {
+	if sam := getSample(basePath + ".mp3"); sam != nil {
 		return sam
 	}
 

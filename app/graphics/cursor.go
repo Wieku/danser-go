@@ -6,13 +6,13 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"io/ioutil"
 	"math"
 	"sync"
 )
@@ -37,8 +37,16 @@ func initCursor() {
 		panic("Wrong cursor trail type")
 	}
 
-	vert, _ := ioutil.ReadFile("assets/shaders/cursortrail.vsh")
-	frag, _ := ioutil.ReadFile("assets/shaders/cursortrail.fsh")
+	vert, err := assets.GetString("assets/shaders/cursortrail.vsh")
+	if err != nil {
+		panic(err)
+	}
+
+	frag, err := assets.GetString("assets/shaders/cursortrail.fsh")
+	if err != nil {
+		panic(err)
+	}
+
 	cursorShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
 
 	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
