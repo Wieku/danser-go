@@ -9,6 +9,7 @@ import "C"
 import (
 	"github.com/wieku/danser-go/app/settings"
 	"os"
+	"unsafe"
 )
 
 type SubSample C.HCHANNEL
@@ -27,6 +28,13 @@ func NewSample(path string) *Sample {
 
 	player := &Sample{}
 	player.channel = C.LoadBassSample(C.CString(path), 32, C.BASS_SAMPLE_OVER_POS)
+
+	return player
+}
+
+func NewSampleData(data []byte) *Sample {
+	player := &Sample{}
+	player.channel = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.ulong(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
 
 	return player
 }
