@@ -13,6 +13,7 @@ require (
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/itchio/lzma v0.0.0-20190703113020-d3e24e3e3d49 // indirect
+	github.com/karrick/godirwalk v1.16.1
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mattn/go-sqlite3 v1.14.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect

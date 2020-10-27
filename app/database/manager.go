@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"log"
@@ -105,9 +106,13 @@ func Init() {
 func LoadBeatmaps() []*beatmap.BeatMap {
 	log.Println("Checking database...")
 
-	searchDir := settings.General.OsuSongsDir
+	searchDir, err := filepath.Abs(settings.General.OsuSongsDir)
+	if err != nil {
+		log.Println("Invalid song path given:", settings.General.OsuSongsDir)
+		return nil
+	}
 
-	_, err := os.Open(searchDir)
+	_, err = os.Open(searchDir)
 	if os.IsNotExist(err) {
 		log.Println(searchDir + " does not exist!")
 		return nil
@@ -118,52 +123,80 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 	newBeatmaps := make([]*beatmap.BeatMap, 0)
 	cachedBeatmaps := make([]*beatmap.BeatMap, 0)
 
-	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osz") {
-			log.Println("Unpacking", path, "to", filepath.Dir(path)+"/"+strings.TrimSuffix(f.Name(), ".osz"))
-			utils.Unzip(path, filepath.Dir(path)+"/"+strings.TrimSuffix(f.Name(), ".osz"))
-			os.Remove(path)
-		}
-		return nil
+	_ = godirwalk.Walk(searchDir, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() && osPathname != searchDir {
+				return godirwalk.SkipThis
+			}
+
+			if strings.HasSuffix(de.Name(), ".osz") {
+				log.Println("Unpacking", osPathname, "to", filepath.Dir(osPathname)+"/"+strings.TrimSuffix(de.Name(), ".osz"))
+				utils.Unzip(osPathname, filepath.Dir(osPathname)+"/"+strings.TrimSuffix(de.Name(), ".osz"))
+				os.Remove(osPathname)
+			}
+
+			return nil
+		},
+		Unsorted: true,
 	})
 
-	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osu") && filepath.Dir(filepath.Dir(path)) == filepath.Clean(searchDir) {
-			cachedTime := mod[filepath.Base(filepath.Dir(path))+"/"+f.Name()]
-			if cachedTime != f.ModTime().UnixNano()/1000000 {
-				if cachedTime > 0 {
-					removeBeatmap(filepath.Base(filepath.Dir(path)), f.Name())
-					log.Println("Found new beatmap version:", f.Name())
-				} else {
-					log.Println("New beatmap found:", f.Name())
+	err = godirwalk.Walk(searchDir, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() && osPathname != searchDir && filepath.Dir(osPathname) != searchDir {
+				return godirwalk.SkipThis
+			}
+
+			if strings.HasSuffix(de.Name(), ".osu") {
+				cachedTime := mod[filepath.Base(filepath.Dir(osPathname))+"/"+de.Name()]
+
+				stat, err := os.Stat(osPathname)
+				if err != nil {
+					log.Println("Failed to read file stats, skipping:", osPathname)
+					return nil
 				}
 
-				file, err := os.Open(path)
+				if cachedTime != stat.ModTime().UnixNano()/1000000 {
+					if cachedTime > 0 {
+						log.Println(cachedTime, stat.ModTime().UnixNano()/1000000, osPathname)
+						removeBeatmap(filepath.Base(filepath.Dir(osPathname)), de.Name())
+						log.Println("Found new beatmap version:", de.Name())
+					} else {
+						log.Println("New beatmap found:", de.Name())
+					}
 
-				if err == nil {
-					defer file.Close()
+					file, err := os.Open(osPathname)
 
-					if bMap := beatmap.ParseBeatMapFile(file); bMap != nil {
-						bMap.LastModified = f.ModTime().UnixNano() / 1000000
-						bMap.TimeAdded = time.Now().UnixNano() / 1000000
-						log.Println("Importing:", bMap.File)
+					if err == nil {
+						defer file.Close()
 
-						hash := md5.New()
-						if _, err := io.Copy(hash, file); err == nil {
-							bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
-							newBeatmaps = append(newBeatmaps, bMap)
+						if bMap := beatmap.ParseBeatMapFile(file); bMap != nil {
+							bMap.LastModified = stat.ModTime().UnixNano() / 1000000
+							bMap.TimeAdded = time.Now().UnixNano() / 1000000
+							log.Println("Importing:", bMap.File)
+
+							hash := md5.New()
+							if _, err := io.Copy(hash, file); err == nil {
+								bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
+								newBeatmaps = append(newBeatmaps, bMap)
+							}
 						}
 					}
+				} else {
+					bMap := beatmap.NewBeatMap()
+					bMap.Dir = filepath.Base(filepath.Dir(osPathname))
+					bMap.File = de.Name()
+					cachedBeatmaps = append(cachedBeatmaps, bMap)
 				}
-			} else {
-				bMap := beatmap.NewBeatMap()
-				bMap.Dir = filepath.Base(filepath.Dir(path))
-				bMap.File = f.Name()
-				cachedBeatmaps = append(cachedBeatmaps, bMap)
 			}
-		}
-		return nil
+
+			return nil
+		},
+		Unsorted: true,
 	})
+
+	if err != nil {
+		panic(err)
+	}
 
 	log.Println("Imported", len(newBeatmaps), "new beatmaps.")
 
