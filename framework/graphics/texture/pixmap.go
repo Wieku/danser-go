@@ -8,6 +8,7 @@ import "C"
 import (
 	"errors"
 	"image"
+	"io"
 	"os"
 	"unsafe"
 )
@@ -41,10 +42,14 @@ func NewPixmapFile(file *os.File) (*Pixmap, error) {
 		return nil, err
 	}
 
-	filePointer := C.malloc(C.ulonglong(stat.Size()))
-	fileData := (*[1 << 30]uint8)(filePointer)[:stat.Size():stat.Size()]
+	return NewPixmapReader(file, stat.Size())
+}
 
-	_, err = file.Read(fileData)
+func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
+	filePointer := C.malloc(C.ulonglong(_size))
+	fileData := (*[1 << 30]uint8)(filePointer)[:_size:_size]
+
+	_, err := file.Read(fileData)
 	if err != nil {
 		return nil, err
 	}
