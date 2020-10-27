@@ -39,7 +39,7 @@ void main()
 
     vec4 borderColorOuter = col_border1;
     vec4 borderColorInner = col_border;
-    vec4 outerShadow = vec4(vec3(0.0), 0.5 * distance_inv / borderStart * borderColorInner.a);
+    vec4 outerShadow = vec4(vec3(0.0f), 0.5f * distance_inv / borderStart * borderColorInner.a);
 
     vec4 bodyColorOuter = col_body1;
     vec4 bodyColorInner = col_body;
@@ -49,9 +49,9 @@ void main()
     float borderEnd = borderStart + borderWidthScaled;
 
     vec4 borderColorMix = mix(borderColorOuter, borderColorInner, smoothstep(borderMid - borderWidthScaled/4, borderMid + borderWidthScaled/4, distance_inv));
-    vec4 bodyColorMix = mix(bodyColorOuter, bodyColorInner, (distance_inv - borderEnd) / (1f - borderEnd));
+    vec4 bodyColorMix = mix(bodyColorOuter, bodyColorInner, (distance_inv - borderEnd) / (1.0f - borderEnd));
 
-    if (borderWidth < 0.01) {
+    if (borderWidth < 0.01f) {
         borderColorMix = outerShadow;
     }
 
