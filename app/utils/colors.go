@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"github.com/lucasb-eyer/go-colorful"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
@@ -14,8 +13,7 @@ func GetColorsH(baseHue, hueShift float64, times int, alpha float64) ([]color2.C
 }
 
 func GetColor(H, S, V, alpha float64) color2.Color {
-	color := colorful.Hsv(H, S, V)
-	return color2.Color{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
+	return color2.NewHSVA(float32(H), float32(S), float32(V), float32(alpha))
 }
 
 func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []color2.Color {
@@ -175,21 +173,3 @@ func GetColorsSVTA(baseHue, hueShift, tagShift float64, times, tag int, S, V, al
 
 	return colors, shifts
 }
-
-/*func GetColorShifted(color color2.Color, hueOffset float64) color2.Color {
-	color.
-	tohsv := colorful.Color{float64(color[0]), float64(color[1]), float64(color[2])}
-	h, s, v := tohsv.Hsv()
-	h += hueOffset
-
-	for h < 0 {
-		h += 360.0
-	}
-
-	for h > 360.0 {
-		h -= 360.0
-	}
-
-	col2 := colorful.Hsv(h, s, v)
-	return color2.Color{float32(col2.R), float32(col2.G), float32(col2.B), color.W()}
-}*/
