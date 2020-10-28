@@ -60,7 +60,7 @@ func main() {
 
 	log.Println("Saving to:", filepath.Join(path, "assets.dpak"))
 
-	err := ioutil.WriteFile(filepath.Join(path, "assets.dpak"), data, 755)
+	err := ioutil.WriteFile(filepath.Join(path, "assets.dpak"), data, 0644)
 	if err != nil {
 		panic(err)
 	}
