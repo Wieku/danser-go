@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"github.com/wieku/danser-go/app/utils"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
@@ -71,58 +70,19 @@ type cursor struct {
 	AdditiveBlending            bool
 }
 
-func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]color2.Color, []float64) {
+func (cr *cursor) GetColors(divides, cursors int, beatScale, alpha float64) []color2.Color {
 	if !cr.EnableCustomTagColorOffset {
-		return cr.Colors.GetColorsH(divides*tag, beatScale, alpha)
-	}
-	flashOffset := 0.0
-	cl := cr.Colors
-	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
-	}
-	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
-
-	for hue >= 360.0 {
-		hue -= 360.0
+		return cr.Colors.GetColors(divides*cursors, beatScale, alpha)
 	}
 
-	for hue < 0.0 {
-		hue += 360.0
+	colors := cr.Colors.GetColors(divides, beatScale, alpha)
+	colors1 := make([]color2.Color, divides*cursors)
+
+	for i := 0; i < divides; i++ {
+		for j := 0; j < cursors; j++ {
+			colors1[i*cursors+j] = colors[i].Shift(float32(j)*float32(cr.TagColorOffset), 0, 0)
+		}
 	}
 
-	offset := 360.0 / float64(divides)
-
-	if cl.EnableCustomHueOffset {
-		offset = cl.HueOffset
-	}
-
-	return utils.GetColorsSVT(hue, offset, cr.TagColorOffset, divides, tag, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
-}
-
-func (cr *cursor) GetColorsA(divides, tag int, beatScale, alpha float64) ([]color2.Color, []float64) {
-	if !cr.EnableCustomTagColorOffset {
-		return cr.Colors.GetColorsH(divides*tag, beatScale, alpha)
-	}
-	flashOffset := 0.0
-	cl := cr.Colors
-	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
-	}
-	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
-
-	for hue >= 360.0 {
-		hue -= 360.0
-	}
-
-	for hue < 0.0 {
-		hue += 360.0
-	}
-
-	offset := 360.0 / float64(divides)
-
-	if cl.EnableCustomHueOffset {
-		offset = cl.HueOffset
-	}
-
-	return utils.GetColorsSVTA(hue, offset, cr.TagColorOffset, divides, tag, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
+	return colors1
 }

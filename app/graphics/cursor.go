@@ -47,7 +47,7 @@ func initCursor() {
 		panic(err)
 	}
 
-	cursorShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+	cursorShader = shader.NewRShader(shader.NewSource(vert, shader.Vertex), shader.NewSource(frag, shader.Fragment))
 
 	cursorFbo = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true, false)
 	region := cursorFbo.Texture().GetRegion()
@@ -138,7 +138,7 @@ func NewCursor() *Cursor {
 	return cursor
 }
 
-func (cr *Cursor) SetPos(pt vector.Vector2f) {
+func (cursor *Cursor) SetPos(pt vector.Vector2f) {
 	tmp := pt
 
 	if settings.Cursor.BounceOnEdges {
@@ -167,92 +167,92 @@ func (cr *Cursor) SetPos(pt vector.Vector2f) {
 		}
 	}
 
-	cr.Position = tmp
+	cursor.Position = tmp
 }
 
-func (cr *Cursor) SetScreenPos(pt vector.Vector2f) {
-	cr.SetPos(Camera.Unproject(pt.Copy64()).Copy32())
+func (cursor *Cursor) SetScreenPos(pt vector.Vector2f) {
+	cursor.SetPos(Camera.Unproject(pt.Copy64()).Copy32())
 }
 
-func (cr *Cursor) Update(delta float64) {
+func (cursor *Cursor) Update(delta float64) {
 	delta = math.Abs(delta)
 
 	if settings.Cursor.TrailStyle == 3 {
-		cr.hueBase += settings.Cursor.Style23Speed / 360.0 * delta
-		if cr.hueBase > 1.0 {
-			cr.hueBase -= 1.0
-		} else if cr.hueBase < 0 {
-			cr.hueBase += 1.0
+		cursor.hueBase += settings.Cursor.Style23Speed / 360.0 * delta
+		if cursor.hueBase > 1.0 {
+			cursor.hueBase -= 1.0
+		} else if cursor.hueBase < 0 {
+			cursor.hueBase += 1.0
 		}
 	}
 
-	points := cr.Position.Dst(cr.LastPos)
+	points := cursor.Position.Dst(cursor.LastPos)
 	distance := float32(1.0 / settings.Cursor.TrailDensity)
 
 	dirtyLocal := false
 
 	if int(points/distance) > 0 {
-		temp := cr.LastPos
+		temp := cursor.LastPos
 		for i := distance; i < points; i += distance {
-			temp = cr.Position.Sub(cr.LastPos).Scl(i / points).Add(cr.LastPos)
-			cr.Points = append(cr.Points, temp)
-			cr.PointsC = append(cr.PointsC, cr.hueBase)
+			temp = cursor.Position.Sub(cursor.LastPos).Scl(i / points).Add(cursor.LastPos)
+			cursor.Points = append(cursor.Points, temp)
+			cursor.PointsC = append(cursor.PointsC, cursor.hueBase)
 
 			if settings.Cursor.TrailStyle == 2 {
-				cr.hueBase += settings.Cursor.Style23Speed / 360.0 * float64(distance)
-				if cr.hueBase > 1.0 {
-					cr.hueBase -= 1.0
-				} else if cr.hueBase < 0 {
-					cr.hueBase += 1.0
+				cursor.hueBase += settings.Cursor.Style23Speed / 360.0 * float64(distance)
+				if cursor.hueBase > 1.0 {
+					cursor.hueBase -= 1.0
+				} else if cursor.hueBase < 0 {
+					cursor.hueBase += 1.0
 				}
 			}
 		}
 		dirtyLocal = true
-		cr.LastPos = temp
+		cursor.LastPos = temp
 	}
 
-	if len(cr.Points) > 0 {
-		cr.removeCounter += float64(len(cr.Points)+3) / (360.0 / delta) * settings.Cursor.TrailRemoveSpeed
-		times := int(math.Floor(cr.removeCounter))
+	if len(cursor.Points) > 0 {
+		cursor.removeCounter += float64(len(cursor.Points)+3) / (360.0 / delta) * settings.Cursor.TrailRemoveSpeed
+		times := int(math.Floor(cursor.removeCounter))
 		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) * settings.Cursor.TrailDensity)
 
-		if len(cr.Points) > lengthAdjusted {
-			cr.Points = cr.Points[len(cr.Points)-lengthAdjusted:]
-			cr.PointsC = cr.PointsC[len(cr.PointsC)-lengthAdjusted:]
-			cr.removeCounter = 0
+		if len(cursor.Points) > lengthAdjusted {
+			cursor.Points = cursor.Points[len(cursor.Points)-lengthAdjusted:]
+			cursor.PointsC = cursor.PointsC[len(cursor.PointsC)-lengthAdjusted:]
+			cursor.removeCounter = 0
 			dirtyLocal = true
 		} else if times > 0 {
-			times = bmath.MinI(times, len(cr.Points))
+			times = bmath.MinI(times, len(cursor.Points))
 
-			cr.Points = cr.Points[times:]
-			cr.PointsC = cr.PointsC[times:]
-			cr.removeCounter -= float64(times)
+			cursor.Points = cursor.Points[times:]
+			cursor.PointsC = cursor.PointsC[times:]
+			cursor.removeCounter -= float64(times)
 
 			dirtyLocal = true
 		}
 	}
 
 	if dirtyLocal {
-		cr.mutex.Lock()
+		cursor.mutex.Lock()
 
-		for i, o := range cr.Points {
-			inv := float32(len(cr.Points) - i - 1)
+		for i, o := range cursor.Points {
+			inv := float32(len(cursor.Points) - i - 1)
 
-			hue := float32(cr.PointsC[i])
+			hue := float32(cursor.PointsC[i])
 			if settings.Cursor.TrailStyle == 4 {
-				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cr.Points))
+				hue = float32(settings.Cursor.Style4Shift) * inv / float32(len(cursor.Points))
 			}
 
 			index := i * 3
-			cr.vertices[index] = o.X
-			cr.vertices[index+1] = o.Y
-			cr.vertices[index+2] = hue
+			cursor.vertices[index] = o.X
+			cursor.vertices[index+1] = o.Y
+			cursor.vertices[index+2] = hue
 		}
 
-		cr.vaoSize = len(cr.Points)
-		cr.VaoPos = cr.Position
-		cr.vaoDirty = true
-		cr.mutex.Unlock()
+		cursor.vaoSize = len(cursor.Points)
+		cursor.VaoPos = cursor.Position
+		cursor.vaoDirty = true
+		cursor.mutex.Unlock()
 	}
 }
 
@@ -295,11 +295,13 @@ func EndCursorRender() {
 	blend.Pop()
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color color2.Color, hueshift float64) {
-	cursor.DrawM(scale, batch, color, color, hueshift)
+func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color color2.Color) {
+	cursor.DrawM(scale, batch, color, color)
 }
 
-func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color color2.Color, colorGlow color2.Color, hueshift float64) {
+func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color color2.Color, colorGlow color2.Color) {
+	hueShift := color.GetHue()
+
 	if useAdditive {
 		cursorFbo.Bind()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
@@ -311,6 +313,8 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color colo
 	if settings.Cursor.EnableCustomTrailGlowOffset {
 		colorGlow = color.Shift(float32(settings.Cursor.TrailGlowOffset), 0, 0)
 	}
+
+	glowShift := colorGlow.GetHue()
 
 	if settings.Cursor.TrailStyle > 1 {
 		color = color.Shift(float32(cursor.hueBase*360), 0, 0)
@@ -346,22 +350,24 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color colo
 	if settings.Cursor.EnableTrailGlow {
 		cursorScl = float32(siz * (12.0 / 18) * scale)
 		innerLengthMult = float32(settings.Cursor.InnerLengthMult)
+
 		cursorShader.SetUniform("col_tint", colorD2)
 		cursorShader.SetUniform("scale", float32(siz*(16.0/18)*scale*settings.Cursor.TrailScale))
 		cursorShader.SetUniform("endScale", float32(settings.Cursor.GlowEndScale))
 		if settings.Cursor.TrailStyle > 1 {
-			cursorShader.SetUniform("hueshift", float32((hueshift-36)/360))
+			cursorShader.SetUniform("hueshift", glowShift/360)
 		}
+
 		cursor.vao.DrawInstanced(0, cursor.instances)
 	}
 
-	if settings.Cursor.TrailStyle > 1 {
-		cursorShader.SetUniform("hueshift", float32(hueshift/360))
-	}
 	cursorShader.SetUniform("col_tint", colorD)
 	cursorShader.SetUniform("scale", cursorScl*float32(settings.Cursor.TrailScale))
 	cursorShader.SetUniform("points", float32(len(cursor.Points))*innerLengthMult)
 	cursorShader.SetUniform("endScale", float32(settings.Cursor.TrailEndScale))
+	if settings.Cursor.TrailStyle > 1 {
+		cursorShader.SetUniform("hueshift", hueShift/360)
+	}
 
 	cursor.vao.DrawInstanced(0, cursor.instances)
 

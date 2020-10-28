@@ -584,9 +584,9 @@ func (pl *Player) Draw(float64) {
 		settings.Cursor.Colors.Update(timMs)
 	}
 
-	colors := settings.Objects.Colors.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	colors1, hshifts := settings.Cursor.GetColors(settings.DIVIDES /*settings.TAG*/, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
-	colors2 := colors
+	objectColors := settings.Objects.Colors.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	colors2 := objectColors
 
 	if settings.Objects.Colors.EnableCustomSliderBorderColor {
 		colors2 = settings.Objects.Colors.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
@@ -599,7 +599,7 @@ func (pl *Player) Draw(float64) {
 
 		pl.batch.SetCamera(cameras[0])
 
-		pl.overlay.DrawBeforeObjects(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		pl.overlay.DrawBeforeObjects(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 
 		pl.batch.End()
 		pl.batch.ResetTransform()
@@ -779,7 +779,7 @@ func (pl *Player) Draw(float64) {
 
 					_, sp := pl.processed[i].renderable.(*objects.Spinner)
 					if !sp || j == 0 {
-						proxy.renderable.Draw(pl.progressMs, colors[j], pl.batch)
+						proxy.renderable.Draw(pl.progressMs, objectColors[j], pl.batch)
 					}
 				} else if !settings.Objects.Sliders.SliderMerge {
 					if !enabled {
@@ -811,7 +811,7 @@ func (pl *Player) Draw(float64) {
 
 				for i := len(pl.processed) - 1; i >= 0; i-- {
 					if s := pl.processed[i]; !s.IsSliderBody {
-						s.renderable.DrawApproach(pl.progressMs, colors[j], pl.batch)
+						s.renderable.DrawApproach(pl.progressMs, objectColors[j], pl.batch)
 					}
 				}
 			}
@@ -827,7 +827,7 @@ func (pl *Player) Draw(float64) {
 
 		pl.batch.SetCamera(cameras[0])
 
-		pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		pl.overlay.DrawNormal(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 
 		pl.batch.End()
 	}
@@ -857,10 +857,10 @@ func (pl *Player) Draw(float64) {
 					ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
 				}
 
-				col1 := colors1[baseIndex]
-				col2 := colors1[ind]
+				col1 := cursorColors[baseIndex]
+				col2 := cursorColors[ind]
 
-				g.DrawM(scale2, pl.batch, col1, col2, hshifts[baseIndex])
+				g.DrawM(scale2, pl.batch, col1, col2)
 			}
 		}
 
@@ -874,12 +874,12 @@ func (pl *Player) Draw(float64) {
 		pl.batch.SetScale(1, 1)
 
 		if !pl.overlay.NormalBeforeCursor() {
-			pl.overlay.DrawNormal(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+			pl.overlay.DrawNormal(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 		}
 
 		pl.batch.SetCamera(pl.scamera.GetProjectionView())
 
-		pl.overlay.DrawHUD(pl.batch, colors1, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		pl.overlay.DrawHUD(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
 
 		pl.batch.End()
 	}

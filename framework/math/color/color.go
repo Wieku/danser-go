@@ -44,6 +44,11 @@ func NewHSV(h, s, v float32) Color {
 	return NewHSVA(h, s, v, 1.0)
 }
 
+func (c Color) GetHue() float32 {
+	h1, _, _ := RGBToHSV(c.R, c.G, c.B)
+	return h1
+}
+
 func (c Color) Mix(c1 Color, t float32) Color {
 	t = bmath.ClampF32(t, 0.0, 1.0)
 	return NewRGBA(

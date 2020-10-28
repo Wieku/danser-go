@@ -3,6 +3,7 @@ package settings
 import (
 	"github.com/wieku/danser-go/app/utils"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"math"
 )
 
 type hsv struct {
@@ -23,11 +24,9 @@ type color struct {
 func (cl *color) Update(delta float64) {
 	if cl.EnableRainbow {
 		cl.currentHue += cl.RainbowSpeed / 1000.0 * delta
-		for cl.currentHue >= 360.0 {
-			cl.currentHue -= 360.0
-		}
 
-		for cl.currentHue < 0.0 {
+		cl.currentHue = math.Mod(cl.currentHue, 360)
+		if cl.currentHue < 0.0 {
 			cl.currentHue += 360.0
 		}
 	} else {
@@ -40,45 +39,16 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []color2.Color
 	if cl.FlashToTheBeat {
 		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
 	}
-	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
 
-	for hue >= 360.0 {
-		hue -= 360.0
-	}
-
-	for hue < 0.0 {
+	hue := math.Mod(cl.BaseColor.Hue+cl.currentHue+flashOffset, 360)
+	if hue < 0.0 {
 		hue += 360.0
 	}
 
 	offset := 360.0 / float64(divides)
-
 	if cl.EnableCustomHueOffset {
 		offset = cl.HueOffset
 	}
 
 	return utils.GetColorsSV(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
-}
-
-func (cl *color) GetColorsH(divides int, beatScale, alpha float64) ([]color2.Color, []float64) {
-	flashOffset := 0.0
-	if cl.FlashToTheBeat {
-		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
-	}
-	hue := cl.BaseColor.Hue + cl.currentHue + flashOffset
-
-	for hue >= 360.0 {
-		hue -= 360.0
-	}
-
-	for hue < 0.0 {
-		hue += 360.0
-	}
-
-	offset := 360.0 / float64(divides)
-
-	if cl.EnableCustomHueOffset {
-		offset = cl.HueOffset
-	}
-
-	return utils.GetColorsSVH(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
