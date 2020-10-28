@@ -45,6 +45,7 @@ danser***.exe <arguments>
 * [64-bit go (1.15 at least)](https://golang.org/dl/)
 * gcc (Linux/MacOS), [mingw-w64](http://mingw-w64.org/) (Windows)
 * libgl (Linux/MacOS)
+* xorg-dev (Linux)
 
 #### Building and running the project
 
@@ -59,7 +60,7 @@ This will automatically download and build needed dependencies.
 
 Then type:
 ```bash
-danser-go <arguments>
+./danser-go <arguments>
 ```
 
 #### Arguments
@@ -84,6 +85,8 @@ Examples which should give the same result:
 <executable> -d="Overdrive" -tag=2 //Assuming that there is only ONE map with "Overdrive" as its difficulty name
 
 <executable> -t="Brain Power" -d="Overdrive" -tag=2
+
+<executable> -t "Brain Power" -d Overdrive -tag 2
 
 <executable> -t="ain pow" -difficulty="rdrive" -tag=2
 
