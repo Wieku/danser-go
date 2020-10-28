@@ -191,6 +191,13 @@ func (s *RShader) SetUniform(name string, value interface{}) {
 		value := value.(mgl32.Mat4x3)
 		gl.UniformMatrix4x3fv(uniform.Location, 1, false, &value[0])
 	default: // We assume that uniform is of type int or sampler
+		if value, ok := value.(int); ok {
+			value := int32(value)
+			gl.Uniform1iv(uniform.Location, 1, &value)
+
+			break
+		}
+
 		value := value.(int32)
 		gl.Uniform1iv(uniform.Location, 1, &value)
 	}
