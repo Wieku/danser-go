@@ -84,3 +84,7 @@ func (c Color) PackFloat() float32 {
 func (c Color) ToVec4() mgl32.Vec4 {
 	return mgl32.Vec4{c.R, c.G, c.B, c.A}
 }
+
+func (c Color) ToArray() []float32 {
+	return []float32{c.R, c.G, c.B, c.A}
+}

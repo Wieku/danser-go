@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
+	"github.com/wieku/danser-go/framework/math/color"
 	"runtime"
 )
 
@@ -154,6 +155,12 @@ func (s *RShader) SetUniform(name string, value interface{}) {
 		value := value.(mgl32.Vec3)
 		gl.Uniform3fv(uniform.Location, 1, &value[0])
 	case attribute.Vec4:
+		if c, ok := value.(color.Color); ok {
+			gl.Uniform4fv(uniform.Location, 1, &c.ToArray()[0])
+
+			break
+		}
+
 		value := value.(mgl32.Vec4)
 		gl.Uniform4fv(uniform.Location, 1, &value[0])
 	case attribute.Mat2:
