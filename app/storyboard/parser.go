@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"log"
 	"strconv"
 	"strings"
@@ -174,15 +175,15 @@ func parseCommand(data []string) []*animation.Transformation {
 		case "MY":
 			transforms = append(transforms, animation.NewSingleTransform(animation.MoveY, easeFunc, start, end, section[0], nextSection[0]))
 		case "C":
-			color1 := bmath.Color{
-				R: section[0],
-				G: section[1],
-				B: section[2],
+			color1 := color2.Color{
+				R: float32(section[0]),
+				G: float32(section[1]),
+				B: float32(section[2]),
 			}
-			color2 := bmath.Color{
-				R: nextSection[0],
-				G: nextSection[1],
-				B: nextSection[2],
+			color2 := color2.Color{
+				R: float32(nextSection[0]),
+				G: float32(nextSection[1]),
+				B: float32(nextSection[2]),
 			}
 			transforms = append(transforms, animation.NewColorTransform(animation.Color3, easeFunc, start, end, color1, color2))
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -175,7 +176,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	body.previousEnd = endInstance
 }
 
-func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset vector.Vector2f, scale float32, bodyInner, bodyOuter, borderInner, borderOuter mgl32.Vec4) {
+func (body *Body) DrawNormal(projection mgl32.Mat4, stackOffset vector.Vector2f, scale float32, bodyInner, bodyOuter, borderInner, borderOuter color2.Color) {
 	if body.framebuffer == nil || body.disposed || len(body.points) == 0 {
 		return
 	}

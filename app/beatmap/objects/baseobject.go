@@ -1,9 +1,9 @@
 package objects
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"strconv"
 	"strings"
@@ -19,8 +19,8 @@ type BaseObject interface {
 }
 
 type Renderable interface {
-	Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool
-	DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch)
+	Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool
+	DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch)
 }
 
 type basicData struct {

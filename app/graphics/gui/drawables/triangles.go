@@ -1,11 +1,11 @@
 package drawables
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"math/rand"
@@ -26,11 +26,11 @@ type Triangles struct {
 	counter      float64
 	velocity     float64
 	fft          []float64
-	colorPalette []bmath.Color
+	colorPalette []color2.Color
 	music        *bass.Track
 }
 
-func NewTriangles(colors []bmath.Color) *Triangles {
+func NewTriangles(colors []color2.Color) *Triangles {
 	visualiser := &Triangles{triangles: make([]*sprite.Sprite, 0), velocity: 100}
 	visualiser.colorPalette = colors
 
@@ -52,7 +52,7 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 	position := vector.NewVec2d((rand.Float64()-0.5)*settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()/2+size)
 	sprite := sprite.NewSpriteSingle(graphics.Triangle, size, position, vector.NewVec2d(0, 0))
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
-		sprite.SetColor(bmath.Color{rand.Float64(), rand.Float64(), rand.Float64(), 1})
+		sprite.SetColor(color2.NewRGB(rand.Float32(), rand.Float32(), rand.Float32()))
 	} else {
 		col := vis.colorPalette[rand.Intn(len(vis.colorPalette))]
 		sprite.SetColor(col)
@@ -69,7 +69,7 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 	vis.triangles = append(vis.triangles, sprite)
 }
 
-func (vis *Triangles) SetColors(colors []bmath.Color) {
+func (vis *Triangles) SetColors(colors []color2.Color) {
 	vis.colorPalette = colors
 }
 

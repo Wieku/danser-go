@@ -3,7 +3,6 @@ package components
 import (
 	"fmt"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
@@ -19,7 +18,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
-	"github.com/wieku/danser-go/framework/math/color"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
@@ -28,9 +27,9 @@ import (
 
 type Overlay interface {
 	Update(int64)
-	DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
-	DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
-	DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64)
+	DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64)
+	DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64)
+	DrawHUD(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64)
 	IsBroken(cursor *graphics.Cursor) bool
 	NormalBeforeCursor() bool
 }
@@ -283,9 +282,9 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	currentStates := [4]bool{overlay.cursor.LeftButton, overlay.cursor.RightButton, false, false}
 
 	for i, state := range currentStates {
-		color := bmath.Color{R: 1.0, G: 222.0 / 255, B: 0, A: 0}
+		color := color2.Color{R: 1.0, G: 222.0 / 255, B: 0, A: 0}
 		if i > 1 {
-			color = bmath.Color{R: 248.0 / 255, G: 0, B: 258.0 / 255, A: 0}
+			color = color2.Color{R: 248.0 / 255, G: 0, B: 258.0 / 255, A: 0}
 		}
 
 		if !overlay.keyStates[i] && state {
@@ -293,7 +292,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 			key.ClearTransformationsOfType(animation.Scale)
 			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(time), float64(time+100), 1.0, 0.8))
 
-			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(time), float64(time+100), bmath.Color{R: 1, G: 1, B: 1, A: 1}, color))
+			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(time), float64(time+100), color2.Color{R: 1, G: 1, B: 1, A: 1}, color))
 
 			overlay.lastPresses[i] = float64(time + 100)
 			overlay.keyCounters[i]++
@@ -304,7 +303,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 			key.ClearTransformationsOfType(animation.Scale)
 			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, math.Max(float64(time), overlay.lastPresses[i]), float64(time+100), key.GetScale().Y, 1.0))
 
-			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(time), float64(time+100), color, bmath.Color{R: 1, G: 1, B: 1, A: 1}))
+			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(time), float64(time+100), color, color2.Color{R: 1, G: 1, B: 1, A: 1}))
 		}
 
 		overlay.keyStates[i] = state
@@ -326,7 +325,7 @@ func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
 	if settings.Gameplay.Boundaries.Enabled {
 		thickness := float32(settings.Gameplay.Boundaries.BorderThickness)
 		alpha *= overlay.bgDim.GetValue()
@@ -337,7 +336,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 
 		if bAlpha := settings.Gameplay.Boundaries.BackgroundOpacity; bAlpha > 0.001 {
 			colHSV := settings.Gameplay.Boundaries.BackgroundColor
-			r, g, b := color.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
+			r, g, b := color2.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
 			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
 
 			overlay.shapeRenderer.DrawQuad(-cs, -cs, bmath.OsuWidth+cs, -cs, bmath.OsuWidth+cs, bmath.OsuHeight+cs, -cs, bmath.OsuHeight+cs)
@@ -345,7 +344,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 
 		if bAlpha := settings.Gameplay.Boundaries.BorderOpacity; bAlpha > 0.001 {
 			colHSV := settings.Gameplay.Boundaries.BorderColor
-			r, g, b := color.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
+			r, g, b := color2.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
 			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
 
 			half := thickness / 2
@@ -387,7 +386,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors
 	}
 }
 
-func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
 	scale := overlay.ruleset.GetBeatMap().Diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
 
@@ -408,7 +407,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl3
 	batch.SetCamera(prev)
 }
 
-func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.ResetTransform()

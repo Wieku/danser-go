@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/dance"
@@ -15,6 +14,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -278,7 +278,7 @@ func (overlay *KnockoutOverlay) Update(time int64) {
 	overlay.lastTime = time
 }
 
-func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
 	//cs := overlay.controller.GetBeatMap().Diff.CircleRadius
 	//sizeX := 512 + (cs+0.3)*2
 	//sizeY := 384 + (cs+0.3)*2
@@ -304,7 +304,7 @@ func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, col
 	//batch.SetScale(1, 1)
 }
 
-func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
 	scl := /*settings.Graphics.GetHeightF() * 0.9*(900.0/1080.0)*/ 384.0 * (1080.0 / 900.0 * 0.9) / (51)
 	batch.SetScale(1, -1)
 	rescale := /*384.0/512.0 * (1080.0/settings.Graphics.GetHeightF())*/ 1.0
@@ -329,12 +329,12 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []m
 					val = "X"
 				}
 				rep := overlay.players[bubble.name]
-				batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*bubble.deathFade.GetValue())
+				batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*bubble.deathFade.GetValue())
 				width := overlay.font.GetWidth(scl*rescale*bubble.deathScale.GetValue(), val)
 				overlay.font.Draw(batch, bubble.deathX-width/2, bubble.deathSlide.GetValue()+scl*rescale*bubble.deathScale.GetValue()/3, scl*rescale*bubble.deathScale.GetValue(), val)
 			} else {
 				rep := overlay.players[bubble.name]
-				batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*bubble.deathFade.GetValue())
+				batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*bubble.deathFade.GetValue())
 				width := overlay.font.GetWidth(scl*rescale, bubble.name)
 				overlay.font.Draw(batch, bubble.deathX-width/2, bubble.deathSlide.GetValue()-scl*rescale/2, scl*rescale, bubble.name)
 
@@ -372,7 +372,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []m
 	batch.SetScale(1, 1)
 }
 
-func (overlay *KnockoutOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl32.Vec4, alpha float64) {
+func (overlay *KnockoutOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
 	controller := overlay.controller
 	replays := controller.GetReplays()
 
@@ -421,7 +421,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl3
 		//batch.DrawUnit(graphics.Pixel.GetRegion())
 		//batch.SetAdditive(false)
 
-		batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*player.fade.GetValue())
+		batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*player.fade.GetValue())
 
 		for j := 0; j < 2; j++ {
 			batch.SetSubScale(scl*0.8/2, scl*0.8/2)
@@ -510,7 +510,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []mgl3
 		overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-cS-overlay.font.GetWidthMonospaced(scl, sWC)-0.5*scl, rowBaseY-scl*1/3, scl, sWC)
 		overlay.font.DrawMonospaced(batch, settings.Graphics.GetWidthF()-overlay.font.GetWidthMonospaced(scl, scorestr)-0.5*scl, rowBaseY-scl*1/3, scl, scorestr)
 
-		batch.SetColor(float64(colors[rep.oldIndex].X()), float64(colors[rep.oldIndex].Y()), float64(colors[rep.oldIndex].Z()), alpha*player.fade.GetValue())
+		batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*player.fade.GetValue())
 		overlay.font.Draw(batch, 3*scl+nWidth, rowBaseY-scl*1/3, scl, r.Name)
 		width := overlay.font.GetWidth(scl, r.Name)
 

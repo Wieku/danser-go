@@ -2,6 +2,7 @@ package animation
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -97,21 +98,21 @@ func NewVectorTransformV(transformationType TransformationType, easing func(floa
 	return transformation
 }
 
-func NewColorTransform(transformationType TransformationType, easing func(float64) float64, startTime, endTime float64, start, end bmath.Color) *Transformation {
+func NewColorTransform(transformationType TransformationType, easing func(float64) float64, startTime, endTime float64, start, end color2.Color) *Transformation {
 	if transformationType&(Color3|Color4) == 0 {
 		panic("Wrong TransformationType used!")
 	}
 
 	transformation := &Transformation{transformationType: transformationType, startTime: startTime, endTime: endTime, easing: easing}
-	transformation.startValues[0] = start.R
-	transformation.startValues[1] = start.G
-	transformation.startValues[2] = start.B
-	transformation.startValues[3] = start.A
+	transformation.startValues[0] = float64(start.R)
+	transformation.startValues[1] = float64(start.G)
+	transformation.startValues[2] = float64(start.B)
+	transformation.startValues[3] = float64(start.A)
 
-	transformation.endValues[0] = end.R
-	transformation.endValues[1] = end.G
-	transformation.endValues[2] = end.B
-	transformation.endValues[3] = end.A
+	transformation.endValues[0] = float64(end.R)
+	transformation.endValues[1] = float64(end.G)
+	transformation.endValues[2] = float64(end.B)
+	transformation.endValues[3] = float64(end.A)
 
 	return transformation
 }
@@ -147,15 +148,15 @@ func (t *Transformation) GetBoolean(time float64) bool {
 	return t.startTime == t.endTime || time >= t.startTime && time < t.endTime
 }
 
-func (t *Transformation) GetColor(time float64) bmath.Color {
+func (t *Transformation) GetColor(time float64) color2.Color {
 	progress := t.getProgress(time)
 
-	return bmath.Color{
-		R: t.startValues[0] + progress*(t.endValues[0]-t.startValues[0]),
-		G: t.startValues[1] + progress*(t.endValues[1]-t.startValues[1]),
-		B: t.startValues[2] + progress*(t.endValues[2]-t.startValues[2]),
-		A: t.startValues[3] + progress*(t.endValues[3]-t.startValues[3]),
-	}
+	return color2.NewRGBA(
+		float32(t.startValues[0]+progress*(t.endValues[0]-t.startValues[0])),
+		float32(t.startValues[1]+progress*(t.endValues[1]-t.startValues[1])),
+		float32(t.startValues[2]+progress*(t.endValues[2]-t.startValues[2])),
+		float32(t.startValues[3]+progress*(t.endValues[3]-t.startValues[3])),
+	)
 }
 
 func (t *Transformation) GetStartTime() float64 {

@@ -5,13 +5,13 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sync"
@@ -295,11 +295,11 @@ func EndCursorRender() {
 	blend.Pop()
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color mgl32.Vec4, hueshift float64) {
+func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color color2.Color, hueshift float64) {
 	cursor.DrawM(scale, batch, color, color, hueshift)
 }
 
-func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl32.Vec4, color2 mgl32.Vec4, hueshift float64) {
+func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color color2.Color, colorGlow color2.Color, hueshift float64) {
 	if useAdditive {
 		cursorFbo.Bind()
 		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
@@ -309,20 +309,20 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 	siz := settings.Cursor.CursorSize
 
 	if settings.Cursor.EnableCustomTrailGlowOffset {
-		color2 = utils.GetColorShifted(color, settings.Cursor.TrailGlowOffset)
+		colorGlow = color.Shift(float32(settings.Cursor.TrailGlowOffset), 0, 0)
 	}
 
 	if settings.Cursor.TrailStyle > 1 {
-		color = utils.GetColorShifted(color, cursor.hueBase*360)
-		color2 = utils.GetColorShifted(color2, cursor.hueBase*360)
+		color = color.Shift(float32(cursor.hueBase*360), 0, 0)
+		colorGlow = colorGlow.Shift(float32(cursor.hueBase*360), 0, 0)
 	}
 
 	colorD := color
-	colorD2 := color2
+	colorD2 := colorGlow
 
 	if settings.Cursor.TrailStyle > 1 {
-		colorD = mgl32.Vec4{1.0, 1.0, 1.0, color.W()}
-		colorD2 = mgl32.Vec4{1.0, 1.0, 1.0, color2.W()}
+		colorD = color2.NewLA(1.0, color.A)
+		colorD2 = color2.NewLA(1.0, colorGlow.A)
 	}
 
 	cursorShader.Bind()
@@ -375,9 +375,9 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color mgl3
 	batch.SetScale(siz*scale, siz*scale)
 	batch.SetSubScale(1, 1)
 
-	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), float64(color[3]))
+	batch.SetColorM(color)
 	batch.DrawUnit(*CursorTex)
-	batch.SetColor(1, 1, 1, math.Sqrt(float64(color[3])))
+	batch.SetColor(1, 1, 1, math.Sqrt(float64(color.A)))
 	batch.DrawUnit(*CursorTop)
 
 	batch.End()

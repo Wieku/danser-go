@@ -1,25 +1,25 @@
 package utils
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/lucasb-eyer/go-colorful"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
-func GetColors(baseHue, hueShift float64, times int, alpha float64) []mgl32.Vec4 {
+func GetColors(baseHue, hueShift float64, times int, alpha float64) []color2.Color {
 	return GetColorsSV(baseHue, hueShift, times, 1, 1, alpha)
 }
 
-func GetColorsH(baseHue, hueShift float64, times int, alpha float64) ([]mgl32.Vec4, []float64) {
+func GetColorsH(baseHue, hueShift float64, times int, alpha float64) ([]color2.Color, []float64) {
 	return GetColorsSVH(baseHue, hueShift, times, 1, 1, alpha)
 }
 
-func GetColor(H, S, V, alpha float64) mgl32.Vec4 {
+func GetColor(H, S, V, alpha float64) color2.Color {
 	color := colorful.Hsv(H, S, V)
-	return mgl32.Vec4{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
+	return color2.Color{float32(color.R), float32(color.G), float32(color.B), float32(alpha)}
 }
 
-func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mgl32.Vec4 {
-	colors := make([]mgl32.Vec4, times)
+func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []color2.Color {
+	colors := make([]color2.Color, times)
 
 	for baseHue < 0.0 {
 		baseHue += 360.0
@@ -46,8 +46,8 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []mg
 	return colors
 }
 
-func GetColorsSVH(baseHue, hueShift float64, times int, S, V, alpha float64) ([]mgl32.Vec4, []float64) {
-	colors := make([]mgl32.Vec4, times)
+func GetColorsSVH(baseHue, hueShift float64, times int, S, V, alpha float64) ([]color2.Color, []float64) {
+	colors := make([]color2.Color, times)
 	shifts := make([]float64, times)
 
 	for baseHue < 0.0 {
@@ -76,8 +76,8 @@ func GetColorsSVH(baseHue, hueShift float64, times int, S, V, alpha float64) ([]
 	return colors, shifts
 }
 
-func GetColorsSVHA(baseHue, hueShift float64, times int, S, V, alpha float64) ([]mgl32.Vec4, []float64) {
-	colors := make([]mgl32.Vec4, times)
+func GetColorsSVHA(baseHue, hueShift float64, times int, S, V, alpha float64) ([]color2.Color, []float64) {
+	colors := make([]color2.Color, times)
 	shifts := make([]float64, times)
 
 	for baseHue < 0.0 {
@@ -112,8 +112,8 @@ func GetColorsSVHA(baseHue, hueShift float64, times int, S, V, alpha float64) ([
 	return colors, shifts
 }
 
-func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) ([]mgl32.Vec4, []float64) {
-	colors := make([]mgl32.Vec4, 0)
+func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) ([]color2.Color, []float64) {
+	colors := make([]color2.Color, 0)
 	shifts := make([]float64, 0)
 
 	for baseHue < 0.0 {
@@ -144,8 +144,8 @@ func GetColorsSVT(baseHue, hueShift, tagShift float64, times, tag int, S, V, alp
 	return colors, shifts
 }
 
-func GetColorsSVTA(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) ([]mgl32.Vec4, []float64) {
-	colors := make([]mgl32.Vec4, 0)
+func GetColorsSVTA(baseHue, hueShift, tagShift float64, times, tag int, S, V, alpha float64) ([]color2.Color, []float64) {
+	colors := make([]color2.Color, 0)
 	shifts := make([]float64, 0)
 
 	for baseHue < 0.0 {
@@ -176,7 +176,8 @@ func GetColorsSVTA(baseHue, hueShift, tagShift float64, times, tag int, S, V, al
 	return colors, shifts
 }
 
-func GetColorShifted(color mgl32.Vec4, hueOffset float64) mgl32.Vec4 {
+/*func GetColorShifted(color color2.Color, hueOffset float64) color2.Color {
+	color.
 	tohsv := colorful.Color{float64(color[0]), float64(color[1]), float64(color[2])}
 	h, s, v := tohsv.Hsv()
 	h += hueOffset
@@ -190,5 +191,5 @@ func GetColorShifted(color mgl32.Vec4, hueOffset float64) mgl32.Vec4 {
 	}
 
 	col2 := colorful.Hsv(h, s, v)
-	return mgl32.Vec4{float32(col2.R), float32(col2.G), float32(col2.B), color.W()}
-}
+	return color2.Color{float32(col2.R), float32(col2.G), float32(col2.B), color.W()}
+}*/

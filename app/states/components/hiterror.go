@@ -8,13 +8,14 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
 const errorBaseScale = 1.5
 
-var colors = []bmath.Color{{0.2, 0.8, 1, 1}, {0.44, 0.98, 0.18, 1}, {0.85, 0.68, 0.27, 1}}
+var colors = []color2.Color{{0.2, 0.8, 1, 1}, {0.44, 0.98, 0.18, 1}, {0.85, 0.68, 0.27, 1}}
 
 type HitErrorMeter struct {
 	diff             *difficulty.Difficulty
@@ -44,7 +45,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	pixel := graphics.Pixel.GetRegion()
 	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-10*scale), bmath.Origin.Centre)
 	bg.SetScaleV(vector.NewVec2d(float64(sum)*2*scale, 20*scale))
-	bg.SetColor(bmath.Color{0, 0, 0, 1})
+	bg.SetColor(color2.Color{0, 0, 0, 1})
 	bg.SetAlpha(0.8)
 	meter.errorDisplay.Add(bg)
 
@@ -100,7 +101,7 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 	middle.SetScaleV(vector.NewVec2d(1.5, 20).Scl(scale))
 	middle.SetAdditive(true)
 
-	var col bmath.Color
+	var col color2.Color
 	switch {
 	case errorA < meter.diff.Hit300:
 		col = colors[0]

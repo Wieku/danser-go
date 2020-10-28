@@ -1,8 +1,8 @@
 package settings
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/utils"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 type hsv struct {
@@ -35,7 +35,7 @@ func (cl *color) Update(delta float64) {
 	}
 }
 
-func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
+func (cl *color) GetColors(divides int, beatScale, alpha float64) []color2.Color {
 	flashOffset := 0.0
 	if cl.FlashToTheBeat {
 		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
@@ -59,7 +59,7 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []mgl32.Vec4 {
 	return utils.GetColorsSV(hue, offset, divides, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
-func (cl *color) GetColorsH(divides int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
+func (cl *color) GetColorsH(divides int, beatScale, alpha float64) ([]color2.Color, []float64) {
 	flashOffset := 0.0
 	if cl.FlashToTheBeat {
 		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)

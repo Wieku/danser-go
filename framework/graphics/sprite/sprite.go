@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -32,7 +33,7 @@ type Sprite struct {
 	flipX            bool
 	flipY            bool
 	rotation         float64
-	color            bmath.Color
+	color            color2.Color
 	additive         bool
 	showForever      bool
 
@@ -45,14 +46,14 @@ type Sprite struct {
 
 func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	return sprite
 }
 
 func NewSpriteSingleCentered(tex *texture.TextureRegion, size vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
@@ -60,14 +61,14 @@ func NewSpriteSingleCentered(tex *texture.TextureRegion, size vector.Vector2d) *
 
 func NewSpriteSingleOrigin(tex *texture.TextureRegion, size vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
 	return sprite
 }
 
 func NewAnimation(textures []*texture.TextureRegion, frameDelay float64, loopForever bool, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
-	sprite := &Sprite{Textures: textures, frameDelay: frameDelay, loopForever: loopForever, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: bmath.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{Textures: textures, frameDelay: frameDelay, loopForever: loopForever, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	return sprite
 }
@@ -108,7 +109,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 		value := transform.GetSingle(float64(time))
 		switch transform.GetType() {
 		case animation.Fade:
-			sprite.color.A = value
+			sprite.color.A = float32(value)
 		case animation.Scale:
 			sprite.scale.X = value
 			sprite.scale.Y = value
@@ -235,7 +236,7 @@ func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
 
 	alpha := sprite.color.A
 	if alpha > 1.001 {
-		alpha -= math.Ceil(sprite.color.A) - 1
+		alpha -= math32.Ceil(sprite.color.A) - 1
 	}
 
 	scaleX := 1.0
@@ -313,15 +314,19 @@ func (sprite *Sprite) GetColor() mgl32.Vec3 {
 	return mgl32.Vec3{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B)}
 }
 
-func (sprite *Sprite) SetColor(color bmath.Color) {
+func (sprite *Sprite) SetColor(color color2.Color) {
 	sprite.color.R, sprite.color.G, sprite.color.B = color.R, color.G, color.B
 }
 
-func (sprite *Sprite) GetAlpha() float64 {
+func (sprite *Sprite) GetAlpha32() float32 {
 	return sprite.color.A
 }
 
-func (sprite *Sprite) SetAlpha(alpha float64) {
+func (sprite *Sprite) GetAlpha() float64 {
+	return float64(sprite.color.A)
+}
+
+func (sprite *Sprite) SetAlpha(alpha float32) {
 	sprite.color.A = alpha
 }
 

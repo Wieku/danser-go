@@ -9,7 +9,6 @@ import (
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -669,22 +668,22 @@ func (slider *Slider) DrawBodyBase(time int64, projection mgl32.Mat4) {
 	slider.body.DrawBase(slider.sliderSnakeHead.GetValue(), slider.sliderSnakeTail.GetValue(), projection)
 }
 
-func (slider *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, projection mgl32.Mat4, scale float32) {
+func (slider *Slider) DrawBody(time int64, color color2.Color, color1 color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue()
 
 	bodyOpacity := bmath.ClampF32(float32(settings.Objects.Sliders.BodyOpacity), 0.0, 1.0)
 
-	borderInner := mgl32.Vec4{color.X(), color.Y(), color.Z(), float32(colorAlpha)}
-	borderOuter := mgl32.Vec4{color1.X(), color1.Y(), color1.Z(), float32(colorAlpha)}
-	bodyInner := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * bodyOpacity}
-	bodyOuter := mgl32.Vec4{0.1, 0.1, 0.1, float32(colorAlpha) * bodyOpacity}
+	borderInner := color2.NewRGBA(color.R, color.G, color.B, float32(colorAlpha))
+	borderOuter := color2.NewRGBA(color1.R, color1.G, color1.B, float32(colorAlpha))
+	bodyInner := color2.NewLA(0.1, float32(colorAlpha)*bodyOpacity)
+	bodyOuter := color2.NewLA(0.1, float32(colorAlpha)*bodyOpacity)
 
 	if settings.Skin.UseColorsFromSkin {
-		borderOuter = skin.GetInfo().SliderBorder.ToVec4()
+		borderOuter = skin.GetInfo().SliderBorder
 		borderInner = borderOuter
 
-		borderOuter[3] = float32(colorAlpha)
-		borderInner[3] = float32(colorAlpha)
+		borderOuter.A = float32(colorAlpha)
+		borderInner.A = float32(colorAlpha)
 
 		var baseTrack color2.Color
 
@@ -694,30 +693,30 @@ func (slider *Slider) DrawBody(time int64, color mgl32.Vec4, color1 mgl32.Vec4, 
 			baseTrack = skin.GetInfo().ComboColors[int(slider.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
 		}
 
-		bodyOuter[0] = baseTrack.R / 1.1
-		bodyOuter[1] = baseTrack.G / 1.1
-		bodyOuter[2] = baseTrack.B / 1.1
+		bodyOuter.R = baseTrack.R / 1.1
+		bodyOuter.G = baseTrack.G / 1.1
+		bodyOuter.B = baseTrack.B / 1.1
 
-		bodyInner[0] = baseTrack.R + (1-baseTrack.R)*0.25
-		bodyInner[1] = baseTrack.G + (1-baseTrack.G)*0.25
-		bodyInner[2] = baseTrack.B + (1-baseTrack.B)*0.25
+		bodyInner.R = baseTrack.R + (1-baseTrack.R)*0.25
+		bodyInner.G = baseTrack.G + (1-baseTrack.G)*0.25
+		bodyInner.B = baseTrack.B + (1-baseTrack.B)*0.25
 	} else if settings.Objects.Colors.UseComboColors && !settings.Objects.Colors.EnableCustomSliderBorderColor {
 		cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 
-		borderInner[0], borderOuter[0] = r, r
-		borderInner[1], borderOuter[1] = g, g
-		borderInner[2], borderOuter[2] = b, b
+		borderInner.R, borderOuter.R = r, r
+		borderInner.G, borderOuter.G = g, g
+		borderInner.B, borderOuter.B = b, b
 	} else if settings.Objects.Colors.EnableCustomSliderBorderGradientOffset {
-		borderOuter = utils.GetColorShifted(color, settings.Objects.Colors.SliderBorderGradientOffset)
-		borderInner[3] = float32(colorAlpha)
-		borderOuter[3] = float32(colorAlpha)
+		borderOuter = color.Shift(float32(settings.Objects.Colors.SliderBorderGradientOffset), 0, 0)
+		borderInner.A = float32(colorAlpha)
+		borderOuter.A = float32(colorAlpha)
 	}
 
 	slider.body.DrawNormal(projection, slider.objData.StackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
 
-func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
+func (slider *Slider) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
 	if len(slider.scorePath) == 0 {
 		return true
 	}
@@ -728,12 +727,12 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
 	}
 
-	batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
+	batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 
 	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger {
 		if time < slider.objData.EndTime {
 			if settings.Objects.Sliders.DrawScorePoints {
-				shifted := utils.GetColorShifted(color, settings.Objects.Colors.ScorePointColorOffset)
+				shifted := color.Shift(float32(settings.Objects.Colors.ScorePointColorOffset), 0, 0)
 
 				scorePoint := skin.GetTexture("sliderscorepoint")
 
@@ -747,7 +746,7 @@ func (slider *Slider) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBat
 						if settings.Objects.Colors.WhiteScorePoints || settings.Skin.UseColorsFromSkin {
 							batch.SetColor(1, 1, 1, alpha*al)
 						} else {
-							batch.SetColor(float64(shifted[0]), float64(shifted[1]), float64(shifted[2]), alpha*al)
+							batch.SetColor(float64(shifted.R), float64(shifted.G), float64(shifted.B), alpha*al)
 						}
 
 						batch.DrawTexture(*scorePoint)
@@ -844,7 +843,7 @@ func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha floa
 	}
 }
 
-func (slider *Slider) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {
+func (slider *Slider) DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch) {
 	if len(slider.scorePath) == 0 {
 		return
 	}

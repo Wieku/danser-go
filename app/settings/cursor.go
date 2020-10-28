@@ -1,8 +1,8 @@
 package settings
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/utils"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 var Cursor = initCursor()
@@ -71,7 +71,7 @@ type cursor struct {
 	AdditiveBlending            bool
 }
 
-func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
+func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]color2.Color, []float64) {
 	if !cr.EnableCustomTagColorOffset {
 		return cr.Colors.GetColorsH(divides*tag, beatScale, alpha)
 	}
@@ -99,7 +99,7 @@ func (cr *cursor) GetColors(divides, tag int, beatScale, alpha float64) ([]mgl32
 	return utils.GetColorsSVT(hue, offset, cr.TagColorOffset, divides, tag, cl.BaseColor.Saturation, cl.BaseColor.Value, alpha)
 }
 
-func (cr *cursor) GetColorsA(divides, tag int, beatScale, alpha float64) ([]mgl32.Vec4, []float64) {
+func (cr *cursor) GetColorsA(divides, tag int, beatScale, alpha float64) ([]color2.Color, []float64) {
 	if !cr.EnableCustomTagColorOffset {
 		return cr.Colors.GetColorsH(divides*tag, beatScale, alpha)
 	}

@@ -675,7 +675,7 @@ func (pl *Player) Draw(float64) {
 			alpha = 0.12
 		}
 
-		pl.LogoS2.SetAlpha(alpha * (1 - easing.OutQuad(pl.progress)))
+		pl.LogoS2.SetAlpha(float32(alpha * (1 - easing.OutQuad(pl.progress))))
 
 		pl.LogoS1.UpdateAndDraw(pl.progressMs, pl.batch)
 		pl.LogoS2.UpdateAndDraw(pl.progressMs, pl.batch)

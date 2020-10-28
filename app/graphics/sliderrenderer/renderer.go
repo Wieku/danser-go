@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -131,7 +132,7 @@ func EndRendererMerge() {
 	batch.End()
 }
 
-func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float32, text texture.Texture, bodyInner, bodyOuter, borderInner, borderOuter mgl32.Vec4, projection mgl32.Mat4) {
+func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float32, text texture.Texture, bodyInner, bodyOuter, borderInner, borderOuter color2.Color, projection mgl32.Mat4) {
 	colorShader.SetUniform("projection", projection)
 
 	colorShader.SetUniform("col_border", borderInner)

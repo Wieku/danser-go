@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
@@ -58,20 +59,20 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 
 	imag, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 
-	newCol := make([]bmath.Color, 0)
+	newCol := make([]color2.Color, 0)
 
 	if err == nil {
 		cItems, _ := prominentcolor.KmeansWithAll(5, imag.NRGBA(), prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
-		newCol = make([]bmath.Color, len(cItems))
+		newCol = make([]color2.Color, len(cItems))
 
 		for i := 0; i < len(cItems); i++ {
-			r, g, b := float64(cItems[i].Color.R)/255, float64(cItems[i].Color.G)/255, float64(cItems[i].Color.B)/255
+			r, g, b := float32(cItems[i].Color.R)/255, float32(cItems[i].Color.G)/255, float32(cItems[i].Color.B)/255
 
 			r = (1-r)*0.9 + r
 			g = (1-g)*0.9 + g
 			b = (1-b)*0.9 + b
 
-			newCol[i] = bmath.Color{r, g, b, 1}
+			newCol[i] = color2.Color{r, g, b, 1}
 		}
 	}
 

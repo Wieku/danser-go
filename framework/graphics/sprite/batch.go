@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
 	"math"
@@ -19,7 +20,7 @@ const defaultBatchSize = 2000
 type SpriteBatch struct {
 	shader     *shader.RShader
 	additive   bool
-	color      mgl32.Vec4
+	color      color2.Color
 	Projection mgl32.Mat4
 	position   vector.Vector2d
 	scale      vector.Vector2d
@@ -108,7 +109,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 
 	return &SpriteBatch{
 		shader:      rShader,
-		color:       mgl32.Vec4{1, 1, 1, 1},
+		color:       color2.NewL(1),
 		Projection:  mgl32.Ident4(),
 		scale:       vector.NewVec2d(1, 1),
 		subscale:    vector.NewVec2d(1, 1),
@@ -197,10 +198,20 @@ func (batch *SpriteBatch) End() {
 }
 
 func (batch *SpriteBatch) SetColor(r, g, b, a float64) {
-	batch.color = mgl32.Vec4{float32(r), float32(g), float32(b), float32(a)}
+	batch.color.R = float32(r)
+	batch.color.G = float32(g)
+	batch.color.B = float32(b)
+	batch.color.A = float32(a)
 }
 
-func (batch *SpriteBatch) SetColorM(color mgl32.Vec4) {
+func (batch *SpriteBatch) SetColor32(r, g, b, a float32) {
+	batch.color.R = r
+	batch.color.G = g
+	batch.color.B = b
+	batch.color.A = a
+}
+
+func (batch *SpriteBatch) SetColorM(color color2.Color) {
 	batch.color = color
 }
 
@@ -256,7 +267,7 @@ func (batch *SpriteBatch) DrawTextureMSDF(texture texture.TextureRegion) {
 }
 
 func (batch *SpriteBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize, msdf bool) {
-	if texture.Texture == nil || batch.color.W() < 0.001 {
+	if texture.Texture == nil || batch.color.A < 0.001 {
 		return
 	}
 
@@ -282,11 +293,6 @@ func (batch *SpriteBatch) drawTextureBase(texture texture.TextureRegion, useText
 
 	layer := float32(texture.Layer)
 
-	r := batch.color.X()
-	g := batch.color.Y()
-	b := batch.color.Z()
-	a := batch.color.W()
-
 	add := float32(1)
 	if batch.additive {
 		add = 0
@@ -308,7 +314,7 @@ func (batch *SpriteBatch) drawTextureBase(texture texture.TextureRegion, useText
 	batch.data[idx+6] = packUV(u1, u2)
 	batch.data[idx+7] = packUV(v1, v2)
 	batch.data[idx+8] = layer
-	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+9] = batch.color.PackFloat()
 	batch.data[idx+10] = add
 	batch.data[idx+11] = msdfI
 
@@ -321,7 +327,7 @@ func (batch *SpriteBatch) drawTextureBase(texture texture.TextureRegion, useText
 }
 
 func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
-	if texture.Texture == nil || color.W()*batch.color.W() < 0.001 {
+	if texture.Texture == nil || color.W()*batch.color.A < 0.001 {
 		return
 	}
 
@@ -350,10 +356,10 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, 
 		v1, v2 = v2, v1
 	}
 
-	r := color.X() * batch.color.X()
-	g := color.Y() * batch.color.Y()
-	b := color.Z() * batch.color.Z()
-	a := color.W() * batch.color.W()
+	r := color.X() * batch.color.R
+	g := color.Y() * batch.color.G
+	b := color.Z() * batch.color.B
+	a := color.W() * batch.color.A
 
 	add := float32(1)
 	if additive || batch.additive {

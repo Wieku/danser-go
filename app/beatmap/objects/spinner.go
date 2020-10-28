@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -21,8 +22,8 @@ import (
 
 const rpms = 0.00795
 
-var spinnerRed = bmath.Color{R: 1, G: 0, B: 0, A: 1}
-var spinnerBlue = bmath.Color{R: 0.05, G: 0.5, B: 1.0, A: 1}
+var spinnerRed = color2.Color{R: 1, G: 0, B: 0, A: 1}
+var spinnerBlue = color2.Color{R: 0.05, G: 0.5, B: 1.0, A: 1}
 
 type Spinner struct {
 	objData  *basicData
@@ -122,7 +123,7 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 		spinner.glow.SetColor(spinnerBlue)
 		spinner.glow.SetAlpha(0.0)
-		spinner.middle.AddTransform(animation.NewColorTransform(animation.Color3, easing.Linear, float64(spinner.objData.StartTime), float64(spinner.objData.EndTime), bmath.Color{R: 1, G: 1, B: 1, A: 1}, spinnerRed))
+		spinner.middle.AddTransform(animation.NewColorTransform(animation.Color3, easing.Linear, float64(spinner.objData.StartTime), float64(spinner.objData.EndTime), color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerRed))
 		spinner.middle.ResetValuesToTransforms()
 
 	} else {
@@ -214,7 +215,7 @@ func (spinner *Spinner) Update(time int64) bool {
 	return true
 }
 
-func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) bool {
+func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 	//percent := bmath.ClampF64(float64(time-spinner.objData.StartTime)/float64(spinner.objData.EndTime-spinner.objData.StartTime), 0.0, 1.0)
 
@@ -274,7 +275,7 @@ func (spinner *Spinner) Draw(time int64, color mgl32.Vec4, batch *sprite.SpriteB
 	return false
 }
 
-func (spinner *Spinner) DrawApproach(time int64, color mgl32.Vec4, batch *sprite.SpriteBatch) {}
+func (spinner *Spinner) DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch) {}
 
 func (spinner *Spinner) Hit(_ int64, isHit bool) {
 	if !isHit {
@@ -332,7 +333,7 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 		spinner.middle2.SetScale(scale)
 		spinner.middle.SetScale(scale)
 
-		spinner.glow.SetAlpha(math.Min(1.0, completion))
+		spinner.glow.SetAlpha(math32.Min(1.0, float32(completion)))
 	} else if spinner.metre != nil {
 		bars := int(math.Min(0.99, completion) * 10)
 
@@ -365,7 +366,7 @@ func (spinner *Spinner) Clear() {
 
 func (spinner *Spinner) Bonus() {
 	if spinner.glow != nil {
-		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(spinner.lastTime), float64(spinner.lastTime+difficulty.HitFadeOut), bmath.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
+		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(spinner.lastTime), float64(spinner.lastTime+difficulty.HitFadeOut), color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
 	}
 
 	spinner.spinnerbonus.Play()
