@@ -31,7 +31,7 @@ func NewPixMap(width, height int) *Pixmap {
 
 	size := width * height * 4
 
-	pixmap.arrPointer = C.malloc(C.uint64_t(size))
+	pixmap.arrPointer = C.stbi__malloc(C.size_t(size))
 	pixmap.Data = (*[1 << 30]uint8)(pixmap.arrPointer)[:size:size]
 
 	return pixmap
@@ -47,7 +47,7 @@ func NewPixmapFile(file *os.File) (*Pixmap, error) {
 }
 
 func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
-	filePointer := C.malloc(C.uint64_t(_size))
+	filePointer := C.stbi__malloc(C.size_t(_size))
 	fileData := (*[1 << 30]uint8)(filePointer)[:_size:_size]
 
 	var err error
