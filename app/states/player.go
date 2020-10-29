@@ -584,16 +584,22 @@ func (pl *Player) Draw(float64) {
 
 	if pl.start {
 		settings.Objects.Colors.Color.Update(timMs)
-		settings.Objects.Colors.CustomSliderBorderColor.Update(timMs)
+		settings.Objects.Colors.Sliders.Border.Color.Update(timMs)
+		settings.Objects.Colors.Sliders.Body.Color.Update(timMs)
 		settings.Cursor.Colors.Update(timMs)
 	}
 
 	objectColors := settings.Objects.Colors.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
 	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
-	colors2 := objectColors
+	borderColors := objectColors
+	bodyColors := objectColors
 
-	if settings.Objects.Colors.EnableCustomSliderBorderColor {
-		colors2 = settings.Objects.Colors.CustomSliderBorderColor.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	if !settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
+		borderColors = settings.Objects.Colors.Sliders.Border.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
+	}
+
+	if !settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
+		bodyColors = settings.Objects.Colors.Sliders.Body.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
 	}
 
 	if pl.overlay != nil {
@@ -743,7 +749,7 @@ func (pl *Player) Draw(float64) {
 							sliderrenderer.BeginRendererMerge()
 						}
 
-						s.DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j], float32(scale1))
+						s.DrawBody(pl.progressMs, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], float32(scale1))
 					}
 				}
 			}
@@ -794,7 +800,7 @@ func (pl *Player) Draw(float64) {
 						sliderrenderer.BeginRenderer()
 					}
 
-					proxy.renderable.(*objects.Slider).DrawBody(pl.progressMs, colors2[j], colors2[ind], cameras[j], float32(scale1))
+					proxy.renderable.(*objects.Slider).DrawBody(pl.progressMs, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], float32(scale1))
 				}
 
 				if proxy.endTime <= pl.progressMs {

@@ -15,7 +15,7 @@ func initObjects() *objects {
 			DrawEndCircles:         true,
 			DrawSliderFollowCircle: true,
 			DrawScorePoints:        true,
-			SliderMerge:            false,
+			SliderMerge:            true,
 			SliderDistortions:      true,
 			BorderWidth:            1.0,
 			BodyOpacity:            0.8,
@@ -45,26 +45,49 @@ func initObjects() *objects {
 				FlashAmplitude:        100,
 				currentHue:            0,
 			},
-			UseComboColors:                false,
-			ComboColors:                   []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
-			WhiteScorePoints:              false,
-			ScorePointColorOffset:         0,
-			EnableCustomSliderBorderColor: false,
-			CustomSliderBorderColor: &color{
-				EnableRainbow: false,
-				RainbowSpeed:  8,
-				BaseColor: &hsv{
-					0,
-					0.0,
-					1.0},
-				EnableCustomHueOffset: false,
-				HueOffset:             0,
-				FlashToTheBeat:        true,
-				FlashAmplitude:        100,
-				currentHue:            0,
+			UseComboColors: false,
+			ComboColors:    []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
+			Sliders: &sliderColors{
+				WhiteScorePoints:      false,
+				ScorePointColorOffset: 0,
+				Border: &borderColors{
+					UseHitCircleColor: false,
+					Color: &color{
+						EnableRainbow: false,
+						RainbowSpeed:  8,
+						BaseColor: &hsv{
+							0,
+							0.0,
+							1.0},
+						EnableCustomHueOffset: false,
+						HueOffset:             0,
+						FlashToTheBeat:        false,
+						FlashAmplitude:        100,
+						currentHue:            0,
+					},
+					EnableCustomGradientOffset: true,
+					CustomGradientOffset:       0,
+				},
+				Body: &bodyColors{
+					UseHitCircleColor: true,
+					Color: &color{
+						EnableRainbow: false,
+						RainbowSpeed:  8,
+						BaseColor: &hsv{
+							0,
+							1.0,
+							0.0},
+						EnableCustomHueOffset: false,
+						HueOffset:             0,
+						FlashToTheBeat:        true,
+						FlashAmplitude:        100,
+						currentHue:            0,
+					},
+					InnerOffset: -0.5,
+					OuterOffset: -0.05,
+					Alpha:       0.8,
+				},
 			},
-			EnableCustomSliderBorderGradientOffset: true,
-			SliderBorderGradientOffset:             18,
 		},
 	}
 }
@@ -109,15 +132,32 @@ type snaking struct {
 }
 
 type objectcolors struct {
-	MandalaTexturesTrigger                 int     //5, minimum value of cursors needed to use more translucent texture
-	MandalaTexturesAlpha                   float64 //0.3
-	Color                                  *color
-	UseComboColors                         bool
-	ComboColors                            []*hsv
-	WhiteScorePoints                       bool    //true
-	ScorePointColorOffset                  float64 //0.0, hue offset of the followpoint
-	EnableCustomSliderBorderColor          bool
-	CustomSliderBorderColor                *color
-	EnableCustomSliderBorderGradientOffset bool
-	SliderBorderGradientOffset             float64 //18, hue offset of slider outer border
+	MandalaTexturesTrigger int     //5, minimum value of cursors needed to use more translucent texture
+	MandalaTexturesAlpha   float64 //0.3
+	Color                  *color
+	UseComboColors         bool
+	ComboColors            []*hsv
+	Sliders                *sliderColors
+}
+
+type sliderColors struct {
+	WhiteScorePoints      bool    //true
+	ScorePointColorOffset float64 //0.0, hue offset of the followpoint
+	Border                *borderColors
+	Body                  *bodyColors
+}
+
+type borderColors struct {
+	UseHitCircleColor          bool
+	Color                      *color
+	EnableCustomGradientOffset bool
+	CustomGradientOffset       float64 //18, hue offset of slider outer border
+}
+
+type bodyColors struct {
+	UseHitCircleColor bool
+	Color             *color
+	InnerOffset       float64
+	OuterOffset       float64
+	Alpha             float64
 }
