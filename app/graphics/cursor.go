@@ -144,7 +144,7 @@ func NewCursor() *Cursor {
 func (cursor *Cursor) SetPos(pt vector.Vector2f) {
 	tmp := pt
 
-	if settings.Cursor.BounceOnEdges {
+	if settings.Cursor.BounceOnEdges && settings.DIVIDES <= 2 {
 		for {
 			ok1, ok2 := false, false
 
