@@ -50,6 +50,7 @@ func initObjects() *objects {
 			Sliders: &sliderColors{
 				WhiteScorePoints:      false,
 				ScorePointColorOffset: 0,
+				SliderBallTint:        false,
 				Border: &borderColors{
 					UseHitCircleColor: false,
 					Color: &color{
@@ -143,6 +144,7 @@ type objectcolors struct {
 type sliderColors struct {
 	WhiteScorePoints      bool    //true
 	ScorePointColorOffset float64 //0.0, hue offset of the followpoint
+	SliderBallTint        bool
 	Border                *borderColors
 	Body                  *bodyColors
 }

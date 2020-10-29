@@ -778,7 +778,7 @@ func (slider *Slider) Draw(time int64, color color2.Color, batch *sprite.SpriteB
 	slider.startCircle.Draw(time, color, batch)
 
 	if time >= slider.objData.StartTime && time <= slider.objData.EndTime {
-		slider.drawBall(time, batch, alpha, settings.Objects.Sliders.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger)
+		slider.drawBall(time, batch, color, alpha, settings.Objects.Sliders.ForceSliderBallTexture || settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger)
 	}
 
 	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.Sliders.DrawSliderFollowCircle && slider.follower != nil {
@@ -803,7 +803,7 @@ func (slider *Slider) Draw(time int64, color color2.Color, batch *sprite.SpriteB
 	return false
 }
 
-func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha float64, useBallTexture bool) {
+func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, color color2.Color, alpha float64, useBallTexture bool) {
 	batch.SetColor(1, 1, 1, alpha)
 	batch.SetTranslation(slider.Pos.Copy64())
 
@@ -824,14 +824,16 @@ func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, alpha floa
 		}
 
 		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
-	} else {
-		if skin.GetInfo().SliderBallTint && settings.Objects.Colors.UseComboColors {
+	} else if settings.Objects.Colors.Sliders.SliderBallTint {
+		if settings.Objects.Colors.UseComboColors {
 			cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 			r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 			batch.SetColor(float64(r), float64(g), float64(b), alpha)
 		} else {
-			batch.SetColor(1, 1, 1, alpha)
+			batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 		}
+	} else {
+		batch.SetColor(1, 1, 1, alpha)
 	}
 
 	//cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
