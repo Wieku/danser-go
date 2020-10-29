@@ -284,9 +284,16 @@ func (renderer *Renderer) DrawCircleProgress(position vector.Vector2f, radius fl
 }
 
 func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius float32, sections int, progress float32) {
-	if progress < 0.001 || renderer.color.A < 0.001 {
+	if math32.Abs(progress) < 0.001 || renderer.color.A < 0.001 {
 		return
 	}
+
+	direction := float32(1.0)
+	if progress < 0 {
+		direction = -1
+	}
+
+	progress = math32.Abs(progress)
 
 	add := float32(1)
 	if renderer.additive {
@@ -295,8 +302,8 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 
 	colorPacked := renderer.color.PackFloat()
 
-	partRadius := 2 * math32.Pi / float32(sections)
-	targetRadius := 2 * math32.Pi * progress
+	partRadians := 2 * math32.Pi / float32(sections)
+	targetRadians := 2 * math32.Pi * progress
 
 	floats := renderer.currentFloats
 
@@ -306,7 +313,7 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 	x := position.X
 	y := position.Y
 
-	for r := float32(0.0); r < targetRadius; r += partRadius {
+	for r := float32(0.0); r < targetRadians; r += partRadians {
 		renderer.vertices[floats] = x
 		renderer.vertices[floats+1] = y
 		renderer.vertices[floats+2] = colorPacked
@@ -317,7 +324,7 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 		renderer.vertices[floats+6] = colorPacked
 		renderer.vertices[floats+7] = add
 
-		rads := math32.Min(targetRadius, r+partRadius) - math32.Pi/2
+		rads := math32.Min(targetRadians, r+partRadians)*direction - math32.Pi/2
 
 		cx = math32.Cos(rads) * radius
 		cy = math32.Sin(rads) * radius

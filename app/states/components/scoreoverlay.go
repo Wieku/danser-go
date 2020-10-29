@@ -415,14 +415,17 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 
 	hObjects := overlay.ruleset.GetBeatMap().HitObjects
 
-	startTime := float64(hObjects[0].GetBasicData().StartTime)
-	endTime := float64(hObjects[len(hObjects)-1].GetBasicData().EndTime)
-	musicPos := 0.0
+	startTime := float32(hObjects[0].GetBasicData().StartTime)
+	endTime := float32(hObjects[len(hObjects)-1].GetBasicData().EndTime)
+	musicPos := float32(0.0)
 	if overlay.music != nil {
-		musicPos = overlay.music.GetPosition() * 1000
+		musicPos = float32(overlay.music.GetPosition()) * 1000
 	}
 
-	progress := math.Min(1.0, math.Max(0.0, (musicPos-startTime)/(endTime-startTime)))
+	progress := bmath.ClampF32((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	if musicPos < startTime {
+		progress = bmath.ClampF32(-1.0+musicPos/startTime, -1.0, 0.0)
+	}
 
 	if scoreAlpha := settings.Gameplay.ScoreOpacity; scoreAlpha > 0.001 && settings.Gameplay.ShowScore && settings.Gameplay.ProgressBar == "Pie" {
 		scoreScale := settings.Gameplay.ScoreScale
@@ -433,7 +436,13 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 		vAccOffset := 4.8
 
 		overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
-		overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
+
+		if progress < 0.0 {
+			overlay.shapeRenderer.SetColor(0.4, 0.8, 0.4, alpha*0.6*scoreAlpha)
+		} else {
+			overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
+		}
+
 		overlay.shapeRenderer.Begin()
 		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16, 40, float32(progress))
 		overlay.shapeRenderer.End()
@@ -477,11 +486,11 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 			batch.DrawTexture(*text)
 
 			accOffset -= 44.8
-		} else {
+		} else if progress > 0.0 {
 			batch.SetColor(0.2, 0.6, 0.2, alpha*0.8*scoreAlpha)
 
-			batch.SetSubScale(272*progress*scoreScale/2, 2.5*scoreScale)
-			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-12-272+progress*272/2)*scoreScale, fntSize))
+			batch.SetSubScale(272*float64(progress)*scoreScale/2, 2.5*scoreScale)
+			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-12-272+float64(progress)*272/2)*scoreScale, fntSize))
 			batch.DrawUnit(graphics.Pixel.GetRegion())
 		}
 
