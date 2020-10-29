@@ -23,10 +23,11 @@ const (
 type Track struct {
 	channel      C.DWORD
 	fft          []float32
-	beat         float64
+	boost        float64
 	peak         float64
 	leftChannel  float64
 	rightChannel float64
+	lowMax       float64
 }
 
 func NewTrack(path string) *Track {
@@ -95,17 +96,18 @@ func (wv *Track) GetState() int {
 
 func (wv *Track) Update() {
 	C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
-	toPeak := -1.0
+
+	toPeak := 0.0
 	beatAv := 0.0
+
 	for i, g := range wv.fft {
 		h := math.Abs(float64(g))
-		if toPeak < h {
-			toPeak = h
-		}
+
+		toPeak = math.Max(toPeak, h)
+
 		if i > 0 && i < 5 {
 			beatAv = math.Max(beatAv, float64(g))
 		}
-		//toAv += math.Abs(float64(g))
 	}
 
 	boost := 0.0
@@ -113,15 +115,15 @@ func (wv *Track) Update() {
 	for i := 0; i < 20; i++ {
 		boost += float64(wv.fft[i]) * float64(20-i) / float64(20)
 	}
-	//log.Println(boost)
-	//beatAv /= 5.0
-	//toAv /= 512
-	wv.beat = boost //beatAv
+
+	wv.lowMax = beatAv
+	wv.boost = boost
 	wv.peak = toPeak
 
 	level := int(C.BASS_ChannelGetLevel(wv.channel))
-	left := int(level & 65535)
-	right := int(level >> 16)
+
+	left := level & 65535
+	right := level >> 16
 
 	wv.leftChannel = float64(left) / 32768
 	wv.rightChannel = float64(right) / 32768
@@ -147,6 +149,10 @@ func (wv *Track) GetRightLevel() float64 {
 	return wv.rightChannel
 }
 
+func (wv *Track) GetBoost() float64 {
+	return wv.boost
+}
+
 func (wv *Track) GetBeat() float64 {
-	return wv.beat
+	return wv.lowMax
 }

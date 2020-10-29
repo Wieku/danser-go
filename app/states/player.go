@@ -76,7 +76,6 @@ type Player struct {
 	Epi             *texture.TextureRegion
 	epiGlider       *animation.Glider
 	overlay         components.Overlay
-	velocity        float64
 	blur            *effects.BlurEffect
 
 	currentBeatVal float64
@@ -455,35 +454,39 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
 
 			lastT = currtime
+
 			limiter.Sync()
 		}
 	}()
 
 	go func() {
 		for {
-
 			musicPlayer.Update()
-			//log.Println(musicPlayer.GetBeat())
-			//player.Scl = bmath.ClampF64(musicPlayer.GetBeat()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
 
-			fft := musicPlayer.GetFFT()
+			target := bmath.ClampF64(musicPlayer.GetBoost()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
 
-			bars := 40
-			boost := 0.0
+			ratio1 := 15 / 16.6666666666667
 
-			for i := 0; i < bars; i++ {
-				boost += 2 * float64(fft[i]) * float64(bars-i) / float64(bars)
+			player.vol = player.musicPlayer.GetLevelCombined()
+			player.volAverage = player.volAverage*0.9*(1-ratio1) + player.vol*0.1*ratio1
+
+			vprog := 1 - ((player.vol - player.volAverage) / 0.5)
+			pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+player.beatProgress*0.5)))
+
+			ratio := math.Pow(0.5, ratio1)
+
+			player.progress = player.lastProgress*ratio + (pV)*(1-ratio)
+			player.lastProgress = player.progress
+
+			if settings.Audio.BeatUseTimingPoints {
+				player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
+			} else {
+				if player.Scl < target {
+					player.Scl += (target - player.Scl) * 15 / 100
+				} else if player.Scl > target {
+					player.Scl -= (player.Scl - target) * 15 / 100
+				}
 			}
-
-			//oldVelocity := player.velocity
-
-			player.velocity = math.Min(math.Max(player.velocity, math.Max(0, (boost*1.5/6)-0.5)/0.5), 1)
-
-			player.velocity *= 1.0 - 0.05
-
-			player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
-
-			//log.Println(player.velocity)
 
 			time.Sleep(15 * time.Millisecond)
 		}
@@ -522,12 +525,6 @@ func (pl *Player) Draw(float64) {
 	}
 
 	pl.progressMs = int64(pl.progressMsF)
-
-	//if pl.Scl < pl.SclA {
-	//	pl.Scl += (pl.SclA - pl.Scl) * timMs / 100
-	//} else if pl.Scl > pl.SclA {
-	//	pl.Scl -= (pl.Scl - pl.SclA) * timMs / 100
-	//}
 
 	pl.profiler.PutSample(timMs)
 	pl.lastTime = tim
@@ -640,24 +637,12 @@ func (pl *Player) Draw(float64) {
 	pl.counter += timMs
 
 	if pl.counter >= 1000.0/60 {
-
-		pl.vol = pl.musicPlayer.GetLevelCombined()
-		pl.volAverage = pl.volAverage*0.9 + pl.vol*0.1
-
 		pl.counter -= 1000.0 / 60
 		if pl.background.GetStoryboard() != nil {
 			pl.storyboardLoad = pl.background.GetStoryboard().GetLoad()
 			pl.storyboardDrawn = pl.background.GetStoryboard().GetRenderedSprites()
 		}
 	}
-
-	vprog := 1 - ((pl.vol - pl.volAverage) / 0.5)
-	pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+pl.beatProgress*0.5)))
-
-	ratio := math.Pow(0.5, timMs/16.6666666666667)
-
-	pl.progress = pl.lastProgress*ratio + (pV)*(1-ratio)
-	pl.lastProgress = pl.progress
 
 	if pl.fxGlider.GetValue() > 0.01 {
 		pl.batch.Begin()
@@ -862,6 +847,7 @@ func (pl *Player) Draw(float64) {
 				}
 
 				baseIndex := j*len(pl.controller.GetCursors()) + i
+
 				ind := baseIndex - 1
 				if ind < 0 {
 					ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1

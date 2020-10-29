@@ -12,6 +12,7 @@ func initAudio() *audio {
 		IgnoreBeatmapSamples:       false,
 		IgnoreBeatmapSampleVolume:  false,
 		BeatScale:                  1.2,
+		BeatUseTimingPoints:        false,
 	}
 }
 
@@ -24,4 +25,5 @@ type audio struct {
 	IgnoreBeatmapSamples       bool //= false
 	IgnoreBeatmapSampleVolume  bool //= false
 	BeatScale                  float64
+	BeatUseTimingPoints        bool
 }
