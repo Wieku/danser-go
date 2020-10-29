@@ -16,11 +16,12 @@ require (
 	github.com/karrick/godirwalk v1.16.1
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
 	github.com/mattn/go-sqlite3 v1.14.0
+	github.com/nattawitc/rich-go v0.0.0-20200402133947-4fcadd738f5b
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/oliamb/cutter v0.2.2 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
-	github.com/wieku/rich-go v0.0.0-20200730185905-836306436db9
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )

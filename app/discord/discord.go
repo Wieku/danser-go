@@ -2,8 +2,8 @@ package discord
 
 import (
 	"fmt"
+	"github.com/nattawitc/rich-go/client"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/rich-go/client"
 	"log"
 	"time"
 )
