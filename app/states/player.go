@@ -301,8 +301,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.epiGlider = animation.NewGlider(0)
 
-	if settings.Playfield.Seizure.Enabled {
-		am := math.Max(1000, settings.Playfield.Seizure.Duration*1000)
+	if settings.Playfield.SeizureWarning.Enabled {
+		am := math.Max(1000, settings.Playfield.SeizureWarning.Duration*1000)
 		startOffset -= am
 		player.epiGlider.AddEvent(startOffset, startOffset+500, 1.0)
 		player.epiGlider.AddEvent(startOffset+am-500, startOffset+am, 0.0)
@@ -627,10 +627,10 @@ func (pl *Player) Draw(float64) {
 		pl.batch.SetScale(scl.X64(), scl.Y64())
 		pl.batch.DrawUnit(*pl.Epi)
 
-		pl.batch.SetScale(1.0, -1.0)
-		s := "Support me on ko-fi.com/wiekus"
-		width := pl.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
-		pl.font.Draw(pl.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
+		//pl.batch.SetScale(1.0, -1.0)
+		//s := "Support me on ko-fi.com/wiekus"
+		//width := pl.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
+		//pl.font.Draw(pl.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
 
 		pl.batch.ResetTransform()
 		pl.batch.End()
