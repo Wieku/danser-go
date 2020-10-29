@@ -48,7 +48,7 @@ func initObjects() *objects {
 			UseComboColors: false,
 			ComboColors:    []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
 			Sliders: &sliderColors{
-				WhiteScorePoints:      false,
+				WhiteScorePoints:      true,
 				ScorePointColorOffset: 0,
 				SliderBallTint:        false,
 				Border: &borderColors{
