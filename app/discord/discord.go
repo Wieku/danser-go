@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/nattawitc/rich-go/client"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/build"
 	"log"
 	"time"
 )
@@ -73,6 +74,7 @@ func sendActivity(state string) {
 			State:      state,
 			Details:    mapString,
 			LargeImage: "danser-logo",
+			LargeText:  "danser-go " + build.VERSION,
 			Timestamps: &client.Timestamps{
 				Start: &startTime,
 				End:   &endTime,
