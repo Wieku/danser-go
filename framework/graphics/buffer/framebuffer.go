@@ -32,7 +32,7 @@ func NewFrame(width, height int, smooth, depth bool) *Framebuffer {
 
 	f.Bind()
 	f.tex.Bind(0)
-	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
+	gl.FramebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
 
 	if depth {
 		var depthRenderBuffer uint32
@@ -58,7 +58,7 @@ func NewFrameDepth(width, height int, smooth bool) *Framebuffer {
 
 	f.Bind()
 	f.tex.Bind(0)
-	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, f.tex.GetID(), 0, 0)
+	gl.FramebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, f.tex.GetID(), 0, 0)
 
 	f.Unbind()
 
@@ -78,7 +78,7 @@ func NewFrameMultisample(width, height int, smooth, depth bool) *Framebuffer {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.helperObj)
 
 	f.tex.Bind(0)
-	gl.FramebufferTextureLayerARB(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
+	gl.FramebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
 
 	previous := history.Pop(gl.FRAMEBUFFER_BINDING)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, previous)
