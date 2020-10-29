@@ -1,4 +1,4 @@
-package components
+package overlays
 
 import (
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/app/states/components/common"
+	"github.com/wieku/danser-go/app/states/components/overlays/play"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -54,7 +56,7 @@ type ScoreOverlay struct {
 	combobreak  *bass.Sample
 	music       *bass.Track
 	nextEnd     int64
-	results     *HitResults
+	results     *play.HitResults
 
 	keyStates   [4]bool
 	keyCounters [4]int
@@ -71,7 +73,7 @@ type ScoreOverlay struct {
 
 	bgDim *animation.Glider
 
-	hitErrorMeter *HitErrorMeter
+	hitErrorMeter *play.HitErrorMeter
 
 	skip *sprite.Sprite
 
@@ -80,11 +82,13 @@ type ScoreOverlay struct {
 	displayHp        float64
 
 	shapeRenderer *shape.Renderer
+
+	boundaries *common.Boundaries
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
 	overlay := new(ScoreOverlay)
-	overlay.results = NewHitResults(ruleset.GetBeatMap().Diff)
+	overlay.results = play.NewHitResults(ruleset.GetBeatMap().Diff)
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
 	overlay.font = font.GetFont("Exo 2 Bold")
@@ -198,7 +202,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.keyOverlay.Add(key)
 	}
 
-	overlay.hitErrorMeter = NewHitErrorMeter(overlay.ScaledWidth, overlay.ScaledHeight, ruleset.GetBeatMap().Diff)
+	overlay.hitErrorMeter = play.NewHitErrorMeter(overlay.ScaledWidth, overlay.ScaledHeight, ruleset.GetBeatMap().Diff)
 
 	start := overlay.ruleset.GetBeatMap().HitObjects[0].GetBasicData().StartTime - 2000
 
@@ -223,6 +227,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
 
 	overlay.shapeRenderer = shape.NewRenderer()
+
+	overlay.boundaries = common.NewBoundaries()
 
 	return overlay
 }
@@ -326,64 +332,7 @@ func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 }
 
 func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
-	if settings.Gameplay.Boundaries.Enabled {
-		thickness := float32(settings.Gameplay.Boundaries.BorderThickness)
-		alpha *= overlay.bgDim.GetValue()
-		cs := float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius)
-
-		overlay.shapeRenderer.SetCamera(batch.Projection)
-		overlay.shapeRenderer.Begin()
-
-		if bAlpha := settings.Gameplay.Boundaries.BackgroundOpacity; bAlpha > 0.001 {
-			colHSV := settings.Gameplay.Boundaries.BackgroundColor
-			r, g, b := color2.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
-			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
-
-			overlay.shapeRenderer.DrawQuad(-cs, -cs, bmath.OsuWidth+cs, -cs, bmath.OsuWidth+cs, bmath.OsuHeight+cs, -cs, bmath.OsuHeight+cs)
-		}
-
-		if bAlpha := settings.Gameplay.Boundaries.BorderOpacity; bAlpha > 0.001 {
-			colHSV := settings.Gameplay.Boundaries.BorderColor
-			r, g, b := color2.HSVToRGB(float32(colHSV.Hue), float32(colHSV.Saturation), float32(colHSV.Value))
-			overlay.shapeRenderer.SetColor(float64(r), float64(g), float64(b), bAlpha*alpha)
-
-			half := thickness / 2
-
-			csH := cs + half
-
-			if settings.Gameplay.Boundaries.BorderFill > 0.99 {
-				overlay.shapeRenderer.DrawLine(-csH-half, -csH, bmath.OsuWidth+csH+half, -csH, thickness)
-				overlay.shapeRenderer.DrawLine(-csH-half, bmath.OsuHeight+csH, bmath.OsuWidth+csH+half, bmath.OsuHeight+csH, thickness)
-			} else {
-				dx := (bmath.OsuWidth + cs*2) / 2 * float32(settings.Gameplay.Boundaries.BorderFill)
-
-				// top
-				overlay.shapeRenderer.DrawLine(-cs-thickness, -csH, -cs+dx, -csH, thickness)
-				overlay.shapeRenderer.DrawLine(bmath.OsuWidth+cs-dx, -csH, bmath.OsuWidth+cs+thickness, -csH, thickness)
-
-				// bottom
-				overlay.shapeRenderer.DrawLine(-cs-thickness, bmath.OsuHeight+csH, -cs+dx, bmath.OsuHeight+csH, thickness)
-				overlay.shapeRenderer.DrawLine(bmath.OsuWidth+cs-dx, bmath.OsuHeight+csH, bmath.OsuWidth+cs+thickness, bmath.OsuHeight+csH, thickness)
-			}
-
-			if settings.Gameplay.Boundaries.BorderFill > bmath.OsuHeight/bmath.OsuWidth {
-				overlay.shapeRenderer.DrawLine(-csH, -csH+half, -csH, bmath.OsuHeight+csH-half, thickness)
-				overlay.shapeRenderer.DrawLine(bmath.OsuWidth+csH, -csH+half, bmath.OsuWidth+csH, bmath.OsuHeight+csH-half, thickness)
-			} else {
-				dy := (bmath.OsuWidth + cs*2) / 2 * float32(settings.Gameplay.Boundaries.BorderFill)
-
-				// left
-				overlay.shapeRenderer.DrawLine(-csH, -cs, -csH, -cs+dy, thickness)
-				overlay.shapeRenderer.DrawLine(-csH, bmath.OsuHeight+cs-dy, -csH, bmath.OsuHeight+cs, thickness)
-
-				// right
-				overlay.shapeRenderer.DrawLine(bmath.OsuWidth+csH, -cs, bmath.OsuWidth+csH, -cs+dy, thickness)
-				overlay.shapeRenderer.DrawLine(bmath.OsuWidth+csH, bmath.OsuHeight+cs-dy, bmath.OsuWidth+csH, bmath.OsuHeight+cs, thickness)
-			}
-		}
-
-		overlay.shapeRenderer.End()
-	}
+	overlay.boundaries.Draw(batch.Projection, float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius), float32(alpha*overlay.bgDim.GetValue()))
 }
 
 func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {

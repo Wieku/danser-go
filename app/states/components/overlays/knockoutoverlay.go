@@ -1,4 +1,4 @@
-package components
+package overlays
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -101,6 +102,8 @@ type KnockoutOverlay struct {
 	//deaths     map[int64]int64
 	generator *rand.Rand
 	lastObj   int64
+
+	boundaries *common.Boundaries
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -119,19 +122,6 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
-		/*if i == 0 {
-			overlay.players[r.Name].fade.SetValue(0)
-			overlay.players[r.Name].height.SetValue(0)
-			overlay.players[r.Name].fade.AddEvent(105640, 105867, 1)
-			overlay.players[r.Name].height.AddEvent(105640, 105867, settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51))
-			//overlay.players[r.Name].fade.AddEvent(187000, 189000, 1)
-			//overlay.players[r.Name].height.AddEvent(187000, 189000, settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51))
-		}*/ /*else if i == 1 {
-			overlay.players[r.Name].fade.SetValue(0)
-			overlay.players[r.Name].height.SetValue(0)
-			overlay.players[r.Name].fade.AddEvent(221432, 226542, 1)
-			overlay.players[r.Name].height.AddEvent(221432, 226542, settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51))
-		}*/
 	}
 
 	rand.Shuffle(len(overlay.playersArray), func(i, j int) {
@@ -249,6 +239,8 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		}
 	})
 
+	overlay.boundaries = common.NewBoundaries()
+
 	return overlay
 }
 
@@ -279,29 +271,7 @@ func (overlay *KnockoutOverlay) Update(time int64) {
 }
 
 func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
-	//cs := overlay.controller.GetBeatMap().Diff.CircleRadius
-	//sizeX := 512 + (cs+0.3)*2
-	//sizeY := 384 + (cs+0.3)*2
-	//
-	//batch.SetScale(sizeX/2, sizeY/2)
-	//batch.SetColor(0, 0, 0, 0.3*alpha)
-	//batch.SetTranslation(vector.NewVec2d(256, 192)) //bg
-	//batch.DrawUnit(graphics.Pixel.GetRegion())
-	//
-	//batch.SetColor(1, 1, 1, 0.5*alpha)
-	//batch.SetScale(sizeX/2, 0.3)
-	//batch.SetTranslation(vector.NewVec2d(256, -cs)) //top line
-	//batch.DrawUnit(graphics.Pixel.GetRegion())
-	//
-	//batch.SetTranslation(vector.NewVec2d(256, 384+cs)) //bottom line
-	//batch.DrawUnit(graphics.Pixel.GetRegion())
-	//
-	//batch.SetScale(0.3, sizeY/2)
-	//batch.SetTranslation(vector.NewVec2d(-cs, 192)) //left line
-	//batch.DrawUnit(graphics.Pixel.GetRegion())
-	//batch.SetTranslation(vector.NewVec2d(512+cs, 192)) //right line
-	//batch.DrawUnit(graphics.Pixel.GetRegion())
-	//batch.SetScale(1, 1)
+	overlay.boundaries.Draw(batch.Projection, float32(overlay.controller.GetBeatMap().Diff.CircleRadius), float32(alpha))
 }
 
 func (overlay *KnockoutOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {

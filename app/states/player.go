@@ -15,7 +15,8 @@ import (
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/app/states/components"
+	"github.com/wieku/danser-go/app/states/components/common"
+	"github.com/wieku/danser-go/app/states/components/overlays"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
@@ -49,7 +50,7 @@ type Player struct {
 	progressMs  int64
 	batch       *sprite.SpriteBatch
 	controller  dance.Controller
-	background  *components.Background
+	background  *common.Background
 	BgScl       vector.Vector2d
 	Scl         float64
 	SclA        float64
@@ -75,7 +76,7 @@ type Player struct {
 	mapFullName     string
 	Epi             *texture.TextureRegion
 	epiGlider       *animation.Glider
-	overlay         components.Overlay
+	overlay         overlays.Overlay
 	blur            *effects.BlurEffect
 
 	currentBeatVal float64
@@ -139,7 +140,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	player.background = components.NewBackground(beatMap)
+	player.background = common.NewBackground(beatMap)
 
 	player.camera = bmath.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
@@ -169,7 +170,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
-		player.overlay = components.NewScoreOverlay(player.controller.(*dance.PlayerController).GetRuleset(), player.controller.GetCursors()[0])
+		player.overlay = overlays.NewScoreOverlay(player.controller.(*dance.PlayerController).GetRuleset(), player.controller.GetCursors()[0])
 	} else if settings.KNOCKOUT {
 		controller := dance.NewReplayController()
 		player.controller = controller
@@ -177,9 +178,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.controller.InitCursors()
 
 		if settings.PLAYERS == 1 {
-			player.overlay = components.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
+			player.overlay = overlays.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
 		} else {
-			player.overlay = components.NewKnockoutOverlay(controller.(*dance.ReplayController))
+			player.overlay = overlays.NewKnockoutOverlay(controller.(*dance.ReplayController))
 		}
 	} else {
 		player.controller = dance.NewGenericController()
@@ -249,7 +250,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)
 	player.fxGlider = animation.NewGlider(0.0)
-	if _, ok := player.overlay.(*components.ScoreOverlay); !ok {
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
 		player.cursorGlider = animation.NewGlider(0.0)
 	} else {
 		player.cursorGlider = animation.NewGlider(1.0)
@@ -280,7 +281,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
 	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
 	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
-	if _, ok := player.overlay.(*components.ScoreOverlay); !ok {
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
 		player.cursorGlider.AddEvent(startOffset-500, startOffset, 0.0)
 	}
 	player.playersGlider.AddEvent(startOffset-500, startOffset, 1.0)
@@ -390,7 +391,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				musicPlayer.SetTempo(settings.SPEED)
 				musicPlayer.SetPitch(settings.PITCH)
 
-				if ov, ok := player.overlay.(*components.ScoreOverlay); ok {
+				if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
 					ov.SetMusic(musicPlayer)
 				}
 

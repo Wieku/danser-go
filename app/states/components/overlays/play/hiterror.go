@@ -1,4 +1,4 @@
-package components
+package play
 
 import (
 	"github.com/wieku/danser-go/app/bmath"
