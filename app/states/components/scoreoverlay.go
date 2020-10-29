@@ -472,6 +472,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 		if settings.Gameplay.ProgressBar == "Pie" {
 			text := skin.GetTextureSource("circularmetre", skin.LOCAL)
 
+			batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
 			batch.DrawTexture(*text)
 
