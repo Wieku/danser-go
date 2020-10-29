@@ -2,8 +2,8 @@ package beatmap
 
 import (
 	"github.com/wieku/danser-go/app/audio"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"strconv"
 	"strings"
 	"time"

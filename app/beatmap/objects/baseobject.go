@@ -1,7 +1,7 @@
 package objects
 
 import (
-	"github.com/wieku/danser-go/app/bmath/difficulty"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"

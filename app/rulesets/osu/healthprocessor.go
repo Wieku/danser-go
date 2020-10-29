@@ -2,9 +2,9 @@ package osu
 
 import (
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"log"
 	"math"
 )
