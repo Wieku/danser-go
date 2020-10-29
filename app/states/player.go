@@ -96,8 +96,10 @@ type Player struct {
 	followpoints *sprite.SpriteManager
 	hudGlider    *animation.Glider
 
-	volumeGlider *animation.Glider
-	startPoint   float64
+	volumeGlider  *animation.Glider
+	startPoint    float64
+	baseLimit     int
+	updateLimiter *frame.Limiter
 }
 
 type RenderableProxy struct {
@@ -350,7 +352,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
 
 	player.profilerU = frame.NewCounter()
-	limiter := frame.NewLimiter(10000)
+
+	player.baseLimit = 2000
+
+	player.updateLimiter = frame.NewLimiter(player.baseLimit)
 
 	go func() {
 		defer func() {
@@ -455,7 +460,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			lastT = currtime
 
-			limiter.Sync()
+			player.updateLimiter.Sync()
 		}
 	}()
 
@@ -519,6 +524,8 @@ func (pl *Player) Draw(float64) {
 	timMs := float64(tim-pl.lastTime) / 1000000.0
 
 	fps := pl.profiler.GetFPS()
+
+	pl.updateLimiter.FPS = bmath.ClampI(int(fps*1.2), pl.baseLimit, 10000)
 
 	if fps > 58 && timMs > 18 {
 		log.Println(fmt.Sprintf("Slow frame detected! Frame time: %.3fms | Av. frame time: %.3fms", timMs, 1000.0/fps))
