@@ -260,16 +260,18 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		skipTime = float64(player.queue2[0].GetBasicData().StartTime)
 	}
 
-	tmS := math.Max(skipTime, settings.SCRUB*1000)
+	skipTime = math.Max(skipTime, settings.SCRUB*1000)
+
+	tmS := math.Max(float64(player.queue2[0].GetBasicData().StartTime), settings.SCRUB*1000)
 	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
 
 	startOffset := 0.0
 
 	if settings.SKIP || settings.SCRUB > 0.01 {
-		startOffset = tmS
-		player.startPoint = tmS - beatMap.Diff.Preempt
+		startOffset = skipTime
+		player.startPoint = skipTime - beatMap.Diff.Preempt
 		player.volumeGlider.SetValue(0.0)
-		player.volumeGlider.AddEvent(tmS-beatMap.Diff.Preempt, tmS-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+		player.volumeGlider.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
 	}
 
 	startOffset += -settings.Playfield.LeadInHold*1000 - beatMap.Diff.Preempt
