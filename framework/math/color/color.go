@@ -73,6 +73,43 @@ func (c Color) Shift(h, s, v float32) Color {
 	return NewHSVA(hR, sR, vR, c.A)
 }
 
+func (c Color) Shade(amount float32) Color {
+	if amount < 0 {
+		return c.Darken(-amount)
+	}
+
+	return c.Lighten(amount)
+}
+
+func (c Color) Shade2(amount float32) Color {
+	if amount < 0 {
+		return c.Darken(-amount)
+	}
+
+	return c.Lighten2(amount)
+}
+
+func (c Color) Darken(amount float32) Color {
+	scale := math32.Max(1.0, 1.0+amount)
+	return NewRGBA(c.R/scale, c.G/scale, c.B/scale, c.A)
+}
+
+func (c Color) Lighten(amount float32) Color {
+	scale := math32.Max(1.0, 1.0+amount)
+	return NewRGBA(c.R*scale, c.G*scale, c.B*scale, c.A)
+}
+
+func (c Color) Lighten2(amount float32) Color {
+	amount *= 0.5
+	scale := 1.0 + 0.5*amount
+
+	return NewRGBA(
+		math32.Min(1.0, c.R*scale+amount),
+		math32.Min(1.0, c.G*scale+amount),
+		math32.Min(1.0, c.B*scale+amount),
+		c.A)
+}
+
 func (c Color) PackInt() uint32 {
 	rI := uint32(c.R * 255)
 	gI := uint32(c.G * 255)

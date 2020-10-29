@@ -675,8 +675,8 @@ func (slider *Slider) DrawBody(time int64, color color2.Color, color1 color2.Col
 
 	borderInner := color2.NewRGBA(color.R, color.G, color.B, float32(colorAlpha))
 	borderOuter := color2.NewRGBA(color1.R, color1.G, color1.B, float32(colorAlpha))
-	bodyInner := color2.NewLA(0.1, float32(colorAlpha)*bodyOpacity)
-	bodyOuter := color2.NewLA(0.1, float32(colorAlpha)*bodyOpacity)
+	bodyInner := color2.NewL(0)
+	bodyOuter := color2.NewL(0)
 
 	if settings.Skin.UseColorsFromSkin {
 		borderOuter = skin.GetInfo().SliderBorder
@@ -693,13 +693,8 @@ func (slider *Slider) DrawBody(time int64, color color2.Color, color1 color2.Col
 			baseTrack = skin.GetInfo().ComboColors[int(slider.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
 		}
 
-		bodyOuter.R = baseTrack.R / 1.1
-		bodyOuter.G = baseTrack.G / 1.1
-		bodyOuter.B = baseTrack.B / 1.1
-
-		bodyInner.R = baseTrack.R + (1-baseTrack.R)*0.25
-		bodyInner.G = baseTrack.G + (1-baseTrack.G)*0.25
-		bodyInner.B = baseTrack.B + (1-baseTrack.B)*0.25
+		bodyOuter = baseTrack.Shade2(-0.1)
+		bodyInner = baseTrack.Shade2(0.5)
 	} else if settings.Objects.Colors.UseComboColors && !settings.Objects.Colors.EnableCustomSliderBorderColor {
 		cHSV := settings.Objects.Colors.ComboColors[int(slider.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
@@ -712,6 +707,9 @@ func (slider *Slider) DrawBody(time int64, color color2.Color, color1 color2.Col
 		borderInner.A = float32(colorAlpha)
 		borderOuter.A = float32(colorAlpha)
 	}
+
+	bodyInner.A = float32(colorAlpha) * bodyOpacity
+	bodyOuter.A = float32(colorAlpha) * bodyOpacity
 
 	slider.body.DrawNormal(projection, slider.objData.StackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
