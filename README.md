@@ -23,13 +23,11 @@ Application is in dev phase so only few things work. But if you want to test it,
 
 ## How to download it
 
-### Windows
+### Executables
+You can download Windows/Linux/MacOS 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
-You can download windows binaries from [releases](https://github.com/Wieku/danser-go/releases).
-
-### Linux/Unix
-
-Binary releases are not available yet. Follow the instructions below.
+### Project
+You need to clone it or download as zip
 
 ## How to run it
 
@@ -44,12 +42,12 @@ danser***.exe <arguments>
 
 * [64-bit go (1.15 at least)](https://golang.org/dl/)
 * gcc (Linux/MacOS), [mingw-w64](http://mingw-w64.org/) (Windows)
-* libgl (Linux/MacOS)
+* OpenGL library (shipped with drivers)
 * xorg-dev (Linux)
 
 #### Building and running the project
 
-You need to clone the repository first and enter it.
+You need to enter the cloned/downloaded repository.
 
 If you're running it for the first time or when you made some changes type:
 ```bash
@@ -76,6 +74,8 @@ Then type:
 * `-settings=name` - if argument is not empty then app will try to load `settings-name.json` instead of `settings.json`
 * `-debug` - shows more info during the map, overrides `Graphics.DrawFPS` setting
 * `-play` - play through the map in osu!standard mode
+* `-skip` - fade right into map's drain time
+* `-scrub=20.5` - start the map at the given time (in seconds)
 
 Since danser 0.4.0b full names for artist, title, difficulty and creator arguments don't have to be strict with `.osu` file. 
 
