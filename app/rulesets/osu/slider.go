@@ -159,9 +159,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 				player.lastButton2 == player.mouseDownButton)
 
 		if player.gameDownState {
-			if state.downButton == Buttons(0) ||
-				(player.mouseDownButton != (Left|Right) && mouseDownAcceptableSwap) {
-
+			if state.downButton == Buttons(0) || (player.mouseDownButton != (Left|Right) && mouseDownAcceptableSwap) {
 				state.downButton = Buttons(0)
 				if player.leftCond {
 					state.downButton = Left

@@ -403,7 +403,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if _, ok := player.controller.(*dance.GenericController); ok {
 					player.bMap.Update(int64(player.progressMsF))
 				}
+			}
 
+			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
 				player.controller.Update(int64(player.progressMsF), float64(currtime-lastT)/1000000)
 			}
 

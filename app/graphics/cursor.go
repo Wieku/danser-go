@@ -69,14 +69,17 @@ type Cursor struct {
 	removeCounter float64
 
 	LeftButton, RightButton bool
-	IsReplayFrame           bool // TODO: temporary hacky solution for spinners
-	IsPlayer                bool
-	LastFrameTime           int64 //
-	CurrentFrameTime        int64 //
-	Position                vector.Vector2f
-	LastPos                 vector.Vector2f
-	VaoPos                  vector.Vector2f
-	RendPos                 vector.Vector2f
+	LeftKey, RightKey       bool
+	LeftMouse, RightMouse   bool
+
+	IsReplayFrame    bool // TODO: temporary hacky solution for spinners
+	IsPlayer         bool
+	LastFrameTime    int64 //
+	CurrentFrameTime int64 //
+	Position         vector.Vector2f
+	LastPos          vector.Vector2f
+	VaoPos           vector.Vector2f
+	RendPos          vector.Vector2f
 
 	Name string
 

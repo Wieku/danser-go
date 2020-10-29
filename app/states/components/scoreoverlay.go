@@ -279,7 +279,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 
 	overlay.hitErrorMeter.Update(float64(time))
 
-	currentStates := [4]bool{overlay.cursor.LeftButton, overlay.cursor.RightButton, false, false}
+	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
 
 	for i, state := range currentStates {
 		color := color2.Color{R: 1.0, G: 222.0 / 255, B: 0, A: 0}

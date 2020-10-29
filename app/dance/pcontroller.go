@@ -39,17 +39,17 @@ func (controller *PlayerController) InitCursors() {
 	controller.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if glfw.GetKeyName(key, scancode) == settings.Input.LeftKey {
 			if action == glfw.Press {
-				controller.leftClick = true
+				controller.cursors[0].LeftKey = true
 			} else if action == glfw.Release {
-				controller.leftClick = false
+				controller.cursors[0].LeftKey = false
 			}
 		}
 
 		if glfw.GetKeyName(key, scancode) == settings.Input.RightKey {
 			if action == glfw.Press {
-				controller.rightClick = true
+				controller.cursors[0].RightKey = true
 			} else if action == glfw.Release {
-				controller.rightClick = false
+				controller.cursors[0].RightKey = false
 			}
 		}
 	})
@@ -64,8 +64,11 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 
 		mouseEnabled := !settings.Input.MouseButtonsDisabled
 
-		controller.cursors[0].LeftButton = controller.leftClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
-		controller.cursors[0].RightButton = controller.rightClick || (mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
+		controller.cursors[0].LeftMouse = mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
+		controller.cursors[0].RightMouse = mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press
+
+		controller.cursors[0].LeftButton = controller.cursors[0].LeftKey || controller.cursors[0].LeftMouse
+		controller.cursors[0].RightButton = controller.cursors[0].RightKey || controller.cursors[0].RightMouse
 	}
 
 	controller.counter += float64(time - controller.lastTime)

@@ -121,6 +121,9 @@ func (controller *GenericController) Update(time int64, delta float64) {
 	for i := range controller.cursors {
 		controller.schedulers[i].Update(time)
 		controller.cursors[i].Update(delta)
+
+		controller.cursors[i].LeftButton = controller.cursors[i].LeftKey || controller.cursors[i].LeftMouse
+		controller.cursors[i].RightButton = controller.cursors[i].RightKey || controller.cursors[i].RightMouse
 	}
 }
 
