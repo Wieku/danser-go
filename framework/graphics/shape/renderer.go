@@ -71,16 +71,12 @@ func NewRenderer() *Renderer {
 	return NewRendererSize(defaultRendererSize)
 }
 
-func NewRendererSize(maxSprites int) *Renderer {
-	//if maxSprites*6 > 0xFFFF {
-	//	panic(fmt.Sprintf("Renderer size is too big, maximum sprites allowed: 10922, given: %d", maxSprites))
-	//}
-
+func NewRendererSize(maxTriangles int) *Renderer {
 	rShader := shader.NewRShader(shader.NewSource(vert, shader.Vertex), shader.NewSource(frag, shader.Fragment))
 
 	vao := buffer.NewVertexArrayObject()
 
-	vao.AddMappedVBO("default", maxSprites*3, 0, attribute.Format{
+	vao.AddMappedVBO("default", maxTriangles*3, 0, attribute.Format{
 		{Name: "in_position", Type: attribute.Vec2},
 		{Name: "in_color", Type: attribute.ColorPacked},
 		{Name: "in_additive", Type: attribute.Float},
@@ -90,11 +86,11 @@ func NewRendererSize(maxSprites int) *Renderer {
 	vao.Attach(rShader)
 	vao.Unbind()
 
-	//ibo := buffer.NewIndexBufferObject(maxSprites*6)
+	//ibo := buffer.NewIndexBufferObject(maxTriangles*6)
 
 	vertexSize := vao.GetVBOFormat("default").Size() / 4
 
-	chunk := vao.MapVBO("default", maxSprites*3*vertexSize)
+	chunk := vao.MapVBO("default", maxTriangles*3*vertexSize)
 
 	return &Renderer{
 		shader:      rShader,
@@ -105,7 +101,7 @@ func NewRendererSize(maxSprites int) *Renderer {
 		chunkOffset: chunk.Offset,
 		vao:         vao,
 		//ibo:         ibo,
-		maxSprites: maxSprites,
+		maxSprites: maxTriangles,
 	}
 }
 

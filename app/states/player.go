@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/difficulty"
 	"github.com/wieku/danser-go/app/dance"
@@ -12,10 +11,9 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
-	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
+	"github.com/wieku/danser-go/app/states/components/containers"
 	"github.com/wieku/danser-go/app/states/components/overlays"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
@@ -34,7 +32,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"time"
 )
@@ -42,8 +39,6 @@ import (
 type Player struct {
 	font        *font.Font
 	bMap        *beatmap.BeatMap
-	queue2      []objects.BaseObject
-	processed   []*RenderableProxy
 	bloomEffect *effects.BloomEffect
 	lastTime    int64
 	progressMsF float64
@@ -94,20 +89,14 @@ type Player struct {
 	cookieSize float64
 	visualiser *drawables.Visualiser
 
-	followpoints *sprite.SpriteManager
-	hudGlider    *animation.Glider
+	hudGlider *animation.Glider
 
 	volumeGlider  *animation.Glider
 	startPoint    float64
 	baseLimit     int
 	updateLimiter *frame.Limiter
-}
 
-type RenderableProxy struct {
-	renderable   objects.Renderable
-	IsSliderBody bool
-	depth        int64
-	endTime      int64
+	objectContainer *containers.HitObjectContainer
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -189,55 +178,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	player.lastTime = -1
-	player.queue2 = make([]objects.BaseObject, len(player.bMap.Queue))
 
-	copy(player.queue2, player.bMap.Queue)
-
-	player.followpoints = sprite.NewSpriteManager()
-
-	prempt := 800.0
-	postmt := 240.0
-	lineDist := 32.0
-
-	for i := 1; i < len(player.queue2); i++ {
-		_, ok1 := player.queue2[i-1].(*objects.Spinner)
-		_, ok2 := player.queue2[i].(*objects.Spinner)
-		if ok1 || ok2 || player.queue2[i].GetBasicData().NewCombo {
-			continue
-		}
-
-		prevTime := float64(player.queue2[i-1].GetBasicData().EndTime)
-		prevPos := player.queue2[i-1].GetBasicData().EndPos.Copy64()
-
-		nextTime := float64(player.queue2[i].GetBasicData().StartTime)
-		nextPos := player.queue2[i].GetBasicData().StartPos.Copy64()
-
-		vec := nextPos.Sub(prevPos)
-		duration := nextTime - prevTime
-		distance := vec.Len()
-		rotation := vec.AngleR()
-
-		for prog := lineDist * 1.5; prog < distance-lineDist; prog += lineDist {
-			t := prog / distance
-
-			tStart := prevTime + t*duration - prempt
-			tEnd := prevTime + t*duration
-
-			pos := prevPos.Add(vec.Scl(t))
-
-			textures := skin.GetFrames("followpoint", true)
-
-			sprite := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, bmath.Origin.Centre)
-			sprite.SetRotation(rotation)
-			sprite.ShowForever(false)
-
-			sprite.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tStart, tStart+postmt, 0, 1))
-			sprite.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tEnd, tEnd+postmt, 1, 0))
-			sprite.AdjustTimesToTransformations()
-			sprite.SetAlpha(0)
-			player.followpoints.Add(sprite)
-		}
-	}
+	player.objectContainer = containers.NewHitObjectContainer(beatMap)
 
 	log.Println("Track:", beatMap.Audio)
 
@@ -259,13 +201,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	skipTime := 0.0
 	if settings.SKIP {
-		skipTime = float64(player.queue2[0].GetBasicData().StartTime)
+		skipTime = float64(beatMap.HitObjects[0].GetBasicData().StartTime)
 	}
 
 	skipTime = math.Max(skipTime, settings.SCRUB*1000)
 
-	tmS := math.Max(float64(player.queue2[0].GetBasicData().StartTime), settings.SCRUB*1000)
-	tmE := float64(player.queue2[len(player.queue2)-1].GetBasicData().EndTime)
+	tmS := math.Max(float64(beatMap.HitObjects[0].GetBasicData().StartTime), settings.SCRUB*1000)
+	tmE := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime)
 
 	startOffset := 0.0
 
@@ -410,6 +352,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if _, ok := player.controller.(*dance.GenericController); ok {
 					player.bMap.Update(int64(player.progressMsF))
 				}
+
+				player.objectContainer.Update(player.progressMsF)
 			}
 
 			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
@@ -444,8 +388,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			offset = offset.Scl(1 / float64(len(player.controller.GetCursors())))
 
 			player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
-
-			player.followpoints.Update(int64(player.progressMsF))
 
 			player.epiGlider.Update(player.progressMsF)
 			player.dimGlider.Update(player.progressMsF)
@@ -505,17 +447,6 @@ func (pl *Player) Show() {
 
 }
 
-func (pl *Player) AddProxy(proxy *RenderableProxy) {
-	n := sort.Search(len(pl.processed), func(j int) bool {
-		return proxy.depth < pl.processed[j].depth
-	})
-
-	pl.processed = append(pl.processed, nil) //allocate bigger array in case when len=cap
-	copy(pl.processed[n+1:], pl.processed[n:])
-
-	pl.processed[n] = proxy
-}
-
 func (pl *Player) Draw(float64) {
 	if pl.lastTime <= 0 {
 		pl.lastTime = qpc.GetNanoTime()
@@ -537,45 +468,6 @@ func (pl *Player) Draw(float64) {
 	pl.profiler.PutSample(timMs)
 	pl.lastTime = tim
 
-	if len(pl.queue2) > 0 {
-		for i := 0; i < len(pl.queue2); i++ {
-			if p := pl.queue2[i]; p.GetBasicData().StartTime-15000 <= pl.progressMs {
-				if p := pl.queue2[i]; p.GetBasicData().StartTime-int64(pl.bMap.Diff.Preempt) <= pl.progressMs {
-
-					if _, ok := p.(*objects.Spinner); ok {
-						pl.AddProxy(&RenderableProxy{
-							renderable:   p.(objects.Renderable),
-							IsSliderBody: false,
-							depth:        math.MaxInt64,
-							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
-						})
-					} else {
-						pl.AddProxy(&RenderableProxy{
-							renderable:   p.(objects.Renderable),
-							IsSliderBody: false,
-							depth:        p.GetBasicData().StartTime,
-							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
-						})
-					}
-
-					if _, ok := p.(*objects.Slider); ok {
-						pl.AddProxy(&RenderableProxy{
-							renderable:   p.(objects.Renderable),
-							IsSliderBody: true,
-							depth:        p.GetBasicData().EndTime + 10,
-							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
-						})
-					}
-
-					pl.queue2 = pl.queue2[1:]
-					i--
-				}
-			} else {
-				break
-			}
-		}
-	}
-
 	bgAlpha := pl.dimGlider.GetValue()
 
 	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
@@ -588,24 +480,10 @@ func (pl *Player) Draw(float64) {
 	pl.background.Draw(pl.progressMs, pl.batch, pl.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
 	if pl.start {
-		settings.Objects.Colors.Color.Update(timMs)
-		settings.Objects.Colors.Sliders.Border.Color.Update(timMs)
-		settings.Objects.Colors.Sliders.Body.Color.Update(timMs)
 		settings.Cursor.Colors.Update(timMs)
 	}
 
-	objectColors := settings.Objects.Colors.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
 	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
-	borderColors := objectColors
-	bodyColors := objectColors
-
-	if !settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
-		borderColors = settings.Objects.Colors.Sliders.Border.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	}
-
-	if !settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
-		bodyColors = settings.Objects.Colors.Sliders.Body.Color.GetColors(settings.DIVIDES, pl.Scl, pl.fadeOut*pl.fadeIn)
-	}
 
 	if pl.overlay != nil {
 		pl.batch.Begin()
@@ -686,12 +564,7 @@ func (pl *Player) Draw(float64) {
 		pl.batch.End()
 	}
 
-	scale1 := pl.Scl
 	scale2 := pl.Scl
-
-	if !settings.Objects.ScaleToTheBeat {
-		scale1 = 1
-	}
 
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
@@ -704,125 +577,7 @@ func (pl *Player) Draw(float64) {
 		pl.bloomEffect.Begin()
 	}
 
-	if settings.Playfield.DrawObjects {
-		pl.batch.Begin()
-		pl.batch.ResetTransform()
-		pl.batch.SetColor(1, 1, 1, 1)
-		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
-
-		if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawFollowPoints {
-			for j := 0; j < settings.DIVIDES; j++ {
-				pl.batch.SetCamera(cameras[j])
-				pl.followpoints.Draw(pl.progressMs, pl.batch)
-			}
-		}
-
-		pl.batch.Flush()
-		pl.batch.SetScale(1, 1)
-
-		for i := len(pl.processed) - 1; i >= 0; i-- {
-			if s, ok := pl.processed[i].renderable.(*objects.Slider); ok && pl.processed[i].IsSliderBody {
-				s.DrawBodyBase(pl.progressMs, cameras[0])
-			}
-		}
-
-		if settings.Objects.Sliders.SliderMerge {
-			enabled := false
-
-			for j := 0; j < settings.DIVIDES; j++ {
-				ind := j - 1
-				if ind < 0 {
-					ind = settings.DIVIDES - 1
-				}
-
-				for i := len(pl.processed) - 1; i >= 0; i-- {
-					if s, ok := pl.processed[i].renderable.(*objects.Slider); ok && pl.processed[i].IsSliderBody {
-						if !enabled {
-							enabled = true
-							sliderrenderer.BeginRendererMerge()
-						}
-
-						s.DrawBody(pl.progressMs, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], float32(scale1))
-					}
-				}
-			}
-			if enabled {
-				sliderrenderer.EndRendererMerge()
-			}
-		}
-
-		if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
-			pl.batch.SetAdditive(true)
-		} else {
-			pl.batch.SetAdditive(false)
-		}
-
-		pl.batch.SetScale(scale1*pl.bMap.Diff.CircleRadius/64, scale1*pl.bMap.Diff.CircleRadius/64)
-
-		for j := 0; j < settings.DIVIDES; j++ {
-			pl.batch.SetCamera(cameras[j])
-			ind := j - 1
-			if ind < 0 {
-				ind = settings.DIVIDES - 1
-			}
-
-			pl.batch.Flush()
-
-			enabled := false
-
-			for i := len(pl.processed) - 1; i >= 0; i-- {
-				proxy := pl.processed[i]
-
-				if !proxy.IsSliderBody {
-					if enabled && !settings.Objects.Sliders.SliderMerge {
-						enabled = false
-
-						sliderrenderer.EndRenderer()
-					}
-
-					_, sp := pl.processed[i].renderable.(*objects.Spinner)
-					if !sp || j == 0 {
-						proxy.renderable.Draw(pl.progressMs, objectColors[j], pl.batch)
-					}
-				} else if !settings.Objects.Sliders.SliderMerge {
-					if !enabled {
-						enabled = true
-
-						pl.batch.Flush()
-
-						sliderrenderer.BeginRenderer()
-					}
-
-					proxy.renderable.(*objects.Slider).DrawBody(pl.progressMs, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], float32(scale1))
-				}
-
-				if proxy.endTime <= pl.progressMs {
-					pl.processed = append(pl.processed[:i], pl.processed[(i+1):]...)
-				}
-			}
-
-			if enabled {
-				sliderrenderer.EndRenderer()
-			}
-		}
-
-		if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
-			pl.batch.Flush()
-
-			for j := 0; j < settings.DIVIDES; j++ {
-				pl.batch.SetCamera(cameras[j])
-
-				for i := len(pl.processed) - 1; i >= 0; i-- {
-					if s := pl.processed[i]; !s.IsSliderBody {
-						s.renderable.DrawApproach(pl.progressMs, objectColors[j], pl.batch)
-					}
-				}
-			}
-		}
-
-		pl.batch.SetScale(1, 1)
-		pl.batch.End()
-	}
+	pl.objectContainer.Draw(pl.batch, cameras, pl.progressMsF, float32(pl.Scl), 1.0)
 
 	if pl.overlay != nil && pl.overlay.NormalBeforeCursor() {
 		pl.batch.Begin()
@@ -963,7 +718,7 @@ func (pl *Player) Draw(float64) {
 			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
 
 			drawShadowed(2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total", len(pl.processed), settings.DIVIDES, len(pl.bMap.HitObjects)))
+			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(pl.processed)*/, 0, settings.DIVIDES, len(pl.bMap.HitObjects)))
 
 			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
 				drawShadowed(0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", pl.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
