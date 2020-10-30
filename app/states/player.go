@@ -416,7 +416,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			ratio1 := 15 / 16.6666666666667
 
 			player.vol = player.musicPlayer.GetLevelCombined()
-			player.volAverage = player.volAverage*0.9*(1-ratio1) + player.vol*0.1*ratio1
+			player.volAverage = player.volAverage*0.9 + player.vol*0.1
 
 			vprog := 1 - ((player.vol - player.volAverage) / 0.5)
 			pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+player.beatProgress*0.5)))
