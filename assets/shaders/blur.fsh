@@ -20,7 +20,7 @@ float gauss(float x, float sigma) {
 void main() {
     float tSigma = length(direction*sigma);
 
-    float gs = gauss(0, tSigma);
+    float gs = gauss(0.0, tSigma);
 
     vec4 inc = texture(tex, vec3(tex_coord, 0));
 

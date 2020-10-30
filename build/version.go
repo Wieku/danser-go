@@ -1,3 +1,5 @@
 package build
 
-const VERSION = "0.3.0b"
+var VERSION = "0.4.0-dev"
+
+var Stream = "Dev"

@@ -19,21 +19,15 @@ Application is in dev phase so only few things work. But if you want to test it,
 * [Halozy - Genryuu Kaiko [Higan Torrent] Mirror Collage](https://youtu.be/HCVIBQh4ljI)
 * [Nightcore - Flower Dance [Amachoco ARX.7] Mandala Mirror Collage](https://youtu.be/HBC89S-UwFc)
 * [MDK - Press Start [bhop_start_collab] - Co-Op Mirror Collage](https://youtu.be/P5mYXvH48Uk)
+* [Flower Dance (osu! cursordance)](https://youtu.be/lcnnz3fN3bs)
 
 ## How to download it
 
-### Windows
-You can download windows binaries from [releases](https://github.com/Wieku/danser-go/releases).
+### Executables
+You can download Windows/Linux/MacOS 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
-### Linux/Unix/Windows
-
-If you want to build it yourself, you need 64bit [go](https://golang.org/dl/), `gcc/mingw64` and libgl (on Linux/Unix).
-
-In your terminal type:
-```bash
-go get -u github.com/wieku/danser-go
-```
-This will automatically download and compile needed libraries.
+### Project
+You need to clone it or download as zip (and unpack it to desired directory)
 
 ## How to run it
 
@@ -42,17 +36,34 @@ This will automatically download and compile needed libraries.
 danser***.exe <arguments>
 ```
 
+### Linux/Unix/Windows(bash/Powershell) executable
+```bash
+./danser*** <arguments>
+```
+
 ### Project
-You have to be in the project directory.
+
+#### Prerequisites
+
+* [64-bit go (1.15 at least)](https://golang.org/dl/)
+* gcc (Linux/MacOS), [mingw-w64](http://mingw-w64.org/) (Windows)
+* OpenGL library (shipped with drivers)
+* xorg-dev (Linux)
+
+#### Building and running the project
+
+You need to enter the cloned/downloaded repository.
 
 If you're running it for the first time or when you made some changes type:
 ```bash
 go build
 ```
 
+This will automatically download and build needed dependencies.
+
 Then type:
 ```bash
-danser-go <arguments>
+./danser-go <arguments>
 ```
 
 #### Arguments
@@ -60,22 +71,37 @@ danser-go <arguments>
 * `-title="Brain Power"` or `-t="Brain Power"`
 * `-difficulty="Overdrive"` or `-d="Overdrive"`
 * `-creator="Skystar"` or `-c="Skystar"`
+* `-md5=hash` - overrides above arguments and tries to find `.osu` file with the same MD5 hash
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of TAG cursors
 * `-speed=1.5` - music speed. Value of 1.5 equals to osu!'s DoubleTime
 * `-pitch=1.5` - music pitch. Value of 1.5 equals to osu!'s Nightcore pitch. To recreate osu!'s Nightcore mod, use with 1.5 speed
-* `-mover=flower` - cursor mover. Movers available now: linear, bezier, flower (default), circular, aggressive.
-* `-settings=1` - if number given is bigger than 0 (e.g. 1) then app will try to load `settings-1.json` instead of `settings.json`
-* `-fps` - shows fps in the lower-left corner 
-* `-debug` - shows more info during the map
+* `-settings=name` - if argument is not empty then app will try to load `settings-name.json` instead of `settings.json`
+* `-debug` - shows more info during the map, overrides `Graphics.DrawFPS` setting
+* `-play` - play through the map in osu!standard mode
+* `-skip` - fade right into map's drain time
+* `-scrub=20.5` - start the map at the given time (in seconds)
 
-Example:
+Since danser 0.4.0b full names for artist, title, difficulty and creator arguments don't have to be strict with `.osu` file. 
+
+Examples which should give the same result:
+
 ```bash
-<executable> -title="Brain Power" -difficulty="Overdrive" -tag=2
+<executable> -d="Overdrive" -tag=2 //Assuming that there is only ONE map with "Overdrive" as its difficulty name
+
+<executable> -t="Brain Power" -d="Overdrive" -tag=2
+
+<executable> -t "Brain Power" -d Overdrive -tag 2
+
+<executable> -t="ain pow" -difficulty="rdrive" -tag=2
+
+<executable> -md5=59f3708114c73b2334ad18f31ef49046 -tag=2
 ```
 
 ## Credits
 
-Original game was made by Dean Herbert ([@ppy](https://github.com/ppy)) and [osu!](https://osu.ppy.sh/) community.
+[osu!](https://osu.ppy.sh/) was created by osu! team ([@ppy](https://github.com/ppy)) and osu! community.
 
-Map assets were made by [Haskorion](https://osu.ppy.sh/users/3252321): [Redd Glass HD](https://osu.ppy.sh/community/forums/topics/211396)
+Default skin was created by [Haskorion](https://osu.ppy.sh/users/3252321): [Redd Glass HD](https://osu.ppy.sh/community/forums/topics/211396)
+
+Uses [Exo2](https://fonts.google.com/specimen/Exo+2) font under [SIL Open Font License](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL_web)
