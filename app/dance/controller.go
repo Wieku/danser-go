@@ -59,6 +59,8 @@ func (controller *GenericController) InitCursors() {
 			scheduler = schedulers.NewGenericScheduler(movers.NewAxisMover)
 		case "aggressive":
 			scheduler = schedulers.NewGenericScheduler(movers.NewAggressiveMover)
+		case "momentum":
+			scheduler = schedulers.NewGenericScheduler(movers.NewMomentumMover)
 		default:
 			scheduler = schedulers.NewGenericScheduler(movers.NewAngleOffsetMover)
 		}

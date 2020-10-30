@@ -35,6 +35,12 @@ func initDance() *dance {
 			StreamWobble:     true,
 			WobbleScale:      0.67,
 		},
+		Momentum: &momentum{
+			SkipStackAngles: false,
+			RestrictAngle:   80,
+			DistanceMult:    0.666,
+			DistanceMultEnd: 0.666,
+		},
 	}
 }
 
@@ -52,6 +58,7 @@ type dance struct {
 	Flower             *flower
 	HalfCircle         *circular
 	Spline             *spline
+	Momentum           *momentum
 }
 
 type bezier struct {
@@ -77,4 +84,11 @@ type spline struct {
 	StreamHalfCircle bool
 	StreamWobble     bool
 	WobbleScale      float64
+}
+
+type momentum struct {
+	SkipStackAngles bool
+	RestrictAngle   float64
+	DistanceMult    float64
+	DistanceMultEnd float64
 }
