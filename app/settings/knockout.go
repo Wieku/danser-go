@@ -4,12 +4,12 @@ var Knockout = initKnockout()
 
 func initKnockout() *knockout {
 	return &knockout{
-		Username:           "",
-		MD5Pass:            "",
-		ApiKey:             "",
-		Mode:               ComboBreak,
-		LocalReplays:       false,
-		OnlineReplays:      true,
+		//Username:           "",
+		//MD5Pass:            "",
+		//ApiKey:             "",
+		Mode: ComboBreak,
+		//LocalReplays:       false,
+		//OnlineReplays:      true,
 		ExcludeMods:        "EZHT",
 		MaxPlayers:         50,
 		BubbleMinimumCombo: 200,
@@ -22,18 +22,18 @@ func initKnockout() *knockout {
 }
 
 type knockout struct {
-	Username string
-	MD5Pass  string
-	ApiKey   string
+	//Username string
+	//MD5Pass  string
+	//ApiKey   string
 
 	// Knockout mode. More info below
 	Mode KnockoutMode
 
 	// Whether to load local replays. They have to be put in ./replays/beatmapMD5/
-	LocalReplays bool
+	//LocalReplays bool
 
 	// Whether to load online replays using osu!api
-	OnlineReplays bool
+	//OnlineReplays bool
 
 	// Exclude plays which contain one of the mods set here
 	ExcludeMods string
