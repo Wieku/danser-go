@@ -380,7 +380,12 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color colo
 
 	batch.Begin()
 
-	batch.SetTranslation(cursor.Position.Copy64())
+	position := cursor.RendPos
+	if settings.PLAY {
+		position = cursor.Position
+	}
+
+	batch.SetTranslation(position.Copy64())
 	batch.SetScale(siz*scale, siz*scale)
 	batch.SetSubScale(1, 1)
 
