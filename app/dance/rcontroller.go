@@ -2,6 +2,7 @@ package dance
 
 import (
 	"github.com/Mempler/rplpa"
+	"github.com/karrick/godirwalk"
 	"github.com/thehowl/go-osuapi"
 	"sort"
 	//"github.com/thehowl/go-osuapi"
@@ -93,6 +94,41 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	if err != nil {
 		panic(err)
 	}
+
+	_ = godirwalk.Walk(replaysMaster, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() && osPathname != replaysMaster {
+				return godirwalk.SkipThis
+			}
+
+			if strings.HasSuffix(de.Name(), ".osr") {
+				log.Println("Checking: ", osPathname)
+
+				data, err := ioutil.ReadFile(osPathname)
+				if err != nil {
+					log.Println("Error reading file: ", err)
+					log.Println("Skipping... ")
+					return nil
+				}
+
+				replayD, err := rplpa.ParseReplay(data)
+				if err != nil {
+					log.Println("Error parsing file: ", err)
+					log.Println("Skipping... ")
+					return nil
+				}
+
+				err = os.Rename(osPathname, filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5), de.Name()))
+				if err != nil {
+					log.Println("Error moving file: ", err)
+					log.Println("Skipping... ")
+				}
+			}
+
+			return nil
+		},
+		Unsorted: true,
+	})
 
 	counter := settings.Knockout.MaxPlayers
 
