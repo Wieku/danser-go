@@ -119,7 +119,7 @@ func getSection(line string) string {
 }
 
 func ParseBeatMap(beatMap *BeatMap) error {
-	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
 	defer file.Close()
 
 	if err != nil {
@@ -195,7 +195,7 @@ func ParseBeatMapFile(file *os.File) *BeatMap {
 }
 
 func ParseTimingPointsAndPauses(beatMap *BeatMap) {
-	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
 	defer file.Close()
 
 	if err != nil {
@@ -216,7 +216,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 		switch currentSection {
 		case "Events":
-			if arr := tokenize(line, ","); len(arr) > 1 {
+			if arr := tokenize(line, ","); len(arr) > 1 && (arr[0] == "2" || arr[0] == "Break") {
 				beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(arr))
 			}
 		case "TimingPoints":
@@ -228,7 +228,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 }
 
 func ParseObjects(beatMap *BeatMap) {
-	file, err := os.Open(settings.General.OsuSongsDir + string(os.PathSeparator) + beatMap.Dir + string(os.PathSeparator) + beatMap.File)
+	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
 	defer file.Close()
 
 	if err != nil {
