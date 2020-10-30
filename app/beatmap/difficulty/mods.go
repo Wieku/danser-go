@@ -49,7 +49,7 @@ var modsString = [...]string{
 	"HT",
 	"NC",
 	"FL",
-	"AU", // Auto.
+	"AT", // Auto.
 	"SO",
 	"AP", // Autopilot.
 	"PF",
