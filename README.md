@@ -27,13 +27,18 @@ Application is in dev phase so only few things work. But if you want to test it,
 You can download Windows/Linux/MacOS 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
 ### Project
-You need to clone it or download as zip
+You need to clone it or download as zip (and unpack it to desired directory)
 
 ## How to run it
 
 ### Windows executable
 ```bash
 danser***.exe <arguments>
+```
+
+### Linux/Unix/Windows(bash/Powershell) executable
+```bash
+./danser*** <arguments>
 ```
 
 ### Project
