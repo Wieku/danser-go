@@ -81,6 +81,7 @@ Then type:
 * `-play` - play through the map in osu!standard mode
 * `-skip` - fade right into map's drain time
 * `-scrub=20.5` - start the map at the given time (in seconds)
+* `-knockout` - knockout mode
 
 Since danser 0.4.0b full names for artist, title, difficulty and creator arguments don't have to be strict with `.osu` file. 
 
@@ -97,6 +98,8 @@ Examples which should give the same result:
 
 <executable> -md5=59f3708114c73b2334ad18f31ef49046 -tag=2
 ```
+
+About settings or knockout usage, look at wiki.
 
 ## Credits
 
