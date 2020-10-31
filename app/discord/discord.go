@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/build"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,7 @@ const appId = "658093518396588032"
 
 var queue chan func()
 var connected bool
+var endSync *sync.WaitGroup
 
 var startTime = time.Now()
 var endTime = time.Now()
@@ -35,6 +37,10 @@ func Connect() {
 
 	queue = make(chan func(), 100)
 
+	endSync = &sync.WaitGroup{}
+
+	endSync.Add(1)
+
 	go func() {
 		for {
 			f, keepOpen := <-queue
@@ -44,6 +50,7 @@ func Connect() {
 			}
 
 			if !keepOpen {
+				endSync.Done()
 				break
 			}
 		}
@@ -136,14 +143,16 @@ func Disconnect() {
 		return
 	}
 
+	connected = false
+
+	close(queue)
+
+	endSync.Wait()
+
 	err := client.ClearActivity()
 	if err != nil {
 		log.Println("Can't clear activity")
 	}
-
-	connected = false
-
-	close(queue)
 
 	client.Logout()
 }
