@@ -25,30 +25,33 @@ func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) 
 	switch typ {
 	case "P":
 		lines = append(lines, ApproximateCircularArc(points[0], points[1], points[2], 0.125)...)
-		break
 	case "L":
 		for i := 0; i < len(points)-1; i++ {
 			lines = append(lines, NewLinear(points[i], points[i+1]))
 		}
-		break
 	case "B":
 		lastIndex := 0
-		for i, p := range points {
-			if (i == len(points)-1 && p != points[i-1]) || (i < len(points)-1 && points[i+1] == p) {
-				pts := points[lastIndex : i+1]
 
-				if len(pts) > 2 {
-					lines = append(lines, ApproximateBezier(pts)...)
-				} else if len(pts) == 2 {
-					lines = append(lines, NewLinear(pts[0], pts[1]))
+		for i := 0; i < len(points); i++ {
+			multi := i < len(points)-2 && points[i] == points[i+1]
+
+			if multi || i == len(points)-1 {
+				subPoints := points[lastIndex : i+1]
+
+				if len(subPoints) > 2 {
+					lines = append(lines, ApproximateBezier(subPoints)...)
+				} else if len(subPoints) == 2 {
+					lines = append(lines, NewLinear(subPoints[0], subPoints[1]))
 				}
 
-				lastIndex = i + 1
+				if multi {
+					i++
+				}
+
+				lastIndex = i
 			}
 		}
-		break
 	case "C":
-
 		if points[0] != points[1] {
 			points = append([]vector.Vector2f{points[0]}, points...)
 		}
@@ -60,7 +63,6 @@ func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) 
 		for i := 0; i < len(points)-3; i++ {
 			lines = append(lines, ApproximateCatmullRom(points[i:i+4], 50)...)
 		}
-		break
 	}
 
 	length := float32(0.0)
@@ -77,8 +79,11 @@ func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) 
 		line := lines[len(lines)-1]
 
 		if float64(line.GetLength()) > diff+minPartWidth {
-			pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
-			lines[len(lines)-1] = NewLinear(line.Point1, pt)
+			if line.Point1 != line.Point2 {
+				pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
+				lines[len(lines)-1] = NewLinear(line.Point1, pt)
+			}
+
 			break
 		}
 
@@ -129,6 +134,7 @@ func (mCurve *MultiCurve) GetStartAngle() float32 {
 	if len(mCurve.lines) > 0 {
 		return mCurve.lines[0].GetStartAngle()
 	}
+
 	return 0.0
 }
 
@@ -159,6 +165,7 @@ func (mCurve *MultiCurve) GetEndAngle() float32 {
 	if len(mCurve.lines) > 0 {
 		return mCurve.lines[len(mCurve.lines)-1].GetEndAngle()
 	}
+
 	return 0.0
 }
 
