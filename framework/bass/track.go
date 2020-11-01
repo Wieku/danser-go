@@ -112,8 +112,8 @@ func (wv *Track) Update() {
 
 	boost := 0.0
 
-	for i := 0; i < 20; i++ {
-		boost += float64(wv.fft[i]) * float64(20-i) / float64(20)
+	for i := 0; i < 10; i++ {
+		boost += float64(wv.fft[i]*wv.fft[i]) * float64(10-i) / float64(10)
 	}
 
 	wv.lowMax = beatAv

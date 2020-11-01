@@ -411,7 +411,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		for {
 			musicPlayer.Update()
 
-			target := bmath.ClampF64(musicPlayer.GetBoost()*0.666*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
+			target := bmath.ClampF64(musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
 
 			ratio1 := 15 / 16.6666666666667
 
@@ -430,7 +430,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
 			} else {
 				if player.Scl < target {
-					player.Scl += (target - player.Scl) * 15 / 100
+					player.Scl += (target - player.Scl) * 30 / 100
 				} else if player.Scl > target {
 					player.Scl -= (player.Scl - target) * 15 / 100
 				}
