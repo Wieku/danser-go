@@ -221,10 +221,6 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.Sprit
 
 	alpha := spinner.fade.GetValue()
 
-	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
-		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
-	}
-
 	batch.SetColor(1, 1, 1, alpha)
 
 	scale := batch.GetScale()
