@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -67,6 +68,10 @@ type Cursor struct {
 	Points        []vector.Vector2f
 	PointsC       []float64
 	removeCounter float64
+
+	scale *animation.Glider
+
+	lastLeftState, lastRightState bool
 
 	LeftButton, RightButton bool
 	LeftKey, RightKey       bool
@@ -136,6 +141,7 @@ func NewCursor() *Cursor {
 	vao.Unbind()
 
 	cursor := &Cursor{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3)}
+	cursor.scale = animation.NewGlider(1.0)
 	cursor.vecSize = 3
 
 	return cursor
@@ -179,6 +185,21 @@ func (cursor *Cursor) SetScreenPos(pt vector.Vector2f) {
 
 func (cursor *Cursor) Update(delta float64) {
 	delta = math.Abs(delta)
+
+	leftState := cursor.LeftKey || cursor.LeftMouse
+	rightState := cursor.RightKey || cursor.RightMouse
+	if cursor.lastLeftState != leftState || cursor.lastRightState != rightState {
+		if (leftState || rightState) && settings.Cursor.CursorExpand {
+			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, 1.0, 1.3)
+		} else {
+			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, cursor.scale.GetValue(), 1.0)
+		}
+
+		cursor.lastLeftState = leftState
+		cursor.lastRightState = rightState
+	}
+
+	cursor.scale.UpdateD(delta)
 
 	if settings.Cursor.TrailStyle == 3 {
 		cursor.hueBase += settings.Cursor.Style23Speed / 360.0 * delta
@@ -311,7 +332,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color colo
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 	}
 
-	siz := settings.Cursor.CursorSize
+	siz := settings.Cursor.CursorSize * cursor.scale.GetValue()
 
 	if settings.Cursor.EnableCustomTrailGlowOffset {
 		colorGlow = color.Shift(float32(settings.Cursor.TrailGlowOffset), 0, 0)

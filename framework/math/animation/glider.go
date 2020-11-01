@@ -123,6 +123,10 @@ func (glider *Glider) UpdateD(delta float64) {
 	glider.Update(glider.time + delta)
 }
 
+func (glider *Glider) GetTime() float64 {
+	return glider.time
+}
+
 func (glider *Glider) SetValue(value float64) {
 	glider.value = value
 	glider.current.targetValue = value

@@ -31,6 +31,7 @@ func initCursor() *cursor {
 		TrailGlowOffset:             -36.0,
 		ScaleToCS:                   false,
 		CursorSize:                  18,
+		CursorExpand:                false,
 		ScaleToTheBeat:              false,
 		ShowCursorsOnBreaks:         true,
 		BounceOnEdges:               false,
@@ -57,6 +58,7 @@ type cursor struct {
 	TrailGlowOffset             float64 //-36, offset of the cursor trail glow
 	ScaleToCS                   bool    //false, if enabled, cursor will scale to beatmap CS value
 	CursorSize                  float64 //18, cursor radius in osu!pixels
+	CursorExpand                bool    //Should cursor be scaled to 1.3 when clicked
 	ScaleToTheBeat              bool    //true, cursor size is changing with music peak amplitude
 	ShowCursorsOnBreaks         bool    //true
 	BounceOnEdges               bool    //false
