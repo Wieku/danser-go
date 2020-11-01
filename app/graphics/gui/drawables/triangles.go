@@ -17,7 +17,7 @@ const separation = 1.4
 const decay = 0.5
 const minSize = 60.0
 const maxSize = 200.0
-const bars = 20
+const bars = 10
 const maxTriangles = 40
 
 type Triangles struct {
@@ -60,7 +60,7 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 
 	sprite.SetVFlip(rand.Float64() >= 0.5)
 	sprite.SetScale(size / float64(graphics.Triangle.Height))
-	sprite.SetAlpha(0.65) //0.5+rand.Float64()*0.5)
+	//sprite.SetAlpha(0.65) //0.5+rand.Float64()*0.5)
 	if onscreen {
 		sprite.SetPosition(vector.NewVec2d(sprite.GetPosition().X, -(rand.Float64()-0.5)*(settings.Graphics.GetHeightF()+size)))
 		//sprite.AddTransform(animation.NewSingleTransform(animation.MoveY, easing.OutQuad, -2000, -1000, position.Y, -(rand.Float64() - 0.5)*(settings.Graphics.GetHeightF()+size)), false)
@@ -84,10 +84,10 @@ func (vis *Triangles) Update(time float64) {
 	fft := vis.music.GetFFT()
 
 	for i := 0; i < bars; i++ {
-		boost += 2 * float64(fft[i]) * float64(bars-i) / float64(bars)
+		boost += 2 * float64(fft[i]*fft[i]) * float64(bars-i) / float64(bars)
 	}
 
-	vis.velocity = math.Max(vis.velocity, math.Min(boost*1.5, 6))
+	vis.velocity = math.Max(vis.velocity, math.Min(boost*3, 12))
 
 	vis.velocity *= 1.0 - 0.05*delta/16
 
