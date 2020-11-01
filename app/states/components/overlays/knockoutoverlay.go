@@ -413,7 +413,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []colo
 			width += overlay.font.GetWidth(scl*0.8, "+"+r.Mods)
 		}
 
-		batch.SetSubScale(scl*0.7/2, -scl*0.7/2)
+		batch.SetSubScale(scl*0.85/2, -scl*0.85/2)
 		batch.SetTranslation(vector.NewVec2d(2*scl+scl*0.1+nWidth, rowBaseY))
 		if r.Grade != osu.NONE {
 			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[r.Grade], "SS", "X"))
