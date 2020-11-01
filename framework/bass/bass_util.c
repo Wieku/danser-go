@@ -2,6 +2,7 @@
 #include <string.h>
 
 #ifdef _WIN32
+#include <stdlib.h>
 
 wchar_t *convert(char *src) {
 	int lengthB = strlen(src);
@@ -53,9 +54,9 @@ wchar_t *convert(char *src) {
 			bytes = 0;
 		}
 	}
+
 	if (bytes) {
 		dest[index] = err;
-		++index;
 	}
 
 	return dest;
@@ -65,32 +66,28 @@ wchar_t *convert(char *src) {
 
 HSTREAM CreateBassStream(char *file, DWORD flags) {
 #ifdef _WIN32
-
 	wchar_t *wFile = convert(file);
 
-	return BASS_StreamCreateFile(0, wFile, 0, 0, flags | BASS_UNICODE);
+	HSTREAM stream = BASS_StreamCreateFile(0, wFile, 0, 0, flags | BASS_UNICODE);
 
 	free(wFile);
 
+	return stream;
 #else
-
 	return BASS_StreamCreateFile(0, file, 0, 0, flags);
-
 #endif
 }
 
 HSAMPLE LoadBassSample(char *file, DWORD max, DWORD flags) {
 #ifdef _WIN32
-
 	wchar_t *wFile = convert(file);
 
-	return BASS_SampleLoad(0, wFile, 0, 0, max, flags | BASS_UNICODE);
+	HSAMPLE sample = BASS_SampleLoad(0, wFile, 0, 0, max, flags | BASS_UNICODE);
 
 	free(wFile);
 
+	return sample;
 #else
-
 	return BASS_SampleLoad(0, file, 0, 0, max, flags);
-
 #endif
 }
