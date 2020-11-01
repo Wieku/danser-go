@@ -158,7 +158,7 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 	spinner.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2-139, spinner.ScaledHeight-56), bmath.Origin.TopLeft)
 
-	spinner.frontSprites.Add(spinner.rpmBg)
+	//spinner.frontSprites.Add(spinner.rpmBg)
 }
 
 func (spinner *Spinner) Update(time int64) bool {
@@ -217,7 +217,18 @@ func (spinner *Spinner) Update(time int64) bool {
 
 func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
-	//percent := bmath.ClampF64(float64(time-spinner.objData.StartTime)/float64(spinner.objData.EndTime-spinner.objData.StartTime), 0.0, 1.0)
+
+	// Objects are not aware of their backing camera so we need to apply scaling and shifting here as it only applies to spinners
+	shiftX := float32(0.0)
+	if !settings.Playfield.OsuShift {
+		shiftX = 8 * float32(spinner.ScaledHeight) / 480
+	}
+
+	overScale := (float32(1.0/settings.Playfield.Scale) - 1) / 2
+	overdrawX := overScale * float32(spinner.ScaledWidth)
+	overdrawY := overScale * float32(spinner.ScaledHeight)
+
+	scaledOrtho := mgl32.Ortho(-overdrawX, float32(spinner.ScaledWidth)+overdrawX, float32(spinner.ScaledHeight)+overdrawY+shiftX, -overdrawY+shiftX, -1, 1)
 
 	alpha := spinner.fade.GetValue()
 
@@ -228,7 +239,8 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.Sprit
 
 	if !spinner.newStyle {
 		oldCamera := batch.Projection
-		batch.SetCamera(mgl32.Ortho(0, float32(spinner.ScaledWidth), float32(spinner.ScaledHeight), 0, -1, 1))
+
+		batch.SetCamera(scaledOrtho)
 
 		spinner.background.Draw(time, batch)
 		spinner.metre.Draw(time, batch)
@@ -253,9 +265,13 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.Sprit
 
 	oldCamera := batch.Projection
 
-	batch.SetCamera(mgl32.Ortho(0, float32(spinner.ScaledWidth), float32(spinner.ScaledHeight), 0, -1, 1))
+	batch.SetCamera(scaledOrtho)
 
 	spinner.frontSprites.Draw(time, batch)
+
+	batch.SetCamera(mgl32.Ortho(0, float32(spinner.ScaledWidth), float32(spinner.ScaledHeight), 0, -1, 1))
+
+	spinner.rpmBg.Draw(time, batch)
 
 	rpmTxt := fmt.Sprintf("%d", int(spinner.rpm))
 	scoreFont.Draw(batch, spinner.ScaledWidth/2+139-scoreFont.GetWidth(scoreFont.GetSize(), rpmTxt), spinner.ScaledHeight-56+scoreFont.GetSize()/2, scoreFont.GetSize(), rpmTxt)
