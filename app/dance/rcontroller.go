@@ -151,10 +151,12 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			if !strings.EqualFold(replayD.BeatmapMD5, beatMap.MD5) {
 				log.Println("Incompatible maps, skipping", replayD.Username)
+				return nil
 			}
 
 			if (replayD.Mods & uint32(excludedMods)) > 0 {
 				log.Println("Excluding for mods:", replayD.Username)
+				return nil
 			}
 
 			candidates = append(candidates, replayD)
