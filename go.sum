@@ -10,8 +10,8 @@ github.com/bnch/uleb128 v0.0.0-20160221084957-fac1fe18ad59 h1:WmIm5PO5EyIEWq8ia2
 github.com/bnch/uleb128 v0.0.0-20160221084957-fac1fe18ad59/go.mod h1:zsF7tgeh6SxSU4t28n0DKFAmrHwIrdgbsBC50nUWIi8=
 github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 h1:baVdMKlASEHrj19iqjARrPbaRisD7EuZEVJj6ZMLl1Q=
 github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3/go.mod h1:VEPNJUlxl5KdWjDvz6Q1l+rJlxF2i6xqDeGuGAxa87M=
-github.com/flesnuk/oppai5 v0.0.0-20190412172023-2673ba4f6361 h1:1a/Qrduq/2HjzaOYB0Q5e5pvh5BvkMio0gnVHfshTBc=
-github.com/flesnuk/oppai5 v0.0.0-20190412172023-2673ba4f6361/go.mod h1:WuRzYLXIfYb2TdTWDWXJVWD+AYd6bzgAWlnweIYR65k=
+github.com/flesnuk/oppai5 v0.0.0-20201101203857-5d57125c15b1 h1:yc+WfwtaogmyNry3/pOPt8B3hfGNN44eCjj9UtyWKAA=
+github.com/flesnuk/oppai5 v0.0.0-20201101203857-5d57125c15b1/go.mod h1:WuRzYLXIfYb2TdTWDWXJVWD+AYd6bzgAWlnweIYR65k=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7/go.mod h1:482civXOzJJCPzJ4ZOX/pwvXBWSnzD4OKMdH4ClKGbk=
 github.com/go-gl/glfw v0.0.0-20200707082815-5321531c36a2 h1:tCvD9jzwA40XAvO3wIhY748dWrXyNJ0mDQ3pTvlHlXQ=
@@ -38,8 +38,6 @@ github.com/olekukonko/tablewriter v0.0.4 h1:vHD/YYe1Wolo78koG299f7V/VAS08c6IpCLn
 github.com/olekukonko/tablewriter v0.0.4/go.mod h1:zq6QwlOf5SlnkVbMSr5EoBv3636FWnp+qbPhuoO21uA=
 github.com/oliamb/cutter v0.2.2 h1:Lfwkya0HHNU1YLnGv2hTkzHfasrSMkgv4Dn+5rmlk3k=
 github.com/oliamb/cutter v0.2.2/go.mod h1:4BenG2/4GuRBDbVm/OPahDVqbrOemzpPiG5mi1iryBU=
-github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
-github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881 h1:FAuvIwAbe8iDo0RGdCcF6eb20snyOumyaHU9BdxlCac=
 github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881/go.mod h1:Y+d6hzF4BM2sz5ytQmJLSImHq9dP9JS3dM4xwarFoUQ=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
