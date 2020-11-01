@@ -131,7 +131,7 @@ func (container *HitObjectContainer) Draw(batch *sprite.SpriteBatch, cameras []m
 							renderable:   p.(objects.Renderable),
 							IsSliderBody: false,
 							depth:        p.GetBasicData().StartTime,
-							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
+							endTime:      p.GetBasicData().EndTime + container.beatMap.Diff.Hit50 + difficulty.HitFadeOut,
 						})
 					}
 
