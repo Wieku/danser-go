@@ -44,6 +44,7 @@ type subControl struct {
 	replayIndex     int
 	replayTime      int64
 	frames          []*rplpa.ReplayData
+	wasLeft         bool
 }
 
 func NewSubControl() *subControl {
@@ -357,6 +358,9 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 			} else {
 				wasUpdated := false
+
+				isRelax := (controller.replays[i].ModsV & difficulty.Relax) > 0
+
 				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= nTime {
 
 					frame := c.frames[c.replayIndex]
@@ -369,18 +373,50 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 					}
 
 					controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, mY))
-					controller.cursors[i].LeftKey = frame.KeyPressed.LeftClick && frame.KeyPressed.Key1
-					controller.cursors[i].RightKey = frame.KeyPressed.RightClick && frame.KeyPressed.Key2
-
-					controller.cursors[i].LeftMouse = frame.KeyPressed.LeftClick && !frame.KeyPressed.Key1
-					controller.cursors[i].RightMouse = frame.KeyPressed.RightClick && !frame.KeyPressed.Key2
-
-					controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
-					controller.cursors[i].RightButton = frame.KeyPressed.RightClick
 
 					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
 					controller.cursors[i].CurrentFrameTime = c.replayTime
 					controller.cursors[i].IsReplayFrame = true
+
+					if !isRelax {
+						controller.cursors[i].LeftKey = frame.KeyPressed.LeftClick && frame.KeyPressed.Key1
+						controller.cursors[i].RightKey = frame.KeyPressed.RightClick && frame.KeyPressed.Key2
+
+						controller.cursors[i].LeftMouse = frame.KeyPressed.LeftClick && !frame.KeyPressed.Key1
+						controller.cursors[i].RightMouse = frame.KeyPressed.RightClick && !frame.KeyPressed.Key2
+
+						controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
+						controller.cursors[i].RightButton = frame.KeyPressed.RightClick
+					} else {
+						processed := controller.ruleset.GetProcessed()
+						player := controller.ruleset.GetPlayer(controller.cursors[i])
+
+						click := false
+
+						for _, o := range processed {
+							circle, c1 := o.(*osu.Circle)
+							slider, c2 := o.(*osu.Slider)
+							_, c3 := o.(*osu.Spinner)
+
+							objectStartTime := controller.bMap.HitObjects[o.GetNumber()].GetBasicData().StartTime
+							objectEndTime := controller.bMap.HitObjects[o.GetNumber()].GetBasicData().EndTime
+
+							if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && c.replayTime > objectStartTime-12 {
+								click = true
+							}
+
+							if (c2 || c3) && c.replayTime >= objectStartTime && c.replayTime <= objectEndTime {
+								click = true
+							}
+						}
+
+						controller.cursors[i].LeftButton = click && !c.wasLeft
+						controller.cursors[i].RightButton = click && c.wasLeft
+
+						if click {
+							c.wasLeft = !c.wasLeft
+						}
+					}
 
 					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
 					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
@@ -452,9 +488,9 @@ func (controller *ReplayController) GetClick(player, key int) bool {
 	case 1:
 		return controller.cursors[player].RightKey
 	case 2:
-		return controller.cursors[player].LeftButton
+		return controller.cursors[player].LeftMouse
 	case 3:
-		return controller.cursors[player].RightButton
+		return controller.cursors[player].RightMouse
 	}
 
 	return false

@@ -62,7 +62,7 @@ func (state buttonState) BothReleased() bool {
 	return !(state.Left || state.Right)
 }
 
-type hitobject interface {
+type HitObject interface {
 	Init(ruleset *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer)
 	UpdateFor(player *difficultyPlayer, time int64) bool
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
@@ -116,8 +116,8 @@ type OsuRuleSet struct {
 	oppaiMaps []*oppai.Map
 	oppDiffs  map[difficulty.Modifier][]oppai.DiffCalc
 
-	queue       []hitobject
-	processed   []hitobject
+	queue       []HitObject
+	processed   []HitObject
 	listener    func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
 	endlistener func(time int64, number int64)
 }
@@ -498,7 +498,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 	if len(set.cursors) == 1 {
 		log.Println(fmt.Sprintf(
-			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f",
+			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f",
 			result.ScoreValue(),
 			subSet.combo,
 			subSet.maxCombo,
@@ -512,11 +512,12 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 			time,
 			x,
 			y,
+			subSet.ppv2.Total,
 		))
 	}
 }
 
-func (set *OsuRuleSet) CanBeHit(time int64, object hitobject, player *difficultyPlayer) ClickAction {
+func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficultyPlayer) ClickAction {
 	if _, ok := object.(*Circle); ok {
 		index := -1
 
@@ -565,6 +566,15 @@ func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int6
 func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	subSet := set.cursors[cursor]
 	return subSet.hp.Health / MaxHp
+}
+
+func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
+	subSet := set.cursors[cursor]
+	return subSet.player
+}
+
+func (set *OsuRuleSet) GetProcessed() []HitObject {
+	return set.processed
 }
 
 func (set *OsuRuleSet) GetBeatMap() *beatmap.BeatMap {
