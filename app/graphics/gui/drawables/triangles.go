@@ -50,7 +50,13 @@ func (vis *Triangles) SetTrack(track *bass.Track) {
 func (vis *Triangles) AddTriangle(onscreen bool) {
 	size := (minSize + rand.Float64()*(maxSize-minSize)) * settings.Graphics.GetHeightF() / 768
 	position := vector.NewVec2d((rand.Float64()-0.5)*settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()/2+size)
-	sprite := sprite.NewSpriteSingle(graphics.Triangle, size, position, vector.NewVec2d(0, 0))
+
+	texture := graphics.Triangle
+	if settings.Playfield.Background.Triangles.Shadowed {
+		texture = graphics.TriangleShadowed
+	}
+
+	sprite := sprite.NewSpriteSingle(texture, size, position, vector.NewVec2d(0, 0))
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
 		sprite.SetColor(color2.NewRGB(rand.Float32(), rand.Float32(), rand.Float32()))
 	} else {

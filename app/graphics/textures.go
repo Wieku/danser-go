@@ -13,6 +13,7 @@ var CursorTrail *texture.TextureSingle
 
 var Pixel *texture.TextureSingle
 var Triangle *texture.TextureRegion
+var TriangleShadowed *texture.TextureRegion
 var TriangleSmall *texture.TextureRegion
 
 var Hit0 *texture.TextureRegion
@@ -35,6 +36,7 @@ func LoadTextures() {
 	OvButtonE, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton-e.png")
 
 	Triangle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle.png")
+	TriangleShadowed, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle-shadow.png")
 	TriangleSmall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle-small.png")
 
 	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
