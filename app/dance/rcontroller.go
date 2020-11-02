@@ -135,6 +135,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	counter := settings.Knockout.MaxPlayers
 
 	excludedMods := osuapi.ParseMods(settings.Knockout.ExcludeMods)
+	displayedMods := uint32(^osuapi.ParseMods(settings.Knockout.HideMods))
 
 	candidates := make([]*rplpa.Replay, 0)
 
@@ -183,7 +184,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		control.newHandling = replay.OsuVersion > 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE})
+		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods & displayedMods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE})
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("Expected score:", replay.Score)
@@ -336,6 +337,7 @@ func (controller *ReplayController) InitCursors() {
 
 		modifiers = append(modifiers, controller.replays[i].ModsV)
 	}
+
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, modifiers)
 
 	//controller.Update(480000, 1)
@@ -361,7 +363,6 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				controller.ruleset.UpdateClickFor(controller.cursors[i], nTime)
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 				controller.ruleset.UpdatePostFor(controller.cursors[i], nTime)
-
 			} else {
 				wasUpdated := false
 

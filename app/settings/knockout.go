@@ -38,6 +38,9 @@ type knockout struct {
 	// Exclude plays which contain one of the mods set here
 	ExcludeMods string
 
+	// Hide specific mods from being displayed in overlay (like NF)
+	HideMods string
+
 	// Max players shown (excluding danser) on a map. Caps at 50.
 	MaxPlayers int
 
