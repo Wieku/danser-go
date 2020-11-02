@@ -101,7 +101,9 @@ type Player struct {
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
+
 	graphics.LoadTextures()
+
 	player.batch = sprite.NewSpriteBatch()
 	player.font = font.GetFont("Exo 2 Bold")
 
@@ -114,6 +116,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	var err error
 
 	LogoT, err := utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/coinbig.png")
+	if err != nil {
+		panic(err)
+	}
+
 	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
 	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
 
@@ -443,215 +449,219 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	return player
 }
 
-func (pl *Player) Show() {
+func (player *Player) Show() {
 
 }
 
-func (pl *Player) Draw(float64) {
-	if pl.lastTime <= 0 {
-		pl.lastTime = qpc.GetNanoTime()
+func (player *Player) Draw(float64) {
+	if player.lastTime <= 0 {
+		player.lastTime = qpc.GetNanoTime()
 	}
 
 	tim := qpc.GetNanoTime()
-	timMs := float64(tim-pl.lastTime) / 1000000.0
+	timMs := float64(tim-player.lastTime) / 1000000.0
 
-	fps := pl.profiler.GetFPS()
+	fps := player.profiler.GetFPS()
 
-	pl.updateLimiter.FPS = bmath.ClampI(int(fps*1.2), pl.baseLimit, 10000)
+	player.updateLimiter.FPS = bmath.ClampI(int(fps*1.2), player.baseLimit, 10000)
+
+	if player.background.GetStoryboard() != nil {
+		player.background.GetStoryboard().SetFPS(bmath.ClampI(int(fps*1.2), player.baseLimit, 10000))
+	}
 
 	if fps > 58 && timMs > 18 {
 		log.Println(fmt.Sprintf("Slow frame detected! Frame time: %.3fms | Av. frame time: %.3fms", timMs, 1000.0/fps))
 	}
 
-	pl.progressMs = int64(pl.progressMsF)
+	player.progressMs = int64(player.progressMsF)
 
-	pl.profiler.PutSample(timMs)
-	pl.lastTime = tim
+	player.profiler.PutSample(timMs)
+	player.lastTime = tim
 
-	bgAlpha := pl.dimGlider.GetValue()
+	bgAlpha := player.dimGlider.GetValue()
 
-	cameras := pl.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
-	cameras1 := pl.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**pl.unfold.GetValue()*/)
+	cameras := player.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**player.unfold.GetValue()*/)
+	cameras1 := player.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**player.unfold.GetValue()*/)
 
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha *= pl.Scl
+		bgAlpha *= player.Scl
 	}
 
-	pl.background.Draw(pl.progressMs, pl.batch, pl.blurGlider.GetValue(), bgAlpha, cameras1[0])
+	player.background.Draw(player.progressMs, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
-	if pl.start {
+	if player.start {
 		settings.Cursor.Colors.Update(timMs)
 	}
 
-	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(pl.controller.GetCursors()), pl.Scl, pl.cursorGlider.GetValue())
+	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(player.controller.GetCursors()), player.Scl, player.cursorGlider.GetValue())
 
-	if pl.overlay != nil {
-		pl.batch.Begin()
-		pl.batch.ResetTransform()
-		pl.batch.SetScale(1, 1)
+	if player.overlay != nil {
+		player.batch.Begin()
+		player.batch.ResetTransform()
+		player.batch.SetScale(1, 1)
 
-		pl.batch.SetCamera(cameras[0])
+		player.batch.SetCamera(cameras[0])
 
-		pl.overlay.DrawBeforeObjects(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		player.overlay.DrawBeforeObjects(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
 
-		pl.batch.End()
-		pl.batch.ResetTransform()
-		pl.batch.SetColor(1, 1, 1, 1)
+		player.batch.End()
+		player.batch.ResetTransform()
+		player.batch.SetColor(1, 1, 1, 1)
 	}
 
-	if pl.epiGlider.GetValue() > 0.01 {
-		pl.batch.Begin()
-		pl.batch.ResetTransform()
-		pl.batch.SetColor(1, 1, 1, pl.epiGlider.GetValue())
-		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+	if player.epiGlider.GetValue() > 0.01 {
+		player.batch.Begin()
+		player.batch.ResetTransform()
+		player.batch.SetColor(1, 1, 1, player.epiGlider.GetValue())
+		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		scl := scaling.Fit.Apply(float32(pl.Epi.Width), float32(pl.Epi.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
+		scl := scaling.Fit.Apply(float32(player.Epi.Width), float32(player.Epi.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
 		scl = scl.Scl(0.5).Scl(0.66)
-		pl.batch.SetScale(scl.X64(), scl.Y64())
-		pl.batch.DrawUnit(*pl.Epi)
+		player.batch.SetScale(scl.X64(), scl.Y64())
+		player.batch.DrawUnit(*player.Epi)
 
-		//pl.batch.SetScale(1.0, -1.0)
+		//player.batch.SetScale(1.0, -1.0)
 		//s := "Support me on ko-fi.com/wiekus"
-		//width := pl.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
-		//pl.font.Draw(pl.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
+		//width := player.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
+		//player.font.Draw(player.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
 
-		pl.batch.ResetTransform()
-		pl.batch.End()
-		pl.batch.SetColor(1, 1, 1, 1)
+		player.batch.ResetTransform()
+		player.batch.End()
+		player.batch.SetColor(1, 1, 1, 1)
 	}
 
-	pl.counter += timMs
+	player.counter += timMs
 
-	if pl.counter >= 1000.0/60 {
-		pl.counter -= 1000.0 / 60
-		if pl.background.GetStoryboard() != nil {
-			pl.storyboardLoad = pl.background.GetStoryboard().GetLoad()
-			pl.storyboardDrawn = pl.background.GetStoryboard().GetRenderedSprites()
+	if player.counter >= 1000.0/60 {
+		player.counter -= 1000.0 / 60
+		if player.background.GetStoryboard() != nil {
+			player.storyboardLoad = player.background.GetStoryboard().GetLoad()
+			player.storyboardDrawn = player.background.GetStoryboard().GetRenderedSprites()
 		}
 	}
 
-	if pl.fxGlider.GetValue() > 0.01 {
-		pl.batch.Begin()
-		pl.batch.ResetTransform()
-		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
-		pl.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+	if player.fxGlider.GetValue() > 0.01 {
+		player.batch.Begin()
+		player.batch.ResetTransform()
+		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
+		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		innerCircleScale := 1.05 - easing.OutQuad(pl.progress)*0.05
-		outerCircleScale := 1.05 + easing.OutQuad(pl.progress)*0.03
+		innerCircleScale := 1.05 - easing.OutQuad(player.progress)*0.05
+		outerCircleScale := 1.05 + easing.OutQuad(player.progress)*0.03
 
 		if settings.Playfield.Logo.DrawSpectrum {
-			pl.visualiser.SetStartDistance(pl.cookieSize * 0.5 * innerCircleScale)
-			pl.visualiser.Draw(pl.progressMsF, pl.batch)
+			player.visualiser.SetStartDistance(player.cookieSize * 0.5 * innerCircleScale)
+			player.visualiser.Draw(player.progressMsF, player.batch)
 		}
 
-		pl.batch.SetColor(1, 1, 1, pl.fxGlider.GetValue())
+		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
 
-		scl := (pl.cookieSize / 2048.0) * 1.05
+		scl := (player.cookieSize / 2048.0) * 1.05
 
-		pl.LogoS1.SetScale(innerCircleScale * scl)
-		pl.LogoS2.SetScale(outerCircleScale * scl)
+		player.LogoS1.SetScale(innerCircleScale * scl)
+		player.LogoS2.SetScale(outerCircleScale * scl)
 
 		alpha := 0.3
-		if pl.bMap.Timings.Current.Kiai {
+		if player.bMap.Timings.Current.Kiai {
 			alpha = 0.12
 		}
 
-		pl.LogoS2.SetAlpha(float32(alpha * (1 - easing.OutQuad(pl.progress))))
+		player.LogoS2.SetAlpha(float32(alpha * (1 - easing.OutQuad(player.progress))))
 
-		pl.LogoS1.UpdateAndDraw(pl.progressMs, pl.batch)
-		pl.LogoS2.UpdateAndDraw(pl.progressMs, pl.batch)
-		pl.batch.ResetTransform()
-		pl.batch.End()
+		player.LogoS1.UpdateAndDraw(player.progressMs, player.batch)
+		player.LogoS2.UpdateAndDraw(player.progressMs, player.batch)
+		player.batch.ResetTransform()
+		player.batch.End()
 	}
 
-	scale2 := pl.Scl
+	scale2 := player.Scl
 
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
 	}
 
 	if settings.Playfield.Bloom.Enabled {
-		pl.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
-		pl.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-		pl.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.Bloom.BloomBeatAddition*(pl.Scl-1.0)/(settings.Audio.BeatScale*0.4))
-		pl.bloomEffect.Begin()
+		player.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
+		player.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
+		player.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.Bloom.BloomBeatAddition*(player.Scl-1.0)/(settings.Audio.BeatScale*0.4))
+		player.bloomEffect.Begin()
 	}
 
-	pl.objectContainer.Draw(pl.batch, cameras, pl.progressMsF, float32(pl.Scl), 1.0)
+	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), 1.0)
 
-	if pl.overlay != nil && pl.overlay.NormalBeforeCursor() {
-		pl.batch.Begin()
-		pl.batch.SetScale(1, 1)
+	if player.overlay != nil && player.overlay.NormalBeforeCursor() {
+		player.batch.Begin()
+		player.batch.SetScale(1, 1)
 
-		pl.batch.SetCamera(cameras[0])
+		player.batch.SetCamera(cameras[0])
 
-		pl.overlay.DrawNormal(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		player.overlay.DrawNormal(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
 
-		pl.batch.End()
+		player.batch.End()
 	}
 
-	pl.background.DrawOverlay(pl.progressMs, pl.batch, bgAlpha, cameras1[0])
+	player.background.DrawOverlay(player.progressMs, player.batch, bgAlpha, cameras1[0])
 
 	if settings.Playfield.DrawCursors {
-		for _, g := range pl.controller.GetCursors() {
+		for _, g := range player.controller.GetCursors() {
 			g.UpdateRenderer()
 		}
 
-		pl.batch.SetAdditive(false)
+		player.batch.SetAdditive(false)
 
 		graphics.BeginCursorRender()
 
 		for j := 0; j < settings.DIVIDES; j++ {
-			pl.batch.SetCamera(cameras[j])
+			player.batch.SetCamera(cameras[j])
 
-			for i, g := range pl.controller.GetCursors() {
-				if pl.overlay != nil && pl.overlay.IsBroken(g) {
+			for i, g := range player.controller.GetCursors() {
+				if player.overlay != nil && player.overlay.IsBroken(g) {
 					continue
 				}
 
-				baseIndex := j*len(pl.controller.GetCursors()) + i
+				baseIndex := j*len(player.controller.GetCursors()) + i
 
 				ind := baseIndex - 1
 				if ind < 0 {
-					ind = settings.DIVIDES*len(pl.controller.GetCursors()) - 1
+					ind = settings.DIVIDES*len(player.controller.GetCursors()) - 1
 				}
 
 				col1 := cursorColors[baseIndex]
 				col2 := cursorColors[ind]
 
-				g.DrawM(scale2, pl.batch, col1, col2)
+				g.DrawM(scale2, player.batch, col1, col2)
 			}
 		}
 
 		graphics.EndCursorRender()
 	}
 
-	pl.batch.SetAdditive(false)
+	player.batch.SetAdditive(false)
 
-	if pl.overlay != nil {
-		pl.batch.Begin()
-		pl.batch.SetScale(1, 1)
+	if player.overlay != nil {
+		player.batch.Begin()
+		player.batch.SetScale(1, 1)
 
-		if !pl.overlay.NormalBeforeCursor() {
-			pl.overlay.DrawNormal(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		if !player.overlay.NormalBeforeCursor() {
+			player.overlay.DrawNormal(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
 		}
 
-		pl.batch.SetCamera(pl.scamera.GetProjectionView())
+		player.batch.SetCamera(player.scamera.GetProjectionView())
 
-		pl.overlay.DrawHUD(pl.batch, cursorColors, pl.playersGlider.GetValue()*pl.hudGlider.GetValue())
+		player.overlay.DrawHUD(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
 
-		pl.batch.End()
+		player.batch.End()
 	}
 
 	if settings.Playfield.Bloom.Enabled {
-		pl.bloomEffect.EndAndRender()
+		player.bloomEffect.EndAndRender()
 	}
 
 	if settings.DEBUG || settings.Graphics.ShowFPS {
-		pl.batch.Begin()
-		pl.batch.SetColor(1, 1, 1, 1)
-		pl.batch.SetScale(1, 1)
-		pl.batch.SetCamera(pl.scamera.GetProjectionView())
+		player.batch.Begin()
+		player.batch.SetColor(1, 1, 1, 1)
+		player.batch.SetScale(1, 1)
+		player.batch.SetCamera(player.scamera.GetProjectionView())
 
 		padDown := 4.0 * (settings.Graphics.GetHeightF() / 1080.0)
 		//shift := 16.0 * (settings.Graphics.GetHeightF() / 1080.0)
@@ -659,18 +669,18 @@ func (pl *Player) Draw(float64) {
 
 		if settings.DEBUG {
 			drawShadowed := func(pos float64, text string) {
-				pl.batch.SetColor(0, 0, 0, 0.5)
-				pl.font.DrawMonospaced(pl.batch, 0-size*0.05, (size+padDown)*pos+padDown/2-size*0.05, size, text)
+				player.batch.SetColor(0, 0, 0, 0.5)
+				player.font.DrawMonospaced(player.batch, 0-size*0.05, (size+padDown)*pos+padDown/2-size*0.05, size, text)
 
-				pl.batch.SetColor(1, 1, 1, 1)
-				pl.font.DrawMonospaced(pl.batch, 0, (size+padDown)*pos+padDown/2, size, text)
+				player.batch.SetColor(1, 1, 1, 1)
+				player.font.DrawMonospaced(player.batch, 0, (size+padDown)*pos+padDown/2, size, text)
 			}
 
-			pl.batch.SetColor(0, 0, 0, 1)
-			pl.font.Draw(pl.batch, 0-size*1.5*0.1, settings.Graphics.GetHeightF()-size*1.5-size*1.5*0.1, size*1.5, pl.mapFullName)
+			player.batch.SetColor(0, 0, 0, 1)
+			player.font.Draw(player.batch, 0-size*1.5*0.1, settings.Graphics.GetHeightF()-size*1.5-size*1.5*0.1, size*1.5, player.mapFullName)
 
-			pl.batch.SetColor(1, 1, 1, 1)
-			pl.font.Draw(pl.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, pl.mapFullName)
+			player.batch.SetColor(1, 1, 1, 1)
+			player.font.Draw(player.batch, 0, settings.Graphics.GetHeightF()-size*1.5, size*1.5, player.mapFullName)
 
 			type tx struct {
 				pos  float64
@@ -680,13 +690,13 @@ func (pl *Player) Draw(float64) {
 			var queue []tx
 
 			drawWithBackground := func(pos float64, text string) {
-				pl.batch.SetColor(0, 0, 0, 0.8)
+				player.batch.SetColor(0, 0, 0, 0.8)
 
-				width := pl.font.GetWidthMonospaced(size, text)
+				width := player.font.GetWidthMonospaced(size, text)
 
-				pl.batch.SetTranslation(vector.NewVec2d(width/2, settings.Graphics.GetHeightF()-(size+padDown)*(pos-0.5)))
-				pl.batch.SetSubScale(width/2, (size+padDown)/2)
-				pl.batch.DrawUnit(graphics.Pixel.GetRegion())
+				player.batch.SetTranslation(vector.NewVec2d(width/2, settings.Graphics.GetHeightF()-(size+padDown)*(pos-0.5)))
+				player.batch.SetSubScale(width/2, (size+padDown)/2)
+				player.batch.DrawUnit(graphics.Pixel.GetRegion())
 
 				queue = append(queue, tx{pos, text})
 			}
@@ -703,25 +713,25 @@ func (pl *Player) Draw(float64) {
 			drawWithBackground(11, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
 			drawWithBackground(12, fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
 
-			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
-				drawWithBackground(13, fmt.Sprintf("SB sprites: %d", pl.storyboardDrawn))
-				drawWithBackground(14, fmt.Sprintf("SB load: %.2f", pl.storyboardLoad))
+			if storyboard := player.background.GetStoryboard(); storyboard != nil {
+				drawWithBackground(13, fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
+				drawWithBackground(14, fmt.Sprintf("SB load: %.2f", player.storyboardLoad))
 			}
 
 			for _, t := range queue {
-				pl.batch.SetColor(1, 1, 1, 1)
-				pl.font.DrawMonospaced(pl.batch, 0, settings.Graphics.GetHeightF()-(size+padDown)*t.pos+padDown/2, size, t.text)
+				player.batch.SetColor(1, 1, 1, 1)
+				player.font.DrawMonospaced(player.batch, 0, settings.Graphics.GetHeightF()-(size+padDown)*t.pos+padDown/2, size, t.text)
 			}
 
-			currentTime := int(pl.musicPlayer.GetPosition())
-			totalTime := int(pl.musicPlayer.GetLength())
-			mapTime := int(pl.bMap.HitObjects[len(pl.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
+			currentTime := int(player.musicPlayer.GetPosition())
+			totalTime := int(player.musicPlayer.GetLength())
+			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
 
 			drawShadowed(2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(pl.processed)*/, 0, settings.DIVIDES, len(pl.bMap.HitObjects)))
+			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(player.processed)*/, 0, settings.DIVIDES, len(player.bMap.HitObjects)))
 
-			if storyboard := pl.background.GetStoryboard(); storyboard != nil {
-				drawShadowed(0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", pl.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
+			if storyboard := player.background.GetStoryboard(); storyboard != nil {
+				drawShadowed(0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", player.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
 			} else {
 				drawShadowed(0, "No storyboard")
 			}
@@ -729,18 +739,18 @@ func (pl *Player) Draw(float64) {
 
 		if settings.DEBUG || settings.Graphics.ShowFPS {
 			drawShadowed := func(pos float64, text string) {
-				pl.batch.SetColor(0, 0, 0, 0.5)
-				pl.font.DrawMonospaced(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidthMonospaced(size, text)-size*0.05, (size+padDown)*pos+padDown/2-size*0.05, size, text)
+				player.batch.SetColor(0, 0, 0, 0.5)
+				player.font.DrawMonospaced(player.batch, settings.Graphics.GetWidthF()-player.font.GetWidthMonospaced(size, text)-size*0.05, (size+padDown)*pos+padDown/2-size*0.05, size, text)
 
-				pl.batch.SetColor(1, 1, 1, 1)
-				pl.font.DrawMonospaced(pl.batch, settings.Graphics.GetWidthF()-pl.font.GetWidthMonospaced(size, text), (size+padDown)*pos+padDown/2, size, text)
+				player.batch.SetColor(1, 1, 1, 1)
+				player.font.DrawMonospaced(player.batch, settings.Graphics.GetWidthF()-player.font.GetWidthMonospaced(size, text), (size+padDown)*pos+padDown/2, size, text)
 			}
 
-			fpsC := pl.profiler.GetFPS()
-			fpsU := pl.profilerU.GetFPS()
+			fpsC := player.profiler.GetFPS()
+			fpsU := player.profilerU.GetFPS()
 
 			off := 0.0
-			if pl.background.GetStoryboard() != nil {
+			if player.background.GetStoryboard() != nil {
 				off = 1.0
 			}
 
@@ -748,8 +758,8 @@ func (pl *Player) Draw(float64) {
 			updateFPS := fmt.Sprintf("%0.0ffps (%0.2fms)", fpsU, 1000/fpsU)
 			sbFPS := ""
 
-			if pl.background.GetStoryboard() != nil {
-				fpsS := pl.background.GetStoryboard().GetFPS()
+			if player.background.GetStoryboard() != nil {
+				fpsS := player.background.GetStoryboard().GetFPS()
 				sbFPS = fmt.Sprintf("%0.0ffps (%0.2fms)", fpsS, 1000/fpsS)
 			}
 
@@ -758,11 +768,11 @@ func (pl *Player) Draw(float64) {
 			drawShadowed(1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
 			drawShadowed(0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))
 
-			if pl.background.GetStoryboard() != nil {
+			if player.background.GetStoryboard() != nil {
 				drawShadowed(0, fmt.Sprintf("Storyboard: %"+shift+"s", sbFPS))
 			}
 		}
 
-		pl.batch.End()
+		player.batch.End()
 	}
 }

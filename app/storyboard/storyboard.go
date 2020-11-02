@@ -307,6 +307,10 @@ func (storyboard *Storyboard) GetFPS() float64 {
 	return storyboard.counter.GetFPS()
 }
 
+func (storyboard *Storyboard) SetFPS(i int) {
+	storyboard.limiter.FPS = i
+}
+
 func (storyboard *Storyboard) Update(time int64) {
 	storyboard.background.Update(time)
 	storyboard.pass.Update(time)
