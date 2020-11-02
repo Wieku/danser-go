@@ -70,7 +70,11 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 
 		if err1 == nil {
 			for i := 0; i < len(cItems); i++ {
-				newCol = append(newCol, color2.NewIRGB(uint8(cItems[i].Color.R), uint8(cItems[i].Color.G), uint8(cItems[i].Color.B)).Lighten2(0.15))
+				if cItems[i].Color.R+cItems[i].Color.G+cItems[i].Color.B == 0 {
+					continue
+				}
+
+				newCol = append(newCol, color2.NewIRGB(uint8(cItems[i].Color.R), uint8(cItems[i].Color.G), uint8(cItems[i].Color.B)) /*.Lighten2(0.15)*/)
 			}
 		}
 	}
@@ -141,6 +145,22 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 		bg.blurVal = blurVal
 	}
 
+	var clipX, clipY, clipW, clipH int
+	widescreen := true
+
+	bg.scaling = scaling.Fill
+
+	if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
+		widescreen = false
+
+		v1 := project(vector.NewVec2d(256-320, 192+240), camera)
+		v2 := project(vector.NewVec2d(256+320, 192-240), camera)
+
+		clipX, clipY, clipW, clipH = int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32())
+
+		bg.scaling = scaling.Fit
+	}
+
 	if needsRedraw {
 		batch.ResetTransform()
 		batch.SetAdditive(false)
@@ -154,15 +174,8 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
 		}
 
-		bg.scaling = scaling.Fill
-
-		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
-			v1 := project(vector.NewVec2d(256-320, 192+240), camera)
-			v2 := project(vector.NewVec2d(256+320, 192-240), camera)
-
-			viewport.PushScissorPos(int(v1.X32()), int(v1.Y32()), int(v2.X32()-v1.X32()), int(v2.Y32()-v1.Y32()))
-
-			bg.scaling = scaling.Fit
+		if !widescreen && !settings.Playfield.Background.Blur.Enabled {
+			viewport.PushScissorPos(clipX, clipY, clipW, clipH)
 		}
 
 		if bg.background != nil && (bg.storyboard == nil || !bg.storyboard.BGFileUsed()) {
@@ -201,13 +214,17 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 		batch.SetColor(1, 1, 1, 1)
 		batch.ResetTransform()
 
-		if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
+		if !widescreen && !settings.Playfield.Background.Blur.Enabled {
 			viewport.PopScissor()
 		}
 
 		if settings.Playfield.Background.Blur.Enabled {
 			bg.blurredTexture = bg.blur.EndAndProcess()
 		}
+	}
+
+	if !widescreen {
+		viewport.PushScissorPos(clipX, clipY, clipW, clipH)
 	}
 
 	if settings.Playfield.Background.Blur.Enabled && bg.blurredTexture != nil {
@@ -228,6 +245,10 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 	}
 
 	batch.End()
+
+	if !widescreen {
+		viewport.PopScissor()
+	}
 }
 
 func (bg *Background) drawTriangles(batch *sprite.SpriteBatch, bgAlpha float64, blur bool) {
@@ -277,9 +298,10 @@ func (bg *Background) DrawOverlay(time int64, batch *sprite.SpriteBatch, bgAlpha
 
 	batch.End()
 
-	if bg.storyboard != nil && !bg.storyboard.IsWideScreen() {
+	if !bg.storyboard.IsWideScreen() {
 		viewport.PopScissor()
 	}
+
 	batch.SetColor(1, 1, 1, 1)
 	batch.ResetTransform()
 }
