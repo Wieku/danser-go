@@ -18,7 +18,6 @@ func initObjects() *objects {
 			SliderMerge:            true,
 			SliderDistortions:      true,
 			BorderWidth:            1.0,
-			BodyOpacity:            0.8,
 			Quality: &quality{
 				CircleLevelOfDetail: 50,
 				PathLevelOfDetail:   50,
@@ -86,7 +85,8 @@ func initObjects() *objects {
 					},
 					InnerOffset: -0.5,
 					OuterOffset: -0.05,
-					Alpha:       0.8,
+					InnerAlpha:  0.8,
+					OuterAlpha:  0.8,
 				},
 			},
 		},
@@ -112,7 +112,6 @@ type sliders struct {
 	SliderMerge            bool
 	SliderDistortions      bool //true, osu!stable slider distortions on aspire maps
 	BorderWidth            float64
-	BodyOpacity            float64
 	Quality                *quality
 	Snaking                *snaking
 }
@@ -161,5 +160,6 @@ type bodyColors struct {
 	Color             *color
 	InnerOffset       float64
 	OuterOffset       float64
-	Alpha             float64
+	InnerAlpha        float64
+	OuterAlpha        float64
 }

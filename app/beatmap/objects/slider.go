@@ -685,7 +685,8 @@ func (slider *Slider) DrawBodyBase(time int64, projection mgl32.Mat4) {
 func (slider *Slider) DrawBody(time int64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue()
 
-	bodyOpacity := bmath.ClampF32(float32(settings.Objects.Sliders.BodyOpacity), 0.0, 1.0)
+	bodyOpacityInner := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
+	bodyOpacityOuter := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
 
 	borderInner := color2.NewRGBA(innerBorder.R, innerBorder.G, innerBorder.B, float32(colorAlpha))
 	borderOuter := color2.NewRGBA(outerBorder.R, outerBorder.G, outerBorder.B, float32(colorAlpha))
@@ -734,8 +735,8 @@ func (slider *Slider) DrawBody(time int64, bodyColor, innerBorder, outerBorder c
 
 	borderInner.A = float32(colorAlpha)
 	borderOuter.A = float32(colorAlpha)
-	bodyInner.A = float32(colorAlpha) * bodyOpacity
-	bodyOuter.A = float32(colorAlpha) * bodyOpacity
+	bodyInner.A = float32(colorAlpha) * bodyOpacityInner
+	bodyOuter.A = float32(colorAlpha) * bodyOpacityOuter
 
 	slider.body.DrawNormal(projection, slider.objData.StackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
