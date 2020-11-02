@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/bmath"
+	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
@@ -56,9 +57,9 @@ type Player struct {
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
 
-	camera          *bmath.Camera
-	camera1         *bmath.Camera
-	scamera         *bmath.Camera
+	camera          *camera2.Camera
+	camera1         *camera2.Camera
+	scamera         *camera2.Camera
 	dimGlider       *animation.Glider
 	blurGlider      *animation.Glider
 	fxGlider        *animation.Glider
@@ -137,12 +138,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.background = common.NewBackground(beatMap)
 
-	player.camera = bmath.NewCamera()
+	player.camera = camera2.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
 	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
 	player.camera.Update()
 
-	player.camera1 = bmath.NewCamera()
+	player.camera1 = camera2.NewCamera()
 
 	sbScale := 1.0
 	if settings.Playfield.ScaleStoryboardWithPlayfield {
@@ -152,7 +153,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.camera1.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), sbScale, false)
 	player.camera1.Update()
 
-	player.scamera = bmath.NewCamera()
+	player.scamera = camera2.NewCamera()
 	player.scamera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
 	player.scamera.SetOrigin(vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 	player.scamera.Update()

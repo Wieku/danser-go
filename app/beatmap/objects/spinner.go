@@ -218,17 +218,19 @@ func (spinner *Spinner) Update(time int64) bool {
 func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
+	shiftX := -float32(settings.Playfield.ShiftX*spinner.ScaledHeight) / 480
+
 	// Objects are not aware of their backing camera so we need to apply scaling and shifting here as it only applies to spinners
-	shiftX := float32(0.0)
+	shiftY := float32(settings.Playfield.ShiftY*spinner.ScaledHeight) / 480
 	if !settings.Playfield.OsuShift {
-		shiftX = 8 * float32(spinner.ScaledHeight) / 480
+		shiftY = 8 * float32(spinner.ScaledHeight) / 480
 	}
 
 	overScale := (float32(1.0/settings.Playfield.Scale) - 1) / 2
 	overdrawX := overScale * float32(spinner.ScaledWidth)
 	overdrawY := overScale * float32(spinner.ScaledHeight)
 
-	scaledOrtho := mgl32.Ortho(-overdrawX, float32(spinner.ScaledWidth)+overdrawX, float32(spinner.ScaledHeight)+overdrawY+shiftX, -overdrawY+shiftX, -1, 1)
+	scaledOrtho := mgl32.Ortho(-overdrawX+shiftX, float32(spinner.ScaledWidth)+overdrawX+shiftX, float32(spinner.ScaledHeight)+overdrawY+shiftY, -overdrawY+shiftY, -1, 1)
 
 	alpha := spinner.fade.GetValue()
 
@@ -269,7 +271,7 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.Sprit
 
 	spinner.frontSprites.Draw(time, batch)
 
-	batch.SetCamera(mgl32.Ortho(0, float32(spinner.ScaledWidth), float32(spinner.ScaledHeight), 0, -1, 1))
+	batch.SetCamera(mgl32.Ortho(shiftX, float32(spinner.ScaledWidth)+shiftX, float32(spinner.ScaledHeight), 0, -1, 1))
 
 	spinner.rpmBg.Draw(time, batch)
 

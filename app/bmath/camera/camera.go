@@ -1,7 +1,8 @@
-package bmath
+package camera
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -63,14 +64,14 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bo
 
 	scl := baseScale * 0.8 * scale
 
-	shift := 0.0
+	shift := settings.Playfield.ShiftY
 	if offset {
 		shift = 8
 	}
 
 	camera.SetViewport(width, height, true)
 	camera.SetOrigin(vector.NewVec2d(OsuWidth/2, OsuHeight/2))
-	camera.SetPosition(vector.NewVec2d(0, shift).Scl(scl))
+	camera.SetPosition(vector.NewVec2d(settings.Playfield.ShiftX, shift).Scl(scl))
 	camera.SetScale(vector.NewVec2d(scl, scl))
 	camera.Update()
 

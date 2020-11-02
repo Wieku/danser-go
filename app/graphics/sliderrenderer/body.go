@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -80,7 +81,7 @@ func (body *Body) setupPoints(curve *curves.MultiCurve) {
 				multiplier = 3.0 //larger allowable area, we want to see distorted sliders "fully"
 			}
 
-			if point.X >= -bmath.OsuWidth*multiplier && point.X <= bmath.OsuWidth*2*multiplier && point.Y >= -bmath.OsuHeight*multiplier && point.Y <= bmath.OsuHeight*2*multiplier {
+			if point.X >= -camera.OsuWidth*multiplier && point.X <= camera.OsuWidth*2*multiplier && point.Y >= -camera.OsuHeight*multiplier && point.Y <= camera.OsuHeight*2*multiplier {
 				body.points = append(body.points, point)
 			}
 		}

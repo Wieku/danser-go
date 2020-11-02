@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
+	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/font"
@@ -66,7 +67,7 @@ type ScoreOverlay struct {
 
 	ScaledWidth  float64
 	ScaledHeight float64
-	camera       *bmath.Camera
+	camera       *camera2.Camera
 	scoreFont    *font.Font
 	comboFont    *font.Font
 	scoreEFont   *font.Font
@@ -179,7 +180,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.ScaledHeight = 768
 	overlay.ScaledWidth = settings.Graphics.GetAspectRatio() * overlay.ScaledHeight
 
-	overlay.camera = bmath.NewCamera()
+	overlay.camera = camera2.NewCamera()
 	overlay.camera.SetViewportF(0, int(overlay.ScaledHeight), int(overlay.ScaledWidth), 0)
 	overlay.camera.Update()
 

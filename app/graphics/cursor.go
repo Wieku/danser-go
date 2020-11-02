@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -28,8 +29,8 @@ var cursorSpaceFBOSprite *sprite.Sprite
 
 var fboBatch *sprite.SpriteBatch
 
-var Camera *bmath.Camera
-var osuRect bmath.Rectangle
+var Camera *camera.Camera
+var osuRect camera.Rectangle
 
 var useAdditive = false
 

@@ -8,7 +8,7 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
+	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics/font"
@@ -268,7 +268,7 @@ func run() {
 		batch := sprite.NewSpriteBatch()
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
-		camera := bmath.NewCamera()
+		camera := camera2.NewCamera()
 		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
 		camera.SetOrigin(vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 		camera.Update()
