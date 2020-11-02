@@ -36,6 +36,12 @@ func initPlayfield() *playfield {
 					Breaks: 0.3,
 				},
 			},
+			Triangles: &triangles{
+				Enabled:            false,
+				Shadowed:           true,
+				DrawOverBlur:       true,
+				ParallaxMultiplier: 0.5,
+			},
 		},
 		Logo: &logo{
 			DrawSpectrum: false,
@@ -92,6 +98,9 @@ type background struct {
 
 	// Blur controls
 	Blur *blur
+
+	//Triangle controls
+	Triangles *triangles
 }
 
 type parallax struct {
@@ -106,6 +115,13 @@ type blur struct {
 	Enabled bool
 
 	Values *dim
+}
+
+type triangles struct {
+	Enabled            bool
+	Shadowed           bool
+	DrawOverBlur       bool
+	ParallaxMultiplier float32
 }
 
 type logo struct {
