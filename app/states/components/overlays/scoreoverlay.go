@@ -290,7 +290,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 	for i, state := range currentStates {
 		color := color2.Color{R: 1.0, G: 222.0 / 255, B: 0, A: 0}
 		if i > 1 {
-			color = color2.Color{R: 248.0 / 255, G: 0, B: 258.0 / 255, A: 0}
+			color = color2.Color{R: 248.0 / 255, G: 0, B: 158.0 / 255, A: 0}
 		}
 
 		if !overlay.keyStates[i] && state {
