@@ -482,6 +482,20 @@ func (slider *Slider) Update(time int64) bool {
 				audio.PlaySliderTick(slider.Timings.Current.SampleSet, slider.Timings.Current.SampleIndex, slider.Timings.Current.SampleVolume, slider.objData.Number, p.Pos.X64())
 			}
 		}
+	} else if slider.isSliding {
+		for i := int64(1); i < slider.repeat; i++ {
+			edgeTime := slider.objData.StartTime + int64(float64(i)*slider.partLen)
+
+			if slider.lastTime < edgeTime && time >= edgeTime {
+				slider.HitEdge(int(i), time, true)
+			}
+		}
+
+		for _, p := range slider.TickPoints {
+			if slider.lastTime < p.Time && time >= p.Time {
+				audio.PlaySliderTick(slider.Timings.Current.SampleSet, slider.Timings.Current.SampleIndex, slider.Timings.Current.SampleVolume, slider.objData.Number, p.Pos.X64())
+			}
+		}
 	}
 
 	slider.sliderSnakeHead.Update(float64(time))

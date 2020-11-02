@@ -210,8 +210,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			if allowable && state.slideStart <= point.time {
 				state.scored++
 
-				scoreGiven := Ignore
-
+				var scoreGiven HitResult
 				if pointsPassed == len(state.points) {
 					scoreGiven = SliderEnd
 				} else if pointsPassed%(len(state.points)/len(slider.hitSlider.TickReverse)) == 0 {
@@ -220,15 +219,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 					scoreGiven = SliderPoint
 				}
 
-				if len(slider.players) == 1 && scoreGiven != SliderEnd {
-					if scoreGiven == SliderPoint {
-						slider.hitSlider.PlayTick()
-					} else if scoreGiven == SliderRepeat {
-						slider.hitSlider.HitEdge(point.edgeNum, time, true)
-					}
-				}
-
-				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, scoreGiven, true, ComboResults.Increase)
 			} else {
 				state.missed++
 
