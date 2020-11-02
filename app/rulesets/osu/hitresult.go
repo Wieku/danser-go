@@ -3,7 +3,7 @@ package osu
 type HitResult int64
 
 const (
-	Ignore     = 0
+	Ignore     = HitResult(0)
 	SliderMiss = HitResult(1 << iota)
 	Miss
 	Hit50

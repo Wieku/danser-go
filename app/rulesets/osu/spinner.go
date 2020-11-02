@@ -180,7 +180,39 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 	return numFinishedTotal == 0
 }
 
-func (spinner *Spinner) UpdatePost(time int64) bool {
+func (spinner *Spinner) UpdatePostFor(player *difficultyPlayer, time int64) bool {
+	state := spinner.state[player]
+
+	if time >= spinner.hitSpinner.GetBasicData().EndTime && !state.finished {
+		hit := Miss
+		combo := ComboResults.Reset
+
+		if state.scoringRotationCount > state.requirement+1 {
+			hit = Hit300
+		} else if state.scoringRotationCount > state.requirement {
+			hit = Hit100
+		} else if state.scoringRotationCount == state.requirement {
+			hit = Hit50
+		}
+
+		if hit != Miss {
+			combo = ComboResults.Increase
+		}
+
+		if len(spinner.players) == 1 {
+			spinner.hitSpinner.StopSpinSample()
+			spinner.hitSpinner.Hit(time, hit != Miss)
+		}
+
+		spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)
+
+		state.finished = true
+	}
+
+	return state.finished
+}
+
+func (spinner *Spinner) UpdatePost(_ int64) bool {
 	numFinishedTotal := 0
 
 	for _, player := range spinner.players {
@@ -188,34 +220,6 @@ func (spinner *Spinner) UpdatePost(time int64) bool {
 
 		if !state.finished {
 			numFinishedTotal++
-
-			if time >= spinner.hitSpinner.GetBasicData().EndTime {
-				hit := Miss
-				combo := ComboResults.Reset
-
-				if state.scoringRotationCount > state.requirement+1 {
-					hit = Hit300
-				} else if state.scoringRotationCount > state.requirement {
-					hit = Hit100
-				} else if state.scoringRotationCount == state.requirement {
-					hit = Hit50
-				}
-
-				if hit != Miss {
-					combo = ComboResults.Increase
-				}
-
-				if len(spinner.players) == 1 {
-					spinner.hitSpinner.StopSpinSample()
-					spinner.hitSpinner.Hit(time, hit != Miss)
-				}
-
-				spinner.ruleSet.SendResult(time, player.cursor, spinner.hitSpinner.GetBasicData().Number, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, false, combo)
-
-				state.finished = true
-
-				continue
-			}
 		}
 	}
 

@@ -66,6 +66,7 @@ type HitObject interface {
 	Init(ruleset *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer)
 	UpdateFor(player *difficultyPlayer, time int64) bool
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
+	UpdatePostFor(player *difficultyPlayer, time int64) bool
 	UpdatePost(time int64) bool
 	IsHit(player *difficultyPlayer) bool
 	GetFadeTime() int64
@@ -369,15 +370,15 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64) {
 }
 
 func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
-	//player := set.cursors[cursor].player
-	//
-	//if len(set.processed) > 0 {
-	//	for i := 0; i < len(set.processed); i++ {
-	//		g := set.processed[i]
-	//
-	//		//g.UpdatePostFor(player, time)
-	//	}
-	//}
+	player := set.cursors[cursor].player
+
+	if len(set.processed) > 0 {
+		for i := 0; i < len(set.processed); i++ {
+			g := set.processed[i]
+
+			g.UpdatePostFor(player, time)
+		}
+	}
 }
 
 func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {

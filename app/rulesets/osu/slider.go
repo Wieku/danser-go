@@ -17,8 +17,8 @@ type sliderstate struct {
 	isStartHit  bool
 	isHit       bool
 	points      []tickpoint
-	scored      int64
-	missed      int64
+	scored      int
+	missed      int
 	slideStart  int64
 	sliding     bool
 	startScored bool
@@ -36,7 +36,6 @@ type Slider struct {
 	players           []*difficultyPlayer
 	state             map[*difficultyPlayer]*sliderstate
 	fadeStartRelative float64
-	lastTime          int64
 	lastSliderTime    int64
 	sliderPosition    vector.Vector2f
 }
@@ -195,8 +194,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			}
 		}
 
-		pointsPassed := int64(0)
-
+		pointsPassed := 0
 		for _, point := range state.points {
 			if point.time <= time {
 				pointsPassed++
@@ -210,29 +208,40 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			point := state.points[index]
 
 			if allowable && state.slideStart <= point.time {
-				if len(slider.players) == 1 && int(index) < len(state.points)-1 {
-					if point.edgeNum == -1 {
+				state.scored++
+
+				scoreGiven := Ignore
+
+				if pointsPassed == len(state.points) {
+					scoreGiven = SliderEnd
+				} else if pointsPassed%(len(state.points)/len(slider.hitSlider.TickReverse)) == 0 {
+					scoreGiven = SliderRepeat
+				} else {
+					scoreGiven = SliderPoint
+				}
+
+				if len(slider.players) == 1 && scoreGiven != SliderEnd {
+					if scoreGiven == SliderPoint {
 						slider.hitSlider.PlayTick()
-					} else {
+					} else if scoreGiven == SliderRepeat {
 						slider.hitSlider.HitEdge(point.edgeNum, time, true)
 					}
 				}
 
-				state.scored++
-
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, point.scoreGiven, true, ComboResults.Increase)
 			} else {
+				state.missed++
+
 				combo := ComboResults.Reset
-				if int(index) == len(state.points)-1 {
+				if state.scored+state.missed == len(state.points) {
 					combo = ComboResults.Hold
 				}
 
-				state.missed++
 				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, combo)
 			}
 		}
 
-		if !allowable && state.sliding && state.scored+state.missed < int64(len(state.points)) {
+		if !allowable && state.sliding && state.scored+state.missed < len(state.points) {
 			if len(slider.players) == 1 {
 				slider.hitSlider.KillSlide(time)
 			}
@@ -244,67 +253,71 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 	return true
 }
 
-func (slider *Slider) UpdatePost(time int64) bool {
+func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
+	state := slider.state[player]
+
+	if time > slider.hitSlider.GetBasicData().StartTime+player.diff.Hit50 && !state.isStartHit {
+		if len(slider.players) == 1 {
+			slider.hitSlider.ArmStart(false, time)
+		}
+
+		slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, ComboResults.Reset)
+
+		if player.leftCond {
+			state.downButton = Left
+		} else if player.rightCond {
+			state.downButton = Right
+		} else {
+			state.downButton = player.mouseDownButton
+		}
+
+		state.isStartHit = true
+	}
+
+	if time >= slider.hitSlider.GetBasicData().EndTime && !state.isHit {
+		if state.startScored {
+			state.scored++
+		}
+
+		hit := Miss
+		combo := ComboResults.Reset
+
+		rate := float64(state.scored) / float64(len(state.points)+1)
+
+		if rate > 0 && len(slider.players) == 1 {
+			slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), time, true)
+		}
+
+		if rate == 1.0 {
+			hit = Hit300
+		} else if rate >= 0.5 {
+			hit = Hit100
+		} else if rate > 0 {
+			hit = Hit50
+		}
+
+		if hit != Miss {
+			combo = ComboResults.Hold
+		}
+
+		slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
+
+		state.isHit = true
+	}
+
+	return state.isHit
+}
+
+func (slider *Slider) UpdatePost(_ int64) bool {
 	numFinishedTotal := 0
 
 	for _, player := range slider.players {
 		state := slider.state[player]
 
-		if !state.isHit || !state.isStartHit {
+		if !state.isHit {
 			numFinishedTotal++
 		}
-
-		if time > slider.hitSlider.GetBasicData().StartTime+player.diff.Hit50 && !state.isStartHit {
-			if len(slider.players) == 1 {
-				slider.hitSlider.ArmStart(false, time)
-			}
-
-			slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, ComboResults.Reset)
-
-			if player.leftCond {
-				state.downButton = Left
-			} else if player.rightCond {
-				state.downButton = Right
-			} else {
-				state.downButton = player.mouseDownButton
-			}
-
-			state.isStartHit = true
-		}
-
-		if time >= slider.hitSlider.GetBasicData().EndTime && !state.isHit {
-			if state.startScored {
-				state.scored++
-			}
-
-			hit := Miss
-			combo := ComboResults.Reset
-
-			rate := float64(state.scored) / float64(len(state.points)+1)
-
-			if rate > 0 && len(slider.players) == 1 {
-				slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), time, true)
-			}
-
-			if rate == 1.0 {
-				hit = Hit300
-			} else if rate >= 0.5 {
-				hit = Hit100
-			} else if rate > 0 {
-				hit = Hit50
-			}
-
-			if hit != Miss {
-				combo = ComboResults.Hold
-			}
-
-			slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetBasicData().Number, slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
-
-			state.isHit = true
-		}
 	}
-
-	slider.lastTime = time
 
 	return numFinishedTotal == 0
 }

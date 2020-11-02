@@ -45,6 +45,7 @@ type subControl struct {
 	replayTime      int64
 	frames          []*rplpa.ReplayData
 	wasLeft         bool
+	newHandling     bool
 }
 
 func NewSubControl() *subControl {
@@ -179,6 +180,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		loadFrames(control, replay.ReplayData)
 
 		mxCombo := replay.MaxCombo
+
+		control.newHandling = replay.OsuVersion > 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 
 		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE})
 		controller.controllers = append(controller.controllers, control)
@@ -342,6 +345,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 	for nTime := controller.lastTime + 1; nTime <= time; nTime++ {
 		controller.bMap.Update(nTime)
+
 		for i, c := range controller.controllers {
 			if c.danceController != nil {
 				c.danceController.Update(nTime, 1)
@@ -364,7 +368,6 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 				isRelax := (controller.replays[i].ModsV & difficulty.Relax) > 0
 
 				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= nTime {
-
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
 
@@ -422,7 +425,20 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
 					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
-					controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
+
+					// New replays (after 20190506) scores object ends only on replay frame
+					if c.newHandling || c.replayIndex == len(c.frames)-1 {
+						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
+					} else {
+						localIndex := bmath.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
+						localFrame := c.frames[localIndex]
+
+						// HACK for older replays: update object ends till the next frame
+						for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
+							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
+						}
+					}
+
 					wasUpdated = true
 
 					c.replayIndex++
@@ -444,7 +460,6 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 					controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
 					controller.cursors[i].IsReplayFrame = false
-					//controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
 				}
 			}
 		}
