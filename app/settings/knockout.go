@@ -14,6 +14,7 @@ func initKnockout() *knockout {
 		MaxPlayers:         50,
 		BubbleMinimumCombo: 200,
 		RevivePlayersAtEnd: false,
+		LiveSort:           true,
 		MinCursorSize:      3.0,
 		MaxCursorSize:      7.0,
 		AddDanser:          false,
@@ -49,6 +50,9 @@ type knockout struct {
 
 	// Whether knocked out players should appear on map end
 	RevivePlayersAtEnd bool
+
+	// Whether scores should be sorted in real time
+	LiveSort bool
 
 	//Minimum cursor size (when all players are alive)
 	MinCursorSize float64

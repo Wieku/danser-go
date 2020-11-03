@@ -124,9 +124,11 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 	}
 
-	rand.Shuffle(len(overlay.playersArray), func(i, j int) {
-		overlay.playersArray[i], overlay.playersArray[j] = overlay.playersArray[j], overlay.playersArray[i]
-	})
+	if settings.Knockout.LiveSort {
+		rand.Shuffle(len(overlay.playersArray), func(i, j int) {
+			overlay.playersArray[i], overlay.playersArray[j] = overlay.playersArray[j], overlay.playersArray[i]
+		})
+	}
 
 	discord.UpdateKnockout(len(overlay.playersArray), len(overlay.playersArray))
 
@@ -199,24 +201,30 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	})
 
 	sortFunc := func(time int64, number int64, instantSort bool) {
-		sort.SliceStable(overlay.playersArray, func(i, j int) bool {
-			return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && overlay.playersArray[i].score > overlay.playersArray[j].score) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number])))
-		})
 		alive := 0
-		for i, g := range overlay.playersArray {
+		for _, g := range overlay.playersArray {
 			if !g.hasBroken {
 				alive++
 			}
-			if i != g.currentIndex {
-				g.index.Reset()
-				animDuration := 0.0
-				if !instantSort {
-					animDuration = 200 + math.Abs(float64(i-g.currentIndex))*10
+		}
+
+		if settings.Knockout.LiveSort {
+			sort.SliceStable(overlay.playersArray, func(i, j int) bool {
+				return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && overlay.playersArray[i].score > overlay.playersArray[j].score) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number])))
+			})
+			for i, g := range overlay.playersArray {
+				if i != g.currentIndex {
+					g.index.Reset()
+					animDuration := 0.0
+					if !instantSort {
+						animDuration = 200 + math.Abs(float64(i-g.currentIndex))*10
+					}
+					g.index.AddEvent(float64(time), float64(time)+animDuration, float64(i))
+					g.currentIndex = i
 				}
-				g.index.AddEvent(float64(time), float64(time)+animDuration, float64(i))
-				g.currentIndex = i
 			}
 		}
+
 		discord.UpdateKnockout(alive, len(overlay.playersArray))
 	}
 
