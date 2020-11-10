@@ -1,10 +1,19 @@
 package color
 
 import (
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
 )
 
 func HSVToRGB(h, s, v float32) (r, g, b float32) {
+	h = math32.Mod(h, 360)
+	if h < 0 {
+		h += 360
+	}
+
+	s = bmath.ClampF32(s, 0, 1)
+	v = bmath.ClampF32(v, 0, 1)
+
 	hp := h / 60
 	c := v * s
 	x := c * (1.0 - math32.Abs(math32.Mod(hp, 2.0)-1.0))
@@ -40,6 +49,10 @@ func HSVToRGB(h, s, v float32) (r, g, b float32) {
 }
 
 func RGBToHSV(r, g, b float32) (h, s, v float32) {
+	r = bmath.ClampF32(r, 0, 1)
+	g = bmath.ClampF32(g, 0, 1)
+	b = bmath.ClampF32(b, 0, 1)
+
 	min := math32.Min(math32.Min(r, g), b)
 	v = math32.Max(math32.Max(r, g), b)
 	c := v - min
