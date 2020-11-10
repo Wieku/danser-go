@@ -71,16 +71,19 @@ func (vbo *VertexBufferObject) Resize(newCapacity int) {
 		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
 	}
 
-	var data []float32 = nil
 	if vbo.data != nil {
-		data = make([]float32, newCapacity)
+		data := make([]float32, newCapacity)
 		copy(data, vbo.data[:bmath.MinI(vbo.capacity, newCapacity)])
 		vbo.data = data
 	}
 
 	vbo.capacity = newCapacity
 
-	gl.BufferData(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(data), uint32(vbo.mode))
+	if vbo.data != nil && len(vbo.data) > 0 {
+		gl.BufferData(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(vbo.data), uint32(vbo.mode))
+	} else {
+		gl.BufferData(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(nil), uint32(vbo.mode))
+	}
 }
 
 func (vbo *VertexBufferObject) Map(size int) MemoryChunk {
