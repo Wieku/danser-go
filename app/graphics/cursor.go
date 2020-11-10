@@ -91,6 +91,7 @@ type Cursor struct {
 
 	vertices  []float32
 	vaoSize   int
+	maxCap    int
 	vaoDirty  bool
 	vao       *buffer.VertexArrayObject
 	mutex     *sync.Mutex
@@ -211,6 +212,8 @@ func (cursor *Cursor) Update(delta float64) {
 		}
 	}
 
+	lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) * settings.Cursor.TrailDensity)
+
 	points := cursor.Position.Dst(cursor.LastPos)
 	distance := float32(1.0 / settings.Cursor.TrailDensity)
 
@@ -239,7 +242,6 @@ func (cursor *Cursor) Update(delta float64) {
 	if len(cursor.Points) > 0 {
 		cursor.removeCounter += float64(len(cursor.Points)+3) / (360.0 / delta) * settings.Cursor.TrailRemoveSpeed
 		times := int(math.Floor(cursor.removeCounter))
-		lengthAdjusted := int(float64(settings.Cursor.TrailMaxLength) * settings.Cursor.TrailDensity)
 
 		if len(cursor.Points) > lengthAdjusted {
 			cursor.Points = cursor.Points[len(cursor.Points)-lengthAdjusted:]
@@ -257,8 +259,11 @@ func (cursor *Cursor) Update(delta float64) {
 		}
 	}
 
+	cursor.mutex.Lock()
 	if dirtyLocal {
-		cursor.mutex.Lock()
+		if len(cursor.vertices) != lengthAdjusted*3 {
+			cursor.vertices = make([]float32, lengthAdjusted*3)
+		}
 
 		for i, o := range cursor.Points {
 			inv := float32(len(cursor.Points) - i - 1)
@@ -274,21 +279,24 @@ func (cursor *Cursor) Update(delta float64) {
 			cursor.vertices[index+2] = hue
 		}
 
+		cursor.maxCap = lengthAdjusted
 		cursor.vaoSize = len(cursor.Points)
-		cursor.VaoPos = cursor.Position
+
 		cursor.vaoDirty = true
-		cursor.mutex.Unlock()
 	}
+	cursor.VaoPos = cursor.Position
+	cursor.mutex.Unlock()
 }
 
 func (cursor *Cursor) UpdateRenderer() {
 	cursor.mutex.Lock()
 	if cursor.vaoDirty {
+		cursor.vao.Resize("points", cursor.maxCap)
 		cursor.vao.SetData("points", 0, cursor.vertices[0:cursor.vaoSize*3])
 		cursor.instances = cursor.vaoSize
-		cursor.RendPos = cursor.VaoPos
 		cursor.vaoDirty = false
 	}
+	cursor.RendPos = cursor.VaoPos
 	cursor.mutex.Unlock()
 }
 
@@ -406,6 +414,8 @@ func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color colo
 	if settings.PLAY {
 		position = cursor.Position
 	}
+
+	batch.ResetTransform()
 
 	batch.SetTranslation(position.Copy64())
 	batch.SetScale(siz*scale, siz*scale)
