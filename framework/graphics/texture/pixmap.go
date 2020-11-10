@@ -50,31 +50,14 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 	filePointer := C.stbi__malloc(C.size_t(_size))
 	fileData := (*[1 << 30]uint8)(filePointer)[:_size:_size]
 
-	var err error
+	defer C.free(filePointer)
 
-	var i, n int
-
-	for {
-		n, err = file.Read(fileData[i:])
-		i += n
-
-		if err != nil || i >= len(fileData) {
-			if err == io.EOF {
-				err = nil
-			}
-
-			break
-		}
-	}
-
-	if err != nil {
+	if _, err := io.ReadFull(file, fileData); err != nil {
 		return nil, err
 	}
 
 	var x, y C.int
 	data := C.stbi_load_from_memory((*C.stbi_uc)(&fileData[0]), C.int(len(fileData)), &x, &y, nil, 4)
-
-	C.free(filePointer)
 
 	if data == nil {
 		return nil, errors.New(C.GoString(C.stbi_failure_reason()))
