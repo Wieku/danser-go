@@ -40,7 +40,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 
 	sum := meter.diff.Hit50
 
-	scale := errorBaseScale * settings.Gameplay.HitErrorMeterScale
+	scale := errorBaseScale * settings.Gameplay.HitErrorMeter.Scale
 
 	pixel := graphics.Pixel.GetRegion()
 	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-10*scale), bmath.Origin.Centre)
@@ -93,7 +93,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 func (meter *HitErrorMeter) Add(time, error float64) {
 	errorA := int64(math.Abs(error))
 
-	scale := settings.Gameplay.HitErrorMeterScale * errorBaseScale
+	scale := settings.Gameplay.HitErrorMeter.Scale * errorBaseScale
 
 	pixel := graphics.Pixel.GetRegion()
 
@@ -137,8 +137,8 @@ func (meter *HitErrorMeter) Update(time float64) {
 
 func (meter *HitErrorMeter) Draw(batch *sprite.SpriteBatch, alpha float64) {
 	batch.ResetTransform()
-	meterAlpha := settings.Gameplay.HitErrorMeterOpacity * meter.errorDisplayFade.GetValue() * alpha
-	if meterAlpha > 0.001 && settings.Gameplay.ShowHitErrorMeter {
+	meterAlpha := settings.Gameplay.HitErrorMeter.Opacity * meter.errorDisplayFade.GetValue() * alpha
+	if meterAlpha > 0.001 && settings.Gameplay.HitErrorMeter.Show {
 		batch.SetColor(1, 1, 1, meterAlpha)
 		meter.errorDisplay.Draw(int64(meter.lastTime), batch)
 	}

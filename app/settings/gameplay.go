@@ -4,19 +4,27 @@ var Gameplay = initGameplay()
 
 func initGameplay() *gameplay {
 	return &gameplay{
-		ShowHitErrorMeter:    true,
-		HitErrorMeterOpacity: 1,
-		HitErrorMeterScale:   1,
-		ShowScore:            true,
-		ScoreScale:           1,
-		ScoreOpacity:         1,
-		ShowCombo:            true,
-		ComboScale:           1,
-		ComboOpacity:         1,
-		ShowKeyOverlay:       true,
-		KeyOverlayScale:      1,
-		KeyOverlayOpacity:    1,
-		ProgressBar:          "Pie",
+		HitErrorMeter: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
+		Score: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
+		ComboCounter: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
+		KeyOverlay: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
+		ProgressBar: "Pie",
 		Boundaries: &boundaries{
 			Enabled:         true,
 			BorderThickness: 1,
@@ -38,21 +46,10 @@ func initGameplay() *gameplay {
 }
 
 type gameplay struct {
-	ShowHitErrorMeter    bool
-	HitErrorMeterOpacity float64
-	HitErrorMeterScale   float64
-
-	ShowScore    bool
-	ScoreScale   float64
-	ScoreOpacity float64
-
-	ShowCombo    bool
-	ComboScale   float64
-	ComboOpacity float64
-
-	ShowKeyOverlay    bool
-	KeyOverlayScale   float64
-	KeyOverlayOpacity float64
+	HitErrorMeter *hudElement
+	Score         *hudElement
+	ComboCounter  *hudElement
+	KeyOverlay    *hudElement
 
 	ProgressBar string
 
@@ -70,4 +67,10 @@ type boundaries struct {
 
 	BackgroundColor   *hsv
 	BackgroundOpacity float64
+}
+
+type hudElement struct {
+	Show    bool
+	Scale   float64
+	Opacity float64
 }

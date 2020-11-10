@@ -194,9 +194,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.keyOverlay.Add(keyBg)
 
 	for i := 0; i < 4; i++ {
-		posY := overlay.ScaledHeight/2 - 64 + (30.4+float64(i)*47.2)*settings.Gameplay.KeyOverlayScale
+		posY := overlay.ScaledHeight/2 - 64 + (30.4+float64(i)*47.2)*settings.Gameplay.KeyOverlay.Scale
 
-		key := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-key"), 1, vector.NewVec2d(overlay.ScaledWidth-24*settings.Gameplay.KeyOverlayScale, posY), bmath.Origin.Centre)
+		key := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-key"), 1, vector.NewVec2d(overlay.ScaledWidth-24*settings.Gameplay.KeyOverlay.Scale, posY), bmath.Origin.Centre)
 		key.ShowForever(true)
 
 		overlay.keys = append(overlay.keys, key)
@@ -377,8 +377,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 		progress = bmath.ClampF32(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
-	if scoreAlpha := settings.Gameplay.ScoreOpacity; scoreAlpha > 0.001 && settings.Gameplay.ShowScore && settings.Gameplay.ProgressBar == "Pie" {
-		scoreScale := settings.Gameplay.ScoreScale
+	if scoreAlpha := settings.Gameplay.Score.Opacity; scoreAlpha > 0.001 && settings.Gameplay.Score.Show && settings.Gameplay.ProgressBar == "Pie" {
+		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
 		rightOffset := -9.6
@@ -403,8 +403,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 
 	//region Combo rendering
 
-	if comboAlpha := settings.Gameplay.ComboOpacity; comboAlpha > 0.001 && settings.Gameplay.ShowCombo {
-		cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboScale
+	if comboAlpha := settings.Gameplay.ComboCounter.Opacity; comboAlpha > 0.001 && settings.Gameplay.ComboCounter.Show {
+		cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
 
 		batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
 
@@ -419,10 +419,10 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 
 	//region Score+progress+accuracy
 
-	if scoreAlpha := settings.Gameplay.ScoreOpacity; scoreAlpha > 0.001 && settings.Gameplay.ShowScore {
+	if scoreAlpha := settings.Gameplay.Score.Opacity; scoreAlpha > 0.001 && settings.Gameplay.Score.Show {
 		batch.ResetTransform()
 
-		scoreScale := settings.Gameplay.ScoreScale
+		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 		rightOffset := -9.6
 		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
@@ -490,8 +490,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.
 
 	batch.ResetTransform()
 
-	if keyAlpha := settings.Gameplay.KeyOverlayOpacity; keyAlpha > 0.001 && settings.Gameplay.ShowKeyOverlay {
-		keyScale := settings.Gameplay.KeyOverlayScale
+	if keyAlpha := settings.Gameplay.KeyOverlay.Opacity; keyAlpha > 0.001 && settings.Gameplay.KeyOverlay.Show {
+		keyScale := settings.Gameplay.KeyOverlay.Scale
 
 		batch.SetColor(1, 1, 1, alpha*keyAlpha)
 		batch.SetScale(keyScale, keyScale)
