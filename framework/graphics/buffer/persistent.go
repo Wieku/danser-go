@@ -64,6 +64,22 @@ func (vbo *PersistentBufferObject) SetData(offset int, data []float32) {
 	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, len(data)*4, gl.Ptr(data[offset:]))
 }
 
+func (vbo *PersistentBufferObject) Resize(newCapacity int) {
+	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
+	if currentVBO != vbo.handle {
+		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
+	}
+
+	vbo.capacity = newCapacity
+
+	gl.BufferStorage(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT)
+
+	pt := gl.MapBufferRange(gl.ARRAY_BUFFER, 0, newCapacity*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_FLUSH_EXPLICIT_BIT)
+
+	vbo.data = (*[1 << 30]float32)(pt)[:newCapacity:newCapacity]
+	vbo.offset = 0
+}
+
 func (vbo *PersistentBufferObject) Map(size int) MemoryChunk {
 	if size > vbo.capacity {
 		panic(fmt.Sprintf("Data request exceeds VBO's capacity. Requested size: %d, capacity: %d", size, vbo.capacity))

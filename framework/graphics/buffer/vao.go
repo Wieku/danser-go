@@ -94,6 +94,29 @@ func (vao *VertexArrayObject) GetVBOFormat(name string) attribute.Format {
 	panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
 }
 
+func (vao *VertexArrayObject) GetVBO(name string) StreamingBuffer {
+	if holder, exists := vao.vbos[name]; exists {
+		return holder.vbo
+	}
+
+	panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
+}
+
+func (vao *VertexArrayObject) Resize(name string, maxVertices int) {
+	if holder, exists := vao.vbos[name]; exists {
+		size := maxVertices * holder.format.Size() / 4
+		if holder.vbo.Capacity() != size {
+			holder.vbo.Bind()
+			holder.vbo.Resize(size)
+			holder.vbo.Unbind()
+		}
+
+		return
+	}
+
+	panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
+}
+
 func (vao *VertexArrayObject) Attach(s *shader.RShader) {
 	currentVAO := history.GetCurrent(gl.VERTEX_ARRAY_BINDING)
 	if currentVAO != vao.handle {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
@@ -15,11 +16,13 @@ type VertexBufferObject struct {
 	bound    bool
 	disposed bool
 	data     []float32
+	mode     DrawMode
 }
 
 func NewVertexBufferObject(maxFloats int, mapped bool, mode DrawMode) *VertexBufferObject {
 	vbo := new(VertexBufferObject)
 	vbo.capacity = maxFloats
+	vbo.mode = mode
 
 	gl.GenBuffers(1, &vbo.handle)
 
@@ -60,6 +63,24 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 	}
 
 	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, len(data)*4, gl.Ptr(data))
+}
+
+func (vbo *VertexBufferObject) Resize(newCapacity int) {
+	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
+	if currentVBO != vbo.handle {
+		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
+	}
+
+	var data []float32 = nil
+	if vbo.data != nil {
+		data = make([]float32, newCapacity)
+		copy(data, vbo.data[:bmath.MinI(vbo.capacity, newCapacity)])
+		vbo.data = data
+	}
+
+	vbo.capacity = newCapacity
+
+	gl.BufferData(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(data), uint32(vbo.mode))
 }
 
 func (vbo *VertexBufferObject) Map(size int) MemoryChunk {
