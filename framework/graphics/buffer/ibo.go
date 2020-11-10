@@ -59,7 +59,7 @@ func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 	statistic.Add(statistic.VerticesDrawn, int64(length))
 	statistic.Increment(statistic.DrawCalls)
 
-	gl.DrawElements(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset))
+	gl.DrawElements(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset*2))
 }
 
 func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, instanceCount int) {
