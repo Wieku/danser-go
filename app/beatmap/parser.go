@@ -24,6 +24,8 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 		}
 	case "AudioFilename":
 		beatMap.Audio += line[1]
+	case "PreviewTime":
+		beatMap.PreviewTime, _ = strconv.ParseInt(line[1], 10, 64)
 	case "SampleSet":
 		switch line[1] {
 		case "Normal", "All":

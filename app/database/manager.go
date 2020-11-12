@@ -21,7 +21,7 @@ import (
 
 var dbFile *sql.DB
 
-const databaseVersion = 20201027
+const databaseVersion = 20201112
 
 var currentPreVersion = databaseVersion
 
@@ -240,18 +240,10 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
 	}
 
-	if currentPreVersion < 20181111 {
+	if currentPreVersion < 20201112 {
 		log.Println("Updating cached beatmaps")
-		tx, err := dbFile.Begin()
-		if err != nil {
-			panic(err)
-		}
 
-		var st *sql.Stmt
-		st, err = tx.Prepare("UPDATE beatmaps SET hpdrain = ?, od = ? WHERE dir = ? AND file = ?")
-		if err != nil {
-			panic(err)
-		}
+		toUpdate := make([]*beatmap.BeatMap, 0)
 
 		for _, bMap := range bMaps {
 			err2 := beatmap.ParseBeatMap(bMap)
@@ -259,6 +251,22 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				log.Println("Corrupted cached beatmap found. Removing from database:", bMap.File)
 				removeList = append(removeList, toRemove{bMap.Dir, bMap.File})
 			} else {
+				toUpdate = append(toUpdate, bMap)
+			}
+		}
+
+		tx, err := dbFile.Begin()
+		if err != nil {
+			panic(err)
+		}
+
+		if currentPreVersion < 20181111 {
+			st, err := tx.Prepare("UPDATE beatmaps SET hpdrain = ?, od = ? WHERE dir = ? AND file = ?")
+			if err != nil {
+				panic(err)
+			}
+
+			for _, bMap := range toUpdate {
 				_, err1 := st.Exec(
 					bMap.Diff.GetHPDrain(),
 					bMap.Diff.GetOD(),
@@ -269,11 +277,32 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 					log.Println(err1)
 				}
 			}
+
+			if err = st.Close(); err != nil {
+				panic(err)
+			}
 		}
 
-		err = st.Close()
-		if err != nil {
-			panic(err)
+		if currentPreVersion < 20201112 {
+			st, err := tx.Prepare("UPDATE beatmaps SET previewTime = ? WHERE dir = ? AND file = ?")
+			if err != nil {
+				panic(err)
+			}
+
+			for _, bMap := range toUpdate {
+				_, err1 := st.Exec(
+					bMap.PreviewTime,
+					bMap.Dir,
+					bMap.File)
+
+				if err1 != nil {
+					log.Println(err1)
+				}
+			}
+
+			if err = st.Close(); err != nil {
+				panic(err)
+			}
 		}
 
 		err = tx.Commit()
