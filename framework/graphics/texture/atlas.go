@@ -31,7 +31,10 @@ func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *Te
 	texture := new(TextureAtlas)
 	texture.subTextures = make(map[string]*TextureRegion)
 	texture.emptySpaces = make(map[int32][]rectangle)
-	texture.emptySpaces[0] = []rectangle{{0, 0, size, size}}
+
+	for i := 0; i < layers; i++ {
+		texture.emptySpaces[int32(i)] = []rectangle{{0, 0, size, size}}
+	}
 
 	var siz int32
 	gl.GetIntegerv(gl.MAX_TEXTURE_SIZE, &siz)
@@ -62,31 +65,25 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 	}
 
 	imBounds := rectangle{0, 0, width + texture.padding, height + texture.padding}
+
 	for layer := int32(0); layer < texture.store.layers; layer++ {
-		j := -1
+		spaceIndex := -1
 		smallest := rectangle{0, 0, int(texture.store.width), int(texture.store.height)}
 
-		for i := range texture.emptySpaces[layer] {
-			space := texture.emptySpaces[layer][i]
+		for i, space := range texture.emptySpaces[layer] {
 			if imBounds.width <= space.width && imBounds.height <= space.height {
 				if space.area() <= smallest.area() {
-					j = i
+					spaceIndex = i
 					smallest = space
 				}
 			}
 		}
 
-		if j == -1 {
-			if layer == texture.store.layers-1 {
-				texture.newLayer()
-			}
-			continue
-		} else {
+		if spaceIndex >= 0 {
 			dw := smallest.width - imBounds.width
 			dh := smallest.height - imBounds.height
 
-			var rect1 rectangle
-			var rect2 rectangle
+			var rect1, rect2 rectangle
 
 			if dh > dw {
 				rect1 = rectangle{smallest.x + imBounds.width, smallest.y, smallest.width - imBounds.width, imBounds.height}
@@ -96,21 +93,26 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 				rect2 = rectangle{smallest.x, smallest.y + imBounds.height, imBounds.width, smallest.height - imBounds.height}
 			}
 
-			texture.emptySpaces[layer] = append(texture.emptySpaces[layer][:j], texture.emptySpaces[layer][j+1:]...)
-			texture.emptySpaces[layer] = append(texture.emptySpaces[layer], rect1, rect2)
+			texture.emptySpaces[layer][spaceIndex] = rect1
+			texture.emptySpaces[layer] = append(texture.emptySpaces[layer], rect2)
 
-			gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(smallest.x), int32(smallest.y), int32(layer), int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+			gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(smallest.x), int32(smallest.y), layer, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+
+			//TODO: generate sub textures with stbi
 			if texture.store.mipmaps > 1 {
 				gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
 			}
 
-			region := TextureRegion{Texture: texture, Width: int32(width), Height: int32(height), Layer: int32(layer)}
+			region := TextureRegion{Texture: texture, Width: int32(width), Height: int32(height), Layer: layer}
 			region.U1 = (float32(smallest.x) + 0.5) / float32(texture.store.width)
 			region.V1 = (float32(smallest.y) + 0.5) / float32(texture.store.height)
 			region.U2 = region.U1 + float32(width-1)/float32(texture.store.width)
 			region.V2 = region.V1 + float32(height-1)/float32(texture.store.height)
+
 			texture.subTextures[name] = &region
 			return &region
+		} else if layer == texture.store.layers-1 {
+			texture.newLayer()
 		}
 	}
 
