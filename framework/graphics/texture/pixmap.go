@@ -43,6 +43,10 @@ func NewPixmapFile(file *os.File) (*Pixmap, error) {
 		return nil, err
 	}
 
+	if stat.Size() == 0 {
+		return nil, errors.New("empty file")
+	}
+
 	return NewPixmapReader(file, stat.Size())
 }
 
@@ -88,6 +92,14 @@ func NewPixmapFileString(path string) (*Pixmap, error) {
 
 func (pixmap *Pixmap) NRGBA() *image.NRGBA {
 	return &image.NRGBA{
+		Pix:    pixmap.Data,
+		Stride: 4,
+		Rect:   image.Rect(0, 0, pixmap.Width, pixmap.Height),
+	}
+}
+
+func (pixmap *Pixmap) RGBA() *image.RGBA {
+	return &image.RGBA{
 		Pix:    pixmap.Data,
 		Stride: 4,
 		Rect:   image.Rect(0, 0, pixmap.Width, pixmap.Height),
