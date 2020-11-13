@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
+	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -44,7 +45,7 @@ type Player struct {
 	lastTime    int64
 	progressMsF float64
 	progressMs  int64
-	batch       *sprite.SpriteBatch
+	batch       *batch2.QuadBatch
 	controller  dance.Controller
 	background  *common.Background
 	BgScl       vector.Vector2d
@@ -105,7 +106,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	graphics.LoadTextures()
 
-	player.batch = sprite.NewSpriteBatch()
+	player.batch = batch2.NewQuadBatch()
 	player.font = font.GetFont("Exo 2 Bold")
 
 	discord.SetMap(beatMap.Artist, beatMap.Name, beatMap.Difficulty)
@@ -136,7 +137,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	player.background = common.NewBackground(beatMap)
+	player.background = common.NewBackground()
+	player.background.SetBeatmap(beatMap, settings.Playfield.Background.LoadStoryboards)
 
 	player.camera = camera2.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
@@ -776,4 +778,12 @@ func (player *Player) Draw(float64) {
 
 		player.batch.End()
 	}
+}
+
+func (player *Player) Hide() {
+
+}
+
+func (player *Player) Dispose() {
+
 }

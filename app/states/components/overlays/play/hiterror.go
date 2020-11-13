@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -135,7 +136,7 @@ func (meter *HitErrorMeter) Update(time float64) {
 	meter.lastTime = time
 }
 
-func (meter *HitErrorMeter) Draw(batch *sprite.SpriteBatch, alpha float64) {
+func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
 	meterAlpha := settings.Gameplay.HitErrorMeter.Opacity * meter.errorDisplayFade.GetValue() * alpha
 	if meterAlpha > 0.001 && settings.Gameplay.HitErrorMeter.Show {

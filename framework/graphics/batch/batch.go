@@ -1,4 +1,4 @@
-package sprite
+package batch
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 
 const defaultBatchSize = 2000
 
-type SpriteBatch struct {
+type QuadBatch struct {
 	shader     *shader.RShader
 	additive   bool
 	color      color2.Color
@@ -41,13 +41,13 @@ type SpriteBatch struct {
 	chunkOffset   int
 }
 
-func NewSpriteBatch() *SpriteBatch {
-	return NewSpriteBatchSize(defaultBatchSize)
+func NewQuadBatch() *QuadBatch {
+	return NewQuadBatchSize(defaultBatchSize)
 }
 
-func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
+func NewQuadBatchSize(maxSprites int) *QuadBatch {
 	if maxSprites*6 > 0xFFFF {
-		panic(fmt.Sprintf("SpriteBatch size is too big, maximum sprites allowed: 10922, given: %d", maxSprites))
+		panic(fmt.Sprintf("QuadBatch size is too big, maximum quads allowed: 10922, given: %d", maxSprites))
 	}
 
 	vert, err := assets.GetString("assets/shaders/sprite.vsh")
@@ -76,7 +76,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 		-1, 1, 0, 1,
 	})
 
-	vao.AddMappedVBO("sprites", maxSprites, 1, attribute.Format{
+	vao.AddMappedVBO("quads", maxSprites, 1, attribute.Format{
 		{Name: "in_origin", Type: attribute.Vec2Packed},
 		{Name: "in_scale", Type: attribute.Vec2},
 		{Name: "in_position", Type: attribute.Vec2},
@@ -103,11 +103,11 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 
 	ibo.Unbind()
 
-	vertexSize := vao.GetVBOFormat("sprites").Size() / 4
+	vertexSize := vao.GetVBOFormat("quads").Size() / 4
 
-	chunk := vao.MapVBO("sprites", maxSprites*vertexSize)
+	chunk := vao.MapVBO("quads", maxSprites*vertexSize)
 
-	return &SpriteBatch{
+	return &QuadBatch{
 		shader:      rShader,
 		color:       color2.NewL(1),
 		Projection:  mgl32.Ident4(),
@@ -123,7 +123,7 @@ func NewSpriteBatchSize(maxSprites int) *SpriteBatch {
 	}
 }
 
-func (batch *SpriteBatch) Begin() {
+func (batch *QuadBatch) Begin() {
 	if batch.drawing {
 		panic("Batching has already begun")
 	}
@@ -141,9 +141,9 @@ func (batch *SpriteBatch) Begin() {
 	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
 }
 
-func (batch *SpriteBatch) bind(texture texture.Texture) {
+func (batch *QuadBatch) bind(texture texture.Texture) {
 	if batch.texture != nil {
-		if batch.texture.GetID() == texture.GetID() {
+		if batch.texture == texture {
 			return
 		}
 
@@ -153,7 +153,7 @@ func (batch *SpriteBatch) bind(texture texture.Texture) {
 	batch.texture = texture
 }
 
-func (batch *SpriteBatch) Flush() {
+func (batch *QuadBatch) Flush() {
 	if batch.currentSize == 0 {
 		return
 	}
@@ -164,14 +164,14 @@ func (batch *SpriteBatch) Flush() {
 
 	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
 
-	//batch.vao.SetData("sprites", 0, batch.data[:batch.currentFloats])
-	batch.vao.UnmapVBO("sprites", 0, batch.currentFloats)
+	//batch.vao.SetData("quads", 0, batch.data[:batch.currentFloats])
+	batch.vao.UnmapVBO("quads", 0, batch.currentFloats)
 
 	batch.ibo.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
 
 	statistic.Add(statistic.SpritesDrawn, int64(batch.currentSize))
 
-	nextChunk := batch.vao.MapVBO("sprites", batch.maxSprites*batch.vertexSize)
+	nextChunk := batch.vao.MapVBO("quads", batch.maxSprites*batch.vertexSize)
 
 	batch.data = nextChunk.Data
 	batch.chunkOffset = nextChunk.Offset
@@ -180,7 +180,7 @@ func (batch *SpriteBatch) Flush() {
 	batch.currentFloats = 0
 }
 
-func (batch *SpriteBatch) End() {
+func (batch *QuadBatch) End() {
 	if !batch.drawing {
 		panic("Batching has already ended")
 	}
@@ -197,76 +197,76 @@ func (batch *SpriteBatch) End() {
 	blend.Pop()
 }
 
-func (batch *SpriteBatch) SetColor(r, g, b, a float64) {
+func (batch *QuadBatch) SetColor(r, g, b, a float64) {
 	batch.color.R = float32(r)
 	batch.color.G = float32(g)
 	batch.color.B = float32(b)
 	batch.color.A = float32(a)
 }
 
-func (batch *SpriteBatch) SetColor32(r, g, b, a float32) {
+func (batch *QuadBatch) SetColor32(r, g, b, a float32) {
 	batch.color.R = r
 	batch.color.G = g
 	batch.color.B = b
 	batch.color.A = a
 }
 
-func (batch *SpriteBatch) SetColorM(color color2.Color) {
+func (batch *QuadBatch) SetColorM(color color2.Color) {
 	batch.color = color
 }
 
-func (batch *SpriteBatch) SetTranslation(vec vector.Vector2d) {
+func (batch *QuadBatch) SetTranslation(vec vector.Vector2d) {
 	batch.position = vec
 }
 
-func (batch *SpriteBatch) SetRotation(rad float64) {
+func (batch *QuadBatch) SetRotation(rad float64) {
 	batch.rotation = rad
 }
 
-func (batch *SpriteBatch) GetRotation() float64 {
+func (batch *QuadBatch) GetRotation() float64 {
 	return batch.rotation
 }
 
-func (batch *SpriteBatch) SetScale(scaleX, scaleY float64) {
+func (batch *QuadBatch) SetScale(scaleX, scaleY float64) {
 	batch.scale = vector.NewVec2d(scaleX, scaleY)
 }
 
-func (batch *SpriteBatch) GetScale() vector.Vector2d {
+func (batch *QuadBatch) GetScale() vector.Vector2d {
 	return batch.scale
 }
 
-func (batch *SpriteBatch) SetSubScale(scaleX, scaleY float64) {
+func (batch *QuadBatch) SetSubScale(scaleX, scaleY float64) {
 	batch.subscale = vector.NewVec2d(scaleX, scaleY)
 }
 
-func (batch *SpriteBatch) ResetTransform() {
+func (batch *QuadBatch) ResetTransform() {
 	batch.scale = vector.NewVec2d(1, 1)
 	batch.subscale = vector.NewVec2d(1, 1)
 	batch.position = vector.NewVec2d(0, 0)
 	batch.rotation = 0
 }
 
-func (batch *SpriteBatch) SetAdditive(additive bool) {
+func (batch *QuadBatch) SetAdditive(additive bool) {
 	batch.additive = additive
 }
 
-func (batch *SpriteBatch) DrawUnit(texture texture.TextureRegion) {
+func (batch *QuadBatch) DrawUnit(texture texture.TextureRegion) {
 	batch.drawTextureBase(texture, false, false)
 }
 
-func (batch *SpriteBatch) DrawUnitMSDF(texture texture.TextureRegion) {
+func (batch *QuadBatch) DrawUnitMSDF(texture texture.TextureRegion) {
 	batch.drawTextureBase(texture, false, true)
 }
 
-func (batch *SpriteBatch) DrawTexture(texture texture.TextureRegion) {
+func (batch *QuadBatch) DrawTexture(texture texture.TextureRegion) {
 	batch.drawTextureBase(texture, true, false)
 }
 
-func (batch *SpriteBatch) DrawTextureMSDF(texture texture.TextureRegion) {
+func (batch *QuadBatch) DrawTextureMSDF(texture texture.TextureRegion) {
 	batch.drawTextureBase(texture, true, true)
 }
 
-func (batch *SpriteBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize, msdf bool) {
+func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize, msdf bool) {
 	if texture.Texture == nil || batch.color.A < 0.001 {
 		return
 	}
@@ -326,7 +326,7 @@ func (batch *SpriteBatch) drawTextureBase(texture texture.TextureRegion, useText
 	}
 }
 
-func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
+func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
 	if texture.Texture == nil || color.W()*batch.color.A < 0.001 {
 		return
 	}
@@ -389,7 +389,7 @@ func (batch *SpriteBatch) DrawStObject(position, origin, scale vector.Vector2d, 
 	}
 }
 
-func (batch *SpriteBatch) SetCamera(camera mgl32.Mat4) {
+func (batch *QuadBatch) SetCamera(camera mgl32.Mat4) {
 	if batch.Projection == camera {
 		return
 	}

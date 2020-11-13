@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -265,7 +266,7 @@ func (circle *Circle) GetPosition() vector.Vector2f {
 	return circle.objData.StartPos
 }
 
-func (circle *Circle) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
+func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(circle.objData.StartPos.Copy64())
 
@@ -334,7 +335,7 @@ func (circle *Circle) Draw(time int64, color color2.Color, batch *sprite.SpriteB
 	return false
 }
 
-func (circle *Circle) DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch) {
+func (circle *Circle) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(circle.objData.StartPos.Copy64())
 	batch.SetColor(1, 1, 1, 1)

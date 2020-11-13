@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
@@ -27,7 +28,7 @@ var cursorFBOSprite *sprite.Sprite
 var cursorSpaceFbo *buffer.Framebuffer = nil
 var cursorSpaceFBOSprite *sprite.Sprite
 
-var fboBatch *sprite.SpriteBatch
+var fboBatch *batch.QuadBatch
 
 var Camera *camera.Camera
 var osuRect camera.Rectangle
@@ -59,7 +60,7 @@ func initCursor() {
 	regionSpace := cursorSpaceFbo.Texture().GetRegion()
 	cursorSpaceFBOSprite = sprite.NewSpriteSingle(&regionSpace, 0, vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 
-	fboBatch = sprite.NewSpriteBatchSize(1)
+	fboBatch = batch.NewQuadBatchSize(1)
 	fboBatch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
 
 	osuRect = Camera.GetWorldRect()
@@ -328,11 +329,11 @@ func EndCursorRender() {
 	blend.Pop()
 }
 
-func (cursor *Cursor) Draw(scale float64, batch *sprite.SpriteBatch, color color2.Color) {
+func (cursor *Cursor) Draw(scale float64, batch *batch.QuadBatch, color color2.Color) {
 	cursor.DrawM(scale, batch, color, color)
 }
 
-func (cursor *Cursor) DrawM(scale float64, batch *sprite.SpriteBatch, color color2.Color, colorGlow color2.Color) {
+func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
 	hueShift := color.GetHue()
 
 	if useAdditive {

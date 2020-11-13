@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -30,9 +31,9 @@ import (
 
 type Overlay interface {
 	Update(int64)
-	DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64)
-	DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64)
-	DrawHUD(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64)
+	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
+	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
+	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	IsBroken(cursor *graphics.Cursor) bool
 	NormalBeforeCursor() bool
 }
@@ -332,11 +333,11 @@ func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius), float32(alpha*overlay.bgDim.GetValue()))
 }
 
-func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
 	scale := overlay.ruleset.GetBeatMap().Diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
 
@@ -357,7 +358,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *sprite.SpriteBatch, colors []colo
 	batch.SetCamera(prev)
 }
 
-func (overlay *ScoreOverlay) DrawHUD(batch *sprite.SpriteBatch, colors []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.ResetTransform()

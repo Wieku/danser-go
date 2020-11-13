@@ -5,14 +5,13 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/storyboard"
-	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -25,32 +24,57 @@ import (
 )
 
 type Background struct {
-	blur           *effects.BlurEffect
-	scale          vector.Vector2d
-	position       vector.Vector2d
-	background     *texture.TextureRegion
-	storyboard     *storyboard.Storyboard
-	lastTime       float64
-	bMap           *beatmap.BeatMap
+	blur       *effects.BlurEffect
+	scale      vector.Vector2d
+	position   vector.Vector2d
+	background *texture.TextureSingle
+	storyboard *storyboard.Storyboard
+	lastTime   float64
+	//bMap           *beatmap.BeatMap
 	triangles      *drawables.Triangles
 	blurVal        float64
 	blurredTexture texture.Texture
 	scaling        scaling.Scaling
 }
 
-func NewBackground(beatMap *beatmap.BeatMap) *Background {
+func NewBackground() *Background {
 	bg := new(Background)
 	bg.blurVal = -1
-	bg.bMap = beatMap
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
-	var err error
-	bg.background, err = utils.LoadTextureToAtlas(graphics.Atlas, filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+	image, err := assets.GetPixmap("assets/textures/background-1.png")
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 
-	if settings.Playfield.Background.LoadStoryboards {
+	bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
+
+	bg.triangles = drawables.NewTriangles(bg.getColors(image))
+
+	if image != nil {
+		image.Dispose()
+	}
+
+	return bg
+}
+
+func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool) {
+	image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+	if err != nil {
+		image, err = assets.GetPixmap("assets/textures/background-1.png")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	bg.triangles.SetColors(bg.getColors(image))
+
+	if image != nil {
+		bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
+		image.Dispose()
+	}
+
+	if loadStoryboards {
 		bg.storyboard = storyboard.NewStoryboard(beatMap)
 
 		if bg.storyboard == nil {
@@ -58,37 +82,6 @@ func NewBackground(beatMap *beatmap.BeatMap) *Background {
 		}
 	}
 
-	image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
-
-	newCol := make([]color2.Color, 0)
-
-	if err == nil {
-		cItems, err1 := prominentcolor.KmeansWithAll(10, image.NRGBA(), prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
-		newCol = make([]color2.Color, 0)
-
-		err = err1
-
-		if err1 == nil {
-			for i := 0; i < len(cItems); i++ {
-				if cItems[i].Color.R+cItems[i].Color.G+cItems[i].Color.B == 0 {
-					continue
-				}
-
-				newCol = append(newCol, color2.NewIRGB(uint8(cItems[i].Color.R), uint8(cItems[i].Color.G), uint8(cItems[i].Color.B)) /*.Lighten2(0.15)*/)
-			}
-		}
-	}
-
-	if err != nil {
-		color1 := color2.NewL(0.054)
-		color2 := color2.NewL(0.3)
-		for i := 0; i <= 10; i++ {
-			newCol = append(newCol, color1.Mix(color2, float32(i)/10))
-		}
-	}
-
-	bg.triangles = drawables.NewTriangles(newCol)
-	return bg
 }
 
 func (bg *Background) SetTrack(track *bass.Track) {
@@ -132,7 +125,7 @@ func project(pos vector.Vector2d, camera mgl32.Mat4) vector.Vector2d {
 	return vector.NewVec2d((float64(res[0])/2+0.5)*settings.Graphics.GetWidthF(), float64((res[1])/2+0.5)*settings.Graphics.GetWidthF())
 }
 
-func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
+func (bg *Background) Draw(time int64, batch *batch.QuadBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
 	if bgAlpha < 0.01 {
 		return
 	}
@@ -180,7 +173,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 
 		if bg.background != nil && (bg.storyboard == nil || !bg.storyboard.BGFileUsed()) {
 			batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-			size := bg.scaling.Apply(float32(bg.background.Width), float32(bg.background.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
+			size := bg.scaling.Apply(float32(bg.background.GetWidth()), float32(bg.background.GetHeight()), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
 
 			if !settings.Playfield.Background.Blur.Enabled {
 				batch.SetTranslation(bg.position.Mult(vector.NewVec2d(1, -1)).Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
@@ -188,7 +181,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 			}
 
 			batch.SetScale(size.X64(), size.Y64())
-			batch.DrawUnit(*bg.background)
+			batch.DrawUnit(bg.background.GetRegion())
 		}
 
 		if bg.storyboard != nil {
@@ -251,7 +244,7 @@ func (bg *Background) Draw(time int64, batch *sprite.SpriteBatch, blurVal, bgAlp
 	}
 }
 
-func (bg *Background) drawTriangles(batch *sprite.SpriteBatch, bgAlpha float64, blur bool) {
+func (bg *Background) drawTriangles(batch *batch.QuadBatch, bgAlpha float64, blur bool) {
 	batch.ResetTransform()
 	cam := mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1)
 
@@ -272,7 +265,7 @@ func (bg *Background) drawTriangles(batch *sprite.SpriteBatch, bgAlpha float64, 
 	batch.ResetTransform()
 }
 
-func (bg *Background) DrawOverlay(time int64, batch *sprite.SpriteBatch, bgAlpha float64, camera mgl32.Mat4) {
+func (bg *Background) DrawOverlay(time int64, batch *batch.QuadBatch, bgAlpha float64, camera mgl32.Mat4) {
 	if bgAlpha < 0.01 || bg.storyboard == nil {
 		return
 	}
@@ -308,4 +301,37 @@ func (bg *Background) DrawOverlay(time int64, batch *sprite.SpriteBatch, bgAlpha
 
 func (bg *Background) GetStoryboard() *storyboard.Storyboard {
 	return bg.storyboard
+}
+
+func (bg *Background) getColors(image *texture.Pixmap) []color2.Color {
+	newCol := make([]color2.Color, 0)
+
+	var err error = nil
+
+	if image != nil {
+		cItems, err1 := prominentcolor.KmeansWithAll(10, image.NRGBA(), prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
+		newCol = make([]color2.Color, 0)
+
+		err = err1
+
+		if err1 == nil {
+			for i := 0; i < len(cItems); i++ {
+				if cItems[i].Color.R+cItems[i].Color.G+cItems[i].Color.B == 0 {
+					continue
+				}
+
+				newCol = append(newCol, color2.NewIRGB(uint8(cItems[i].Color.R), uint8(cItems[i].Color.G), uint8(cItems[i].Color.B)) /*.Lighten2(0.15)*/)
+			}
+		}
+	}
+
+	if err != nil {
+		color1 := color2.NewL(0.054)
+		color2 := color2.NewL(0.3)
+		for i := 0; i <= 10; i++ {
+			newCol = append(newCol, color1.Mix(color2, float32(i)/10))
+		}
+	}
+
+	return newCol
 }

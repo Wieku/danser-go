@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -111,7 +112,7 @@ func (container *HitObjectContainer) Update(time float64) {
 
 }
 
-func (container *HitObjectContainer) Draw(batch *sprite.SpriteBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
+func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
 	divides := len(cameras)
 
 	if len(container.objectQueue) > 0 {

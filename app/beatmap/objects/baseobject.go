@@ -2,7 +2,7 @@ package objects
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"strconv"
@@ -19,8 +19,8 @@ type BaseObject interface {
 }
 
 type Renderable interface {
-	Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool
-	DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch)
+	Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool
+	DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch)
 }
 
 type basicData struct {

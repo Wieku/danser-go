@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -87,13 +88,15 @@ func (vis *Triangles) Update(time float64) {
 
 	boost := 0.0
 
-	fft := vis.music.GetFFT()
+	if vis.music != nil {
+		fft := vis.music.GetFFT()
 
-	for i := 0; i < bars; i++ {
-		boost += 2 * float64(fft[i]*fft[i]) * float64(bars-i) / float64(bars)
+		for i := 0; i < bars; i++ {
+			boost += 2 * float64(fft[i]*fft[i]) * float64(bars-i) / float64(bars)
+		}
 	}
 
-	vis.velocity = math.Max(vis.velocity, math.Min(boost*3, 12))
+	vis.velocity = math.Max(vis.velocity, math.Min(boost*12, 12))
 
 	vis.velocity *= 1.0 - 0.05*delta/16
 
@@ -125,7 +128,7 @@ func (vis *Triangles) Update(time float64) {
 	vis.lastTime = time
 }
 
-func (vis *Triangles) Draw(time float64, batch *sprite.SpriteBatch) {
+func (vis *Triangles) Draw(time float64, batch *batch.QuadBatch) {
 	for _, t := range vis.triangles {
 		t.Draw(int64(time), batch)
 	}

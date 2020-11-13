@@ -3,7 +3,7 @@ package font
 import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
 	font2 "golang.org/x/image/font"
@@ -155,7 +155,7 @@ func LoadFont(reader io.Reader) *Font {
 	return font
 }
 
-func (font *Font) drawInternal(renderer *sprite.SpriteBatch, x, y float64, size float64, text string, monospaced bool) {
+func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size float64, text string, monospaced bool) {
 	advance := x
 
 	scale := size / font.initialSize
@@ -198,16 +198,16 @@ func (font *Font) drawInternal(renderer *sprite.SpriteBatch, x, y float64, size 
 	}
 }
 
-func (font *Font) Draw(renderer *sprite.SpriteBatch, x, y float64, size float64, text string) {
+func (font *Font) Draw(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
 	font.drawInternal(renderer, x, y, size, text, false)
 }
 
-func (font *Font) DrawCentered(renderer *sprite.SpriteBatch, x, y float64, size float64, text string) {
+func (font *Font) DrawCentered(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
 	xpad := font.GetWidth(size, text) * renderer.GetScale().X
 	font.Draw(renderer, x-(xpad)/2, y, size, text)
 }
 
-func (font *Font) DrawMonospaced(renderer *sprite.SpriteBatch, x, y float64, size float64, text string) {
+func (font *Font) DrawMonospaced(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
 	font.drawInternal(renderer, x, y, size, text, true)
 }
 

@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/framework/bass"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -73,7 +73,7 @@ func (vis *Visualiser) Update(time float64) {
 	vis.lastTime = time
 }
 
-func (vis *Visualiser) Draw(time float64, batch *sprite.SpriteBatch) {
+func (vis *Visualiser) Draw(time float64, batch *batch.QuadBatch) {
 	origin := vector.NewVec2d(-1, 0)
 
 	color := mgl32.Vec4{1, 1, 1, 0.3}

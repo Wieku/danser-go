@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -215,7 +216,7 @@ func (spinner *Spinner) Update(time int64) bool {
 	return true
 }
 
-func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
+func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	shiftX := -float32(settings.Playfield.ShiftX*spinner.ScaledHeight) / 480
@@ -289,7 +290,7 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *sprite.Sprit
 	return false
 }
 
-func (spinner *Spinner) DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch) {}
+func (spinner *Spinner) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {}
 
 func (spinner *Spinner) Hit(_ int64, isHit bool) {
 	if !isHit {

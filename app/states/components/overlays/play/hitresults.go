@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -132,7 +133,7 @@ func (results *HitResults) Update(time float64) {
 	results.lastTime = time
 }
 
-func (results *HitResults) Draw(batch *sprite.SpriteBatch, _ float64) {
+func (results *HitResults) Draw(batch *batch.QuadBatch, _ float64) {
 	batch.ResetTransform()
 
 	scale := results.diff.CircleRadius / 64

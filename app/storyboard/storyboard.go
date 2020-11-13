@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -318,7 +319,7 @@ func (storyboard *Storyboard) Update(time int64) {
 	storyboard.overlay.Update(time)
 }
 
-func (storyboard *Storyboard) Draw(time int64, batch *sprite.SpriteBatch) {
+func (storyboard *Storyboard) Draw(time int64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
@@ -326,7 +327,7 @@ func (storyboard *Storyboard) Draw(time int64, batch *sprite.SpriteBatch) {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 }
 
-func (storyboard *Storyboard) DrawOverlay(time int64, batch *sprite.SpriteBatch) {
+func (storyboard *Storyboard) DrawOverlay(time int64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.overlay.Draw(time, batch)
 	batch.SetTranslation(vector.NewVec2d(0, 0))

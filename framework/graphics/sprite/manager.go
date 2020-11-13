@@ -1,6 +1,7 @@
 package sprite
 
 import (
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"math"
 	"sort"
 	"sync"
@@ -125,7 +126,7 @@ func (layer *SpriteManager) GetLoad() (sum float64) {
 	return
 }
 
-func (layer *SpriteManager) Draw(time int64, batch *SpriteBatch) {
+func (layer *SpriteManager) Draw(time int64, batch *batch.QuadBatch) {
 	layer.mutex.Lock()
 	if layer.dirty {
 		layer.visibleObjects = 0

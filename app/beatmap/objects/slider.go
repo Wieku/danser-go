@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -741,7 +742,7 @@ func (slider *Slider) DrawBody(time int64, bodyColor, innerBorder, outerBorder c
 	slider.body.DrawNormal(projection, slider.objData.StackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
 
-func (slider *Slider) Draw(time int64, color color2.Color, batch *sprite.SpriteBatch) bool {
+func (slider *Slider) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
 	if len(slider.scorePath) == 0 {
 		return true
 	}
@@ -818,7 +819,7 @@ func (slider *Slider) Draw(time int64, color color2.Color, batch *sprite.SpriteB
 	return false
 }
 
-func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, color color2.Color, alpha float64, useBallTexture bool) {
+func (slider *Slider) drawBall(time int64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {
 	batch.SetColor(1, 1, 1, alpha)
 	batch.SetTranslation(slider.Pos.Copy64())
 
@@ -870,7 +871,7 @@ func (slider *Slider) drawBall(time int64, batch *sprite.SpriteBatch, color colo
 	}
 }
 
-func (slider *Slider) DrawApproach(time int64, color color2.Color, batch *sprite.SpriteBatch) {
+func (slider *Slider) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {
 	if len(slider.scorePath) == 0 {
 		return
 	}

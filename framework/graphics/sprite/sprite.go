@@ -3,6 +3,7 @@ package sprite
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -220,12 +221,12 @@ func (sprite *Sprite) ShowForever(value bool) {
 	sprite.showForever = value
 }
 
-func (sprite *Sprite) UpdateAndDraw(time int64, batch *SpriteBatch) {
+func (sprite *Sprite) UpdateAndDraw(time int64, batch *batch.QuadBatch) {
 	sprite.Update(time)
 	sprite.Draw(time, batch)
 }
 
-func (sprite *Sprite) Draw(time int64, batch *SpriteBatch) {
+func (sprite *Sprite) Draw(time int64, batch *batch.QuadBatch) {
 	if (!sprite.showForever && float64(time) < sprite.startTime && float64(time) >= sprite.endTime) || sprite.color.A < 0.01 {
 		return
 	}
