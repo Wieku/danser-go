@@ -41,6 +41,7 @@ type textureStore struct {
 	layers, width, height, mipmaps int32
 	format                         Format
 	min, mag                       Filter
+	disposed                       bool
 }
 
 func newStore(layerNum, width, height int, format Format, mipmaps int) *textureStore {
@@ -88,5 +89,9 @@ func (store *textureStore) SetFiltering(min, mag Filter) {
 }
 
 func (store *textureStore) Dispose() {
-	gl.DeleteTextures(1, &store.id)
+	if !store.disposed {
+		gl.DeleteTextures(1, &store.id)
+	}
+
+	store.disposed = true
 }
