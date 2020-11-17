@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	oppai "github.com/flesnuk/oppai5"
 	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
@@ -21,7 +22,7 @@ import (
 
 var dbFile *sql.DB
 
-const databaseVersion = 20201112
+const databaseVersion = 20201117
 
 var currentPreVersion = databaseVersion
 
@@ -33,17 +34,14 @@ type toRemove struct {
 func Init() {
 	var err error
 	dbFile, err = sql.Open("sqlite3", "danser.db")
-
 	if err != nil {
 		panic(err)
 	}
 
 	_, err = dbFile.Exec(`
-		PRAGMA main.auto_vacuum = FULL;
-		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);
+		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1);
 		CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
 		CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);
-		vacuum;
 	`)
 
 	if err != nil {
@@ -53,21 +51,21 @@ func Init() {
 	res, _ := dbFile.Query("SELECT key, value FROM info")
 
 	for res.Next() {
-		var key string
-		var value string
+		var key, value string
 
 		res.Scan(&key, &value)
 		if key == "version" {
-			parsed, _ := strconv.ParseInt(value, 10, 32)
-			currentPreVersion = int(parsed)
+			currentPreVersion, _ = strconv.Atoi(value)
 		}
 	}
 
 	log.Println("Database version: ", currentPreVersion)
 
-	if currentPreVersion < databaseVersion {
-		log.Println("Database is too old! Updating...")
+	if currentPreVersion == databaseVersion {
+		return
 	}
+
+	log.Println("Database is too old! Updating...")
 
 	if currentPreVersion < 20181111 {
 		_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN hpdrain REAL;
@@ -92,6 +90,13 @@ func Init() {
 			vacuum;
 		`)
 
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if currentPreVersion < 20201117 {
+		_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN stars REAL DEFAULT -1;`)
 		if err != nil {
 			panic(err)
 		}
@@ -211,10 +216,71 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 	log.Println("Loaded", len(allMaps), "total.")
 
 	result := make([]*beatmap.BeatMap, 0)
+	stars := make([]interface{}, 0)
+
 	for _, b := range allMaps {
 		if b.Mode == 0 {
+			if b.Stars < 0 {
+				stars = append(stars, b)
+			}
+
 			result = append(result, b)
 		}
+	}
+
+	if len(stars) > 0 {
+		log.Println("Updating star rating...")
+
+		utils.Balance(4, stars, func(a interface{}) interface{} {
+			b := a.(*beatmap.BeatMap)
+
+			f, err := os.Open(filepath.Join(settings.General.OsuSongsDir, b.Dir, b.File))
+			if err == nil {
+				mp := oppai.Parse(f)
+
+				if len(mp.Objects) > 0 {
+					calc := &oppai.DiffCalc{Beatmap: *mp}
+					calc.Calc(0, oppai.DefaultSingletapThreshold)
+					b.Stars = calc.Total
+				} else {
+					b.Stars = 0
+				}
+			}
+
+			return a
+		})
+
+		tx, err := dbFile.Begin()
+		if err != nil {
+			panic(err)
+		}
+
+		st, err := tx.Prepare("UPDATE beatmaps SET stars = ? WHERE dir = ? AND file = ?")
+		if err != nil {
+			panic(err)
+		}
+
+		for _, b := range stars {
+			bMap := b.(*beatmap.BeatMap)
+			_, err1 := st.Exec(
+				bMap.Stars,
+				bMap.Dir,
+				bMap.File)
+
+			if err1 != nil {
+				log.Println(err1)
+			}
+		}
+
+		if err = st.Close(); err != nil {
+			panic(err)
+		}
+
+		if err = tx.Commit(); err != nil {
+			panic(err)
+		}
+
+		log.Println("Calculations finished")
 	}
 
 	return result
@@ -347,7 +413,8 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.PlayCount,
 				&beatmap.LastPlayed,
 				&hp,
-				&od)
+				&od,
+				&beatmap.Stars)
 
 			beatmap.Diff.SetCS(cs)
 			beatmap.Diff.SetAR(ar)
@@ -379,7 +446,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	if err == nil {
 		var st *sql.Stmt
-		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
 		if err == nil {
 			for _, bMap := range bMaps {
@@ -409,12 +476,15 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.PlayCount,
 					bMap.LastPlayed,
 					bMap.Diff.GetHPDrain(),
-					bMap.Diff.GetOD())
+					bMap.Diff.GetOD(),
+					bMap.Stars)
 
 				if err1 != nil {
 					log.Println(err1)
 				}
 			}
+		} else {
+			panic(err)
 		}
 
 		st.Close()
@@ -424,7 +494,6 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 	if err != nil {
 		log.Println(err)
 	}
-
 }
 
 func getLastModified() map[string]int64 {

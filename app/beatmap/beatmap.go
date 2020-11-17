@@ -38,10 +38,11 @@ type BeatMap struct {
 	HitObjects []objects.BaseObject
 	Pauses     []objects.BaseObject
 	Queue      []objects.BaseObject
+	Stars      float64
 }
 
 func NewBeatMap() *BeatMap {
-	beatMap := &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7, Diff: difficulty.NewDifficulty(5, 5, 5, 5)}
+	beatMap := &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7, Diff: difficulty.NewDifficulty(5, 5, 5, 5), Stars: -1}
 	//beatMap.Diff.SetMods(difficulty.Hidden)
 	return beatMap
 }
