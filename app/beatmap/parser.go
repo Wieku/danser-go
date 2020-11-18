@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"math"
 	"os"
@@ -166,6 +167,28 @@ func ParseBeatMap(beatMap *BeatMap) error {
 			if arr := tokenize(line, ","); len(arr) > 1 {
 				beatMap.ParsePoint(line)
 				counter++
+			}
+		case "HitObjects":
+			if arr := tokenize(line, ","); arr != nil {
+				var time string
+
+				objType, _ := strconv.ParseInt(arr[3], 10, 64)
+				if (objType & objects.CIRCLE) > 0 {
+					beatMap.Circles++
+					time = arr[2]
+				} else if (objType & objects.SPINNER) > 0 {
+					beatMap.Spinners++
+					time = arr[5]
+				} else if (objType & objects.SLIDER) > 0 {
+					beatMap.Sliders++
+					time = arr[2]
+				} else if (objType & objects.LONGNOTE) > 0 {
+					beatMap.Sliders++
+					time = strings.Split(arr[5], ":")[0]
+				}
+				timeI, _ := strconv.Atoi(time)
+
+				beatMap.Length = bmath.MaxI(beatMap.Length, timeI)
 			}
 		}
 	}

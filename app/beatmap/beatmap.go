@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -34,15 +35,31 @@ type BeatMap struct {
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 
+	Stars float64
+
+	Length   int
+	Circles  int
+	Sliders  int
+	Spinners int
+
+	MinBPM float64
+	MaxBPM float64
+
 	Timings    *objects.Timings
 	HitObjects []objects.BaseObject
 	Pauses     []objects.BaseObject
 	Queue      []objects.BaseObject
-	Stars      float64
 }
 
 func NewBeatMap() *BeatMap {
-	beatMap := &BeatMap{Timings: objects.NewTimings(), StackLeniency: 0.7, Diff: difficulty.NewDifficulty(5, 5, 5, 5), Stars: -1}
+	beatMap := &BeatMap{
+		Timings:       objects.NewTimings(),
+		StackLeniency: 0.7,
+		Diff:          difficulty.NewDifficulty(5, 5, 5, 5),
+		Stars:         -1,
+		MinBPM:        math.Inf(0),
+		MaxBPM:        0,
+	}
 	//beatMap.Diff.SetMods(difficulty.Hidden)
 	return beatMap
 }
@@ -88,6 +105,12 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 	line := strings.Split(point, ",")
 	pointTime, _ := strconv.ParseInt(line[0], 10, 64)
 	bpm, _ := strconv.ParseFloat(line[1], 64)
+
+	if !math.IsNaN(bpm) && bpm >= 0 {
+		rBPM := 60000 / bpm
+		beatMap.MinBPM = math.Min(beatMap.MinBPM, rBPM)
+		beatMap.MaxBPM = math.Max(beatMap.MaxBPM, rBPM)
+	}
 
 	if len(line) > 3 {
 		sampleset, _ := strconv.ParseInt(line[3], 10, 64)

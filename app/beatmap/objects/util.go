@@ -28,7 +28,8 @@ func GetObject(data []string) BaseObject {
 }
 
 const (
-	CIRCLE  int64 = 1
-	SLIDER  int64 = 2
-	SPINNER int64 = 8
+	CIRCLE   int64 = 1
+	SLIDER   int64 = 2
+	SPINNER  int64 = 8
+	LONGNOTE int64 = 128 //only for mania, used to have correct number of sliders in database just in case
 )
