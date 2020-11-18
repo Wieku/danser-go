@@ -197,6 +197,10 @@ func ParseBeatMapFile(file *os.File) *BeatMap {
 }
 
 func ParseTimingPointsAndPauses(beatMap *BeatMap) {
+	if len(beatMap.Timings.Points) > 0 {
+		return
+	}
+
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
 	defer file.Close()
 
