@@ -22,7 +22,7 @@ import (
 
 var dbFile *sql.DB
 
-const databaseVersion = 20201117
+const databaseVersion = 20201118
 
 var currentPreVersion = databaseVersion
 
@@ -39,7 +39,7 @@ func Init() {
 	}
 
 	_, err = dbFile.Exec(`
-		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1);
+		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1, bpmMin REAL, bpmMax REAL, circles INTEGER, sliders INTEGER, spinners INTEGER, endTime INTEGER);
 		CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
 		CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);
 	`)
@@ -97,6 +97,21 @@ func Init() {
 
 	if currentPreVersion < 20201117 {
 		_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN stars REAL DEFAULT -1;`)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if currentPreVersion < 20201118 {
+		_, err = dbFile.Exec(`
+			ALTER TABLE beatmaps ADD COLUMN bpmMin REAL DEFAULT 0;
+ 			ALTER TABLE beatmaps ADD COLUMN bpmMax REAL DEFAULT 0;
+  			ALTER TABLE beatmaps ADD COLUMN circles INTEGER DEFAULT 0;
+   			ALTER TABLE beatmaps ADD COLUMN sliders INTEGER DEFAULT 0;
+    		ALTER TABLE beatmaps ADD COLUMN spinners INTEGER DEFAULT 0;
+     		ALTER TABLE beatmaps ADD COLUMN endTime INTEGER DEFAULT 0;
+     	`)
+
 		if err != nil {
 			panic(err)
 		}
@@ -306,7 +321,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
 	}
 
-	if currentPreVersion < 20201112 {
+	if currentPreVersion < 20201118 {
 		log.Println("Updating cached beatmaps")
 
 		toUpdate := make([]*beatmap.BeatMap, 0)
@@ -371,6 +386,33 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 			}
 		}
 
+		if currentPreVersion < 20201118 {
+			st, err := tx.Prepare("UPDATE beatmaps SET bpmMin = ?, bpmMax = ?, circles = ?, sliders = ?, spinners = ?, endTime = ? WHERE dir = ? AND file = ?")
+			if err != nil {
+				panic(err)
+			}
+
+			for _, bMap := range toUpdate {
+				_, err1 := st.Exec(
+					bMap.MinBPM,
+					bMap.MaxBPM,
+					bMap.Circles,
+					bMap.Sliders,
+					bMap.Spinners,
+					bMap.Length,
+					bMap.Dir,
+					bMap.File)
+
+				if err1 != nil {
+					log.Println(err1)
+				}
+			}
+
+			if err = st.Close(); err != nil {
+				panic(err)
+			}
+		}
+
 		err = tx.Commit()
 		if err != nil {
 			panic(err)
@@ -414,7 +456,14 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 				&beatmap.LastPlayed,
 				&hp,
 				&od,
-				&beatmap.Stars)
+				&beatmap.Stars,
+				&beatmap.MinBPM,
+				&beatmap.MaxBPM,
+				&beatmap.Circles,
+				&beatmap.Sliders,
+				&beatmap.Spinners,
+				&beatmap.Length,
+			)
 
 			beatmap.Diff.SetCS(cs)
 			beatmap.Diff.SetAR(ar)
@@ -446,7 +495,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	if err == nil {
 		var st *sql.Stmt
-		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
 		if err == nil {
 			for _, bMap := range bMaps {
@@ -477,7 +526,14 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.LastPlayed,
 					bMap.Diff.GetHPDrain(),
 					bMap.Diff.GetOD(),
-					bMap.Stars)
+					bMap.Stars,
+					bMap.MinBPM,
+					bMap.MaxBPM,
+					bMap.Circles,
+					bMap.Sliders,
+					bMap.Spinners,
+					bMap.Length,
+				)
 
 				if err1 != nil {
 					log.Println(err1)
