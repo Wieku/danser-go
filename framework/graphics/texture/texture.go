@@ -80,6 +80,10 @@ func (store *textureStore) Bind(loc uint) {
 	gl.BindTexture(gl.TEXTURE_2D_ARRAY, store.id)
 }
 
+func (store *textureStore) Clear() {
+	gl.ClearTexImage(store.id, 0, store.format.Format(), store.format.Type(), gl.Ptr(nil))
+}
+
 func (store *textureStore) SetFiltering(min, mag Filter) {
 	store.min = min
 	store.mag = mag
