@@ -31,7 +31,7 @@ func NewPixMap(width, height int) *Pixmap {
 
 	size := width * height * 4
 
-	pixmap.arrPointer = C.stbi__malloc(C.size_t(size))
+	pixmap.arrPointer = C.calloc(C.size_t(size), C.size_t(1))
 	pixmap.Data = (*[1 << 30]uint8)(pixmap.arrPointer)[:size:size]
 
 	return pixmap
@@ -93,7 +93,7 @@ func NewPixmapFileString(path string) (*Pixmap, error) {
 func (pixmap *Pixmap) NRGBA() *image.NRGBA {
 	return &image.NRGBA{
 		Pix:    pixmap.Data,
-		Stride: 4,
+		Stride: 4 * pixmap.Width,
 		Rect:   image.Rect(0, 0, pixmap.Width, pixmap.Height),
 	}
 }
@@ -101,7 +101,7 @@ func (pixmap *Pixmap) NRGBA() *image.NRGBA {
 func (pixmap *Pixmap) RGBA() *image.RGBA {
 	return &image.RGBA{
 		Pix:    pixmap.Data,
-		Stride: 4,
+		Stride: 4 * pixmap.Width,
 		Rect:   image.Rect(0, 0, pixmap.Width, pixmap.Height),
 	}
 }
