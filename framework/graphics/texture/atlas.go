@@ -16,11 +16,12 @@ func (rect rectangle) area() int {
 }
 
 type TextureAtlas struct {
-	store       *textureStore
-	defRegion   TextureRegion
-	padding     int
-	subTextures map[string]*TextureRegion
-	emptySpaces map[int32][]rectangle
+	store         *textureStore
+	defRegion     TextureRegion
+	padding       int
+	subTextures   map[string]*TextureRegion
+	emptySpaces   map[int32][]rectangle
+	manualMipmaps bool
 }
 
 func NewTextureAtlas(size, mipmaps int) *TextureAtlas {
@@ -44,6 +45,8 @@ func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *Te
 	}
 
 	texture.store = newStore(layers, size, size, format, mipmaps)
+	texture.store.Clear()
+
 	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(size), int32(size), 0}
 	texture.padding = 1 << uint(texture.store.mipmaps)
 
@@ -99,7 +102,7 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 			gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(smallest.x), int32(smallest.y), layer, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
 
 			//TODO: generate sub textures with stbi
-			if texture.store.mipmaps > 1 {
+			if texture.store.mipmaps > 1 && !texture.manualMipmaps {
 				gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
 			}
 
@@ -128,25 +131,23 @@ func (texture *TextureAtlas) newLayer() {
 
 	layers := texture.store.layers + 1
 
-	var fbo uint32
-	gl.GenFramebuffers(1, &fbo)
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo)
-
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
+
 	dstStore.SetFiltering(texture.store.min, texture.store.mag)
 	dstStore.Bind(texture.store.binding)
 
-	for layer := int32(0); layer < layers-1; layer++ {
-		for level := int32(0); level < texture.store.mipmaps; level++ {
-			gl.FramebufferTextureLayer(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, texture.store.id, level, layer)
-
-			div := int32(1 << uint(level))
-			gl.CopyTexSubImage3D(gl.TEXTURE_2D_ARRAY, level, 0, 0, layer, 0, 0, texture.store.width/div, texture.store.height/div)
-		}
+	mMaps := texture.store.mipmaps
+	if texture.manualMipmaps {
+		mMaps = 1
 	}
 
-	gl.DeleteFramebuffers(1, &fbo)
-	texture.store.Dispose()
+	for level := int32(0); level < mMaps; level++ {
+		div := int32(1 << uint(level))
+		gl.CopyImageSubData(texture.store.id, gl.TEXTURE_2D_ARRAY, level, 0, 0, 0, dstStore.id, gl.TEXTURE_2D_ARRAY, level, 0, 0, 0, dstStore.width/div, dstStore.height/div, layers-1)
+	}
+
+	oldStore := texture.store
+	oldStore.Dispose()
 
 	texture.store = dstStore
 }
@@ -158,6 +159,12 @@ func (texture *TextureAtlas) SetData(x, y, width, height, layer int, data []uint
 
 	gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
 
+	if texture.store.mipmaps > 1 && !texture.manualMipmaps {
+		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
+	}
+}
+
+func (texture *TextureAtlas) GenerateMipmaps() {
 	if texture.store.mipmaps > 1 {
 		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
 	}
@@ -185,6 +192,10 @@ func (texture *TextureAtlas) GetLayers() int32 {
 
 func (texture *TextureAtlas) SetFiltering(min, mag Filter) {
 	texture.store.SetFiltering(min, mag)
+}
+
+func (texture *TextureAtlas) SetManualMipmapping(value bool) {
+	texture.manualMipmaps = value
 }
 
 func (texture *TextureAtlas) Bind(loc uint) {
