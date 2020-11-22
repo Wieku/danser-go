@@ -9,7 +9,6 @@ import (
 	font2 "golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 	"image"
-	"image/draw"
 	"io"
 	"io/ioutil"
 	"log"
@@ -27,8 +26,10 @@ func GetFont(name string) *Font {
 }
 
 type glyphData struct {
-	region                      *texture.TextureRegion
-	advance, bearingX, bearingY float64
+	region   *texture.TextureRegion
+	advance  float64
+	bearingX float64
+	bearingY float64
 }
 
 type Font struct {
@@ -43,7 +44,6 @@ type Font struct {
 
 func LoadFont(reader io.Reader) *Font {
 	data, err := ioutil.ReadAll(reader)
-
 	if err != nil {
 		panic("Error reading font: " + err.Error())
 	}
@@ -54,36 +54,38 @@ func LoadFont(reader io.Reader) *Font {
 	}
 
 	font := new(Font)
-	font.initialSize = 100.0
-	font.glyphs = make(map[rune]*glyphData) //, font.max-font.min+1)
+	font.initialSize = 64.0
+	font.glyphs = make(map[rune]*glyphData)
 	font.kernTable = make(map[rune]map[rune]float64)
-	font.atlas = texture.NewTextureAtlas(1024, 4)
 
-	font.atlas.Bind(20)
+	font.atlas = texture.NewTextureAtlas(1024, 4)
+	font.atlas.SetManualMipmapping(true)
 
 	fc := truetype.NewFace(ttf, &truetype.Options{Size: font.initialSize, DPI: 72, Hinting: font2.HintingFull})
+	defer fc.Close()
 
 	context := freetype.NewContext()
 	context.SetFont(ttf)
 	context.SetFontSize(font.initialSize)
 	context.SetDPI(72)
 	context.SetHinting(font2.HintingFull)
+	context.SetSrc(image.White)
 
 	for i := rune(0); i <= unicode.MaxRune; i++ {
 		if ttf.Index(i) > 0 {
 			gBnd, gAdv, ok := fc.GlyphBounds(i)
-			if ok != true {
+			if !ok {
 				continue
 			}
 
-			gh := int32((gBnd.Max.Y - gBnd.Min.Y) >> 6)
-			gw := int32((gBnd.Max.X - gBnd.Min.X) >> 6)
+			gw := int((gBnd.Max.X - gBnd.Min.X) >> 6)
+			gh := int((gBnd.Max.Y - gBnd.Min.Y) >> 6)
 
-			//if gylph has no diamensions set to a max value
+			//if gylph has no dimensions set to a max value
 			if gw == 0 || gh == 0 {
 				gBnd = ttf.Bounds(fixed.Int26_6(20))
-				gw = int32((gBnd.Max.X - gBnd.Min.X) >> 6)
-				gh = int32((gBnd.Max.Y - gBnd.Min.Y) >> 6)
+				gw = int((gBnd.Max.X - gBnd.Min.X) >> 6)
+				gh = int((gBnd.Max.Y - gBnd.Min.Y) >> 6)
 
 				//above can sometimes yield 0 for font smaller than 48pt, 1 is minimum
 				if gw == 0 || gh == 0 {
@@ -94,59 +96,51 @@ func LoadFont(reader io.Reader) *Font {
 
 			//The glyph's ascent and descent equal -bounds.Min.Y and +bounds.Max.Y.
 			gAscent := int(-gBnd.Min.Y) >> 6
-			//gdescent := int(gBnd.Max.Y) >> 6
 
-			fg, bg := image.White, image.Transparent
-			rect := image.Rect(0, 0, int(gw), int(gh))
-			rgba := image.NewNRGBA(rect)
-			draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+			pixmap := texture.NewPixMap(gw, gh)
 
-			context.SetClip(rect)
-			context.SetDst(rgba)
-			context.SetSrc(fg)
+			context.SetClip(image.Rect(0, 0, gw, gh))
+			context.SetDst(pixmap.NRGBA())
 
-			px := 0 - (int(gBnd.Min.X) >> 6)
-			py := (gAscent)
+			px := -(int(gBnd.Min.X) >> 6)
+			py := gAscent
 			pt := freetype.Pt(px, py)
 
 			// Draw the text from mask to image
 			_, err = context.DrawString(string(i), pt)
 			if err != nil {
-				log.Println(err)
+				log.Println(string(i), err)
 				continue
 			}
 
-			//res := font.toSDF(rgba)
+			region := font.atlas.AddTexture(string(i), pixmap.Width, pixmap.Height, pixmap.Data)
 
-			newPix := make([]uint8, len(rgba.Pix))
-			height := rgba.Bounds().Dy()
+			region.V1, region.V2 = region.V2, region.V1
 
-			for i := 0; i < height; i++ {
-				copy(newPix[i*rgba.Stride:(i+1)*rgba.Stride], rgba.Pix[(height-1-i)*rgba.Stride:(height-i)*rgba.Stride])
-			}
-
-			region := font.atlas.AddTexture(string(i), rgba.Bounds().Dx(), rgba.Bounds().Dy(), newPix)
+			pixmap.Dispose()
 
 			//set w,h and adv, bearing V and bearing H in char
 			advance := float64(gAdv) / 64
-			/*font.biggest = math.Max(font.biggest, float64(advance))*/
 			bearingV := float64(gBnd.Max.Y) / 64
 			bearingH := float64(gBnd.Min.X) / 64
+
 			font.glyphs[i] = &glyphData{region, advance, bearingH, bearingV}
 		}
 	}
 
-	for i := range font.glyphs {
-		for j := range font.glyphs {
-			if font.kernTable[i] == nil {
-				font.kernTable[i] = make(map[rune]float64)
-			}
+	font.atlas.GenerateMipmaps()
 
-			font.kernTable[i][j] = float64(fc.Kern(i, j)) / 64
+	for i := range font.glyphs {
+		font.kernTable[i] = make(map[rune]float64)
+
+		for j := range font.glyphs {
+			if krn := fc.Kern(i, j); krn != 0 {
+				font.kernTable[i][j] = float64(krn) / 64
+			}
 		}
 	}
 
-	font.biggest = font.glyphs['9'].advance
+	font.biggest = font.glyphs['5'].advance
 
 	fonts[ttf.Name(truetype.NameIDFontFullName)] = font
 
