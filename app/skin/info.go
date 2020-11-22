@@ -43,7 +43,9 @@ type SkinInfo struct {
 	SliderTrackOverride *color.Color
 	SliderBall          *color.Color
 
-	InputOverlayText color.Color
+	SongSelectInactiveText color.Color
+	SongSelectActiveText   color.Color
+	InputOverlayText       color.Color
 
 	//hit circle font settings
 	HitCirclePrefix             string
@@ -79,6 +81,8 @@ func newDefaultInfo() *SkinInfo {
 		SliderBallFlip:              false,
 		SliderBorder:                color.NewL(1),
 		SliderTrackOverride:         nil,
+		SongSelectInactiveText:      color.NewL(1),
+		SongSelectActiveText:        color.NewL(0),
 		InputOverlayText:            color.NewL(1),
 		HitCirclePrefix:             "default",
 		HitCircleOverlap:            -2,
@@ -223,6 +227,10 @@ func LoadInfo(path string) (*SkinInfo, error) {
 		case "SliderBall":
 			col := ParseColor(tokenized[1], tokenized[0])
 			info.SliderBall = &col
+		case "SongSelectInactiveText":
+			info.SongSelectInactiveText = ParseColor(tokenized[1], tokenized[0])
+		case "SongSelectActiveText":
+			info.SongSelectActiveText = ParseColor(tokenized[1], tokenized[0])
 		case "InputOverlayText":
 			info.InputOverlayText = ParseColor(tokenized[1], tokenized[0])
 		case "HitCirclePrefix":
