@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/EdlinOrg/prominentcolor"
+	"github.com/faiface/mainthread"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
@@ -35,6 +36,7 @@ type Background struct {
 	blurVal        float64
 	blurredTexture texture.Texture
 	scaling        scaling.Scaling
+	forceRedraw    bool
 }
 
 func NewBackground() *Background {
@@ -59,20 +61,26 @@ func NewBackground() *Background {
 }
 
 func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool) {
-	image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
-	if err != nil {
-		image, err = assets.GetPixmap("assets/textures/background-1.png")
+	go func() {
+		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 		if err != nil {
-			panic(err)
+			image, err = assets.GetPixmap("assets/textures/background-1.png")
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
 
-	bg.triangles.SetColors(bg.getColors(image))
+		bg.triangles.SetColors(bg.getColors(image))
 
-	if image != nil {
-		bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
-		image.Dispose()
-	}
+		if image != nil {
+			mainthread.CallNonBlock(func() {
+				bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
+				image.Dispose()
+
+				bg.forceRedraw = true
+			})
+		}
+	}()
 
 	if loadStoryboards {
 		bg.storyboard = storyboard.NewStoryboard(beatMap)
@@ -129,9 +137,12 @@ func (bg *Background) Draw(time int64, batch *batch.QuadBatch, blurVal, bgAlpha 
 	if bgAlpha < 0.01 {
 		return
 	}
+
 	batch.Begin()
 
-	needsRedraw := bg.storyboard != nil || !settings.Playfield.Background.Blur.Enabled || (settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur)
+	needsRedraw := bg.forceRedraw || bg.storyboard != nil || !settings.Playfield.Background.Blur.Enabled || (settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur)
+
+	bg.forceRedraw = false
 
 	if math.Abs(bg.blurVal-blurVal) > 0.001 {
 		needsRedraw = true
