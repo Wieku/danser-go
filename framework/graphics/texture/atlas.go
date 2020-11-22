@@ -39,6 +39,7 @@ func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *Te
 
 	var siz int32
 	gl.GetIntegerv(gl.MAX_TEXTURE_SIZE, &siz)
+
 	if int(siz) < size {
 		log.Printf("WARNING: GPU supports only %dx%d textures\n", siz, siz)
 		size = int(siz)
@@ -59,8 +60,6 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 	if len(data) != width*height*texture.store.format.Size() {
 		panic("Wrong number of pixels given!")
 	}
-
-	texture.Bind(texture.store.binding)
 
 	if int(texture.GetWidth()) <= width || int(texture.GetHeight()) <= height {
 		log.Printf("Texture is too big! Atlas size: %dx%d, texture size: %dx%d", texture.GetWidth(), texture.GetHeight(), width, height)
@@ -99,11 +98,11 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 			texture.emptySpaces[layer][spaceIndex] = rect1
 			texture.emptySpaces[layer] = append(texture.emptySpaces[layer], rect2)
 
-			gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(smallest.x), int32(smallest.y), layer, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+			gl.TextureSubImage3D(texture.store.id, 0, int32(smallest.x), int32(smallest.y), layer, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
 
 			//TODO: generate sub textures with stbi
 			if texture.store.mipmaps > 1 && !texture.manualMipmaps {
-				gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
+				gl.GenerateTextureMipmap(texture.store.id)
 			}
 
 			region := TextureRegion{Texture: texture, Width: int32(width), Height: int32(height), Layer: layer}
@@ -132,13 +131,11 @@ func (texture *TextureAtlas) newLayer() {
 	layers := texture.store.layers + 1
 
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
-
 	dstStore.SetFiltering(texture.store.min, texture.store.mag)
-	dstStore.Bind(texture.store.binding)
 
-	mMaps := texture.store.mipmaps
-	if texture.manualMipmaps {
-		mMaps = 1
+	mMaps := int32(1)
+	if !texture.manualMipmaps {
+		mMaps = texture.store.mipmaps
 	}
 
 	for level := int32(0); level < mMaps; level++ {
@@ -146,8 +143,7 @@ func (texture *TextureAtlas) newLayer() {
 		gl.CopyImageSubData(texture.store.id, gl.TEXTURE_2D_ARRAY, level, 0, 0, 0, dstStore.id, gl.TEXTURE_2D_ARRAY, level, 0, 0, 0, dstStore.width/div, dstStore.height/div, layers-1)
 	}
 
-	oldStore := texture.store
-	oldStore.Dispose()
+	texture.store.Dispose()
 
 	texture.store = dstStore
 }
@@ -157,16 +153,16 @@ func (texture *TextureAtlas) SetData(x, y, width, height, layer int, data []uint
 		panic("Wrong number of pixels given!")
 	}
 
-	gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+	gl.TextureSubImage3D(texture.store.id, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
 
 	if texture.store.mipmaps > 1 && !texture.manualMipmaps {
-		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
+		gl.GenerateTextureMipmap(texture.store.id)
 	}
 }
 
 func (texture *TextureAtlas) GenerateMipmaps() {
 	if texture.store.mipmaps > 1 {
-		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
+		gl.GenerateTextureMipmap(texture.store.id)
 	}
 }
 

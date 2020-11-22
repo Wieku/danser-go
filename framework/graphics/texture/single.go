@@ -37,10 +37,10 @@ func (texture *TextureSingle) SetData(x, y, width, height int, data []uint8) {
 		panic("Wrong number of pixels given!")
 	}
 
-	gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+	gl.TextureSubImage3D(texture.store.id, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
 
 	if texture.store.mipmaps > 1 {
-		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
+		gl.GenerateTextureMipmap(texture.store.id)
 	}
 }
 

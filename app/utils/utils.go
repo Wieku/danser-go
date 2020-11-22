@@ -30,7 +30,6 @@ func LoadTexture(path string) (*texture.TextureSingle, error) {
 		defer img.Dispose()
 
 		tex := texture.NewTextureSingle(img.Width, img.Height, 0)
-		tex.Bind(0)
 		tex.SetData(0, 0, img.Width, img.Height, img.Data)
 
 		return tex, nil

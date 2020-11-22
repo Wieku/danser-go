@@ -35,9 +35,6 @@ var defaultCache = make(map[string]*texture.TextureRegion)
 
 var sourceCache = make(map[*texture.TextureRegion]Source)
 
-//dead-locking single textures to not get swept by GC
-var singleTextures = make(map[string]*texture.TextureSingle)
-
 var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
@@ -297,12 +294,9 @@ func loadTexture(name string) *texture.TextureRegion {
 			// If texture is too big load it separately
 			if rg == nil {
 				tx := texture.NewTextureSingle(image.Width, image.Height, 0)
-				tx.Bind(0)
 				tx.SetData(0, 0, image.Width, image.Height, image.Data)
+
 				reg := tx.GetRegion()
-
-				singleTextures[name] = tx
-
 				rg = &reg
 
 				log.Println("SkinManager: Texture uploaded as single texture:", name)
