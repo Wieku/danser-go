@@ -20,11 +20,9 @@ func NewIndexBufferObject(maxIndices int) *IndexBufferObject {
 	ibo := new(IndexBufferObject)
 	ibo.capacity = maxIndices
 
-	gl.GenBuffers(1, &ibo.handle)
+	gl.CreateBuffers(1, &ibo.handle)
 
-	ibo.Bind()
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, maxIndices*2, gl.Ptr(nil), gl.DYNAMIC_DRAW)
-	ibo.Unbind()
+	gl.NamedBufferData(ibo.handle, maxIndices*2, gl.Ptr(nil), gl.DYNAMIC_DRAW)
 
 	runtime.SetFinalizer(ibo, (*IndexBufferObject).Dispose)
 
@@ -40,9 +38,11 @@ func (ibo *IndexBufferObject) SetData(offset int, data []uint16) {
 		return
 	}
 
-	ibo.check(offset, len(data), "Data")
+	if offset+len(data) > ibo.capacity {
+		panic(fmt.Sprintf("Data exceeds IBO's capacity. Data length: %d, offset: %d, capacity: %d", len(data), offset, ibo.capacity))
+	}
 
-	gl.BufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset, len(data)*2, gl.Ptr(data))
+	gl.NamedBufferSubData(ibo.handle, offset, len(data)*2, gl.Ptr(data))
 }
 
 func (ibo *IndexBufferObject) Draw() {
