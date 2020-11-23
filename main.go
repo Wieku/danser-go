@@ -22,6 +22,7 @@ import (
 	"github.com/wieku/danser-go/framework/frame"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/blend"
+	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -52,6 +53,9 @@ var pressedP = false
 func run() {
 	var win *glfw.Window
 	var limiter *frame.Limiter
+	var screenFBO *buffer.Framebuffer
+	var lastSamples int
+	var lastVSync bool
 
 	mainthread.Call(func() {
 
@@ -153,8 +157,6 @@ func run() {
 			if beatMap == nil {
 				log.Println("Beatmap not found, closing...")
 				closeAfterSettingsLoad = true
-			} else {
-				discord.Connect()
 			}
 		}
 
@@ -166,7 +168,7 @@ func run() {
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 		glfw.WindowHint(glfw.Resizable, glfw.False)
-		glfw.WindowHint(glfw.Samples, int(settings.Graphics.MSAA))
+		glfw.WindowHint(glfw.Samples, 0)
 
 		var err error
 
@@ -181,6 +183,10 @@ func run() {
 		if closeAfterSettingsLoad {
 			os.Exit(0)
 		}
+
+		lastSamples = int(settings.Graphics.MSAA)
+
+		discord.Connect()
 
 		if settings.Graphics.Fullscreen {
 			glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
@@ -282,12 +288,9 @@ func run() {
 
 		batch.End()
 		win.SwapBuffers()
-		glfw.PollEvents()
 
-		glfw.SwapInterval(0)
-		if settings.Graphics.VSync {
-			glfw.SwapInterval(1)
-		}
+		glfw.SwapInterval(1)
+		lastVSync = true
 
 		bass.Init()
 		audio.LoadSamples()
@@ -301,17 +304,43 @@ func run() {
 
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
+			if lastVSync != settings.Graphics.VSync {
+				if settings.Graphics.VSync {
+					glfw.SwapInterval(1)
+				} else {
+					glfw.SwapInterval(0)
+				}
+
+				lastVSync = settings.Graphics.VSync
+			}
+
 			statistic.Reset()
 			glfw.PollEvents()
-
-			if settings.Graphics.MSAA > 0 {
-				gl.Enable(gl.MULTISAMPLE)
-			}
 
 			gl.Enable(gl.SCISSOR_TEST)
 			gl.Disable(gl.DITHER)
 
+			blend.Enable()
+			blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
+
 			viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+
+			if screenFBO == nil ||
+				lastSamples != int(settings.Graphics.MSAA) ||
+				screenFBO.GetWidth() != int(settings.Graphics.GetWidth()) ||
+				screenFBO.GetHeight() != int(settings.Graphics.GetHeight()) {
+				if screenFBO != nil {
+					screenFBO.Dispose()
+				}
+
+				screenFBO = buffer.NewFrameMultisampleScreen(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, int(settings.Graphics.MSAA))
+
+				lastSamples = int(settings.Graphics.MSAA)
+			}
+
+			if lastSamples > 0 {
+				screenFBO.Bind()
+			}
 
 			gl.ClearColor(0, 0, 0, 1)
 			gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -363,6 +392,10 @@ func run() {
 
 			if win.GetKey(glfw.KeyEqual) == glfw.Release {
 				pressedP = false
+			}
+
+			if lastSamples > 0 {
+				screenFBO.Unbind()
 			}
 
 			win.SwapBuffers()
