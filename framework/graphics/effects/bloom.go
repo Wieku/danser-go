@@ -58,9 +58,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 		-1, 1, 0, 0, 1,
 	})
 
-	effect.vao.Bind()
 	effect.vao.Attach(effect.filterShader)
-	effect.vao.Unbind()
 
 	effect.fbo = buffer.NewFrame(width, height, true, false)
 

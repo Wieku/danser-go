@@ -60,7 +60,7 @@ func NewQuadBatchSize(maxSprites int) *QuadBatch {
 		panic(err)
 	}
 
-	rShader := shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+	rShader := shader.NewRShader(shader.NewSource(vert, shader.Vertex), shader.NewSource(frag, shader.Fragment))
 
 	vao := buffer.NewVertexArrayObject()
 
@@ -89,19 +89,13 @@ func NewQuadBatchSize(maxSprites int) *QuadBatch {
 		{Name: "in_msdf", Type: attribute.Float},
 	})
 
-	vao.Bind()
 	vao.Attach(rShader)
-	vao.Unbind()
 
 	ibo := buffer.NewIndexBufferObject(6)
-
-	ibo.Bind()
 
 	ibo.SetData(0, []uint16{
 		0, 1, 2, 2, 3, 0,
 	})
-
-	ibo.Unbind()
 
 	vertexSize := vao.GetVBOFormat("quads").Size() / 4
 
@@ -164,7 +158,6 @@ func (batch *QuadBatch) Flush() {
 
 	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
 
-	//batch.vao.SetData("quads", 0, batch.data[:batch.currentFloats])
 	batch.vao.UnmapVBO("quads", 0, batch.currentFloats)
 
 	batch.ibo.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)

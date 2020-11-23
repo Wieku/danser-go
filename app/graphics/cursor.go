@@ -139,9 +139,7 @@ func NewCursor() *Cursor {
 		},
 	)
 
-	vao.Bind()
 	vao.Attach(cursorShader)
-	vao.Unbind()
 
 	cursor := &Cursor{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3)}
 	cursor.scale = animation.NewGlider(1.0)

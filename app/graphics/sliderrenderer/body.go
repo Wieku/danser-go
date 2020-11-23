@@ -91,7 +91,6 @@ func (body *Body) setupPoints(curve *curves.MultiCurve) {
 }
 
 func (body *Body) setupVAO() {
-
 	body.vao = buffer.NewVertexArrayObject()
 
 	unitCircle := createUnitCircle(int(settings.Objects.Sliders.Quality.CircleLevelOfDetail))
@@ -115,9 +114,7 @@ func (body *Body) setupVAO() {
 
 	body.vao.SetData("points", 0, points)
 
-	body.vao.Bind()
 	body.vao.Attach(sliderShader)
-	body.vao.Unbind()
 }
 
 func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {

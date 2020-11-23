@@ -55,9 +55,7 @@ func NewBlurEffect(width, height int) *BlurEffect {
 		-1, 1, 0, 0, 1,
 	})
 
-	effect.vao.Bind()
 	effect.vao.Attach(effect.blurShader)
-	effect.vao.Unbind()
 
 	effect.fbo1 = buffer.NewFrame(width, height, true, false)
 	effect.fbo2 = buffer.NewFrame(width, height, true, false)
