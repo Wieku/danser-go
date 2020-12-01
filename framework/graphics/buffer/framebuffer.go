@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"github.com/wieku/danser-go/framework/graphics/history"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
 
@@ -179,4 +180,30 @@ func (f *Framebuffer) GetWidth() int {
 
 func (f *Framebuffer) GetHeight() int {
 	return f.height
+}
+
+func (f *Framebuffer) ClearColor(r, g, b, a float32) {
+	col := []float32{r, g, b, a}
+	gl.ClearNamedFramebufferfv(f.handle, gl.COLOR, 0, &col[0])
+}
+
+func (f *Framebuffer) ClearColorI(index int, r, g, b, a float32) {
+	col := []float32{r, g, b, a}
+	gl.ClearNamedFramebufferfv(f.handle, gl.COLOR, int32(index), &col[0])
+}
+
+func (f *Framebuffer) ClearColorM(color color2.Color) {
+	gl.ClearNamedFramebufferfv(f.handle, gl.COLOR, 0, &color.ToArray()[0])
+}
+
+func (f *Framebuffer) ClearColorIM(index int, color color2.Color) {
+	gl.ClearNamedFramebufferfv(f.handle, gl.COLOR, int32(index), &color.ToArray()[0])
+}
+
+func (f *Framebuffer) ClearDepthV(v float32) {
+	gl.ClearNamedFramebufferfv(f.handle, gl.DEPTH, 0, &v)
+}
+
+func (f *Framebuffer) ClearDepth() {
+	f.ClearDepthV(1)
 }

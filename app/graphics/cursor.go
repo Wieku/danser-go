@@ -1,7 +1,6 @@
 package graphics
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/camera"
@@ -306,8 +305,7 @@ func BeginCursorRender() {
 
 	if useAdditive {
 		cursorSpaceFbo.Bind()
-		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		cursorSpaceFbo.ClearColor(0.0, 0.0, 0.0, 0.0)
 	}
 
 	blend.Push()
@@ -336,8 +334,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.
 
 	if useAdditive {
 		cursorFbo.Bind()
-		gl.ClearColor(0.0, 0.0, 0.0, 0.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		cursorFbo.ClearColor(0.0, 0.0, 0.0, 0.0)
 	}
 
 	siz := settings.Cursor.CursorSize * cursor.scale.GetValue()

@@ -353,19 +353,6 @@ func run() {
 				win.SetShouldClose(true)
 			}
 
-			if win.GetKey(glfw.KeyF2) == glfw.Press {
-
-				if !pressed {
-					utils.MakeScreenshot(*win)
-				}
-
-				pressed = true
-			}
-
-			if win.GetKey(glfw.KeyF2) == glfw.Release {
-				pressed = false
-			}
-
 			if win.GetKey(glfw.KeyMinus) == glfw.Press {
 
 				if !pressedM {
@@ -396,6 +383,19 @@ func run() {
 
 			if lastSamples > 0 {
 				screenFBO.Unbind()
+			}
+
+			if win.GetKey(glfw.KeyF2) == glfw.Press {
+
+				if !pressed {
+					utils.MakeScreenshot(*win)
+				}
+
+				pressed = true
+			}
+
+			if win.GetKey(glfw.KeyF2) == glfw.Release {
+				pressed = false
 			}
 
 			win.SwapBuffers()

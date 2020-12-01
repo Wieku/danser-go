@@ -104,8 +104,7 @@ func kernelSize(sigma float32) int {
 
 func (effect *BlurEffect) Begin() {
 	effect.fbo1.Bind()
-	gl.ClearColor(0, 0, 0, 1)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	effect.fbo1.ClearColor(0, 0, 0, 1)
 	gl.Viewport(0, 0, int32(effect.fbo1.Texture().GetWidth()), int32(effect.fbo1.Texture().GetHeight()))
 }
 
@@ -122,8 +121,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.vao.Bind()
 
 	effect.fbo2.Bind()
-	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	effect.fbo2.ClearColor(0, 0, 0, 0)
 
 	effect.fbo1.Texture().Bind(0)
 
@@ -132,8 +130,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo2.Unbind()
 
 	effect.fbo1.Bind()
-	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	effect.fbo1.ClearColor(0, 0, 0, 0)
 
 	effect.fbo2.Texture().Bind(0)
 

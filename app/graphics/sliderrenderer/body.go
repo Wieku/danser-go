@@ -149,7 +149,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	gl.DepthMask(true)
 	gl.DepthFunc(gl.LESS)
 
-	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	body.framebuffer.ClearDepth()
 
 	sliderShader.Bind()
 
