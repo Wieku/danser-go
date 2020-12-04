@@ -18,7 +18,7 @@ import (
 type cursorRenderer interface {
 	Update(delta float64, position vector.Vector2f)
 	UpdateRenderer()
-	DrawM(scale float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color)
+	DrawM(scale, expand float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color)
 }
 
 var cursorFbo *buffer.Framebuffer = nil
@@ -70,6 +70,8 @@ type Cursor struct {
 
 	Name string
 
+	lastSetting bool
+
 	renderer cursorRenderer
 }
 
@@ -80,7 +82,14 @@ func NewCursor() *Cursor {
 
 	cursor := &Cursor{Position: vector.NewVec2f(100, 100)}
 	cursor.scale = animation.NewGlider(1.0)
-	cursor.renderer = newDanserRenderer()
+
+	cursor.lastSetting = settings.Skin.UseSkinCursor
+
+	if cursor.lastSetting {
+		cursor.renderer = newOsuRenderer()
+	} else {
+		cursor.renderer = newDanserRenderer()
+	}
 
 	return cursor
 }
@@ -127,7 +136,7 @@ func (cursor *Cursor) Update(delta float64) {
 	leftState := cursor.LeftKey || cursor.LeftMouse
 	rightState := cursor.RightKey || cursor.RightMouse
 	if cursor.lastLeftState != leftState || cursor.lastRightState != rightState {
-		if (leftState || rightState) && settings.Cursor.CursorExpand {
+		if leftState || rightState {
 			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, 1.0, 1.3)
 		} else {
 			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, cursor.scale.GetValue(), 1.0)
@@ -143,11 +152,22 @@ func (cursor *Cursor) Update(delta float64) {
 }
 
 func (cursor *Cursor) UpdateRenderer() {
+	newSettings := settings.Skin.UseSkinCursor
+
+	if newSettings != cursor.lastSetting {
+		cursor.lastSetting = newSettings
+		if cursor.lastSetting {
+			cursor.renderer = newOsuRenderer()
+		} else {
+			cursor.renderer = newDanserRenderer()
+		}
+	}
+
 	cursor.renderer.UpdateRenderer()
 }
 
 func BeginCursorRender() {
-	useAdditive = settings.Cursor.AdditiveBlending && (settings.PLAYERS > 1 || settings.DIVIDES > 1 || settings.TAG > 1)
+	useAdditive = settings.Cursor.AdditiveBlending && (settings.PLAYERS > 1 || settings.DIVIDES > 1 || settings.TAG > 1) && !settings.Skin.UseSkinCursor
 
 	if useAdditive {
 		cursorSpaceFbo.Bind()
@@ -181,7 +201,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.
 		cursorFbo.ClearColor(0.0, 0.0, 0.0, 0.0)
 	}
 
-	cursor.renderer.DrawM(scale*cursor.scale.GetValue(), batch, color, colorGlow)
+	cursor.renderer.DrawM(scale, cursor.scale.GetValue(), batch, color, colorGlow)
 
 	if useAdditive {
 		cursorFbo.Unbind()

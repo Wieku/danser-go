@@ -199,7 +199,11 @@ func (cursor *danserRenderer) UpdateRenderer() {
 	cursor.mutex.Unlock()
 }
 
-func (cursor *danserRenderer) DrawM(scale float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
+func (cursor *danserRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
+	if settings.Cursor.CursorExpand {
+		scale *= expand
+	}
+
 	hueShift := color.GetHue()
 
 	siz := settings.Cursor.CursorSize * scale
