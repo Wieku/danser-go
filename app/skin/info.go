@@ -30,8 +30,9 @@ type SkinInfo struct {
 
 	//skipping combo bursts
 
-	//skipping cursor settings for now
-	//renderer for old cursor trails may come in the future
+	CursorCentre bool
+	CursorExpand bool
+	CursorRotate bool
 
 	ComboColors []color.Color
 
@@ -71,6 +72,9 @@ func newDefaultInfo() *SkinInfo {
 		SpinnerNoBlink:           false,
 		SpinnerFrequencyModulate: true,
 		LayeredHitSounds:         true,
+		CursorCentre:             true,
+		CursorExpand:             true,
+		CursorRotate:             true,
 		ComboColors: []color.Color{
 			color.NewIRGB(255, 192, 0),
 			color.NewIRGB(0, 202, 0),
@@ -209,6 +213,12 @@ func LoadInfo(path string) (*SkinInfo, error) {
 			info.SpinnerFrequencyModulate = tokenized[1] == "1"
 		case "LayeredHitSounds":
 			info.LayeredHitSounds = tokenized[1] == "1"
+		case "CursorCentre":
+			info.CursorCentre = tokenized[1] == "1"
+		case "CursorExpand":
+			info.CursorExpand = tokenized[1] == "1"
+		case "CursorRotate":
+			info.CursorRotate = tokenized[1] == "1"
 		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
 			index, _ := strconv.ParseInt(strings.TrimPrefix(tokenized[0], "Combo"), 10, 64)
 			colorsI = append(colorsI, colorI{
