@@ -83,7 +83,7 @@ func NewCursor() *Cursor {
 	cursor := &Cursor{Position: vector.NewVec2f(100, 100)}
 	cursor.scale = animation.NewGlider(1.0)
 
-	cursor.lastSetting = settings.Skin.UseSkinCursor
+	cursor.lastSetting = settings.Skin.Cursor.UseSkinCursor
 
 	if cursor.lastSetting {
 		cursor.renderer = newOsuRenderer()
@@ -152,7 +152,7 @@ func (cursor *Cursor) Update(delta float64) {
 }
 
 func (cursor *Cursor) UpdateRenderer() {
-	newSettings := settings.Skin.UseSkinCursor
+	newSettings := settings.Skin.Cursor.UseSkinCursor
 
 	if newSettings != cursor.lastSetting {
 		cursor.lastSetting = newSettings
@@ -167,7 +167,7 @@ func (cursor *Cursor) UpdateRenderer() {
 }
 
 func BeginCursorRender() {
-	useAdditive = settings.Cursor.AdditiveBlending && (settings.PLAYERS > 1 || settings.DIVIDES > 1 || settings.TAG > 1) && !settings.Skin.UseSkinCursor
+	useAdditive = settings.Cursor.AdditiveBlending && (settings.PLAYERS > 1 || settings.DIVIDES > 1 || settings.TAG > 1) && !settings.Skin.Cursor.UseSkinCursor
 
 	if useAdditive {
 		cursorSpaceFbo.Bind()

@@ -149,7 +149,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 
 	cursor.Position = position
 
-	if cursor.middle == nil {
+	if cursor.middle.Textures[0] == nil && !settings.Skin.Cursor.ForceLongTrail {
 		cursor.VaoPos = cursor.Position
 		cursor.RendPos = cursor.Position
 
@@ -169,10 +169,11 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 		return
 	}
 
-	lengthAdjusted := int(settings.Cursor.TrailMaxLength)
+	lengthAdjusted := int(settings.Skin.Cursor.LongTrailLength)
 
+	fadeTime := 3.0 * (1.0 + float64(settings.Skin.Cursor.LongTrailLength-2048)/4096)
+	distance := float32(cursor.trail.Width) / 2.5 * scaling * float32(settings.Skin.Cursor.Scale)
 	points := cursor.Position.Dst(cursor.LastPos)
-	distance := float32(cursor.trail.Width) / 2.5 * scaling
 
 	if int(points/distance) > 0 {
 		temp := cursor.LastPos
@@ -180,9 +181,9 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 			temp = cursor.Position.Sub(cursor.LastPos).Scl(i / points).Add(cursor.LastPos)
 
 			cursor.Points = append(cursor.Points, temp)
-			cursor.PointsC = append(cursor.PointsC, cursor.clock+3)
-
+			cursor.PointsC = append(cursor.PointsC, cursor.clock+fadeTime)
 		}
+
 		dirtyLocal = true
 		cursor.LastPos = temp
 	}
@@ -200,6 +201,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 		if len(cursor.Points) > lengthAdjusted {
 			cursor.Points = cursor.Points[len(cursor.Points)-lengthAdjusted:]
 			cursor.PointsC = cursor.PointsC[len(cursor.PointsC)-lengthAdjusted:]
+
 			dirtyLocal = true
 		} else if times > 0 {
 			times = bmath.MinI(times, len(cursor.Points))
@@ -229,28 +231,33 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 
 		cursor.vaoDirty = true
 	}
+
 	cursor.VaoPos = cursor.Position
 	cursor.mutex.Unlock()
 }
 
 func (cursor *osuRenderer) UpdateRenderer() {
 	cursor.mutex.Lock()
+
 	if cursor.vaoDirty {
 		cursor.vao.Resize("points", cursor.maxCap)
 		cursor.vao.SetData("points", 0, cursor.vertices[0:cursor.vaoSize*3])
 		cursor.instances = cursor.vaoSize
 		cursor.vaoDirty = false
 	}
+
 	cursor.RendPos = cursor.VaoPos
+
 	cursor.mutex.Unlock()
 }
 
 func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
+	scale *= settings.Skin.Cursor.Scale
 	if skin.GetInfo().CursorExpand {
 		scale *= expand
 	}
 
-	if cursor.middle.Textures[0] != nil && cursor.middle.Textures[0].Texture != nil {
+	if settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Textures[0] != nil && cursor.middle.Textures[0].Texture != nil) {
 		osuShader.Bind()
 
 		osuShader.SetUniform("tex", int32(cursor.trail.Texture.GetLocation()))

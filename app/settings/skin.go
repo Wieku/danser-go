@@ -6,12 +6,25 @@ func initSkin() *skin {
 	return &skin{
 		CurrentSkin:       "default",
 		UseColorsFromSkin: false,
-		UseSkinCursor:     false,
+		Cursor: &skinCursor{
+			UseSkinCursor:   false,
+			Scale:           1.0,
+			ForceLongTrail:  false,
+			LongTrailLength: 2048,
+		},
 	}
 }
 
 type skin struct {
 	CurrentSkin       string
 	UseColorsFromSkin bool
-	UseSkinCursor     bool
+
+	Cursor *skinCursor
+}
+
+type skinCursor struct {
+	UseSkinCursor   bool
+	Scale           float64
+	ForceLongTrail  bool
+	LongTrailLength int64
 }
