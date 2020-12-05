@@ -37,6 +37,9 @@ func initDance() *dance {
 		},
 		Momentum: &momentum{
 			SkipStackAngles: false,
+			StreamRestrict:  true,
+			StreamMult:      1.0,
+			StreamAngle:     90,
 			RestrictAngle:   80,
 			DistanceMult:    0.666,
 			DistanceMultEnd: 0.666,
@@ -88,6 +91,9 @@ type spline struct {
 
 type momentum struct {
 	SkipStackAngles bool
+	StreamRestrict  bool
+	StreamMult      float64
+	StreamAngle     float64
 	RestrictAngle   float64
 	DistanceMult    float64
 	DistanceMultEnd float64

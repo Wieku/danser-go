@@ -35,12 +35,33 @@ func same(o1 objects.BaseObject, o2 objects.BaseObject) bool {
 	return d1.StartPos == d2.StartPos || (settings.Dance.Momentum.SkipStackAngles && d1.StartPos.Sub(d2.StackOffset) == d2.StartPos.Sub(d2.StackOffset))
 }
 
+func anorm(a float32) float32 {
+	pi2 := 2 * math32.Pi
+	a = math32.Mod(a, pi2)
+	if a < 0 { a += pi2 }
+	return a
+}
+
+func anorm2(a float32) float32 {
+	a = anorm(a)
+	if a > math32.Pi { a = -(2 * math32.Pi - a) }
+	return a
+}
+
 func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
 	i := 0
 	if bm.first { i = 1 }
 
 	end := objs[i+0]
 	start := objs[i+1]
+	hasNext := false
+	var next *objects.Circle
+	if len(objs) > 2 {
+		if v, ok := objs[i+2].(*objects.Circle); ok {
+			hasNext = true
+			next = v
+		}   
+	}
 
 	endPos := end.GetBasicData().EndPos
 	startPos := start.GetBasicData().StartPos
@@ -51,7 +72,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
 	fromSlider := false
 	for i++; i < len(objs); i++ {
 		o := objs[i]
-		if s, ok := o.(*objects.Slider); ok {
+		if s, ok := o.(*objects.Slider); ok && !s.IsRetarded() {
 			a2 = s.GetStartAngle()
 			fromSlider = true
 			break
@@ -66,8 +87,26 @@ func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
 		}
 	}
 
+	s, ok1 := end.(*objects.Slider)
+	if ok1 { ok1 = !s.IsRetarded() }
+
+	// stream detection logic stolen from spline mover
+	stream := false
+	ms := settings.Dance.Momentum
+	if hasNext && !fromSlider && ms.StreamRestrict {
+		min := float32(25.0)
+		max := float32(6000.0)
+		nextPos := next.GetBasicData().StartPos
+		sq1 := endPos.DstSq(startPos)
+		sq2 := startPos.DstSq(nextPos)
+
+		if sq1 >= min && sq2 >= min && sq1 <= max && sq2 <= max {
+			stream = true
+		}
+	}
+
 	var a1 float32
-	if s, ok := end.(*objects.Slider); ok {
+	if ok1 {
 		a1 = s.GetEndAngle()
 	} else if bm.first {
 		a1 = a2 + math.Pi
@@ -75,18 +114,32 @@ func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
 		a1 = endPos.AngleRV(bm.last)
 	}
 
-	a := startPos.AngleRV(endPos)
-	offset := float32(settings.Dance.Momentum.RestrictAngle * math.Pi / 180.0)
-	if !fromSlider && math32.Abs(a2 - a) < offset {
-		if a2 - a < offset {
+	a := endPos.AngleRV(startPos)
+	offset := float32(ms.RestrictAngle * math.Pi / 180.0)
+	sangle := float32(ms.StreamAngle * math.Pi / 180.0)
+
+	multend := ms.DistanceMult
+	multstart := ms.DistanceMultEnd
+
+	if stream && math32.Abs(anorm(a2 - startPos.AngleRV(endPos))) < anorm((2 * math32.Pi) - offset) {
+		if anorm(a1 - a) > math32.Pi {
+			a2 = a - sangle
+		} else {
+			a2 = a + sangle
+		}
+		multend = ms.StreamMult
+		multstart = ms.StreamMult
+	} else if !fromSlider && math32.Abs(anorm2(a2 - startPos.AngleRV(endPos))) < offset {
+		a = startPos.AngleRV(endPos)
+		if anorm(a2 - a) < offset {
 			a2 = a - offset
 		} else {
 			a2 = a + offset
 		}
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst * float32(settings.Dance.Momentum.DistanceMult)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst * float32(settings.Dance.Momentum.DistanceMultEnd)).Add(startPos)
+	p1 := vector.NewVec2fRad(a1, dst * float32(multend)).Add(endPos)
+	p2 := vector.NewVec2fRad(a2, dst * float32(multstart)).Add(startPos)
 
 	if !same(end, start) {
 		bm.last = p2
