@@ -305,7 +305,7 @@ func (slider *Slider) UpdatePost(_ int64) bool {
 	for _, player := range slider.players {
 		state := slider.state[player]
 
-		if !state.isHit {
+		if !state.isHit || !state.isStartHit {
 			numFinishedTotal++
 		}
 	}
