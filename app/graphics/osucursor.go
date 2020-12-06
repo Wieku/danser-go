@@ -266,6 +266,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 		osuShader.SetUniform("layer", float32(cursor.trail.Layer))
 		osuShader.SetUniform("proj", batch.Projection)
 		osuShader.SetUniform("clock", float32(cursor.clock))
+		osuShader.SetUniform("alpha", color.A)
 
 		cursor.vao.Bind()
 
