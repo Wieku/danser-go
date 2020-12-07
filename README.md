@@ -48,7 +48,7 @@ danser***.exe <arguments>
 #### Prerequisites
 
 * [64-bit go (1.15 at least)](https://golang.org/dl/)
-* gcc (Linux/Unix), [mingw-w64](http://mingw-w64.org/) (Windows)
+* gcc (Linux/Unix), [mingw-w64](http://mingw-w64.org/) (Windows, TDM-GCC won't work)
 * OpenGL library (shipped with drivers)
 * xorg-dev (Linux)
 
