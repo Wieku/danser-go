@@ -12,6 +12,8 @@ danser-go is a visualiser for osu! maps written in Go.
 
 Application is in dev phase so only few things work. But if you want to test it, you should follow steps at the end of this readme.
 
+**WARNING**: Because of poor OpenGL support by MacOS, danser-go won't run on that platform. Please use Windows/Linux on dualboot.
+
 ## Dance examples
 * [REOL - YoiYoi Kokon [Yoi] - Dance comparison](https://youtu.be/QZ6-MaWWyA8)
 * [Omoi - Chiisana Koi no Uta (Synth Rock Cover) [Kroytz's EX EX] - TAG2 Mirror Collage](https://youtu.be/Vo0Pbpu113Y)
@@ -24,7 +26,7 @@ Application is in dev phase so only few things work. But if you want to test it,
 ## How to download it
 
 ### Executables
-You can download Windows/Linux/MacOS 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
+You can download Windows/Linux 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
 ### Project
 You need to clone it or download as zip (and unpack it to desired directory)
@@ -46,7 +48,7 @@ danser***.exe <arguments>
 #### Prerequisites
 
 * [64-bit go (1.15 at least)](https://golang.org/dl/)
-* gcc (Linux/MacOS), [mingw-w64](http://mingw-w64.org/) (Windows)
+* gcc (Linux/Unix), [mingw-w64](http://mingw-w64.org/) (Windows)
 * OpenGL library (shipped with drivers)
 * xorg-dev (Linux)
 
@@ -99,7 +101,7 @@ Examples which should give the same result:
 <executable> -md5=59f3708114c73b2334ad18f31ef49046 -tag=2
 ```
 
-About settings or knockout usage, look at wiki.
+If you want to know more about settings or knockout usage, look at [wiki](https://github.com/Wieku/danser-go/wiki).
 
 ## Credits
 
