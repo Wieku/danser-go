@@ -78,12 +78,12 @@ func SaveToFile() {
 
 	log.Println("Events added, starting encoding...")
 
-	err := os.Mkdir("video", 0655)
-	if err != nil {
+	err := os.Mkdir("videos", 0655)
+	if !os.IsExist(err) {
 		panic(err)
 	}
 
-	C.BASS_Encode_Start(mixStream, C.CString("video/audio.wav"), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
+	C.BASS_Encode_Start(mixStream, C.CString("videos/audio.wav"), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
 
 	// TODO: test if buffer length affects latency
 	buffer := make([]byte, 512)
