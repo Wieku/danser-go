@@ -15,6 +15,6 @@ fi
 
 go run tools/assets/assets.go ./
 go build -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -o danser-$exec.exe -v -x
-go run tools/pack/pack.go danser-$exec-win.zip danser-$exec.exe bass.dll bass_fx.dll assets.dpak libwinpthread-1.dll
+go run tools/pack/pack.go danser-$exec-win.zip danser-$exec.exe bass.dll bass_fx.dll bassenc.dll bassmix.dll assets.dpak libwinpthread-1.dll
 rm -f danser-$exec.exe
 rm -f assets.dpak
