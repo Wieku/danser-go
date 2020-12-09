@@ -15,6 +15,7 @@ func initKnockout() *knockout {
 		BubbleMinimumCombo: 200,
 		RevivePlayersAtEnd: false,
 		LiveSort:           true,
+		SortBy:             "Score",
 		MinCursorSize:      3.0,
 		MaxCursorSize:      7.0,
 		AddDanser:          false,
@@ -53,6 +54,8 @@ type knockout struct {
 
 	// Whether scores should be sorted in real time
 	LiveSort bool
+
+	SortBy string
 
 	//Minimum cursor size (when all players are alive)
 	MinCursorSize float64

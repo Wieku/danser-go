@@ -41,6 +41,7 @@ type knockoutPlayer struct {
 	pp        float64
 	score     int64
 	scores    []int64
+	pps       []float64
 	displayHp float64
 
 	lastHit  osu.HitResult
@@ -123,7 +124,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(settings.Graphics.GetHeightF() * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 	}
@@ -151,6 +152,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		player.scores[number] = score
 
 		player.pp = pp
+		player.pps[number] = pp
 
 		player.scoreDisp.Reset()
 		player.scoreDisp.AddEvent(float64(time), float64(time+500), float64(score))
@@ -213,8 +215,18 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 		}
 
 		if settings.Knockout.LiveSort {
+			cond := strings.ToLower(settings.Knockout.SortBy)
+
 			sort.SliceStable(overlay.playersArray, func(i, j int) bool {
-				return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && overlay.playersArray[i].score > overlay.playersArray[j].score) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number])))
+				mainCond := true
+				switch cond {
+				case "pp":
+					mainCond = overlay.playersArray[i].pps[number] > overlay.playersArray[j].pps[number]
+				default:
+					mainCond = overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number]
+				}
+
+				return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && mainCond) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && mainCond)))
 			})
 			for i, g := range overlay.playersArray {
 				if i != g.currentIndex {
