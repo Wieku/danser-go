@@ -152,17 +152,23 @@ func (f *Framebuffer) Bind() {
 
 // Unbind unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
 func (f *Framebuffer) Unbind() {
-	if f.multisampled {
-		gl.NamedFramebufferReadBuffer(f.handle, gl.COLOR_ATTACHMENT0)
+	handle := history.Pop(gl.FRAMEBUFFER_BINDING)
 
-		if f.helperHandle > 0 {
-			gl.NamedFramebufferDrawBuffer(f.helperHandle, gl.COLOR_ATTACHMENT0)
+	if f.multisampled {
+		hHandle := f.helperHandle
+		if hHandle == 0 {
+			hHandle = handle
 		}
 
-		gl.BlitNamedFramebuffer(f.handle, f.helperHandle, 0, 0, int32(f.width), int32(f.height), 0, 0, int32(f.width), int32(f.height), gl.COLOR_BUFFER_BIT, gl.LINEAR)
+		gl.NamedFramebufferReadBuffer(f.handle, gl.COLOR_ATTACHMENT0)
+
+		if hHandle > 0 {
+			gl.NamedFramebufferDrawBuffer(hHandle, gl.COLOR_ATTACHMENT0)
+		}
+
+		gl.BlitNamedFramebuffer(f.handle, hHandle, 0, 0, int32(f.width), int32(f.height), 0, 0, int32(f.width), int32(f.height), gl.COLOR_BUFFER_BIT, gl.LINEAR)
 	}
 
-	handle := history.Pop(gl.FRAMEBUFFER_BINDING)
 	if handle != 0 {
 		statistic.Increment(statistic.FBOBinds)
 	}
