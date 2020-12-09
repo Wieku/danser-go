@@ -109,8 +109,8 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 	}
 }
 
-var whistleChannel bass.SubSample = 0
-var slideChannel bass.SubSample = 0
+var whistleChannel *bass.SubSample = nil
+var slideChannel *bass.SubSample = nil
 var lastSampleSet = 0
 var lastAdditionSet = 0
 var lastIndex = 0
@@ -120,16 +120,22 @@ func PlaySliderLoops(sampleSet, additionSet, hitsound, index int, volume float64
 		additionSet = sampleSet
 	}
 
-	whistleUpdate := lastAdditionSet != additionSet || index != lastIndex || whistleChannel == 0
-	slideUpdate := lastSampleSet != sampleSet || index != lastIndex || slideChannel == 0
+	whistleUpdate := lastAdditionSet != additionSet || index != lastIndex || whistleChannel == nil
+	slideUpdate := lastSampleSet != sampleSet || index != lastIndex || slideChannel == nil
 
 	if hitsound&2 > 0 && whistleUpdate {
-		bass.StopSample(whistleChannel)
+		if whistleChannel != nil {
+			bass.StopSample(whistleChannel)
+		}
+
 		whistleChannel = playSampleLoop(additionSet, 6, index, volume, objNum, xPos)
 	}
 
 	if (hitsound&2 == 0 || skin.GetInfo().LayeredHitSounds) && slideUpdate {
-		bass.StopSample(slideChannel)
+		if slideChannel != nil {
+			bass.StopSample(slideChannel)
+		}
+
 		slideChannel = playSampleLoop(sampleSet, 5, index, volume, objNum, xPos)
 	}
 
@@ -143,14 +149,19 @@ func StopSliderLoops() {
 	lastAdditionSet = 0
 	lastIndex = 0
 
-	bass.StopSample(whistleChannel)
-	bass.StopSample(slideChannel)
+	if whistleChannel != nil {
+		bass.StopSample(whistleChannel)
+	}
 
-	whistleChannel = 0
-	slideChannel = 0
+	if slideChannel != nil {
+		bass.StopSample(slideChannel)
+	}
+
+	whistleChannel = nil
+	slideChannel = nil
 }
 
-func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) bass.SubSample {
+func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) *bass.SubSample {
 	balance := 0.0
 	if settings.DIVIDES == 1 {
 		balance = (xPos - 256) / 512 * settings.Audio.HitsoundPositionMultiplier
