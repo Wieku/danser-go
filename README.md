@@ -84,6 +84,7 @@ Then type:
 * `-skip` - fade right into map's drain time
 * `-scrub=20.5` - start the map at the given time (in seconds)
 * `-knockout` - knockout mode
+* `-record` - Record danser straight to mp4 file. Needs global accessible [ffmpeg](https://ffmpeg.org/download.html) installation.
 
 Since danser 0.4.0b full names for artist, title, difficulty and creator arguments don't have to be strict with `.osu` file. 
 
