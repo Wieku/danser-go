@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"flag"
+	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -11,6 +12,7 @@ import (
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
+	"github.com/wieku/danser-go/app/ffmpeg"
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
@@ -29,6 +31,7 @@ import (
 	"image"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -45,17 +48,20 @@ const (
 	shorthand      = " (shorthand)"
 )
 
-var player *states.Player
+var player states.State
 var pressed = false
 var pressedM = false
 var pressedP = false
 
+var batch *batch2.QuadBatch
+
+var win *glfw.Window
+var limiter *frame.Limiter
+var screenFBO *buffer.Framebuffer
+var lastSamples int
+var lastVSync bool
+
 func run() {
-	var win *glfw.Window
-	var limiter *frame.Limiter
-	var screenFBO *buffer.Framebuffer
-	var lastSamples int
-	var lastVSync bool
 
 	mainthread.Call(func() {
 
@@ -87,6 +93,7 @@ func run() {
 		scrub := flag.Float64("scrub", 0, "Start at the given time in seconds")
 
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
+		record := flag.Bool("record", false, "Records a video")
 
 		flag.Parse()
 
@@ -106,6 +113,11 @@ func run() {
 		settings.PITCH = *pitch
 		settings.SKIP = *skip
 		settings.SCRUB = *scrub
+		settings.RECORD = *record
+
+		if settings.RECORD {
+			bass.Offscreen = true
+		}
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
@@ -186,7 +198,11 @@ func run() {
 
 		lastSamples = int(settings.Graphics.MSAA)
 
-		discord.Connect()
+		if settings.RECORD {
+			glfw.WindowHint(glfw.Visible, glfw.False)
+		} else {
+			discord.Connect()
+		}
 
 		if settings.Graphics.Fullscreen {
 			glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
@@ -269,9 +285,13 @@ func run() {
 
 		gl.Enable(gl.BLEND)
 		gl.ClearColor(0, 0, 0, 1)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		batch := batch2.NewQuadBatch()
+		file, _ := assets.Open("assets/fonts/Exo2-Bold.ttf")
+		font.LoadFont(file)
+		file.Close()
+
+		batch = batch2.NewQuadBatch()
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
 		camera := camera2.NewCamera()
@@ -280,11 +300,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		file, _ := assets.Open("assets/fonts/Exo2-Bold.ttf")
-		font := font.LoadFont(file)
-		file.Close()
-
-		font.Draw(batch, 0, 10, 32, "Loading...")
+		font.GetFont("Exo 2 Bold").Draw(batch, 0, 10, 32, "Loading...")
 
 		batch.End()
 		win.SwapBuffers()
@@ -302,112 +318,192 @@ func run() {
 		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
 
-	for !win.ShouldClose() {
+	count := 0
+
+	if settings.RECORD {
+		fps := float64(settings.Recording.FPS)
+
+		//HACK: some in-app variables depend on these settings so we force them here
+		settings.Graphics.VSync = false
+		settings.Graphics.ShowFPS = false
+		settings.DEBUG = false
+		settings.Graphics.Fullscreen = false
+		settings.Graphics.WindowWidth = int64(settings.Recording.FrameWidth)
+		settings.Graphics.WindowHeight = int64(settings.Recording.FrameHeight)
+
+		w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
+
+		var fbo *buffer.Framebuffer
+
 		mainthread.Call(func() {
-			if lastVSync != settings.Graphics.VSync {
-				if settings.Graphics.VSync {
-					glfw.SwapInterval(1)
-				} else {
-					glfw.SwapInterval(0)
-				}
-
-				lastVSync = settings.Graphics.VSync
-			}
-
-			statistic.Reset()
-			glfw.PollEvents()
-
-			gl.Enable(gl.SCISSOR_TEST)
-			gl.Disable(gl.DITHER)
-
-			blend.Enable()
-			blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
-
-			viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-
-			if screenFBO == nil ||
-				lastSamples != int(settings.Graphics.MSAA) ||
-				screenFBO.GetWidth() != int(settings.Graphics.GetWidth()) ||
-				screenFBO.GetHeight() != int(settings.Graphics.GetHeight()) {
-				if screenFBO != nil {
-					screenFBO.Dispose()
-				}
-
-				screenFBO = buffer.NewFrameMultisampleScreen(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, int(settings.Graphics.MSAA))
-
-				lastSamples = int(settings.Graphics.MSAA)
-			}
-
-			if lastSamples > 0 {
-				screenFBO.Bind()
-			}
-
-			gl.ClearColor(0, 0, 0, 1)
-			gl.Clear(gl.COLOR_BUFFER_BIT)
-
-			if player != nil {
-				player.Draw(0)
-			}
-
-			if win.GetKey(glfw.KeyEscape) == glfw.Press {
-				win.SetShouldClose(true)
-			}
-
-			if win.GetKey(glfw.KeyMinus) == glfw.Press {
-
-				if !pressedM {
-					if settings.DIVIDES > 1 {
-						settings.DIVIDES -= 1
-					}
-				}
-
-				pressedM = true
-			}
-
-			if win.GetKey(glfw.KeyMinus) == glfw.Release {
-				pressedM = false
-			}
-
-			if win.GetKey(glfw.KeyEqual) == glfw.Press {
-
-				if !pressedP {
-					settings.DIVIDES += 1
-				}
-
-				pressedP = true
-			}
-
-			if win.GetKey(glfw.KeyEqual) == glfw.Release {
-				pressedP = false
-			}
-
-			if lastSamples > 0 {
-				screenFBO.Unbind()
-			}
-
-			if win.GetKey(glfw.KeyF2) == glfw.Press {
-
-				if !pressed {
-					utils.MakeScreenshot(*win)
-				}
-
-				pressed = true
-			}
-
-			if win.GetKey(glfw.KeyF2) == glfw.Release {
-				pressed = false
-			}
-
-			win.SwapBuffers()
-
-			if !settings.Graphics.VSync {
-				limiter.Sync()
-			}
-
-			blend.ClearStack()
-			viewport.ClearStack()
+			fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 		})
+
+		ffmpeg.StartFFmpeg(int(fps), w, h)
+
+		updateFPS := math.Max(fps, 1000)
+		updateDelta := 1000 / updateFPS
+		fpsDelta := 1000 / fps
+
+		deltaSumF := 0.0
+
+		p, _ := player.(*states.Player)
+
+		maxFrames := int(p.RunningTime / 1000 * fps)
+
+		var lastProgress, progress int
+
+		for !p.Update(updateDelta) {
+			deltaSumF += updateDelta
+			if deltaSumF >= fpsDelta {
+				mainthread.Call(func() {
+					fbo.Bind()
+
+					viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+					pushFrame()
+
+					ffmpeg.MakeFrame()
+
+					fbo.Unbind()
+
+					count++
+
+					progress = int(float64(count) / float64(maxFrames) * 100)
+
+					if progress%5 == 0 && lastProgress != progress {
+						fmt.Println()
+						log.Println(fmt.Sprintf("Progress: %d%%", progress))
+						lastProgress = progress
+					}
+				})
+
+				mainthread.Call(func() {
+					ffmpeg.CheckData()
+				})
+
+				deltaSumF -= fpsDelta
+			}
+		}
+
+		mainthread.Call(func() {
+			ffmpeg.StopFFmpeg()
+		})
+
+		bass.SaveToFile()
+		ffmpeg.Combine()
+	} else {
+		for !win.ShouldClose() {
+			mainthread.Call(func() {
+				if lastVSync != settings.Graphics.VSync {
+					if settings.Graphics.VSync {
+						glfw.SwapInterval(1)
+					} else {
+						glfw.SwapInterval(0)
+					}
+
+					lastVSync = settings.Graphics.VSync
+				}
+
+				pushFrame()
+
+				if win.GetKey(glfw.KeyF2) == glfw.Press {
+
+					if !pressed {
+						utils.MakeScreenshot(*win)
+					}
+
+					pressed = true
+				}
+
+				if win.GetKey(glfw.KeyF2) == glfw.Release {
+					pressed = false
+				}
+
+				if win.GetKey(glfw.KeyEscape) == glfw.Press {
+					win.SetShouldClose(true)
+				}
+
+				if win.GetKey(glfw.KeyMinus) == glfw.Press {
+
+					if !pressedM {
+						if settings.DIVIDES > 1 {
+							settings.DIVIDES -= 1
+						}
+					}
+
+					pressedM = true
+				}
+
+				if win.GetKey(glfw.KeyMinus) == glfw.Release {
+					pressedM = false
+				}
+
+				if win.GetKey(glfw.KeyEqual) == glfw.Press {
+
+					if !pressedP {
+						settings.DIVIDES += 1
+					}
+
+					pressedP = true
+				}
+
+				if win.GetKey(glfw.KeyEqual) == glfw.Release {
+					pressedP = false
+				}
+
+				win.SwapBuffers()
+
+				if !settings.Graphics.VSync {
+					limiter.Sync()
+				}
+
+			})
+		}
 	}
+}
+
+func pushFrame() {
+	statistic.Reset()
+	glfw.PollEvents()
+
+	gl.Enable(gl.SCISSOR_TEST)
+	gl.Disable(gl.DITHER)
+
+	blend.Enable()
+	blend.SetFunction(blend.One, blend.OneMinusSrcAlpha)
+
+	viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+
+	if screenFBO == nil ||
+		lastSamples != int(settings.Graphics.MSAA) ||
+		screenFBO.GetWidth() != int(settings.Graphics.GetWidth()) ||
+		screenFBO.GetHeight() != int(settings.Graphics.GetHeight()) {
+		if screenFBO != nil {
+			screenFBO.Dispose()
+		}
+
+		screenFBO = buffer.NewFrameMultisampleScreen(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, int(settings.Graphics.MSAA))
+
+		lastSamples = int(settings.Graphics.MSAA)
+	}
+
+	if lastSamples > 0 {
+		screenFBO.Bind()
+	}
+
+	gl.ClearColor(0, 0, 0, 1)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+
+	if player != nil {
+		player.Draw(0)
+	}
+
+	if lastSamples > 0 {
+		screenFBO.Unbind()
+	}
+
+	blend.ClearStack()
+	viewport.ClearStack()
 }
 
 func setWorkingDirectory() {

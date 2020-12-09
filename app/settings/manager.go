@@ -21,6 +21,7 @@ func initStorage() {
 		Playfield: Playfield,
 		Dance:     Dance,
 		Knockout:  Knockout,
+		Recording: Recording,
 	}
 }
 
@@ -75,4 +76,8 @@ func saveSettings(path string, source interface{}) {
 	if err := file.Close(); err != nil {
 		panic(err)
 	}
+}
+
+func GetFormat() *fileformat {
+	return fileStorage
 }

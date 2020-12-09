@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
+	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/containers"
@@ -99,6 +100,11 @@ type Player struct {
 	updateLimiter *frame.Limiter
 
 	objectContainer *containers.HitObjectContainer
+
+	MapEnd      float64
+	RunningTime float64
+
+	secDelta float64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -252,6 +258,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.volumeGlider.AddEvent(tmE, tmE+settings.Playfield.FadeOutTime*1000, 0.0)
 
+	player.MapEnd = tmE + fadeOut
+
 	player.epiGlider = animation.NewGlider(0)
 
 	if settings.Playfield.SeizureWarning.Enabled {
@@ -264,6 +272,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	startOffset -= settings.Playfield.LeadInTime * 1000
 
 	player.progressMsF = startOffset
+
+	player.RunningTime = player.MapEnd - startOffset
 
 	player.unfold = animation.NewGlider(1)
 
@@ -309,6 +319,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.updateLimiter = frame.NewLimiter(player.baseLimit)
 
+	if settings.RECORD {
+		return player
+	}
+
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -326,7 +340,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		var lastT = qpc.GetNanoTime()
 
-		for {
+		for !input.Win.ShouldClose() {
 			currtime := qpc.GetNanoTime()
 
 			player.profilerU.PutSample(float64(currtime-lastT) / 1000000.0)
@@ -337,119 +351,162 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
 			}
 
-			if player.progressMsF >= player.startPoint && !player.start {
-				musicPlayer.Play()
-				musicPlayer.SetTempo(settings.SPEED)
-				musicPlayer.SetPitch(settings.PITCH)
-
-				if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
-					ov.SetMusic(musicPlayer)
-				}
-
-				musicPlayer.SetPosition(player.startPoint / 1000)
-
-				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
-
-				if player.overlay == nil {
-					discord.UpdateDance(settings.TAG, settings.DIVIDES)
-				}
-
-				player.start = true
-			}
-
-			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
-				if _, ok := player.controller.(*dance.GenericController); ok {
-					player.bMap.Update(int64(player.progressMsF))
-				}
-
-				player.objectContainer.Update(player.progressMsF)
-			}
-
-			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
-				player.controller.Update(int64(player.progressMsF), float64(currtime-lastT)/1000000)
-			}
-
-			if player.overlay != nil {
-				player.overlay.Update(int64(player.progressMsF))
-			}
-
-			bTime := player.bMap.Timings.Current.BaseBpm
-
-			if bTime != player.lastBeatLength {
-				player.lastBeatLength = bTime
-				player.lastBeatStart = float64(player.bMap.Timings.Current.Time)
-				player.lastBeatProg = int64((player.progressMsF-player.lastBeatStart)/player.lastBeatLength) - 1
-			}
-
-			if int64(float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength) > player.lastBeatProg {
-				player.lastBeatProg++
-			}
-
-			player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
-			player.visualiser.Update(player.progressMsF)
-
-			var offset vector.Vector2d
-
-			for _, c := range player.controller.GetCursors() {
-				offset = offset.Add(player.camera.Project(c.Position.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF())))
-			}
-
-			offset = offset.Scl(1 / float64(len(player.controller.GetCursors())))
-
-			player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
-
-			player.epiGlider.Update(player.progressMsF)
-			player.dimGlider.Update(player.progressMsF)
-			player.blurGlider.Update(player.progressMsF)
-			player.fxGlider.Update(player.progressMsF)
-			player.cursorGlider.Update(player.progressMsF)
-			player.playersGlider.Update(player.progressMsF)
-			player.hudGlider.Update(player.progressMsF)
-			player.unfold.Update(player.progressMsF)
-
-			player.volumeGlider.Update(player.progressMsF)
-			player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
+			player.updateMain(float64(currtime-lastT) / 1000000.0)
 
 			lastT = currtime
 
 			player.updateLimiter.Sync()
 		}
+
+		musicPlayer.Stop()
+		bass.StopLoops()
 	}()
 
 	go func() {
 		for {
-			musicPlayer.Update()
+			player.updateMusic(16.6666666666667)
 
-			target := bmath.ClampF64(musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
-
-			ratio1 := 15 / 16.6666666666667
-
-			player.vol = player.musicPlayer.GetLevelCombined()
-			player.volAverage = player.volAverage*0.9 + player.vol*0.1
-
-			vprog := 1 - ((player.vol - player.volAverage) / 0.5)
-			pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+player.beatProgress*0.5)))
-
-			ratio := math.Pow(0.5, ratio1)
-
-			player.progress = player.lastProgress*ratio + (pV)*(1-ratio)
-			player.lastProgress = player.progress
-
-			if settings.Audio.BeatUseTimingPoints {
-				player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
-			} else {
-				if player.Scl < target {
-					player.Scl += (target - player.Scl) * 30 / 100
-				} else if player.Scl > target {
-					player.Scl -= (player.Scl - target) * 15 / 100
-				}
-			}
-
-			time.Sleep(15 * time.Millisecond)
+			time.Sleep(16 * time.Millisecond)
 		}
 	}()
 
 	return player
+}
+
+func (player *Player) Update(delta float64) bool {
+	player.progressMsF += delta * settings.SPEED
+	bass.GlobalTimeMs += delta * settings.SPEED
+
+	player.secDelta += delta
+	if player.secDelta >= 16.6667 {
+		player.musicPlayer.Update()
+
+		player.updateMusic(16.6666666666667)
+
+		player.secDelta -= 16.6667
+	}
+
+	if player.progressMsF > player.startPoint && settings.RECORD {
+		player.musicPlayer.SetPositionF(player.progressMsF / 1000)
+	}
+
+	player.updateMain(delta)
+
+	if player.progressMsF >= player.MapEnd {
+		player.musicPlayer.Stop()
+		bass.StopLoops()
+
+		return true
+	}
+
+	return false
+}
+
+func (player *Player) updateMain(delta float64) {
+	if player.progressMsF >= player.startPoint && !player.start {
+		player.musicPlayer.Play()
+
+		player.musicPlayer.SetTempo(settings.SPEED)
+		player.musicPlayer.SetPitch(settings.PITCH)
+
+		if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+			ov.SetMusic(player.musicPlayer)
+		}
+
+		player.musicPlayer.SetPosition(player.startPoint / 1000)
+
+		discord.SetDuration(int64((player.musicPlayer.GetLength() - player.musicPlayer.GetPosition()) * 1000 / settings.SPEED))
+
+		if player.overlay == nil {
+			discord.UpdateDance(settings.TAG, settings.DIVIDES)
+		}
+
+		player.start = true
+	}
+
+	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
+		if _, ok := player.controller.(*dance.GenericController); ok {
+			player.bMap.Update(int64(player.progressMsF))
+		}
+
+		player.objectContainer.Update(player.progressMsF)
+	}
+
+	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
+		player.controller.Update(int64(player.progressMsF), delta)
+	}
+
+	if player.overlay != nil {
+		player.overlay.Update(int64(player.progressMsF))
+	}
+
+	bTime := player.bMap.Timings.Current.BaseBpm
+
+	if bTime != player.lastBeatLength {
+		player.lastBeatLength = bTime
+		player.lastBeatStart = float64(player.bMap.Timings.Current.Time)
+		player.lastBeatProg = int64((player.progressMsF-player.lastBeatStart)/player.lastBeatLength) - 1
+	}
+
+	if int64(float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength) > player.lastBeatProg {
+		player.lastBeatProg++
+	}
+
+	player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
+	player.visualiser.Update(player.progressMsF)
+
+	var offset vector.Vector2d
+
+	for _, c := range player.controller.GetCursors() {
+		offset = offset.Add(player.camera.Project(c.Position.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF())))
+	}
+
+	offset = offset.Scl(1 / float64(len(player.controller.GetCursors())))
+
+	player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
+
+	player.epiGlider.Update(player.progressMsF)
+	player.dimGlider.Update(player.progressMsF)
+	player.blurGlider.Update(player.progressMsF)
+	player.fxGlider.Update(player.progressMsF)
+	player.cursorGlider.Update(player.progressMsF)
+	player.playersGlider.Update(player.progressMsF)
+	player.hudGlider.Update(player.progressMsF)
+	player.unfold.Update(player.progressMsF)
+
+	player.volumeGlider.Update(player.progressMsF)
+	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+		player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
+	}
+}
+
+func (player *Player) updateMusic(delta float64) {
+	player.musicPlayer.Update()
+
+	target := bmath.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
+
+	ratio1 := delta / 16.6666666666667
+
+	player.vol = player.musicPlayer.GetLevelCombined()
+	player.volAverage = player.volAverage*0.9 + player.vol*0.1
+
+	vprog := 1 - ((player.vol - player.volAverage) / 0.5)
+	pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+player.beatProgress*0.5)))
+
+	ratio := math.Pow(0.5, ratio1)
+
+	player.progress = player.lastProgress*ratio + (pV)*(1-ratio)
+	player.lastProgress = player.progress
+
+	if settings.Audio.BeatUseTimingPoints {
+		player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
+	} else {
+		if player.Scl < target {
+			player.Scl += (target - player.Scl) * 30 / 100
+		} else if player.Scl > target {
+			player.Scl -= (player.Scl - target) * 15 / 100
+		}
+	}
 }
 
 func (player *Player) Show() {
@@ -472,7 +529,7 @@ func (player *Player) Draw(float64) {
 		player.background.GetStoryboard().SetFPS(bmath.ClampI(int(fps*1.2), player.baseLimit, 10000))
 	}
 
-	if fps > 58 && timMs > 18 {
+	if fps > 58 && timMs > 18 && !settings.RECORD {
 		log.Println(fmt.Sprintf("Slow frame detected! Frame time: %.3fms | Av. frame time: %.3fms", timMs, 1000.0/fps))
 	}
 
