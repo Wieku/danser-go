@@ -37,7 +37,7 @@ type Spinner struct {
 	rpm      float64
 
 	spinnerbonus *bass.Sample
-	loopSample   bass.SubSample
+	loopSample   *bass.SubSample
 	completion   float64
 
 	newStyle     bool
@@ -335,7 +335,7 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 
 	spinner.completion = completion
 
-	if skin.GetInfo().SpinnerFrequencyModulate {
+	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
 		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*completion)))
 	}
 
@@ -361,17 +361,22 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 }
 
 func (spinner *Spinner) StartSpinSample() {
-	if spinner.loopSample == 0 {
+	if spinner.loopSample == nil {
 		spinner.loopSample = audio.LoadSample("spinnerspin").PlayLoop()
 	} else {
 		bass.PlaySample(spinner.loopSample)
 	}
 
-	bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
+	if skin.GetInfo().SpinnerFrequencyModulate {
+		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
+	}
 }
 
 func (spinner *Spinner) StopSpinSample() {
-	bass.PauseSample(spinner.loopSample)
+	if spinner.loopSample != nil {
+		bass.StopSample(spinner.loopSample)
+		spinner.loopSample = nil
+	}
 }
 
 func (spinner *Spinner) Clear() {
