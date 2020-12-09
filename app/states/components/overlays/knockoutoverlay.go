@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -104,6 +105,9 @@ type KnockoutOverlay struct {
 	lastObj   int64
 
 	boundaries *common.Boundaries
+
+	Button        *texture.TextureRegion
+	ButtonClicked *texture.TextureRegion
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -248,6 +252,9 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	})
 
 	overlay.boundaries = common.NewBoundaries()
+
+	overlay.Button = skin.GetTexture("knockout-button")
+	overlay.ButtonClicked = skin.GetTexture("knockout-button-active")
 
 	return overlay
 }
@@ -404,9 +411,11 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		for j := 0; j < 2; j++ {
 			batch.SetSubScale(scl*0.8/2, scl*0.8/2)
 			batch.SetTranslation(vector.NewVec2d((float64(j)+0.5)*scl /*rowPosY*/, rowBaseY))
-			batch.DrawUnit(*graphics.OvButtonE)
+
 			if controller.GetClick(rep.oldIndex, j) || controller.GetClick(rep.oldIndex, j+2) {
-				batch.DrawUnit(*graphics.OvButton)
+				batch.DrawUnit(*overlay.ButtonClicked)
+			} else {
+				batch.DrawUnit(*overlay.Button)
 			}
 		}
 
