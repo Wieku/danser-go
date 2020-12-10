@@ -186,6 +186,7 @@ func MakeFrame() {
 	gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
 	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, pbo.handle)
 
+	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
 	gl.ReadPixels(0, 0, int32(w), int32(h), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(nil))
 
 	gl.Flush()
