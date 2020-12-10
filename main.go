@@ -200,6 +200,14 @@ func run() {
 
 		if settings.RECORD {
 			glfw.WindowHint(glfw.Visible, glfw.False)
+
+			//HACK: some in-app variables depend on these settings so we force them here
+			settings.Graphics.VSync = false
+			settings.Graphics.ShowFPS = false
+			settings.DEBUG = false
+			settings.Graphics.Fullscreen = false
+			settings.Graphics.WindowWidth = int64(settings.Recording.FrameWidth)
+			settings.Graphics.WindowHeight = int64(settings.Recording.FrameHeight)
 		} else {
 			discord.Connect()
 		}
@@ -322,14 +330,6 @@ func run() {
 
 	if settings.RECORD {
 		fps := float64(settings.Recording.FPS)
-
-		//HACK: some in-app variables depend on these settings so we force them here
-		settings.Graphics.VSync = false
-		settings.Graphics.ShowFPS = false
-		settings.DEBUG = false
-		settings.Graphics.Fullscreen = false
-		settings.Graphics.WindowWidth = int64(settings.Recording.FrameWidth)
-		settings.Graphics.WindowHeight = int64(settings.Recording.FrameHeight)
 
 		w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
 
