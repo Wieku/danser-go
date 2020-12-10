@@ -31,7 +31,7 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 		switch line[1] {
 		case "Normal", "All":
 			beatMap.Timings.BaseSet = 1
-		case "Soft":
+		case "Soft", "None":
 			beatMap.Timings.BaseSet = 2
 		case "Drum":
 			beatMap.Timings.BaseSet = 3

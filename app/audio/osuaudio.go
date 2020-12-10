@@ -98,6 +98,10 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 		volume = 1.0
 	}
 
+	if sampleSet < 1 || sampleSet > 3 {
+		sampleSet = 1
+	}
+
 	for _, f := range listeners {
 		f(sampleSet, hitsoundIndex, index, volume, objNum)
 	}
