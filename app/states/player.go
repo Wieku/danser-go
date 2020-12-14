@@ -375,7 +375,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 func (player *Player) Update(delta float64) bool {
 	player.progressMsF += delta * settings.SPEED
-	bass.GlobalTimeMs += delta * settings.SPEED
+	bass.GlobalTimeMs += delta
 
 	player.secDelta += delta
 	if player.secDelta >= 16.6667 {
