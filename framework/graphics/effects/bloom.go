@@ -66,7 +66,7 @@ func NewBloomEffect(width, height int) *BloomEffect {
 	effect.blur = 0.3
 	effect.power = 1.2
 
-	effect.blurEffect = NewBlurEffect(width, height)
+	effect.blurEffect = NewBlurEffect(width/2, height/2)
 	effect.blurEffect.SetBlur(effect.blur, effect.blur)
 
 	return effect
