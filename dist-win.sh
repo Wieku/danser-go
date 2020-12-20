@@ -31,7 +31,7 @@ BEGIN
     BLOCK "040904b0"
     BEGIN
       VALUE "CompanyName", "Wieku"
-      VALUE "FileDescription", ""
+      VALUE "FileDescription", "Watch osu! cursordances and replays or just play osu!standard mode"
       VALUE "LegalCopyright", "Wieku 2018-2020"
       VALUE "ProductName", "danser"
       VALUE "ProductVersion", "'$build'"
