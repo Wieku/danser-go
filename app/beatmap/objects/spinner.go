@@ -367,7 +367,7 @@ func (spinner *Spinner) StartSpinSample() {
 		bass.PlaySample(spinner.loopSample)
 	}
 
-	if skin.GetInfo().SpinnerFrequencyModulate {
+	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
 		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
 	}
 }

@@ -9,7 +9,6 @@ import "C"
 import (
 	"github.com/wieku/danser-go/app/settings"
 	"io/ioutil"
-	"log"
 	"os"
 	"unsafe"
 )
@@ -41,8 +40,8 @@ func NewSample(path string) *Sample {
 	sample := new(Sample)
 
 	sample.data, err = ioutil.ReadAll(f)
-	if err != nil {
-		log.Println(err)
+	if err != nil || len(sample.data) == 0 {
+		return nil
 	}
 
 	f.Close()
@@ -53,6 +52,10 @@ func NewSample(path string) *Sample {
 }
 
 func NewSampleData(data []byte) *Sample {
+	if len(data) == 0 {
+		return nil
+	}
+
 	sample := new(Sample)
 	sample.data = data
 	sample.bassSample = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)

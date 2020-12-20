@@ -108,7 +108,7 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 
 	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil && !settings.Audio.IgnoreBeatmapSamples {
 		sample.PlayRVPos(volume, balance)
-	} else {
+	} else if Samples[sampleSet-1][hitsoundIndex] != nil {
 		Samples[sampleSet-1][hitsoundIndex].PlayRVPos(volume, balance)
 	}
 }
@@ -181,9 +181,11 @@ func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, obj
 
 	if sample := MapSamples[sampleSet-1][hitsoundIndex][index]; sample != nil && !settings.Audio.IgnoreBeatmapSamples {
 		return sample.PlayRVPosLoop(volume, balance)
-	} else {
+	} else if Samples[sampleSet-1][hitsoundIndex] != nil {
 		return Samples[sampleSet-1][hitsoundIndex].PlayRVPosLoop(volume, balance)
 	}
+
+	return nil
 }
 
 func PlaySliderTick(sampleSet, index int, volume float64, objNum int64, xPos float64) {
