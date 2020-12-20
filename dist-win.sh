@@ -31,7 +31,7 @@ BEGIN
     BLOCK "040904b0"
     BEGIN
       VALUE "CompanyName", "Wieku"
-      VALUE "FileDescription", "Watch osu! cursordances and replays or just play osu!standard mode"
+      VALUE "FileDescription", "3rd party osu! cursordance/replay client"
       VALUE "LegalCopyright", "Wieku 2018-2020"
       VALUE "ProductName", "danser"
       VALUE "ProductVersion", "'$build'"
@@ -42,6 +42,7 @@ BEGIN
       VALUE "Translation", 0x409, 1200
     END
 END
+2 ICON assets/textures/favicon.ico
 '
 
 echo $base > danser.rc
