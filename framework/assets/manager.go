@@ -2,7 +2,6 @@ package assets
 
 import (
 	"archive/zip"
-	"bytes"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"io"
 	"io/ioutil"
@@ -31,20 +30,19 @@ func Init(_local bool) {
 			panic(err)
 		}
 
-		data, err1 := ioutil.ReadAll(file)
-		if err1 != nil || data[0] != 'r' || data[1] != 'o' || data[2] != '2' || data[3] != 'd' {
+		header := make([]byte, 4)
+
+		_, err = file.ReadAt(header, 0)
+		if err != nil || header[0] != 'r' || header[1] != 'o' || header[2] != '2' || header[3] != 'd' {
 			panic("Assets package is corrupted")
 		}
 
-		replaced := make([]byte, len(data))
-		copy(replaced, zipHeader)
-		copy(replaced[4:], data[4:])
-
-		for i := 4; i < len(replaced); i++ {
-			replaced[i] ^= byte(i + i%20)
+		info, err := file.Stat()
+		if err != nil {
+			panic(err)
 		}
 
-		zipFile, err = zip.NewReader(bytes.NewReader(replaced), int64(len(replaced)))
+		zipFile, err = zip.NewReader(&xorReader{mainReader: file}, info.Size())
 		if err != nil {
 			panic(err)
 		}
