@@ -57,6 +57,8 @@ func (controller *GenericController) InitCursors() {
 			scheduler = schedulers.NewGenericScheduler(movers.NewLinearMover)
 		case "axis":
 			scheduler = schedulers.NewGenericScheduler(movers.NewAxisMover)
+		case "exgon":
+			scheduler = schedulers.NewGenericScheduler(movers.NewExGonMover)
 		case "aggressive":
 			scheduler = schedulers.NewGenericScheduler(movers.NewAggressiveMover)
 		case "momentum":

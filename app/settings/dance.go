@@ -41,6 +41,9 @@ func initDance() *dance {
 			DistanceMult:    0.666,
 			DistanceMultEnd: 0.666,
 		},
+		ExGon: &exgon{
+			Delay: 50,
+		},
 	}
 }
 
@@ -59,6 +62,7 @@ type dance struct {
 	HalfCircle         *circular
 	Spline             *spline
 	Momentum           *momentum
+	ExGon              *exgon
 }
 
 type bezier struct {
@@ -91,4 +95,8 @@ type momentum struct {
 	RestrictAngle   float64
 	DistanceMult    float64
 	DistanceMultEnd float64
+}
+
+type exgon struct {
+	Delay int64
 }
