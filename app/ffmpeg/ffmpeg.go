@@ -165,7 +165,7 @@ func Combine() {
 	log.Println("Finished! Cleaning up...")
 
 	os.Remove(filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container))
-	//os.Remove(filepath.Join(settings.Recording.OutputDir,"audio.wav"))
+	os.Remove(filepath.Join(settings.Recording.OutputDir, "audio.wav"))
 
 	log.Println("Finished.")
 }
