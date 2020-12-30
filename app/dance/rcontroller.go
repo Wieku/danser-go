@@ -120,6 +120,13 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 					return nil
 				}
 
+				err = os.MkdirAll(filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5)), 0655)
+				if err != nil {
+					log.Println("Error creating directory: ", err)
+					log.Println("Skipping... ")
+					return nil
+				}
+
 				err = os.Rename(osPathname, filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5), de.Name()))
 				if err != nil {
 					log.Println("Error moving file: ", err)
