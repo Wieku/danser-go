@@ -9,7 +9,7 @@ require (
 	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3
 	github.com/flesnuk/oppai5 v0.0.0-20201101203857-5d57125c15b1
 	github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
-	github.com/go-gl/glfw v0.0.0-20200707082815-5321531c36a2
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20201108214237-06ea97f0c265
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/itchio/lzma v0.0.0-20190703113020-d3e24e3e3d49 // indirect

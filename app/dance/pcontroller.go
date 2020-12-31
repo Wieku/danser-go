@@ -1,13 +1,14 @@
 package dance
 
 import (
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"strings"
 )
 
 type PlayerController struct {
@@ -37,7 +38,7 @@ func (controller *PlayerController) InitCursors() {
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{difficulty.None})
 	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 	controller.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		if glfw.GetKeyName(key, scancode) == settings.Input.LeftKey {
+		if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.LeftKey) {
 			if action == glfw.Press {
 				controller.cursors[0].LeftKey = true
 			} else if action == glfw.Release {
@@ -45,7 +46,7 @@ func (controller *PlayerController) InitCursors() {
 			}
 		}
 
-		if glfw.GetKeyName(key, scancode) == settings.Input.RightKey {
+		if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.RightKey) {
 			if action == glfw.Press {
 				controller.cursors[0].RightKey = true
 			} else if action == glfw.Release {
