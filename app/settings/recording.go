@@ -15,6 +15,17 @@ func initRecording() *recording {
 		Filters:        "",
 		OutputDir:      "videos",
 		Container:      "mp4",
+		MotionBlur: &motionblur{
+			Enabled:              false,
+			OversampleMultiplier: 3,
+			BlendFrames:          5,
+			BlendWeights: &blendWeights{
+				UseManualWeights: false,
+				ManualWeights:    "1 1.7 2.1 4.1 5",
+				AutoWeightsID:    1,
+				AutoWeightsScale: 1,
+			},
+		},
 	}
 }
 
@@ -30,4 +41,19 @@ type recording struct {
 	Filters        string
 	OutputDir      string
 	Container      string
+	MotionBlur     *motionblur
+}
+
+type motionblur struct {
+	Enabled              bool
+	OversampleMultiplier int
+	BlendFrames          int
+	BlendWeights         *blendWeights
+}
+
+type blendWeights struct {
+	UseManualWeights bool
+	ManualWeights    string
+	AutoWeightsID    int
+	AutoWeightsScale float64
 }

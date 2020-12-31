@@ -331,6 +331,10 @@ func run() {
 	if settings.RECORD {
 		fps := float64(settings.Recording.FPS)
 
+		if settings.Recording.MotionBlur.Enabled {
+			fps *= float64(settings.Recording.MotionBlur.OversampleMultiplier)
+		}
+
 		w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
 
 		var fbo *buffer.Framebuffer
@@ -359,8 +363,11 @@ func run() {
 				mainthread.Call(func() {
 					fbo.Bind()
 
+					ffmpeg.PreFrame()
+
 					viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 					pushFrame()
+					viewport.Pop()
 
 					ffmpeg.MakeFrame()
 
@@ -503,7 +510,7 @@ func pushFrame() {
 	}
 
 	blend.ClearStack()
-	viewport.ClearStack()
+	viewport.Pop()
 }
 
 func setWorkingDirectory() {

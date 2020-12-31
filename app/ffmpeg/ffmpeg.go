@@ -5,6 +5,9 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/effects"
+	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"io"
 	"log"
 	"os"
@@ -18,6 +21,34 @@ import (
 )
 
 const MaxBuffers = 10
+
+var easings = []easing.Easing{
+	easing.Linear,
+	easing.InQuad,
+	easing.OutQuad,
+	easing.InOutQuad,
+	easing.InCubic,
+	easing.OutCubic,
+	easing.InOutCubic,
+	easing.InQuart,
+	easing.OutQuart,
+	easing.InOutQuart,
+	easing.InQuint,
+	easing.OutQuint,
+	easing.InOutQuint,
+	easing.InSine,
+	easing.OutSine,
+	easing.InOutSine,
+	easing.InExpo,
+	easing.OutExpo,
+	easing.InOutExpo,
+	easing.InCirc,
+	easing.OutCirc,
+	easing.InOutCirc,
+	easing.InBack,
+	easing.OutBack,
+	easing.InOutBack,
+}
 
 var cmd *exec.Cmd
 var pipe io.WriteCloser
@@ -57,6 +88,10 @@ var syncPool = make([]syncObj, 0)
 
 var pboPool = make([]*PBO, 0)
 
+var blend *effects.Blend
+
+var multiTexture *texture.TextureMultiLayer
+
 func StartFFmpeg(fps, _w, _h int) {
 	w = _w
 	h = _h
@@ -71,6 +106,10 @@ func StartFFmpeg(fps, _w, _h int) {
 	filters := settings.Recording.Filters
 	if len(filters) > 0 {
 		filters = "," + filters
+	}
+
+	if settings.Recording.MotionBlur.Enabled {
+		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
 
 	options := []string{
@@ -112,6 +151,49 @@ func StartFFmpeg(fps, _w, _h int) {
 			pboPool = append(pboPool, createPBO())
 		}
 	})
+
+	if settings.Recording.MotionBlur.Enabled {
+		mainthread.Call(func() {
+			bFrames := settings.Recording.MotionBlur.BlendFrames
+
+			multiTexture = texture.NewTextureMultiLayerFormat(w, h, texture.RGB, 0, bFrames)
+
+			var weights []float32
+
+			if settings.Recording.MotionBlur.BlendWeights.UseManualWeights {
+				weightsSplit := strings.Split(settings.Recording.MotionBlur.BlendWeights.ManualWeights, " ")
+
+				for _, s := range weightsSplit {
+					v, err := strconv.ParseFloat(s, 32)
+					if err != nil {
+						panic(fmt.Sprintf("Failed to parse weight: %s", s))
+					}
+
+					weights = append(weights, float32(v))
+				}
+			} else {
+				id := settings.Recording.MotionBlur.BlendWeights.AutoWeightsID
+				if id < 0 || id > len(easings) {
+					id = 0
+				}
+
+				if id == 0 {
+					for i := 0; i < bFrames; i++ {
+						weights = append(weights, 1)
+					}
+				} else {
+					easeFunc := easings[id-1]
+
+					for i := 0; i < bFrames; i++ {
+						w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*float64(i)*settings.Recording.MotionBlur.BlendWeights.AutoWeightsScale
+						weights = append(weights, float32(w))
+					}
+				}
+			}
+
+			blend = effects.NewBlend(w, h, bFrames, weights)
+		})
+	}
 
 	pboSync = &sync.Mutex{}
 
@@ -170,7 +252,27 @@ func Combine() {
 	log.Println("Finished.")
 }
 
+func PreFrame() {
+	if settings.Recording.MotionBlur.Enabled {
+		blend.Begin()
+	}
+}
+
+var frameNumber = int64(-1)
+
 func MakeFrame() {
+	frameNumber++
+
+	if settings.Recording.MotionBlur.Enabled {
+		blend.End()
+
+		if frameNumber%int64(settings.Recording.MotionBlur.OversampleMultiplier) != 0 {
+			return
+		}
+
+		blend.Blend()
+	}
+
 	//spin until at least one pbo is free
 	for len(pboPool) == 0 {
 		CheckData()
