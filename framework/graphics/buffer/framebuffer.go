@@ -69,6 +69,20 @@ func NewFrameF(width, height int) *Framebuffer {
 	return f
 }
 
+func NewFrameLayer(texture texture.Texture, layer int) *Framebuffer {
+	f := new(Framebuffer)
+	f.width = int(texture.GetWidth())
+	f.height = int(texture.GetHeight())
+
+	gl.CreateFramebuffers(1, &f.handle)
+
+	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT0, texture.GetID(), 0, int32(layer))
+
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
+
+	return f
+}
+
 func NewFrameDepth(width, height int, smooth bool) *Framebuffer {
 	f := new(Framebuffer)
 	f.width = width
