@@ -22,7 +22,7 @@ import (
 
 var dbFile *sql.DB
 
-const databaseVersion = 20201118
+const databaseVersion = 20210104
 
 var currentPreVersion = databaseVersion
 
@@ -321,7 +321,7 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
 	}
 
-	if currentPreVersion < 20201118 {
+	if currentPreVersion < 20210104 {
 		log.Println("Updating cached beatmaps")
 
 		toUpdate := make([]*beatmap.BeatMap, 0)
@@ -400,6 +400,35 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.Sliders,
 					bMap.Spinners,
 					bMap.Length,
+					bMap.Dir,
+					bMap.File)
+
+				if err1 != nil {
+					log.Println(err1)
+				}
+			}
+
+			if err = st.Close(); err != nil {
+				panic(err)
+			}
+		}
+
+		if currentPreVersion < 20210104 {
+			st, err := tx.Prepare("UPDATE beatmaps SET title = ?, titleUnicode = ?, artist = ?, artistUnicode = ?, creator = ?, version = ?, `source` = ?, tags = ? WHERE dir = ? AND file = ?")
+			if err != nil {
+				panic(err)
+			}
+
+			for _, bMap := range toUpdate {
+				_, err1 := st.Exec(
+					bMap.Name,
+					bMap.NameUnicode,
+					bMap.Artist,
+					bMap.ArtistUnicode,
+					bMap.Creator,
+					bMap.Difficulty,
+					bMap.Source,
+					bMap.Tags,
 					bMap.Dir,
 					bMap.File)
 

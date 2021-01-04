@@ -103,13 +103,20 @@ func parseHitObjects(line []string, beatMap *BeatMap) {
 }
 
 func tokenize(line, delimiter string) []string {
+	return tokenizeN(line, delimiter, -1)
+}
+
+func tokenizeN(line, delimiter string, n int) []string {
 	if strings.HasPrefix(line, "//") || !strings.Contains(line, delimiter) {
 		return nil
 	}
-	divided := strings.Split(line, delimiter)
+
+	divided := strings.SplitN(line, delimiter, n)
+
 	for i, a := range divided {
 		divided[i] = strings.TrimSpace(a)
 	}
+
 	return divided
 }
 
@@ -146,17 +153,17 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 		switch currentSection {
 		case "General":
-			if arr := tokenize(line, ":"); len(arr) > 1 {
+			if arr := tokenizeN(line, ":", 2); len(arr) > 1 {
 				if err := parseGeneral(arr, beatMap); err {
 					return errors.New("wrong mode")
 				}
 			}
 		case "Metadata":
-			if arr := tokenize(line, ":"); len(arr) > 1 {
+			if arr := tokenizeN(line, ":", 2); len(arr) > 1 {
 				parseMetadata(arr, beatMap)
 			}
 		case "Difficulty":
-			if arr := tokenize(line, ":"); len(arr) > 1 {
+			if arr := tokenizeN(line, ":", 2); len(arr) > 1 {
 				parseDifficulty(arr, beatMap)
 			}
 		case "Events":
