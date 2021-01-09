@@ -24,9 +24,9 @@ func NewPersistentBufferObject(maxFloats int) *PersistentBufferObject {
 
 	gl.CreateBuffers(1, &vbo.handle)
 
-	gl.NamedBufferStorage(vbo.handle, maxFloats*4, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT)
+	gl.NamedBufferStorage(vbo.handle, maxFloats*4, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
 
-	pt := gl.MapNamedBufferRange(vbo.handle, 0, maxFloats*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_FLUSH_EXPLICIT_BIT)
+	pt := gl.MapNamedBufferRange(vbo.handle, 0, maxFloats*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
 
 	vbo.data = (*[1 << 30]float32)(pt)[:maxFloats:maxFloats]
 
@@ -90,8 +90,6 @@ func (vbo *PersistentBufferObject) Unmap(offset, size int) {
 	if vbo.offset+offset+size > vbo.capacity {
 		panic(fmt.Sprintf("Data exceeds VBO's capacity. Data length: %d, Offset: %d, capacity: %d", size, vbo.offset+offset, vbo.capacity))
 	}
-
-	gl.FlushMappedNamedBufferRange(vbo.handle, (vbo.offset+offset)*4, size*4)
 
 	vbo.offset += offset + size
 }
