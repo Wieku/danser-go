@@ -57,15 +57,15 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 		inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
 		if clicked && inRange {
-			if player.leftCondE {
-				player.leftCondE = false
-			} else if player.rightCondE {
-				player.rightCondE = false
-			}
-
 			action := circle.ruleSet.CanBeHit(time, circle, player)
 
 			if action == Click {
+				if player.leftCondE {
+					player.leftCondE = false
+				} else if player.rightCondE {
+					player.rightCondE = false
+				}
+
 				hit := Miss
 
 				relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))
@@ -95,8 +95,13 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 					state.isHit = true
 				}
-			} else if action == Shake && len(circle.players) == 1 {
-				circle.hitCircle.Shake(time)
+			} else {
+				player.leftCondE = false
+				player.rightCondE = false
+
+				if action == Shake && len(circle.players) == 1 {
+					circle.hitCircle.Shake(time)
+				}
 			}
 		}
 	}

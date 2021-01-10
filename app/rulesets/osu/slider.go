@@ -93,13 +93,13 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	inRadius := player.cursor.Position.Dst(slider.hitSlider.GetBasicData().StartPos.SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
 
 	if clicked && inRadius && !state.isStartHit && !state.isHit {
-		if player.leftCondE {
-			player.leftCondE = false
-		} else if player.rightCondE {
-			player.rightCondE = false
-		}
-
 		if slider.ruleSet.CanBeHit(time, slider, player) == Click {
+			if player.leftCondE {
+				player.leftCondE = false
+			} else if player.rightCondE {
+				player.rightCondE = false
+			}
+
 			if player.leftCond {
 				state.downButton = Left
 			} else if player.rightCond {
@@ -128,6 +128,9 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 				state.isStartHit = true
 			}
+		} else {
+			player.leftCondE = false
+			player.rightCondE = false
 		}
 	}
 
