@@ -116,6 +116,8 @@ func (diff *Difficulty) SetAR(ar float64) {
 }
 
 func DifficultyRate(diff, min, mid, max float64) float64 {
+	diff = float64(float32(diff))
+
 	if diff > 5 {
 		return mid + (max-mid)*(diff-5)/5
 	}
