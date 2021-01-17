@@ -221,6 +221,10 @@ func (sprite *Sprite) ShowForever(value bool) {
 	sprite.showForever = value
 }
 
+func (sprite *Sprite) IsAlwaysVisible() bool {
+	return sprite.showForever
+}
+
 func (sprite *Sprite) UpdateAndDraw(time int64, batch *batch.QuadBatch) {
 	sprite.Update(time)
 	sprite.Draw(time, batch)
