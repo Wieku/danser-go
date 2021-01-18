@@ -5,11 +5,13 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -73,6 +75,9 @@ type Cursor struct {
 	lastSetting bool
 
 	renderer cursorRenderer
+
+	rippleContainer *sprite.SpriteManager
+	time            float64
 }
 
 func NewCursor() *Cursor {
@@ -90,6 +95,8 @@ func NewCursor() *Cursor {
 	} else {
 		cursor.renderer = newDanserRenderer()
 	}
+
+	cursor.rippleContainer = sprite.NewSpriteManager()
 
 	return cursor
 }
@@ -132,11 +139,23 @@ func (cursor *Cursor) SetScreenPos(pt vector.Vector2f) {
 
 func (cursor *Cursor) Update(delta float64) {
 	delta = math.Abs(delta)
+	cursor.time += delta
 
 	leftState := cursor.LeftKey || cursor.LeftMouse
 	rightState := cursor.RightKey || cursor.RightMouse
 	if cursor.lastLeftState != leftState || cursor.lastRightState != rightState {
 		if leftState || rightState {
+			if settings.Cursor.CursorRipples {
+				spr := sprite.NewSpriteSingle(skin.GetTextureSource("ripple", skin.LOCAL), cursor.time, cursor.Position.Copy64(), bmath.Origin.Centre)
+				spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+700, 0.3, 0.0))
+				spr.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, cursor.time, cursor.time+700, 0.05, 0.5))
+				spr.ResetValuesToTransforms()
+				spr.AdjustTimesToTransformations()
+				spr.ShowForever(false)
+
+				cursor.rippleContainer.Add(spr)
+			}
+
 			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, 1.0, 1.3)
 		} else {
 			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, cursor.scale.GetValue(), 1.0)
@@ -149,6 +168,8 @@ func (cursor *Cursor) Update(delta float64) {
 	cursor.scale.UpdateD(delta)
 
 	cursor.renderer.Update(delta, cursor.Position)
+
+	cursor.rippleContainer.Update(int64(cursor.time))
 }
 
 func (cursor *Cursor) UpdateRenderer() {
@@ -196,6 +217,19 @@ func (cursor *Cursor) Draw(scale float64, batch *batch.QuadBatch, color color2.C
 }
 
 func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
+	if cursor.rippleContainer.GetNumProcessed() > 0 {
+		batch.Begin()
+		batch.SetAdditive(false)
+		batch.ResetTransform()
+		batch.SetColor(1, 1, 1, 1)
+		batch.SetScale(scaling*scaling, scaling*scaling)
+		batch.SetSubScale(1, 1)
+
+		cursor.rippleContainer.Draw(int64(cursor.time), batch)
+
+		batch.End()
+	}
+
 	if useAdditive {
 		cursorFbo.Bind()
 		cursorFbo.ClearColor(0.0, 0.0, 0.0, 0.0)
