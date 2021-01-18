@@ -83,6 +83,9 @@ type ScoreOverlay struct {
 	healthBar        *sprite.Sprite
 	displayHp        float64
 
+	hpSlide *animation.Glider
+	hpFade  *animation.Glider
+
 	shapeRenderer *shape.Renderer
 
 	boundaries *common.Boundaries
@@ -110,6 +113,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.bgDim = animation.NewGlider(1)
 
+	overlay.hpSlide = animation.NewGlider(0)
+	overlay.hpFade = animation.NewGlider(1)
+
 	overlay.combobreak = audio.LoadSample("combobreak")
 
 	for _, p := range ruleset.GetBeatMap().Pauses {
@@ -124,6 +130,12 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 		overlay.bgDim.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0)
 		overlay.bgDim.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 1)
+
+		overlay.hpSlide.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, -20)
+		overlay.hpSlide.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 0)
+
+		overlay.hpFade.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0)
+		overlay.hpFade.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 1)
 	}
 
 	discord.UpdatePlay(cursor.Name)
@@ -259,6 +271,8 @@ func (overlay *ScoreOverlay) Update(time int64) {
 		overlay.scoreGlider.Update(float64(sTime))
 		overlay.ppGlider.Update(float64(sTime))
 		overlay.comboSlide.Update(float64(sTime))
+		overlay.hpFade.Update(float64(sTime))
+		overlay.hpSlide.Update(float64(sTime))
 
 		if sTime%17 == 0 {
 			if overlay.combo > overlay.newCombo && overlay.newCombo == 0 {
@@ -399,8 +413,13 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		overlay.shapeRenderer.End()
 	}
 
-	overlay.healthBackground.Draw(overlay.lastTime, batch)
-	overlay.healthBar.Draw(overlay.lastTime, batch)
+	if hpAlpha := overlay.hpFade.GetValue() * alpha; hpAlpha > 0.001 {
+		batch.SetTranslation(vector.NewVec2d(0, overlay.hpSlide.GetValue()))
+		batch.SetColor(1, 1, 1, hpAlpha)
+
+		overlay.healthBackground.Draw(overlay.lastTime, batch)
+		overlay.healthBar.Draw(overlay.lastTime, batch)
+	}
 
 	//region Combo rendering
 
