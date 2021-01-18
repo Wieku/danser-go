@@ -24,6 +24,11 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
+		PPCounter: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
 		KeyOverlay: &hudElement{
 			Show:    true,
 			Scale:   1.0,
@@ -55,6 +60,7 @@ type gameplay struct {
 	Score         *hudElement
 	HpBar         *hudElement
 	ComboCounter  *hudElement
+	PPCounter     *hudElement
 	KeyOverlay    *hudElement
 
 	ProgressBar string
