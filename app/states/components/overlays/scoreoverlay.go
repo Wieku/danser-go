@@ -88,7 +88,8 @@ type ScoreOverlay struct {
 
 	shapeRenderer *shape.Renderer
 
-	boundaries *common.Boundaries
+	boundaries     *common.Boundaries
+	hpBasePosition vector.Vector2d
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -234,6 +235,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	if skin.GetTexture("scorebar-marker") != nil {
 		pos = vector.NewVec2d(12, 12.5)
 	}
+
+	overlay.hpBasePosition = pos
 
 	barTextures := skin.GetFrames("scorebar-colour", true)
 
@@ -413,11 +416,17 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		overlay.shapeRenderer.End()
 	}
 
-	if hpAlpha := overlay.hpFade.GetValue() * alpha; hpAlpha > 0.001 {
+	if hpAlpha := settings.Gameplay.HpBar.Opacity * overlay.hpFade.GetValue() * alpha; hpAlpha > 0.001 && settings.Gameplay.HpBar.Show {
+		hpScale := settings.Gameplay.HpBar.Scale
+
 		batch.SetTranslation(vector.NewVec2d(0, overlay.hpSlide.GetValue()))
 		batch.SetColor(1, 1, 1, hpAlpha)
 
+		overlay.healthBackground.SetScale(hpScale)
 		overlay.healthBackground.Draw(overlay.lastTime, batch)
+
+		overlay.healthBar.SetPosition(overlay.hpBasePosition.Scl(hpScale))
+		overlay.healthBar.SetScale(hpScale)
 		overlay.healthBar.Draw(overlay.lastTime, batch)
 	}
 

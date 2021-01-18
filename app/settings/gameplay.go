@@ -14,6 +14,11 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
+		HpBar: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
 		ComboCounter: &hudElement{
 			Show:    true,
 			Scale:   1.0,
@@ -48,6 +53,7 @@ func initGameplay() *gameplay {
 type gameplay struct {
 	HitErrorMeter *hudElement
 	Score         *hudElement
+	HpBar         *hudElement
 	ComboCounter  *hudElement
 	KeyOverlay    *hudElement
 
