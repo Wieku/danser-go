@@ -19,8 +19,6 @@ var TriangleSmall *texture.TextureRegion
 var Hit0 *texture.TextureRegion
 var Hit50 *texture.TextureRegion
 var Hit100 *texture.TextureRegion
-var OvButton *texture.TextureRegion
-var OvButtonE *texture.TextureRegion
 
 func LoadTextures() {
 	Atlas = texture.NewTextureAtlas(4096, 4)
@@ -32,8 +30,6 @@ func LoadTextures() {
 	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit0-0.png")
 	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit50.png")
 	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit100.png")
-	OvButton, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton.png")
-	OvButtonE, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/ovbutton-e.png")
 
 	Triangle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle.png")
 	TriangleShadowed, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle-shadow.png")
