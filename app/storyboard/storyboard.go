@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	video2 "github.com/wieku/danser-go/framework/graphics/video"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
@@ -72,6 +74,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	variables := make(map[string]string)
 	counter := 0
+	hasVideo := false
 
 	for _, fS := range files {
 		file, err := os.Open(fS)
@@ -116,18 +119,38 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					}
 				}
 
-				if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
-					if currentSprite != "" {
-						counter++
-						storyboard.loadSprite(path, currentSprite, commands)
+				if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
+					spl := strings.Split(line, ",")
+
+					log.Println(filepath.Join(path, fix(spl[2])))
+
+					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), bmath.Origin.Centre)
+
+					if video == nil {
+						continue
 					}
 
-					currentSprite = line
-					commands = make([]string, 0)
-				} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
-					commands = append(commands, line)
+					video.SetScaleV(vector.NewVec2d(1, 1).Scl(480.0 / float64(video.Textures[0].Height)))
+
+					offset, _ := strconv.ParseFloat(spl[1], 64)
+					video.Offset = int64(offset)
+
+					storyboard.background.Add(video)
+
+					hasVideo = true
+				} else if settings.Playfield.Background.LoadStoryboards {
+					if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+						if currentSprite != "" {
+							counter++
+							storyboard.loadSprite(path, currentSprite, commands)
+						}
+
+						currentSprite = line
+						commands = make([]string, 0)
+					} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
+						commands = append(commands, line)
+					}
 				}
-				break
 			}
 		}
 
@@ -143,7 +166,12 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		if storyboard.atlas != nil {
 			storyboard.atlas.Dispose()
 		}
-		return nil
+
+		if !hasVideo {
+			return nil
+		} else if !storyboard.widescreen {
+			storyboard.widescreen = true
+		}
 	}
 
 	for k := range storyboard.textures {

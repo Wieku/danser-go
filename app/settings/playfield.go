@@ -20,6 +20,7 @@ func initPlayfield() *playfield {
 		},
 		Background: &background{
 			LoadStoryboards: true,
+			LoadVideos:      false,
 			FlashToTheBeat:  false,
 			Dim: &dim{
 				Intro:  0,
@@ -92,6 +93,9 @@ type seizure struct {
 type background struct {
 	// Whether storyboards should be loaded
 	LoadStoryboards bool
+
+	// Whether videos should be loaded
+	LoadVideos bool
 
 	FlashToTheBeat bool
 
