@@ -36,7 +36,7 @@ func (bm *AxisMover) SetObjects(objs []objects.BaseObject) int {
 		midP = vector.NewVec2f(startPos.X, endPos.Y)
 	}
 
-	bm.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos}, float64(endPos.Dst(midP)+midP.Dst(startPos)))
+	bm.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos})
 	bm.endTime = endTime
 	bm.beginTime = startTime
 

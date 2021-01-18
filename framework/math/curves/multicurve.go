@@ -15,7 +15,7 @@ type MultiCurve struct {
 	firstPoint vector.Vector2f
 }
 
-func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) *MultiCurve {
+func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
 	lines := make([]Linear, 0)
 
 	if len(points) < 3 {
@@ -73,30 +73,6 @@ func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) 
 
 	firstPoint := points[0]
 
-	diff := float64(length) - desiredLength
-
-	for len(lines) > 0 {
-		line := lines[len(lines)-1]
-
-		if float64(line.GetLength()) > diff+minPartWidth {
-			if line.Point1 != line.Point2 {
-				pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
-				lines[len(lines)-1] = NewLinear(line.Point1, pt)
-			}
-
-			break
-		}
-
-		diff -= float64(line.GetLength())
-		lines = lines[:len(lines)-1]
-	}
-
-	length = 0.0
-
-	for _, l := range lines {
-		length += l.GetLength()
-	}
-
 	sections := make([]float32, len(lines)+1)
 	sections[0] = 0.0
 	prev := float32(0.0)
@@ -107,6 +83,45 @@ func NewMultiCurve(typ string, points []vector.Vector2f, desiredLength float64) 
 	}
 
 	return &MultiCurve{sections, lines, length, firstPoint}
+}
+
+func NewMultiCurveT(typ string, points []vector.Vector2f, desiredLength float64) *MultiCurve {
+	mCurve := NewMultiCurve(typ, points)
+
+	diff := float64(mCurve.length) - desiredLength
+
+	for len(mCurve.lines) > 0 {
+		line := mCurve.lines[len(mCurve.lines)-1]
+
+		if float64(line.GetLength()) > diff+minPartWidth {
+			if line.Point1 != line.Point2 {
+				pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
+				mCurve.lines[len(mCurve.lines)-1] = NewLinear(line.Point1, pt)
+			}
+
+			break
+		}
+
+		diff -= float64(line.GetLength())
+		mCurve.lines = mCurve.lines[:len(mCurve.lines)-1]
+	}
+
+	mCurve.length = 0.0
+
+	for _, l := range mCurve.lines {
+		mCurve.length += l.GetLength()
+	}
+
+	mCurve.sections = make([]float32, len(mCurve.lines)+1)
+	mCurve.sections[0] = 0.0
+	prev := float32(0.0)
+
+	for i := 0; i < len(mCurve.lines); i++ {
+		prev += mCurve.lines[i].GetLength()
+		mCurve.sections[i+1] = prev
+	}
+
+	return mCurve
 }
 
 func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {

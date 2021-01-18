@@ -108,7 +108,7 @@ func NewSlider(data []string) *Slider {
 		points = append(points, vector.NewVec2f(float32(x), float32(y)))
 	}
 
-	slider.multiCurve = curves.NewMultiCurve(list[0], points, slider.pixelLength)
+	slider.multiCurve = curves.NewMultiCurveT(list[0], points, slider.pixelLength)
 
 	slider.objData.EndTime = slider.objData.StartTime
 	slider.objData.EndPos = slider.multiCurve.PointAt(1.0)
