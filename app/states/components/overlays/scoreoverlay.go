@@ -514,7 +514,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		batch.SetScale(1, -1)
 		batch.SetSubScale(1, 1)
 
-		overlay.font.DrawMonospaced(batch, 0, 150, 40*ppScale, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
+		overlay.font.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition, 40*ppScale, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
 	}
 
 	//endregion

@@ -24,10 +24,14 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
-		PPCounter: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		PPCounter: &ppCounter{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XPosition: 5,
+			YPosition: 150,
 		},
 		KeyOverlay: &hudElement{
 			Show:    true,
@@ -60,7 +64,7 @@ type gameplay struct {
 	Score         *hudElement
 	HpBar         *hudElement
 	ComboCounter  *hudElement
-	PPCounter     *hudElement
+	PPCounter     *ppCounter
 	KeyOverlay    *hudElement
 
 	ProgressBar string
@@ -85,4 +89,10 @@ type hudElement struct {
 	Show    bool
 	Scale   float64
 	Opacity float64
+}
+
+type ppCounter struct {
+	*hudElement
+	XPosition float64
+	YPosition float64
 }
