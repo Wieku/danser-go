@@ -143,19 +143,20 @@ func (cursor *Cursor) Update(delta float64) {
 
 	leftState := cursor.LeftKey || cursor.LeftMouse
 	rightState := cursor.RightKey || cursor.RightMouse
+
+	if settings.Cursor.CursorRipples && ((!cursor.lastLeftState && leftState) || (!cursor.lastRightState && rightState)) {
+		spr := sprite.NewSpriteSingle(skin.GetTextureSource("ripple", skin.LOCAL), cursor.time, cursor.Position.Copy64(), bmath.Origin.Centre)
+		spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+700, 0.3, 0.0))
+		spr.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, cursor.time, cursor.time+700, 0.05, 0.5))
+		spr.ResetValuesToTransforms()
+		spr.AdjustTimesToTransformations()
+		spr.ShowForever(false)
+
+		cursor.rippleContainer.Add(spr)
+	}
+
 	if cursor.lastLeftState != leftState || cursor.lastRightState != rightState {
 		if leftState || rightState {
-			if settings.Cursor.CursorRipples {
-				spr := sprite.NewSpriteSingle(skin.GetTextureSource("ripple", skin.LOCAL), cursor.time, cursor.Position.Copy64(), bmath.Origin.Centre)
-				spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+700, 0.3, 0.0))
-				spr.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, cursor.time, cursor.time+700, 0.05, 0.5))
-				spr.ResetValuesToTransforms()
-				spr.AdjustTimesToTransformations()
-				spr.ShowForever(false)
-
-				cursor.rippleContainer.Add(spr)
-			}
-
 			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, 1.0, 1.3)
 		} else {
 			cursor.scale.AddEventS(cursor.scale.GetTime(), cursor.scale.GetTime()+100, cursor.scale.GetValue(), 1.0)
