@@ -49,6 +49,12 @@ func newReverse() (point *reversePoint) {
 	return
 }
 
+var easeBezier = curves.NewMultiCurve("B", []vector.Vector2f{{X: 0, Y: 0}, {X: 0.1, Y: 1}, {X: 0.5, Y: 0.5}, {X: 1, Y: 1}})
+
+var snakeEase = easing.Easing(func(f float64) float64 {
+	return float64(easeBezier.PointAt(float32(f)).Y)
+})
+
 type Slider struct {
 	objData     *basicData
 	multiCurve  *curves.MultiCurve
@@ -365,14 +371,6 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		slider.sliderSnakeTail.SetValue(1)
 	}
 
-	if settings.Objects.Sliders.Snaking.Out {
-		if slider.repeat%2 == 1 {
-			slider.sliderSnakeHead.AddEvent(float64(slider.objData.EndTime)-slider.partLen, float64(slider.objData.EndTime), 1)
-		} else {
-			slider.sliderSnakeTail.AddEvent(float64(slider.objData.EndTime)-slider.partLen, float64(slider.objData.EndTime), 0)
-		}
-	}
-
 	slider.fade = animation.NewGlider(0)
 	slider.fade.AddEvent(float64(slider.objData.StartTime)-diff.Preempt, float64(slider.objData.StartTime)-(diff.Preempt-difficulty.HitFadeIn), 1)
 
@@ -399,6 +397,10 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	frameDelay := math.Max(150/slider.Timings.GetVelocity(slider.TPoint)*sixty, sixty)
 
 	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+
+	if settings.Objects.Sliders.Snaking.Out {
+		slider.ball.SetAlpha(0)
+	}
 
 	if len(slider.scorePath) > 0 {
 		angle := slider.scorePath[0].Line.GetStartAngle()
@@ -542,6 +544,14 @@ func (slider *Slider) Update(time int64) bool {
 
 	pos := slider.GetPointAt(time)
 
+	if settings.Objects.Sliders.Snaking.Out && slider.repeat%2 == 1 && time >= int64(float64(slider.objData.EndTime)-slider.partLen) {
+		p2 := slider.GetPointAt(slider.objData.EndTime - int64(slider.partLen*(1-slider.sliderSnakeHead.GetValue())))
+		slider.ball.SetPosition(p2.Copy64())
+		slider.startCircle.objData.StartPos = p2
+	} else {
+		slider.ball.SetPosition(pos.Copy64())
+	}
+
 	if time-slider.lastTime > 0 && time >= slider.objData.StartTime {
 		angle := pos.AngleRV(slider.Pos)
 
@@ -575,6 +585,45 @@ func (slider *Slider) Update(time int64) bool {
 
 func (slider *Slider) ArmStart(clicked bool, time int64) {
 	slider.startCircle.Arm(clicked, time)
+
+	if settings.Objects.Sliders.Snaking.Out {
+		slider.ball.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(slider.objData.StartTime), float64(slider.objData.StartTime), 0, 1))
+		slider.ball.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(slider.objData.EndTime), float64(slider.objData.EndTime), 1, 0))
+		slider.ball.ResetValuesToTransforms()
+
+		if time < int64(float64(slider.objData.EndTime)-slider.partLen) {
+			if slider.repeat%2 == 1 {
+				slider.sliderSnakeHead.AddEvent(float64(slider.objData.EndTime)-slider.partLen, float64(slider.objData.EndTime), 1)
+			} else {
+				slider.sliderSnakeTail.AddEvent(float64(slider.objData.EndTime)-slider.partLen, float64(slider.objData.EndTime), 0)
+			}
+		} else {
+			endTime := float64(slider.objData.EndTime)
+
+			for _, p := range slider.ScorePoints {
+				if p.Time > time {
+					endTime = float64(p.Time)
+					break
+				}
+			}
+
+			partStart := float64(slider.objData.EndTime) - slider.partLen
+			remaining := endTime - float64(time)
+
+			first := float64(time) - partStart
+
+			dur := math.Min(first/2, remaining*0.66)
+			eTime := float64(time) + dur
+
+			if slider.repeat%2 == 1 {
+				slider.sliderSnakeHead.AddEventEase(float64(time), eTime, (first+dur)/slider.partLen, snakeEase)
+				slider.sliderSnakeHead.AddEvent(eTime, float64(slider.objData.EndTime), 1)
+			} else {
+				slider.sliderSnakeTail.AddEventEase(float64(time), eTime, 1-(first+dur)/slider.partLen, snakeEase)
+				slider.sliderSnakeTail.AddEvent(eTime, float64(slider.objData.EndTime), 0)
+			}
+		}
+	}
 }
 
 func (slider *Slider) InitSlide(time int64) {
@@ -644,8 +693,12 @@ func (slider *Slider) PlayEdgeSample(index int) {
 }
 
 func (slider *Slider) HitEdge(index int, time int64, isHit bool) {
-	e := slider.edges[index]
-	e.Arm(isHit, time)
+	if index == 0 {
+		slider.ArmStart(isHit, time)
+	} else {
+		e := slider.edges[index]
+		e.Arm(isHit, time)
+	}
 
 	if isHit {
 		slider.PlayEdgeSample(index)
@@ -808,6 +861,7 @@ func (slider *Slider) Draw(time int64, color color2.Color, batch *batch.QuadBatc
 
 	if time >= slider.objData.EndTime && slider.fade.GetValue() <= 0.001 {
 		if slider.body != nil {
+			//HACKHACKHACK: for some reason disposing FBOs with VSync causes 30ms frame skips...
 			if !settings.Graphics.VSync {
 				slider.body.Dispose()
 			}
@@ -821,7 +875,7 @@ func (slider *Slider) Draw(time int64, color color2.Color, batch *batch.QuadBatc
 
 func (slider *Slider) drawBall(time int64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {
 	batch.SetColor(1, 1, 1, alpha)
-	batch.SetTranslation(slider.Pos.Copy64())
+	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	isB := skin.GetSource("sliderb") != skin.SKIN && useBallTexture
 
