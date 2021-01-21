@@ -168,6 +168,11 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 				return nil
 			}
 
+			if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+				log.Println("Excluding for missing input data:", replayD.Username)
+				return nil
+			}
+
 			candidates = append(candidates, replayD)
 		}
 
