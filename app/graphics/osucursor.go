@@ -172,7 +172,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 	lengthAdjusted := int(settings.Skin.Cursor.LongTrailLength)
 
 	fadeTime := 3.0 * (1.0 + float64(settings.Skin.Cursor.LongTrailLength-2048)/4096)
-	distance := float32(cursor.trail.Width) / 2.5 * scaling * float32(settings.Skin.Cursor.Scale)
+	distance := float32(cursor.trail.Width) / 2.5 * scaling * float32(settings.Skin.Cursor.Scale) / float32(settings.Skin.Cursor.LongTrailDensity)
 	points := cursor.Position.Dst(cursor.LastPos)
 
 	if int(points/distance) > 0 {
