@@ -50,7 +50,9 @@ func LoadSettings(version string) bool {
 		saveSettings(fileName, fileStorage) //this is done to save additions from the current format
 	}
 
-	setupWatcher(fileName)
+	if !RECORD {
+		setupWatcher(fileName)
+	}
 
 	return false
 }
