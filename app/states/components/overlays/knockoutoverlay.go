@@ -178,7 +178,8 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			}
 		}
 
-		if comboResult == osu.ComboResults.Reset && number != 0 {
+		comboBreak := comboResult == osu.ComboResults.Reset
+		if (settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
 
 			if !player.hasBroken {
 				if settings.Knockout.Mode == settings.XReplays {
@@ -186,7 +187,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 						overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, resultClean, comboResult))
 						log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
 					}
-				} else if settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
+				} else if settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
 					//Fade out player name
 					player.hasBroken = true
 					player.breakTime = time
@@ -201,7 +202,9 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 					log.Println(overlay.names[cursor], "has broken! Max combo:", player.sCombo)
 				}
 			}
+		}
 
+		if comboBreak {
 			player.sCombo = 0
 		}
 	})

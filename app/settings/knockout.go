@@ -82,4 +82,7 @@ const (
 
 	// Players scores other than 300's will be shown on the map (NOTE: this overrides MaxPlayer value)
 	OneVsOne
+
+	//Other result than 300 will knock the player out
+	SSOrQuit
 )
