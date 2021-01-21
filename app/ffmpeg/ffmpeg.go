@@ -220,14 +220,24 @@ func StartFFmpeg(fps, _w, _h int) {
 }
 
 func StopFFmpeg() {
+	log.Println("Finishing rendering...")
+
 	for len(syncPool) > 0 {
 		CheckData()
 	}
 
 	close(queue)
 	endSync.Wait()
+
+	log.Println("Finished! Stopping ffmpeg...")
+
 	pipe.Close()
+
+	log.Println("Pipe closed.")
+
 	cmd.Wait()
+
+	log.Println("Ffmpeg finished.")
 }
 
 func Combine() {
