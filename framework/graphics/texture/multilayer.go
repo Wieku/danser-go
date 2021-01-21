@@ -34,6 +34,7 @@ func (texture *TextureMultiLayer) NewLayer() {
 
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
 	dstStore.SetFiltering(texture.store.min, texture.store.mag)
+	dstStore.Bind(texture.store.binding)
 
 	mMaps := int32(1)
 	if !texture.manualMipmaps {
