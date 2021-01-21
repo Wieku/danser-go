@@ -2,7 +2,11 @@ package settings
 
 import (
 	"encoding/json"
+	"github.com/fsnotify/fsnotify"
+	"log"
 	"os"
+	"path/filepath"
+	"time"
 )
 
 var fileStorage *fileformat
@@ -46,7 +50,53 @@ func LoadSettings(version string) bool {
 		saveSettings(fileName, fileStorage) //this is done to save additions from the current format
 	}
 
+	setupWatcher(fileName)
+
 	return false
+}
+
+func setupWatcher(file string) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//defer watcher.Close()
+
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				log.Println("event:", event)
+
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					log.Println("modified file:", event.Name)
+
+					time.Sleep(time.Millisecond * 200)
+
+					file, _ := os.Open(fileName)
+
+					load(file, fileStorage)
+
+					file.Close()
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	abs, _ := filepath.Abs(file)
+
+	err = watcher.Add(abs)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func load(file *os.File, target interface{}) {
