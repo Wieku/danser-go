@@ -206,9 +206,9 @@ func MakeFrame() {
 	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
 	gl.ReadPixels(0, 0, int32(w), int32(h), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(nil))
 
-	gl.Flush()
-
 	pbo.sync = gl.FenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
+
+	gl.Flush()
 
 	syncPool = append(syncPool, pbo)
 }
