@@ -6,8 +6,6 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/graphics/texture"
-	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"io"
 	"log"
 	"os"
@@ -16,39 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 	"unsafe"
 )
 
 const MaxBuffers = 10
-
-var easings = []easing.Easing{
-	easing.Linear,
-	easing.InQuad,
-	easing.OutQuad,
-	easing.InOutQuad,
-	easing.InCubic,
-	easing.OutCubic,
-	easing.InOutCubic,
-	easing.InQuart,
-	easing.OutQuart,
-	easing.InOutQuart,
-	easing.InQuint,
-	easing.OutQuint,
-	easing.InOutQuint,
-	easing.InSine,
-	easing.OutSine,
-	easing.InOutSine,
-	easing.InExpo,
-	easing.OutExpo,
-	easing.InOutExpo,
-	easing.InCirc,
-	easing.OutCirc,
-	easing.InOutCirc,
-	easing.InBack,
-	easing.OutBack,
-	easing.InOutBack,
-}
 
 var cmd *exec.Cmd
 var pipe io.WriteCloser
@@ -62,6 +31,8 @@ type PBO struct {
 	handle     uint32
 	memPointer unsafe.Pointer
 	data       []byte
+
+	sync uintptr
 }
 
 func createPBO() *PBO {
@@ -77,24 +48,15 @@ func createPBO() *PBO {
 	return pbo
 }
 
-type syncObj struct {
-	sync uintptr
-	pbo  *PBO
-}
-
-var pboSync *sync.Mutex
-
-var syncPool = make([]syncObj, 0)
-
+var pboSync *sync.RWMutex
 var pboPool = make([]*PBO, 0)
+
+var syncPool = make([]*PBO, 0)
 
 var blend *effects.Blend
 
-var multiTexture *texture.TextureMultiLayer
-
 func StartFFmpeg(fps, _w, _h int) {
-	w = _w
-	h = _h
+	w, h = _w, _h
 
 	err := os.MkdirAll(settings.Recording.OutputDir, 0655)
 	if err != nil && !os.IsExist(err) {
@@ -103,7 +65,7 @@ func StartFFmpeg(fps, _w, _h int) {
 
 	split := strings.Split(settings.Recording.EncoderOptions, " ")
 
-	filters := settings.Recording.Filters
+	filters := strings.TrimSpace(settings.Recording.Filters)
 	if len(filters) > 0 {
 		filters = "," + filters
 	}
@@ -125,9 +87,11 @@ func StartFFmpeg(fps, _w, _h int) {
 		"-preset", settings.Recording.Preset,
 		"-an", //Tells FFMPEG not to expect any audio
 		"-vcodec", settings.Recording.Encoder,
+		"-pix_fmt", settings.Recording.PixelFormat,
 	}
 
-	options = append(options, append(split, "-pix_fmt", settings.Recording.PixelFormat, filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container))...)
+	options = append(options, split...)
+	options = append(options, filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -150,52 +114,14 @@ func StartFFmpeg(fps, _w, _h int) {
 		for i := 0; i < MaxBuffers; i++ {
 			pboPool = append(pboPool, createPBO())
 		}
+
+		if settings.Recording.MotionBlur.Enabled {
+			bFrames := settings.Recording.MotionBlur.BlendFrames
+			blend = effects.NewBlend(w, h, bFrames, calculateWeights(bFrames))
+		}
 	})
 
-	if settings.Recording.MotionBlur.Enabled {
-		mainthread.Call(func() {
-			bFrames := settings.Recording.MotionBlur.BlendFrames
-
-			multiTexture = texture.NewTextureMultiLayerFormat(w, h, texture.RGB, 0, bFrames)
-
-			var weights []float32
-
-			if settings.Recording.MotionBlur.BlendWeights.UseManualWeights {
-				weightsSplit := strings.Split(settings.Recording.MotionBlur.BlendWeights.ManualWeights, " ")
-
-				for _, s := range weightsSplit {
-					v, err := strconv.ParseFloat(s, 32)
-					if err != nil {
-						panic(fmt.Sprintf("Failed to parse weight: %s", s))
-					}
-
-					weights = append(weights, float32(v))
-				}
-			} else {
-				id := settings.Recording.MotionBlur.BlendWeights.AutoWeightsID
-				if id < 0 || id > len(easings) {
-					id = 0
-				}
-
-				if id == 0 {
-					for i := 0; i < bFrames; i++ {
-						weights = append(weights, 1)
-					}
-				} else {
-					easeFunc := easings[id-1]
-
-					for i := 0; i < bFrames; i++ {
-						w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*float64(i)*settings.Recording.MotionBlur.BlendWeights.AutoWeightsScale
-						weights = append(weights, float32(w))
-					}
-				}
-			}
-
-			blend = effects.NewBlend(w, h, bFrames, weights)
-		})
-	}
-
-	pboSync = &sync.Mutex{}
+	pboSync = &sync.RWMutex{}
 
 	queue = make(chan func(), MaxBuffers)
 
@@ -240,28 +166,6 @@ func StopFFmpeg() {
 	log.Println("Ffmpeg finished.")
 }
 
-func Combine() {
-	log.Println("Starting composing audio and video into one file...")
-	cmd2 := exec.Command("ffmpeg",
-		"-y",
-		"-i", filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container),
-		"-i", filepath.Join(settings.Recording.OutputDir, "audio.wav"),
-		"-c:v", "copy",
-		"-c:a", "aac",
-		"-ab", "320k",
-		filepath.Join(settings.Recording.OutputDir, "danser_"+time.Now().Format("2006-01-02_15-04-05")+"."+settings.Recording.Container),
-	)
-	cmd2.Start()
-	cmd2.Wait()
-
-	log.Println("Finished! Cleaning up...")
-
-	os.Remove(filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container))
-	os.Remove(filepath.Join(settings.Recording.OutputDir, "audio.wav"))
-
-	log.Println("Finished.")
-}
-
 func PreFrame() {
 	if settings.Recording.MotionBlur.Enabled {
 		blend.Begin()
@@ -288,14 +192,15 @@ func MakeFrame() {
 		CheckData()
 	}
 
-	pboSync.Lock()
+	pboSync.RLock()
 
 	pbo := pboPool[0]
 	pboPool = pboPool[1:]
 
-	pboSync.Unlock()
+	pboSync.RUnlock()
 
 	gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
+
 	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, pbo.handle)
 
 	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
@@ -303,12 +208,9 @@ func MakeFrame() {
 
 	gl.Flush()
 
-	fSync := gl.FenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
+	pbo.sync = gl.FenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
 
-	syncPool = append(syncPool, syncObj{
-		sync: fSync,
-		pbo:  pbo,
-	})
+	syncPool = append(syncPool, pbo)
 }
 
 func CheckData() {
@@ -317,24 +219,24 @@ func CheckData() {
 			return
 		}
 
-		peekVal := syncPool[0]
+		pbo := syncPool[0]
 
 		var status int32
-		gl.GetSynciv(peekVal.sync, gl.SYNC_STATUS, 1, nil, &status)
+		gl.GetSynciv(pbo.sync, gl.SYNC_STATUS, 1, nil, &status)
 
 		if status == gl.SIGNALED {
-			gl.DeleteSync(peekVal.sync)
+			gl.DeleteSync(pbo.sync)
 
 			syncPool = syncPool[1:]
 
 			queue <- func() {
-				_, err := pipe.Write(peekVal.pbo.data)
+				_, err := pipe.Write(pbo.data)
 				if err != nil {
 					panic(err)
 				}
 
 				pboSync.Lock()
-				pboPool = append(pboPool, peekVal.pbo)
+				pboPool = append(pboPool, pbo)
 				pboSync.Unlock()
 			}
 
