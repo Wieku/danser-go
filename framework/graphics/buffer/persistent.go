@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
@@ -22,7 +23,14 @@ func NewPersistentBufferObject(maxFloats int) *PersistentBufferObject {
 	vbo := new(PersistentBufferObject)
 	vbo.capacity = maxFloats
 
-	gl.CreateBuffers(1, &vbo.handle)
+	if glfw.ExtensionSupported("GL_ARB_direct_state_access") {
+		gl.CreateBuffers(1, &vbo.handle)
+	} else {
+		gl.GenBuffers(1, &vbo.handle)
+		handle := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo.handle)
+		gl.BindBuffer(gl.ARRAY_BUFFER, handle)
+	}
 
 	gl.NamedBufferStorage(vbo.handle, maxFloats*4, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
 

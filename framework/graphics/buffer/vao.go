@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/graphics/shader"
@@ -32,7 +33,14 @@ func NewVertexArrayObject() *VertexArrayObject {
 	vao := new(VertexArrayObject)
 	vao.buffers = make(map[string]*bufferHolder)
 
-	gl.CreateVertexArrays(1, &vao.handle)
+	if glfw.ExtensionSupported("GL_ARB_direct_state_access") {
+		gl.CreateVertexArrays(1, &vao.handle)
+	} else {
+		gl.GenVertexArrays(1, &vao.handle)
+		handle := history.GetCurrent(gl.VERTEX_ARRAY_BINDING)
+		gl.BindVertexArray(vao.handle)
+		gl.BindVertexArray(handle)
+	}
 
 	runtime.SetFinalizer(vao, (*VertexArrayObject).Dispose)
 

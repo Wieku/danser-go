@@ -1,6 +1,7 @@
 package buffer
 
 import (
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -36,12 +37,12 @@ func NewFrame(width, height int, smooth, depth bool) *Framebuffer {
 
 	f.tex = texture.NewTextureSingle(width, height, 0)
 
-	gl.CreateFramebuffers(1, &f.handle)
+	createFramebuffer(f)
 
 	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
 
 	if depth {
-		gl.CreateRenderbuffers(1, &f.depth)
+		createRenderbuffer(&f.depth)
 
 		gl.NamedRenderbufferStorage(f.depth, gl.DEPTH_COMPONENT, int32(width), int32(height))
 		gl.NamedFramebufferRenderbuffer(f.handle, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, f.depth)
@@ -60,7 +61,7 @@ func NewFrameF(width, height int) *Framebuffer {
 	f.tex = texture.NewTextureSingleFormat(width, height, texture.RGBA32F, 0)
 	f.tex.SetFiltering(texture.Filtering.Nearest, texture.Filtering.Nearest)
 
-	gl.CreateFramebuffers(1, &f.handle)
+	createFramebuffer(f)
 
 	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
 
@@ -74,7 +75,7 @@ func NewFrameLayer(texture texture.Texture, layer int) *Framebuffer {
 	f.width = int(texture.GetWidth())
 	f.height = int(texture.GetHeight())
 
-	gl.CreateFramebuffers(1, &f.handle)
+	createFramebuffer(f)
 
 	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT0, texture.GetID(), 0, int32(layer))
 
@@ -88,9 +89,9 @@ func NewFrameDepth(width, height int, smooth bool) *Framebuffer {
 	f.width = width
 	f.height = height
 
-	f.tex = texture.NewTextureSingleFormat(width, height, texture.Depth, 0)
+	createFramebuffer(f)
 
-	gl.CreateFramebuffers(1, &f.handle)
+	f.tex = texture.NewTextureSingleFormat(width, height, texture.Depth, 0)
 
 	gl.NamedFramebufferTextureLayer(f.handle, gl.DEPTH_ATTACHMENT, f.tex.GetID(), 0, 0)
 
@@ -105,14 +106,15 @@ func NewFrameMultisampleScreen(width, height int, depth bool, samples int) *Fram
 	f.height = height
 	f.multisampled = true
 
-	gl.CreateFramebuffers(1, &f.handle)
+	createFramebuffer(f)
 
-	gl.CreateRenderbuffers(1, &f.texRenderbuffer)
+	createRenderbuffer(&f.texRenderbuffer)
+
 	gl.NamedRenderbufferStorageMultisample(f.texRenderbuffer, int32(samples), texture.RGBA.InternalFormat(), int32(width), int32(height))
 	gl.NamedFramebufferRenderbuffer(f.handle, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, f.texRenderbuffer)
 
 	if depth {
-		gl.CreateRenderbuffers(1, &f.depth)
+		createRenderbuffer(&f.depth)
 		gl.NamedRenderbufferStorageMultisample(f.depth, int32(samples), gl.DEPTH_COMPONENT, int32(width), int32(height))
 		gl.NamedFramebufferRenderbuffer(f.handle, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, f.depth)
 	}
@@ -226,4 +228,23 @@ func (f *Framebuffer) ClearDepthV(v float32) {
 
 func (f *Framebuffer) ClearDepth() {
 	f.ClearDepthV(1)
+}
+
+func createFramebuffer(f *Framebuffer) {
+	if glfw.ExtensionSupported("GL_ARB_direct_state_access") {
+		gl.CreateFramebuffers(1, &f.handle)
+	} else {
+		gl.GenFramebuffers(1, &f.handle)
+		handle := history.GetCurrent(gl.FRAMEBUFFER_BINDING)
+		gl.BindFramebuffer(gl.FRAMEBUFFER, f.handle)
+		gl.BindFramebuffer(gl.FRAMEBUFFER, handle)
+	}
+}
+func createRenderbuffer(handle *uint32) {
+	if glfw.ExtensionSupported("GL_ARB_direct_state_access") {
+		gl.CreateRenderbuffers(1, handle)
+	} else {
+		gl.GenRenderbuffers(1, handle)
+		gl.BindRenderbuffer(gl.RENDERBUFFER, *handle)
+	}
 }
