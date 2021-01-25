@@ -17,7 +17,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"github.com/wieku/danser-go/framework/qpc"
 	"math"
 	"sync"
 )
@@ -134,6 +133,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 	dirtyLocal := false
 
 	cursor.clock += delta / 100
+
 	if cursor.clock >= 1000000 {
 		cursor.clock = 0
 
@@ -144,7 +144,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 		dirtyLocal = true
 	}
 
-	cursor.currentTime = qpc.GetMilliTimeF()
+	cursor.currentTime = cursor.clock * 100
 	cursor.manager.Update(int64(cursor.currentTime))
 
 	cursor.Position = position
