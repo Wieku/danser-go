@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
@@ -21,14 +20,7 @@ func NewIndexBufferObject(maxIndices int) *IndexBufferObject {
 	ibo := new(IndexBufferObject)
 	ibo.capacity = maxIndices
 
-	if glfw.ExtensionSupported("GL_ARB_direct_state_access") {
-		gl.CreateBuffers(1, &ibo.handle)
-	} else {
-		gl.GenBuffers(1, &ibo.handle)
-		handle := history.GetCurrent(gl.ELEMENT_ARRAY_BUFFER_BINDING)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.handle)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, handle)
-	}
+	gl.CreateBuffers(1, &ibo.handle)
 
 	gl.NamedBufferData(ibo.handle, maxIndices*2, gl.Ptr(nil), gl.DYNAMIC_DRAW)
 
