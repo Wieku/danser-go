@@ -2,7 +2,6 @@ package texture
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type Filter int32
@@ -48,13 +47,7 @@ type textureStore struct {
 func newStore(layerNum, width, height int, format Format, mipmaps int) *textureStore {
 	store := new(textureStore)
 
-	if glfw.ExtensionSupported("GL_ARB_direct_state_access") {
-		gl.CreateTextures(gl.TEXTURE_2D_ARRAY, 1, &store.id)
-	} else {
-		gl.GenTextures(1, &store.id)
-		gl.ActiveTexture(0)
-		gl.BindTexture(gl.TEXTURE_2D_ARRAY, store.id)
-	}
+	gl.CreateTextures(gl.TEXTURE_2D_ARRAY, 1, &store.id)
 
 	store.layers = int32(layerNum)
 	store.width = int32(width)
