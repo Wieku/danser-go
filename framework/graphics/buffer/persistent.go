@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
@@ -19,6 +20,10 @@ type PersistentBufferObject struct {
 }
 
 func NewPersistentBufferObject(maxFloats int) *PersistentBufferObject {
+	if !glfw.ExtensionSupported("GL_ARB_buffer_storage") {
+		panic("Your GPU does not support one or more required OpenGL extensions: [GL_ARB_buffer_storage]. Please update your graphics drivers or upgrade your GPU.")
+	}
+
 	vbo := new(PersistentBufferObject)
 	vbo.capacity = maxFloats
 

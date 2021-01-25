@@ -251,6 +251,8 @@ func run() {
 
 		gl.Init()
 
+		extensionCheck()
+
 		C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.RENDERER))))
 
 		glVendor := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VENDOR))))
@@ -467,6 +469,33 @@ func run() {
 			})
 		}
 	}
+}
+
+func extensionCheck() {
+	extensions := []string{
+		"GL_ARB_clear_texture",
+		"GL_ARB_direct_state_access",
+		"GL_ARB_texture_storage",
+		"GL_ARB_vertex_attrib_binding",
+	}
+
+	if settings.RECORD {
+		extensions = append(extensions, "GL_ARB_buffer_storage")
+	}
+
+	var notSupported []string
+
+	for _, ext := range extensions {
+		if !glfw.ExtensionSupported(ext) {
+			notSupported = append(notSupported, ext)
+		}
+	}
+
+	if len(notSupported) > 0 {
+		panic(fmt.Sprintf("Your GPU does not support one or more required OpenGL extensions: %s. Please update your graphics drivers or upgrade your GPU", notSupported))
+	}
+
+	_ = extensions
 }
 
 func pushFrame() {
