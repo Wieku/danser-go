@@ -58,11 +58,16 @@ func (vbo *PersistentBufferObject) SetData(offset int, data []float32) {
 func (vbo *PersistentBufferObject) Resize(newCapacity int) {
 	vbo.capacity = newCapacity
 
-	gl.NamedBufferStorage(vbo.handle, newCapacity*4, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT)
+	gl.DeleteBuffers(1, &vbo.handle)
 
-	pt := gl.MapNamedBufferRange(vbo.handle, 0, newCapacity*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_FLUSH_EXPLICIT_BIT)
+	gl.CreateBuffers(1, &vbo.handle)
+
+	gl.NamedBufferStorage(vbo.handle, newCapacity*4, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
+
+	pt := gl.MapNamedBufferRange(vbo.handle, 0, newCapacity*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
 
 	vbo.data = (*[1 << 30]float32)(pt)[:newCapacity:newCapacity]
+
 	vbo.offset = 0
 }
 

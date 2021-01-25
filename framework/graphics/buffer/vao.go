@@ -15,6 +15,7 @@ type bufferHolder struct {
 	buffer  StreamingBuffer
 	divisor int
 	format  attribute.Format
+	binding int
 }
 
 type VertexArrayObject struct {
@@ -56,6 +57,7 @@ func (vao *VertexArrayObject) addVBO(name string, maxVertices int, divisor int, 
 		buffer:  NewVertexBufferObject(maxVertices*format.Size()/4, mapped, DynamicDraw),
 		divisor: divisor,
 		format:  format,
+		binding: -1,
 	}
 
 	if divisor == 0 {
@@ -71,10 +73,12 @@ func (vao *VertexArrayObject) AddPersistentVBO(name string, maxVertices int, div
 	}
 
 	holder := &bufferHolder{
-		buffer:  NewPersistentBufferObject(maxVertices * format.Size() / 4),
+		buffer:  NewPersistentBufferObject(maxVertices / 100 * format.Size() / 4),
 		divisor: divisor,
 		format:  format,
 	}
+
+	holder.buffer.Resize(maxVertices * format.Size() / 4)
 
 	if divisor == 0 {
 		vao.capacity = maxVertices
@@ -104,6 +108,11 @@ func (vao *VertexArrayObject) Resize(name string, maxVertices int) {
 		size := maxVertices * holder.format.Size() / 4
 		if holder.buffer.Capacity() != size {
 			holder.buffer.Resize(size)
+
+			// If we have persistent buffer object that was bound we want to bind it again because new object was created on resize
+			if _, ok := holder.buffer.(*PersistentBufferObject); ok && holder.binding >= 0 {
+				gl.VertexArrayVertexBuffer(vao.handle, uint32(holder.binding), holder.buffer.GetID(), 0, int32(holder.format.Size()))
+			}
 		}
 
 		return
@@ -135,6 +144,7 @@ func (vao *VertexArrayObject) Attach(s *shader.RShader) {
 			offset += attr.Type.Size()
 		}
 
+		holder.binding = index
 		gl.VertexArrayVertexBuffer(vao.handle, uint32(index), holder.buffer.GetID(), 0, int32(holder.format.Size()))
 		gl.VertexArrayBindingDivisor(vao.handle, uint32(index), uint32(holder.divisor))
 
