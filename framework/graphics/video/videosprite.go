@@ -39,7 +39,7 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 }
 
 func (video *Video) Update(time int64) {
-	if video.decoder == nil {
+	if video.decoder == nil || video.decoder.HasFinished() {
 		return
 	}
 

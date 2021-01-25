@@ -20,10 +20,11 @@ type VideoDecoder struct {
 
 	readyQueue chan Frame
 
-	command *exec.Cmd
-	pipe    io.ReadCloser
-	running bool
-	wg      *sync.WaitGroup
+	command  *exec.Cmd
+	pipe     io.ReadCloser
+	running  bool
+	wg       *sync.WaitGroup
+	finished bool
 }
 
 func NewVideoDecoder(filePath string) *VideoDecoder {
@@ -102,6 +103,7 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 			_, err = io.ReadFull(dec.pipe, frame)
 			if err != nil {
 				dec.running = false
+				dec.finished = true
 			}
 
 			dec.readyQueue <- frame
@@ -117,4 +119,8 @@ func (dec *VideoDecoder) GetFrame() Frame {
 
 func (dec *VideoDecoder) Free(frame Frame) {
 	dec.emptyQueue <- frame
+}
+
+func (dec *VideoDecoder) HasFinished() bool {
+	return dec.finished
 }
