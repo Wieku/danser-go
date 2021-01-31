@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/curves"
@@ -12,13 +13,15 @@ type AggressiveMover struct {
 	lastAngle          float32
 	bz                 *curves.Bezier
 	startTime, endTime int64
+	mods               difficulty.Modifier
 }
 
 func NewAggressiveMover() MultiPointMover {
 	return &AggressiveMover{lastAngle: 0}
 }
 
-func (bm *AggressiveMover) Reset() {
+func (bm *AggressiveMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.lastAngle = 0
 }
 
@@ -26,16 +29,16 @@ func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPosition()
+	endPos := end.GetStackedEndPositionMod(bm.mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPosition()
+	startPos := start.GetStackedStartPositionMod(bm.mods)
 	startTime := start.GetStartTime()
 
 	scaledDistance := float32(startTime - endTime)
 
 	newAngle := bm.lastAngle + math.Pi
 	if s, ok := end.(*objects.Slider); ok {
-		newAngle = s.GetEndAngle()
+		newAngle = s.GetEndAngleMod(bm.mods)
 	}
 
 	points := []vector.Vector2f{endPos, vector.NewVec2fRad(newAngle, scaledDistance).Add(endPos)}
@@ -45,7 +48,7 @@ func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	}
 
 	if s, ok := start.(*objects.Slider); ok {
-		points = append(points, vector.NewVec2fRad(s.GetStartAngle(), scaledDistance).Add(startPos))
+		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(bm.mods), scaledDistance).Add(startPos))
 	}
 
 	points = append(points, startPos)

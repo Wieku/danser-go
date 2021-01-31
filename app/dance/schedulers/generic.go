@@ -1,6 +1,7 @@
 package schedulers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/spinners"
@@ -17,20 +18,22 @@ type GenericScheduler struct {
 	lastTime     int64
 	spinnerMover spinners.SpinnerMover
 	input        *InputProcessor
+	mods         difficulty.Modifier
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
 	return &GenericScheduler{mover: mover()}
 }
 
-func (sched *GenericScheduler) Init(objs []objects.IHitObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
+func (sched *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
+	sched.mods = mods
 	sched.spinnerMover = spinnerMover
 	sched.cursor = cursor
 	sched.queue = objs
 
 	sched.input = NewInputProcessor(objs, cursor)
 
-	sched.mover.Reset()
+	sched.mover.Reset(mods)
 
 	for i := 0; i < len(sched.queue); i++ {
 		sched.queue = PreprocessQueue(i, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
@@ -63,7 +66,7 @@ func (sched *GenericScheduler) Update(time int64) {
 
 					sched.cursor.SetPos(sched.spinnerMover.GetPositionAt(time))
 				} else {
-					sched.cursor.SetPos(g.GetStackedPositionAt(time))
+					sched.cursor.SetPos(g.GetStackedPositionAtMod(time, sched.mods))
 				}
 			} else if time > g.GetEndTime() {
 				toRemove := 1

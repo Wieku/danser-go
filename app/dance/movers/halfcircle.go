@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -13,13 +14,15 @@ type HalfCircleMover struct {
 	ca                 curves.Curve
 	startTime, endTime int64
 	invert             float32
+	mods               difficulty.Modifier
 }
 
 func NewHalfCircleMover() MultiPointMover {
 	return &HalfCircleMover{invert: -1}
 }
 
-func (bm *HalfCircleMover) Reset() {
+func (bm *HalfCircleMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.invert = -1
 }
 
@@ -27,8 +30,8 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPosition()
-	startPos := start.GetStackedStartPosition()
+	endPos := end.GetStackedEndPositionMod(bm.mods)
+	startPos := start.GetStackedStartPositionMod(bm.mods)
 	bm.endTime = end.GetEndTime()
 	bm.startTime = start.GetStartTime()
 

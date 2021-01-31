@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -18,30 +19,34 @@ type MomentumMover struct {
 	startTime int64
 	endTime   int64
 	first     bool
+	mods      difficulty.Modifier
 }
 
 func NewMomentumMover() MultiPointMover {
 	return &MomentumMover{last: vector.NewVec2f(0, 0), first: true}
 }
 
-func (bm *MomentumMover) Reset() {
+func (bm *MomentumMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.first = true
 	bm.last = vector.NewVec2f(0, 0)
 }
 
-func same(o1 objects.IHitObject, o2 objects.IHitObject) bool {
-	return o1.GetStackedStartPosition() == o2.GetStackedStartPosition() || (settings.Dance.Momentum.SkipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
+func same(mods difficulty.Modifier, o1 objects.IHitObject, o2 objects.IHitObject) bool {
+	return o1.GetStackedStartPositionMod(mods) == o2.GetStackedStartPositionMod(mods) || (settings.Dance.Momentum.SkipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
 }
 
 func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	i := 0
-	if bm.first { i = 1 }
+	if bm.first {
+		i = 1
+	}
 
 	end := objs[i+0]
 	start := objs[i+1]
 
-	endPos := end.GetStackedEndPosition()
-	startPos := start.GetStackedStartPosition()
+	endPos := end.GetStackedEndPositionMod(bm.mods)
+	startPos := start.GetStackedStartPositionMod(bm.mods)
 
 	dst := endPos.Dst(startPos)
 
@@ -50,23 +55,23 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	for i++; i < len(objs); i++ {
 		o := objs[i]
 		if s, ok := o.(*objects.Slider); ok {
-			a2 = s.GetStartAngle()
+			a2 = s.GetStartAngleMod(bm.mods)
 			fromSlider = true
 			break
 		}
-		if i == len(objs) - 1 {
+		if i == len(objs)-1 {
 			a2 = bm.last.AngleRV(endPos)
 			break
 		}
-		if !same(o, objs[i+1]) {
-			a2 = o.GetStackedStartPosition().AngleRV(objs[i+1].GetStackedStartPosition())
+		if !same(bm.mods, o, objs[i+1]) {
+			a2 = o.GetStackedStartPositionMod(bm.mods).AngleRV(objs[i+1].GetStackedStartPositionMod(bm.mods))
 			break
 		}
 	}
 
 	var a1 float32
 	if s, ok := end.(*objects.Slider); ok {
-		a1 = s.GetEndAngle()
+		a1 = s.GetEndAngleMod(bm.mods)
 	} else if bm.first {
 		a1 = a2 + math.Pi
 	} else {
@@ -75,18 +80,18 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	a := startPos.AngleRV(endPos)
 	offset := float32(settings.Dance.Momentum.RestrictAngle * math.Pi / 180.0)
-	if !fromSlider && math32.Abs(a2 - a) < offset {
-		if a2 - a < offset {
+	if !fromSlider && math32.Abs(a2-a) < offset {
+		if a2-a < offset {
 			a2 = a - offset
 		} else {
 			a2 = a + offset
 		}
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst * float32(settings.Dance.Momentum.DistanceMult)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst * float32(settings.Dance.Momentum.DistanceMultEnd)).Add(startPos)
+	p1 := vector.NewVec2fRad(a1, dst*float32(settings.Dance.Momentum.DistanceMult)).Add(endPos)
+	p2 := vector.NewVec2fRad(a2, dst*float32(settings.Dance.Momentum.DistanceMultEnd)).Add(startPos)
 
-	if !same(end, start) {
+	if !same(bm.mods, end, start) {
 		bm.last = p2
 	}
 

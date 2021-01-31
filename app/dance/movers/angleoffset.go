@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -16,13 +17,15 @@ type AngleOffsetMover struct {
 	bz                 *curves.Bezier
 	startTime, endTime int64
 	invert             float32
+	mods               difficulty.Modifier
 }
 
 func NewAngleOffsetMover() MultiPointMover {
 	return &AngleOffsetMover{lastAngle: 0, invert: 1}
 }
 
-func (bm *AngleOffsetMover) Reset() {
+func (bm *AngleOffsetMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.lastAngle = 0
 	bm.invert = 1
 	bm.lastPoint = vector.NewVec2f(0, 0)
@@ -32,9 +35,9 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPosition()
+	endPos := end.GetStackedEndPositionMod(bm.mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPosition()
+	startPos := start.GetStackedStartPositionMod(bm.mods)
 	startTime := start.GetStartTime()
 
 	distance := endPos.Dst(startPos)
@@ -62,7 +65,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 			pt1 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
 
 			if ok1 {
-				pt1 = vector.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
+				pt1 = vector.NewVec2fRad(s1.GetEndAngleMod(bm.mods), scaledDistance).Add(endPos)
 			}
 
 			if !ok2 {
@@ -75,7 +78,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			} else {
-				pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
+				pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(bm.mods), scaledDistance).Add(startPos)
 				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			}
 		} else {
@@ -84,8 +87,8 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	} else if ok1 && ok2 {
 		bm.invert = -1 * bm.invert
 
-		pt1 := vector.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
-		pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(bm.mods), scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(bm.mods), scaledDistance).Add(startPos)
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else if ok1 {
@@ -93,10 +96,10 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 		if math.Abs(float64(startTime-endTime)) > 1 {
 			bm.lastAngle = endPos.AngleRV(startPos) - newAngle*bm.invert
 		} else {
-			bm.lastAngle = s1.GetEndAngle() + math.Pi
+			bm.lastAngle = s1.GetEndAngleMod(bm.mods) + math.Pi
 		}
 
-		pt1 := vector.NewVec2fRad(s1.GetEndAngle(), scaledDistance).Add(endPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(bm.mods), scaledDistance).Add(endPos)
 		pt2 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(startPos)
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
@@ -106,7 +109,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 		}
 
 		pt1 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
-		pt2 := vector.NewVec2fRad(s2.GetStartAngle(), scaledDistance).Add(startPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(bm.mods), scaledDistance).Add(startPos)
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else {

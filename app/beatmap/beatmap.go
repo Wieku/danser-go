@@ -60,7 +60,7 @@ func NewBeatMap() *BeatMap {
 		MinBPM:        math.Inf(0),
 		MaxBPM:        0,
 	}
-	beatMap.Diff.SetMods(difficulty.HardRock)
+	//beatMap.Diff.SetMods(difficulty.HardRock|difficulty.Hidden)
 	return beatMap
 }
 

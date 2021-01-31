@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -12,14 +13,15 @@ import (
 type SplineMover struct {
 	curve              *curves.BSpline
 	startTime, endTime int64
+	mods               difficulty.Modifier
 }
 
 func NewSplineMover() MultiPointMover {
 	return &SplineMover{}
 }
 
-func (mover *SplineMover) Reset() {
-
+func (mover *SplineMover) Reset(mods difficulty.Modifier) {
+	mover.mods = mods
 }
 
 func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
@@ -35,15 +37,15 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	for ; i < len(objs); i++ {
 		if i == 0 {
 			if s, ok := objs[i].(*objects.Slider); ok {
-				points = append(points, s.GetStackedEndPosition(), vector.NewVec2fRad(s.GetEndAngle(), s.GetStackedEndPosition().Dst(objs[i+1].GetStackedStartPosition())*0.7).Add(s.GetStackedEndPosition()))
+				points = append(points, s.GetStackedEndPositionMod(mover.mods), vector.NewVec2fRad(s.GetEndAngleMod(mover.mods), s.GetStackedEndPositionMod(mover.mods).Dst(objs[i+1].GetStackedStartPositionMod(mover.mods))*0.7).Add(s.GetStackedEndPositionMod(mover.mods)))
 			}
 
 			if s, ok := objs[i].(*objects.Circle); ok {
-				points = append(points, s.GetStackedEndPosition(), objs[i+1].GetStackedStartPosition().Sub(s.GetStackedEndPosition()).Scl(0.333).Add(s.GetStackedEndPosition()))
+				points = append(points, s.GetStackedEndPositionMod(mover.mods), objs[i+1].GetStackedStartPositionMod(mover.mods).Sub(s.GetStackedEndPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedEndPositionMod(mover.mods)))
 			}
 
 			if s, ok := objs[i].(*objects.Spinner); ok {
-				points = append(points, s.GetStackedEndPosition(), objs[i+1].GetStackedStartPosition().Sub(s.GetStackedEndPosition()).Scl(0.333).Add(s.GetStackedEndPosition()))
+				points = append(points, s.GetStackedEndPositionMod(mover.mods), objs[i+1].GetStackedStartPositionMod(mover.mods).Sub(s.GetStackedEndPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedEndPositionMod(mover.mods)))
 			}
 
 			timing = append(timing, bmath.MaxI64(objs[i].GetStartTime(), objs[i].GetEndTime()))
@@ -59,15 +61,15 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 		if ok || i == len(objs)-1 {
 			if s, ok := objs[i].(*objects.Slider); ok {
-				points = append(points, vector.NewVec2fRad(s.GetStartAngle(), s.GetStackedStartPosition().Dst(objs[i-1].GetStackedEndPosition())*0.7).Add(s.GetStackedStartPosition()), s.GetStackedStartPosition())
+				points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.mods), s.GetStackedStartPositionMod(mover.mods).Dst(objs[i-1].GetStackedEndPositionMod(mover.mods))*0.7).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
 			}
 
 			if s, ok := objs[i].(*objects.Circle); ok {
-				points = append(points, objs[i-1].GetStackedEndPosition().Sub(s.GetStackedStartPosition()).Scl(0.333).Add(s.GetStackedStartPosition()), s.GetStackedStartPosition())
+				points = append(points, objs[i-1].GetStackedEndPositionMod(mover.mods).Sub(s.GetStackedStartPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
 			}
 
 			if s, ok := objs[i].(*objects.Spinner); ok {
-				points = append(points, objs[i-1].GetStackedEndPosition().Sub(s.GetStackedStartPosition()).Scl(0.333).Add(s.GetStackedStartPosition()), s.GetStackedStartPosition())
+				points = append(points, objs[i-1].GetStackedEndPositionMod(mover.mods).Sub(s.GetStackedStartPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
 			}
 
 			timing = append(timing, objs[i].GetStartTime())
@@ -77,9 +79,9 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			break
 		} else if i < len(objs)-1 && i-1 > 0 {
 			if _, ok := objs[i].(*objects.Circle); ok {
-				pos1 := objs[i-1].GetStackedStartPosition()
-				pos2 := objs[i].GetStackedStartPosition()
-				pos3 := objs[i+1].GetStackedStartPosition()
+				pos1 := objs[i-1].GetStackedStartPositionMod(mover.mods)
+				pos2 := objs[i].GetStackedStartPositionMod(mover.mods)
+				pos3 := objs[i+1].GetStackedStartPositionMod(mover.mods)
 
 				min := float32(25.0)
 				max := float32(4000.0)
@@ -159,7 +161,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 		}
 
 		if s, ok := objs[i].(*objects.Circle); ok {
-			points = append(points, s.GetStackedEndPosition())
+			points = append(points, s.GetStackedEndPositionMod(mover.mods))
 			timing = append(timing, s.GetStartTime())
 		}
 	}

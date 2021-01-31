@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/curves"
@@ -11,21 +12,22 @@ import (
 type AxisMover struct {
 	bz                 *curves.MultiCurve
 	beginTime, endTime int64
+	mods               difficulty.Modifier
 }
 
 func NewAxisMover() MultiPointMover {
 	return &AxisMover{}
 }
 
-func (bm *AxisMover) Reset() {
-
+func (bm *AxisMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 }
 
 func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPosition()
+	endPos := end.GetStackedEndPositionMod(bm.mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPosition()
+	startPos := start.GetStackedStartPositionMod(bm.mods)
 	startTime := start.GetStartTime()
 
 	var midP vector.Vector2f

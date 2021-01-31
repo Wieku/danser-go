@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -16,13 +17,15 @@ type ExGonMover struct {
 	nextTime int64
 
 	endTime int64
+	mods    difficulty.Modifier
 }
 
 func NewExGonMover() MultiPointMover {
 	return &ExGonMover{}
 }
 
-func (bm *ExGonMover) Reset() {
+func (bm *ExGonMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.wasFirst = false
 }
 
