@@ -173,7 +173,7 @@ func (slider *Slider) GetStartAngle() float32 {
 }
 
 func (slider *Slider) GetStartAngleMod(modifier difficulty.Modifier) float32 {
-	return slider.GetStackedStartPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.StartTime + int64(math.Min(10, slider.partLen)), modifier)) //temporary solution
+	return slider.GetStackedStartPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.StartTime+int64(math.Min(10, slider.partLen)), modifier)) //temporary solution
 }
 
 func (slider *Slider) GetEndAngle() float32 {
@@ -181,7 +181,7 @@ func (slider *Slider) GetEndAngle() float32 {
 }
 
 func (slider *Slider) GetEndAngleMod(modifier difficulty.Modifier) float32 {
-	return slider.GetStackedEndPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.EndTime - int64(math.Min(10, slider.partLen)), modifier)) //temporary solution
+	return slider.GetStackedEndPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.EndTime-int64(math.Min(10, slider.partLen)), modifier)) //temporary solution
 }
 
 func (slider *Slider) GetPartLen() float32 {
@@ -814,7 +814,14 @@ func (slider *Slider) DrawBody(time int64, bodyColor, innerBorder, outerBorder c
 	bodyInner.A = float32(colorAlpha) * bodyOpacityInner
 	bodyOuter.A = float32(colorAlpha) * bodyOpacityOuter
 
-	slider.body.DrawNormal(projection, slider.StackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
+	stackOffset := slider.StackOffset
+	if slider.diff.Mods&difficulty.HardRock > 0 {
+		stackOffset = slider.StackOffsetHR
+	} else if slider.diff.Mods&difficulty.Easy > 0 {
+		stackOffset = slider.StackOffsetEZ
+	}
+
+	slider.body.DrawNormal(projection, stackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
 
 func (slider *Slider) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
