@@ -28,7 +28,7 @@ var spinnerBlue = color2.Color{R: 0.05, G: 0.5, B: 1.0, A: 1}
 
 type Spinner struct {
 	*HitObject
-	
+
 	Timings  *Timings
 	sample   int
 	rad      float32
@@ -122,7 +122,6 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 		spinner.glow.SetAlpha(0.0)
 		spinner.middle.AddTransform(animation.NewColorTransform(animation.Color3, easing.Linear, float64(spinner.StartTime), float64(spinner.EndTime), color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerRed))
 		spinner.middle.ResetValuesToTransforms()
-
 	} else {
 		spinner.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+350.4), bmath.Origin.Centre)
 		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 1.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 46.5), bmath.Origin.TopLeft)
@@ -133,10 +132,12 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 		spinner.sprites.Add(spinner.middle2)
 	}
 
-	spinner.approach = sprite.NewSpriteSingle(skin.GetTexture("spinner-approachcircle"), 5.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
-	spinner.sprites.Add(spinner.approach)
-	spinner.approach.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(spinner.StartTime), float64(spinner.EndTime), 1.9, 0.1))
-	spinner.approach.ResetValuesToTransforms()
+	if !diff.CheckModActive(difficulty.Hidden) {
+		spinner.approach = sprite.NewSpriteSingle(skin.GetTexture("spinner-approachcircle"), 5.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.sprites.Add(spinner.approach)
+		spinner.approach.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(spinner.StartTime), float64(spinner.EndTime), 1.9, 0.1))
+		spinner.approach.ResetValuesToTransforms()
+	}
 
 	spinner.UpdateCompletion(0.0)
 
@@ -178,16 +179,6 @@ func (spinner *Spinner) Update(time int64) bool {
 				spinner.StartSpinSample()
 			}
 		}
-
-		//frad := float32(easing.InQuad(float64(1.0 - math32.Abs((math32.Mod(spinner.rad, math32.Pi/2)-math32.Pi/4)/(math32.Pi/4)))))
-		//a := spinner.rad - math32.Pi/2*math32.Round(spinner.rad*2/math32.Pi)
-		//spinner.pos = vector.NewVec2fRad(spinner.rad*1.1, 100/math32.Cos(a) /*+ frad * (50 * (math32.Sqrt(2) - 1))*/).Add(spinner.StartPosRaw)
-
-		//spinner.pos.X = 16 * math32.Pow(math32.Sin(spinner.rad), 3)
-		//spinner.pos.Y = 13*math32.Cos(spinner.rad) - 5*math32.Cos(2*spinner.rad) - 2*math32.Cos(3*spinner.rad) - math32.Cos(4*spinner.rad)
-
-		//spinner.pos = spinner.pos.Scl(-6 - 2*math32.Sin(float32(time-spinner.StartTime)/2000*2*math32.Pi)).Add(spinner.StartPosRaw)
-		//spinner.GetStackedEndPosition() = spinner.pos
 	}
 
 	spinner.pos = spinner.StartPosRaw
