@@ -81,7 +81,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			decay1 := math.Pow(0.9, timeDiff/FrameTime)
 			state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(state.currentVelocity)*1000)/(math.Pi*2)*60
 
-			mouseAngle := float64(player.cursor.Position.Sub(spinnerPosition).AngleR())
+			mouseAngle := float64(player.cursor.RawPosition.Sub(spinnerPosition).AngleR())
 
 			angleDiff := mouseAngle - state.lastAngle
 

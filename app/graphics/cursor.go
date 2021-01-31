@@ -68,7 +68,10 @@ type Cursor struct {
 	IsPlayer         bool
 	LastFrameTime    int64 //
 	CurrentFrameTime int64 //
-	Position         vector.Vector2f
+	RawPosition      vector.Vector2f
+	InvertDisplay    bool
+
+	Position vector.Vector2f
 
 	Name string
 
@@ -102,7 +105,12 @@ func NewCursor() *Cursor {
 }
 
 func (cursor *Cursor) SetPos(pt vector.Vector2f) {
+	cursor.RawPosition = pt
 	tmp := pt
+
+	if cursor.InvertDisplay {
+		tmp.Y = 384 - tmp.Y
+	}
 
 	if settings.Cursor.BounceOnEdges && settings.DIVIDES <= 2 {
 		for {

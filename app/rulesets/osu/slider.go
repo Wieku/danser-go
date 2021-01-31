@@ -37,14 +37,14 @@ type Slider struct {
 	state             map[*difficultyPlayer]*sliderstate
 	fadeStartRelative float64
 
-	lastSliderTime    int64
-	sliderPosition    vector.Vector2f
+	lastSliderTime int64
+	sliderPosition vector.Vector2f
 
-	lastSliderTimeHR    int64
-	sliderPositionHR    vector.Vector2f
+	lastSliderTimeHR int64
+	sliderPositionHR vector.Vector2f
 
-	lastSliderTimeEZ    int64
-	sliderPositionEZ    vector.Vector2f
+	lastSliderTimeEZ int64
+	sliderPositionEZ vector.Vector2f
 }
 
 func (slider *Slider) GetNumber() int64 {
@@ -92,7 +92,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
 
 	clicked := player.leftCondE || player.rightCondE
-	inRadius := player.cursor.Position.Dst(position) <= float32(player.diff.CircleRadius)
+	inRadius := player.cursor.RawPosition.Dst(position) <= float32(player.diff.CircleRadius)
 
 	if clicked && inRadius && !state.isStartHit && !state.isHit {
 		if slider.ruleSet.CanBeHit(time, slider, player) == Click {
@@ -200,7 +200,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			radiusNeeded *= 2.4
 		}
 
-		allowable := mouseDownAcceptable && player.cursor.Position.Dst(sliderPosition) <= float32(radiusNeeded)
+		allowable := mouseDownAcceptable && player.cursor.RawPosition.Dst(sliderPosition) <= float32(radiusNeeded)
 
 		if allowable && !state.sliding {
 			state.sliding = true

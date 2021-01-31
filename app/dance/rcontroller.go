@@ -347,6 +347,10 @@ func (controller *ReplayController) InitCursors() {
 			controller.cursors = append(controller.cursors, cursor)
 		}
 
+		if controller.bMap.Diff.Mods.Active(difficulty.HardRock) != controller.replays[i].ModsV.Active(difficulty.HardRock) {
+			controller.cursors[i].InvertDisplay = true
+		}
+
 		modifiers = append(modifiers, controller.replays[i].ModsV)
 	}
 
@@ -384,13 +388,7 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
 
-					mY := frame.MouseY
-
-					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
-						mY = 384 - mY
-					}
-
-					controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, mY))
+					controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, frame.MouseY))
 
 					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
 					controller.cursors[i].CurrentFrameTime = c.replayTime
@@ -466,10 +464,6 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 
 					mX := (c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + c.frames[prevIndex].MosueX
 					mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
-
-					if controller.replays[i].ModsV&difficulty.HardRock > 0 {
-						mY = 384 - mY
-					}
 
 					controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
 					controller.cursors[i].IsReplayFrame = false
