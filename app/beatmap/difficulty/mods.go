@@ -59,9 +59,10 @@ var modsString = [...]string{
 	"K6",
 	"K7",
 	"K8",
-	"K9",
+	"FI",
 	"RN", // Random
-	"LM", // LastMod. Cinema?
+	"CN",
+	"TG",
 	"K9",
 	"K0",
 	"K1",
