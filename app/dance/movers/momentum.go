@@ -132,8 +132,8 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	offset := float32(ms.RestrictAngle * math.Pi / 180.0)
 
-	multend := ms.DistanceMultOut
-	multstart := ms.DistanceMultOut
+	multEnd := ms.DistanceMultOut
+	multStart := ms.DistanceMultOut
 
 	if stream && math32.Abs(anorm(a2 - startPos.AngleRV(endPos))) < anorm((2 * math32.Pi) - offset) {
 		a := endPos.AngleRV(startPos)
@@ -144,8 +144,8 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			a2 = a + sangle
 		}
 
-		multend = ms.StreamMult
-		multstart = ms.StreamMult
+		multEnd = ms.StreamMult
+		multStart = ms.StreamMult
 	} else if !fromSlider && math32.Abs(anorm2(a2 - startPos.AngleRV(endPos))) < offset {
 		a := startPos.AngleRV(endPos)
 		if anorm(a2 - a) < offset {
@@ -154,8 +154,8 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			a2 = a + offset
 		}
 
-		multend = ms.DistanceMult
-		multstart = ms.DistanceMultEnd
+		multEnd = ms.DistanceMult
+		multStart = ms.DistanceMultEnd
 	}
 
 	endTime := end.GetEndTime()
@@ -164,12 +164,12 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	if ms.DurationTrigger > 0 && duration >= ms.DurationTrigger {
 		mult := math.Pow(ms.DurationPow, float64(duration) / ms.DurationTrigger)
-		multend *= mult
-		multstart *= mult
+		multEnd *= mult
+		multStart *= mult
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst * float32(multend)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst * float32(multstart)).Add(startPos)
+	p1 := vector.NewVec2fRad(a1, dst * float32(multEnd)).Add(endPos)
+	p2 := vector.NewVec2fRad(a2, dst * float32(multStart)).Add(startPos)
 
 	if !same(bm.mods, end, start) {
 		bm.last = p2
