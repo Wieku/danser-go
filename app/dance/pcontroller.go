@@ -35,7 +35,7 @@ func (controller *PlayerController) InitCursors() {
 	controller.cursors = []*graphics.Cursor{graphics.NewCursor()}
 	controller.cursors[0].IsPlayer = true
 	controller.window = glfw.GetCurrentContext()
-	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{difficulty.None})
+	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{controller.bMap.Diff.Mods})
 	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 	controller.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.LeftKey) {

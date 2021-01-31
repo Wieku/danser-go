@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
+	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
@@ -95,7 +96,21 @@ func run() {
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
 		record := flag.Bool("record", false, "Records a video")
 
+		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
+
 		flag.Parse()
+
+		modsParsed := difficulty2.ParseMods(*mods)
+
+		if !modsParsed.Compatible() {
+			panic("Incompatible mods selected!")
+		}
+
+		incompatibleMods := difficulty2.SpunOut | difficulty2.Flashlight | difficulty2.Relax | difficulty2.Relax2
+
+		if modsParsed.Active(incompatibleMods) {
+			panic(fmt.Sprintf("Those mods are not yet supported: %s", (modsParsed & incompatibleMods).String()))
+		}
 
 		closeAfterSettingsLoad := false
 
@@ -321,10 +336,24 @@ func run() {
 		bass.Init()
 		audio.LoadSamples()
 
+		if modsParsed.Active(difficulty2.Nightcore) {
+			settings.SPEED = 1.5
+			settings.PITCH = 1.5
+		} else if modsParsed.Active(difficulty2.DoubleTime) {
+			settings.SPEED = 1.5
+		} else if modsParsed.Active(difficulty2.Daycore) {
+			settings.PITCH = 0.75
+			settings.SPEED = 0.75
+		} else if modsParsed.Active(difficulty2.HalfTime) {
+			settings.SPEED = 0.75
+		}
+
+		beatMap.Diff.SetMods(modsParsed)
 		beatmap.ParseTimingPointsAndPauses(beatMap)
 		beatmap.ParseObjects(beatMap)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
+
 		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
 
