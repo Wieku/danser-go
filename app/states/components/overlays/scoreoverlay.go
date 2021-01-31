@@ -24,6 +24,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -90,6 +91,9 @@ type ScoreOverlay struct {
 
 	boundaries     *common.Boundaries
 	hpBasePosition vector.Vector2d
+
+	mods     *sprite.SpriteManager
+	notFirst bool
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -245,6 +249,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.boundaries = common.NewBoundaries()
 
+	overlay.mods = sprite.NewSpriteManager()
+
 	return overlay
 }
 
@@ -255,6 +261,37 @@ func (overlay *ScoreOverlay) animate(time int64) {
 }
 
 func (overlay *ScoreOverlay) Update(time int64) {
+	if !overlay.notFirst && time > -int64(settings.Playfield.LeadInHold*1000) {
+		overlay.notFirst = true
+
+		mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
+
+		offset := -40.0
+		for i, s := range mods {
+			modSpriteName := "selection-mod-" + strings.ToLower(s)
+
+			log.Println(modSpriteName)
+
+			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 155), bmath.Origin.Centre)
+			mod.SetAlpha(0)
+			mod.ShowForever(true)
+
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(time), float64(time)+500, 0.0, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(time), float64(time)+500, 1.5, 1.0))
+
+			if overlay.cursor.Name == "" {
+				startT := float64(overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime())
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0, 0))
+
+				endT := float64(overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime())
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500, 0.0, 1.0))
+			}
+
+			overlay.mods.Add(mod)
+
+			offset -= 18
+		}
+	}
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
 		if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
@@ -332,6 +369,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 		overlay.keyStates[i] = state
 	}
 
+	overlay.mods.Update(time)
 	overlay.keyOverlay.Update(time)
 	overlay.bgDim.Update(float64(time))
 	overlay.healthBackground.Update(time)
@@ -561,6 +599,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
+
+	overlay.mods.Draw(overlay.lastTime, batch)
 
 	batch.SetCamera(prev)
 }
