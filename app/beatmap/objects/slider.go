@@ -208,7 +208,7 @@ func (slider *Slider) PositionAt(time int64) vector.Vector2f {
 		pos = pLine.Line.PointAt(float32(clamped-pLine.Time1) / float32(pLine.Time2-pLine.Time1))
 	}
 
-	return pos.Add(slider.StackOffset)
+	return pos
 }
 
 func (slider *Slider) GetAsDummyCircles() []IHitObject {
