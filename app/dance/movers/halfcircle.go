@@ -23,14 +23,14 @@ func (bm *HalfCircleMover) Reset() {
 	bm.invert = -1
 }
 
-func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetBasicData().EndPos
-	startPos := start.GetBasicData().StartPos
-	bm.endTime = end.GetBasicData().EndTime
-	bm.startTime = start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPosition()
+	startPos := start.GetStackedStartPosition()
+	bm.endTime = end.GetEndTime()
+	bm.startTime = start.GetStartTime()
 
 	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < settings.Dance.HalfCircle.StreamTrigger {
 		bm.invert = -1 * bm.invert

@@ -46,9 +46,9 @@ type BeatMap struct {
 	MaxBPM float64
 
 	Timings    *objects.Timings
-	HitObjects []objects.BaseObject
-	Pauses     []objects.BaseObject
-	Queue      []objects.BaseObject
+	HitObjects []objects.IHitObject
+	Pauses     []*Pause
+	Queue      []objects.IHitObject
 }
 
 func NewBeatMap() *BeatMap {
@@ -60,12 +60,12 @@ func NewBeatMap() *BeatMap {
 		MinBPM:        math.Inf(0),
 		MaxBPM:        0,
 	}
-	//beatMap.Diff.SetMods(difficulty.Hidden)
+	beatMap.Diff.SetMods(difficulty.HardRock)
 	return beatMap
 }
 
 func (b *BeatMap) Reset() {
-	b.Queue = make([]objects.BaseObject, len(b.HitObjects))
+	b.Queue = make([]objects.IHitObject, len(b.HitObjects))
 	copy(b.Queue, b.HitObjects)
 	b.Timings.Reset()
 	for _, o := range b.HitObjects {
@@ -78,13 +78,13 @@ func (b *BeatMap) Update(time int64) {
 
 	for i := 0; i < len(b.Queue); i++ {
 		g := b.Queue[i]
-		if g.GetBasicData().StartTime-int64(b.Diff.Preempt) > time {
+		if g.GetStartTime()-int64(b.Diff.Preempt) > time {
 			break
 		}
 
 		g.Update(time)
 
-		if time >= g.GetBasicData().EndTime+difficulty.HitFadeOut+b.Diff.Hit50 {
+		if time >= g.GetEndTime()+difficulty.HitFadeOut+b.Diff.Hit50 {
 			if i < len(b.Queue)-1 {
 				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
 			} else if i < len(b.Queue) {
@@ -95,8 +95,8 @@ func (b *BeatMap) Update(time int64) {
 	}
 }
 
-func (beatMap *BeatMap) GetObjectsCopy() []objects.BaseObject {
-	queue := make([]objects.BaseObject, len(beatMap.HitObjects))
+func (beatMap *BeatMap) GetObjectsCopy() []objects.IHitObject {
+	queue := make([]objects.IHitObject, len(beatMap.HitObjects))
 	copy(queue, beatMap.HitObjects)
 	return queue
 }

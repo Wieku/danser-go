@@ -21,12 +21,12 @@ func (bm *AxisMover) Reset() {
 
 }
 
-func (bm *AxisMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	end, start := objs[0], objs[1]
-	endPos := end.GetBasicData().EndPos
-	endTime := end.GetBasicData().EndTime
-	startPos := start.GetBasicData().StartPos
-	startTime := start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPosition()
+	endTime := end.GetEndTime()
+	startPos := start.GetStackedStartPosition()
+	startTime := start.GetStartTime()
 
 	var midP vector.Vector2f
 

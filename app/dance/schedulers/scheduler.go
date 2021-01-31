@@ -7,6 +7,6 @@ import (
 )
 
 type Scheduler interface {
-	Init(objects []objects.BaseObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover)
+	Init(objects []objects.IHitObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover)
 	Update(time int64)
 }

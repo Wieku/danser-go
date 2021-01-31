@@ -26,7 +26,7 @@ type renderableProxy struct {
 
 type HitObjectContainer struct {
 	beatMap       *beatmap.BeatMap
-	objectQueue   []objects.BaseObject
+	objectQueue   []objects.IHitObject
 	renderables   []*renderableProxy
 	spriteManager *sprite.SpriteManager
 	lastTime      float64
@@ -46,15 +46,15 @@ func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
 	for i := 1; i < len(container.objectQueue); i++ {
 		_, ok1 := container.objectQueue[i-1].(*objects.Spinner)
 		_, ok2 := container.objectQueue[i].(*objects.Spinner)
-		if ok1 || ok2 || container.objectQueue[i].GetBasicData().NewCombo {
+		if ok1 || ok2 || container.objectQueue[i].IsNewCombo() {
 			continue
 		}
 
-		prevTime := float64(container.objectQueue[i-1].GetBasicData().EndTime)
-		prevPos := container.objectQueue[i-1].GetBasicData().EndPos.Copy64()
+		prevTime := float64(container.objectQueue[i-1].GetEndTime())
+		prevPos := container.objectQueue[i-1].GetStackedEndPositionMod(beatMap.Diff.Mods).Copy64()
 
-		nextTime := float64(container.objectQueue[i].GetBasicData().StartTime)
-		nextPos := container.objectQueue[i].GetBasicData().StartPos.Copy64()
+		nextTime := float64(container.objectQueue[i].GetStartTime())
+		nextPos := container.objectQueue[i].GetStackedStartPositionMod(beatMap.Diff.Mods).Copy64()
 
 		vec := nextPos.Sub(prevPos)
 		duration := nextTime - prevTime
@@ -117,22 +117,22 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 	if len(container.objectQueue) > 0 {
 		for i := 0; i < len(container.objectQueue); i++ {
-			if p := container.objectQueue[i]; p.GetBasicData().StartTime-15000 <= int64(time) {
-				if p := container.objectQueue[i]; p.GetBasicData().StartTime-int64(container.beatMap.Diff.Preempt) <= int64(time) {
+			if p := container.objectQueue[i]; p.GetStartTime()-15000 <= int64(time) {
+				if p := container.objectQueue[i]; p.GetStartTime()-int64(container.beatMap.Diff.Preempt) <= int64(time) {
 
 					if _, ok := p.(*objects.Spinner); ok {
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
 							IsSliderBody: false,
 							depth:        math.MaxInt64,
-							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
+							endTime:      p.GetEndTime() + difficulty.HitFadeOut,
 						})
 					} else {
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
 							IsSliderBody: false,
-							depth:        p.GetBasicData().StartTime,
-							endTime:      p.GetBasicData().EndTime + container.beatMap.Diff.Hit50 + difficulty.HitFadeOut,
+							depth:        p.GetStartTime(),
+							endTime:      p.GetEndTime() + container.beatMap.Diff.Hit50 + difficulty.HitFadeOut,
 						})
 					}
 
@@ -140,8 +140,8 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
 							IsSliderBody: true,
-							depth:        p.GetBasicData().EndTime + 10,
-							endTime:      p.GetBasicData().EndTime + difficulty.HitFadeOut,
+							depth:        p.GetEndTime() + 10,
+							endTime:      p.GetEndTime() + difficulty.HitFadeOut,
 						})
 					}
 

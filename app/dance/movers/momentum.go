@@ -29,21 +29,19 @@ func (bm *MomentumMover) Reset() {
 	bm.last = vector.NewVec2f(0, 0)
 }
 
-func same(o1 objects.BaseObject, o2 objects.BaseObject) bool {
-	d1 := o1.GetBasicData()
-	d2 := o2.GetBasicData()
-	return d1.StartPos == d2.StartPos || (settings.Dance.Momentum.SkipStackAngles && d1.StartPos.Sub(d2.StackOffset) == d2.StartPos.Sub(d2.StackOffset))
+func same(o1 objects.IHitObject, o2 objects.IHitObject) bool {
+	return o1.GetStackedStartPosition() == o2.GetStackedStartPosition() || (settings.Dance.Momentum.SkipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
 }
 
-func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	i := 0
 	if bm.first { i = 1 }
 
 	end := objs[i+0]
 	start := objs[i+1]
 
-	endPos := end.GetBasicData().EndPos
-	startPos := start.GetBasicData().StartPos
+	endPos := end.GetStackedEndPosition()
+	startPos := start.GetStackedStartPosition()
 
 	dst := endPos.Dst(startPos)
 
@@ -61,7 +59,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
 			break
 		}
 		if !same(o, objs[i+1]) {
-			a2 = o.GetBasicData().StartPos.AngleRV(objs[i+1].GetBasicData().StartPos)
+			a2 = o.GetStackedStartPosition().AngleRV(objs[i+1].GetStackedStartPosition())
 			break
 		}
 	}
@@ -93,8 +91,8 @@ func (bm *MomentumMover) SetObjects(objs []objects.BaseObject) int {
 	}
 
 	bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
-	bm.endTime = end.GetBasicData().EndTime
-	bm.startTime = start.GetBasicData().StartTime
+	bm.endTime = end.GetEndTime()
+	bm.startTime = start.GetStartTime()
 	bm.first = false
 
 	return 2

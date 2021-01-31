@@ -12,7 +12,7 @@ import (
 
 type GenericScheduler struct {
 	cursor       *graphics.Cursor
-	queue        []objects.BaseObject
+	queue        []objects.IHitObject
 	mover        movers.MultiPointMover
 	lastTime     int64
 	spinnerMover spinners.SpinnerMover
@@ -23,7 +23,7 @@ func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
 	return &GenericScheduler{mover: mover()}
 }
 
-func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
+func (sched *GenericScheduler) Init(objs []objects.IHitObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
 	sched.spinnerMover = spinnerMover
 	sched.cursor = cursor
 	sched.queue = objs
@@ -36,7 +36,7 @@ func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.
 		sched.queue = PreprocessQueue(i, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
-	sched.queue = append([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, sched.queue...)
+	sched.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, sched.queue...)
 
 	toRemove := sched.mover.SetObjects(sched.queue) - 1
 	sched.queue = sched.queue[toRemove:]
@@ -49,23 +49,23 @@ func (sched *GenericScheduler) Update(time int64) {
 		for i := 0; i < len(sched.queue); i++ {
 			g := sched.queue[i]
 
-			if g.GetBasicData().StartTime > time {
+			if g.GetStartTime() > time {
 				break
 			}
 
 			move = false
 
-			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
+			if time >= g.GetStartTime() && time <= g.GetEndTime() {
 				if _, ok := g.(*objects.Spinner); ok {
-					if sched.lastTime < g.GetBasicData().StartTime {
-						sched.spinnerMover.Init(g.GetBasicData().StartTime, g.GetBasicData().EndTime)
+					if sched.lastTime < g.GetStartTime() {
+						sched.spinnerMover.Init(g.GetStartTime(), g.GetEndTime())
 					}
 
 					sched.cursor.SetPos(sched.spinnerMover.GetPositionAt(time))
 				} else {
-					sched.cursor.SetPos(g.GetPosition())
+					sched.cursor.SetPos(g.GetStackedPositionAt(time))
 				}
-			} else if time > g.GetBasicData().EndTime {
+			} else if time > g.GetEndTime() {
 				toRemove := 1
 				if i+1 < len(sched.queue) {
 					toRemove = sched.mover.SetObjects(sched.queue[i:]) - 1

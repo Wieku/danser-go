@@ -71,7 +71,7 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	type Queue struct {
-		objs []objects.BaseObject
+		objs []objects.IHitObject
 	}
 
 	objs := make([]Queue, settings.TAG)
@@ -87,11 +87,9 @@ func (controller *GenericController) InitCursors() {
 	if settings.Dance.SliderDance2B {
 		for i := 0; i < len(queue); i++ {
 			if s, ok := queue[i].(*objects.Slider); ok {
-				sd := s.GetBasicData()
-
 				for j := i + 1; j < len(queue); j++ {
-					od := queue[j].GetBasicData()
-					if (od.StartTime > sd.StartTime && od.StartTime < sd.EndTime) || (od.EndTime > sd.StartTime && od.EndTime < sd.EndTime) {
+					o := queue[j]
+					if (o.GetStartTime() > s.GetStartTime() && o.GetStartTime() < s.GetEndTime()) || (o.GetEndTime() > s.GetStartTime() && o.GetEndTime() < s.GetEndTime()) {
 						queue = schedulers.PreprocessQueue(i, queue, true)
 						break
 					}

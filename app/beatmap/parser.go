@@ -90,7 +90,7 @@ func parseEvents(line []string, beatMap *BeatMap) {
 	case "Background", "0":
 		beatMap.Bg = strings.Replace(line[2], "\"", "", -1)
 	case "Break", "2":
-		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
+		beatMap.Pauses = append(beatMap.Pauses, NewPause(line))
 	}
 }
 
@@ -253,7 +253,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 		switch currentSection {
 		case "Events":
 			if arr := tokenize(line, ","); len(arr) > 1 && (arr[0] == "2" || arr[0] == "Break") {
-				beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(arr))
+				beatMap.Pauses = append(beatMap.Pauses, NewPause(arr))
 			}
 		case "TimingPoints":
 			if arr := tokenize(line, ","); arr != nil {
@@ -293,29 +293,24 @@ func ParseObjects(beatMap *BeatMap) {
 	}
 
 	sort.Slice(beatMap.HitObjects, func(i, j int) bool {
-		return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime
+		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
 	num := 0
 	comboNumber := 1
 	comboSet := 0
-	for _, o := range beatMap.HitObjects {
-		_, ok := o.(*objects.Pause)
-
-		if !ok {
-			o.GetBasicData().Number = int64(num)
-			if o.GetBasicData().NewCombo {
-				comboNumber = 1
-				comboSet++
-			}
-
-			o.GetBasicData().ComboNumber = int64(comboNumber)
-			o.GetBasicData().ComboSet = int64(comboSet)
-
-			comboNumber++
-			num++
+	for _, iO := range beatMap.HitObjects {
+		if iO.IsNewCombo() {
+			comboNumber = 1
+			comboSet++
 		}
 
+		iO.SetID(int64(num))
+		iO.SetComboNumber(int64(comboNumber))
+		iO.SetComboSet(int64(comboSet))
+
+		comboNumber++
+		num++
 	}
 
 	for _, obj := range beatMap.HitObjects {

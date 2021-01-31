@@ -72,7 +72,7 @@ func (hp *HealthProcessor) CalculateRate() {
 
 		lowestHp := hp.Health
 
-		lastTime := hp.beatMap.HitObjects[0].GetBasicData().StartTime - int64(hp.diff.Preempt)
+		lastTime := hp.beatMap.HitObjects[0].GetStartTime() - int64(hp.diff.Preempt)
 		fail = false
 
 		breakNumber := 0
@@ -87,16 +87,16 @@ func (hp *HealthProcessor) CalculateRate() {
 
 			if breakCount > 0 && breakNumber < breakCount {
 				pause := hp.beatMap.Pauses[breakNumber]
-				if pause.GetBasicData().StartTime >= localLastTime && pause.GetBasicData().EndTime <= o.GetBasicData().StartTime {
+				if pause.GetStartTime() >= localLastTime && pause.GetEndTime() <= o.GetStartTime() {
 					//TODO: calculations for beatmap version < 8
-					breakTime = pause.GetBasicData().EndTime - localLastTime
+					breakTime = pause.GetEndTime() - localLastTime
 					breakNumber++
 				}
 			}
 
-			hp.Increase(-hp.PassiveDrain * float64(o.GetBasicData().StartTime-lastTime-breakTime))
+			hp.Increase(-hp.PassiveDrain * float64(o.GetStartTime()-lastTime-breakTime))
 
-			lastTime = o.GetBasicData().EndTime
+			lastTime = o.GetEndTime()
 
 			lowestHp = math.Min(lowestHp, hp.Health)
 
@@ -106,7 +106,7 @@ func (hp *HealthProcessor) CalculateRate() {
 				break
 			}
 
-			hp.Increase(-hp.PassiveDrain * float64(o.GetBasicData().EndTime-o.GetBasicData().StartTime))
+			hp.Increase(-hp.PassiveDrain * float64(o.GetEndTime()-o.GetStartTime()))
 
 			if s, ok := o.(*objects.Slider); ok {
 				for j := 0; j < len(s.TickReverse)+1; j++ {
@@ -117,13 +117,13 @@ func (hp *HealthProcessor) CalculateRate() {
 					hp.AddResult(SliderPoint)
 				}
 			} else if s, ok := o.(*objects.Spinner); ok {
-				requirement := int(float64(s.GetBasicData().EndTime-s.GetBasicData().StartTime) / 1000 * hp.diff.SpinnerRatio)
+				requirement := int(float64(s.GetEndTime()-s.GetStartTime()) / 1000 * hp.diff.SpinnerRatio)
 				for j := 0; j < requirement; j++ {
 					hp.AddResult(SpinnerSpin)
 				}
 			}
 
-			if i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].GetBasicData().NewCombo {
+			if i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo() {
 				hp.AddResult(Hit300g)
 
 				if hp.Health < lowestHpComboEnd {
@@ -162,23 +162,23 @@ func (hp *HealthProcessor) CalculateRate() {
 	log.Println("combomult", hp.HpMultiplierComboEnd)
 
 	breakNumber := 0
-	lastDrainStart := hp.beatMap.HitObjects[0].GetBasicData().StartTime - int64(hp.diff.Preempt)
-	lastDrainEnd := hp.beatMap.HitObjects[0].GetBasicData().StartTime - int64(hp.diff.Preempt)
+	lastDrainStart := hp.beatMap.HitObjects[0].GetStartTime() - int64(hp.diff.Preempt)
+	lastDrainEnd := hp.beatMap.HitObjects[0].GetStartTime() - int64(hp.diff.Preempt)
 
 	for _, o := range hp.beatMap.HitObjects {
 
 		if breakCount > 0 && breakNumber < breakCount {
 			pause := hp.beatMap.Pauses[breakNumber]
-			if pause.GetBasicData().StartTime >= lastDrainEnd && pause.GetBasicData().EndTime <= o.GetBasicData().StartTime {
+			if pause.GetStartTime() >= lastDrainEnd && pause.GetEndTime() <= o.GetStartTime() {
 				breakNumber++
 
 				hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
 
-				lastDrainStart = o.GetBasicData().StartTime
+				lastDrainStart = o.GetStartTime()
 			}
 		}
 
-		lastDrainEnd = o.GetBasicData().EndTime
+		lastDrainEnd = o.GetEndTime()
 	}
 
 	hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})

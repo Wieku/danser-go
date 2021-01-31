@@ -28,14 +28,14 @@ func (bm *AngleOffsetMover) Reset() {
 	bm.lastPoint = vector.NewVec2f(0, 0)
 }
 
-func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetBasicData().EndPos
-	endTime := end.GetBasicData().EndTime
-	startPos := start.GetBasicData().StartPos
-	startTime := start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPosition()
+	endTime := end.GetEndTime()
+	startPos := start.GetStackedStartPosition()
+	startTime := start.GetStartTime()
 
 	distance := endPos.Dst(startPos)
 
@@ -47,7 +47,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.BaseObject) int {
 	scaledDistance := distance * float32(settings.Dance.Flower.DistanceMult)
 	newAngle := float32(settings.Dance.Flower.AngleOffset) * math32.Pi / 180.0
 
-	if end.GetBasicData().StartTime > 0 && settings.Dance.Flower.LongJump >= 0 && (startTime-endTime) > settings.Dance.Flower.LongJump {
+	if end.GetStartTime() > 0 && settings.Dance.Flower.LongJump >= 0 && (startTime-endTime) > settings.Dance.Flower.LongJump {
 		scaledDistance = float32(startTime-endTime) * float32(settings.Dance.Flower.LongJumpMult)
 	}
 

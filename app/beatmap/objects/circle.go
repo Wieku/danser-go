@@ -20,7 +20,8 @@ import (
 const defaultCircleName = "hit"
 
 type Circle struct {
-	objData *basicData
+	*HitObject
+
 	sample  int
 	Timings *Timings
 
@@ -40,16 +41,20 @@ type Circle struct {
 	textureName      string
 	appearTime       int64
 	ArrowRotation    float64
+
+	SliderPoint        bool
+	SliderPointStart   bool
+	SliderPointEnd     bool
 }
 
 func NewCircle(data []string) *Circle {
-	circle := &Circle{}
-	circle.objData = commonParse(data)
+	circle := &Circle{
+		HitObject: commonParse(data, 5),
+	}
+
 	f, _ := strconv.ParseInt(data[4], 10, 64)
 	circle.sample = int(f)
-	circle.objData.EndTime = circle.objData.StartTime
-	circle.objData.EndPos = circle.objData.StartPos
-	circle.objData.parseExtras(data, 5)
+
 	circle.textureName = defaultCircleName
 	return circle
 }
@@ -59,29 +64,27 @@ func DummyCircle(pos vector.Vector2f, time int64) *Circle {
 }
 
 func DummyCircleInherit(pos vector.Vector2f, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
-	circle := &Circle{objData: &basicData{}}
-	circle.objData.StartPos = pos
-	circle.objData.EndPos = pos
-	circle.objData.StartTime = time
-	circle.objData.EndTime = time
-	circle.objData.EndPos = circle.objData.StartPos
-	circle.objData.SliderPoint = inherit
-	circle.objData.SliderPointStart = inheritStart
-	circle.objData.SliderPointEnd = inheritEnd
+	circle := &Circle{HitObject: &HitObject{}}
+	circle.StartPosRaw = pos
+	circle.EndPosRaw = pos
+	circle.StartTime = time
+	circle.EndTime = time
+	circle.SliderPoint = inherit
+	circle.SliderPointStart = inheritStart
+	circle.SliderPointEnd = inheritEnd
 	circle.silent = true
 	circle.textureName = "sliderstart"
 	return circle
 }
 
 func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, last bool) *Circle {
-	circle := &Circle{objData: &basicData{}}
-	circle.objData.StartPos = pos
-	circle.objData.EndPos = pos
-	circle.objData.StartTime = time
-	circle.objData.EndTime = time
-	circle.objData.EndPos = circle.objData.StartPos
-	circle.objData.SliderPoint = true
-	circle.objData.SliderPointEnd = last
+	circle := &Circle{HitObject: &HitObject{}}
+	circle.StartPosRaw = pos
+	circle.EndPosRaw = pos
+	circle.StartTime = time
+	circle.EndTime = time
+	circle.SliderPoint = true
+	circle.SliderPointEnd = last
 	circle.firstEndCircle = first
 	circle.silent = true
 	circle.textureName = "sliderend"
@@ -89,13 +92,9 @@ func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, last
 	return circle
 }
 
-func (circle Circle) GetBasicData() *basicData {
-	return circle.objData
-}
-
 func (circle *Circle) Update(time int64) bool {
-	if !circle.silent && ((!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1) && (circle.lastTime < circle.objData.StartTime && time >= circle.objData.StartTime) {
-		circle.Arm(true, circle.objData.StartTime)
+	if !circle.silent && ((!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1) && (circle.lastTime < circle.StartTime && time >= circle.StartTime) {
+		circle.Arm(true, circle.StartTime)
 		circle.PlaySound()
 	}
 
@@ -113,10 +112,10 @@ func (circle *Circle) Update(time int64) bool {
 }
 
 func (circle *Circle) PlaySound() {
-	point := circle.Timings.GetPoint(circle.objData.StartTime)
+	point := circle.Timings.GetPoint(circle.StartTime)
 
-	index := circle.objData.customIndex
-	sampleSet := circle.objData.sampleSet
+	index := circle.BasicHitSound.CustomIndex
+	sampleSet := circle.BasicHitSound.SampleSet
 
 	if index == 0 {
 		index = point.SampleIndex
@@ -126,7 +125,7 @@ func (circle *Circle) PlaySound() {
 		sampleSet = point.SampleSet
 	}
 
-	audio.PlaySample(sampleSet, circle.objData.additionSet, circle.sample, index, point.SampleVolume, circle.objData.Number, circle.GetBasicData().StartPos.X64())
+	audio.PlaySample(sampleSet, circle.BasicHitSound.AdditionSet, circle.sample, index, point.SampleVolume, circle.HitObjectID, circle.GetStackedStartPosition().X64())
 }
 
 func (circle *Circle) SetTiming(timings *Timings) {
@@ -136,13 +135,13 @@ func (circle *Circle) SetTiming(timings *Timings) {
 func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	circle.diff = diff
 
-	startTime := float64(circle.objData.StartTime) - diff.Preempt
+	startTime := float64(circle.StartTime) - diff.Preempt
 
-	if circle.objData.SliderPoint {
+	if circle.SliderPoint {
 		startTime = float64(circle.appearTime)
 	}
 
-	endTime := float64(circle.objData.StartTime)
+	endTime := float64(circle.StartTime)
 
 	circle.textFade = animation.NewGlider(0)
 
@@ -174,13 +173,13 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	for _, t := range circles {
 		if diff.CheckModActive(difficulty.Hidden) {
-			if !circle.objData.SliderPoint || circle.objData.SliderPointStart || circle.firstEndCircle {
+			if !circle.SliderPoint || circle.SliderPointStart || circle.firstEndCircle {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.Preempt*0.4, 0.0, 1.0))
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 1.0, 0.0))
 			}
 		} else {
 			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+difficulty.HitFadeIn, 0.0, 1.0))
-			if !circle.objData.SliderPoint || circle.objData.SliderPointStart {
+			if !circle.SliderPoint || circle.SliderPointStart {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0))
 			} else {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
@@ -199,7 +198,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		circle.textFade.AddEventS(endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0)
 	}
 
-	if !diff.CheckModActive(difficulty.Hidden) || circle.objData.Number == 0 {
+	if !diff.CheckModActive(difficulty.Hidden) || circle.HitObjectID == 0 {
 		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
 
 		if diff.CheckModActive(difficulty.Hidden) {
@@ -262,13 +261,11 @@ func (circle *Circle) UpdateStacking() {
 
 }
 
-func (circle *Circle) GetPosition() vector.Vector2f {
-	return circle.objData.StartPos
-}
-
 func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
+	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
+
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(circle.objData.StartPos.Copy64())
+	batch.SetTranslation(position.Copy64())
 
 	alpha := 1.0
 	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
@@ -282,10 +279,10 @@ func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatc
 
 	//TODO: REDO THIS
 	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
-		color := skin.GetInfo().ComboColors[int(circle.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
+		color := skin.GetInfo().ComboColors[int(circle.ComboSet)%len(skin.GetInfo().ComboColors)]
 		circle.hitCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
 	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
-		cHSV := settings.Objects.Colors.ComboColors[int(circle.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
+		cHSV := settings.Objects.Colors.ComboColors[int(circle.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 		circle.hitCircle.SetColor(color2.NewRGB(r, g, b))
 	} else {
@@ -307,19 +304,19 @@ func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatc
 			circle.hitCircleOverlay.Draw(time, batch)
 		}
 
-		if !circle.objData.SliderPoint || circle.objData.SliderPointStart {
+		if !circle.SliderPoint || circle.SliderPointStart {
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 				fnt := skin.GetFont("default")
 				batch.SetColor(1, 1, 1, alpha*circle.textFade.GetValue())
-				fnt.DrawCentered(batch, circle.objData.StartPos.X64(), circle.objData.StartPos.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(circle.objData.ComboNumber)))
+				fnt.DrawCentered(batch, position.X64(), position.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(circle.ComboNumber)))
 			}
-		} else if !circle.objData.SliderPointEnd {
+		} else if !circle.SliderPointEnd {
 			circle.reverseArrow.SetRotation(circle.ArrowRotation)
 			circle.reverseArrow.Draw(time, batch)
 		}
 
 		batch.SetSubScale(1, 1)
-		batch.SetTranslation(circle.objData.StartPos.Copy64())
+		batch.SetTranslation(position.Copy64())
 		batch.SetColor(1, 1, 1, alpha)
 		if skin.GetInfo().HitCircleOverlayAboveNumber {
 			circle.hitCircleOverlay.Draw(time, batch)
@@ -329,22 +326,24 @@ func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatc
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
-	if time >= circle.objData.StartTime && circle.hitCircle.GetAlpha() <= 0.001 {
+	if time >= circle.StartTime && circle.hitCircle.GetAlpha() <= 0.001 {
 		return true
 	}
 	return false
 }
 
 func (circle *Circle) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {
+	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
+
 	batch.SetSubScale(1, 1)
-	batch.SetTranslation(circle.objData.StartPos.Copy64())
+	batch.SetTranslation(position.Copy64())
 	batch.SetColor(1, 1, 1, 1)
 
 	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
-		color := skin.GetInfo().ComboColors[int(circle.objData.ComboSet)%len(skin.GetInfo().ComboColors)]
+		color := skin.GetInfo().ComboColors[int(circle.ComboSet)%len(skin.GetInfo().ComboColors)]
 		circle.approachCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
 	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
-		cHSV := settings.Objects.Colors.ComboColors[int(circle.objData.ComboSet)%len(settings.Objects.Colors.ComboColors)]
+		cHSV := settings.Objects.Colors.ComboColors[int(circle.ComboSet)%len(settings.Objects.Colors.ComboColors)]
 		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 		circle.approachCircle.SetColor(color2.NewRGB(r, g, b))
 	} else {

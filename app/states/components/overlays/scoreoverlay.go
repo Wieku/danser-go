@@ -120,23 +120,21 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.combobreak = audio.LoadSample("combobreak")
 
 	for _, p := range ruleset.GetBeatMap().Pauses {
-		bd := p.GetBasicData()
-
-		if bd.EndTime-bd.StartTime < 1000 {
+		if p.GetEndTime()-p.GetStartTime() < 1000 {
 			continue
 		}
 
-		overlay.comboSlide.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, -1)
-		overlay.comboSlide.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 0)
+		overlay.comboSlide.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, -1)
+		overlay.comboSlide.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 0)
 
-		overlay.bgDim.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0)
-		overlay.bgDim.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 1)
+		overlay.bgDim.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, 0)
+		overlay.bgDim.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 1)
 
-		overlay.hpSlide.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, -20)
-		overlay.hpSlide.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 0)
+		overlay.hpSlide.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, -20)
+		overlay.hpSlide.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 0)
 
-		overlay.hpFade.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0)
-		overlay.hpFade.AddEvent(float64(bd.EndTime-500), float64(bd.EndTime), 1)
+		overlay.hpFade.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, 0)
+		overlay.hpFade.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 1)
 	}
 
 	discord.UpdatePlay(cursor.Name)
@@ -157,7 +155,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		allowSlider := sl && result == osu.SliderStart
 
 		if allowCircle || allowSlider {
-			timeDiff := float64(time) - float64(ruleset.GetBeatMap().HitObjects[number].GetBasicData().StartTime)
+			timeDiff := float64(time) - float64(ruleset.GetBeatMap().HitObjects[number].GetStartTime())
 
 			overlay.hitErrorMeter.Add(float64(time), timeDiff)
 		}
@@ -219,7 +217,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hitErrorMeter = play.NewHitErrorMeter(overlay.ScaledWidth, overlay.ScaledHeight, ruleset.GetBeatMap().Diff)
 
-	start := overlay.ruleset.GetBeatMap().HitObjects[0].GetBasicData().StartTime - 2000
+	start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime() - 2000
 
 	if start > 2000 {
 		skipFrames := skin.GetFrames("play-skip", true)
@@ -260,7 +258,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
 		if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
-			start := overlay.ruleset.GetBeatMap().HitObjects[0].GetBasicData().StartTime
+			start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
 			if start-time > 4000 {
 				overlay.music.SetPosition((float64(start) - 2000) / 1000)
 			}
@@ -383,8 +381,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 
 	hObjects := overlay.ruleset.GetBeatMap().HitObjects
 
-	startTime := float32(hObjects[0].GetBasicData().StartTime)
-	endTime := float32(hObjects[len(hObjects)-1].GetBasicData().EndTime)
+	startTime := float32(hObjects[0].GetStartTime())
+	endTime := float32(hObjects[len(hObjects)-1].GetEndTime())
 	musicPos := float32(0.0)
 	if overlay.music != nil {
 		musicPos = float32(overlay.music.GetPosition()) * 1000

@@ -30,13 +30,13 @@ func (bm *BezierMover) Reset() {
 	bm.previousSpeed = -1
 }
 
-func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
-	endPos := end.GetBasicData().EndPos
-	endTime := end.GetBasicData().EndTime
-	startPos := start.GetBasicData().StartPos
-	startTime := start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPosition()
+	endTime := end.GetEndTime()
+	startPos := start.GetStackedStartPosition()
+	startTime := start.GetStartTime()
 
 	dst := endPos.Dst(startPos)
 
@@ -59,18 +59,18 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
 	} else if ok1 && ok2 {
 		endAngle := s1.GetEndAngle()
 		startAngle := s2.GetStartAngle()
-		bm.pt = vector.NewVec2fRad(endAngle, s1.GetPointAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
-		pt2 := vector.NewVec2fRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		bm.pt = vector.NewVec2fRad(endAngle, s1.GetStackedPositionAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt2 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []vector.Vector2f{endPos, bm.pt, pt2, startPos}
 	} else if ok1 {
 		endAngle := s1.GetEndAngle()
-		pt1 := vector.NewVec2fRad(endAngle, s1.GetPointAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt1 := vector.NewVec2fRad(endAngle, s1.GetStackedPositionAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
 		bm.pt = vector.NewVec2fRad(startPos.AngleRV(bm.pt), genScale*aggressiveness).Add(startPos)
 		points = []vector.Vector2f{endPos, pt1, bm.pt, startPos}
 	} else if ok2 {
 		startAngle := s2.GetStartAngle()
 		bm.pt = vector.NewVec2fRad(endPos.AngleRV(bm.pt), genScale*aggressiveness).Add(endPos)
-		pt1 := vector.NewVec2fRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		pt1 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []vector.Vector2f{endPos, bm.pt, pt1, startPos}
 	} else {
 		angle := endPos.AngleRV(bm.pt)

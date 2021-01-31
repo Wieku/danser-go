@@ -1,7 +1,6 @@
 package osu
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"math"
 )
@@ -19,10 +18,10 @@ type Circle struct {
 }
 
 func (circle *Circle) GetNumber() int64 {
-	return circle.hitCircle.GetBasicData().Number
+	return circle.hitCircle.GetID()
 }
 
-func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer) {
+func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.IHitObject, players []*difficultyPlayer) {
 	circle.ruleSet = ruleSet
 	circle.hitCircle = object.(*objects.Circle)
 	circle.players = players
@@ -44,17 +43,10 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	state := circle.state[player]
 
 	if !state.isHit {
-		xOffset := float32(0.0)
-		yOffset := float32(0.0)
-
-		if player.diff.Mods&difficulty.HardRock > 0 {
-			data := circle.hitCircle.GetBasicData()
-			xOffset = data.StackOffset.X + float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
-			yOffset = data.StackOffset.Y - float32(data.StackIndex)*float32(player.diff.CircleRadius)/10
-		}
+		position := circle.hitCircle.GetStackedPositionAtMod(time, player.diff.Mods)
 
 		clicked := player.leftCondE || player.rightCondE
-		inRange := player.cursor.Position.Dst(circle.hitCircle.GetPosition().SubS(xOffset, yOffset)) <= float32(player.diff.CircleRadius)
+		inRange := player.cursor.Position.Dst(position) <= float32(player.diff.CircleRadius)
 
 		if clicked && inRange {
 			action := circle.ruleSet.CanBeHit(time, circle, player)
@@ -68,7 +60,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 				hit := Miss
 
-				relative := int64(math.Abs(float64(time - circle.hitCircle.GetBasicData().EndTime)))
+				relative := int64(math.Abs(float64(time - circle.hitCircle.GetEndTime())))
 				if relative < player.diff.Hit300 {
 					hit = Hit300
 				} else if relative < player.diff.Hit100 {
@@ -91,7 +83,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 						circle.hitCircle.Arm(hit != Miss, time)
 					}
 
-					circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, hit, false, combo)
+					circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetID(), position.X, position.Y, hit, false, combo)
 
 					state.isHit = true
 				}
@@ -112,8 +104,9 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 	state := circle.state[player]
 
-	if time > circle.hitCircle.GetBasicData().EndTime+player.diff.Hit50 && !state.isHit {
-		circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetBasicData().Number, circle.hitCircle.GetPosition().X, circle.hitCircle.GetPosition().Y, Miss, false, ComboResults.Reset)
+	if time > circle.hitCircle.GetEndTime()+player.diff.Hit50 && !state.isHit {
+		position := circle.hitCircle.GetStackedPositionAtMod(time, player.diff.Mods)
+		circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetID(), position.X, position.Y, Miss, false, ComboResults.Reset)
 
 		if len(circle.players) == 1 {
 			circle.hitCircle.Arm(false, time)
@@ -144,5 +137,5 @@ func (circle *Circle) IsHit(player *difficultyPlayer) bool {
 }
 
 func (circle *Circle) GetFadeTime() int64 {
-	return circle.hitCircle.GetBasicData().StartTime - int64(circle.fadeStartRelative)
+	return circle.hitCircle.GetStartTime() - int64(circle.fadeStartRelative)
 }

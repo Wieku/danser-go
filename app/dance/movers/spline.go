@@ -22,7 +22,7 @@ func (mover *SplineMover) Reset() {
 
 }
 
-func (mover *SplineMover) SetObjects(objs []objects.BaseObject) int {
+func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	points := make([]vector.Vector2f, 0)
 	timing := make([]int64, 0)
 
@@ -35,19 +35,19 @@ func (mover *SplineMover) SetObjects(objs []objects.BaseObject) int {
 	for ; i < len(objs); i++ {
 		if i == 0 {
 			if s, ok := objs[i].(*objects.Slider); ok {
-				points = append(points, s.GetBasicData().EndPos, vector.NewVec2fRad(s.GetEndAngle(), s.GetBasicData().EndPos.Dst(objs[i+1].GetBasicData().StartPos)*0.7).Add(s.GetBasicData().EndPos))
+				points = append(points, s.GetStackedEndPosition(), vector.NewVec2fRad(s.GetEndAngle(), s.GetStackedEndPosition().Dst(objs[i+1].GetStackedStartPosition())*0.7).Add(s.GetStackedEndPosition()))
 			}
 
 			if s, ok := objs[i].(*objects.Circle); ok {
-				points = append(points, s.GetBasicData().EndPos, objs[i+1].GetBasicData().StartPos.Sub(s.GetBasicData().EndPos).Scl(0.333).Add(s.GetBasicData().EndPos))
+				points = append(points, s.GetStackedEndPosition(), objs[i+1].GetStackedStartPosition().Sub(s.GetStackedEndPosition()).Scl(0.333).Add(s.GetStackedEndPosition()))
 			}
 
 			if s, ok := objs[i].(*objects.Spinner); ok {
-				points = append(points, s.GetBasicData().EndPos, objs[i+1].GetBasicData().StartPos.Sub(s.GetBasicData().EndPos).Scl(0.333).Add(s.GetBasicData().EndPos))
+				points = append(points, s.GetStackedEndPosition(), objs[i+1].GetStackedStartPosition().Sub(s.GetStackedEndPosition()).Scl(0.333).Add(s.GetStackedEndPosition()))
 			}
 
-			timing = append(timing, bmath.MaxI64(objs[i].GetBasicData().StartTime, objs[i].GetBasicData().EndTime))
-			endTime = bmath.MaxI64(objs[i].GetBasicData().StartTime, objs[i].GetBasicData().EndTime)
+			timing = append(timing, bmath.MaxI64(objs[i].GetStartTime(), objs[i].GetEndTime()))
+			endTime = bmath.MaxI64(objs[i].GetStartTime(), objs[i].GetEndTime())
 
 			continue
 		}
@@ -59,27 +59,27 @@ func (mover *SplineMover) SetObjects(objs []objects.BaseObject) int {
 
 		if ok || i == len(objs)-1 {
 			if s, ok := objs[i].(*objects.Slider); ok {
-				points = append(points, vector.NewVec2fRad(s.GetStartAngle(), s.GetBasicData().StartPos.Dst(objs[i-1].GetBasicData().EndPos)*0.7).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
+				points = append(points, vector.NewVec2fRad(s.GetStartAngle(), s.GetStackedStartPosition().Dst(objs[i-1].GetStackedEndPosition())*0.7).Add(s.GetStackedStartPosition()), s.GetStackedStartPosition())
 			}
 
 			if s, ok := objs[i].(*objects.Circle); ok {
-				points = append(points, objs[i-1].GetBasicData().EndPos.Sub(s.GetBasicData().StartPos).Scl(0.333).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
+				points = append(points, objs[i-1].GetStackedEndPosition().Sub(s.GetStackedStartPosition()).Scl(0.333).Add(s.GetStackedStartPosition()), s.GetStackedStartPosition())
 			}
 
 			if s, ok := objs[i].(*objects.Spinner); ok {
-				points = append(points, objs[i-1].GetBasicData().EndPos.Sub(s.GetBasicData().StartPos).Scl(0.333).Add(s.GetBasicData().StartPos), s.GetBasicData().StartPos)
+				points = append(points, objs[i-1].GetStackedEndPosition().Sub(s.GetStackedStartPosition()).Scl(0.333).Add(s.GetStackedStartPosition()), s.GetStackedStartPosition())
 			}
 
-			timing = append(timing, objs[i].GetBasicData().StartTime)
+			timing = append(timing, objs[i].GetStartTime())
 
-			startTime = objs[i].GetBasicData().StartTime
+			startTime = objs[i].GetStartTime()
 
 			break
 		} else if i < len(objs)-1 && i-1 > 0 {
 			if _, ok := objs[i].(*objects.Circle); ok {
-				pos1 := objs[i-1].GetBasicData().StartPos
-				pos2 := objs[i].GetBasicData().StartPos
-				pos3 := objs[i+1].GetBasicData().StartPos
+				pos1 := objs[i-1].GetStackedStartPosition()
+				pos2 := objs[i].GetStackedStartPosition()
+				pos3 := objs[i+1].GetStackedStartPosition()
 
 				min := float32(25.0)
 				max := float32(4000.0)
@@ -146,21 +146,21 @@ func (mover *SplineMover) SetObjects(objs []objects.BaseObject) int {
 							p4 := mid.Sub(pos1).Scl(scale).Rotate(angle + float32(sign*t)*math32.Pi/6).Add(mid)
 
 							points = append(points, p4)
-							timing = append(timing, (objs[i].GetBasicData().StartTime-objs[i-1].GetBasicData().StartTime)*(3+int64(t))/6+objs[i-1].GetBasicData().StartTime)
+							timing = append(timing, (objs[i].GetStartTime()-objs[i-1].GetStartTime())*(3+int64(t))/6+objs[i-1].GetStartTime())
 						}
 					} else {
 						p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
 
 						points = append(points, p4)
-						timing = append(timing, (objs[i].GetBasicData().StartTime-objs[i-1].GetBasicData().StartTime)/2+objs[i-1].GetBasicData().StartTime)
+						timing = append(timing, (objs[i].GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime())
 					}
 				}
 			}
 		}
 
 		if s, ok := objs[i].(*objects.Circle); ok {
-			points = append(points, s.GetBasicData().EndPos)
-			timing = append(timing, s.GetBasicData().StartTime)
+			points = append(points, s.GetStackedEndPosition())
+			timing = append(timing, s.GetStartTime())
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 )
 
 type InputProcessor struct {
-	queue  []objects.BaseObject
+	queue  []objects.IHitObject
 	cursor *graphics.Cursor
 
 	lastLeft       bool
@@ -19,10 +19,10 @@ type InputProcessor struct {
 	rightToRelease bool
 }
 
-func NewInputProcessor(objs []objects.BaseObject, cursor *graphics.Cursor) *InputProcessor {
+func NewInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *InputProcessor {
 	processor := new(InputProcessor)
 	processor.cursor = cursor
-	processor.queue = make([]objects.BaseObject, len(objs))
+	processor.queue = make([]objects.IHitObject, len(objs))
 
 	copy(processor.queue, objs)
 
@@ -33,14 +33,14 @@ func (processor *InputProcessor) Update(time int64) {
 	if len(processor.queue) > 0 {
 		for i := 0; i < len(processor.queue); i++ {
 			g := processor.queue[i]
-			if g.GetBasicData().StartTime > time {
+			if g.GetStartTime() > time {
 				break
 			}
 
-			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
+			if time >= g.GetStartTime() && time <= g.GetEndTime() {
 				if !processor.moving {
-					if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
-						if !processor.lastLeft && g.GetBasicData().StartTime-processor.lastEnd < 140 {
+					//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
+						if !processor.lastLeft && g.GetStartTime()-processor.lastEnd < 140 {
 							processor.cursor.LeftKey = true
 							processor.lastLeft = true
 							processor.leftToRelease = false
@@ -51,19 +51,19 @@ func (processor *InputProcessor) Update(time int64) {
 							processor.rightToRelease = false
 							processor.lastRightClick = time
 						}
-					}
+					//}
 				}
 
 				processor.moving = true
-			} else if time > g.GetBasicData().StartTime && time > g.GetBasicData().EndTime {
+			} else if time > g.GetStartTime() && time > g.GetEndTime() {
 
 				processor.moving = false
-				if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd {
+				//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd {
 					processor.leftToRelease = true
 					processor.rightToRelease = true
-				}
+				//}
 
-				processor.lastEnd = g.GetBasicData().EndTime
+				processor.lastEnd = g.GetEndTime()
 
 				processor.queue = append(processor.queue[:i], processor.queue[i+1:]...)
 

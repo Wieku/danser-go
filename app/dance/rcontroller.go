@@ -416,8 +416,8 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 							slider, c2 := o.(*osu.Slider)
 							_, c3 := o.(*osu.Spinner)
 
-							objectStartTime := controller.bMap.HitObjects[o.GetNumber()].GetBasicData().StartTime
-							objectEndTime := controller.bMap.HitObjects[o.GetNumber()].GetBasicData().EndTime
+							objectStartTime := controller.bMap.HitObjects[o.GetNumber()].GetStartTime()
+							objectEndTime := controller.bMap.HitObjects[o.GetNumber()].GetEndTime()
 
 							if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && c.replayTime > objectStartTime-12 {
 								click = true

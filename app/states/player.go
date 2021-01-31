@@ -216,13 +216,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	skipTime := 0.0
 	if settings.SKIP {
-		skipTime = float64(beatMap.HitObjects[0].GetBasicData().StartTime)
+		skipTime = float64(beatMap.HitObjects[0].GetStartTime())
 	}
 
 	skipTime = math.Max(skipTime, settings.SCRUB*1000)
 
-	tmS := math.Max(float64(beatMap.HitObjects[0].GetBasicData().StartTime), settings.SCRUB*1000)
-	tmE := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime)
+	tmS := math.Max(float64(beatMap.HitObjects[0].GetStartTime()), settings.SCRUB*1000)
+	tmE := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime())
 
 	startOffset := 0.0
 
@@ -278,26 +278,27 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.unfold = animation.NewGlider(1)
 
 	for _, p := range beatMap.Pauses {
-		bd := p.GetBasicData()
+		startTime := float64(p.GetStartTime())
+		endTime := float64(p.GetEndTime())
 
-		if bd.EndTime-bd.StartTime < 1000 {
+		if endTime-startTime < 1000 {
 			continue
 		}
 
 		//player.hudGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0.0)
-		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Background.Dim.Breaks)
-		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.Background.Blur.Values.Breaks)
-		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
+		player.dimGlider.AddEvent(startTime, startTime+500, 1.0-settings.Playfield.Background.Dim.Breaks)
+		player.blurGlider.AddEvent(startTime, startTime+500, settings.Playfield.Background.Blur.Values.Breaks)
+		player.fxGlider.AddEvent(startTime, startTime+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
 
 		if !settings.Cursor.ShowCursorsOnBreaks {
-			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
+			player.cursorGlider.AddEvent(startTime, startTime+100, 0.0)
 		}
 
-		//player.hudGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0)
-		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Background.Dim.Normal)
-		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.Background.Blur.Values.Normal)
-		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Logo.Dim.Normal)
-		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
+		//player.hudGlider.AddEvent(endTime-500, endTime, 1.0)
+		player.dimGlider.AddEvent(endTime-500, endTime, 1.0-settings.Playfield.Background.Dim.Normal)
+		player.blurGlider.AddEvent(endTime-500, endTime, settings.Playfield.Background.Blur.Values.Normal)
+		player.fxGlider.AddEvent(endTime-500, endTime, 1.0-settings.Playfield.Logo.Dim.Normal)
+		player.cursorGlider.AddEvent(endTime-100, endTime, 1.0)
 	}
 
 	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
@@ -792,7 +793,7 @@ func (player *Player) Draw(float64) {
 
 			currentTime := int(player.musicPlayer.GetPosition())
 			totalTime := int(player.musicPlayer.GetLength())
-			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
+			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() / 1000)
 
 			drawShadowed(2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
 			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(player.processed)*/, 0, settings.DIVIDES, len(player.bMap.HitObjects)))

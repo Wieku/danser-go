@@ -21,16 +21,16 @@ func (bm *LinearMover) Reset() {
 
 }
 
-func (bm *LinearMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *LinearMover) SetObjects(objs []objects.IHitObject) int {
 	end, start := objs[0], objs[1]
-	endPos := end.GetBasicData().EndPos
-	endTime := end.GetBasicData().EndTime
-	startPos := start.GetBasicData().StartPos
-	startTime := start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPosition()
+	endTime := end.GetEndTime()
+	startPos := start.GetStackedStartPosition()
+	startTime := start.GetStartTime()
 
 	bm.line = curves.NewLinear(endPos, startPos)
 
-	bm.endTime = bmath.MaxI64(endTime, start.GetBasicData().StartTime-380)
+	bm.endTime = bmath.MaxI64(endTime, start.GetStartTime()-380)
 	bm.beginTime = startTime
 
 	return 2

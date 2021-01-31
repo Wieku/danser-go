@@ -63,7 +63,7 @@ func (state buttonState) BothReleased() bool {
 }
 
 type HitObject interface {
-	Init(ruleset *OsuRuleSet, object objects.BaseObject, players []*difficultyPlayer)
+	Init(ruleset *OsuRuleSet, object objects.IHitObject, players []*difficultyPlayer)
 	UpdateFor(player *difficultyPlayer, time int64) bool
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
 	UpdatePostFor(player *difficultyPlayer, time int64) bool
@@ -143,10 +143,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
-		pauses += p.GetBasicData().EndTime - p.GetBasicData().StartTime
+		pauses += p.GetEndTime() - p.GetStartTime()
 	}
 
-	drainTime := float32((beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime - beatMap.HitObjects[0].GetBasicData().StartTime - pauses) / 1000)
+	drainTime := float32((beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() - beatMap.HitObjects[0].GetStartTime() - pauses) / 1000)
 
 	// HACK HACK HACK:
 	// apparently .NET Framework treats doubles differently than other runtimes
@@ -458,7 +458,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 		subSet.currentBad++
 	}
 
-	if result&BaseHitsM > 0 && (int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].GetBasicData().NewCombo)) {
+	if result&BaseHitsM > 0 && (int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].IsNewCombo())) {
 		allClicked := true
 
 		// We don't want to give geki/katu if all objects in current combo weren't clicked
@@ -474,7 +474,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 				break
 			}
 
-			if set.beatMap.HitObjects[obj.GetNumber()].GetBasicData().NewCombo {
+			if set.beatMap.HitObjects[obj.GetNumber()].IsNewCombo() {
 				break
 			}
 		}
@@ -528,7 +528,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 			}
 		}
 
-		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetBasicData().StackIndex > 0 && !set.processed[index-1].IsHit(player) {
+		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
 			return Ignored //don't shake the stacks
 		}
 	}
@@ -536,7 +536,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 	for _, g := range set.processed {
 		if !g.IsHit(player) {
 			if g.GetNumber() != object.GetNumber() {
-				if set.beatMap.HitObjects[g.GetNumber()].GetBasicData().EndTime+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime {
+				if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
 					return Shake
 				}
 			} else {
@@ -545,9 +545,10 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 		}
 	}
 
-	if math.Abs(float64(time-set.beatMap.HitObjects[object.GetNumber()].GetBasicData().StartTime)) >= difficulty.HittableRange {
+	if math.Abs(float64(time-set.beatMap.HitObjects[object.GetNumber()].GetStartTime())) >= difficulty.HittableRange {
 		return Shake
 	}
+
 	return Click
 }
 

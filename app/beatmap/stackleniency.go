@@ -1,34 +1,51 @@
 package beatmap
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
 
-func isSpinnerBreak(obj objects.BaseObject) bool {
-	_, ok2 := obj.(*objects.Pause)
+func isSpinner(obj objects.IHitObject) bool {
+	_, ok2 := obj.(*objects.Spinner)
 	return ok2
 }
 
-func isSlider(obj objects.BaseObject) bool {
+func isSlider(obj objects.IHitObject) bool {
 	_, ok1 := obj.(*objects.Slider)
 	return ok1
 }
 
 func calculateStackLeniency(b *BeatMap) {
-	stack_distance := float32(3.0)
-
-	hitObjects := b.HitObjects
-
 	if !settings.Objects.StackEnabled {
 		return
 	}
 
+	diffNM := difficulty.NewDifficulty(b.Diff.GetHPDrain(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
+	diffEZ := difficulty.NewDifficulty(b.Diff.GetHPDrain(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
+	diffHR := difficulty.NewDifficulty(b.Diff.GetHPDrain(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
+
+	diffEZ.SetMods(difficulty.Easy)
+	diffHR.SetMods(difficulty.HardRock)
+
+	processStacking(b.HitObjects, diffNM, b.StackLeniency)
+	processStacking(b.HitObjects, diffEZ, b.StackLeniency)
+	processStacking(b.HitObjects, diffHR, b.StackLeniency)
+
+	for _, v := range b.HitObjects {
+		v.UpdateStacking()
+	}
+}
+
+func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficulty, stackLeniency float64) {
+	stack_distance := float32(3.0)
+	stackThreshold := diff.Preempt * stackLeniency
+	modifiers := diff.Mods
+
 	for _, v := range hitObjects {
-		v.GetBasicData().StackIndex = 0
+		v.SetStackIndex(0, diff.Mods)
 	}
 
 	extendedEndIndex := len(hitObjects) - 1
@@ -37,25 +54,23 @@ func calculateStackLeniency(b *BeatMap) {
 
 		for n := stackBaseIndex + 1; n < len(hitObjects); n++ {
 
-			stackBaseObject := hitObjects[stackBaseIndex]
-			if isSpinnerBreak(stackBaseObject) {
+			stackIHitObject := hitObjects[stackBaseIndex]
+			if isSpinner(stackIHitObject) {
 				break
 			}
 
 			objectN := hitObjects[n]
-			if isSpinnerBreak(objectN) {
+			if isSpinner(objectN) {
 				continue
 			}
 
-			stackThreshold := b.Diff.Preempt * b.StackLeniency
-
-			if objectN.GetBasicData().StartTime-stackBaseObject.GetBasicData().EndTime > int64(stackThreshold) {
+			if objectN.GetStartTime()-stackIHitObject.GetEndTime() > int64(stackThreshold) {
 				break
 			}
 
-			if stackBaseObject.GetBasicData().StartPos.Dst(objectN.GetBasicData().StartPos) < stack_distance || isSlider(stackBaseObject) && stackBaseObject.GetBasicData().EndPos.Dst(objectN.GetBasicData().StartPos) < stack_distance {
+			if stackIHitObject.GetStartPosition().Dst(objectN.GetStartPosition()) < stack_distance || isSlider(stackIHitObject) && stackIHitObject.GetEndPosition().Dst(objectN.GetStartPosition()) < stack_distance {
 				stackBaseIndex = n
-				objectN.GetBasicData().StackIndex = 0
+				objectN.SetStackIndex(0, modifiers)
 			}
 		}
 
@@ -74,43 +89,41 @@ func calculateStackLeniency(b *BeatMap) {
 
 		objectI := hitObjects[i]
 
-		if objectI.GetBasicData().StackIndex != 0 || isSpinnerBreak(objectI) {
+		if objectI.GetStackIndex(modifiers) != 0 || isSpinner(objectI) {
 			continue
 		}
 
-		stackThreshold := b.Diff.Preempt * b.StackLeniency
-
-		if _, ok := objectI.(*objects.Circle); ok {
+		if !isSlider(objectI) && !isSpinner(objectI) {
 			for n--; n >= 0; n-- {
 				objectN := hitObjects[n]
 
-				if isSpinnerBreak(objectN) {
+				if isSpinner(objectN) {
 					continue
 				}
 
-				if objectI.GetBasicData().StartTime-objectN.GetBasicData().EndTime > int64(stackThreshold) {
+				if objectI.GetStartTime()-objectN.GetEndTime() > int64(stackThreshold) {
 					break
 				}
 
 				if n < extendedStartIndex {
-					objectN.GetBasicData().StackIndex = 0
+					objectN.SetStackIndex(0, modifiers)
 					extendedStartIndex = n
 				}
 
-				if isSlider(objectN) && objectN.GetBasicData().EndPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
-					offset := objectI.GetBasicData().StackIndex - objectN.GetBasicData().StackIndex + 1
+				if isSlider(objectN) && objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stack_distance {
+					offset := objectI.GetStackIndex(modifiers) - objectN.GetStackIndex(modifiers) + 1
 					for j := n + 1; j <= i; j++ {
 						objectJ := hitObjects[j]
-						if objectN.GetBasicData().EndPos.Dst(objectJ.GetBasicData().StartPos) < stack_distance {
-							objectJ.GetBasicData().StackIndex -= offset
+						if objectN.GetEndPosition().Dst(objectJ.GetStartPosition()) < stack_distance {
+							objectJ.SetStackIndex(objectJ.GetStackIndex(modifiers) - offset, modifiers)
 						}
 					}
 
 					break
 				}
 
-				if objectN.GetBasicData().StartPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
-					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex + 1
+				if objectN.GetStartPosition().Dst(objectI.GetStartPosition()) < stack_distance {
+					objectN.SetStackIndex(objectI.GetStackIndex(modifiers) + 1, modifiers)
 					objectI = objectN
 				}
 
@@ -120,31 +133,24 @@ func calculateStackLeniency(b *BeatMap) {
 			for n--; n >= 0; n-- {
 				objectN := hitObjects[n]
 
-				if isSpinnerBreak(objectN) {
+				if isSpinner(objectN) {
 					continue
 				}
 
-				if objectI.GetBasicData().StartTime-objectN.GetBasicData().StartTime > int64(stackThreshold) {
+				if objectI.GetStartTime()-objectN.GetStartTime() > int64(stackThreshold) {
 					break
 				}
 
-				if objectN.GetBasicData().EndPos.Dst(objectI.GetBasicData().StartPos) < stack_distance {
-					objectN.GetBasicData().StackIndex = objectI.GetBasicData().StackIndex + 1
+				if objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stack_distance {
+					objectN.SetStackIndex(objectI.GetStackIndex(modifiers) + 1, modifiers)
 					objectI = objectN
 				}
 
 			}
 		}
 
-	}
-
-	for _, v := range hitObjects {
-		if !isSpinnerBreak(v) {
-			sc := -float32(v.GetBasicData().StackIndex) * float32(b.Diff.CircleRadius) / 10
-			v.GetBasicData().StackOffset = vector.NewVec2f(sc, sc)
-			v.GetBasicData().StartPos = v.GetBasicData().StartPos.Add(v.GetBasicData().StackOffset)
-			v.GetBasicData().EndPos = v.GetBasicData().EndPos.Add(v.GetBasicData().StackOffset)
-			v.UpdateStacking()
+		for _, v := range hitObjects {
+			v.SetStackOffset(-float32(v.GetStackIndex(modifiers)) * float32(diff.CircleRadius) / 10, modifiers)
 		}
 	}
 }

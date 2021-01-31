@@ -26,18 +26,17 @@ func (bm *ExGonMover) Reset() {
 	bm.wasFirst = false
 }
 
-func (bm *ExGonMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 	if !bm.wasFirst {
-		bData := objs[1].GetBasicData()
-		bm.rand = rand.New(rand.NewSource((int64(bData.StartPos.X)+1000*int64(bData.StartPos.Y))*100 + bData.StartTime))
+		bm.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + objs[1].GetStartTime()))
 
 		bm.wasFirst = true
 	}
 
 	prev, next := objs[0], objs[1]
 
-	bm.nextTime = prev.GetBasicData().EndTime + settings.Dance.ExGon.Delay
-	bm.endTime = next.GetBasicData().StartTime
+	bm.nextTime = prev.GetEndTime() + settings.Dance.ExGon.Delay
+	bm.endTime = next.GetStartTime()
 
 	return 2
 }

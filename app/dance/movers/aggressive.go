@@ -22,14 +22,14 @@ func (bm *AggressiveMover) Reset() {
 	bm.lastAngle = 0
 }
 
-func (bm *AggressiveMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetBasicData().EndPos
-	endTime := end.GetBasicData().EndTime
-	startPos := start.GetBasicData().StartPos
-	startTime := start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPosition()
+	endTime := end.GetEndTime()
+	startPos := start.GetStackedStartPosition()
+	startTime := start.GetStartTime()
 
 	scaledDistance := float32(startTime - endTime)
 
