@@ -257,7 +257,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 		scale *= expand
 	}
 
-	if settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Textures[0] != nil && cursor.middle.Textures[0].Texture != nil) {
+	if (settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Textures[0] != nil && cursor.middle.Textures[0].Texture != nil)) && cursor.trail.Texture != nil {
 		osuShader.Bind()
 
 		osuShader.SetUniform("tex", int32(cursor.trail.Texture.GetLocation()))
