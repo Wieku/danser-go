@@ -97,16 +97,16 @@ type spline struct {
 }
 
 type momentum struct {
-	SkipStackAngles bool// false,
-	StreamRestrict  bool//  true,
-	DurationPow     float64//    1.3,
-	DurationTrigger float64// 500,
-	StreamMult float64//      1,
-	StreamAngle float64//     90,
-	RestrictAngle float64//   89,
-	DistanceMult float64//    0.7,
-	DistanceMultEnd float64// 0.7,
-	DistanceMultOut float64// 0.45
+	SkipStackAngles bool
+	StreamRestrict  bool
+	DurationPow     float64
+	DurationTrigger float64
+	StreamMult      float64
+	StreamAngle     float64
+	RestrictAngle   float64
+	DistanceMult    float64
+	DistanceMultEnd float64
+	DistanceMultOut float64
 }
 
 type exgon struct {
