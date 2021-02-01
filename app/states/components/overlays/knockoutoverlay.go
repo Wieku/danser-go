@@ -148,6 +148,10 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	replayController.GetRuleset().SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
 		player := overlay.players[overlay.names[cursor]]
 
+		if replayController.GetRuleset().GetBeatMap().Diff.Mods.Active(difficulty.HardRock) != replayController.GetReplays()[player.oldIndex].ModsV.Active(difficulty.HardRock) {
+			position.Y = 384 - position.Y
+		}
+
 		player.score = score
 		player.scores[number] = score
 
