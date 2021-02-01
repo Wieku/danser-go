@@ -37,18 +37,6 @@ type TickPoint struct {
 	IsReverse bool
 }
 
-type reversePoint struct {
-	fade  *animation.Glider
-	pulse *animation.Glider
-}
-
-func newReverse() (point *reversePoint) {
-	point = &reversePoint{animation.NewGlider(0), animation.NewGlider(1)}
-	point.fade.SetEasing(easing.OutQuad)
-	point.pulse.SetEasing(easing.OutQuad)
-	return
-}
-
 var easeBezier = curves.NewMultiCurve("B", []vector.Vector2f{{X: 0, Y: 0}, {X: 0.1, Y: 1}, {X: 0.5, Y: 0.5}, {X: 1, Y: 1}})
 
 var snakeEase = easing.Easing(func(f float64) float64 {
@@ -157,8 +145,6 @@ func NewSlider(data []string) *Slider {
 
 	slider.fade = animation.NewGlider(1)
 	slider.bodyFade = animation.NewGlider(1)
-	//slider.fadeCircle = animation.NewGlider(1)
-	//slider.fadeApproach = animation.NewGlider(1)
 	slider.sliderSnakeTail = animation.NewGlider(1)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 	return slider
@@ -285,16 +271,9 @@ func (slider *Slider) SetTiming(timings *Timings) {
 
 			startTime += progress
 			slider.EndTime = int64(math.Floor(startTime))
-			/*if slider.StartTime == 120273 {
-				log.Printf("%.10f", distance)
-				log.Printf("%.10f", progress)
-				log.Printf("%.10f", velocity)
-				log.Println(startTime)
-			}*/
 
 			scoringDistance += float64(distance)
 
-			//sprites for scoring points (dots)
 			for scoringDistance >= tickDistance && !skipTick {
 				scoringLengthTotal += tickDistance
 				scoringDistance -= tickDistance
@@ -310,7 +289,6 @@ func (slider *Slider) SetTiming(timings *Timings) {
 				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false}
 				slider.TickPoints = append(slider.TickPoints, point)
 				slider.ScorePoints = append(slider.ScorePoints, point)
-
 			}
 		}
 
@@ -322,7 +300,6 @@ func (slider *Slider) SetTiming(timings *Timings) {
 		slider.TickReverse = append(slider.TickReverse, point)
 		slider.ScorePoints = append(slider.ScorePoints, point)
 
-		// If our scoring distance is small enough, then there was no "last" scoring point at the end. No need to mirror a non-existing point.
 		if skipTick {
 			scoringDistance = 0
 		} else {
@@ -535,7 +512,6 @@ func (slider *Slider) Update(time int64) bool {
 	slider.fade.Update(float64(time))
 	slider.bodyFade.Update(float64(time))
 
-	//TODO:HR
 	headPos := slider.multiCurve.PointAt(float32(slider.sliderSnakeHead.GetValue()))
 	tailPos := slider.multiCurve.PointAt(float32(slider.sliderSnakeTail.GetValue()))
 	headAngle := slider.multiCurve.GetStartAngleAt(float32(slider.sliderSnakeHead.GetValue())) + math.Pi
@@ -653,26 +629,41 @@ func (slider *Slider) InitSlide(time int64) {
 
 	startTime := float64(time)
 
+	fadeInEnd := math.Min(startTime+180, float64(slider.EndTime))
+
 	slider.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(startTime+60, float64(slider.EndTime)), 0, 1))
-	slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, math.Min(startTime+180, float64(slider.EndTime)), 0.5, 1))
-
-	for j, p := range slider.ScorePoints {
-		if j < 1 || p.Time < time {
-			continue
-		}
-
-		fade := 200.0
-		delay := fade
-		if len(slider.ScorePoints) >= 2 {
-			delay = math.Min(fade, float64(p.Time-slider.ScorePoints[j-1].Time))
-			ratio := delay / fade
-
-			slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(p.Time), float64(p.Time)+delay, 1.1, 1.1-ratio*0.1))
-		}
-	}
+	slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, fadeInEnd, 0.5, 1))
 
 	slider.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, float64(slider.EndTime), float64(slider.EndTime+200), 1, 0))
 	slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(slider.EndTime), float64(slider.EndTime+200), 1, 0.8))
+
+	fadeBase := 200.0
+
+	fadeTime := fadeBase
+	if len(slider.ScorePoints) >= 2 {
+		fadeTime = math.Min(fadeTime, float64(slider.ScorePoints[1].Time-slider.ScorePoints[0].Time))
+	}
+
+	endValue := 1.1 - (fadeTime/fadeBase)*0.1
+
+	for i := 0; i < len(slider.ScorePoints)-1; i++ {
+		p := slider.ScorePoints[i]
+		endTime := float64(p.Time) + fadeTime
+
+		if endTime < fadeInEnd {
+			continue
+		}
+
+		startTime := float64(p.Time)
+		startValue := 1.1
+
+		if startTime < fadeInEnd {
+			startValue = (startValue-endValue)*(endTime-startTime)/fadeTime + endValue
+			startTime = fadeInEnd
+		}
+
+		slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, math.Min(float64(slider.EndTime), endTime), startValue, endValue))
+	}
 
 	slider.isSliding = true
 }
