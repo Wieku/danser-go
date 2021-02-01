@@ -19,6 +19,7 @@ type MomentumMover struct {
 	startTime int64
 	endTime   int64
 	first     bool
+	wasStream bool
 	mods      difficulty.Modifier
 }
 
@@ -36,14 +37,42 @@ func same(mods difficulty.Modifier, o1 objects.IHitObject, o2 objects.IHitObject
 	return o1.GetStackedStartPositionMod(mods) == o2.GetStackedStartPositionMod(mods) || (settings.Dance.Momentum.SkipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
 }
 
+func anorm(a float32) float32 {
+	pi2 := 2 * math32.Pi
+	a = math32.Mod(a, pi2)
+	if a < 0 {
+		a += pi2
+	}
+
+	return a
+}
+
+func anorm2(a float32) float32 {
+	a = anorm(a)
+	if a > math32.Pi {
+		a = -(2 * math32.Pi - a)
+	}
+
+	return a
+}
+
 func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	i := 0
-	if bm.first {
-		i = 1
-	}
 
 	end := objs[i+0]
 	start := objs[i+1]
+
+	hasNext := false
+	var next objects.IHitObject
+	if len(objs) > 2 {
+		if _, ok := objs[i+2].(*objects.Circle); ok {
+			hasNext = true
+			next = objs[i+2]
+		} else if v, ok := objs[i+2].(*objects.Slider); ok && v.IsRetarded() {
+			hasNext = true
+			next = objs[i+2]
+		}
+	}
 
 	endPos := end.GetStackedEndPositionMod(bm.mods)
 	startPos := start.GetStackedStartPositionMod(bm.mods)
@@ -54,12 +83,12 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	fromSlider := false
 	for i++; i < len(objs); i++ {
 		o := objs[i]
-		if s, ok := o.(*objects.Slider); ok {
+		if s, ok := o.(*objects.Slider); ok && !s.IsRetarded() {
 			a2 = s.GetStartAngleMod(bm.mods)
 			fromSlider = true
 			break
 		}
-		if i == len(objs)-1 {
+		if i == len(objs) - 1 {
 			a2 = bm.last.AngleRV(endPos)
 			break
 		}
@@ -68,6 +97,29 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			break
 		}
 	}
+
+	s, ok1 := end.(*objects.Slider)
+	if ok1 {
+		ok1 = !s.IsRetarded()
+	}
+
+	ms := settings.Dance.Momentum
+
+	// stream detection logic stolen from spline mover
+	stream := false
+	if hasNext && !fromSlider && ms.StreamRestrict {
+		min := float32(25.0)
+		max := float32(10000.0)
+		nextPos := next.GetStackedStartPositionMod(bm.mods)
+		sq1 := endPos.DstSq(startPos)
+		sq2 := startPos.DstSq(nextPos)
+
+		if sq1 >= min && sq1 <= max && bm.wasStream || (sq2 >= min && sq2 <= max) {
+			stream = true
+		}
+	}
+
+	bm.wasStream = stream
 
 	var a1 float32
 	if s, ok := end.(*objects.Slider); ok {
@@ -78,18 +130,46 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		a1 = endPos.AngleRV(bm.last)
 	}
 
-	a := startPos.AngleRV(endPos)
-	offset := float32(settings.Dance.Momentum.RestrictAngle * math.Pi / 180.0)
-	if !fromSlider && math32.Abs(a2-a) < offset {
-		if a2-a < offset {
+	offset := float32(ms.RestrictAngle * math.Pi / 180.0)
+
+	multEnd := ms.DistanceMultOut
+	multStart := ms.DistanceMultOut
+
+	if stream && math32.Abs(anorm(a2 - startPos.AngleRV(endPos))) < anorm((2 * math32.Pi) - offset) {
+		a := endPos.AngleRV(startPos)
+		sangle := float32(ms.StreamAngle * math.Pi / 180.0)
+		if anorm(a1 - a) > math32.Pi {
+			a2 = a - sangle
+		} else {
+			a2 = a + sangle
+		}
+
+		multEnd = ms.StreamMult
+		multStart = ms.StreamMult
+	} else if !fromSlider && math32.Abs(anorm2(a2 - startPos.AngleRV(endPos))) < offset {
+		a := startPos.AngleRV(endPos)
+		if anorm(a2 - a) < offset {
 			a2 = a - offset
 		} else {
 			a2 = a + offset
 		}
+
+		multEnd = ms.DistanceMult
+		multStart = ms.DistanceMultEnd
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst*float32(settings.Dance.Momentum.DistanceMult)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst*float32(settings.Dance.Momentum.DistanceMultEnd)).Add(startPos)
+	endTime := end.GetEndTime()
+	startTime := start.GetStartTime()
+	duration := float64(startTime - endTime)
+
+	if ms.DurationTrigger > 0 && duration >= ms.DurationTrigger {
+		mult := math.Pow(ms.DurationPow, float64(duration) / ms.DurationTrigger)
+		multEnd *= mult
+		multStart *= mult
+	}
+
+	p1 := vector.NewVec2fRad(a1, dst * float32(multEnd)).Add(endPos)
+	p2 := vector.NewVec2fRad(a2, dst * float32(multStart)).Add(startPos)
 
 	if !same(bm.mods, end, start) {
 		bm.last = p2

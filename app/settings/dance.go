@@ -37,9 +37,15 @@ func initDance() *dance {
 		},
 		Momentum: &momentum{
 			SkipStackAngles: false,
-			RestrictAngle:   80,
-			DistanceMult:    0.666,
-			DistanceMultEnd: 0.666,
+			StreamRestrict:  true,
+			DurationPow:     1.3,
+			DurationTrigger: 500,
+			StreamMult:      1,
+			StreamAngle:     90,
+			RestrictAngle:   89,
+			DistanceMult:    0.7,
+			DistanceMultEnd: 0.7,
+			DistanceMultOut: 0.45,
 		},
 		ExGon: &exgon{
 			Delay: 50,
@@ -92,9 +98,15 @@ type spline struct {
 
 type momentum struct {
 	SkipStackAngles bool
+	StreamRestrict  bool
+	DurationPow     float64
+	DurationTrigger float64
+	StreamMult      float64
+	StreamAngle     float64
 	RestrictAngle   float64
 	DistanceMult    float64
 	DistanceMultEnd float64
+	DistanceMultOut float64
 }
 
 type exgon struct {
