@@ -405,7 +405,7 @@ func run() {
 
 		p, _ := player.(*states.Player)
 
-		maxFrames := int(p.RunningTime / 1000 * fps)
+		maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
 
 		var lastProgress, progress int
 
