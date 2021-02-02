@@ -276,8 +276,10 @@ func (overlay *ScoreOverlay) Update(time int64) {
 			mod.SetAlpha(0)
 			mod.ShowForever(true)
 
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(time), float64(time)+500, 0.0, 1.0))
-			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(time), float64(time)+500, 1.5, 1.0))
+			timeStart := float64(time + int64(i)*120)
+
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, timeStart, timeStart+500, 0.0, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+500, 1.5, 1.0))
 
 			if overlay.cursor.Name == "" {
 				startT := float64(overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime())
