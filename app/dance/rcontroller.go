@@ -146,38 +146,57 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	candidates := make([]*rplpa.Replay, 0)
 
-	//if settings.Knockout.LocalReplays {
-	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osr") {
-			log.Println("Loading: ", f.Name())
+	localReplay := false
+	if settings.REPLAY != "" {
+		log.Println("Loading: ", settings.REPLAY)
 
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				panic(err)
-			}
-
-			replayD, _ := rplpa.ParseReplay(data)
-
-			if !strings.EqualFold(replayD.BeatmapMD5, beatMap.MD5) {
-				log.Println("Incompatible maps, skipping", replayD.Username)
-				return nil
-			}
-
-			if (replayD.Mods & uint32(excludedMods)) > 0 {
-				log.Println("Excluding for mods:", replayD.Username)
-				return nil
-			}
-
-			if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-				log.Println("Excluding for missing input data:", replayD.Username)
-				return nil
-			}
-
-			candidates = append(candidates, replayD)
+		data, err := ioutil.ReadFile(settings.REPLAY)
+		if err != nil {
+			panic(err)
 		}
 
-		return nil
-	})
+		replayD, _ := rplpa.ParseReplay(data)
+
+		if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+			log.Println("Excluding for missing input data:", replayD.Username)
+		} else {
+			candidates = append(candidates, replayD)
+
+			localReplay = true
+		}
+	} else {
+		filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
+			if strings.HasSuffix(f.Name(), ".osr") {
+				log.Println("Loading: ", f.Name())
+
+				data, err := ioutil.ReadFile(path)
+				if err != nil {
+					panic(err)
+				}
+
+				replayD, _ := rplpa.ParseReplay(data)
+
+				if !strings.EqualFold(replayD.BeatmapMD5, beatMap.MD5) {
+					log.Println("Incompatible maps, skipping", replayD.Username)
+					return nil
+				}
+
+				if (replayD.Mods & uint32(excludedMods)) > 0 {
+					log.Println("Excluding for mods:", replayD.Username)
+					return nil
+				}
+
+				if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+					log.Println("Excluding for missing input data:", replayD.Username)
+					return nil
+				}
+
+				candidates = append(candidates, replayD)
+			}
+
+			return nil
+		})
+	}
 
 	sort.Slice(candidates, func(i, j int) bool {
 		return candidates[i].Score > candidates[j].Score
@@ -297,7 +316,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	//skip:
 
-	if settings.Knockout.AddDanser || counter == settings.Knockout.MaxPlayers {
+	if !localReplay && (settings.Knockout.AddDanser || counter == settings.Knockout.MaxPlayers) {
 		control := NewSubControl()
 
 		control.danceController = NewGenericController()

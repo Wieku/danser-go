@@ -4,6 +4,7 @@ import "C"
 import (
 	"flag"
 	"fmt"
+	"github.com/Mempler/rplpa"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -31,6 +32,7 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"image"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -98,9 +100,28 @@ func run() {
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
 
+		replay := flag.String("replay", "", "Play map from specific replay file. Overrides -knockout, -mods and all beatmap arguments.")
+
 		flag.Parse()
 
 		modsParsed := difficulty2.ParseMods(*mods)
+
+		if *replay != "" {
+			bytes, err := ioutil.ReadFile(*replay)
+			if err != nil {
+				panic(err)
+			}
+
+			rp, err := rplpa.ParseReplay(bytes)
+			if err != nil {
+				panic(err)
+			}
+
+			*md5 = rp.BeatmapMD5
+			modsParsed = difficulty2.Modifier(rp.Mods)
+			*knockout = true
+			settings.REPLAY = *replay
+		}
 
 		if !modsParsed.Compatible() {
 			panic("Incompatible mods selected!")
