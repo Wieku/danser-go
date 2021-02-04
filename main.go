@@ -127,7 +127,7 @@ func run() {
 			panic("Incompatible mods selected!")
 		}
 
-		incompatibleMods := difficulty2.SpunOut | difficulty2.Flashlight | difficulty2.Relax | difficulty2.Relax2
+		incompatibleMods := difficulty2.SpunOut | difficulty2.Relax | difficulty2.Relax2
 
 		if modsParsed.Active(incompatibleMods) {
 			panic(fmt.Sprintf("Those mods are not yet supported: %s", (modsParsed & incompatibleMods).String()))
