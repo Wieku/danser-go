@@ -51,6 +51,10 @@ func (slider *Slider) GetNumber() int64 {
 	return slider.hitSlider.GetID()
 }
 
+func (slider *Slider) IsSliding(player *difficultyPlayer) bool {
+	return slider.state[player].sliding
+}
+
 func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, players []*difficultyPlayer) {
 	slider.ruleSet = ruleSet
 	slider.hitSlider = object.(*objects.Slider)

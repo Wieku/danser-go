@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/audio"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
@@ -24,7 +25,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -92,8 +92,9 @@ type ScoreOverlay struct {
 	boundaries     *common.Boundaries
 	hpBasePosition vector.Vector2d
 
-	mods     *sprite.SpriteManager
-	notFirst bool
+	mods       *sprite.SpriteManager
+	notFirst   bool
+	flashlight *common.Flashlight
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -183,6 +184,10 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.newCombo = 0
 		}
 
+		if overlay.flashlight != nil {
+			overlay.flashlight.UpdateCombo(overlay.newCombo)
+		}
+
 		_, _, score, _ := overlay.ruleset.GetResults(overlay.cursor)
 
 		overlay.scoreGlider.Reset()
@@ -251,6 +256,10 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.mods = sprite.NewSpriteManager()
 
+	if overlay.ruleset.GetBeatMap().Diff.Mods.Active(difficulty.Flashlight) {
+		overlay.flashlight = common.NewFlashlight(overlay.ruleset.GetBeatMap())
+	}
+
 	return overlay
 }
 
@@ -269,8 +278,6 @@ func (overlay *ScoreOverlay) Update(time int64) {
 		offset := -40.0
 		for i, s := range mods {
 			modSpriteName := "selection-mod-" + strings.ToLower(s)
-
-			log.Println(modSpriteName)
 
 			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 155), bmath.Origin.Centre)
 			mod.SetAlpha(0)
@@ -293,6 +300,23 @@ func (overlay *ScoreOverlay) Update(time int64) {
 
 			offset -= 18
 		}
+	}
+
+	if overlay.flashlight != nil && time >= 0 {
+
+		overlay.flashlight.Update(float64(time))
+		overlay.flashlight.UpdatePosition(overlay.cursor.Position)
+
+		proc := overlay.ruleset.GetProcessed()
+
+		sliding := false
+		for _, p := range proc {
+			if o, ok := p.(*osu.Slider); ok {
+				sliding = sliding || o.IsSliding(overlay.ruleset.GetPlayer(overlay.cursor))
+			}
+		}
+
+		overlay.flashlight.SetSliding(sliding)
 	}
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
@@ -397,6 +421,12 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, colors []color2.
 	batch.SetScale(scale, scale)
 
 	overlay.results.Draw(batch, 1.0)
+
+	batch.Flush()
+
+	if overlay.flashlight != nil {
+		overlay.flashlight.Draw(batch.Projection)
+	}
 
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
