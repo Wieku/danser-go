@@ -373,6 +373,9 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.startCircle.ComboNumber = slider.ComboNumber
 	slider.startCircle.ComboSet = slider.ComboSet
 	slider.startCircle.HitObjectID = slider.HitObjectID
+	slider.startCircle.StackOffset = slider.StackOffset
+	slider.startCircle.StackOffsetHR = slider.StackOffsetHR
+	slider.startCircle.StackOffsetEZ = slider.StackOffsetEZ
 	slider.startCircle.SetDifficulty(diff)
 
 	slider.edges = append(slider.edges, slider.startCircle)
@@ -407,6 +410,9 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circle.ComboNumber = slider.ComboNumber
 		circle.ComboSet = slider.ComboSet
 		circle.HitObjectID = slider.HitObjectID
+		circle.StackOffset = slider.StackOffset
+		circle.StackOffsetHR = slider.StackOffsetHR
+		circle.StackOffsetEZ = slider.StackOffsetEZ
 		circle.SetTiming(slider.Timings)
 		circle.SetDifficulty(diff)
 
