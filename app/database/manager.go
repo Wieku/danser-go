@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	oppai "github.com/flesnuk/oppai5"
 	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
@@ -231,72 +230,72 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 	log.Println("Loaded", len(allMaps), "total.")
 
 	result := make([]*beatmap.BeatMap, 0)
-	stars := make([]interface{}, 0)
+	//stars := make([]interface{}, 0)
 
 	for _, b := range allMaps {
 		if b.Mode == 0 {
-			if b.Stars < 0 {
-				stars = append(stars, b)
-			}
+			//if b.Stars < 0 {
+			//	stars = append(stars, b)
+			//}
 
 			result = append(result, b)
 		}
 	}
 
-	if len(stars) > 0 {
-		log.Println("Updating star rating...")
-
-		utils.Balance(4, stars, func(a interface{}) interface{} {
-			b := a.(*beatmap.BeatMap)
-
-			f, err := os.Open(filepath.Join(settings.General.OsuSongsDir, b.Dir, b.File))
-			if err == nil {
-				mp := oppai.Parse(f)
-
-				if len(mp.Objects) > 0 {
-					calc := &oppai.DiffCalc{Beatmap: *mp}
-					calc.Calc(0, oppai.DefaultSingletapThreshold)
-					b.Stars = calc.Total
-				} else {
-					b.Stars = 0
-				}
-			}
-
-			return a
-		})
-
-		tx, err := dbFile.Begin()
-		if err != nil {
-			panic(err)
-		}
-
-		st, err := tx.Prepare("UPDATE beatmaps SET stars = ? WHERE dir = ? AND file = ?")
-		if err != nil {
-			panic(err)
-		}
-
-		for _, b := range stars {
-			bMap := b.(*beatmap.BeatMap)
-			_, err1 := st.Exec(
-				bMap.Stars,
-				bMap.Dir,
-				bMap.File)
-
-			if err1 != nil {
-				log.Println(err1)
-			}
-		}
-
-		if err = st.Close(); err != nil {
-			panic(err)
-		}
-
-		if err = tx.Commit(); err != nil {
-			panic(err)
-		}
-
-		log.Println("Calculations finished")
-	}
+	//if len(stars) > 0 {
+	//	log.Println("Updating star rating...")
+	//
+	//	utils.Balance(4, stars, func(a interface{}) interface{} {
+	//		b := a.(*beatmap.BeatMap)
+	//
+	//		f, err := os.Open(filepath.Join(settings.General.OsuSongsDir, b.Dir, b.File))
+	//		if err == nil {
+	//			mp := oppai.Parse(f)
+	//
+	//			if len(mp.Objects) > 0 {
+	//				calc := &oppai.DiffCalc{Beatmap: *mp}
+	//				calc.Calc(0, oppai.DefaultSingletapThreshold)
+	//				b.Stars = calc.Total
+	//			} else {
+	//				b.Stars = 0
+	//			}
+	//		}
+	//
+	//		return a
+	//	})
+	//
+	//	tx, err := dbFile.Begin()
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	st, err := tx.Prepare("UPDATE beatmaps SET stars = ? WHERE dir = ? AND file = ?")
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	for _, b := range stars {
+	//		bMap := b.(*beatmap.BeatMap)
+	//		_, err1 := st.Exec(
+	//			bMap.Stars,
+	//			bMap.Dir,
+	//			bMap.File)
+	//
+	//		if err1 != nil {
+	//			log.Println(err1)
+	//		}
+	//	}
+	//
+	//	if err = st.Close(); err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	if err = tx.Commit(); err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	log.Println("Calculations finished")
+	//}
 
 	return result
 }
