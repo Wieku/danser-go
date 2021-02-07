@@ -2,19 +2,17 @@ package osu
 
 import (
 	"fmt"
-	"github.com/flesnuk/oppai5"
 	"github.com/olekukonko/tablewriter"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/oppai"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
-	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -107,6 +105,13 @@ type subSet struct {
 	hp            *HealthProcessor
 }
 
+type MapTo struct {
+	ncircles int
+	nsliders int
+	nobjects int
+	maxCombo int
+}
+
 type OsuRuleSet struct {
 	beatMap         *beatmap.BeatMap
 	cursors         map[*graphics.Cursor]*subSet
@@ -114,8 +119,9 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	oppaiMaps []*oppai.Map
-	oppDiffs  map[difficulty.Modifier][]oppai.DiffCalc
+	//oppaiMaps []*oppai.Map
+	mapStats []*MapTo
+	oppDiffs map[difficulty.Modifier][]oppai.Stars
 
 	queue       []HitObject
 	processed   []HitObject
@@ -126,20 +132,42 @@ type OsuRuleSet struct {
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.DiffCalc)
+	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.Stars)
 
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	ruleset.mapStats = make([]*MapTo, 0, len(ruleset.beatMap.HitObjects))
 
-	if err != nil {
-		panic("Could not open beatmap file.")
+	for i, o := range ruleset.beatMap.HitObjects {
+		mapTo := &MapTo{}
+
+		if i > 0 {
+			*mapTo = *ruleset.mapStats[i-1]
+		}
+
+		if s, ok := o.(*objects.Slider); ok {
+			mapTo.nsliders++
+			mapTo.maxCombo += len(s.ScorePoints)
+		} else if _, ok := o.(*objects.Circle); ok {
+			mapTo.ncircles++
+		}
+
+		mapTo.maxCombo++
+		mapTo.nobjects++
+
+		ruleset.mapStats = append(ruleset.mapStats, mapTo)
 	}
 
-	defer file.Close()
-
-	for j := range beatMap.HitObjects {
-		ruleset.oppaiMaps = append(ruleset.oppaiMaps, oppai.ParsebyNum(file, j+1))
-		file.Seek(0, 0)
-	}
+	//file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	//
+	//if err != nil {
+	//	panic("Could not open beatmap file.")
+	//}
+	//
+	//defer file.Close()
+	//
+	//for j := range beatMap.HitObjects {
+	//	ruleset.oppaiMaps = append(ruleset.oppaiMaps, oppai.ParsebyNum(file, j+1))
+	//	file.Seek(0, 0)
+	//}
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
@@ -165,13 +193,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]] == nil {
-			diffs := make([]oppai.DiffCalc, 0)
-
-			for _, m := range ruleset.oppaiMaps {
-				diffs = append(diffs, (&oppai.DiffCalc{Beatmap: *m}).Calc(int(mods[i]), oppai.DefaultSingletapThreshold))
-			}
-
-			ruleset.oppDiffs[mods[i]] = diffs
+			ruleset.oppDiffs[mods[i]] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
 		}
 
 		hp := NewHealthProcessor(beatMap, diff)
@@ -447,9 +469,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 	index := bmath.MaxI64(0, subSet.numObjects-1)
 
+	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods][index]
 
-	subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), int(subSet.maxCombo))
+	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
+	//subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), int(subSet.maxCombo))
 
 	switch result {
 	case Hit100:

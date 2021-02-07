@@ -9,7 +9,8 @@ const FadeIn = 400.0
 const FadeOut = 240.0
 
 func GetObject(data []string) IHitObject {
-	objType, _ := strconv.ParseInt(data[3], 10, 64)
+	objTypeI, _ := strconv.Atoi(data[3])
+	objType := Type(objTypeI)
 	if (objType & CIRCLE) > 0 {
 		return NewCircle(data)
 	} else if (objType & SPINNER) > 0 {
@@ -27,10 +28,12 @@ func GetObject(data []string) IHitObject {
 	return nil
 }
 
+type Type int
+
 const (
-	CIRCLE   int64 = 1
-	SLIDER   int64 = 2
-	NEWCOMBO int64 = 4
-	SPINNER  int64 = 8
-	LONGNOTE int64 = 128 //only for mania, used to have correct number of sliders in database just in case
+	CIRCLE = Type(1 << iota)
+	SLIDER
+	NEWCOMBO
+	SPINNER
+	LONGNOTE = Type(128) //only for mania, used to have correct number of sliders in database just in case
 )

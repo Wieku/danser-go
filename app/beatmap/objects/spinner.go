@@ -386,3 +386,7 @@ func (spinner *Spinner) Bonus() {
 
 	spinner.bonus += 1000
 }
+
+func (circle *Spinner) GetType() Type {
+	return SPINNER
+}

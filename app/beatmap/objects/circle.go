@@ -42,9 +42,9 @@ type Circle struct {
 	appearTime       int64
 	ArrowRotation    float64
 
-	SliderPoint        bool
-	SliderPointStart   bool
-	SliderPointEnd     bool
+	SliderPoint      bool
+	SliderPointStart bool
+	SliderPointEnd   bool
 }
 
 func NewCircle(data []string) *Circle {
@@ -352,4 +352,8 @@ func (circle *Circle) DrawApproach(time int64, color color2.Color, batch *batch.
 	//circle.approachCircle.SetColor(color2.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 
 	circle.approachCircle.Draw(time, batch)
+}
+
+func (circle *Circle) GetType() Type {
+	return CIRCLE
 }

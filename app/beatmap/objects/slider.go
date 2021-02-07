@@ -958,3 +958,7 @@ func (slider *Slider) DrawApproach(time int64, color color2.Color, batch *batch.
 
 	slider.startCircle.DrawApproach(time, color, batch)
 }
+
+func (circle *Slider) GetType() Type {
+	return SLIDER
+}

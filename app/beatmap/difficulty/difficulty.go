@@ -21,6 +21,10 @@ type Difficulty struct {
 	Hit300              int64
 	HPMod               float64
 	SpinnerRatio        float64
+	Speed               float64
+
+	ARReal float64
+	ODReal float64
 }
 
 func NewDifficulty(hpDrain, cs, od, ar float64) *Difficulty {
@@ -58,6 +62,10 @@ func (diff *Difficulty) calculate() {
 	diff.Hit100 = int64(DifficultyRate(od, 140, 100, 60))
 	diff.Hit300 = int64(DifficultyRate(od, 80, 50, 20))
 	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
+	diff.Speed = 1.0 / diff.GetModifiedTime(1)
+
+	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.Preempt), 1800, 1200, 450)
+	diff.ODReal = DiffFromRate(diff.GetModifiedTime(float64(diff.Hit300)), 80, 50, 20)
 }
 
 func (diff *Difficulty) SetMods(mods Modifier) {
@@ -125,4 +133,17 @@ func DifficultyRate(diff, min, mid, max float64) float64 {
 		return mid - (mid-min)*(5-diff)/5
 	}
 	return mid
+}
+
+func DiffFromRate(rate, min, mid, max float64) float64 {
+	rate = float64(float32(rate))
+
+	minStep := (min - mid) / 5
+	maxStep := (mid - max) / 5
+
+	if rate > mid {
+		return -(rate - min) / minStep
+	}
+
+	return 5.0 - (rate-mid)/maxStep
 }

@@ -37,11 +37,13 @@ type IHitObject interface {
 	SetStackOffset(offset float32, modifier difficulty.Modifier)
 
 	IsNewCombo() bool
+
+	GetType() Type
 }
 
 type HitObject struct {
-	StartPosRaw  vector.Vector2f
-	EndPosRaw    vector.Vector2f
+	StartPosRaw vector.Vector2f
+	EndPosRaw   vector.Vector2f
 
 	StartTime int64
 	EndTime   int64
@@ -65,9 +67,9 @@ type HitObject struct {
 	BasicHitSound audio.HitSoundInfo
 }
 
-func (hitObject *HitObject) Update(time int64) bool { return true }
-func (hitObject *HitObject) SetTiming(timings *Timings) {}
-func (hitObject *HitObject) UpdateStacking() {}
+func (hitObject *HitObject) Update(time int64) bool                          { return true }
+func (hitObject *HitObject) SetTiming(timings *Timings)                      {}
+func (hitObject *HitObject) UpdateStacking()                                 {}
 func (hitObject *HitObject) SetDifficulty(difficulty *difficulty.Difficulty) {}
 
 func (hitObject *HitObject) GetStartTime() int64 {

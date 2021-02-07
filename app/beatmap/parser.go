@@ -179,7 +179,8 @@ func ParseBeatMap(beatMap *BeatMap) error {
 			if arr := tokenize(line, ","); arr != nil {
 				var time string
 
-				objType, _ := strconv.ParseInt(arr[3], 10, 64)
+				objTypeI, _ := strconv.Atoi(arr[3])
+				objType := objects.Type(objTypeI)
 				if (objType & objects.CIRCLE) > 0 {
 					beatMap.Circles++
 					time = arr[2]
