@@ -2,7 +2,6 @@ package oppai
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"math"
 )
 
@@ -15,29 +14,26 @@ func ppBase(stars float64) float64 {
 		100000.0
 }
 
-// PPv2Parameters : parameters to be passed to PPv2.
-/* aim_stars, speed_stars, max_combo, nsliders, ncircles, nobjects,
-* base_ar, base_od are required.
- */
-//type PPv2Parameters struct {
-//	Beatmap                      *Map
-//	AimStars, SpeedStars         float64
-//	MaxCombo                     int
-//	NSliders, NCircles, NObjects int
-//	BaseAR                       float32 // the base AR (before applying mods).
-//	BaseOD                       float32 // the base OD (before applying mods).
-//	Mode                         int     // gamemode
-//	Mods                         int     // the mods bitmask, same as osu! api
-//	Combo                        int     // Max combo achieved, if -1 it will default to maxCombo-nmiss
-//	// if N300 = -1 it will default to nobjects - n100 - n50 - nmiss
-//	N300, N100, N50, NMiss int
-//	ScoreVer               int // scorev1 (1) or scorev2 (2).
-//}
-
 // PPv2 : structure to store ppv2 values
 type PPv2 struct {
 	Total, Aim, Speed, Acc float64
-	ComputedAccuracy       Accuracy
+
+	aimStrain, speedStrain float64
+
+	maxCombo, nsliders, ncircles, nobjects int
+
+	scoreMaxCombo int
+	countGreat    int
+	countOk       int
+	countMeh      int
+	countMiss     int
+
+	diff *difficulty.Difficulty
+
+	ComputedAccuracy             Accuracy
+	totalHits                    int
+	accuracy                     float64
+	amountHitObjectsWithAccuracy int
 }
 
 func (pp *PPv2) PPv2x(aimStars, speedStars float64,
@@ -50,17 +46,29 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		maxCombo = 1
 	}
 
+	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
+
 	if combo < 0 {
-		combo = maxCombo - nmiss
+		combo = maxCombo
 	}
 
 	if n300 < 0 {
 		n300 = nobjects - n100 - n50 - nmiss
 	}
 
+	totalhits := n300 + n100 + n50 + nmiss
+
+	pp.aimStrain = aimStars
+	pp.speedStrain = speedStars
+	pp.diff = diff
+	pp.totalHits = totalhits
+	pp.scoreMaxCombo = combo
+	pp.countGreat = n300
+	pp.countOk = n100
+	pp.countMeh = n50
+	pp.countMiss = nmiss
+
 	/* accuracy -------------------------------------------- */
-	var realAcc float64
-	var accuracy float64
 
 	pp.ComputedAccuracy = Accuracy{
 		N300:    n300,
@@ -69,153 +77,175 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		NMisses: nmiss,
 	}
 
-	accuracy = pp.ComputedAccuracy.Value()
-	realAcc = accuracy
+	pp.accuracy = pp.ComputedAccuracy.Value()
 
 	switch scoreVersion {
 	case 1:
-		/* scorev1 ignores sliders since they are free 300s
-		and for some reason also ignores spinners */
-		nspinners := nobjects - nsliders - ncircles
-
-		realAcc = (&Accuracy{
-			N300:    bmath.MaxI(n300-nsliders-nspinners, 0),
-			N100:    n100,
-			N50:     n50,
-			NMisses: nmiss,
-		}).Value()
-
-		realAcc = math.Max(0.0, realAcc)
+		pp.amountHitObjectsWithAccuracy = ncircles
 	case 2:
-		ncircles = nobjects
+		pp.amountHitObjectsWithAccuracy = nobjects
 	default:
 		panic("unsupported score")
 	}
 
-	/* global values --------------------------------------- */
-	nobjectsOver2k := float64(nobjects) / 2000.0
-	lengthBonus := 0.95 + 0.4*math.Min(1.0, nobjectsOver2k)
-
-	if nobjects > 2000 {
-		lengthBonus += math.Log10(nobjectsOver2k) * 0.5
-	}
-
-	missPenalty := math.Pow(0.97, float64(nmiss))
-	comboBreak := math.Pow(float64(combo), 0.8) /
-		math.Pow(float64(maxCombo), 0.8)
-
-	/* ar bonus -------------------------------------------- */
-	arBonus := 1.0
-
-	if diff.ARReal > 10.33 {
-		arBonus += 0.3 * (diff.ARReal - 10.33)
-	} else if diff.ARReal < 8.0 {
-		arBonus += 0.01 * (8.0 - diff.ARReal)
-	}
-
-	/* aim pp ---------------------------------------------- */
-	pp.Aim = ppBase(aimStars)
-	pp.Aim *= lengthBonus
-	pp.Aim *= missPenalty
-	pp.Aim *= comboBreak
-	pp.Aim *= arBonus
-
-	hdBonus := 1.0
-	if diff.Mods.Active(difficulty.Hidden) {
-		hdBonus += 0.04 * (12.0 - diff.ARReal)
-	}
-
-	pp.Aim *= hdBonus
-
-	if diff.Mods.Active(difficulty.Flashlight) {
-		fl_bonus := 1.0 + 0.35*math.Min(1.0, float64(nobjects)/200.0)
-		if nobjects > 200 {
-			fl_bonus += 0.3 * math.Min(1, (float64(nobjects)-200.0)/300.0)
-		}
-		if nobjects > 500 {
-			fl_bonus += (float64(nobjects) - 500.0) / 1200.0
-		}
-		pp.Aim *= fl_bonus
-	}
-
-	accBonus := 0.5 + accuracy/2.0
-	od_squared := diff.ODReal * diff.ODReal
-	odBonus := 0.98 + od_squared/2500.0
-
-	pp.Aim *= accBonus
-	pp.Aim *= odBonus
-
-	/* speed pp -------------------------------------------- */
-	pp.Speed = ppBase(speedStars)
-	pp.Speed *= lengthBonus
-	pp.Speed *= missPenalty
-	pp.Speed *= comboBreak
-	if diff.ARReal > 10.33 {
-		pp.Speed *= arBonus
-	}
-	pp.Speed *= hdBonus
-
-	pp.Speed *= 0.02 + accuracy
-	pp.Speed *= 0.96 + float64(od_squared)/1600.0
-
-	/* acc pp ---------------------------------------------- */
-	pp.Acc = math.Pow(1.52163, diff.ODReal) *
-		math.Pow(realAcc, 24.0) * 2.83
-
-	pp.Acc *= math.Min(1.15, math.Pow(float64(ncircles)/1000.0, 0.3))
-
-	if diff.Mods.Active(difficulty.Hidden) {
-		pp.Acc *= 1.08
-	}
-
-	if diff.Mods.Active(difficulty.Flashlight) {
-		pp.Acc *= 1.02
-	}
 	/* total pp -------------------------------------------- */
 	finalMultiplier := 1.12
 
 	if diff.Mods.Active(difficulty.NoFail) {
-		finalMultiplier *= 0.90
+		finalMultiplier *= math.Max(0.90, 1.0-0.02*float64(nmiss))
 	}
 
 	if diff.Mods.Active(difficulty.SpunOut) {
-		finalMultiplier *= 0.95
+		nspinners := nobjects - nsliders - ncircles
+
+		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
 	}
 
+	aim := pp.computeAimValue()
+	speed := pp.computeSpeedValue()
+	accuracy := pp.computeAccuracyValue()
+
 	pp.Total = math.Pow(
-		math.Pow(pp.Aim, 1.1)+math.Pow(pp.Speed, 1.1)+
-			math.Pow(pp.Acc, 1.1),
+		math.Pow(aim, 1.1)+math.Pow(speed, 1.1)+
+			math.Pow(accuracy, 1.1),
 		1.0/1.1) * finalMultiplier
 
 	return *pp
 }
 
-// PPv2WithMods calculates the pp of the map with the mods passed and acc passed
-//func (pp *PPv2) PPv2WithMods(aimStars, speedStars float64, b *Map, mods, n300, n100, n50, nmiss, combo int) {
-//	pp.ppv2x(aimStars, speedStars, -1, b.NSliders, b.NCircles,
-//		len(b.Objects), b.Mode, mods, combo, n300, n100, n50, nmiss,
-//		b.AR, b.OD, 1, b, -1)
-//}
-//
-//// PPv2ssWithMods calculates the pp of the map with the mods passed and 100% acc
-//func (pp *PPv2) PPv2ssWithMods(aimStars, speedStars float64, b *Map, mods int) {
-//	pp.ppv2x(aimStars, speedStars, -1, b.NSliders, b.NCircles,
-//		len(b.Objects), b.Mode, mods, -1, -1, 0, 0, 0,
-//		b.AR, b.OD, 1, b, -1)
-//}
-//
-//// PPv2ss calculates the pp of the map with nomods and 100% acc
-//func (pp *PPv2) PPv2ss(aimStars, speedStars float64, b *Map) {
-//	pp.ppv2x(aimStars, speedStars, -1, b.NSliders, b.NCircles,
-//		len(b.Objects), b.Mode, ModsNOMOD, -1, -1, 0, 0, 0,
-//		b.AR, b.OD, 1, b, -1)
-//}
+func (pp *PPv2) computeAimValue() float64 {
+	rawAim := pp.aimStrain
 
-// MultiAccPP returns the PP for every acc step
-type MultiAccPP struct {
-	P95   float64
-	P98   float64
-	P99   float64
-	P99p5 float64
-	P100  float64
+	if pp.diff.Mods.Active(difficulty.TouchDevice) {
+		rawAim = math.Pow(rawAim, 0.8)
+	}
+
+	aimValue := ppBase(rawAim)
+
+	// Longer maps are worth more
+	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
+	if pp.totalHits > 2000 {
+		lengthBonus += math.Log10(float64(pp.totalHits)/2000.0) * 0.5
+	}
+
+	aimValue *= lengthBonus
+
+	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
+	if pp.countMiss > 0 {
+		aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), float64(pp.countMiss))
+	}
+
+	// Combo scaling
+	if pp.maxCombo > 0 {
+		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	}
+
+	approachRateFactor := 0.0
+	if pp.diff.ARReal > 10.33 {
+		approachRateFactor += 0.4 * (pp.diff.ARReal - 10.33)
+	} else if pp.diff.ARReal < 8.0 {
+		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
+	}
+
+	aimValue *= 1.0 + math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
+
+	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
+	if pp.diff.Mods.Active(difficulty.Hidden) {
+		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
+	}
+
+	if pp.diff.Mods.Active(difficulty.Flashlight) {
+		flBonus := 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+		if pp.totalHits > 200 {
+			flBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
+		}
+		if pp.totalHits > 500 {
+			flBonus += (float64(pp.totalHits) - 500.0) / 1200.0
+		}
+		aimValue *= flBonus
+	}
+
+	// Scale the aim value with accuracy _slightly_
+	aimValue *= 0.5 + pp.accuracy/2.0
+	// It is important to also consider accuracy difficulty when doing that
+	aimValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
+
+	return aimValue
+}
+
+func (pp *PPv2) computeSpeedValue() float64 {
+	speedValue := ppBase(pp.speedStrain)
+
+	// Longer maps are worth more
+	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
+	if pp.totalHits > 2000 {
+		lengthBonus += math.Log10(float64(pp.totalHits)/2000.0) * 0.5
+	}
+
+	speedValue *= lengthBonus
+
+	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
+	if pp.countMiss > 0 {
+		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.countMiss), 0.875))
+	}
+
+	// Combo scaling
+	if pp.maxCombo > 0 {
+		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	}
+
+	approachRateFactor := 0.0
+	if pp.diff.ARReal > 10.33 {
+		approachRateFactor += 0.4 * (pp.diff.ARReal - 10.33)
+	}
+
+	speedValue *= 1.0 + math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
+
+	if pp.diff.Mods.Active(difficulty.Hidden) {
+		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
+	}
+
+	// Scale the speed value with accuracy and OD
+	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
+	// Scale the speed value with # of 50s to punish doubletapping.
+
+	mehMult := 0.0
+	if float64(pp.countMeh) >= float64(pp.totalHits)/500 {
+		mehMult = float64(pp.countMeh) - float64(pp.totalHits)/500.0
+	}
+
+	speedValue *= math.Pow(0.98, mehMult)
+
+	return speedValue
+}
+
+func (pp *PPv2) computeAccuracyValue() float64 {
+	// This percentage only considers HitCircles of any value - in this part of the calculation we focus on hitting the timing hit window
+	betterAccuracyPercentage := 0.0
+
+	if pp.amountHitObjectsWithAccuracy > 0 {
+		betterAccuracyPercentage = float64((pp.countGreat-(pp.totalHits-pp.amountHitObjectsWithAccuracy))*6+pp.countOk*2+pp.countMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
+	}
+
+	// It is possible to reach a negative accuracy with this formula. Cap it at zero - zero points
+	if betterAccuracyPercentage < 0 {
+		betterAccuracyPercentage = 0
+	}
+
+	// Lots of arbitrary values from testing.
+	// Considering to use derivation from perfect accuracy in a probabilistic manner - assume normal distribution
+	accuracyValue := math.Pow(1.52163, pp.diff.ODReal) * math.Pow(betterAccuracyPercentage, 24) * 2.83
+
+	// Bonus for many hitcircles - it's harder to keep good accuracy up for longer
+	accuracyValue *= math.Min(1.15, math.Pow(float64(pp.amountHitObjectsWithAccuracy)/1000.0, 0.3))
+
+	if pp.diff.Mods.Active(difficulty.Hidden) {
+		accuracyValue *= 1.08
+	}
+
+	if pp.diff.Mods.Active(difficulty.Flashlight) {
+		accuracyValue *= 1.02
+	}
+
+	return accuracyValue
 }
