@@ -178,7 +178,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.newCombo++
 			overlay.nextEnd = time + 300
 		} else if comboResult == osu.ComboResults.Reset {
-			if overlay.newCombo > 20 {
+			if overlay.newCombo > 20 && overlay.combobreak != nil {
 				overlay.combobreak.Play()
 			}
 			overlay.newCombo = 0

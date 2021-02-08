@@ -37,6 +37,7 @@ type trackEvent struct {
 	time     float64
 	play     bool
 	delegate func() C.DWORD
+	called   bool
 }
 
 var trackEvents = make([]trackEvent, 0)
@@ -105,6 +106,27 @@ func SaveToFile() {
 //export goCallback
 func goCallback(i C.int) {
 	eventIndex := int(i)
+
+	if trackEvents[eventIndex].called {
+		return
+	}
+
+	minIndex := eventIndex
+
+	for i := eventIndex - 1; i >= 0; i-- {
+		if trackEvents[i].called {
+			break
+		}
+
+		minIndex = i
+	}
+
+	for i := minIndex; i <= eventIndex; i++ {
+		processEvent(i)
+	}
+}
+
+func processEvent(eventIndex int) {
 	event := trackEvents[eventIndex]
 
 	var ret C.DWORD
@@ -123,6 +145,9 @@ func goCallback(i C.int) {
 
 	errCode := C.BASS_ErrorGetCode()
 	if errCode != 0 {
-		log.Println("BASS encountered an error: ", errCode, " at: ", event.time)
+		log.Println("BASS encountered an error: ", errCode, " at: ", event.time, ret)
 	}
+
+	event.called = true
+	trackEvents[eventIndex] = event
 }

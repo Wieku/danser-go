@@ -349,7 +349,10 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 
 func (spinner *Spinner) StartSpinSample() {
 	if spinner.loopSample == nil {
-		spinner.loopSample = audio.LoadSample("spinnerspin").PlayLoop()
+		sample := audio.LoadSample("spinnerspin")
+		if sample != nil {
+			spinner.loopSample = sample.PlayLoop()
+		}
 	} else {
 		bass.PlaySample(spinner.loopSample)
 	}
@@ -376,7 +379,9 @@ func (spinner *Spinner) Bonus() {
 		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(spinner.lastTime), float64(spinner.lastTime+difficulty.HitFadeOut), color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
 	}
 
-	spinner.spinnerbonus.Play()
+	if spinner.spinnerbonus != nil {
+		spinner.spinnerbonus.Play()
+	}
 
 	spinner.bonusFade.Reset()
 	spinner.bonusFade.AddEventS(float64(spinner.lastTime), float64(spinner.lastTime+800), 1.0, 0.0)

@@ -48,6 +48,10 @@ func NewSample(path string) *Sample {
 
 	sample.bassSample = C.LoadBassSample(C.CString(path), 32, C.BASS_SAMPLE_OVER_POS)
 
+	if sample.bassSample == 0 {
+		return nil
+	}
+
 	return sample
 }
 
@@ -59,6 +63,10 @@ func NewSampleData(data []byte) *Sample {
 	sample := new(Sample)
 	sample.data = data
 	sample.bassSample = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
+
+	if sample.bassSample == 0 {
+		return nil
+	}
 
 	return sample
 }
@@ -185,7 +193,9 @@ func (sample *Sample) createPlayEvent(sSample *SubSample, delegate func()) {
 		delegate: func() C.DWORD {
 			sSample.streamChan = C.BASS_StreamCreateFile(1, unsafe.Pointer(&sample.data[0]), C.QWORD(0), C.QWORD(len(sample.data)), C.BASS_STREAM_DECODE)
 
-			delegate()
+			if sSample.streamChan != 0 {
+				delegate()
+			}
 
 			return sSample.streamChan
 		},
@@ -201,8 +211,10 @@ func setLoop(sSample *SubSample) {
 		return
 	}
 
-	addDelayedEvent(5, func() {
-		C.BASS_ChannelFlags(sSample.streamChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
+	addNormalEvent(func() {
+		if sSample.streamChan != 0 {
+			C.BASS_ChannelFlags(sSample.streamChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
+		}
 	})
 }
 
