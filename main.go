@@ -244,6 +244,7 @@ func run() {
 			settings.Graphics.Fullscreen = false
 			settings.Graphics.WindowWidth = int64(settings.Recording.FrameWidth)
 			settings.Graphics.WindowHeight = int64(settings.Recording.FrameHeight)
+			settings.Playfield.LeadInTime = 0
 		} else {
 			discord.Connect()
 		}
