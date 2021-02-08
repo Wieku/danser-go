@@ -207,10 +207,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider = animation.NewGlider(0.0)
 	player.blurGlider = animation.NewGlider(0.0)
 	player.fxGlider = animation.NewGlider(0.0)
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
-		player.cursorGlider = animation.NewGlider(0.0)
-	} else {
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].Name == "" {
 		player.cursorGlider = animation.NewGlider(1.0)
+	} else {
+		player.cursorGlider = animation.NewGlider(0.0)
 	}
 	player.playersGlider = animation.NewGlider(0.0)
 
