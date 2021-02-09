@@ -56,7 +56,7 @@ func (diff *Difficulty) calculate() {
 
 	diff.HPMod = hpDrain
 	diff.CircleRadius = DifficultyRate(cs, 54.4, 32, 9.6) * 1.00041 //some weird allowance osu has
-	diff.Preempt = DifficultyRate(ar, 1800, 1200, 450)
+	diff.Preempt = math.Floor(DifficultyRate(ar, 1800, 1200, 450))
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
 	diff.Hit50 = int64(DifficultyRate(od, 200, 150, 100))
 	diff.Hit100 = int64(DifficultyRate(od, 140, 100, 60))
