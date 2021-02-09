@@ -1,7 +1,7 @@
 package dance
 
 import (
-	"github.com/Mempler/rplpa"
+	"github.com/wieku/rplpa"
 	"github.com/karrick/godirwalk"
 	"github.com/thehowl/go-osuapi"
 	"sort"
@@ -433,7 +433,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 				frame := c.frames[c.replayIndex]
 				c.replayTime += frame.Time
 
-				controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, frame.MouseY))
+				controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
 
 				controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
 				controller.cursors[i].CurrentFrameTime = c.replayTime
@@ -507,7 +507,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 				prevIndex := bmath.MaxI(0, localIndex-1)
 
-				mX := (c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + c.frames[prevIndex].MosueX
+				mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
 				mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
 
 				controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))

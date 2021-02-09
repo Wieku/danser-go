@@ -4,7 +4,7 @@ import "C"
 import (
 	"flag"
 	"fmt"
-	"github.com/Mempler/rplpa"
+	"github.com/wieku/rplpa"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
