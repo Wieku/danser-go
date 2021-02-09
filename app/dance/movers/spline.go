@@ -8,11 +8,12 @@ import (
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
 type SplineMover struct {
 	curve              *curves.BSpline
-	startTime, endTime int64
+	startTime, endTime float64
 	mods               difficulty.Modifier
 }
 
@@ -28,7 +29,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	points := make([]vector.Vector2f, 0)
 	timing := make([]int64, 0)
 
-	var endTime, startTime int64
+	var endTime, startTime float64
 	var angle float32
 	var stream bool
 
@@ -48,8 +49,8 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 				points = append(points, s.GetStackedEndPositionMod(mover.mods), objs[i+1].GetStackedStartPositionMod(mover.mods).Sub(s.GetStackedEndPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedEndPositionMod(mover.mods)))
 			}
 
-			timing = append(timing, bmath.MaxI64(objs[i].GetStartTime(), objs[i].GetEndTime()))
-			endTime = bmath.MaxI64(objs[i].GetStartTime(), objs[i].GetEndTime())
+			timing = append(timing, int64(math.Max(objs[i].GetStartTime(), objs[i].GetEndTime())))
+			endTime = math.Max(objs[i].GetStartTime(), objs[i].GetEndTime())
 
 			continue
 		}
@@ -72,7 +73,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 				points = append(points, objs[i-1].GetStackedEndPositionMod(mover.mods).Sub(s.GetStackedStartPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
 			}
 
-			timing = append(timing, objs[i].GetStartTime())
+			timing = append(timing, int64(objs[i].GetStartTime()))
 
 			startTime = objs[i].GetStartTime()
 
@@ -148,13 +149,13 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 							p4 := mid.Sub(pos1).Scl(scale).Rotate(angle + float32(sign*t)*math32.Pi/6).Add(mid)
 
 							points = append(points, p4)
-							timing = append(timing, (objs[i].GetStartTime()-objs[i-1].GetStartTime())*(3+int64(t))/6+objs[i-1].GetStartTime())
+							timing = append(timing, int64((objs[i].GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime()))
 						}
 					} else {
 						p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
 
 						points = append(points, p4)
-						timing = append(timing, (objs[i].GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime())
+						timing = append(timing, int64((objs[i].GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime()))
 					}
 				}
 			}
@@ -162,7 +163,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 		if s, ok := objs[i].(*objects.Circle); ok {
 			points = append(points, s.GetStackedEndPositionMod(mover.mods))
-			timing = append(timing, s.GetStartTime())
+			timing = append(timing, int64(s.GetStartTime()))
 		}
 	}
 
@@ -173,11 +174,11 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	return i + 1
 }
 
-func (mover *SplineMover) Update(time int64) vector.Vector2f {
+func (mover *SplineMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
 	return mover.curve.PointAt(t)
 }
 
-func (mover *SplineMover) GetEndTime() int64 {
+func (mover *SplineMover) GetEndTime() float64 {
 	return mover.startTime
 }

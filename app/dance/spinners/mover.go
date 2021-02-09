@@ -10,8 +10,8 @@ const rpms = 0.00795
 var center = vector.NewVec2f(256, 192)
 
 type SpinnerMover interface {
-	Init(start, end int64)
-	GetPositionAt(time int64) vector.Vector2f
+	Init(start, end float64)
+	GetPositionAt(time float64) vector.Vector2f
 }
 
 func GetMoverByName(name string) SpinnerMover {

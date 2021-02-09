@@ -40,7 +40,7 @@ func (layer *SpriteManager) Add(sprite ISprite) {
 	layer.spriteQueue[n] = sprite
 }
 
-func (layer *SpriteManager) Update(time int64) {
+func (layer *SpriteManager) Update(time float64) {
 	dirtyLocal := false
 	toRemove := 0
 
@@ -126,7 +126,7 @@ func (layer *SpriteManager) GetLoad() (sum float64) {
 	return
 }
 
-func (layer *SpriteManager) Draw(time int64, batch *batch.QuadBatch) {
+func (layer *SpriteManager) Draw(time float64, batch *batch.QuadBatch) {
 	layer.mutex.Lock()
 	if layer.dirty {
 		layer.visibleObjects = 0

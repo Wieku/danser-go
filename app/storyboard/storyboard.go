@@ -32,7 +32,7 @@ type Storyboard struct {
 	bgFileUsed  bool
 	widescreen  bool
 	shouldRun   bool
-	currentTime int64
+	currentTime float64
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
@@ -133,7 +133,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					video.SetScaleV(vector.NewVec2d(1, 1).Scl(480.0 / float64(video.Textures[0].Height)))
 
 					offset, _ := strconv.ParseFloat(spl[1], 64)
-					video.Offset = int64(offset)
+					video.Offset = offset
 
 					storyboard.background.Add(video)
 
@@ -328,7 +328,7 @@ func (storyboard *Storyboard) IsThreadRunning() bool {
 	return storyboard.shouldRun
 }
 
-func (storyboard *Storyboard) UpdateTime(time int64) {
+func (storyboard *Storyboard) UpdateTime(time float64) {
 	storyboard.currentTime = time
 }
 
@@ -340,14 +340,14 @@ func (storyboard *Storyboard) SetFPS(i int) {
 	storyboard.limiter.FPS = i
 }
 
-func (storyboard *Storyboard) Update(time int64) {
+func (storyboard *Storyboard) Update(time float64) {
 	storyboard.background.Update(time)
 	storyboard.pass.Update(time)
 	storyboard.foreground.Update(time)
 	storyboard.overlay.Update(time)
 }
 
-func (storyboard *Storyboard) Draw(time int64, batch *batch.QuadBatch) {
+func (storyboard *Storyboard) Draw(time float64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
@@ -355,7 +355,7 @@ func (storyboard *Storyboard) Draw(time int64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 }
 
-func (storyboard *Storyboard) DrawOverlay(time int64, batch *batch.QuadBatch) {
+func (storyboard *Storyboard) DrawOverlay(time float64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.overlay.Draw(time, batch)
 	batch.SetTranslation(vector.NewVec2d(0, 0))

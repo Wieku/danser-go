@@ -11,7 +11,7 @@ import (
 
 type AxisMover struct {
 	bz                 *curves.MultiCurve
-	beginTime, endTime int64
+	beginTime, endTime float64
 	mods               difficulty.Modifier
 }
 
@@ -45,12 +45,12 @@ func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	return 2
 }
 
-func (bm AxisMover) Update(time int64) vector.Vector2f {
+func (bm AxisMover) Update(time float64) vector.Vector2f {
 	t := float32(time-bm.endTime) / float32(bm.beginTime-bm.endTime)
 	tr := bmath.ClampF32(math32.Sin(t*math32.Pi/2), 0, 1)
 	return bm.bz.PointAt(tr)
 }
 
-func (bm *AxisMover) GetEndTime() int64 {
+func (bm *AxisMover) GetEndTime() float64 {
 	return bm.beginTime
 }

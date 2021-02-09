@@ -106,7 +106,7 @@ func (vis *Triangles) Update(time float64) {
 
 	for i := 0; i < len(vis.triangles); i++ {
 		t := vis.triangles[i]
-		t.Update(int64(time))
+		t.Update(time)
 		scale := (t.GetScale().Y * float64(graphics.Triangle.Width)) / maxSize / (settings.Graphics.GetHeightF() / 768)
 		t.SetPosition(t.GetPosition().AddS(0, -delta/16*velocity*(0.2+(1.0-scale*0.8)*separation)*settings.Graphics.GetHeightF()/768))
 		if t.GetPosition().Y < -settings.Graphics.GetHeightF()/2-t.GetScale().Y*float64(graphics.Triangle.Width)/2 {
@@ -130,6 +130,6 @@ func (vis *Triangles) Update(time float64) {
 
 func (vis *Triangles) Draw(time float64, batch *batch.QuadBatch) {
 	for _, t := range vis.triangles {
-		t.Draw(int64(time), batch)
+		t.Draw(time, batch)
 	}
 }

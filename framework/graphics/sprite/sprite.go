@@ -74,11 +74,11 @@ func NewAnimation(textures []*texture.TextureRegion, frameDelay float64, loopFor
 	return sprite
 }
 
-func (sprite *Sprite) Update(time int64) {
+func (sprite *Sprite) Update(time float64) {
 	sprite.currentFrame = 0
 
 	if sprite.Textures != nil && len(sprite.Textures) > 1 && float64(time) >= sprite.startTime {
-		frame := int(math.Floor((float64(time) - sprite.startTime) / sprite.frameDelay))
+		frame := int(math.Floor((time - sprite.startTime) / sprite.frameDelay))
 		if !sprite.loopForever {
 			frame = bmath.MinI(frame, len(sprite.Textures)-1)
 		} else {
@@ -90,13 +90,13 @@ func (sprite *Sprite) Update(time int64) {
 
 	for i := 0; i < len(sprite.transforms); i++ {
 		transform := sprite.transforms[i]
-		if float64(time) < transform.GetStartTime() {
+		if time < transform.GetStartTime() {
 			break
 		}
 
 		sprite.updateTransform(transform, time)
 
-		if float64(time) >= transform.GetEndTime() {
+		if time >= transform.GetEndTime() {
 			copy(sprite.transforms[i:], sprite.transforms[i+1:])
 			sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
 			i--
@@ -104,10 +104,10 @@ func (sprite *Sprite) Update(time int64) {
 	}
 }
 
-func (sprite *Sprite) updateTransform(transform *animation.Transformation, time int64) {
+func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) {
 	switch transform.GetType() {
 	case animation.Fade, animation.Scale, animation.Rotate, animation.MoveX, animation.MoveY:
-		value := transform.GetSingle(float64(time))
+		value := transform.GetSingle(time)
 		switch transform.GetType() {
 		case animation.Fade:
 			sprite.color.A = float32(value)
@@ -122,7 +122,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 			sprite.position.Y = value
 		}
 	case animation.Move, animation.ScaleVector:
-		x, y := transform.GetDouble(float64(time))
+		x, y := transform.GetDouble(time)
 		switch transform.GetType() {
 		case animation.Move:
 			sprite.position.X = x
@@ -132,7 +132,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 			sprite.scale.Y = y
 		}
 	case animation.Additive, animation.HorizontalFlip, animation.VerticalFlip:
-		value := transform.GetBoolean(float64(time))
+		value := transform.GetBoolean(time)
 		switch transform.GetType() {
 		case animation.Additive:
 			sprite.additive = value
@@ -143,7 +143,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 		}
 
 	case animation.Color3, animation.Color4:
-		color := transform.GetColor(float64(time))
+		color := transform.GetColor(time)
 		sprite.color.R = color.R
 		sprite.color.G = color.G
 		sprite.color.B = color.B
@@ -210,7 +210,7 @@ func (sprite *Sprite) ResetValuesToTransforms() {
 
 	for _, t := range sprite.transforms {
 		if _, exists := applied[t.GetType()]; !exists {
-			sprite.updateTransform(t, int64(t.GetStartTime()-1))
+			sprite.updateTransform(t, t.GetStartTime()-1)
 
 			applied[t.GetType()] = 1
 		}
@@ -225,13 +225,13 @@ func (sprite *Sprite) IsAlwaysVisible() bool {
 	return sprite.showForever
 }
 
-func (sprite *Sprite) UpdateAndDraw(time int64, batch *batch.QuadBatch) {
+func (sprite *Sprite) UpdateAndDraw(time float64, batch *batch.QuadBatch) {
 	sprite.Update(time)
 	sprite.Draw(time, batch)
 }
 
-func (sprite *Sprite) Draw(time int64, batch *batch.QuadBatch) {
-	if (!sprite.showForever && float64(time) < sprite.startTime && float64(time) >= sprite.endTime) || sprite.color.A < 0.01 {
+func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
+	if (!sprite.showForever && time < sprite.startTime && time >= sprite.endTime) || sprite.color.A < 0.01 {
 		return
 	}
 

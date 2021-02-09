@@ -7,11 +7,12 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
 type LinearMover struct {
 	line               curves.Linear
-	beginTime, endTime int64
+	beginTime, endTime float64
 	mods               difficulty.Modifier
 }
 
@@ -32,17 +33,17 @@ func (bm *LinearMover) SetObjects(objs []objects.IHitObject) int {
 
 	bm.line = curves.NewLinear(endPos, startPos)
 
-	bm.endTime = bmath.MaxI64(endTime, start.GetStartTime()-380)
+	bm.endTime = math.Max(endTime, start.GetStartTime()-380)
 	bm.beginTime = startTime
 
 	return 2
 }
 
-func (bm LinearMover) Update(time int64) vector.Vector2f {
+func (bm LinearMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF64(float64(time-bm.endTime)/float64(bm.beginTime-bm.endTime), 0, 1)
 	return bm.line.PointAt(float32(easing.OutQuad(t)))
 }
 
-func (bm *LinearMover) GetEndTime() int64 {
+func (bm *LinearMover) GetEndTime() float64 {
 	return bm.beginTime
 }

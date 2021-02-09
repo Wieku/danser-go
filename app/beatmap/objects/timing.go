@@ -6,7 +6,7 @@ import (
 )
 
 type TimingPoint struct {
-	Time                  int64
+	Time                  float64
 	BaseBpm, Bpm, beatLen float64
 	SampleSet             int
 	SampleIndex           int
@@ -36,7 +36,7 @@ func NewTimings() *Timings {
 	return &Timings{BaseSet: 1, LastSet: 1}
 }
 
-func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int, samplevolume float64, inherited, isKiai bool) {
+func (tim *Timings) AddPoint(time float64, bpm float64, sampleset, sampleindex int, samplevolume float64, inherited, isKiai bool) {
 	point := TimingPoint{Time: time, Bpm: bpm, SampleSet: sampleset, SampleIndex: sampleindex, SampleVolume: samplevolume, beatLen: bpm}
 	if !inherited {
 		tim.fullBPM = point.Bpm
@@ -52,7 +52,7 @@ func (tim *Timings) AddPoint(time int64, bpm float64, sampleset, sampleindex int
 	tim.queue = append(tim.queue, point)
 }
 
-func (tim *Timings) Update(time int64) {
+func (tim *Timings) Update(time float64) {
 	if len(tim.queue) > 0 {
 		p := tim.queue[0]
 		if p.Time <= time {
@@ -73,7 +73,7 @@ func clamp(a, min, max int) int {
 	return a
 }
 
-func (tim *Timings) GetPoint(time int64) TimingPoint {
+func (tim *Timings) GetPoint(time float64) TimingPoint {
 	for i, pt := range tim.Points {
 		if time < pt.Time {
 			return tim.Points[clamp(i-1, 0, len(tim.Points)-1)]
@@ -82,7 +82,7 @@ func (tim *Timings) GetPoint(time int64) TimingPoint {
 	return tim.Points[len(tim.Points)-1]
 }
 
-func (tim Timings) GetSliderTimeS(time int64, pixelLength float64) int64 {
+func (tim Timings) GetSliderTimeS(time float64, pixelLength float64) int64 {
 	res := int64(tim.GetPoint(time).Bpm * pixelLength / (100.0 * tim.SliderMult))
 	if res < 0 {
 		log.Println("E?", tim.GetPoint(time).Bpm, pixelLength, tim.SliderMult)

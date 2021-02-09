@@ -9,6 +9,6 @@ import (
 type MultiPointMover interface {
 	Reset(mods difficulty.Modifier)
 	SetObjects(objs []objects.IHitObject) int
-	Update(time int64) vector.Vector2f
-	GetEndTime() int64
+	Update(time float64) vector.Vector2f
+	GetEndTime() float64
 }

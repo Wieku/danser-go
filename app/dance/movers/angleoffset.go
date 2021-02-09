@@ -15,7 +15,7 @@ type AngleOffsetMover struct {
 	lastAngle          float32
 	lastPoint          vector.Vector2f
 	bz                 *curves.Bezier
-	startTime, endTime int64
+	startTime, endTime float64
 	invert             float32
 	mods               difficulty.Modifier
 }
@@ -50,7 +50,7 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	scaledDistance := distance * float32(settings.Dance.Flower.DistanceMult)
 	newAngle := float32(settings.Dance.Flower.AngleOffset) * math32.Pi / 180.0
 
-	if end.GetStartTime() > 0 && settings.Dance.Flower.LongJump >= 0 && (startTime-endTime) > settings.Dance.Flower.LongJump {
+	if end.GetStartTime() > 0 && settings.Dance.Flower.LongJump >= 0 && (startTime-endTime) > float64(settings.Dance.Flower.LongJump) {
 		scaledDistance = float32(startTime-endTime) * float32(settings.Dance.Flower.LongJumpMult)
 	}
 
@@ -141,11 +141,11 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	return 2
 }
 
-func (bm *AngleOffsetMover) Update(time int64) vector.Vector2f {
+func (bm *AngleOffsetMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }
 
-func (bm *AngleOffsetMover) GetEndTime() int64 {
+func (bm *AngleOffsetMover) GetEndTime() float64 {
 	return bm.startTime
 }

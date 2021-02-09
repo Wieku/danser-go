@@ -12,7 +12,7 @@ import (
 
 type HalfCircleMover struct {
 	ca                 curves.Curve
-	startTime, endTime int64
+	startTime, endTime float64
 	invert             float32
 	mods               difficulty.Modifier
 }
@@ -35,7 +35,7 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	bm.endTime = end.GetEndTime()
 	bm.startTime = start.GetStartTime()
 
-	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < settings.Dance.HalfCircle.StreamTrigger {
+	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < float64(settings.Dance.HalfCircle.StreamTrigger) {
 		bm.invert = -1 * bm.invert
 	}
 
@@ -51,11 +51,11 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	return 2
 }
 
-func (bm *HalfCircleMover) Update(time int64) vector.Vector2f {
+func (bm *HalfCircleMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.ca.PointAt(t)
 }
 
-func (bm *HalfCircleMover) GetEndTime() int64 {
+func (bm *HalfCircleMover) GetEndTime() float64 {
 	return bm.startTime
 }

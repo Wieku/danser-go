@@ -7,17 +7,17 @@ import (
 )
 
 type IHitObject interface {
-	Update(time int64) bool
+	Update(time float64) bool
 	SetTiming(timings *Timings)
 	UpdateStacking()
 	SetDifficulty(difficulty *difficulty.Difficulty)
 
-	GetStartTime() int64
-	GetEndTime() int64
+	GetStartTime() float64
+	GetEndTime() float64
 
-	GetPositionAt(int64) vector.Vector2f
-	GetStackedPositionAt(int64) vector.Vector2f
-	GetStackedPositionAtMod(time int64, modifier difficulty.Modifier) vector.Vector2f
+	GetPositionAt(float64) vector.Vector2f
+	GetStackedPositionAt(float64) vector.Vector2f
+	GetStackedPositionAtMod(time float64, modifier difficulty.Modifier) vector.Vector2f
 
 	GetStartPosition() vector.Vector2f
 	GetStackedStartPosition() vector.Vector2f
@@ -45,14 +45,14 @@ type HitObject struct {
 	StartPosRaw vector.Vector2f
 	EndPosRaw   vector.Vector2f
 
-	StartTime int64
-	EndTime   int64
+	StartTime float64
+	EndTime   float64
 
 	StackOffset   vector.Vector2f
 	StackOffsetEZ vector.Vector2f
 	StackOffsetHR vector.Vector2f
 
-	PositionDelegate func(time int64) vector.Vector2f
+	PositionDelegate func(time float64) vector.Vector2f
 
 	StackIndex   int64
 	StackIndexEZ int64
@@ -67,20 +67,20 @@ type HitObject struct {
 	BasicHitSound audio.HitSoundInfo
 }
 
-func (hitObject *HitObject) Update(time int64) bool                          { return true }
+func (hitObject *HitObject) Update(time float64) bool                          { return true }
 func (hitObject *HitObject) SetTiming(timings *Timings)                      {}
 func (hitObject *HitObject) UpdateStacking()                                 {}
 func (hitObject *HitObject) SetDifficulty(difficulty *difficulty.Difficulty) {}
 
-func (hitObject *HitObject) GetStartTime() int64 {
+func (hitObject *HitObject) GetStartTime() float64 {
 	return hitObject.StartTime
 }
 
-func (hitObject *HitObject) GetEndTime() int64 {
+func (hitObject *HitObject) GetEndTime() float64 {
 	return hitObject.EndTime
 }
 
-func (hitObject *HitObject) GetPositionAt(time int64) vector.Vector2f {
+func (hitObject *HitObject) GetPositionAt(time float64) vector.Vector2f {
 	if hitObject.PositionDelegate != nil {
 		return hitObject.PositionDelegate(time)
 	}
@@ -88,11 +88,11 @@ func (hitObject *HitObject) GetPositionAt(time int64) vector.Vector2f {
 	return hitObject.StartPosRaw
 }
 
-func (hitObject *HitObject) GetStackedPositionAt(time int64) vector.Vector2f {
+func (hitObject *HitObject) GetStackedPositionAt(time float64) vector.Vector2f {
 	return hitObject.GetPositionAt(time).Add(hitObject.StackOffset)
 }
 
-func (hitObject *HitObject) GetStackedPositionAtMod(time int64, modifier difficulty.Modifier) vector.Vector2f {
+func (hitObject *HitObject) GetStackedPositionAtMod(time float64, modifier difficulty.Modifier) vector.Vector2f {
 	basePosition := hitObject.GetPositionAt(time)
 
 	switch {

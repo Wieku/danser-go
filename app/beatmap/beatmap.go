@@ -73,18 +73,18 @@ func (b *BeatMap) Reset() {
 	}
 }
 
-func (b *BeatMap) Update(time int64) {
+func (b *BeatMap) Update(time float64) {
 	b.Timings.Update(time)
 
 	for i := 0; i < len(b.Queue); i++ {
 		g := b.Queue[i]
-		if g.GetStartTime()-int64(b.Diff.Preempt) > time {
+		if g.GetStartTime()-b.Diff.Preempt > time {
 			break
 		}
 
 		g.Update(time)
 
-		if time >= g.GetEndTime()+difficulty.HitFadeOut+b.Diff.Hit50 {
+		if time >= g.GetEndTime()+difficulty.HitFadeOut+float64(b.Diff.Hit50) {
 			if i < len(b.Queue)-1 {
 				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
 			} else if i < len(b.Queue) {
@@ -135,9 +135,9 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 		}
 
 		beatMap.Timings.LastSet = int(sampleset)
-		beatMap.Timings.AddPoint(pointTime, bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, inherited, kiai)
+		beatMap.Timings.AddPoint(float64(pointTime), bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, inherited, kiai)
 	} else {
-		beatMap.Timings.AddPoint(pointTime, bpm, beatMap.Timings.LastSet, 1, 1, false, false)
+		beatMap.Timings.AddPoint(float64(pointTime), bpm, beatMap.Timings.LastSet, 1, 1, false, false)
 	}
 }
 

@@ -131,7 +131,7 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 func (meter *HitErrorMeter) Update(time float64) {
 	meter.errorDisplayFade.Update(time)
-	meter.errorDisplay.Update(int64(time))
+	meter.errorDisplay.Update(time)
 
 	meter.lastTime = time
 }
@@ -141,7 +141,7 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 	meterAlpha := settings.Gameplay.HitErrorMeter.Opacity * meter.errorDisplayFade.GetValue() * alpha
 	if meterAlpha > 0.001 && settings.Gameplay.HitErrorMeter.Show {
 		batch.SetColor(1, 1, 1, meterAlpha)
-		meter.errorDisplay.Draw(int64(meter.lastTime), batch)
+		meter.errorDisplay.Draw(meter.lastTime, batch)
 	}
 	batch.ResetTransform()
 }

@@ -178,7 +178,7 @@ func (cursor *Cursor) Update(delta float64) {
 
 	cursor.renderer.Update(delta, cursor.Position)
 
-	cursor.rippleContainer.Update(int64(cursor.time))
+	cursor.rippleContainer.Update(cursor.time)
 }
 
 func (cursor *Cursor) UpdateRenderer() {
@@ -234,7 +234,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.
 		batch.SetScale(scaling*scaling, scaling*scaling)
 		batch.SetSubScale(1, 1)
 
-		cursor.rippleContainer.Draw(int64(cursor.time), batch)
+		cursor.rippleContainer.Draw(cursor.time, batch)
 
 		batch.End()
 	}

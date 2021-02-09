@@ -3,12 +3,12 @@ package difficulty
 import "math"
 
 const (
-	HitFadeIn     = 400
-	HitFadeOut    = 240
-	HittableRange = 400
-	ResultFadeIn  = 120
-	ResultFadeOut = 600
-	PostEmpt      = 500
+	HitFadeIn     = 400.0
+	HitFadeOut    = 240.0
+	HittableRange = 400.0
+	ResultFadeIn  = 120.0
+	ResultFadeOut = 600.0
+	PostEmpt      = 500.0
 )
 
 type Difficulty struct {

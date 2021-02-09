@@ -57,7 +57,7 @@ type bubble struct {
 	deathFade  *animation.Glider
 	deathSlide *animation.Glider
 	deathX     float64
-	endTime    int64
+	endTime    float64
 	name       string
 	combo      int64
 	lastHit    osu.HitResult
@@ -65,7 +65,7 @@ type bubble struct {
 	deathScale *animation.Glider
 }
 
-func newBubble(position vector.Vector2d, time int64, name string, combo int64, lastHit osu.HitResult, lastCombo osu.ComboResult) *bubble {
+func newBubble(position vector.Vector2d, time float64, name string, combo int64, lastHit osu.HitResult, lastCombo osu.ComboResult) *bubble {
 	bub := new(bubble)
 	bub.name = name
 	deathShiftX := (rand.Float64() - 0.5) * 10
@@ -100,7 +100,7 @@ type KnockoutOverlay struct {
 	playersArray []*knockoutPlayer
 	deathBubbles []*bubble
 	names        map[*graphics.Cursor]string
-	lastTime     int64
+	lastTime     float64
 	//deaths     map[int64]int64
 	generator *rand.Rand
 	lastObj   int64
@@ -178,7 +178,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			player.scaleHit.AddEventS(float64(time), float64(time+300), 0.5, 1)
 			player.lastHit = result & (osu.HitValues | osu.Miss) //resultClean
 			if settings.Knockout.Mode == settings.OneVsOne {
-				overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, resultClean, comboResult))
+				overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, float64(time), overlay.names[cursor], player.sCombo, resultClean, comboResult))
 			}
 		}
 
@@ -188,7 +188,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 			if !player.hasBroken {
 				if settings.Knockout.Mode == settings.XReplays {
 					if player.sCombo >= int64(settings.Knockout.BubbleMinimumCombo) {
-						overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, resultClean, comboResult))
+						overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, float64(time), overlay.names[cursor], player.sCombo, resultClean, comboResult))
 						log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
 					}
 				} else if settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
@@ -201,7 +201,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 					player.height.SetEasing(easing.OutQuad)
 					player.height.AddEvent(float64(time+2500), float64(time+3000), 0)
 
-					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, time, overlay.names[cursor], player.sCombo, resultClean, comboResult))
+					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, float64(time), overlay.names[cursor], player.sCombo, resultClean, comboResult))
 
 					log.Println(overlay.names[cursor], "has broken! Max combo:", player.sCombo)
 				}
@@ -278,29 +278,53 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	return overlay
 }
 
-func (overlay *KnockoutOverlay) Update(time int64) {
-	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
-		for _, r := range overlay.controller.GetReplays() {
-			player := overlay.players[r.Name]
-			player.height.Update(float64(sTime))
-			player.fade.Update(float64(sTime))
-			player.fadeHit.Update(float64(sTime))
-			player.scaleHit.Update(float64(sTime))
-			player.index.Update(float64(sTime))
-			player.scoreDisp.Update(float64(sTime))
-			player.ppDisp.Update(float64(sTime))
-			player.lastCombo = r.Combo
+func (overlay *KnockoutOverlay) Update(time float64) {
+	//for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
+	//	for _, r := range overlay.controller.GetReplays() {
+	//		player := overlay.players[r.Name]
+	//		player.height.Update(float64(sTime))
+	//		player.fade.Update(float64(sTime))
+	//		player.fadeHit.Update(float64(sTime))
+	//		player.scaleHit.Update(float64(sTime))
+	//		player.index.Update(float64(sTime))
+	//		player.scoreDisp.Update(float64(sTime))
+	//		player.ppDisp.Update(float64(sTime))
+	//		player.lastCombo = r.Combo
+	//
+	//		currentHp := overlay.controller.GetRuleset().GetHP(overlay.controller.GetCursors()[player.oldIndex])
+	//
+	//		if player.displayHp < currentHp {
+	//			player.displayHp = math.Min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4/16.667)
+	//		} else if player.displayHp > currentHp {
+	//			player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6/16.667)
+	//		}
+	//
+	//	}
+	//}
 
-			currentHp := overlay.controller.GetRuleset().GetHP(overlay.controller.GetCursors()[player.oldIndex])
+	delta := time - overlay.lastTime
 
-			if player.displayHp < currentHp {
-				player.displayHp = math.Min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4/16.667)
-			} else if player.displayHp > currentHp {
-				player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6/16.667)
-			}
+	for _, r := range overlay.controller.GetReplays() {
+		player := overlay.players[r.Name]
+		player.height.Update(time)
+		player.fade.Update(time)
+		player.fadeHit.Update(time)
+		player.scaleHit.Update(time)
+		player.index.Update(time)
+		player.scoreDisp.Update(time)
+		player.ppDisp.Update(time)
+		player.lastCombo = r.Combo
 
+		currentHp := overlay.controller.GetRuleset().GetHP(overlay.controller.GetCursors()[player.oldIndex])
+
+		if player.displayHp < currentHp {
+			player.displayHp = math.Min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4 * delta/16.667)
+		} else if player.displayHp > currentHp {
+			player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6 * delta/16.667)
 		}
+
 	}
+
 	overlay.lastTime = time
 }
 

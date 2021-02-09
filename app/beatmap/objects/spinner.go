@@ -34,7 +34,7 @@ type Spinner struct {
 	rad      float32
 	pos      vector.Vector2f
 	fade     *animation.Glider
-	lastTime int64
+	lastTime float64
 	rpm      float64
 
 	spinnerbonus *bass.Sample
@@ -72,7 +72,7 @@ func NewSpinner(data []string) *Spinner {
 		HitObject: commonParse(data, 6),
 	}
 
-	spinner.EndTime, _ = strconv.ParseInt(data[5], 10, 64)
+	spinner.EndTime, _ = strconv.ParseFloat(data[5], 64)
 
 	sample, _ := strconv.ParseInt(data[4], 10, 64)
 
@@ -159,7 +159,7 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	//spinner.frontSprites.Add(spinner.rpmBg)
 }
 
-func (spinner *Spinner) Update(time int64) bool {
+func (spinner *Spinner) Update(time float64) bool {
 	spinner.fade.Update(float64(time))
 
 	if time >= spinner.StartTime && time <= spinner.EndTime {
@@ -203,7 +203,7 @@ func (spinner *Spinner) Update(time int64) bool {
 	return true
 }
 
-func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
+func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	shiftX := -float32(settings.Playfield.ShiftX*spinner.ScaledHeight) / 480
@@ -277,9 +277,9 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBa
 	return false
 }
 
-func (spinner *Spinner) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {}
+func (spinner *Spinner) DrawApproach(time float64, color color2.Color, batch *batch.QuadBatch) {}
 
-func (spinner *Spinner) Hit(_ int64, isHit bool) {
+func (spinner *Spinner) Hit(_ float64, isHit bool) {
 	if !isHit {
 		return
 	}

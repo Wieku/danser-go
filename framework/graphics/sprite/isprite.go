@@ -9,7 +9,7 @@ import (
 )
 
 type ISprite interface {
-	Update(time int64)
+	Update(time float64)
 
 	AddTransform(transformation *animation.Transformation)
 
@@ -33,9 +33,9 @@ type ISprite interface {
 
 	IsAlwaysVisible() bool
 
-	UpdateAndDraw(time int64, batch *batch.QuadBatch)
+	UpdateAndDraw(time float64, batch *batch.QuadBatch)
 
-	Draw(time int64, batch *batch.QuadBatch)
+	Draw(time float64, batch *batch.QuadBatch)
 
 	GetPosition() vector.Vector2d
 

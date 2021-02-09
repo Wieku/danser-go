@@ -11,10 +11,10 @@ type InputProcessor struct {
 
 	lastLeft       bool
 	moving         bool
-	lastEnd        int64
-	lastTime       int64
-	lastLeftClick  int64
-	lastRightClick int64
+	lastEnd        float64
+	lastTime       float64
+	lastLeftClick  float64
+	lastRightClick float64
 	leftToRelease  bool
 	rightToRelease bool
 }
@@ -29,7 +29,7 @@ func NewInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *Inpu
 	return processor
 }
 
-func (processor *InputProcessor) Update(time int64) {
+func (processor *InputProcessor) Update(time float64) {
 	if len(processor.queue) > 0 {
 		for i := 0; i < len(processor.queue); i++ {
 			g := processor.queue[i]
@@ -37,7 +37,7 @@ func (processor *InputProcessor) Update(time int64) {
 				break
 			}
 
-			if time >= g.GetStartTime() && time <= g.GetEndTime() {
+			if (processor.lastTime <= g.GetStartTime() && time >= g.GetStartTime()) || (time >= g.GetStartTime() && time <= g.GetEndTime()) {
 				if !processor.moving {
 					//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
 						if !processor.lastLeft && g.GetStartTime()-processor.lastEnd < 140 {

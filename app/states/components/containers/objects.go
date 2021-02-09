@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"log"
 	"math"
 	"sort"
 )
@@ -20,8 +21,8 @@ import (
 type renderableProxy struct {
 	renderable   objects.Renderable
 	IsSliderBody bool
-	depth        int64
-	endTime      int64
+	depth        float64
+	endTime      float64
 }
 
 type HitObjectContainer struct {
@@ -33,6 +34,7 @@ type HitObjectContainer struct {
 }
 
 func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
+	log.Println("ocontainer")
 	container := new(HitObjectContainer)
 	container.beatMap = beatMap
 	container.objectQueue = beatMap.GetObjectsCopy()
@@ -99,7 +101,7 @@ func (container *HitObjectContainer) addProxy(proxy *renderableProxy) {
 }
 
 func (container *HitObjectContainer) Update(time float64) {
-	container.spriteManager.Update(int64(time))
+	container.spriteManager.Update(time)
 
 	if time > 0 {
 		delta := time - container.lastTime
@@ -117,14 +119,14 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 	if len(container.objectQueue) > 0 {
 		for i := 0; i < len(container.objectQueue); i++ {
-			if p := container.objectQueue[i]; p.GetStartTime()-15000 <= int64(time) {
-				if p := container.objectQueue[i]; p.GetStartTime()-int64(container.beatMap.Diff.Preempt) <= int64(time) {
+			if p := container.objectQueue[i]; p.GetStartTime()-15000 <= time {
+				if p := container.objectQueue[i]; p.GetStartTime()-math.Floor(container.beatMap.Diff.Preempt) <= time {
 
 					if _, ok := p.(*objects.Spinner); ok {
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
 							IsSliderBody: false,
-							depth:        math.MaxInt64,
+							depth:        math.MaxFloat64,
 							endTime:      p.GetEndTime() + difficulty.HitFadeOut,
 						})
 					} else {
@@ -132,7 +134,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 							renderable:   p.(objects.Renderable),
 							IsSliderBody: false,
 							depth:        p.GetStartTime(),
-							endTime:      p.GetEndTime() + container.beatMap.Diff.Hit50 + difficulty.HitFadeOut,
+							endTime:      p.GetEndTime() + float64(container.beatMap.Diff.Hit50) + difficulty.HitFadeOut,
 						})
 					}
 
@@ -179,7 +181,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 		if divides < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawFollowPoints {
 			for i := 0; i < divides; i++ {
 				batch.SetCamera(cameras[i])
-				container.spriteManager.Draw(int64(time), batch)
+				container.spriteManager.Draw(time, batch)
 			}
 		}
 
@@ -188,7 +190,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 		for i := len(container.renderables) - 1; i >= 0; i-- {
 			if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].IsSliderBody {
-				s.DrawBodyBase(int64(time), cameras[0])
+				s.DrawBodyBase(time, cameras[0])
 			}
 		}
 
@@ -208,7 +210,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 							sliderrenderer.BeginRendererMerge()
 						}
 
-						s.DrawBody(int64(time), bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
+						s.DrawBody(time, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
 					}
 				}
 			}
@@ -244,7 +246,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 					_, sp := container.renderables[i].renderable.(*objects.Spinner)
 					if !sp || j == 0 {
-						proxy.renderable.Draw(int64(time), objectColors[j], batch)
+						proxy.renderable.Draw(time, objectColors[j], batch)
 					}
 				} else if !settings.Objects.Sliders.SliderMerge {
 					if !enabled {
@@ -255,10 +257,10 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 						sliderrenderer.BeginRenderer()
 					}
 
-					proxy.renderable.(*objects.Slider).DrawBody(int64(time), bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
+					proxy.renderable.(*objects.Slider).DrawBody(time, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
 				}
 
-				if proxy.endTime <= int64(time) {
+				if proxy.endTime <= time {
 					container.renderables = append(container.renderables[:i], container.renderables[(i+1):]...)
 				}
 			}
@@ -274,7 +276,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 				for i := len(container.renderables) - 1; i >= 0; i-- {
 					if s := container.renderables[i]; !s.IsSliderBody {
-						s.renderable.DrawApproach(int64(time), objectColors[j], batch)
+						s.renderable.DrawApproach(time, objectColors[j], batch)
 					}
 				}
 			}

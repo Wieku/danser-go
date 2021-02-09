@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/settings"
+	"math"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
@@ -41,7 +42,7 @@ func calculateStackLeniency(b *BeatMap) {
 
 func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficulty, stackLeniency float64) {
 	stack_distance := float32(3.0)
-	stackThreshold := diff.Preempt * stackLeniency
+	stackThreshold := math.Floor(diff.Preempt * stackLeniency)
 	modifiers := diff.Mods
 
 	for _, v := range hitObjects {
@@ -64,7 +65,7 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 				continue
 			}
 
-			if objectN.GetStartTime()-stackIHitObject.GetEndTime() > int64(stackThreshold) {
+			if objectN.GetStartTime()-stackIHitObject.GetEndTime() > stackThreshold {
 				break
 			}
 
@@ -101,7 +102,7 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 					continue
 				}
 
-				if objectI.GetStartTime()-objectN.GetEndTime() > int64(stackThreshold) {
+				if objectI.GetStartTime()-objectN.GetEndTime() > stackThreshold {
 					break
 				}
 
@@ -137,7 +138,7 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 					continue
 				}
 
-				if objectI.GetStartTime()-objectN.GetStartTime() > int64(stackThreshold) {
+				if objectI.GetStartTime()-objectN.GetStartTime() > stackThreshold {
 					break
 				}
 

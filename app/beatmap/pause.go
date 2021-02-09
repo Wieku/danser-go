@@ -5,21 +5,21 @@ import (
 )
 
 type Pause struct {
-	StartTime int64
-	EndTime   int64
+	StartTime float64
+	EndTime   float64
 }
 
 func NewPause(data []string) *Pause {
 	pause := &Pause{}
-	pause.StartTime, _ = strconv.ParseInt(data[1], 10, 64)
-	pause.EndTime, _ = strconv.ParseInt(data[2], 10, 64)
+	pause.StartTime, _ = strconv.ParseFloat(data[1], 64)
+	pause.EndTime, _ = strconv.ParseFloat(data[2], 64)
 	return pause
 }
 
-func (pause *Pause) GetStartTime() int64 {
+func (pause *Pause) GetStartTime() float64 {
 	return pause.StartTime
 }
 
-func (pause *Pause) GetEndTime() int64 {
+func (pause *Pause) GetEndTime() float64 {
 	return pause.EndTime
 }

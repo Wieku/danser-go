@@ -16,7 +16,7 @@ type PlayerController struct {
 	cursors  []*graphics.Cursor
 	window   *glfw.Window
 	ruleset  *osu.OsuRuleSet
-	lastTime int64
+	lastTime float64
 	counter  float64
 
 	leftClick  bool
@@ -56,7 +56,7 @@ func (controller *PlayerController) InitCursors() {
 	})
 }
 
-func (controller *PlayerController) Update(time int64, delta float64) {
+func (controller *PlayerController) Update(time float64, delta float64) {
 
 	controller.bMap.Update(time)
 
@@ -81,10 +81,10 @@ func (controller *PlayerController) Update(time int64, delta float64) {
 		controller.cursors[0].IsReplayFrame = false
 	}
 
-	controller.ruleset.UpdateClickFor(controller.cursors[0], time)
-	controller.ruleset.UpdateNormalFor(controller.cursors[0], time)
-	controller.ruleset.UpdatePostFor(controller.cursors[0], time)
-	controller.ruleset.Update(time)
+	controller.ruleset.UpdateClickFor(controller.cursors[0], int64(time))
+	controller.ruleset.UpdateNormalFor(controller.cursors[0], int64(time))
+	controller.ruleset.UpdatePostFor(controller.cursors[0], int64(time))
+	controller.ruleset.Update(int64(time))
 
 	controller.lastTime = time
 

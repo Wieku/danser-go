@@ -43,7 +43,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	state := circle.state[player]
 
 	if !state.isHit {
-		position := circle.hitCircle.GetStackedPositionAtMod(time, player.diff.Mods)
+		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
 
 		clicked := player.leftCondE || player.rightCondE
 		inRange := player.cursor.RawPosition.Dst(position) <= float32(player.diff.CircleRadius)
@@ -60,7 +60,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 				hit := Miss
 
-				relative := int64(math.Abs(float64(time - circle.hitCircle.GetEndTime())))
+				relative := int64(math.Abs(float64(time) - circle.hitCircle.GetEndTime()))
 				if relative < player.diff.Hit300 {
 					hit = Hit300
 				} else if relative < player.diff.Hit100 {
@@ -80,7 +80,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 					}
 
 					if len(circle.players) == 1 {
-						circle.hitCircle.Arm(hit != Miss, time)
+						circle.hitCircle.Arm(hit != Miss, float64(time))
 					}
 
 					circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetID(), position.X, position.Y, hit, false, combo)
@@ -92,7 +92,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				player.rightCondE = false
 
 				if action == Shake && len(circle.players) == 1 {
-					circle.hitCircle.Shake(time)
+					circle.hitCircle.Shake(float64(time))
 				}
 			}
 		}
@@ -104,12 +104,12 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 	state := circle.state[player]
 
-	if time > circle.hitCircle.GetEndTime()+player.diff.Hit50 && !state.isHit {
-		position := circle.hitCircle.GetStackedPositionAtMod(time, player.diff.Mods)
+	if time > int64(circle.hitCircle.GetEndTime())+player.diff.Hit50 && !state.isHit {
+		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
 		circle.ruleSet.SendResult(time, player.cursor, circle.hitCircle.GetID(), position.X, position.Y, Miss, false, ComboResults.Reset)
 
 		if len(circle.players) == 1 {
-			circle.hitCircle.Arm(false, time)
+			circle.hitCircle.Arm(false, float64(time))
 		}
 
 		state.isHit = true
@@ -137,5 +137,5 @@ func (circle *Circle) IsHit(player *difficultyPlayer) bool {
 }
 
 func (circle *Circle) GetFadeTime() int64 {
-	return circle.hitCircle.GetStartTime() - int64(circle.fadeStartRelative)
+	return int64(circle.hitCircle.GetStartTime() - circle.fadeStartRelative)
 }

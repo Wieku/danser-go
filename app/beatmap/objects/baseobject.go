@@ -10,8 +10,8 @@ import (
 )
 
 type Renderable interface {
-	Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool
-	DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch)
+	Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool
+	DrawApproach(time float64, color color2.Color, batch *batch.QuadBatch)
 }
 
 func commonParse(data []string, extraIndex int) *HitObject {
@@ -25,8 +25,8 @@ func commonParse(data []string, extraIndex int) *HitObject {
 	hitObject := &HitObject{
 		StartPosRaw: startPos,
 		EndPosRaw: startPos,
-		StartTime: time,
-		EndTime: time,
+		StartTime: float64(time),
+		EndTime: float64(time),
 		HitObjectID: -1,
 		NewCombo: (objType & 4) == 4,
 	}

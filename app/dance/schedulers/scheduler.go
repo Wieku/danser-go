@@ -9,5 +9,5 @@ import (
 
 type Scheduler interface {
 	Init(objects []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover)
-	Update(time int64)
+	Update(time float64)
 }

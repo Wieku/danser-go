@@ -130,6 +130,9 @@ type OsuRuleSet struct {
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
+
+	log.Println("rs")
+
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
 	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.Stars)
@@ -171,10 +174,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
-		pauses += p.GetEndTime() - p.GetStartTime()
+		pauses += int64(p.GetEndTime() - p.GetStartTime())
 	}
 
-	drainTime := float32((beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() - beatMap.HitObjects[0].GetStartTime() - pauses) / 1000)
+	drainTime := float32((int64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) - int64(beatMap.HitObjects[0].GetStartTime()) - pauses) / 1000)
 
 	// HACK HACK HACK:
 	// apparently .NET Framework treats doubles differently than other runtimes
@@ -193,7 +196,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]] == nil {
+			log.Println("preopp")
 			ruleset.oppDiffs[mods[i]] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
+			log.Println("postopp")
 		}
 
 		hp := NewHealthProcessor(beatMap, diff)
@@ -221,9 +226,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		}
 	}
 
+	log.Println("erreretrtgrde")
+
 	sort.Slice(ruleset.queue, func(i, j int) bool {
 		return ruleset.queue[i].GetFadeTime() < ruleset.queue[j].GetFadeTime()
 	})
+
+	log.Println("fertgrde")
 
 	return ruleset
 }
@@ -569,7 +578,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 		}
 	}
 
-	if math.Abs(float64(time-set.beatMap.HitObjects[object.GetNumber()].GetStartTime())) >= difficulty.HittableRange {
+	if math.Abs(float64(time-int64(set.beatMap.HitObjects[object.GetNumber()].GetStartTime()))) >= difficulty.HittableRange {
 		return Shake
 	}
 

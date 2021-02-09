@@ -14,7 +14,7 @@ import (
 type Controller interface {
 	SetBeatMap(beatMap *beatmap.BeatMap)
 	InitCursors()
-	Update(time int64, delta float64)
+	Update(time float64, delta float64)
 	GetCursors() []*graphics.Cursor
 }
 
@@ -119,7 +119,7 @@ func (controller *GenericController) InitCursors() {
 	}
 }
 
-func (controller *GenericController) Update(time int64, delta float64) {
+func (controller *GenericController) Update(time float64, delta float64) {
 	for i := range controller.cursors {
 		controller.schedulers[i].Update(time)
 		controller.cursors[i].Update(delta)

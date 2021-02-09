@@ -15,7 +15,7 @@ type GenericScheduler struct {
 	cursor       *graphics.Cursor
 	queue        []objects.IHitObject
 	mover        movers.MultiPointMover
-	lastTime     int64
+	lastTime     float64
 	spinnerMover spinners.SpinnerMover
 	input        *InputProcessor
 	mods         difficulty.Modifier
@@ -45,7 +45,7 @@ func (sched *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.M
 	sched.queue = sched.queue[toRemove:]
 }
 
-func (sched *GenericScheduler) Update(time int64) {
+func (sched *GenericScheduler) Update(time float64) {
 	if len(sched.queue) > 0 {
 		move := true
 

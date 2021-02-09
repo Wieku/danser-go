@@ -177,9 +177,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.overlay = overlays.NewScoreOverlay(player.controller.(*dance.PlayerController).GetRuleset(), player.controller.GetCursors()[0])
 	} else if settings.KNOCKOUT {
 		controller := dance.NewReplayController()
+		log.Println("rc")
 		player.controller = controller
 		player.controller.SetBeatMap(player.bMap)
+		log.Println("bs")
 		player.controller.InitCursors()
+
+		log.Println("cinit")
 
 		if settings.PLAYERS == 1 {
 			player.overlay = overlays.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
@@ -427,18 +431,18 @@ func (player *Player) updateMain(delta float64) {
 
 	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
 		if _, ok := player.controller.(*dance.GenericController); ok {
-			player.bMap.Update(int64(player.progressMsF))
+			player.bMap.Update(player.progressMsF)
 		}
 
 		player.objectContainer.Update(player.progressMsF)
 	}
 
 	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
-		player.controller.Update(int64(player.progressMsF), delta)
+		player.controller.Update(player.progressMsF, delta)
 	}
 
 	if player.overlay != nil {
-		player.overlay.Update(int64(player.progressMsF))
+		player.overlay.Update(player.progressMsF)
 	}
 
 	bTime := player.bMap.Timings.Current.BaseBpm
@@ -548,7 +552,7 @@ func (player *Player) Draw(float64) {
 		bgAlpha *= player.Scl
 	}
 
-	player.background.Draw(player.progressMs, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
+	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
 	if player.start {
 		settings.Cursor.Colors.Update(timMs)
@@ -629,8 +633,8 @@ func (player *Player) Draw(float64) {
 
 		player.LogoS2.SetAlpha(float32(alpha * (1 - easing.OutQuad(player.progress))))
 
-		player.LogoS1.UpdateAndDraw(player.progressMs, player.batch)
-		player.LogoS2.UpdateAndDraw(player.progressMs, player.batch)
+		player.LogoS1.UpdateAndDraw(player.progressMsF, player.batch)
+		player.LogoS2.UpdateAndDraw(player.progressMsF, player.batch)
 		player.batch.ResetTransform()
 		player.batch.End()
 	}
@@ -661,7 +665,7 @@ func (player *Player) Draw(float64) {
 		player.batch.End()
 	}
 
-	player.background.DrawOverlay(player.progressMs, player.batch, bgAlpha, cameras1[0])
+	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, cameras1[0])
 
 	if settings.Playfield.DrawCursors {
 		for _, g := range player.controller.GetCursors() {

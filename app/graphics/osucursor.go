@@ -145,7 +145,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 	}
 
 	cursor.currentTime = cursor.clock * 100
-	cursor.manager.Update(int64(cursor.currentTime))
+	cursor.manager.Update(cursor.currentTime)
 
 	cursor.Position = position
 
@@ -297,7 +297,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 	batch.SetScale(scale*scaling, scale*scaling)
 	batch.SetSubScale(1, 1)
 
-	cursor.manager.Draw(int64(cursor.currentTime), batch)
+	cursor.manager.Draw(cursor.currentTime, batch)
 
 	batch.SetTranslation(position.Copy64())
 
@@ -307,8 +307,8 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 		cursor.cursor.SetRotation(0)
 	}
 
-	cursor.cursor.Draw(int64(cursor.currentTime), batch)
-	cursor.middle.Draw(int64(cursor.currentTime), batch)
+	cursor.cursor.Draw(cursor.currentTime, batch)
+	cursor.middle.Draw(cursor.currentTime, batch)
 
 	batch.End()
 }

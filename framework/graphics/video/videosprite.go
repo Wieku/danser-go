@@ -14,7 +14,7 @@ type Video struct {
 	decoder *VideoDecoder
 
 	lastTime float64
-	Offset   int64
+	Offset   float64
 }
 
 func NewVideo(path string, depth float64, position vector.Vector2d, origin vector.Vector2d) *Video {
@@ -38,7 +38,7 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 	}
 }
 
-func (video *Video) Update(time int64) {
+func (video *Video) Update(time float64) {
 	if video.decoder == nil || video.decoder.HasFinished() {
 		return
 	}
@@ -50,12 +50,12 @@ func (video *Video) Update(time int64) {
 
 	delta := 1000.0 / video.decoder.Metadata.FPS
 
-	if float64(time) < video.lastTime || video.lastTime+delta*10 < float64(time) {
-		video.decoder.StartFFmpeg(time)
-		video.lastTime = float64(time) - delta
+	if time < video.lastTime || video.lastTime+delta*10 < time {
+		video.decoder.StartFFmpeg(int64(time))
+		video.lastTime = time - delta
 	}
 
-	for video.lastTime+delta < float64(time) {
+	for video.lastTime+delta < time {
 		video.lastTime += delta
 
 		frame := video.decoder.GetFrame()

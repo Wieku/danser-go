@@ -13,7 +13,7 @@ import (
 type BezierMover struct {
 	pt                 vector.Vector2f
 	bz                 *curves.Bezier
-	beginTime, endTime int64
+	beginTime, endTime float64
 	previousSpeed      float32
 	invert             float32
 	mods               difficulty.Modifier
@@ -94,11 +94,11 @@ func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 	return 2
 }
 
-func (bm *BezierMover) Update(time int64) vector.Vector2f {
+func (bm *BezierMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.beginTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }
 
-func (bm *BezierMover) GetEndTime() int64 {
+func (bm *BezierMover) GetEndTime() float64 {
 	return bm.beginTime
 }

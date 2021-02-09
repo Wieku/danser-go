@@ -46,6 +46,7 @@ type subControl struct {
 	frames          []*rplpa.ReplayData
 	wasLeft         bool
 	newHandling     bool
+	lastTime        int64
 }
 
 func NewSubControl() *subControl {
@@ -59,8 +60,7 @@ type ReplayController struct {
 	cursors     []*graphics.Cursor
 	controllers []*subControl
 	ruleset     *osu.OsuRuleSet
-	lastTime    int64
-	//counter int64
+	lastTime    float64
 }
 
 func NewReplayController() Controller {
@@ -378,122 +378,17 @@ func (controller *ReplayController) InitCursors() {
 	//controller.Update(480000, 1)
 }
 
-func (controller *ReplayController) Update(time int64, delta float64) {
+func (controller *ReplayController) Update(time float64, delta float64) {
 
-	for nTime := controller.lastTime + 1; nTime <= time; nTime++ {
-		controller.bMap.Update(nTime)
+	numSkipped := int(time-controller.lastTime)-1
 
-		for i, c := range controller.controllers {
-			if c.danceController != nil {
-				c.danceController.Update(nTime, 1)
-
-				if nTime%17 == 0 {
-					controller.cursors[i].LastFrameTime = nTime - 17
-					controller.cursors[i].CurrentFrameTime = nTime
-					controller.cursors[i].IsReplayFrame = true
-				} else {
-					controller.cursors[i].IsReplayFrame = false
-				}
-
-				controller.ruleset.UpdateClickFor(controller.cursors[i], nTime)
-				controller.ruleset.UpdateNormalFor(controller.cursors[i], nTime)
-				controller.ruleset.UpdatePostFor(controller.cursors[i], nTime)
-			} else {
-				wasUpdated := false
-
-				isRelax := (controller.replays[i].ModsV & difficulty.Relax) > 0
-
-				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= nTime {
-					frame := c.frames[c.replayIndex]
-					c.replayTime += frame.Time
-
-					controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, frame.MouseY))
-
-					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
-					controller.cursors[i].CurrentFrameTime = c.replayTime
-					controller.cursors[i].IsReplayFrame = true
-
-					if !isRelax {
-						controller.cursors[i].LeftKey = frame.KeyPressed.LeftClick && frame.KeyPressed.Key1
-						controller.cursors[i].RightKey = frame.KeyPressed.RightClick && frame.KeyPressed.Key2
-
-						controller.cursors[i].LeftMouse = frame.KeyPressed.LeftClick && !frame.KeyPressed.Key1
-						controller.cursors[i].RightMouse = frame.KeyPressed.RightClick && !frame.KeyPressed.Key2
-
-						controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
-						controller.cursors[i].RightButton = frame.KeyPressed.RightClick
-					} else {
-						processed := controller.ruleset.GetProcessed()
-						player := controller.ruleset.GetPlayer(controller.cursors[i])
-
-						click := false
-
-						for _, o := range processed {
-							circle, c1 := o.(*osu.Circle)
-							slider, c2 := o.(*osu.Slider)
-							_, c3 := o.(*osu.Spinner)
-
-							objectStartTime := controller.bMap.HitObjects[o.GetNumber()].GetStartTime()
-							objectEndTime := controller.bMap.HitObjects[o.GetNumber()].GetEndTime()
-
-							if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && c.replayTime > objectStartTime-12 {
-								click = true
-							}
-
-							if (c2 || c3) && c.replayTime >= objectStartTime && c.replayTime <= objectEndTime {
-								click = true
-							}
-						}
-
-						controller.cursors[i].LeftButton = click && !c.wasLeft
-						controller.cursors[i].RightButton = click && c.wasLeft
-
-						if click {
-							c.wasLeft = !c.wasLeft
-						}
-					}
-
-					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
-					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
-
-					// New replays (after 20190506) scores object ends only on replay frame
-					if c.newHandling || c.replayIndex == len(c.frames)-1 {
-						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
-					} else {
-						localIndex := bmath.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
-						localFrame := c.frames[localIndex]
-
-						// HACK for older replays: update object ends till the next frame
-						for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
-							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
-						}
-					}
-
-					wasUpdated = true
-
-					c.replayIndex++
-				}
-
-				if !wasUpdated {
-					localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
-
-					progress := math32.Min(float32(nTime-c.replayTime), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
-
-					prevIndex := bmath.MaxI(0, localIndex-1)
-
-					mX := (c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + c.frames[prevIndex].MosueX
-					mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
-
-					controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
-					controller.cursors[i].IsReplayFrame = false
-				}
-			}
+	if numSkipped >= 1 {
+		for nTime := numSkipped; nTime >= 1; nTime-- {
+			controller.updateMain(time-float64(nTime))
 		}
-
-		controller.ruleset.Update(nTime)
-
-		controller.lastTime = nTime
 	}
+
+	controller.updateMain(time)
 
 	for i := range controller.controllers {
 		if controller.controllers[i].danceController == nil {
@@ -505,7 +400,127 @@ func (controller *ReplayController) Update(time int64, delta float64) {
 		controller.replays[i].Combo = combo
 		controller.replays[i].Grade = grade
 	}
+}
 
+func (controller *ReplayController) updateMain(nTime float64) {
+	controller.bMap.Update(nTime)
+
+	for i, c := range controller.controllers {
+		if c.danceController != nil {
+			c.danceController.Update(nTime, nTime-controller.lastTime)
+
+			if int64(nTime)%17 == 0 {
+				controller.cursors[i].LastFrameTime = int64(nTime) - 17
+				controller.cursors[i].CurrentFrameTime = int64(nTime)
+				controller.cursors[i].IsReplayFrame = true
+			} else {
+				controller.cursors[i].IsReplayFrame = false
+			}
+
+			if int64(nTime) != c.lastTime {
+				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
+			}
+
+			c.lastTime = int64(nTime)
+		} else {
+			wasUpdated := false
+
+			isRelax := (controller.replays[i].ModsV & difficulty.Relax) > 0
+
+			for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= int64(nTime) {
+				frame := c.frames[c.replayIndex]
+				c.replayTime += frame.Time
+
+				controller.cursors[i].SetPos(vector.NewVec2f(frame.MosueX, frame.MouseY))
+
+				controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
+				controller.cursors[i].CurrentFrameTime = c.replayTime
+				controller.cursors[i].IsReplayFrame = true
+
+				if !isRelax {
+					controller.cursors[i].LeftKey = frame.KeyPressed.LeftClick && frame.KeyPressed.Key1
+					controller.cursors[i].RightKey = frame.KeyPressed.RightClick && frame.KeyPressed.Key2
+
+					controller.cursors[i].LeftMouse = frame.KeyPressed.LeftClick && !frame.KeyPressed.Key1
+					controller.cursors[i].RightMouse = frame.KeyPressed.RightClick && !frame.KeyPressed.Key2
+
+					controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
+					controller.cursors[i].RightButton = frame.KeyPressed.RightClick
+				} else {
+					processed := controller.ruleset.GetProcessed()
+					player := controller.ruleset.GetPlayer(controller.cursors[i])
+
+					click := false
+
+					for _, o := range processed {
+						circle, c1 := o.(*osu.Circle)
+						slider, c2 := o.(*osu.Slider)
+						_, c3 := o.(*osu.Spinner)
+
+						objectStartTime := int64(controller.bMap.HitObjects[o.GetNumber()].GetStartTime())
+						objectEndTime := int64(controller.bMap.HitObjects[o.GetNumber()].GetEndTime())
+
+						if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && c.replayTime > objectStartTime-12 {
+							click = true
+						}
+
+						if (c2 || c3) && c.replayTime >= objectStartTime && c.replayTime <= objectEndTime {
+							click = true
+						}
+					}
+
+					controller.cursors[i].LeftButton = click && !c.wasLeft
+					controller.cursors[i].RightButton = click && c.wasLeft
+
+					if click {
+						c.wasLeft = !c.wasLeft
+					}
+				}
+
+				controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
+				controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
+
+				// New replays (after 20190506) scores object ends only on replay frame
+				if c.newHandling || c.replayIndex == len(c.frames)-1 {
+					controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
+				} else {
+					localIndex := bmath.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
+					localFrame := c.frames[localIndex]
+
+					// HACK for older replays: update object ends till the next frame
+					for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
+						controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
+					}
+				}
+
+				wasUpdated = true
+
+				c.replayIndex++
+			}
+
+			if !wasUpdated {
+				localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
+
+				progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
+
+				prevIndex := bmath.MaxI(0, localIndex-1)
+
+				mX := (c.frames[localIndex].MosueX-c.frames[prevIndex].MosueX)*progress + c.frames[prevIndex].MosueX
+				mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
+
+				controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
+				controller.cursors[i].IsReplayFrame = false
+			}
+		}
+	}
+
+	if int64(nTime) != int64(controller.lastTime) {
+		controller.ruleset.Update(int64(nTime))
+	}
+
+	controller.lastTime = nTime
 }
 
 func (controller *ReplayController) GetCursors() []*graphics.Cursor {

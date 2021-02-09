@@ -14,9 +14,9 @@ type ExGonMover struct {
 	rand     *rand.Rand
 
 	lastPos  vector.Vector2f
-	nextTime int64
+	nextTime float64
 
-	endTime int64
+	endTime float64
 	mods    difficulty.Modifier
 }
 
@@ -31,22 +31,22 @@ func (bm *ExGonMover) Reset(mods difficulty.Modifier) {
 
 func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 	if !bm.wasFirst {
-		bm.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + objs[1].GetStartTime()))
+		bm.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + int64(objs[1].GetStartTime())))
 
 		bm.wasFirst = true
 	}
 
 	prev, next := objs[0], objs[1]
 
-	bm.nextTime = prev.GetEndTime() + settings.Dance.ExGon.Delay
+	bm.nextTime = prev.GetEndTime() + float64(settings.Dance.ExGon.Delay)
 	bm.endTime = next.GetStartTime()
 
 	return 2
 }
 
-func (bm *ExGonMover) Update(time int64) vector.Vector2f {
+func (bm *ExGonMover) Update(time float64) vector.Vector2f {
 	if time >= bm.nextTime {
-		bm.nextTime += settings.Dance.ExGon.Delay
+		bm.nextTime += float64(settings.Dance.ExGon.Delay)
 
 		bm.lastPos = vector.NewVec2f(568, 426).Mult(vector.NewVec2f(float32(easing.InOutCubic(bm.rand.Float64())), float32(easing.InOutCubic(bm.rand.Float64())))).SubS(28, 21)
 	}
@@ -54,6 +54,6 @@ func (bm *ExGonMover) Update(time int64) vector.Vector2f {
 	return bm.lastPos
 }
 
-func (bm *ExGonMover) GetEndTime() int64 {
+func (bm *ExGonMover) GetEndTime() float64 {
 	return bm.endTime
 }

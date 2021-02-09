@@ -31,7 +31,7 @@ import (
 )
 
 type Overlay interface {
-	Update(int64)
+	Update(float64)
 	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
@@ -41,7 +41,7 @@ type Overlay interface {
 
 type ScoreOverlay struct {
 	font     *font.Font
-	lastTime int64
+	lastTime float64
 	combo    int64
 	newCombo int64
 	maxCombo int64
@@ -58,7 +58,7 @@ type ScoreOverlay struct {
 	cursor      *graphics.Cursor
 	combobreak  *bass.Sample
 	music       *bass.Track
-	nextEnd     int64
+	nextEnd     float64
 	results     *play.HitResults
 
 	keyStates   [4]bool
@@ -95,6 +95,7 @@ type ScoreOverlay struct {
 	mods       *sprite.SpriteManager
 	notFirst   bool
 	flashlight *common.Flashlight
+	delta      float64
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -172,11 +173,11 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.newComboFadeB.Reset()
 			overlay.newComboFadeB.AddEventS(float64(time), float64(time+300), 0.6, 0.0)
 
-			overlay.animate(time)
+			overlay.animate(float64(time))
 
 			overlay.combo = overlay.newCombo
 			overlay.newCombo++
-			overlay.nextEnd = time + 300
+			overlay.nextEnd = float64(time) + 300
 		} else if comboResult == osu.ComboResults.Reset {
 			if overlay.newCombo > 20 && overlay.combobreak != nil {
 				overlay.combobreak.Play()
@@ -263,14 +264,14 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	return overlay
 }
 
-func (overlay *ScoreOverlay) animate(time int64) {
+func (overlay *ScoreOverlay) animate(time float64) {
 	overlay.newComboScale.Reset()
-	overlay.newComboScale.AddEventSEase(float64(time), float64(time+50), 1.0, 1.2, easing.InQuad)
-	overlay.newComboScale.AddEventSEase(float64(time+50), float64(time+100), 1.2, 1.0, easing.OutQuad)
+	overlay.newComboScale.AddEventSEase(time, time+50, 1.0, 1.2, easing.InQuad)
+	overlay.newComboScale.AddEventSEase(time+50, time+100, 1.2, 1.0, easing.OutQuad)
 }
 
-func (overlay *ScoreOverlay) Update(time int64) {
-	if !overlay.notFirst && time > -int64(settings.Playfield.LeadInHold*1000) {
+func (overlay *ScoreOverlay) Update(time float64) {
+	if !overlay.notFirst && time > -settings.Playfield.LeadInHold*1000 {
 		overlay.notFirst = true
 
 		mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
@@ -283,7 +284,7 @@ func (overlay *ScoreOverlay) Update(time int64) {
 			mod.SetAlpha(0)
 			mod.ShowForever(true)
 
-			timeStart := float64(time + int64(i)*120)
+			timeStart := time + float64(i)*120
 
 			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, timeStart, timeStart+500, 0.0, 1.0))
 			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+500, 1.5, 1.0))
@@ -328,22 +329,39 @@ func (overlay *ScoreOverlay) Update(time int64) {
 		}
 	}
 
-	for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
-		overlay.newComboScale.Update(float64(sTime))
-		overlay.newComboScaleB.Update(float64(sTime))
-		overlay.newComboFadeB.Update(float64(sTime))
-		overlay.scoreGlider.Update(float64(sTime))
-		overlay.ppGlider.Update(float64(sTime))
-		overlay.comboSlide.Update(float64(sTime))
-		overlay.hpFade.Update(float64(sTime))
-		overlay.hpSlide.Update(float64(sTime))
+	overlay.newComboScale.Update(time)
+	overlay.newComboScaleB.Update(time)
+	overlay.newComboFadeB.Update(time)
+	overlay.scoreGlider.Update(time)
+	overlay.ppGlider.Update(time)
+	overlay.comboSlide.Update(time)
+	overlay.hpFade.Update(time)
+	overlay.hpSlide.Update(time)
 
-		if sTime%17 == 0 {
-			if overlay.combo > overlay.newCombo && overlay.newCombo == 0 {
-				overlay.combo--
-			}
+	overlay.delta += time - overlay.lastTime
+	if overlay.delta >= 16.6667 {
+		overlay.delta -= 16.6667
+		if overlay.combo > overlay.newCombo && overlay.newCombo == 0 {
+			overlay.combo--
 		}
 	}
+
+	//for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
+	//	overlay.newComboScale.Update(float64(sTime))
+	//	overlay.newComboScaleB.Update(float64(sTime))
+	//	overlay.newComboFadeB.Update(float64(sTime))
+	//	overlay.scoreGlider.Update(float64(sTime))
+	//	overlay.ppGlider.Update(float64(sTime))
+	//	overlay.comboSlide.Update(float64(sTime))
+	//	overlay.hpFade.Update(float64(sTime))
+	//	overlay.hpSlide.Update(float64(sTime))
+	//
+	//	if sTime%17 == 0 {
+	//		if overlay.combo > overlay.newCombo && overlay.newCombo == 0 {
+	//			overlay.combo--
+	//		}
+	//	}
+	//}
 
 	if overlay.combo != overlay.newCombo && overlay.nextEnd < time+140 {
 		overlay.animate(time)

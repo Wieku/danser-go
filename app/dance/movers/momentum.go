@@ -16,8 +16,8 @@ import (
 type MomentumMover struct {
 	bz        *curves.Bezier
 	last      vector.Vector2f
-	startTime int64
-	endTime   int64
+	startTime float64
+	endTime   float64
 	first     bool
 	wasStream bool
 	mods      difficulty.Modifier
@@ -183,11 +183,11 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	return 2
 }
 
-func (bm *MomentumMover) Update(time int64) vector.Vector2f {
+func (bm *MomentumMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }
 
-func (bm *MomentumMover) GetEndTime() int64 {
+func (bm *MomentumMover) GetEndTime() float64 {
 	return bm.startTime
 }

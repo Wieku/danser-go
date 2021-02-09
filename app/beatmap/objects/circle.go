@@ -35,11 +35,11 @@ type Circle struct {
 	reverseArrow     *sprite.Sprite
 	sprites          []*sprite.Sprite
 	diff             *difficulty.Difficulty
-	lastTime         int64
+	lastTime         float64
 	silent           bool
 	firstEndCircle   bool
 	textureName      string
-	appearTime       int64
+	appearTime       float64
 	ArrowRotation    float64
 
 	SliderPoint      bool
@@ -59,11 +59,11 @@ func NewCircle(data []string) *Circle {
 	return circle
 }
 
-func DummyCircle(pos vector.Vector2f, time int64) *Circle {
+func DummyCircle(pos vector.Vector2f, time float64) *Circle {
 	return DummyCircleInherit(pos, time, false, false, false)
 }
 
-func DummyCircleInherit(pos vector.Vector2f, time int64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
+func DummyCircleInherit(pos vector.Vector2f, time float64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
 	circle := &Circle{HitObject: &HitObject{}}
 	circle.StartPosRaw = pos
 	circle.EndPosRaw = pos
@@ -77,7 +77,7 @@ func DummyCircleInherit(pos vector.Vector2f, time int64, inherit bool, inheritSt
 	return circle
 }
 
-func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, last bool) *Circle {
+func NewSliderEndCircle(pos vector.Vector2f, appearTime, time float64, first, last bool) *Circle {
 	circle := &Circle{HitObject: &HitObject{}}
 	circle.StartPosRaw = pos
 	circle.EndPosRaw = pos
@@ -92,7 +92,7 @@ func NewSliderEndCircle(pos vector.Vector2f, appearTime, time int64, first, last
 	return circle
 }
 
-func (circle *Circle) Update(time int64) bool {
+func (circle *Circle) Update(time float64) bool {
 	if !circle.silent && ((!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1) && (circle.lastTime < circle.StartTime && time >= circle.StartTime) {
 		circle.Arm(true, circle.StartTime)
 		circle.PlaySound()
@@ -216,7 +216,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	}
 }
 
-func (circle *Circle) Arm(clicked bool, time int64) {
+func (circle *Circle) Arm(clicked bool, time float64) {
 	circle.hitCircle.ClearTransformations()
 	circle.hitCircleOverlay.ClearTransformations()
 	circle.textFade.Reset()
@@ -244,7 +244,7 @@ func (circle *Circle) Arm(clicked bool, time int64) {
 	}
 }
 
-func (circle *Circle) Shake(time int64) {
+func (circle *Circle) Shake(time float64) {
 	startTime := float64(time)
 	for _, s := range circle.sprites {
 		s.ClearTransformationsOfType(animation.MoveX)
@@ -261,7 +261,7 @@ func (circle *Circle) UpdateStacking() {
 
 }
 
-func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
+func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool {
 	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
 
 	batch.SetSubScale(1, 1)
@@ -332,7 +332,7 @@ func (circle *Circle) Draw(time int64, color color2.Color, batch *batch.QuadBatc
 	return false
 }
 
-func (circle *Circle) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {
+func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batch.QuadBatch) {
 	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
 
 	batch.SetSubScale(1, 1)

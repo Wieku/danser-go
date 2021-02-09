@@ -12,7 +12,7 @@ import (
 type AggressiveMover struct {
 	lastAngle          float32
 	bz                 *curves.Bezier
-	startTime, endTime int64
+	startTime, endTime float64
 	mods               difficulty.Modifier
 }
 
@@ -60,11 +60,11 @@ func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	return 2
 }
 
-func (bm *AggressiveMover) Update(time int64) vector.Vector2f {
+func (bm *AggressiveMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }
 
-func (bm *AggressiveMover) GetEndTime() int64 {
+func (bm *AggressiveMover) GetEndTime() float64 {
 	return bm.startTime
 }

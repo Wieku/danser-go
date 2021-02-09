@@ -103,12 +103,12 @@ func (bg *Background) Update(time float64, x, y float64) {
 
 	if bg.storyboard != nil {
 		if settings.RECORD {
-			bg.storyboard.Update(int64(time))
+			bg.storyboard.Update(time)
 		} else {
 			if !bg.storyboard.IsThreadRunning() {
 				bg.storyboard.StartThread()
 			}
-			bg.storyboard.UpdateTime(int64(time))
+			bg.storyboard.UpdateTime(time)
 		}
 	}
 
@@ -137,7 +137,7 @@ func project(pos vector.Vector2d, camera mgl32.Mat4) vector.Vector2d {
 	return vector.NewVec2d((float64(res[0])/2+0.5)*settings.Graphics.GetWidthF(), float64((res[1])/2+0.5)*settings.Graphics.GetWidthF())
 }
 
-func (bg *Background) Draw(time int64, batch *batch.QuadBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
+func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlpha float64, camera mgl32.Mat4) {
 	if bgAlpha < 0.01 {
 		return
 	}
@@ -280,7 +280,7 @@ func (bg *Background) drawTriangles(batch *batch.QuadBatch, bgAlpha float64, blu
 	batch.ResetTransform()
 }
 
-func (bg *Background) DrawOverlay(time int64, batch *batch.QuadBatch, bgAlpha float64, camera mgl32.Mat4) {
+func (bg *Background) DrawOverlay(time float64, batch *batch.QuadBatch, bgAlpha float64, camera mgl32.Mat4) {
 	if bgAlpha < 0.01 || bg.storyboard == nil {
 		return
 	}
