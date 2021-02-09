@@ -271,13 +271,13 @@ func loadTexture(name string) *texture.TextureRegion {
 		image, err = getPixmap(name)
 		if err == nil {
 			region = &texture.TextureRegion{}
-			region.Width = int32(image.Width)
-			region.Height = int32(image.Height)
+			region.Width = float32(image.Width)
+			region.Height = float32(image.Height)
 		}
 	} else {
 		region = &texture.TextureRegion{}
-		region.Width = int32(image.Width / 2)
-		region.Height = int32(image.Height / 2)
+		region.Width = float32(image.Width / 2)
+		region.Height = float32(image.Height / 2)
 	}
 
 	if region != nil {

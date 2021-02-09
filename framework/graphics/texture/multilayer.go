@@ -22,7 +22,7 @@ func NewTextureMultiLayerFormat(width, height int, format Format, mipmaps int, l
 	texture.store = newStore(layers, width, height, format, mipmaps)
 	texture.store.Clear()
 
-	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(width), int32(height), 0}
+	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, float32(width), float32(height), 0}
 
 	runtime.SetFinalizer(texture, (*TextureMultiLayer).Dispose)
 

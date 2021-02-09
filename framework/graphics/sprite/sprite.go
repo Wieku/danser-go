@@ -265,7 +265,7 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 		ratio := float32(1 - sprite.cutX)
 		middle := float32(sprite.cutOrigin.X)/2*math32.Abs(region.U2-region.U1) + (region.U1+region.U2)/2
 
-		region.Width = int32(float32(region.Width) * ratio)
+		region.Width = float32(region.Width) * ratio
 		region.U1 = (region.U1-middle)*ratio + middle
 		region.U2 = (region.U2-middle)*ratio + middle
 	}
@@ -278,7 +278,7 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 		ratio := float32(1 - sprite.cutY)
 		middle := float32(sprite.cutOrigin.Y)/2*math32.Abs(region.V2-region.V1) + (region.V1+region.V2)/2
 
-		region.Height = int32(float32(region.Height) * ratio)
+		region.Height = float32(region.Height) * ratio
 		region.V1 = (region.V1-middle)*ratio + middle
 		region.V2 = (region.V2-middle)*ratio + middle
 	}

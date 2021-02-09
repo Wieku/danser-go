@@ -44,7 +44,7 @@ func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *Te
 
 	texture.TextureMultiLayer = NewTextureMultiLayerFormat(size, size, format, mipmaps, layers)
 
-	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(size), int32(size), 0}
+	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, float32(size), float32(size), 0}
 	texture.padding = 1 << uint(texture.store.mipmaps)
 
 	runtime.SetFinalizer(texture, (*TextureAtlas).Dispose)
@@ -96,7 +96,7 @@ func (texture *TextureAtlas) AddTexture(name string, width, height int, data []u
 
 			texture.SetData(smallest.x, smallest.y, width, height, layer, data)
 
-			region := TextureRegion{Texture: texture, Width: int32(width), Height: int32(height), Layer: int32(layer)}
+			region := TextureRegion{Texture: texture, Width: float32(width), Height: float32(height), Layer: int32(layer)}
 			region.U1 = (float32(smallest.x) + 0.5) / float32(texture.store.width)
 			region.V1 = (float32(smallest.y) + 0.5) / float32(texture.store.height)
 			region.U2 = region.U1 + float32(width-1)/float32(texture.store.width)

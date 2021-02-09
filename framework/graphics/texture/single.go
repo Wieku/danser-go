@@ -19,7 +19,7 @@ func NewTextureSingle(width, height, mipmaps int) *TextureSingle {
 func NewTextureSingleFormat(width, height int, format Format, mipmaps int) *TextureSingle {
 	texture := new(TextureSingle)
 	texture.store = newStore(1, width, height, format, mipmaps)
-	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(width), int32(height), 0}
+	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, float32(width), float32(height), 0}
 
 	runtime.SetFinalizer(texture, (*TextureSingle).Dispose)
 
