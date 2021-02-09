@@ -195,9 +195,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		player := &difficultyPlayer{cursor: cursor, diff: diff}
 		diffPlayers = append(diffPlayers, player)
 
-		if ruleset.oppDiffs[mods[i]] == nil {
+		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
 			log.Println("preopp")
-			ruleset.oppDiffs[mods[i]] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
 			log.Println("postopp")
 		}
 
@@ -479,7 +479,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	index := bmath.MaxI64(0, subSet.numObjects-1)
 
 	mapTo := set.mapStats[index]
-	diff := set.oppDiffs[subSet.player.diff.Mods][index]
+	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
 	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
 	//subSet.ppv2.PPv2WithMods(diff.Aim, diff.Speed, set.oppaiMaps[index], int(subSet.player.diff.Mods), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), int(subSet.maxCombo))
