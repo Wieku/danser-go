@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -73,7 +74,8 @@ type Cursor struct {
 
 	Position vector.Vector2f
 
-	Name string
+	Name    string
+	ScoreID int64
 
 	lastSetting bool
 
@@ -113,6 +115,13 @@ func (cursor *Cursor) SetPos(pt vector.Vector2f) {
 	}
 
 	if settings.Cursor.BounceOnEdges && settings.DIVIDES <= 2 {
+		tmp.X -= osuRect.MinX
+		tmp.Y -= osuRect.MinY
+		tmp.X = math32.Mod(tmp.X, 2*(osuRect.MaxX-osuRect.MinX))
+		tmp.Y = math32.Mod(tmp.Y, 2*(osuRect.MaxY-osuRect.MinY))
+		tmp.X += osuRect.MinX
+		tmp.Y += osuRect.MinY
+
 		for {
 			ok1, ok2 := false, false
 
