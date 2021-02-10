@@ -140,6 +140,10 @@ func run() {
 		if (*md5 + *artist + *title + *difficulty + *creator) == "" {
 			log.Println("No beatmap specified, closing...")
 			closeAfterSettingsLoad = true
+
+			if *replay == "" {
+				utils.OpenURL("https://youtu.be/dQw4w9WgXcQ")
+			}
 		}
 
 		settings.DEBUG = *debug
