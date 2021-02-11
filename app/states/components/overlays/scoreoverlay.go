@@ -485,8 +485,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
-		rightOffset := -9.6
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
+		rightOffset := -9.6 * scoreScale
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 * scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
@@ -499,7 +499,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 			}
 
 			overlay.shapeRenderer.Begin()
-			overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16, 40, float32(progress))
+			overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16*float32(settings.Gameplay.Score.Scale), 40, progress)
 			overlay.shapeRenderer.End()
 		} else if progress > 0.0 {
 			batch.SetColor(1, 1, 0.5, alpha*0.5*scoreAlpha)
@@ -552,18 +552,19 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 
 		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
-		rightOffset := -9.6
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
+		rightOffset := -9.6 * scoreScale
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 * scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
 			text := skin.GetTextureSource("circularmetre", skin.LOCAL)
 
 			batch.SetColor(1, 1, 1, alpha*scoreAlpha)
+			batch.SetScale(scoreScale, scoreScale)
 			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
 			batch.DrawTexture(*text)
 
-			accOffset -= 44.8
+			accOffset -= 44.8 * scoreScale
 		}
 
 		batch.ResetTransform()
