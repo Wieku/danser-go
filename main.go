@@ -82,7 +82,7 @@ func run() {
 		creator := flag.String("creator", "", creatorDesc)
 		flag.StringVar(creator, "c", "", creatorDesc+shorthand)
 
-		settingsVersion := flag.String("settings", "", "Specify settings version")
+		settingsVersion := flag.String("settings", "", "Specify settings version, -settings=a means that settings-a.json will be loaded")
 		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
 		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
 		knockout := flag.Bool("knockout", false, "Use knockout feature")
@@ -101,6 +101,8 @@ func run() {
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
 
 		replay := flag.String("replay", "", "Play map from specific replay file. Overrides -knockout, -mods and all beatmap arguments.")
+
+		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
 		flag.Parse()
 
@@ -239,6 +241,10 @@ func run() {
 		}
 
 		lastSamples = int(settings.Graphics.MSAA)
+
+		if strings.TrimSpace(*skin) != "" {
+			settings.Skin.CurrentSkin = *skin
+		}
 
 		if settings.RECORD {
 			glfw.WindowHint(glfw.Visible, glfw.False)
