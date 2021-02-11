@@ -344,6 +344,10 @@ func run() {
 		font.LoadFont(file)
 		file.Close()
 
+		file2, _ := assets.Open("assets/fonts/Ubuntu-Regular.ttf")
+		font.LoadFont(file2)
+		file2.Close()
+
 		batch = batch2.NewQuadBatch()
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
