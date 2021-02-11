@@ -99,6 +99,29 @@ func NewFrameDepth(width, height int, smooth bool) *Framebuffer {
 	return f
 }
 
+func NewFrameMultisample(width, height int, samples int) *Framebuffer {
+	f := new(Framebuffer)
+	f.width = width
+	f.height = height
+	f.multisampled = true
+
+	gl.CreateFramebuffers(1, &f.handle)
+
+
+	gl.CreateRenderbuffers(1, &f.texRenderbuffer)
+	gl.NamedRenderbufferStorageMultisample(f.texRenderbuffer, int32(samples), texture.RGBA.InternalFormat(), int32(width), int32(height))
+	gl.NamedFramebufferRenderbuffer(f.handle, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, f.texRenderbuffer)
+
+	f.tex = texture.NewTextureSingle(width, height, 0)
+
+	gl.CreateFramebuffers(1, &f.helperHandle)
+	gl.NamedFramebufferTextureLayer(f.helperHandle, gl.COLOR_ATTACHMENT0, f.tex.GetID(), 0, 0)
+
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
+
+	return f
+}
+
 func NewFrameMultisampleScreen(width, height int, depth bool, samples int) *Framebuffer {
 	f := new(Framebuffer)
 	f.width = width
