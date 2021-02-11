@@ -66,7 +66,7 @@ func LoadTextureFontMap2(chars map[rune]*texture.TextureRegion, overlap float64)
 	font := new(Font)
 
 	font.glyphs = make(map[rune]*glyphData)
-	font.overlap = overlap
+	font.Overlap = overlap
 
 	for c, r := range chars {
 		if r == nil {

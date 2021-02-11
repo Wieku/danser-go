@@ -39,7 +39,7 @@ type Font struct {
 	lineDist    float64
 	kernTable   map[rune]map[rune]float64
 	biggest     float64
-	overlap     float64
+	Overlap     float64
 }
 
 func LoadFont(reader io.Reader) *Font {
@@ -164,8 +164,8 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 			advance += font.kernTable[rune(text[i-1])][c] * scale * renderer.GetScale().X
 		}
 
-		if i > 0 || monospaced {
-			advance -= font.overlap * scale * renderer.GetScale().X
+		if i > 0 {
+			advance -= font.Overlap * scale * renderer.GetScale().X
 		}
 
 		renderer.SetSubScale(scale, scale)
@@ -220,8 +220,8 @@ func (font *Font) getWidthInternal(size float64, text string, monospaced bool) f
 			advance += font.kernTable[rune(text[i-1])][c]
 		}
 
-		if i > 0 || monospaced {
-			advance -= font.overlap
+		if i > 0 {
+			advance -= font.Overlap
 		}
 
 		xAdv := char.advance

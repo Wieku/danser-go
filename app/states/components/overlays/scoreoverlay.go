@@ -650,6 +650,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 			} else {
 				siz := scale * overlay.scoreEFont.GetSize()
 				batch.SetScale(1, 1)
+				overlay.scoreEFont.Overlap = 1.6
 				overlay.scoreEFont.DrawCentered(batch, posX, posY, siz, text)
 			}
 		}
