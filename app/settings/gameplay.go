@@ -38,6 +38,11 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
+		ScoreBoard: &hudElement{
+			Show:    true,
+			Scale:   1.0,
+			Opacity: 1.0,
+		},
 		ProgressBar: "Pie",
 		Boundaries: &boundaries{
 			Enabled:         true,
@@ -66,6 +71,7 @@ type gameplay struct {
 	ComboCounter  *hudElement
 	PPCounter     *ppCounter
 	KeyOverlay    *hudElement
+	ScoreBoard    *hudElement
 
 	ProgressBar string
 

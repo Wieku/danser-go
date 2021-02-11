@@ -4,6 +4,7 @@ import (
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -205,6 +206,12 @@ func (board *ScoreBoard) Update(time float64) {
 }
 
 func (board *ScoreBoard) Draw(batch *batch.QuadBatch, alpha float64) {
+	if !settings.Gameplay.ScoreBoard.Show {
+		return
+	}
+
+	alpha *= settings.Gameplay.ScoreBoard.Opacity
+
 	for _, e := range board.displayScores {
 		e.Draw(board.time, batch, alpha)
 	}
