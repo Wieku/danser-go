@@ -481,7 +481,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		progress = bmath.ClampF32(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
-	if scoreAlpha := settings.Gameplay.Score.Opacity; scoreAlpha > 0.001 && settings.Gameplay.Score.Show && settings.Gameplay.ProgressBar == "Pie" {
+	if scoreAlpha := settings.Gameplay.Score.Opacity; scoreAlpha > 0.001 && settings.Gameplay.Score.Show {
 		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
@@ -489,17 +489,30 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 + rightOffset
 		vAccOffset := 4.8
 
-		overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
+		if settings.Gameplay.ProgressBar == "Pie" {
+			overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
 
-		if progress < 0.0 {
-			overlay.shapeRenderer.SetColor(0.4, 0.8, 0.4, alpha*0.6*scoreAlpha)
-		} else {
-			overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
+			if progress < 0.0 {
+				overlay.shapeRenderer.SetColor(0.4, 0.8, 0.4, alpha*0.6*scoreAlpha)
+			} else {
+				overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
+			}
+
+			overlay.shapeRenderer.Begin()
+			overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16, 40, float32(progress))
+			overlay.shapeRenderer.End()
+		} else if progress > 0.0 {
+			batch.SetColor(1, 1, 0.5, alpha*0.5*scoreAlpha)
+
+			batch.SetAdditive(true)
+
+			batch.SetSubScale(272*float64(progress)*scoreScale/2, 3*scoreScale)
+			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-12-272+float64(progress)*272/2)*scoreScale, fntSize+3*scoreScale/2))
+			batch.DrawUnit(graphics.Pixel.GetRegion())
+
+			batch.SetAdditive(false)
+			batch.ResetTransform()
 		}
-
-		overlay.shapeRenderer.Begin()
-		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16, 40, float32(progress))
-		overlay.shapeRenderer.End()
 	}
 
 	if hpAlpha := settings.Gameplay.HpBar.Opacity * overlay.hpFade.GetValue() * alpha; hpAlpha > 0.001 && settings.Gameplay.HpBar.Show {
@@ -551,12 +564,6 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 			batch.DrawTexture(*text)
 
 			accOffset -= 44.8
-		} else if progress > 0.0 {
-			batch.SetColor(0.2, 0.6, 0.2, alpha*0.8*scoreAlpha)
-
-			batch.SetSubScale(272*float64(progress)*scoreScale/2, 2.5*scoreScale)
-			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-12-272+float64(progress)*272/2)*scoreScale, fntSize))
-			batch.DrawUnit(graphics.Pixel.GetRegion())
 		}
 
 		batch.ResetTransform()
