@@ -106,7 +106,7 @@ func run() {
 
 		flag.Parse()
 
-		incompatibleMods := difficulty2.SpunOut | difficulty2.Relax | difficulty2.Relax2
+		incompatibleMods := difficulty2.Relax | difficulty2.Relax2
 
 		modsParsed := difficulty2.ParseMods(*mods)
 

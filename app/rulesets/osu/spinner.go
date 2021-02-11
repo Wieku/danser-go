@@ -1,6 +1,7 @@
 package osu
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"math"
 )
@@ -124,7 +125,9 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 			maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * timeDiff)
 
-			if state.theoreticalVelocity > state.currentVelocity {
+			if player.diff.CheckModActive(difficulty.SpunOut) {
+				state.currentVelocity = 0.03
+			} else if state.theoreticalVelocity > state.currentVelocity {
 				state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, maxAccelThisFrame)
 			} else {
 				state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, -maxAccelThisFrame)
