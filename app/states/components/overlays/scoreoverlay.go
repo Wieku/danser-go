@@ -96,6 +96,8 @@ type ScoreOverlay struct {
 	notFirst   bool
 	flashlight *common.Flashlight
 	delta      float64
+
+	entry *play.ScoreBoard
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -189,7 +191,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.flashlight.UpdateCombo(overlay.newCombo)
 		}
 
-		_, _, score, _ := overlay.ruleset.GetResults(overlay.cursor)
+		_, mCombo, score, _ := overlay.ruleset.GetResults(overlay.cursor)
+
+		overlay.entry.UpdatePlayer(score, mCombo)
 
 		overlay.scoreGlider.Reset()
 		overlay.scoreGlider.AddEvent(float64(time), float64(time+500), float64(score))
@@ -260,6 +264,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	if overlay.ruleset.GetBeatMap().Diff.Mods.Active(difficulty.Flashlight) {
 		overlay.flashlight = common.NewFlashlight(overlay.ruleset.GetBeatMap())
 	}
+
+	overlay.entry = play.NewScoreboard(overlay.ruleset.GetBeatMap(), overlay.cursor.ScoreID)
+	overlay.entry.AddPlayer(overlay.cursor.Name)
 
 	return overlay
 }
@@ -337,6 +344,8 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.comboSlide.Update(time)
 	overlay.hpFade.Update(time)
 	overlay.hpSlide.Update(time)
+
+	overlay.entry.Update(time)
 
 	overlay.delta += time - overlay.lastTime
 	if overlay.delta >= 16.6667 {
@@ -466,6 +475,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
+
+	overlay.entry.Draw(batch, alpha)
 
 	hObjects := overlay.ruleset.GetBeatMap().HitObjects
 
