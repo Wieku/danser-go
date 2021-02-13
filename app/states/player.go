@@ -39,6 +39,8 @@ import (
 	"time"
 )
 
+const windowsOffset = 15
+
 type Player struct {
 	font        *font.Font
 	bMap        *beatmap.BeatMap
@@ -350,7 +352,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			if musicPlayer.GetState() == bass.MUSIC_STOPPED {
 				player.progressMsF += float64(currtime-lastT) / 1000000.0
 			} else {
-				player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
+				platformOffset := 0.0
+				if runtime.GOOS == "windows" {
+					platformOffset = windowsOffset
+				}
+
+				player.progressMsF = musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
 			}
 
 			player.updateMain(float64(currtime-lastT) / 1000000.0)
