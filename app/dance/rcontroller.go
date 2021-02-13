@@ -93,7 +93,7 @@ func NewReplayController() Controller {
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	replayDir := filepath.Join(replaysMaster, beatMap.MD5)
 
-	err := os.MkdirAll(replayDir, os.ModeDir)
+	err := os.MkdirAll(replayDir, 0755)
 	if err != nil {
 		panic(err)
 	}

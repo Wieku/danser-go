@@ -58,7 +58,7 @@ var blend *effects.Blend
 func StartFFmpeg(fps, _w, _h int) {
 	w, h = _w, _h
 
-	err := os.MkdirAll(settings.Recording.OutputDir, 0655)
+	err := os.MkdirAll(settings.Recording.OutputDir, 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
