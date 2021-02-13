@@ -45,22 +45,22 @@ type ScoreOverlay struct {
 	lastTime float64
 	combo    int64
 	newCombo int64
-	maxCombo int64
 
 	comboSlide     *animation.Glider
 	newComboScale  *animation.Glider
 	newComboScaleB *animation.Glider
 	newComboFadeB  *animation.Glider
 
-	oldScore    int64
-	scoreGlider *animation.Glider
-	ppGlider    *animation.Glider
-	ruleset     *osu.OsuRuleSet
-	cursor      *graphics.Cursor
-	combobreak  *bass.Sample
-	music       *bass.Track
-	nextEnd     float64
-	results     *play.HitResults
+	currentScore int64
+	displayScore float64
+
+	ppGlider   *animation.Glider
+	ruleset    *osu.OsuRuleSet
+	cursor     *graphics.Cursor
+	combobreak *bass.Sample
+	music      *bass.Track
+	nextEnd    float64
+	results    *play.HitResults
 
 	keyStates   [4]bool
 	keyCounters [4]int
@@ -115,9 +115,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.newComboScaleB = animation.NewGlider(1)
 	overlay.newComboFadeB = animation.NewGlider(1)
 
-	overlay.scoreGlider = animation.NewGlider(0)
-	overlay.scoreGlider.SetEasing(easing.OutQuad)
-
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.ppGlider.SetEasing(easing.OutQuint)
 
@@ -133,17 +130,17 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			continue
 		}
 
-		overlay.comboSlide.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, -1)
-		overlay.comboSlide.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 0)
+		overlay.comboSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -1)
+		overlay.comboSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
 
-		overlay.bgDim.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, 0)
-		overlay.bgDim.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 1)
+		overlay.bgDim.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
+		overlay.bgDim.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
 
-		overlay.hpSlide.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, -20)
-		overlay.hpSlide.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 0)
+		overlay.hpSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -20)
+		overlay.hpSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
 
-		overlay.hpFade.AddEvent(float64(p.GetStartTime()), float64(p.GetStartTime())+500, 0)
-		overlay.hpFade.AddEvent(float64(p.GetEndTime())-500, float64(p.GetEndTime()), 1)
+		overlay.hpFade.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
+		overlay.hpFade.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
 	}
 
 	discord.UpdatePlay(cursor.Name)
@@ -153,7 +150,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.comboFont = skin.GetFont("combo")
 
 	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
-
 		if result&(osu.BaseHitsM) > 0 {
 			overlay.results.AddResult(time, result, position)
 		}
@@ -164,7 +160,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		allowSlider := sl && result == osu.SliderStart
 
 		if allowCircle || allowSlider {
-			timeDiff := float64(time) - float64(ruleset.GetBeatMap().HitObjects[number].GetStartTime())
+			timeDiff := float64(time) - ruleset.GetBeatMap().HitObjects[number].GetStartTime()
 
 			overlay.hitErrorMeter.Add(float64(time), timeDiff)
 		}
@@ -196,12 +192,10 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 		overlay.entry.UpdatePlayer(score, mCombo)
 
-		overlay.scoreGlider.Reset()
-		overlay.scoreGlider.AddEvent(float64(time), float64(time+500), float64(score))
 		overlay.ppGlider.Reset()
 		overlay.ppGlider.AddEvent(float64(time), float64(time+500), pp)
 
-		overlay.oldScore = score
+		overlay.currentScore = score
 	})
 
 	overlay.ScaledHeight = 768
@@ -239,7 +233,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.skip = sprite.NewAnimation(skipFrames, skin.GetInfo().GetFrameTime(len(skipFrames)), true, 0.0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight), bmath.Origin.BottomRight)
 		overlay.skip.SetAlpha(0.0)
 		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, 0, 500, 0.0, 0.6))
-		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(start), float64(start+300), 0.6, 0.0))
+		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, start, start+300, 0.6, 0.0))
 	}
 
 	overlay.healthBackground = sprite.NewSpriteSingle(skin.GetTexture("scorebar-bg"), 0, vector.NewVec2d(0, 0), bmath.Origin.TopLeft)
@@ -298,10 +292,10 @@ func (overlay *ScoreOverlay) Update(time float64) {
 			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+500, 1.5, 1.0))
 
 			if overlay.cursor.Name == "" {
-				startT := float64(overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime())
+				startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
 				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0, 0))
 
-				endT := float64(overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime())
+				endT := overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()
 				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500, 0.0, 1.0))
 			}
 
@@ -313,7 +307,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	if overlay.flashlight != nil && time >= 0 {
 
-		overlay.flashlight.Update(float64(time))
+		overlay.flashlight.Update(time)
 		overlay.flashlight.UpdatePosition(overlay.cursor.Position)
 
 		proc := overlay.ruleset.GetProcessed()
@@ -332,7 +326,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
 			start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
 			if start-time > 4000 {
-				overlay.music.SetPosition((float64(start) - 2000) / 1000)
+				overlay.music.SetPosition((start - 2000) / 1000)
 			}
 		}
 	}
@@ -340,7 +334,6 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.newComboScale.Update(time)
 	overlay.newComboScaleB.Update(time)
 	overlay.newComboFadeB.Update(time)
-	overlay.scoreGlider.Update(time)
 	overlay.ppGlider.Update(time)
 	overlay.comboSlide.Update(time)
 	overlay.hpFade.Update(time)
@@ -356,23 +349,6 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		}
 	}
 
-	//for sTime := overlay.lastTime + 1; sTime <= time; sTime++ {
-	//	overlay.newComboScale.Update(float64(sTime))
-	//	overlay.newComboScaleB.Update(float64(sTime))
-	//	overlay.newComboFadeB.Update(float64(sTime))
-	//	overlay.scoreGlider.Update(float64(sTime))
-	//	overlay.ppGlider.Update(float64(sTime))
-	//	overlay.comboSlide.Update(float64(sTime))
-	//	overlay.hpFade.Update(float64(sTime))
-	//	overlay.hpSlide.Update(float64(sTime))
-	//
-	//	if sTime%17 == 0 {
-	//		if overlay.combo > overlay.newCombo && overlay.newCombo == 0 {
-	//			overlay.combo--
-	//		}
-	//	}
-	//}
-
 	if overlay.combo != overlay.newCombo && overlay.nextEnd < time+140 {
 		overlay.animate(time)
 		overlay.combo = overlay.newCombo
@@ -381,17 +357,25 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	currentHp := overlay.ruleset.GetHP(overlay.cursor)
 
+	delta60 := (time - overlay.lastTime) / 16.667
+
 	if overlay.displayHp < currentHp {
-		overlay.displayHp = math.Min(1.0, overlay.displayHp+math.Abs(currentHp-overlay.displayHp)/4*float64(time-overlay.lastTime)/16.667)
+		overlay.displayHp = math.Min(1.0, overlay.displayHp+math.Abs(currentHp-overlay.displayHp)/4*delta60)
 	} else if overlay.displayHp > currentHp {
-		overlay.displayHp = math.Max(0.0, overlay.displayHp-math.Abs(overlay.displayHp-currentHp)/6*float64(time-overlay.lastTime)/16.667)
+		overlay.displayHp = math.Max(0.0, overlay.displayHp-math.Abs(overlay.displayHp-currentHp)/6*delta60)
 	}
 
 	overlay.healthBar.SetCutX(1.0 - overlay.displayHp)
 
-	overlay.results.Update(float64(time))
+	if math.Abs(overlay.displayScore-float64(overlay.currentScore)) < 0.5 {
+		overlay.displayScore = float64(overlay.currentScore)
+	} else {
+		overlay.displayScore = float64(overlay.currentScore) + (overlay.displayScore-float64(overlay.currentScore))*math.Pow(0.75, delta60)
+	}
 
-	overlay.hitErrorMeter.Update(float64(time))
+	overlay.results.Update(time)
+
+	overlay.hitErrorMeter.Update(time)
 
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
 
@@ -403,21 +387,21 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 		if !overlay.keyStates[i] && state {
 			key := overlay.keys[i]
+
 			key.ClearTransformationsOfType(animation.Scale)
-			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(time), float64(time+100), 1.0, 0.8))
+			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, time, time+100, 1.0, 0.8))
+			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, time, time+100, color2.Color{R: 1, G: 1, B: 1, A: 1}, color))
 
-			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(time), float64(time+100), color2.Color{R: 1, G: 1, B: 1, A: 1}, color))
-
-			overlay.lastPresses[i] = float64(time + 100)
+			overlay.lastPresses[i] = time + 100
 			overlay.keyCounters[i]++
 		}
 
 		if overlay.keyStates[i] && !state {
 			key := overlay.keys[i]
 			key.ClearTransformationsOfType(animation.Scale)
-			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, math.Max(float64(time), overlay.lastPresses[i]), float64(time+100), key.GetScale().Y, 1.0))
+			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, math.Max(time, overlay.lastPresses[i]), time+100, key.GetScale().Y, 1.0))
 
-			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(time), float64(time+100), color, color2.Color{R: 1, G: 1, B: 1, A: 1}))
+			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, time, time+100, color, color2.Color{R: 1, G: 1, B: 1, A: 1}))
 		}
 
 		overlay.keyStates[i] = state
@@ -425,7 +409,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	overlay.mods.Update(time)
 	overlay.keyOverlay.Update(time)
-	overlay.bgDim.Update(float64(time))
+	overlay.bgDim.Update(time)
 	overlay.healthBackground.Update(time)
 	overlay.healthBar.Update(time)
 
@@ -440,11 +424,11 @@ func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius), float32(alpha*overlay.bgDim.GetValue()))
 }
 
-func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
 	scale := overlay.ruleset.GetBeatMap().Diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
 
@@ -471,7 +455,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, colors []color2.
 	batch.SetCamera(prev)
 }
 
-func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.ResetTransform()
@@ -498,7 +482,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
 		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 * scoreScale + rightOffset
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4*scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
@@ -565,7 +549,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4 * scoreScale + rightOffset
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4*scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
@@ -582,7 +566,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		batch.ResetTransform()
 		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
-		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
+		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.displayScore)))
 		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText)+skin.GetInfo().ScoreOverlap, fntSize/2, fntSize, scoreText)
 
 		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
@@ -681,7 +665,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 	batch.SetCamera(prev)
 }
 
-func (overlay *ScoreOverlay) IsBroken(cursor *graphics.Cursor) bool {
+func (overlay *ScoreOverlay) IsBroken(_ *graphics.Cursor) bool {
 	return false
 }
 
