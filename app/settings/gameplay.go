@@ -32,6 +32,7 @@ func initGameplay() *gameplay {
 			},
 			XPosition: 5,
 			YPosition: 150,
+			Align: "CentreLeft",
 		},
 		KeyOverlay: &hudElement{
 			Show:    true,
@@ -101,4 +102,5 @@ type ppCounter struct {
 	*hudElement
 	XPosition float64
 	YPosition float64
+	Align     string
 }

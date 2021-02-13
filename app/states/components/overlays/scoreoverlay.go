@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
+	"github.com/wieku/danser-go/app/storyboard"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/shape"
@@ -619,7 +620,12 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Col
 		batch.SetScale(1, -1)
 		batch.SetSubScale(1, 1)
 
-		overlay.font.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition, 40*ppScale, fmt.Sprintf("%0.2fpp", overlay.ppGlider.GetValue()))
+		ppText := fmt.Sprintf("%.0fpp", overlay.ppGlider.GetValue())
+
+		width := overlay.font.GetWidthMonospaced(40*ppScale, ppText)
+		align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))
+
+		overlay.font.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
 	}
 
 	//endregion
