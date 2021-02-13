@@ -70,8 +70,11 @@ func checkInit() {
 		var err error
 		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
 		if err != nil {
-			log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
-			fallback()
+			info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "Skin.ini"))
+			if err != nil {
+				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
+				fallback()
+			}
 		}
 	}
 
