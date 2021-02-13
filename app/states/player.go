@@ -177,13 +177,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.overlay = overlays.NewScoreOverlay(player.controller.(*dance.PlayerController).GetRuleset(), player.controller.GetCursors()[0])
 	} else if settings.KNOCKOUT {
 		controller := dance.NewReplayController()
-		log.Println("rc")
 		player.controller = controller
-		player.controller.SetBeatMap(player.bMap)
-		log.Println("bs")
-		player.controller.InitCursors()
 
-		log.Println("cinit")
+		player.controller.SetBeatMap(player.bMap)
+		player.controller.InitCursors()
 
 		if settings.PLAYERS == 1 {
 			player.overlay = overlays.NewScoreOverlay(player.controller.(*dance.ReplayController).GetRuleset(), player.controller.GetCursors()[0])
