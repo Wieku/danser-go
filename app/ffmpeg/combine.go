@@ -13,8 +13,8 @@ func Combine() {
 	log.Println("Starting composing audio and video into one file...")
 	cmd2 := exec.Command("ffmpeg",
 		"-y",
-		"-i", filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container),
-		"-i", filepath.Join(settings.Recording.OutputDir, "audio.wav"),
+		"-i", filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container),
+		"-i", filepath.Join(settings.Recording.OutputDir, filename+".wav"),
 		"-c:v", "copy",
 		"-c:a", "aac",
 		"-ab", "320k",
@@ -25,8 +25,8 @@ func Combine() {
 
 	log.Println("Finished! Cleaning up...")
 
-	os.Remove(filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container))
-	os.Remove(filepath.Join(settings.Recording.OutputDir, "audio.wav"))
+	os.Remove(filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container))
+	os.Remove(filepath.Join(settings.Recording.OutputDir, filename+".wav"))
 
 	log.Println("Finished.")
 }

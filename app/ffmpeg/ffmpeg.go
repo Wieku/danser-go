@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -8,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +20,8 @@ import (
 )
 
 const MaxBuffers = 10
+
+var filename string
 
 var cmd *exec.Cmd
 var pipe io.WriteCloser
@@ -63,6 +67,11 @@ func StartFFmpeg(fps, _w, _h int) {
 		panic(err)
 	}
 
+	b := make([]byte, 16)
+	rand.Read(b)
+
+	filename = hex.EncodeToString(b)
+
 	split := strings.Split(settings.Recording.EncoderOptions, " ")
 
 	filters := strings.TrimSpace(settings.Recording.Filters)
@@ -91,7 +100,7 @@ func StartFFmpeg(fps, _w, _h int) {
 	}
 
 	options = append(options, split...)
-	options = append(options, filepath.Join(settings.Recording.OutputDir, "video."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -245,4 +254,8 @@ func CheckData() {
 
 		return
 	}
+}
+
+func GetFileName() string {
+	return filename
 }

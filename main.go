@@ -465,7 +465,7 @@ func run() {
 			ffmpeg.StopFFmpeg()
 		})
 
-		bass.SaveToFile()
+		bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
 		ffmpeg.Combine()
 	} else {
 		for !win.ShouldClose() {

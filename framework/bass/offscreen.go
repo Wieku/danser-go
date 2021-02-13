@@ -20,10 +20,7 @@ static inline void SetSync(HSTREAM stream, QWORD pos, int eNum) {
 */
 import "C"
 import (
-	"github.com/wieku/danser-go/app/settings"
 	"log"
-	"os"
-	"path/filepath"
 	"unsafe"
 )
 
@@ -58,7 +55,7 @@ func addDelayedEvent(delay float64, delegate func()) {
 	})
 }
 
-func SaveToFile() {
+func SaveToFile(file string) {
 	mixStream = C.BASS_Mixer_StreamCreate(44100, 2, C.BASS_STREAM_DECODE|C.BASS_MIXER_END)
 
 	log.Println("Mixer stream created, adding events for processing...")
@@ -81,12 +78,7 @@ func SaveToFile() {
 
 	log.Println("Events added, starting encoding...")
 
-	err := os.MkdirAll(settings.Recording.OutputDir, 0655)
-	if err != nil && !os.IsExist(err) {
-		panic(err)
-	}
-
-	C.BASS_Encode_Start(mixStream, C.CString(filepath.Join(settings.Recording.OutputDir, "audio.wav")), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
+	C.BASS_Encode_Start(mixStream, C.CString(file), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
 
 	// TODO: test if buffer length affects latency
 	buffer := make([]byte, 512)
