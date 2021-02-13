@@ -201,13 +201,13 @@ func (wv *Track) SetTempo(tempo float64) {
 
 func (wv *Track) SetPitch(tempo float64) {
 	if !Offscreen {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*12))
+		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*12))
+		C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
 	})
 }
 
