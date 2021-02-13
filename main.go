@@ -64,6 +64,8 @@ var screenFBO *buffer.Framebuffer
 var lastSamples int
 var lastVSync bool
 
+var output string
+
 func run() {
 
 	mainthread.Call(func() {
@@ -104,7 +106,14 @@ func run() {
 
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
+		out := flag.String("out", "", "Overrides -record flag. Specifies the name of recorded video file, extension is managed by settings")
+
 		flag.Parse()
+
+		if *out != "" {
+			*record = true
+			output = *out
+		}
 
 		incompatibleMods := difficulty2.Relax | difficulty2.Relax2
 
@@ -466,7 +475,8 @@ func run() {
 		})
 
 		bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
-		ffmpeg.Combine()
+
+		ffmpeg.Combine(output)
 	} else {
 		for !win.ShouldClose() {
 			mainthread.Call(func() {

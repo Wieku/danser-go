@@ -6,10 +6,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
-func Combine() {
+func Combine(output string) {
+
+	if strings.TrimSpace(output) == "" {
+		output = "danser_"+time.Now().Format("2006-01-02_15-04-05")
+	}
+
 	log.Println("Starting composing audio and video into one file...")
 	cmd2 := exec.Command("ffmpeg",
 		"-y",
@@ -18,7 +24,7 @@ func Combine() {
 		"-c:v", "copy",
 		"-c:a", "aac",
 		"-ab", "320k",
-		filepath.Join(settings.Recording.OutputDir, "danser_"+time.Now().Format("2006-01-02_15-04-05")+"."+settings.Recording.Container),
+		filepath.Join(settings.Recording.OutputDir, output+"."+settings.Recording.Container),
 	)
 	cmd2.Start()
 	cmd2.Wait()
