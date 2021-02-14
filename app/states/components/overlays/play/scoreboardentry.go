@@ -66,7 +66,7 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 
 func (entry *ScoreboardEntry) UpdateData() {
 	entry.scoreHumanized = humanize(entry.score)
-	entry.comboHumanized = fmt.Sprintf("%dx", entry.combo)
+	entry.comboHumanized = humanize(entry.combo)+"x"
 	entry.rankHumanized = fmt.Sprintf("%d", entry.rank)
 }
 
