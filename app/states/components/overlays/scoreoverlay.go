@@ -482,7 +482,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
 		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4*scoreScale + rightOffset
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap * fntSize*0.6 / overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
@@ -549,7 +549,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") - 38.4*scoreScale + rightOffset
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap * fntSize*0.6 / overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
@@ -567,18 +567,12 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
 		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.displayScore)))
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText)+skin.GetInfo().ScoreOverlap, fntSize/2, fntSize, scoreText)
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
 
 		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
 
-		var accText string
-		if acc == 100 {
-			accText = fmt.Sprintf("%5.1f%%", acc)
-		} else {
-			accText = fmt.Sprintf("%5.2f%%", acc)
-		}
-
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, accText)+skin.GetInfo().ScoreOverlap*0.6, fntSize+vAccOffset+fntSize*0.6/2, fntSize*0.6, accText)
+		accText := fmt.Sprintf("%5.2f%%", acc)
+		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, accText), fntSize+vAccOffset+fntSize*0.6/2, fntSize*0.6, accText)
 
 		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
 			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
