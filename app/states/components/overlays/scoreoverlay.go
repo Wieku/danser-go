@@ -529,14 +529,13 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 
 	if comboAlpha := settings.Gameplay.ComboCounter.Opacity; comboAlpha > 0.001 && settings.Gameplay.ComboCounter.Show {
 		cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
-
-		batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
-
 		shiftL := overlay.comboSlide.GetValue() * overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
 
-		overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScaleB.GetValue()/2, cmbSize*overlay.newComboScaleB.GetValue(), fmt.Sprintf("%dx", overlay.newCombo))
+		batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
+		overlay.scoreFont.DrawOrigin(batch, shiftL, overlay.ScaledHeight, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScaleB.GetValue(), true, fmt.Sprintf("%dx", overlay.newCombo))
+
 		batch.SetColor(1, 1, 1, alpha*comboAlpha)
-		overlay.comboFont.Draw(batch, shiftL, overlay.ScaledHeight-cmbSize*overlay.newComboScale.GetValue()/2, cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
+		overlay.scoreFont.DrawOrigin(batch, shiftL, overlay.ScaledHeight, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), true, fmt.Sprintf("%dx", overlay.combo))
 	}
 
 	//endregion
@@ -567,12 +566,13 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
 
 		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.displayScore)))
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
+		//overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
+		overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset, 0, bmath.Origin.TopRight, fntSize, true, scoreText)
 
 		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
 
 		accText := fmt.Sprintf("%5.2f%%", acc)
-		overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, accText), fntSize+vAccOffset+fntSize*0.6/2, fntSize*0.6, accText)
+		overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset, fntSize+vAccOffset, bmath.Origin.TopRight, fntSize*0.6, true, accText)
 
 		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
 			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
@@ -646,7 +646,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 				siz := scale * overlay.scoreEFont.GetSize()
 				batch.SetScale(1, 1)
 				overlay.scoreEFont.Overlap = 1.6
-				overlay.scoreEFont.DrawCentered(batch, posX, posY, siz, text)
+				overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, siz, false, text)
 			}
 		}
 	}

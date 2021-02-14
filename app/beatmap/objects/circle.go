@@ -308,7 +308,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 				fnt := skin.GetFont("default")
 				batch.SetColor(1, 1, 1, alpha*circle.textFade.GetValue())
-				fnt.DrawCentered(batch, position.X64(), position.Y64(), 0.8*fnt.GetSize(), strconv.Itoa(int(circle.ComboNumber)))
+				fnt.DrawOriginV(batch, position.Copy64(), bmath.Origin.Centre, 0.8*fnt.GetSize(), false, strconv.Itoa(int(circle.ComboNumber)))
 			}
 		} else if !circle.SliderPointEnd {
 			circle.reverseArrow.SetRotation(circle.ArrowRotation)

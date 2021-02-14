@@ -68,7 +68,7 @@ func LoadTextureFontMap2(chars map[rune]*texture.TextureRegion, overlap float64)
 
 		font.initialSize = math.Max(font.initialSize, float64(r.Height))
 
-		font.glyphs[c] = &glyphData{r, float64(r.Width), 0, float64(r.Height) / 2}
+		font.glyphs[c] = &glyphData{r, float64(r.Width), 0, 0}
 	}
 
 	setMeasures(font)
@@ -80,9 +80,5 @@ func setMeasures(font *Font) {
 	if glyph, exists := font.glyphs['5']; exists {
 		font.biggest = glyph.advance
 		font.initialSize = float64(glyph.region.Height)
-	}
-
-	for _, d := range font.glyphs {
-		d.bearingY = font.initialSize / 2
 	}
 }

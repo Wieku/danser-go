@@ -247,3 +247,14 @@ func (font *Font) GetWidthMonospaced(size float64, text string) float64 {
 func (font *Font) GetSize() float64 {
 	return font.initialSize
 }
+
+func (font *Font) DrawOrigin(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, monospaced bool, text string) {
+	width := font.getWidthInternal(size, text, monospaced)
+	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -size/2)).Mult(renderer.GetScale())
+
+	font.drawInternal(renderer, x+align.X, y+align.Y, size, text, monospaced)
+}
+
+func (font *Font) DrawOriginV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size float64, monospaced bool, text string) {
+	font.DrawOrigin(renderer, position.X, position.Y, origin, size, monospaced, text)
+}

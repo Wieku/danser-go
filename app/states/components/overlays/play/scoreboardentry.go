@@ -88,19 +88,19 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawMonospaced(batch, entryPos.X-padding+3.2, entryPos.Y+16, fnt.GetSize(), entry.scoreHumanized)
+	fnt.DrawOrigin(batch, entryPos.X-padding+3.2, entryPos.Y+8.8, bmath.Origin.TopLeft, fnt.GetSize(), true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawMonospaced(batch, entryPos.X-10-fnt.GetWidthMonospaced(fnt.GetSize()*2.2, entry.rankHumanized), entryPos.Y-8, fnt.GetSize()*2.2, entry.rankHumanized)
+		fnt.DrawOrigin(batch, entryPos.X-10, entryPos.Y-22, bmath.Origin.TopRight, fnt.GetSize()*2.2, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawMonospaced(batch, entryPos.X-10-fnt.GetWidthMonospaced(fnt.GetSize(), entry.comboHumanized), entryPos.Y+16, fnt.GetSize(), entry.comboHumanized)
+	fnt.DrawOrigin(batch, entryPos.X-10, entryPos.Y+8.8, bmath.Origin.TopRight, fnt.GetSize(), true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5

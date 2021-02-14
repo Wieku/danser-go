@@ -256,7 +256,7 @@ func (spinner *Spinner) Draw(time float64, _ color2.Color, batch *batch.QuadBatc
 	if spinner.bonusFade.GetValue() > 0.01 {
 		batch.SetColor(1.0, 1.0, 1.0, spinner.bonusFade.GetValue())
 
-		scoreFont.DrawCentered(batch, 256, 192+80, spinner.bonusScale.GetValue()*scoreFont.GetSize()*0.8, strconv.Itoa(spinner.bonus))
+		scoreFont.DrawOrigin(batch, 256, 192+80, bmath.Origin.Centre, spinner.bonusScale.GetValue()*scoreFont.GetSize()*0.8, false, strconv.Itoa(spinner.bonus))
 	}
 
 	batch.ResetTransform()
@@ -273,7 +273,7 @@ func (spinner *Spinner) Draw(time float64, _ color2.Color, batch *batch.QuadBatc
 	spinner.rpmBg.Draw(time, batch)
 
 	rpmTxt := fmt.Sprintf("%d", int(spinner.rpm))
-	scoreFont.Draw(batch, spinner.ScaledWidth/2+139-scoreFont.GetWidth(scoreFont.GetSize(), rpmTxt), spinner.ScaledHeight-56+scoreFont.GetSize()/2, scoreFont.GetSize(), rpmTxt)
+	scoreFont.DrawOrigin(batch, spinner.ScaledWidth/2+139, spinner.ScaledHeight-56, bmath.Origin.TopRight, scoreFont.GetSize(), false, rpmTxt)
 
 	batch.SetCamera(oldCamera)
 	batch.ResetTransform()
