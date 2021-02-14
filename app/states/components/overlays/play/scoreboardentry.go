@@ -3,9 +3,9 @@ package play
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/bmath"
-	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"

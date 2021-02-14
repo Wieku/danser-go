@@ -3,10 +3,10 @@ package skin
 import (
 	"fmt"
 	"github.com/faiface/mainthread"
-	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
 	"path/filepath"
