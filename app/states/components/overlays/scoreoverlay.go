@@ -293,17 +293,17 @@ func (overlay *ScoreOverlay) Update(time float64) {
 			mod.SetAlpha(0)
 			mod.ShowForever(true)
 
-			timeStart := time + float64(i)*500*settings.SPEED
+			timeStart := time + float64(i)*500
 
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400*settings.SPEED, 0.0, 1.0))
-			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400*settings.SPEED, 2, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2, 1.0))
 
 			if overlay.cursor.Name == "" {
 				startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000*settings.SPEED, 1.0, 0))
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0, 0))
 
 				endT := overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500*settings.SPEED, 0.0, 1.0))
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500, 0.0, 1.0))
 
 				offset -= 16
 			} else {
@@ -312,6 +312,22 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 			overlay.mods.Add(mod)
 		}
+	}
+
+	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
+		if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+			start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
+			if start-time > 4000 {
+				overlay.music.SetPosition((start - 2000) / 1000)
+			}
+		}
+	}
+
+	overlay.results.Update(time)
+	overlay.hitErrorMeter.Update(time)
+
+	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+		time /= settings.SPEED
 	}
 
 	if overlay.flashlight != nil && time >= 0 {
@@ -331,20 +347,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		overlay.flashlight.SetSliding(sliding)
 	}
 
-	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
-		if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
-			start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-			if start-time > 4000 {
-				overlay.music.SetPosition((start - 2000) / 1000)
-			}
-		}
-	}
-
-	overlay.results.Update(time)
-	overlay.hitErrorMeter.Update(time)
 	overlay.mods.Update(time)
-
-	time /= settings.SPEED
 
 	overlay.newComboScale.Update(time)
 	overlay.newComboScaleB.Update(time)
