@@ -14,7 +14,7 @@ import (
 	"math"
 )
 
-const errorBaseScale = 1.5
+const errorBase = 4.8
 
 var colors = []color2.Color{{0.2, 0.8, 1, 1}, {0.44, 0.98, 0.18, 1}, {0.85, 0.68, 0.27, 1}}
 
@@ -39,18 +39,18 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	meter.errorDisplay = sprite.NewSpriteManager()
 	meter.errorDisplayFade = animation.NewGlider(0.0)
 
-	sum := meter.diff.Hit50
+	sum := float64(meter.diff.Hit50) * 0.8
 
-	scale := errorBaseScale * settings.Gameplay.HitErrorMeter.Scale
+	scale := settings.Gameplay.HitErrorMeter.Scale
 
 	pixel := graphics.Pixel.GetRegion()
-	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-10*scale), bmath.Origin.Centre)
-	bg.SetScaleV(vector.NewVec2d(float64(sum)*2*scale, 20*scale))
-	bg.SetColor(color2.Color{0, 0, 0, 1})
-	bg.SetAlpha(0.8)
+	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), bmath.Origin.Centre)
+	bg.SetScaleV(vector.NewVec2d(sum*2, errorBase*4).Scl(scale))
+	bg.SetColor(color2.NewL(0))
+	bg.SetAlpha(0.6)
 	meter.errorDisplay.Add(bg)
 
-	vals := []float64{float64(meter.diff.Hit300), float64(meter.diff.Hit100), float64(meter.diff.Hit50)}
+	vals := []float64{float64(meter.diff.Hit300)*0.8, float64(meter.diff.Hit100)*0.8, float64(meter.diff.Hit50)*0.8}
 
 	for i, v := range vals {
 		pos := 0.0
@@ -61,30 +61,27 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 			width -= vals[i-1]
 		}
 
-		left := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2-pos*scale, meter.Height-10*scale), bmath.Origin.CentreRight)
-		left.SetScaleV(vector.NewVec2d(width*scale, 4*scale))
+		left := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2-pos*scale, meter.Height-errorBase*2*scale), bmath.Origin.CentreRight)
+		left.SetScaleV(vector.NewVec2d(width, errorBase).Scl(scale))
 		left.SetColor(colors[i])
-		left.SetAlpha(0.8)
 
 		meter.errorDisplay.Add(left)
 
-		right := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2+pos*scale, meter.Height-10*scale), bmath.Origin.CentreLeft)
-		right.SetScaleV(vector.NewVec2d(width*scale, 4*scale))
+		right := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2+pos*scale, meter.Height-errorBase*2*scale), bmath.Origin.CentreLeft)
+		right.SetScaleV(vector.NewVec2d(width, errorBase).Scl(scale))
 		right.SetColor(colors[i])
-		right.SetAlpha(0.8)
 
 		meter.errorDisplay.Add(right)
 	}
 
-	middle := sprite.NewSpriteSingle(&pixel, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-10*scale), bmath.Origin.Centre)
-	middle.SetScaleV(vector.NewVec2d(2*scale, 20*scale))
-	middle.SetAlpha(0.8)
+	middle := sprite.NewSpriteSingle(&pixel, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), bmath.Origin.Centre)
+	middle.SetScaleV(vector.NewVec2d(2, errorBase*4).Scl(scale))
 
 	meter.errorDisplay.Add(middle)
 
-	meter.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-12*scale), bmath.Origin.BottomCentre)
-	meter.triangle.SetScaleV(vector.NewVec2d(scale/8, scale/8))
-	meter.triangle.SetAlpha(0.8)
+	meter.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2.5*scale), bmath.Origin.BottomCentre)
+	meter.triangle.SetScaleV(vector.NewVec2d(scale/6, scale/6))
+	meter.triangle.SetAlpha(1)
 
 	meter.errorDisplay.Add(meter.triangle)
 
@@ -94,12 +91,12 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 func (meter *HitErrorMeter) Add(time, error float64) {
 	errorA := int64(math.Abs(error))
 
-	scale := settings.Gameplay.HitErrorMeter.Scale * errorBaseScale
+	scale := settings.Gameplay.HitErrorMeter.Scale
 
 	pixel := graphics.Pixel.GetRegion()
 
-	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+error*scale, meter.Height-10*scale), bmath.Origin.Centre)
-	middle.SetScaleV(vector.NewVec2d(1.5, 20).Scl(scale))
+	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+error*0.8*scale, meter.Height-errorBase*2*scale), bmath.Origin.Centre)
+	middle.SetScaleV(vector.NewVec2d(3, errorBase*4).Scl(scale))
 	middle.SetAdditive(true)
 
 	var col color2.Color
@@ -119,7 +116,7 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 	meter.errorDisplay.Add(middle)
 
-	meter.errorCurrent = meter.errorCurrent*0.8 + error*0.2
+	meter.errorCurrent = meter.errorCurrent*0.8 + error*0.8*0.2
 
 	meter.triangle.ClearTransformations()
 	meter.triangle.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.OutQuad, time, time+800, meter.triangle.GetPosition().X, meter.Width/2+meter.errorCurrent*scale))
