@@ -344,6 +344,11 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	frames = append(frames[:maniaFrameIndex], frames[maniaFrameIndex+1:]...)
 
+	// Hope this won't explode
+	if frames[0].Time < 0 {
+		frames = frames[1:]
+	}
+
 	subController.frames = frames
 }
 
