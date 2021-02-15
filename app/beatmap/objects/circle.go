@@ -200,12 +200,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	if !diff.CheckModActive(difficulty.Hidden) || circle.HitObjectID == 0 {
 		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
-
-		if diff.CheckModActive(difficulty.Hidden) {
-			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 0.9, 0.0))
-		} else {
-			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
-		}
+		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
 
 		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, endTime, 4.0, 1.0))
 	}
@@ -221,7 +216,7 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 	circle.hitCircleOverlay.ClearTransformations()
 	circle.textFade.Reset()
 
-	startTime := float64(time)
+	startTime := time
 
 	circle.approachCircle.ClearTransformations()
 	circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
