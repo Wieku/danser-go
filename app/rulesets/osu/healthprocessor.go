@@ -89,7 +89,11 @@ func (hp *HealthProcessor) CalculateRate() {
 				pause := hp.beatMap.Pauses[breakNumber]
 				if pause.GetStartTime() >= float64(localLastTime) && pause.GetEndTime() <= o.GetStartTime() {
 					//TODO: calculations for beatmap version < 8
-					breakTime = int64(pause.GetEndTime()) - localLastTime
+					if hp.beatMap.Version < 8 {
+						breakTime = int64(pause.GetEndTime()) - int64(pause.GetStartTime())
+					} else {
+						breakTime = int64(pause.GetEndTime()) - localLastTime
+					}
 					breakNumber++
 				}
 			}
@@ -171,6 +175,10 @@ func (hp *HealthProcessor) CalculateRate() {
 			pause := hp.beatMap.Pauses[breakNumber]
 			if pause.GetStartTime() >= float64(lastDrainEnd) && pause.GetEndTime() <= o.GetStartTime() {
 				breakNumber++
+
+				if hp.beatMap.Version < 8 {
+					lastDrainEnd = int64(pause.GetStartTime())
+				}
 
 				hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
 
