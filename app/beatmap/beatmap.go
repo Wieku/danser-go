@@ -49,6 +49,7 @@ type BeatMap struct {
 	HitObjects []objects.IHitObject
 	Pauses     []*Pause
 	Queue      []objects.IHitObject
+	Version    int
 }
 
 func NewBeatMap() *BeatMap {

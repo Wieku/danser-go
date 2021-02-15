@@ -278,6 +278,11 @@ func ParseObjects(beatMap *BeatMap) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
+		if strings.HasPrefix(line, "osu file format v") {
+			trim := strings.TrimPrefix(line, "osu file format v")
+			beatMap.Version, _ = strconv.Atoi(trim)
+		}
+
 		section := getSection(line)
 		if section != "" {
 			currentSection = section

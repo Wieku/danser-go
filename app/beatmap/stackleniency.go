@@ -9,6 +9,8 @@ import (
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
 
+const stackDistance = 3.0
+
 func isSpinner(obj objects.IHitObject) bool {
 	_, ok2 := obj.(*objects.Spinner)
 	return ok2
@@ -31,17 +33,16 @@ func calculateStackLeniency(b *BeatMap) {
 	diffEZ.SetMods(difficulty.Easy)
 	diffHR.SetMods(difficulty.HardRock)
 
-	processStacking(b.HitObjects, diffNM, b.StackLeniency)
-	processStacking(b.HitObjects, diffEZ, b.StackLeniency)
-	processStacking(b.HitObjects, diffHR, b.StackLeniency)
+	processStacking(b.HitObjects, b.Version, diffNM, b.StackLeniency)
+	processStacking(b.HitObjects, b.Version, diffEZ, b.StackLeniency)
+	processStacking(b.HitObjects, b.Version, diffHR, b.StackLeniency)
 
 	for _, v := range b.HitObjects {
 		v.UpdateStacking()
 	}
 }
 
-func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficulty, stackLeniency float64) {
-	stack_distance := float32(3.0)
+func processStacking(hitObjects []objects.IHitObject, version int, diff *difficulty.Difficulty, stackLeniency float64) {
 	stackThreshold := math.Floor(diff.Preempt * stackLeniency)
 	modifiers := diff.Mods
 
@@ -49,6 +50,18 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 		v.SetStackIndex(0, diff.Mods)
 	}
 
+	if version >= 6 {
+		applyNewStacking(hitObjects, modifiers, stackThreshold)
+	} else {
+		applyOldStacking(hitObjects, modifiers, stackThreshold)
+	}
+
+	for _, v := range hitObjects {
+		v.SetStackOffset(-float32(v.GetStackIndex(modifiers)) * float32(diff.CircleRadius) / 10, modifiers)
+	}
+}
+
+func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modifier, stackThreshold float64) {
 	extendedEndIndex := len(hitObjects) - 1
 	for i := len(hitObjects) - 1; i >= 0; i-- {
 		stackBaseIndex := i
@@ -69,7 +82,7 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 				break
 			}
 
-			if stackIHitObject.GetStartPosition().Dst(objectN.GetStartPosition()) < stack_distance || isSlider(stackIHitObject) && stackIHitObject.GetEndPosition().Dst(objectN.GetStartPosition()) < stack_distance {
+			if stackIHitObject.GetStartPosition().Dst(objectN.GetStartPosition()) < stackDistance || isSlider(stackIHitObject) && stackIHitObject.GetEndPosition().Dst(objectN.GetStartPosition()) < stackDistance {
 				stackBaseIndex = n
 				objectN.SetStackIndex(0, modifiers)
 			}
@@ -111,11 +124,11 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 					extendedStartIndex = n
 				}
 
-				if isSlider(objectN) && objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stack_distance {
+				if isSlider(objectN) && objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stackDistance {
 					offset := objectI.GetStackIndex(modifiers) - objectN.GetStackIndex(modifiers) + 1
 					for j := n + 1; j <= i; j++ {
 						objectJ := hitObjects[j]
-						if objectN.GetEndPosition().Dst(objectJ.GetStartPosition()) < stack_distance {
+						if objectN.GetEndPosition().Dst(objectJ.GetStartPosition()) < stackDistance {
 							objectJ.SetStackIndex(objectJ.GetStackIndex(modifiers) - offset, modifiers)
 						}
 					}
@@ -123,11 +136,10 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 					break
 				}
 
-				if objectN.GetStartPosition().Dst(objectI.GetStartPosition()) < stack_distance {
+				if objectN.GetStartPosition().Dst(objectI.GetStartPosition()) < stackDistance {
 					objectN.SetStackIndex(objectI.GetStackIndex(modifiers) + 1, modifiers)
 					objectI = objectN
 				}
-
 			}
 		} else if isSlider(objectI) {
 
@@ -142,16 +154,41 @@ func processStacking(hitObjects []objects.IHitObject, diff *difficulty.Difficult
 					break
 				}
 
-				if objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stack_distance {
+				if objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stackDistance {
 					objectN.SetStackIndex(objectI.GetStackIndex(modifiers) + 1, modifiers)
 					objectI = objectN
 				}
 
 			}
 		}
+	}
+}
 
-		for _, v := range hitObjects {
-			v.SetStackOffset(-float32(v.GetStackIndex(modifiers)) * float32(diff.CircleRadius) / 10, modifiers)
+func applyOldStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modifier, stackThreshold float64) {
+	for i := 0; i < len(hitObjects); i++ {
+		objectI := hitObjects[i]
+
+		startTime := objectI.GetEndTime()
+
+		if objectI.GetStackIndex(modifiers) == 0 || isSlider(objectI) {
+			sliderStack := int64(0)
+
+			for n := i+1; n < len(hitObjects); n++ {
+				objectN := hitObjects[n]
+
+				if objectN.GetStartTime() - stackThreshold > startTime {
+					break
+				}
+
+				if objectN.GetStartPosition().Dst(objectI.GetStartPosition()) < stackDistance {
+					objectI.SetStackIndex(objectI.GetStackIndex(modifiers) + 1, modifiers)
+					startTime = objectN.GetEndTime()
+				} else if objectN.GetStartPosition().Dst(objectI.GetEndPosition()) < stackDistance {
+					sliderStack++
+					objectN.SetStackIndex(objectN.GetStackIndex(modifiers) - sliderStack, modifiers)
+					startTime = objectN.GetEndTime()
+				}
+			}
 		}
 	}
 }
