@@ -54,6 +54,9 @@ type ScoreOverlay struct {
 	currentScore int64
 	displayScore float64
 
+	currentAccuracy float64
+	displayAccuracy float64
+
 	ppGlider   *animation.Glider
 	ruleset    *osu.OsuRuleSet
 	cursor     *graphics.Cursor
@@ -188,7 +191,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.flashlight.UpdateCombo(overlay.newCombo)
 		}
 
-		_, mCombo, score, _ := overlay.ruleset.GetResults(overlay.cursor)
+		accuracy, mCombo, score, _ := overlay.ruleset.GetResults(overlay.cursor)
 
 		overlay.entry.UpdatePlayer(score, mCombo)
 
@@ -196,6 +199,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.ppGlider.AddEvent(float64(time), float64(time+500), pp)
 
 		overlay.currentScore = score
+		overlay.currentAccuracy = accuracy
 	})
 
 	overlay.ScaledHeight = 768
@@ -371,6 +375,12 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		overlay.displayScore = float64(overlay.currentScore)
 	} else {
 		overlay.displayScore = float64(overlay.currentScore) + (overlay.displayScore-float64(overlay.currentScore))*math.Pow(0.75, delta60)
+	}
+
+	if math.Abs(overlay.displayAccuracy-overlay.currentAccuracy) < 0.005 {
+		overlay.displayAccuracy = overlay.currentAccuracy
+	} else {
+		overlay.displayAccuracy = overlay.currentAccuracy + (overlay.displayAccuracy-overlay.currentAccuracy)*math.Pow(0.5, delta60)
 	}
 
 	overlay.results.Update(time)
@@ -569,9 +579,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		//overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
 		overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset, 0, bmath.Origin.TopRight, fntSize, true, scoreText)
 
-		acc, _, _, _ := overlay.ruleset.GetResults(overlay.cursor)
-
-		accText := fmt.Sprintf("%5.2f%%", acc)
+		accText := fmt.Sprintf("%5.2f%%", overlay.displayAccuracy)
 		overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset, fntSize+vAccOffset, bmath.Origin.TopRight, fntSize*0.6, true, accText)
 
 		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
