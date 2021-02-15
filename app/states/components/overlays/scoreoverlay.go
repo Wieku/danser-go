@@ -114,9 +114,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.comboSlide = animation.NewGlider(0)
 	overlay.comboSlide.SetEasing(easing.OutQuad)
 
-	overlay.newComboScale = animation.NewGlider(1)
-	overlay.newComboScaleB = animation.NewGlider(1)
-	overlay.newComboFadeB = animation.NewGlider(1)
+	overlay.newComboScale = animation.NewGlider(1.28)
+	overlay.newComboScaleB = animation.NewGlider(1.28)
+	overlay.newComboFadeB = animation.NewGlider(0)
 
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.ppGlider.SetEasing(easing.OutQuint)
@@ -170,7 +170,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 		if comboResult == osu.ComboResults.Increase {
 			overlay.newComboScaleB.Reset()
-			overlay.newComboScaleB.AddEventS(float64(time), float64(time+300), 1.7, 1.1)
+			overlay.newComboScaleB.AddEventS(float64(time), float64(time+300), 2, 1.28)
 
 			overlay.newComboFadeB.Reset()
 			overlay.newComboFadeB.AddEventS(float64(time), float64(time+300), 0.6, 0.0)
@@ -272,8 +272,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 func (overlay *ScoreOverlay) animate(time float64) {
 	overlay.newComboScale.Reset()
-	overlay.newComboScale.AddEventSEase(time, time+50, 1.0, 1.2, easing.InQuad)
-	overlay.newComboScale.AddEventSEase(time+50, time+100, 1.2, 1.0, easing.OutQuad)
+	overlay.newComboScale.AddEventSEase(time, time+50, 1.28, 1.4, easing.InQuad)
+	overlay.newComboScale.AddEventSEase(time+50, time+100, 1.4, 1.28, easing.OutQuad)
 }
 
 func (overlay *ScoreOverlay) Update(time float64) {
@@ -492,7 +492,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 
 		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap * fntSize*0.6 / overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap*fntSize*0.6/overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
@@ -539,13 +539,19 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 
 	if comboAlpha := settings.Gameplay.ComboCounter.Opacity; comboAlpha > 0.001 && settings.Gameplay.ComboCounter.Show {
 		cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
-		shiftL := overlay.comboSlide.GetValue() * overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo))
+		posX := overlay.comboSlide.GetValue()*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
+		posY := overlay.ScaledHeight - 12.8
+		origY := overlay.comboFont.GetSize()*0.375 - 9
+
+		batch.SetAdditive(true)
 
 		batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
-		overlay.scoreFont.DrawOrigin(batch, shiftL, overlay.ScaledHeight, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScaleB.GetValue(), true, fmt.Sprintf("%dx", overlay.newCombo))
+		overlay.comboFont.DrawOrigin(batch, posX-2.4*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, posY+origY*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScaleB.GetValue(), false, fmt.Sprintf("%dx", overlay.newCombo))
+
+		batch.SetAdditive(false)
 
 		batch.SetColor(1, 1, 1, alpha*comboAlpha)
-		overlay.scoreFont.DrawOrigin(batch, shiftL, overlay.ScaledHeight, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), true, fmt.Sprintf("%dx", overlay.combo))
+		overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
 	}
 
 	//endregion
@@ -558,7 +564,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		scoreScale := settings.Gameplay.Score.Scale
 		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
 		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap * fntSize*0.6 / overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
+		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap*fntSize*0.6/overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
 		vAccOffset := 4.8
 
 		if settings.Gameplay.ProgressBar == "Pie" {
