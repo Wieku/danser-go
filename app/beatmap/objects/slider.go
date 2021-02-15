@@ -364,12 +364,12 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.bodyFade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-difficulty.HitFadeIn), 1)
 
 	if diff.CheckModActive(difficulty.Hidden) {
-		slider.bodyFade.AddEvent(slider.StartTime-diff.Preempt+difficulty.HitFadeIn, slider.EndTime, 0)
+		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+difficulty.HitFadeIn, slider.EndTime, 0, easing.OutQuad)
 	} else {
 		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 	}
 
-	slider.fade.AddEvent(float64(slider.EndTime), float64(slider.EndTime)+difficulty.HitFadeOut, 0)
+	slider.fade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 
 	slider.startCircle = DummyCircle(slider.StartPosRaw, slider.StartTime)
 	slider.startCircle.ComboNumber = slider.ComboNumber
