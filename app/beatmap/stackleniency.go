@@ -57,7 +57,13 @@ func processStacking(hitObjects []objects.IHitObject, version int, diff *difficu
 	}
 
 	for _, v := range hitObjects {
-		v.SetStackOffset(-float32(v.GetStackIndex(modifiers)) * float32(diff.CircleRadius) / 10, modifiers)
+		if isSpinner(v) {
+			v.SetStackIndex(0, difficulty.None)
+			v.SetStackIndex(0, difficulty.Easy)
+			v.SetStackIndex(0, difficulty.HardRock)
+		} else {
+			v.SetStackOffset(-float32(v.GetStackIndex(modifiers)) * float32(diff.CircleRadius) / 10, modifiers)
+		}
 	}
 }
 
