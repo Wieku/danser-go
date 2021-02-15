@@ -230,13 +230,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	startOffset := 0.0
 
 	if settings.SKIP || settings.SCRUB > 0.01 {
-		startOffset = skipTime
-		player.startPoint = skipTime - beatMap.Diff.Preempt
+		startOffset = math.Max(0, skipTime - beatMap.Diff.Preempt)
+		player.startPoint = startOffset
 		player.volumeGlider.SetValue(0.0)
 		player.volumeGlider.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+	} else {
+		startOffset = -beatMap.Diff.Preempt
 	}
 
-	startOffset += -settings.Playfield.LeadInHold*1000 - beatMap.Diff.Preempt
+	startOffset += -settings.Playfield.LeadInHold*1000
 
 	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
 	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
