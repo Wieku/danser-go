@@ -38,7 +38,7 @@ func initDance() *dance {
 		Momentum: &momentum{
 			SkipStackAngles: false,
 			StreamRestrict:  true,
-			DurationPow:     1.3,
+			DurationMult:    2,
 			DurationTrigger: 500,
 			StreamMult:      1,
 			StreamAngle:     90,
@@ -99,7 +99,7 @@ type spline struct {
 type momentum struct {
 	SkipStackAngles bool
 	StreamRestrict  bool
-	DurationPow     float64
+	DurationMult    float64
 	DurationTrigger float64
 	StreamMult      float64
 	StreamAngle     float64

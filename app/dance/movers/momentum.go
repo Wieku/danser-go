@@ -67,11 +67,10 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	if len(objs) > 2 {
 		if _, ok := objs[i+2].(*objects.Circle); ok {
 			hasNext = true
-			next = objs[i+2]
 		} else if v, ok := objs[i+2].(*objects.Slider); ok && v.IsRetarded() {
 			hasNext = true
-			next = objs[i+2]
 		}
+		next = objs[i+2]
 	}
 
 	endPos := end.GetStackedEndPositionMod(bm.mods)
@@ -103,6 +102,13 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		ok1 = !s.IsRetarded()
 	}
 
+	var sq1, sq2 float32
+	if next != nil {
+		nextPos := next.GetStackedStartPositionMod(bm.mods)
+		sq1 = endPos.DstSq(startPos)
+		sq2 = startPos.DstSq(nextPos)
+	}
+
 	ms := settings.Dance.Momentum
 
 	// stream detection logic stolen from spline mover
@@ -110,9 +116,6 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	if hasNext && !fromSlider && ms.StreamRestrict {
 		min := float32(25.0)
 		max := float32(10000.0)
-		nextPos := next.GetStackedStartPositionMod(bm.mods)
-		sq1 := endPos.DstSq(startPos)
-		sq2 := startPos.DstSq(nextPos)
 
 		if sq1 >= min && sq1 <= max && bm.wasStream || (sq2 >= min && sq2 <= max) {
 			stream = true
@@ -156,6 +159,10 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 		multEnd = ms.DistanceMult
 		multStart = ms.DistanceMultEnd
+	} else if next != nil && !fromSlider {
+		r := sq1 / (sq1 + sq2)
+		a := endPos.AngleRV(startPos)
+		a2 = a + r * anorm2(a2 - a)
 	}
 
 	endTime := end.GetEndTime()
@@ -163,7 +170,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	duration := float64(startTime - endTime)
 
 	if ms.DurationTrigger > 0 && duration >= ms.DurationTrigger {
-		mult := math.Pow(ms.DurationPow, float64(duration) / ms.DurationTrigger)
+		mult := ms.DurationMult * (float64(duration) / ms.DurationTrigger)
 		multEnd *= mult
 		multStart *= mult
 	}
