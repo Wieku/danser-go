@@ -153,6 +153,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.comboFont = skin.GetFont("combo")
 
 	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
+		baseTime := float64(time)/settings.SPEED
+
 		if result&(osu.BaseHitsM) > 0 {
 			overlay.results.AddResult(time, result, position)
 		}
@@ -169,17 +171,18 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		}
 
 		if comboResult == osu.ComboResults.Increase {
+
 			overlay.newComboScaleB.Reset()
-			overlay.newComboScaleB.AddEventS(float64(time), float64(time+300), 2, 1.28)
+			overlay.newComboScaleB.AddEventS(baseTime, baseTime+300, 2, 1.28)
 
 			overlay.newComboFadeB.Reset()
-			overlay.newComboFadeB.AddEventS(float64(time), float64(time+300), 0.6, 0.0)
+			overlay.newComboFadeB.AddEventS(baseTime, baseTime+300, 0.6, 0.0)
 
-			overlay.animate(float64(time))
+			overlay.animate(baseTime)
 
 			overlay.combo = overlay.newCombo
 			overlay.newCombo++
-			overlay.nextEnd = float64(time) + 300
+			overlay.nextEnd = baseTime + 300
 		} else if comboResult == osu.ComboResults.Reset {
 			if overlay.newCombo > 20 && overlay.combobreak != nil {
 				overlay.combobreak.Play()
@@ -196,7 +199,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.entry.UpdatePlayer(score, mCombo)
 
 		overlay.ppGlider.Reset()
-		overlay.ppGlider.AddEvent(float64(time), float64(time+500), pp)
+		overlay.ppGlider.AddEvent(baseTime, baseTime+500, pp)
 
 		overlay.currentScore = score
 		overlay.currentAccuracy = accuracy
@@ -282,30 +285,32 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 		mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
 
-		offset := -40.0
+		offset := -48.0
 		for i, s := range mods {
 			modSpriteName := "selection-mod-" + strings.ToLower(s)
 
-			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 155), bmath.Origin.Centre)
+			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), bmath.Origin.Centre)
 			mod.SetAlpha(0)
 			mod.ShowForever(true)
 
-			timeStart := time + float64(i)*120
+			timeStart := time + float64(i)*500*settings.SPEED
 
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, timeStart, timeStart+500, 0.0, 1.0))
-			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+500, 1.5, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400*settings.SPEED, 0.0, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400*settings.SPEED, 2, 1.0))
 
 			if overlay.cursor.Name == "" {
 				startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0, 0))
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000*settings.SPEED, 1.0, 0))
 
 				endT := overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500, 0.0, 1.0))
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500*settings.SPEED, 0.0, 1.0))
+
+				offset -= 16
+			} else {
+				offset -= 80
 			}
 
 			overlay.mods.Add(mod)
-
-			offset -= 18
 		}
 	}
 
@@ -334,6 +339,12 @@ func (overlay *ScoreOverlay) Update(time float64) {
 			}
 		}
 	}
+
+	overlay.results.Update(time)
+	overlay.hitErrorMeter.Update(time)
+	overlay.mods.Update(time)
+
+	time /= settings.SPEED
 
 	overlay.newComboScale.Update(time)
 	overlay.newComboScaleB.Update(time)
@@ -383,10 +394,6 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		overlay.displayAccuracy = overlay.currentAccuracy + (overlay.displayAccuracy-overlay.currentAccuracy)*math.Pow(0.5, delta60)
 	}
 
-	overlay.results.Update(time)
-
-	overlay.hitErrorMeter.Update(time)
-
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
 
 	for i, state := range currentStates {
@@ -417,7 +424,6 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		overlay.keyStates[i] = state
 	}
 
-	overlay.mods.Update(time)
 	overlay.keyOverlay.Update(time)
 	overlay.bgDim.Update(time)
 	overlay.healthBackground.Update(time)
