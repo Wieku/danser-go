@@ -77,7 +77,7 @@ func flat(_ float64) float64 {
 }
 
 func gauss(t float64) float64 {
-	return math.Exp(-math.Pow(1.5*t, 2))
+	return math.Exp(-math.Pow(1.5*(t-1), 2))
 }
 
 func gaussSymmetric(t float64) float64 {
