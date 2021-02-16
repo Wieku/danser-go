@@ -33,9 +33,9 @@ var easings = []easing.Easing{
 	easing.InCirc,
 	easing.OutCirc,
 	easing.InOutCirc,
-	easing.InBack,
+	inBack,
 	easing.OutBack,
-	easing.InOutBack,
+	inOutBack,
 	gauss,
 	gaussSymmetric,
 	pyramidSymmetric,
@@ -64,7 +64,7 @@ func calculateWeights(bFrames int) []float32 {
 
 		easeFunc := easings[id]
 		for i := 0; i < bFrames; i++ {
-			w := 1.0 + easeFunc(float64(i)/float64(bFrames-1)) * 100
+			w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*100
 			weights = append(weights, float32(w))
 		}
 	}
@@ -74,6 +74,14 @@ func calculateWeights(bFrames int) []float32 {
 
 func flat(_ float64) float64 {
 	return 1.0
+}
+
+func inBack(t float64) float64 {
+	return easing.InBack(t) + 0.100004
+}
+
+func inOutBack(t float64) float64 {
+	return easing.InOutBack(t) + 0.100004
 }
 
 func gauss(t float64) float64 {
