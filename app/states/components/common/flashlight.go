@@ -3,6 +3,7 @@ package common
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
@@ -62,8 +63,8 @@ func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
 
 	size := animation.NewGlider(DefaultFlashlightSize * 2.5)
 
-	startTime := float64(beatMap.HitObjects[0].GetStartTime())
-	endTime := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) + float64(beatMap.Diff.Hit50+5)
+	startTime := beatMap.HitObjects[0].GetStartTime() / settings.SPEED
+	endTime := (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50+5)) / settings.SPEED
 
 	size.AddEvent(startTime-DefaultFlashlightDuration, startTime, DefaultFlashlightSize)
 	size.AddEvent(endTime, endTime+DefaultFlashlightDuration, DefaultFlashlightSize*2.5)
@@ -119,15 +120,18 @@ func (fl *Flashlight) Update(time float64) {
 	for i := fl.breakIndex + 1; i < len(fl.beatMap.Pauses); i++ {
 		pause := fl.beatMap.Pauses[i]
 
-		if time < float64(pause.GetStartTime()) {
+		pauseStart := pause.GetStartTime() / settings.SPEED
+		pauseEnd := pause.GetEndTime() / settings.SPEED
+
+		if time < pauseStart {
 			break
 		}
 
 		fl.breakIndex = i
 
-		if float64(pause.EndTime-pause.StartTime) > DefaultFlashlightDuration*2 {
-			fl.size.AddEvent(float64(pause.StartTime), float64(pause.StartTime)+DefaultFlashlightDuration, DefaultFlashlightSize*2.5)
-			fl.size.AddEvent(float64(pause.EndTime)-DefaultFlashlightDuration, float64(pause.EndTime), fl.target)
+		if pauseEnd-pauseStart > DefaultFlashlightDuration*2 {
+			fl.size.AddEvent(pauseStart, pauseStart+DefaultFlashlightDuration, DefaultFlashlightSize*2.5)
+			fl.size.AddEvent(pauseEnd-DefaultFlashlightDuration, pauseEnd, fl.target)
 		}
 	}
 
