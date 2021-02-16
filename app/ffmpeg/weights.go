@@ -77,11 +77,11 @@ func flat(_ float64) float64 {
 }
 
 func gauss(t float64) float64 {
-	return math.Exp(-math.Pow(1.5*(t-1), 2))
+	return math.Exp(-math.Pow(settings.Recording.MotionBlur.BlendWeights.GaussWeightsMult*(t-1), 2))
 }
 
 func gaussSymmetric(t float64) float64 {
-	return math.Exp(-math.Pow(1.5*(t-0.5)*2, 2))
+	return math.Exp(-math.Pow(settings.Recording.MotionBlur.BlendWeights.GaussWeightsMult*(t*2-1), 2))
 }
 
 func pyramidSymmetric(t float64) float64 {

@@ -23,6 +23,7 @@ func initRecording() *recording {
 				UseManualWeights: false,
 				ManualWeights:    "1 1.7 2.1 4.1 5",
 				AutoWeightsID:    1,
+				GaussWeightsMult: 1.5,
 			},
 		},
 	}
@@ -54,4 +55,5 @@ type blendWeights struct {
 	UseManualWeights bool
 	ManualWeights    string
 	AutoWeightsID    int
+	GaussWeightsMult float64
 }
