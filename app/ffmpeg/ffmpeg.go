@@ -96,6 +96,11 @@ func StartFFmpeg(fps, _w, _h int) {
 		"-preset", settings.Recording.Preset,
 		"-an", //Tells FFMPEG not to expect any audio
 		"-vcodec", settings.Recording.Encoder,
+		"-color_range", "1",
+		"-colorspace", "1",
+		"-color_trc", "1",
+		"-color_primaries", "1",
+		"-movflags", "+write_colr",
 		"-pix_fmt", settings.Recording.PixelFormat,
 	}
 
