@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"math"
 	"strconv"
 	"strings"
 )
 
 var easings = []easing.Easing{
+	flat,
 	easing.Linear,
 	easing.InQuad,
 	easing.OutQuad,
@@ -34,6 +36,10 @@ var easings = []easing.Easing{
 	easing.InBack,
 	easing.OutBack,
 	easing.InOutBack,
+	gauss,
+	gaussSymmetric,
+	pyramidSymmetric,
+	semiCircle,
 }
 
 func calculateWeights(bFrames int) []float32 {
@@ -56,19 +62,32 @@ func calculateWeights(bFrames int) []float32 {
 			id = 0
 		}
 
-		if id == 0 {
-			for i := 0; i < bFrames; i++ {
-				weights = append(weights, 1)
-			}
-		} else {
-			easeFunc := easings[id-1]
-
-			for i := 0; i < bFrames; i++ {
-				w := 1.0 + easeFunc(float64(i)/float64(bFrames-1)) * 100
-				weights = append(weights, float32(w))
-			}
+		easeFunc := easings[id]
+		for i := 0; i < bFrames; i++ {
+			w := 1.0 + easeFunc(float64(i)/float64(bFrames-1)) * 100
+			weights = append(weights, float32(w))
 		}
 	}
 
 	return weights
+}
+
+func flat(_ float64) float64 {
+	return 1.0
+}
+
+func gauss(t float64) float64 {
+	return math.Exp(-math.Pow(1.5*t, 2))
+}
+
+func gaussSymmetric(t float64) float64 {
+	return math.Exp(-math.Pow(1.5*(t-0.5)*2, 2))
+}
+
+func pyramidSymmetric(t float64) float64 {
+	return 1.0 - math.Abs(t*2-1)
+}
+
+func semiCircle(t float64) float64 {
+	return math.Sqrt(1 - math.Pow(0.5-t, 2))
 }
