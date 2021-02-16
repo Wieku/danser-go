@@ -64,7 +64,7 @@ func calculateWeights(bFrames int) []float32 {
 			easeFunc := easings[id-1]
 
 			for i := 0; i < bFrames; i++ {
-				w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*float64(i)*settings.Recording.MotionBlur.BlendWeights.AutoWeightsScale
+				w := 1.0 + easeFunc(float64(i)/float64(bFrames-1)) * 100
 				weights = append(weights, float32(w))
 			}
 		}
