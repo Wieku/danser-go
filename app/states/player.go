@@ -274,7 +274,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.epiGlider.AddEvent(startOffset+am-500, startOffset+am, 0.0)
 	}
 
-	startOffset -= settings.Playfield.LeadInTime * 1000
+	startOffset -= math.Max(settings.Playfield.LeadInTime * 1000, 1000)
 
 	player.progressMsF = startOffset
 
