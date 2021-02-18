@@ -283,27 +283,27 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.unfold = animation.NewGlider(1)
 
 	for _, p := range beatMap.Pauses {
-		startTime := float64(p.GetStartTime())
-		endTime := float64(p.GetEndTime())
+		startTime := p.GetStartTime()
+		endTime := p.GetEndTime()
 
 		if endTime-startTime < 1000 {
 			continue
 		}
 
 		//player.hudGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0.0)
-		player.dimGlider.AddEvent(startTime, startTime+500, 1.0-settings.Playfield.Background.Dim.Breaks)
-		player.blurGlider.AddEvent(startTime, startTime+500, settings.Playfield.Background.Blur.Values.Breaks)
-		player.fxGlider.AddEvent(startTime, startTime+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
+		player.dimGlider.AddEvent(startTime, startTime+500*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Breaks)
+		player.blurGlider.AddEvent(startTime, startTime+500*settings.SPEED, settings.Playfield.Background.Blur.Values.Breaks)
+		player.fxGlider.AddEvent(startTime, startTime+500*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Breaks)
 
 		if !settings.Cursor.ShowCursorsOnBreaks {
-			player.cursorGlider.AddEvent(startTime, startTime+100, 0.0)
+			player.cursorGlider.AddEvent(startTime, startTime+100*settings.SPEED, 0.0)
 		}
 
 		//player.hudGlider.AddEvent(endTime-500, endTime, 1.0)
-		player.dimGlider.AddEvent(endTime-500, endTime, 1.0-settings.Playfield.Background.Dim.Normal)
-		player.blurGlider.AddEvent(endTime-500, endTime, settings.Playfield.Background.Blur.Values.Normal)
-		player.fxGlider.AddEvent(endTime-500, endTime, 1.0-settings.Playfield.Logo.Dim.Normal)
-		player.cursorGlider.AddEvent(endTime-100, endTime, 1.0)
+		player.dimGlider.AddEvent(endTime, endTime+500*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Normal)
+		player.blurGlider.AddEvent(endTime, endTime+500*settings.SPEED, settings.Playfield.Background.Blur.Values.Normal)
+		player.fxGlider.AddEvent(endTime, endTime+500*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Normal)
+		player.cursorGlider.AddEvent(endTime, endTime+100*settings.SPEED, 1.0)
 	}
 
 	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
@@ -385,7 +385,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 }
 
 func (player *Player) Update(delta float64) bool {
-	player.progressMsF += delta * settings.SPEED
+	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+		player.progressMsF += delta * settings.SPEED
+	} else {
+		player.progressMsF += delta
+	}
+
 	bass.GlobalTimeMs += delta
 
 	player.secDelta += delta

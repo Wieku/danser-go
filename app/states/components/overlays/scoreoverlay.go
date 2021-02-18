@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/audio"
+	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
@@ -101,7 +102,11 @@ type ScoreOverlay struct {
 	flashlight *common.Flashlight
 	delta      float64
 
-	entry *play.ScoreBoard
+	entry        *play.ScoreBoard
+	audioTime    float64
+	normalTime   float64
+	breakMode    bool
+	currentBreak *beatmap.Pause
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -128,23 +133,22 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.combobreak = audio.LoadSample("combobreak")
 
-	for _, p := range ruleset.GetBeatMap().Pauses {
-		if p.GetEndTime()-p.GetStartTime() < 1000 {
-			continue
-		}
-
-		overlay.comboSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -1)
-		overlay.comboSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
-
-		overlay.bgDim.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
-		overlay.bgDim.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
-
-		overlay.hpSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -20)
-		overlay.hpSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
-
-		overlay.hpFade.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
-		overlay.hpFade.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
-	}
+	//for _, p := range ruleset.GetBeatMap().Pauses {
+	//	if p.GetEndTime()-p.GetStartTime() < 1000 {
+	//		continue
+	//	}
+	//
+	//	overlay.comboSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -1)
+	//	overlay.bgDim.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
+	//	overlay.hpSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -20)
+	//	overlay.hpFade.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
+	//
+	//
+	//	overlay.comboSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
+	//	overlay.bgDim.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
+	//	overlay.hpSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
+	//	overlay.hpFade.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
+	//}
 
 	discord.UpdatePlay(cursor.Name)
 
@@ -153,8 +157,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.comboFont = skin.GetFont("combo")
 
 	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
-		baseTime := float64(time)/settings.SPEED
-
 		if result&(osu.BaseHitsM) > 0 {
 			overlay.results.AddResult(time, result, position)
 		}
@@ -173,16 +175,16 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		if comboResult == osu.ComboResults.Increase {
 
 			overlay.newComboScaleB.Reset()
-			overlay.newComboScaleB.AddEventS(baseTime, baseTime+300, 2, 1.28)
+			overlay.newComboScaleB.AddEventS(overlay.normalTime, overlay.normalTime+300, 2, 1.28)
 
 			overlay.newComboFadeB.Reset()
-			overlay.newComboFadeB.AddEventS(baseTime, baseTime+300, 0.6, 0.0)
+			overlay.newComboFadeB.AddEventS(overlay.normalTime, overlay.normalTime+300, 0.6, 0.0)
 
-			overlay.animate(baseTime)
+			overlay.animate(overlay.normalTime)
 
 			overlay.combo = overlay.newCombo
 			overlay.newCombo++
-			overlay.nextEnd = baseTime + 300
+			overlay.nextEnd = overlay.normalTime + 300
 		} else if comboResult == osu.ComboResults.Reset {
 			if overlay.newCombo > 20 && overlay.combobreak != nil {
 				overlay.combobreak.Play()
@@ -199,7 +201,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.entry.UpdatePlayer(score, mCombo)
 
 		overlay.ppGlider.Reset()
-		overlay.ppGlider.AddEvent(baseTime, baseTime+500, pp)
+		overlay.ppGlider.AddEvent(overlay.normalTime, overlay.normalTime+500, pp)
 
 		overlay.currentScore = score
 		overlay.currentAccuracy = accuracy
@@ -280,6 +282,21 @@ func (overlay *ScoreOverlay) animate(time float64) {
 }
 
 func (overlay *ScoreOverlay) Update(time float64) {
+	if overlay.audioTime == 0 {
+		overlay.audioTime = time
+		overlay.normalTime = time
+	}
+
+	delta := time - overlay.audioTime
+
+	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+		delta /= settings.SPEED
+	}
+
+	overlay.normalTime += delta
+
+	overlay.audioTime = time
+
 	if !overlay.notFirst && time > -settings.Playfield.LeadInHold*1000 {
 		overlay.notFirst = true
 
@@ -326,9 +343,17 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.results.Update(time)
 	overlay.hitErrorMeter.Update(time)
 
-	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
-		time /= settings.SPEED
+	if overlay.skip != nil {
+		overlay.skip.Update(time)
 	}
+
+	//normal timing
+	overlay.updateNormal(overlay.normalTime)
+}
+
+func (overlay *ScoreOverlay) updateNormal(time float64) {
+	overlay.updateBreaks(time)
+
 
 	if overlay.flashlight != nil && time >= 0 {
 
@@ -432,11 +457,37 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.healthBackground.Update(time)
 	overlay.healthBar.Update(time)
 
-	if overlay.skip != nil {
-		overlay.skip.Update(time)
+	overlay.lastTime = time
+}
+
+func (overlay *ScoreOverlay) updateBreaks(time float64) {
+	inBreak := false
+
+	for _, b := range overlay.ruleset.GetBeatMap().Pauses {
+		if overlay.audioTime < b.GetStartTime() {
+			break
+		}
+
+		if b.GetEndTime()-b.GetStartTime() >= 1000 && overlay.audioTime >= b.GetStartTime() && overlay.audioTime <= b.GetEndTime() {
+			inBreak = true
+			overlay.currentBreak = b
+			break
+		}
 	}
 
-	overlay.lastTime = time
+	if !overlay.breakMode && inBreak {
+		overlay.comboSlide.AddEvent(time, time+500, -1)
+		overlay.bgDim.AddEvent(time, time+500, 0)
+		overlay.hpSlide.AddEvent(time, time+500, -20)
+		overlay.hpFade.AddEvent(time, time+500, 0)
+	} else if overlay.breakMode && !inBreak {
+		overlay.comboSlide.AddEvent(time, time+500, 0)
+		overlay.bgDim.AddEvent(time, time+500, 1)
+		overlay.hpSlide.AddEvent(time, time+500, 0)
+		overlay.hpFade.AddEvent(time, time+500, 1)
+	}
+
+	overlay.breakMode = inBreak
 }
 
 func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
