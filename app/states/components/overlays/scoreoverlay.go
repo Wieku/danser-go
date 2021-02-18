@@ -102,15 +102,21 @@ type ScoreOverlay struct {
 	flashlight *common.Flashlight
 	delta      float64
 
-	entry        *play.ScoreBoard
-	audioTime    float64
-	normalTime   float64
-	breakMode    bool
-	currentBreak *beatmap.Pause
+	entry         *play.ScoreBoard
+	audioTime     float64
+	normalTime    float64
+	breakMode     bool
+	currentBreak  *beatmap.Pause
+	sPass         *sprite.Sprite
+	sFail         *sprite.Sprite
+	passContainer *sprite.SpriteManager
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
 	overlay := new(ScoreOverlay)
+	overlay.ScaledHeight = 768
+	overlay.ScaledWidth = settings.Graphics.GetAspectRatio() * overlay.ScaledHeight
+
 	overlay.results = play.NewHitResults(ruleset.GetBeatMap().Diff)
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
@@ -133,22 +139,18 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.combobreak = audio.LoadSample("combobreak")
 
-	//for _, p := range ruleset.GetBeatMap().Pauses {
-	//	if p.GetEndTime()-p.GetStartTime() < 1000 {
-	//		continue
-	//	}
-	//
-	//	overlay.comboSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -1)
-	//	overlay.bgDim.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
-	//	overlay.hpSlide.AddEvent(p.GetStartTime(), p.GetStartTime()+500, -20)
-	//	overlay.hpFade.AddEvent(p.GetStartTime(), p.GetStartTime()+500, 0)
-	//
-	//
-	//	overlay.comboSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
-	//	overlay.bgDim.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
-	//	overlay.hpSlide.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 0)
-	//	overlay.hpFade.AddEvent(p.GetEndTime()-500, p.GetEndTime(), 1)
-	//}
+	audio.LoadSample("sectionpass")
+	audio.LoadSample("sectionfail")
+
+	overlay.sPass = sprite.NewSpriteSingle(skin.GetTexture("section-pass"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight).Scl(0.5), bmath.Origin.Centre)
+	overlay.sPass.SetAlpha(0)
+
+	overlay.sFail = sprite.NewSpriteSingle(skin.GetTexture("section-fail"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight).Scl(0.5), bmath.Origin.Centre)
+	overlay.sFail.SetAlpha(0)
+
+	overlay.passContainer = sprite.NewSpriteManager()
+	overlay.passContainer.Add(overlay.sPass)
+	overlay.passContainer.Add(overlay.sFail)
 
 	discord.UpdatePlay(cursor.Name)
 
@@ -206,9 +208,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.currentScore = score
 		overlay.currentAccuracy = accuracy
 	})
-
-	overlay.ScaledHeight = 768
-	overlay.ScaledWidth = settings.Graphics.GetAspectRatio() * overlay.ScaledHeight
 
 	overlay.camera = camera2.NewCamera()
 	overlay.camera.SetViewportF(0, int(overlay.ScaledHeight), int(overlay.ScaledWidth), 0)
@@ -347,6 +346,8 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		overlay.skip.Update(time)
 	}
 
+	overlay.passContainer.Update(overlay.audioTime)
+
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
 }
@@ -476,6 +477,8 @@ func (overlay *ScoreOverlay) updateBreaks(time float64) {
 	}
 
 	if !overlay.breakMode && inBreak {
+		overlay.showPassInfo()
+
 		overlay.comboSlide.AddEvent(time, time+500, -1)
 		overlay.bgDim.AddEvent(time, time+500, 0)
 		overlay.hpSlide.AddEvent(time, time+500, -20)
@@ -532,6 +535,8 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	batch.SetColor(1, 1, 1, alpha)
 
 	overlay.entry.Draw(batch, alpha)
+
+	overlay.passContainer.Draw(overlay.audioTime, batch)
 
 	hObjects := overlay.ruleset.GetBeatMap().HitObjects
 
@@ -739,4 +744,32 @@ func (overlay *ScoreOverlay) IsBroken(_ *graphics.Cursor) bool {
 
 func (overlay *ScoreOverlay) NormalBeforeCursor() bool {
 	return true
+}
+
+func (overlay *ScoreOverlay) showPassInfo() {
+	if overlay.currentBreak.Length() < 2880 {
+		return
+	}
+
+	pass := overlay.ruleset.GetHP(overlay.cursor) >= 0.5
+
+	time := math.Min(overlay.currentBreak.GetEndTime()-2880, overlay.currentBreak.GetEndTime()-overlay.currentBreak.Length()/2)
+
+	if pass {
+		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionpass"), time + 20))
+
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 20, time + 20, 0, 1))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 100, time + 100, 1, 0))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 160, time + 160, 0, 1))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 230, time + 230, 1, 0))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 280, time + 280, 0, 1))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 1280, time + 1480, 1, 0))
+	} else {
+		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionfail"), time + 130))
+
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 130, time + 130, 0, 1))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 230, time + 230, 1, 0))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 280, time + 280, 0, 1))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 1280, time + 1480, 1, 0))
+	}
 }

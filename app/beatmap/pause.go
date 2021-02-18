@@ -23,3 +23,7 @@ func (pause *Pause) GetStartTime() float64 {
 func (pause *Pause) GetEndTime() float64 {
 	return pause.EndTime
 }
+
+func (pause *Pause) Length() float64 {
+	return pause.EndTime - pause.StartTime
+}
