@@ -658,11 +658,9 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 
 			text := skin.GetTexture("ranking-" + gText + "-small")
 
-			aspect := float64(text.Width) / float64(text.Height)
-
 			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
-			batch.SetSubScale(fntSize*aspect*0.6/2, fntSize*0.6/2)
-			batch.DrawUnit(*text)
+			batch.SetSubScale(0.8*scoreScale, 0.8*scoreScale)
+			batch.DrawTexture(*text)
 		}
 	}
 
