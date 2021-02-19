@@ -432,7 +432,7 @@ func run() {
 
 		p, _ := player.(*states.Player)
 
-		maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
+		//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
 
 		var lastProgress, progress int
 
@@ -454,7 +454,7 @@ func run() {
 
 					count++
 
-					progress = int(float64(count) / float64(maxFrames) * 100)
+					progress = int(math.Round(p.GetTimeOffset() / p.RunningTime /*float64(count) / float64(maxFrames)*/ * 100))
 
 					if progress%5 == 0 && lastProgress != progress {
 						fmt.Println()

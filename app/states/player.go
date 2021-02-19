@@ -107,6 +107,8 @@ type Player struct {
 	RunningTime float64
 
 	secDelta float64
+
+	startOffset  float64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -276,6 +278,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset -= math.Max(settings.Playfield.LeadInTime * 1000, 1000)
 
+	player.startOffset = startOffset
 	player.progressMsF = startOffset
 
 	player.RunningTime = player.MapEnd - startOffset
@@ -416,6 +419,10 @@ func (player *Player) Update(delta float64) bool {
 	}
 
 	return false
+}
+
+func (player *Player) GetTimeOffset() float64 {
+	return player.progressMsF - player.startOffset
 }
 
 func (player *Player) updateMain(delta float64) {
