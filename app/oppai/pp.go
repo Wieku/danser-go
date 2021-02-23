@@ -95,7 +95,7 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		finalMultiplier *= math.Max(0.90, 1.0-0.02*float64(nmiss))
 	}
 
-	if diff.Mods.Active(difficulty.SpunOut) {
+	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
 		nspinners := nobjects - nsliders - ncircles
 
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
