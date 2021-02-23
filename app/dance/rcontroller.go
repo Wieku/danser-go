@@ -1,10 +1,11 @@
 package dance
 
 import (
-	"github.com/wieku/rplpa"
 	"github.com/karrick/godirwalk"
 	"github.com/thehowl/go-osuapi"
+	"github.com/wieku/rplpa"
 	"sort"
+
 	//"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -199,11 +200,13 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		})
 	}
 
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].Score > candidates[j].Score
-	})
+	if !localReplay {
+		sort.Slice(candidates, func(i, j int) bool {
+			return candidates[i].Score > candidates[j].Score
+		})
 
-	candidates = candidates[:bmath.MinI(len(candidates), settings.Knockout.MaxPlayers)]
+		candidates = candidates[:bmath.MinI(len(candidates), settings.Knockout.MaxPlayers)]
+	}
 
 	for i, replay := range candidates {
 		log.Println("Loading replay for:", replay.Username)
