@@ -24,11 +24,11 @@ func commonParse(data []string, extraIndex int) *HitObject {
 
 	hitObject := &HitObject{
 		StartPosRaw: startPos,
-		EndPosRaw: startPos,
-		StartTime: float64(time),
-		EndTime: float64(time),
+		EndPosRaw:   startPos,
+		StartTime:   float64(time),
+		EndTime:     float64(time),
 		HitObjectID: -1,
-		NewCombo: (objType & 4) == 4,
+		NewCombo:    (objType & 4) == 4,
 	}
 
 	hitObject.BasicHitSound = parseExtras(data, extraIndex)
@@ -36,24 +36,22 @@ func commonParse(data []string, extraIndex int) *HitObject {
 	return hitObject
 }
 
-func parseExtras(data []string, extraIndex int) audio.HitSoundInfo {
-	info := audio.HitSoundInfo{}
-	if extraIndex < len(data) {
+func parseExtras(data []string, extraIndex int) (info audio.HitSoundInfo) {
+	if extraIndex < len(data) && len(data[extraIndex]) > 0 {
 		extras := strings.Split(data[extraIndex], ":")
-		sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
-		additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
-		index, _ := strconv.ParseInt(extras[2], 10, 64)
-		if len(extras) > 3 {
-			volume, _ := strconv.ParseInt(extras[3], 10, 64)
-			info.CustomVolume = float64(volume) / 100.0
-		} else {
-			info.CustomVolume = 0
+
+		info.SampleSet, _ = strconv.Atoi(extras[0])
+		info.AdditionSet, _ = strconv.Atoi(extras[1])
+
+		if len(extras) > 2 {
+			info.CustomIndex, _ = strconv.Atoi(extras[2])
 		}
 
-		info.SampleSet = int(sampleSet)
-		info.AdditionSet = int(additionSet)
-		info.CustomIndex = int(index)
+		if len(extras) > 3 {
+			volume, _ := strconv.Atoi(extras[3])
+			info.CustomVolume = float64(volume) / 100.0
+		}
 	}
 
-	return info
+	return
 }
