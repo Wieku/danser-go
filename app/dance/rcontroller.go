@@ -49,6 +49,7 @@ type subControl struct {
 	wasLeft         bool
 	newHandling     bool
 	lastTime        int64
+	oldSpinners     bool
 }
 
 func NewSubControl() *subControl {
@@ -218,6 +219,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		mxCombo := replay.MaxCombo
 
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
+		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
 		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods & displayedMods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID})
 		controller.controllers = append(controller.controllers, control)
@@ -374,6 +376,7 @@ func (controller *ReplayController) InitCursors() {
 			cursor := graphics.NewCursor()
 			cursor.Name = controller.replays[i].Name
 			cursor.ScoreID = controller.replays[i].scoreID
+			cursor.OldSpinnerScoring = controller.controllers[i].oldSpinners
 
 			controller.cursors = append(controller.cursors, cursor)
 		}

@@ -67,6 +67,9 @@ type Cursor struct {
 
 	IsReplayFrame    bool // TODO: temporary hacky solution for spinners
 	IsPlayer         bool
+
+	OldSpinnerScoring bool
+
 	LastFrameTime    int64 //
 	CurrentFrameTime int64 //
 	RawPosition      vector.Vector2f
