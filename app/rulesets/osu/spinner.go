@@ -22,6 +22,7 @@ type spinnerstate struct {
 	finished             bool
 	zeroCount            int64
 	rpm                  float64
+	updatedBefore        bool
 }
 
 type Spinner struct {
@@ -83,6 +84,11 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(state.currentVelocity)*1000)/(math.Pi*2)*60
 
 			mouseAngle := float64(player.cursor.RawPosition.Sub(spinnerPosition).AngleR())
+
+			if !player.cursor.OldSpinnerScoring && !state.updatedBefore {
+				state.lastAngle = mouseAngle
+				state.updatedBefore = true
+			}
 
 			angleDiff := mouseAngle - state.lastAngle
 
@@ -159,7 +165,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			if state.rotationCount != state.lastRotationCount {
 				state.scoringRotationCount++
 
-				if state.scoringRotationCount == state.requirement && len(spinner.players) == 1 {
+				if state.scoringRotationCount == spinner.getRequirementClear(player) && len(spinner.players) == 1 {
 					spinner.hitSpinner.Clear()
 				}
 
@@ -190,11 +196,11 @@ func (spinner *Spinner) UpdatePostFor(player *difficultyPlayer, time int64) bool
 		hit := Miss
 		combo := ComboResults.Reset
 
-		if state.scoringRotationCount > state.requirement+1 {
+		if (!player.cursor.OldSpinnerScoring && spinner.state[player].requirement == 0) || state.scoringRotationCount >= spinner.getRequirementGreat(player) {
 			hit = Hit300
-		} else if state.scoringRotationCount > state.requirement {
+		} else if state.scoringRotationCount >= spinner.getRequirementOk(player) {
 			hit = Hit100
-		} else if state.scoringRotationCount == state.requirement {
+		} else if state.scoringRotationCount >= spinner.getRequirementMeh(player) {
 			hit = Hit50
 		}
 
@@ -235,4 +241,37 @@ func (spinner *Spinner) IsHit(pl *difficultyPlayer) bool {
 
 func (spinner *Spinner) GetFadeTime() int64 {
 	return int64(spinner.hitSpinner.GetStartTime() - spinner.fadeStartRelative)
+}
+
+// new vs old spinner handling helpers
+func (spinner *Spinner) getRequirementMeh(player *difficultyPlayer) int64 {
+	if player.cursor.OldSpinnerScoring {
+		return spinner.state[player].requirement
+	}
+
+	return spinner.state[player].requirement / 4
+}
+
+func (spinner *Spinner) getRequirementOk(player *difficultyPlayer) int64 {
+	if player.cursor.OldSpinnerScoring {
+		return spinner.state[player].requirement + 1
+	}
+
+	return spinner.state[player].requirement - 1
+}
+
+func (spinner *Spinner) getRequirementGreat(player *difficultyPlayer) int64 {
+	if player.cursor.OldSpinnerScoring {
+		return spinner.state[player].requirement + 2
+	}
+
+	return spinner.state[player].requirement + 1
+}
+
+func (spinner *Spinner) getRequirementClear(player *difficultyPlayer) int64 {
+	if player.cursor.OldSpinnerScoring {
+		return spinner.state[player].requirement + 1
+	}
+
+	return spinner.state[player].requirement
 }
