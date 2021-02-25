@@ -16,7 +16,7 @@ func initGameplay() *gameplay {
 				Opacity: 1.0,
 			},
 			ProgressBar:     "Pie",
-			ShowGradeAlways: true,
+			ShowGradeAlways: false,
 		},
 		HpBar: &hudElement{
 			Show:    true,
