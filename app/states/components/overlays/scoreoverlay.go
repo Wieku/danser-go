@@ -49,7 +49,6 @@ type Overlay interface {
 }
 
 type ScoreOverlay struct {
-	font     *font.Font
 	lastTime float64
 	combo    int64
 	newCombo int64
@@ -82,6 +81,9 @@ type ScoreOverlay struct {
 	ScaledWidth  float64
 	ScaledHeight float64
 	camera       *camera2.Camera
+
+	ppFont     *font.Font
+	keyFont     *font.Font
 	scoreFont    *font.Font
 	comboFont    *font.Font
 	scoreEFont   *font.Font
@@ -147,7 +149,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.results = play.NewHitResults(ruleset.GetBeatMap().Diff)
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
-	overlay.font = font.GetFont("Exo 2 Bold")
 
 	overlay.comboSlide = animation.NewGlider(0)
 	overlay.comboSlide.SetEasing(easing.OutQuad)
@@ -187,6 +188,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	discord.UpdatePlay(cursor.Name)
 
+	overlay.ppFont = font.GetFont("Exo 2 Bold")
+	overlay.keyFont = font.GetFont("Ubuntu Regular")
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
 	overlay.comboFont = skin.GetFont("combo")
@@ -742,10 +745,10 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 
 	ppText := fmt.Sprintf("%.0fpp", overlay.ppGlider.GetValue())
 
-	width := overlay.font.GetWidthMonospaced(40*ppScale, ppText)
+	width := overlay.ppFont.GetWidthMonospaced(40*ppScale, ppText)
 	align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))
 
-	overlay.font.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
+	overlay.ppFont.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
 }
 
 func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
@@ -784,10 +787,10 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 				text += strconv.Itoa(i%2 + 1)
 			}
 
-			texLen := overlay.font.GetWidthMonospaced(scale*14, text)
+			texLen := overlay.keyFont.GetWidthMonospaced(scale*14, text)
 
 			batch.SetScale(1, -1)
-			overlay.font.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
+			overlay.keyFont.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
 		} else {
 			siz := scale * overlay.scoreEFont.GetSize()
 			batch.SetScale(1, 1)
