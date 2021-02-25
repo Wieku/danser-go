@@ -739,7 +739,6 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 
 	ppScale := settings.Gameplay.PPCounter.Scale
 
-	batch.SetColor(1, 1, 1, ppAlpha)
 	batch.SetScale(1, -1)
 	batch.SetSubScale(1, 1)
 
@@ -748,6 +747,9 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 	width := overlay.ppFont.GetWidthMonospaced(40*ppScale, ppText)
 	align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))
 
+	batch.SetColor(0, 0, 0, ppAlpha*0.8)
+	overlay.ppFont.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X+ppScale, settings.Gameplay.PPCounter.YPosition+align.Y+ppScale, 40*ppScale, ppText)
+	batch.SetColor(1, 1, 1, ppAlpha)
 	overlay.ppFont.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
 }
 
