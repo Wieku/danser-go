@@ -649,15 +649,33 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 
 		accOffset -= 44.8 * scoreScale
 	} else if progress > 0.0 {
-		thickness := float32(barThickness * scoreScale)
-		startPositionX := overlay.ScaledWidth - (12+barWidth)*scoreScale
-		positionY := float32(scoreSize) - 2*float32(scoreScale) + thickness/2
+		thickness := barThickness * scoreScale
+
+		var positionX, positionY, bWidth float64
+
+		switch settings.Gameplay.Score.ProgressBar {
+		case "BottomRight":
+			bWidth = barWidth*0.694*scoreScale
+			positionX = overlay.ScaledWidth - bWidth
+			positionY = 736
+			bWidth = 188
+		case "Bottom":
+			positionX = 0
+			positionY = overlay.ScaledHeight - thickness
+			bWidth = overlay.ScaledWidth
+		default:
+			positionX = overlay.ScaledWidth - (12+barWidth)*scoreScale
+			positionY = scoreSize - 2*scoreScale
+			bWidth = barWidth*scoreScale
+		}
+
+		positionY += thickness/2
 
 		overlay.shapeRenderer.SetColor(1, 1, 0.5, 0.5*scoreAlpha)
 
 		overlay.shapeRenderer.Begin()
 		overlay.shapeRenderer.SetAdditive(true)
-		overlay.shapeRenderer.DrawLine(float32(startPositionX), positionY, float32(startPositionX+progress*scoreScale*barWidth), positionY, thickness)
+		overlay.shapeRenderer.DrawLine(float32(positionX), float32(positionY), float32(positionX+progress*bWidth), float32(positionY), float32(thickness))
 		overlay.shapeRenderer.SetAdditive(false)
 		overlay.shapeRenderer.End()
 	}
