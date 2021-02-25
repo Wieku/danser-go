@@ -445,7 +445,10 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, time, time+100, color2.Color{R: 1, G: 1, B: 1, A: 1}, color))
 
 			overlay.lastPresses[i] = time + 100
-			overlay.keyCounters[i]++
+
+			if overlay.isDrain() {
+				overlay.keyCounters[i]++
+			}
 		}
 
 		if overlay.keyStates[i] && !state {
@@ -767,6 +770,14 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 	}
 
 	return progress
+}
+
+func (overlay *ScoreOverlay) isDrain() bool {
+	hObjects := overlay.ruleset.GetBeatMap().HitObjects
+	startTime := hObjects[0].GetStartTime() - overlay.ruleset.GetBeatMap().Diff.Preempt
+	endTime := hObjects[len(hObjects)-1].GetEndTime() + float64(overlay.ruleset.GetBeatMap().Diff.Hit50)
+
+	return overlay.audioTime >= startTime && overlay.audioTime <= endTime && !overlay.breakMode
 }
 
 func (overlay *ScoreOverlay) IsBroken(_ *graphics.Cursor) bool {
