@@ -116,10 +116,18 @@ type ScoreOverlay struct {
 	sPass         *sprite.Sprite
 	sFail         *sprite.Sprite
 	passContainer *sprite.SpriteManager
+
+	rankBack  *sprite.Sprite
+	rankFront *sprite.Sprite
+
+	oldGrade osu.Grade
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
 	overlay := new(ScoreOverlay)
+
+	overlay.oldGrade = -10
+
 	overlay.ScaledHeight = 768
 	overlay.ScaledWidth = settings.Graphics.GetAspectRatio() * overlay.ScaledHeight
 
@@ -153,6 +161,12 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.sFail = sprite.NewSpriteSingle(skin.GetTexture("section-fail"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight).Scl(0.5), bmath.Origin.Centre)
 	overlay.sFail.SetAlpha(0)
+
+	overlay.rankBack = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	overlay.rankBack.SetAlpha(0)
+
+	overlay.rankFront = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	overlay.rankFront.SetAlpha(0)
 
 	overlay.passContainer = sprite.NewSpriteManager()
 	overlay.passContainer.Add(overlay.sPass)
@@ -204,7 +218,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 			overlay.flashlight.UpdateCombo(overlay.newCombo)
 		}
 
-		accuracy, mCombo, score, _ := overlay.ruleset.GetResults(overlay.cursor)
+		accuracy, mCombo, score, grade := overlay.ruleset.GetResults(overlay.cursor)
 
 		overlay.entry.UpdatePlayer(score, mCombo)
 
@@ -213,6 +227,19 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 		overlay.currentScore = score
 		overlay.currentAccuracy = accuracy
+
+		if overlay.oldGrade != grade {
+			go func() {
+				gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+
+				text := skin.GetTexture("ranking-" + gText + "-small")
+
+				overlay.rankBack.Textures[0] = text
+				overlay.rankFront.Textures[0] = text
+
+				overlay.oldGrade = grade
+			}()
+		}
 	})
 
 	overlay.camera = camera2.NewCamera()
@@ -353,6 +380,8 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	}
 
 	overlay.passContainer.Update(overlay.audioTime)
+	overlay.rankBack.Update(overlay.audioTime)
+	overlay.rankFront.Update(overlay.audioTime)
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
@@ -586,7 +615,7 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 
 	overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
 
-	if settings.Gameplay.ProgressBar == "Pie" {
+	if settings.Gameplay.Score.ProgressBar == "Pie" {
 		if progress < 0.0 {
 			overlay.shapeRenderer.SetColor(0.4, 0.8, 0.4, 0.6*scoreAlpha)
 		} else {
@@ -626,14 +655,15 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	accText := fmt.Sprintf("%5.2f%%", overlay.displayAccuracy)
 	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap, accYPos, bmath.Origin.TopRight, accSize, true, accText)
 
-	if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
-		gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+	batch.ResetTransform()
+	batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+	batch.SetScale(scoreScale*0.8, scoreScale*0.8)
 
-		text := skin.GetTexture("ranking-" + gText + "-small")
-
-		batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
-		batch.SetSubScale(0.8*scoreScale, 0.8*scoreScale)
-		batch.DrawTexture(*text)
+	if !settings.Gameplay.Score.ShowGradeAlways {
+		overlay.rankBack.Draw(overlay.audioTime, batch)
+		overlay.rankFront.Draw(overlay.audioTime, batch)
+	} else if overlay.rankBack.Textures[0] != nil {
+		batch.DrawTexture(*overlay.rankBack.Textures[0])
 	}
 }
 
@@ -814,4 +844,17 @@ func (overlay *ScoreOverlay) showPassInfo() {
 		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+280, time+280, 0, 1))
 		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+1280, time+1480, 1, 0))
 	}
+
+	if overlay.currentBreak.Length() < 5000 {
+		return
+	}
+
+	breakStart := overlay.currentBreak.GetStartTime()
+	breakEnd := overlay.currentBreak.GetEndTime()
+
+	overlay.rankBack.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, breakStart+400, breakStart+1600, 1, 0))
+	overlay.rankBack.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, breakStart+400, breakStart+1600, 1, 1.625))
+
+	overlay.rankFront.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, breakStart+400, breakStart+700, 0, 1))
+	overlay.rankFront.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, breakEnd-1000, breakEnd-700, 1, 0))
 }

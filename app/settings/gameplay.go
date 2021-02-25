@@ -9,10 +9,14 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
-		Score: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		Score: &score{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			ProgressBar:     "Pie",
+			ShowGradeAlways: true,
 		},
 		HpBar: &hudElement{
 			Show:    true,
@@ -32,7 +36,7 @@ func initGameplay() *gameplay {
 			},
 			XPosition: 5,
 			YPosition: 150,
-			Align: "CentreLeft",
+			Align:     "CentreLeft",
 		},
 		KeyOverlay: &hudElement{
 			Show:    true,
@@ -44,7 +48,6 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
-		ProgressBar: "Pie",
 		Boundaries: &boundaries{
 			Enabled:         true,
 			BorderThickness: 1,
@@ -67,16 +70,13 @@ func initGameplay() *gameplay {
 
 type gameplay struct {
 	HitErrorMeter *hudElement
-	Score         *hudElement
+	Score         *score
 	HpBar         *hudElement
 	ComboCounter  *hudElement
 	PPCounter     *ppCounter
 	KeyOverlay    *hudElement
 	ScoreBoard    *hudElement
-
-	ProgressBar string
-
-	Boundaries *boundaries
+	Boundaries    *boundaries
 }
 
 type boundaries struct {
@@ -96,6 +96,12 @@ type hudElement struct {
 	Show    bool
 	Scale   float64
 	Opacity float64
+}
+
+type score struct {
+	*hudElement
+	ProgressBar     string
+	ShowGradeAlways bool
 }
 
 type ppCounter struct {
