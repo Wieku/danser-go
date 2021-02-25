@@ -18,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
 	"github.com/wieku/danser-go/app/storyboard"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
@@ -123,7 +124,19 @@ type ScoreOverlay struct {
 	oldGrade osu.Grade
 }
 
+func loadFonts() {
+	if font.GetFont("Ubuntu Regular") != nil {
+		return
+	}
+
+	file2, _ := assets.Open("assets/fonts/Ubuntu-Regular.ttf")
+	font.LoadFont(file2)
+	file2.Close()
+}
+
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
+	loadFonts()
+
 	overlay := new(ScoreOverlay)
 
 	overlay.oldGrade = -10
@@ -286,7 +299,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hpBasePosition = pos
 
-	barTextures := skin.GetFrames("scorebar-colour", true)
+	barTextures := skin.GetFrames("scorebar-colour", true) //nolint:misspell
 
 	overlay.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, bmath.Origin.TopLeft)
 	overlay.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
