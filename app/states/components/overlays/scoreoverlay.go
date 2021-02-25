@@ -32,6 +32,12 @@ import (
 	"strings"
 )
 
+const (
+	vAccOffset   = 4.8
+	barWidth     = 272.0
+	barThickness = 4.8
+)
+
 type Overlay interface {
 	Update(float64)
 	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
@@ -538,173 +544,191 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 
 	overlay.passContainer.Draw(overlay.audioTime, batch)
 
-	hObjects := overlay.ruleset.GetBeatMap().HitObjects
+	overlay.drawScore(batch, alpha)
+	overlay.drawCombo(batch, alpha)
+	overlay.drawHP(batch, alpha)
+	overlay.drawPP(batch, alpha)
+	overlay.drawKeys(batch, alpha)
 
-	startTime := float32(hObjects[0].GetStartTime())
-	endTime := float32(hObjects[len(hObjects)-1].GetEndTime())
-	musicPos := float32(0.0)
-	if overlay.music != nil {
-		musicPos = float32(overlay.music.GetPosition()) * 1000
+	batch.ResetTransform()
+	batch.SetColor(1, 1, 1, alpha)
+
+	overlay.mods.Draw(overlay.lastTime, batch)
+
+	batch.SetCamera(prev)
+}
+
+func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
+	scoreAlpha := settings.Gameplay.Score.Opacity * alpha
+
+	if scoreAlpha < 0.001 || !settings.Gameplay.Score.Show {
+		return
 	}
 
-	progress := bmath.ClampF32((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
-	if musicPos < startTime {
-		progress = bmath.ClampF32(-1.0+musicPos/startTime, -1.0, 0.0)
-	}
+	scoreScale := settings.Gameplay.Score.Scale
+	rightOffset := -9.6 * scoreScale
 
-	if scoreAlpha := settings.Gameplay.Score.Opacity; scoreAlpha > 0.001 && settings.Gameplay.Score.Show {
-		scoreScale := settings.Gameplay.Score.Scale
-		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
+	progress := overlay.getProgress()
 
-		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap*fntSize*0.6/overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
-		vAccOffset := 4.8
+	scoreSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
+	scoreOverlap := overlay.scoreFont.Overlap * scoreSize / overlay.scoreFont.GetSize()
 
-		if settings.Gameplay.ProgressBar == "Pie" {
-			overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
+	accSize := scoreSize * 0.6
+	accOverlap := overlay.scoreFont.Overlap * accSize / overlay.scoreFont.GetSize()
+	accYPos := scoreSize + vAccOffset*scoreScale
 
-			if progress < 0.0 {
-				overlay.shapeRenderer.SetColor(0.4, 0.8, 0.4, alpha*0.6*scoreAlpha)
-			} else {
-				overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*alpha*scoreAlpha)
-			}
+	accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(accSize, "99.99%") + accOverlap - 38.4*scoreScale + rightOffset
 
-			overlay.shapeRenderer.Begin()
-			overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(fntSize+vAccOffset+fntSize*0.6/2)), 16*float32(settings.Gameplay.Score.Scale), 40, progress)
-			overlay.shapeRenderer.End()
-		} else if progress > 0.0 {
-			batch.SetColor(1, 1, 0.5, alpha*0.5*scoreAlpha)
+	batch.Flush()
 
-			batch.SetAdditive(true)
+	overlay.shapeRenderer.SetCamera(overlay.camera.GetProjectionView())
 
-			batch.SetSubScale(272*float64(progress)*scoreScale/2, 3*scoreScale)
-			batch.SetTranslation(vector.NewVec2d(overlay.ScaledWidth+(-12-272+float64(progress)*272/2)*scoreScale, fntSize+3*scoreScale/2))
-			batch.DrawUnit(graphics.Pixel.GetRegion())
-
-			batch.SetAdditive(false)
-			batch.ResetTransform()
-		}
-	}
-
-	if hpAlpha := settings.Gameplay.HpBar.Opacity * overlay.hpFade.GetValue() * alpha; hpAlpha > 0.001 && settings.Gameplay.HpBar.Show {
-		hpScale := settings.Gameplay.HpBar.Scale
-
-		batch.SetTranslation(vector.NewVec2d(0, overlay.hpSlide.GetValue()))
-		batch.SetColor(1, 1, 1, hpAlpha)
-
-		overlay.healthBackground.SetScale(hpScale)
-		overlay.healthBackground.Draw(overlay.lastTime, batch)
-
-		overlay.healthBar.SetPosition(overlay.hpBasePosition.Scl(hpScale))
-		overlay.healthBar.SetScale(hpScale)
-		overlay.healthBar.Draw(overlay.lastTime, batch)
-	}
-
-	//region Combo rendering
-
-	if comboAlpha := settings.Gameplay.ComboCounter.Opacity; comboAlpha > 0.001 && settings.Gameplay.ComboCounter.Show {
-		cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
-		posX := overlay.comboSlide.GetValue()*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
-		posY := overlay.ScaledHeight - 12.8
-		origY := overlay.comboFont.GetSize()*0.375 - 9
-
-		batch.SetAdditive(true)
-
-		batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*alpha*comboAlpha)
-		overlay.comboFont.DrawOrigin(batch, posX-2.4*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, posY+origY*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScaleB.GetValue(), false, fmt.Sprintf("%dx", overlay.newCombo))
-
-		batch.SetAdditive(false)
-
-		batch.SetColor(1, 1, 1, alpha*comboAlpha)
-		overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
-	}
-
-	//endregion
-
-	//region Score+progress+accuracy
-
-	if scoreAlpha := settings.Gameplay.Score.Opacity; scoreAlpha > 0.001 && settings.Gameplay.Score.Show {
-		batch.ResetTransform()
-
-		scoreScale := settings.Gameplay.Score.Scale
-		fntSize := overlay.scoreFont.GetSize() * scoreScale * 0.96
-		rightOffset := -9.6 * scoreScale
-		accOffset := overlay.ScaledWidth - overlay.scoreFont.GetWidthMonospaced(fntSize*0.6, "99.99%") + overlay.scoreFont.Overlap*fntSize*0.6/overlay.scoreFont.GetSize() - 38.4*scoreScale + rightOffset
-		vAccOffset := 4.8
-
-		if settings.Gameplay.ProgressBar == "Pie" {
-			text := skin.GetTextureSource("circularmetre", skin.LOCAL)
-
-			batch.SetColor(1, 1, 1, alpha*scoreAlpha)
-			batch.SetScale(scoreScale, scoreScale)
-			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
-			batch.DrawTexture(*text)
-
-			accOffset -= 44.8 * scoreScale
+	if settings.Gameplay.ProgressBar == "Pie" {
+		if progress < 0.0 {
+			overlay.shapeRenderer.SetColor(0.4, 0.8, 0.4, 0.6*scoreAlpha)
+		} else {
+			overlay.shapeRenderer.SetColor(1, 1, 1, 0.6*scoreAlpha)
 		}
 
-		batch.ResetTransform()
-		batch.SetColor(1, 1, 1, alpha*scoreAlpha)
+		overlay.shapeRenderer.Begin()
+		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(accYPos+accSize/2)), 16*float32(settings.Gameplay.Score.Scale), 40, float32(progress))
+		overlay.shapeRenderer.End()
 
-		scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.displayScore)))
-		//overlay.scoreFont.DrawMonospaced(batch, overlay.ScaledWidth+rightOffset-overlay.scoreFont.GetWidthMonospaced(fntSize, scoreText), fntSize/2, fntSize, scoreText)
-		overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset, 0, bmath.Origin.TopRight, fntSize, true, scoreText)
+		batch.SetColor(1, 1, 1, scoreAlpha)
+		batch.SetScale(scoreScale, scoreScale)
+		batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+		batch.DrawTexture(*skin.GetTextureSource("circularmetre", skin.LOCAL))
 
-		accText := fmt.Sprintf("%5.2f%%", overlay.displayAccuracy)
-		overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset, fntSize+vAccOffset, bmath.Origin.TopRight, fntSize*0.6, true, accText)
+		accOffset -= 44.8 * scoreScale
+	} else if progress > 0.0 {
+		thickness := float32(barThickness * scoreScale)
+		startPositionX := overlay.ScaledWidth - (12+barWidth)*scoreScale
+		positionY := float32(scoreSize) - 2*float32(scoreScale) + thickness/2
 
-		if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
-			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+		overlay.shapeRenderer.SetColor(1, 1, 0.5, 0.5*scoreAlpha)
 
-			text := skin.GetTexture("ranking-" + gText + "-small")
-
-			batch.SetTranslation(vector.NewVec2d(accOffset, fntSize+vAccOffset+fntSize*0.6/2))
-			batch.SetSubScale(0.8*scoreScale, 0.8*scoreScale)
-			batch.DrawTexture(*text)
-		}
+		overlay.shapeRenderer.Begin()
+		overlay.shapeRenderer.SetAdditive(true)
+		overlay.shapeRenderer.DrawLine(float32(startPositionX), positionY, float32(startPositionX+progress*scoreScale*barWidth), positionY, thickness)
+		overlay.shapeRenderer.SetAdditive(false)
+		overlay.shapeRenderer.End()
 	}
 
-	//endregion
+	batch.ResetTransform()
+	batch.SetColor(1, 1, 1, scoreAlpha)
 
-	//region pp
+	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.displayScore)))
+	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap, 0, bmath.Origin.TopRight, scoreSize, true, scoreText)
 
-	if ppAlpha := settings.Gameplay.PPCounter.Opacity * alpha; ppAlpha > 0.001 && settings.Gameplay.PPCounter.Show {
-		ppScale := settings.Gameplay.PPCounter.Scale
+	accText := fmt.Sprintf("%5.2f%%", overlay.displayAccuracy)
+	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap, accYPos, bmath.Origin.TopRight, accSize, true, accText)
 
-		batch.SetColor(1, 1, 1, ppAlpha)
-		batch.SetScale(1, -1)
-		batch.SetSubScale(1, 1)
+	if _, _, _, grade := overlay.ruleset.GetResults(overlay.cursor); grade != osu.NONE {
+		gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
 
-		ppText := fmt.Sprintf("%.0fpp", overlay.ppGlider.GetValue())
+		text := skin.GetTexture("ranking-" + gText + "-small")
 
-		width := overlay.font.GetWidthMonospaced(40*ppScale, ppText)
-		align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))
+		batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+		batch.SetSubScale(0.8*scoreScale, 0.8*scoreScale)
+		batch.DrawTexture(*text)
+	}
+}
 
-		overlay.font.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
+func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
+	comboAlpha := settings.Gameplay.ComboCounter.Opacity * alpha
+
+	if comboAlpha < 0.001 || !settings.Gameplay.ComboCounter.Show {
+		return
 	}
 
-	//endregion
+	cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
+
+	posX := overlay.comboSlide.GetValue()*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
+	posY := overlay.ScaledHeight - 12.8
+	origY := overlay.comboFont.GetSize()*0.375 - 9
 
 	batch.ResetTransform()
 
-	if keyAlpha := settings.Gameplay.KeyOverlay.Opacity; keyAlpha > 0.001 && settings.Gameplay.KeyOverlay.Show {
-		keyScale := settings.Gameplay.KeyOverlay.Scale
+	batch.SetAdditive(true)
 
-		batch.SetColor(1, 1, 1, alpha*keyAlpha)
-		batch.SetScale(keyScale, keyScale)
+	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*comboAlpha)
+	overlay.comboFont.DrawOrigin(batch, posX-2.4*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, posY+origY*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScaleB.GetValue(), false, fmt.Sprintf("%dx", overlay.newCombo))
 
-		overlay.keyOverlay.Draw(overlay.lastTime, batch)
+	batch.SetAdditive(false)
 
-		col := skin.GetInfo().InputOverlayText
-		batch.SetColor(float64(col.R), float64(col.G), float64(col.B), alpha*keyAlpha)
+	batch.SetColor(1, 1, 1, comboAlpha)
+	overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
+}
 
-		for i := 0; i < 4; i++ {
-			posX := overlay.ScaledWidth - 24*keyScale
-			posY := overlay.ScaledHeight/2 - 64 + (30.4+float64(i)*47.2)*keyScale
-			scale := overlay.keys[i].GetScale().Y * keyScale
+func (overlay *ScoreOverlay) drawHP(batch *batch.QuadBatch, alpha float64) {
+	hpAlpha := settings.Gameplay.HpBar.Opacity * overlay.hpFade.GetValue() * alpha
 
-			text := strconv.Itoa(overlay.keyCounters[i])
+	if hpAlpha < 0.001 || !settings.Gameplay.HpBar.Show {
+		return
+	}
 
+	hpScale := settings.Gameplay.HpBar.Scale
+
+	batch.ResetTransform()
+
+	batch.SetScale(hpScale, hpScale)
+	batch.SetTranslation(vector.NewVec2d(0, overlay.hpSlide.GetValue()))
+	batch.SetColor(1, 1, 1, hpAlpha)
+
+	overlay.healthBackground.Draw(overlay.lastTime, batch)
+
+	overlay.healthBar.SetPosition(overlay.hpBasePosition.Scl(hpScale))
+	overlay.healthBar.Draw(overlay.lastTime, batch)
+}
+
+func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
+	ppAlpha := settings.Gameplay.PPCounter.Opacity * alpha
+
+	if ppAlpha < 0.001 || !settings.Gameplay.PPCounter.Show {
+		return
+	}
+
+	ppScale := settings.Gameplay.PPCounter.Scale
+
+	batch.SetColor(1, 1, 1, ppAlpha)
+	batch.SetScale(1, -1)
+	batch.SetSubScale(1, 1)
+
+	ppText := fmt.Sprintf("%.0fpp", overlay.ppGlider.GetValue())
+
+	width := overlay.font.GetWidthMonospaced(40*ppScale, ppText)
+	align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))
+
+	overlay.font.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
+}
+
+func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
+	keyAlpha := settings.Gameplay.KeyOverlay.Opacity * alpha
+
+	if keyAlpha < 0.001 || !settings.Gameplay.KeyOverlay.Show {
+		return
+	}
+
+	batch.ResetTransform()
+
+	keyScale := settings.Gameplay.KeyOverlay.Scale
+
+	batch.SetColor(1, 1, 1, keyAlpha)
+	batch.SetScale(keyScale, keyScale)
+
+	overlay.keyOverlay.Draw(overlay.lastTime, batch)
+
+	col := skin.GetInfo().InputOverlayText
+	batch.SetColor(float64(col.R), float64(col.G), float64(col.B), keyAlpha)
+
+	for i := 0; i < 4; i++ {
+		posX := overlay.ScaledWidth - 24*keyScale
+		posY := overlay.ScaledHeight/2 - 64 + (30.4+float64(i)*47.2)*keyScale
+		scale := overlay.keys[i].GetScale().Y * keyScale
+
+		text := strconv.Itoa(overlay.keyCounters[i])
+
+		if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
 			if overlay.keyCounters[i] == 0 {
 				text = "K"
 				if i > 1 {
@@ -714,26 +738,35 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 				text += strconv.Itoa(i%2 + 1)
 			}
 
-			if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
-				texLen := overlay.font.GetWidthMonospaced(scale*14, text)
+			texLen := overlay.font.GetWidthMonospaced(scale*14, text)
 
-				batch.SetScale(1, -1)
-				overlay.font.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
-			} else {
-				siz := scale * overlay.scoreEFont.GetSize()
-				batch.SetScale(1, 1)
-				overlay.scoreEFont.Overlap = 1.6
-				overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, siz, false, text)
-			}
+			batch.SetScale(1, -1)
+			overlay.font.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
+		} else {
+			siz := scale * overlay.scoreEFont.GetSize()
+			batch.SetScale(1, 1)
+			overlay.scoreEFont.Overlap = 1.6
+			overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, siz, false, text)
 		}
 	}
+}
 
-	batch.ResetTransform()
-	batch.SetColor(1, 1, 1, alpha)
+func (overlay *ScoreOverlay) getProgress() float64 {
+	hObjects := overlay.ruleset.GetBeatMap().HitObjects
+	startTime := hObjects[0].GetStartTime()
+	endTime := hObjects[len(hObjects)-1].GetEndTime()
 
-	overlay.mods.Draw(overlay.lastTime, batch)
+	musicPos := 0.0
+	if overlay.music != nil {
+		musicPos = overlay.music.GetPosition() * 1000
+	}
 
-	batch.SetCamera(prev)
+	progress := bmath.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	if musicPos < startTime {
+		progress = bmath.ClampF64(-1.0+musicPos/startTime, -1.0, 0.0)
+	}
+
+	return progress
 }
 
 func (overlay *ScoreOverlay) IsBroken(_ *graphics.Cursor) bool {
@@ -754,20 +787,20 @@ func (overlay *ScoreOverlay) showPassInfo() {
 	time := math.Min(overlay.currentBreak.GetEndTime()-2880, overlay.currentBreak.GetEndTime()-overlay.currentBreak.Length()/2)
 
 	if pass {
-		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionpass"), time + 20))
+		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionpass"), time+20))
 
-		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 20, time + 20, 0, 1))
-		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 100, time + 100, 1, 0))
-		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 160, time + 160, 0, 1))
-		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 230, time + 230, 1, 0))
-		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 280, time + 280, 0, 1))
-		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 1280, time + 1480, 1, 0))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+20, time+20, 0, 1))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+100, time+100, 1, 0))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+160, time+160, 0, 1))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+230, time+230, 1, 0))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+280, time+280, 0, 1))
+		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+1280, time+1480, 1, 0))
 	} else {
-		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionfail"), time + 130))
+		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionfail"), time+130))
 
-		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 130, time + 130, 0, 1))
-		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 230, time + 230, 1, 0))
-		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 280, time + 280, 0, 1))
-		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time + 1280, time + 1480, 1, 0))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+130, time+130, 0, 1))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+230, time+230, 1, 0))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+280, time+280, 0, 1))
+		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+1280, time+1480, 1, 0))
 	}
 }
