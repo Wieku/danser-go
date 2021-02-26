@@ -94,13 +94,6 @@ type ScoreOverlay struct {
 
 	skip *sprite.Sprite
 
-	healthBackground *sprite.Sprite
-	healthBar        *sprite.Sprite
-	displayHp        float64
-
-	hpSlide *animation.Glider
-	hpFade  *animation.Glider
-
 	shapeRenderer *shape.Renderer
 
 	boundaries     *common.Boundaries
@@ -124,6 +117,8 @@ type ScoreOverlay struct {
 	rankFront *sprite.Sprite
 
 	oldGrade osu.Grade
+
+	hpBar *play.HpBar
 }
 
 func loadFonts() {
@@ -161,9 +156,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.ppGlider.SetEasing(easing.OutQuint)
 
 	overlay.bgDim = animation.NewGlider(1)
-
-	overlay.hpSlide = animation.NewGlider(0)
-	overlay.hpFade = animation.NewGlider(1)
 
 	overlay.combobreak = audio.LoadSample("combobreak")
 
@@ -293,19 +285,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, start, start+300, 0.6, 0.0))
 	}
 
-	overlay.healthBackground = sprite.NewSpriteSingle(skin.GetTexture("scorebar-bg"), 0, vector.NewVec2d(0, 0), bmath.Origin.TopLeft)
-
-	pos := vector.NewVec2d(4.8, 16)
-	if skin.GetTexture("scorebar-marker") != nil {
-		pos = vector.NewVec2d(12, 12.5)
-	}
-
-	overlay.hpBasePosition = pos
-
-	barTextures := skin.GetFrames("scorebar-colour", true) //nolint:misspell
-
-	overlay.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, bmath.Origin.TopLeft)
-	overlay.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
+	overlay.hpBar = play.NewHpBar()
 
 	overlay.shapeRenderer = shape.NewRenderer()
 
@@ -431,8 +411,9 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 	overlay.newComboFadeB.Update(time)
 	overlay.ppGlider.Update(time)
 	overlay.comboSlide.Update(time)
-	overlay.hpFade.Update(time)
-	overlay.hpSlide.Update(time)
+
+	overlay.hpBar.SetHp(overlay.ruleset.GetHP(overlay.cursor))
+	overlay.hpBar.Update(time)
 
 	overlay.entry.Update(time)
 
@@ -450,17 +431,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 		overlay.nextEnd = math.MaxInt64
 	}
 
-	currentHp := overlay.ruleset.GetHP(overlay.cursor)
-
 	delta60 := (time - overlay.lastTime) / 16.667
-
-	if overlay.displayHp < currentHp {
-		overlay.displayHp = math.Min(1.0, overlay.displayHp+math.Abs(currentHp-overlay.displayHp)/4*delta60)
-	} else if overlay.displayHp > currentHp {
-		overlay.displayHp = math.Max(0.0, overlay.displayHp-math.Abs(overlay.displayHp-currentHp)/6*delta60)
-	}
-
-	overlay.healthBar.SetCutX(1.0 - overlay.displayHp)
 
 	if math.Abs(overlay.displayScore-float64(overlay.currentScore)) < 0.5 {
 		overlay.displayScore = float64(overlay.currentScore)
@@ -509,8 +480,6 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	overlay.keyOverlay.Update(time)
 	overlay.bgDim.Update(time)
-	overlay.healthBackground.Update(time)
-	overlay.healthBar.Update(time)
 
 	overlay.lastTime = time
 }
@@ -535,13 +504,11 @@ func (overlay *ScoreOverlay) updateBreaks(time float64) {
 
 		overlay.comboSlide.AddEvent(time, time+500, -1)
 		overlay.bgDim.AddEvent(time, time+500, 0)
-		overlay.hpSlide.AddEvent(time, time+500, -20)
-		overlay.hpFade.AddEvent(time, time+500, 0)
+		overlay.hpBar.SlideOut()
 	} else if overlay.breakMode && !inBreak {
 		overlay.comboSlide.AddEvent(time, time+500, 0)
 		overlay.bgDim.AddEvent(time, time+500, 1)
-		overlay.hpSlide.AddEvent(time, time+500, 0)
-		overlay.hpFade.AddEvent(time, time+500, 1)
+		overlay.hpBar.SlideIn()
 	}
 
 	overlay.breakMode = inBreak
@@ -594,7 +561,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 
 	overlay.drawScore(batch, alpha)
 	overlay.drawCombo(batch, alpha)
-	overlay.drawHP(batch, alpha)
+	overlay.hpBar.Draw(batch, alpha)
 	overlay.drawPP(batch, alpha)
 	overlay.drawKeys(batch, alpha)
 
@@ -725,27 +692,6 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	batch.SetColor(1, 1, 1, comboAlpha)
 	overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, bmath.Origin.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
-}
-
-func (overlay *ScoreOverlay) drawHP(batch *batch.QuadBatch, alpha float64) {
-	hpAlpha := settings.Gameplay.HpBar.Opacity * overlay.hpFade.GetValue() * alpha
-
-	if hpAlpha < 0.001 || !settings.Gameplay.HpBar.Show {
-		return
-	}
-
-	hpScale := settings.Gameplay.HpBar.Scale
-
-	batch.ResetTransform()
-
-	batch.SetScale(hpScale, hpScale)
-	batch.SetTranslation(vector.NewVec2d(0, overlay.hpSlide.GetValue()))
-	batch.SetColor(1, 1, 1, hpAlpha)
-
-	overlay.healthBackground.Draw(overlay.lastTime, batch)
-
-	overlay.healthBar.SetPosition(overlay.hpBasePosition.Scl(hpScale))
-	overlay.healthBar.Draw(overlay.lastTime, batch)
 }
 
 func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
