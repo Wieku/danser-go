@@ -199,7 +199,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
 		}
 
-		hp := NewHealthProcessor(beatMap, diff)
+		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
 		hp.CalculateRate()
 		hp.ResetHp()
 

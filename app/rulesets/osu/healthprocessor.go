@@ -42,15 +42,28 @@ type HealthProcessor struct {
 	Health         float64
 	HealthUncapped float64
 
-	drains   []drain
-	lastTime int64
+	drains            []drain
+	lastTime          int64
+	lowerSpinnerDrain bool
+
+	spinners      []*objects.Spinner
+	spinnerActive bool
 }
 
-func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty) *HealthProcessor {
-	return &HealthProcessor{
+func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, lowerSpinnerDrain bool) *HealthProcessor {
+	proc := &HealthProcessor{
 		beatMap: beatMap,
 		diff:    diff,
+		lowerSpinnerDrain: lowerSpinnerDrain,
 	}
+
+	for _, o := range beatMap.HitObjects {
+		if s, ok := o.(*objects.Spinner); ok {
+			proc.spinners = append(proc.spinners, s)
+		}
+	}
+
+	return proc
 }
 
 func (hp *HealthProcessor) CalculateRate() {
@@ -80,7 +93,6 @@ func (hp *HealthProcessor) CalculateRate() {
 		comboTooLowCount := 0
 
 		for i, o := range hp.beatMap.HitObjects {
-
 			localLastTime := lastTime
 
 			breakTime := int64(0)
@@ -107,6 +119,7 @@ func (hp *HealthProcessor) CalculateRate() {
 			if hp.Health <= lowestHpEver {
 				fail = true
 				hp.PassiveDrain *= 0.96
+
 				break
 			}
 
@@ -170,7 +183,6 @@ func (hp *HealthProcessor) CalculateRate() {
 	lastDrainEnd := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
 
 	for _, o := range hp.beatMap.HitObjects {
-
 		if breakCount > 0 && breakNumber < breakCount {
 			pause := hp.beatMap.Pauses[breakNumber]
 			if pause.GetStartTime() >= float64(lastDrainEnd) && pause.GetEndTime() <= o.GetStartTime() {
@@ -244,7 +256,12 @@ func (hp *HealthProcessor) Increase(amount float64) {
 }
 
 func (hp *HealthProcessor) ReducePassive(amount int64) {
-	hp.Increase(-hp.PassiveDrain * float64(amount))
+	scale := 1.0
+	if hp.spinnerActive && hp.lowerSpinnerDrain {
+		scale = 0.25
+	}
+
+	hp.Increase(-hp.PassiveDrain * float64(amount) * scale)
 }
 
 func (hp *HealthProcessor) Update(time int64) {
@@ -253,6 +270,18 @@ func (hp *HealthProcessor) Update(time int64) {
 	for _, d := range hp.drains {
 		if d.start <= time && d.end >= time {
 			drainTime = true
+			break
+		}
+	}
+
+	hp.spinnerActive = false
+	for _, d := range hp.spinners {
+		if d.GetStartTime() > float64(time) {
+			break
+		}
+
+		if d.GetStartTime() <= float64(time) && float64(time) <= d.GetEndTime()  {
+			hp.spinnerActive = true
 			break
 		}
 	}
