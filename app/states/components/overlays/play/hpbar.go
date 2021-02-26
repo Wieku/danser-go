@@ -39,10 +39,11 @@ func NewHpBar() *HpBar {
 	hpBar := new(HpBar)
 
 	hpBar.healthBackground = sprite.NewSpriteSingle(skin.GetTexture("scorebar-bg"), 0, vector.NewVec2d(0, 0), bmath.Origin.TopLeft)
+	barTextures := skin.GetFrames("scorebar-colour", true) //nolint:misspell
 
 	pos := vector.NewVec2d(4.8, 16)
 
-	marker := skin.GetTexture("scorebar-marker")
+	marker := skin.GetTextureSource("scorebar-marker", skin.GetSourceFromTexture(barTextures[0]))
 
 	if marker != nil {
 		hpBar.newStyle = true
@@ -54,16 +55,14 @@ func NewHpBar() *HpBar {
 
 		hpBar.kiPosY = 17
 	} else {
-		hpBar.kiNormal = skin.GetTexture("scorebar-ki")
-		hpBar.kiDanger = skin.GetTexture("scorebar-kidanger")
-		hpBar.kiDanger2 = skin.GetTexture("scorebar-kidanger2")
+		hpBar.kiNormal = skin.GetTextureSource("scorebar-ki", skin.GetSourceFromTexture(barTextures[0]))
+		hpBar.kiDanger = skin.GetTextureSource("scorebar-kidanger", skin.GetSourceFromTexture(barTextures[0]))
+		hpBar.kiDanger2 = skin.GetTextureSource("scorebar-kidanger2", skin.GetSourceFromTexture(barTextures[0]))
 
 		hpBar.kiPosY = 16
 	}
 
 	hpBar.hpBasePosition = pos
-
-	barTextures := skin.GetFrames("scorebar-colour", true) //nolint:misspell
 
 	hpBar.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, bmath.Origin.TopLeft)
 	hpBar.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
