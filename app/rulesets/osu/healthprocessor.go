@@ -98,7 +98,7 @@ func (hp *HealthProcessor) CalculateRate() {
 				}
 			}
 
-			hp.Increase(-hp.PassiveDrain * (o.GetStartTime()-float64(lastTime-breakTime)))
+			hp.Increase(-hp.PassiveDrain * (o.GetStartTime()-float64(lastTime+breakTime)))
 
 			lastTime = int64(o.GetEndTime())
 
