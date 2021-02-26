@@ -90,7 +90,7 @@ func (hp *HealthProcessor) CalculateRate() {
 				if pause.GetStartTime() >= float64(localLastTime) && pause.GetEndTime() <= o.GetStartTime() {
 					//TODO: calculations for beatmap version < 8
 					if hp.beatMap.Version < 8 {
-						breakTime = int64(pause.GetEndTime()) - int64(pause.GetStartTime())
+						breakTime = int64(pause.Length())
 					} else {
 						breakTime = int64(pause.GetEndTime()) - localLastTime
 					}
