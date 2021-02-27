@@ -146,7 +146,7 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 	urBase /= float64(len(meter.errors))
 
-	meter.unstableRate = math.Sqrt(urBase) * 10
+	meter.unstableRate = math.Sqrt(urBase) * 10 / meter.diff.Speed
 }
 
 func (meter *HitErrorMeter) Update(time float64) {
