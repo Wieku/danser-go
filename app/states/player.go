@@ -227,7 +227,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	skipTime = math.Max(skipTime, settings.SCRUB*1000)
 
 	tmS := math.Max(float64(beatMap.HitObjects[0].GetStartTime()), settings.SCRUB*1000)
-	tmE := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime())
+	tmE := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) + float64(beatMap.Diff.Hit50)
 
 	startOffset := 0.0
 
@@ -256,6 +256,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(tmS-750, tmS-250, 1.0)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		fadeOut = 1500
+	}
+
 	player.dimGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 	player.fxGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 	player.cursorGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
@@ -266,6 +270,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.volumeGlider.AddEvent(tmE, tmE+settings.Playfield.FadeOutTime*1000, 0.0)
 
 	player.MapEnd = tmE + fadeOut
+
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		player.MapEnd += 6000
+	}
 
 	player.epiGlider = animation.NewGlider(0)
 

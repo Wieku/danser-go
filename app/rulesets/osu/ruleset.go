@@ -610,6 +610,11 @@ func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) float64 {
 	return subSet.ppv2.Total
 }
 
+func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {
+	subSet := set.cursors[cursor]
+	return subSet.maxCombo == int64(set.mapStats[subSet.numObjects-1].maxCombo)
+}
+
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
 	subSet := set.cursors[cursor]
 	return subSet.player

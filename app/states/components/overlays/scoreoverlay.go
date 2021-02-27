@@ -83,10 +83,10 @@ type ScoreOverlay struct {
 	camera       *camera2.Camera
 
 	ppFont     *font.Font
-	keyFont     *font.Font
-	scoreFont    *font.Font
-	comboFont    *font.Font
-	scoreEFont   *font.Font
+	keyFont    *font.Font
+	scoreFont  *font.Font
+	comboFont  *font.Font
+	scoreEFont *font.Font
 
 	bgDim *animation.Glider
 
@@ -119,6 +119,11 @@ type ScoreOverlay struct {
 	oldGrade osu.Grade
 
 	hpBar *play.HpBar
+
+	resultsFade *animation.Glider
+	hpSections  []vector.Vector2d
+	panel       *play.RankingPanel
+	created     bool
 }
 
 func loadFonts() {
@@ -154,6 +159,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.ppGlider = animation.NewGlider(0)
 	overlay.ppGlider.SetEasing(easing.OutQuint)
+
+	overlay.resultsFade = animation.NewGlider(0)
 
 	overlay.bgDim = animation.NewGlider(1)
 
@@ -235,6 +242,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 		overlay.currentScore = score
 		overlay.currentAccuracy = accuracy
+
+		overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
 		if overlay.oldGrade != grade {
 			go func() {
@@ -386,6 +395,21 @@ func (overlay *ScoreOverlay) Update(time float64) {
 func (overlay *ScoreOverlay) updateNormal(time float64) {
 	overlay.updateBreaks(time)
 
+	if overlay.panel != nil {
+		overlay.panel.Update(time)
+	} else if !overlay.created && overlay.audioTime >= overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime() + float64(overlay.ruleset.GetBeatMap().Diff.Hit50) {
+		overlay.created = true
+		cTime := overlay.normalTime
+
+		go func() {
+			overlay.panel = play.NewRankingPanel(overlay.cursor, overlay.ruleset, overlay.hitErrorMeter, overlay.hpSections)
+
+			s := cTime + 1500//settings.Playfield.FadeOutTime*1000
+
+			overlay.resultsFade.AddEventS(s, s+500, 0, 1)
+			overlay.resultsFade.AddEventS(s+5500, s+6000, 1, 0)
+		}()
+	}
 
 	if overlay.flashlight != nil && time >= 0 {
 
@@ -481,6 +505,8 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 	overlay.keyOverlay.Update(time)
 	overlay.bgDim.Update(time)
 
+	overlay.resultsFade.Update(time)
+
 	overlay.lastTime = time
 }
 
@@ -570,6 +596,10 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 
 	overlay.mods.Draw(overlay.lastTime, batch)
 
+	if overlay.panel != nil {
+		overlay.panel.Draw(batch, overlay.resultsFade.GetValue())
+	}
+
 	batch.SetCamera(prev)
 }
 
@@ -622,7 +652,7 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 
 		switch settings.Gameplay.Score.ProgressBar {
 		case "BottomRight":
-			bWidth = barWidth*0.694*scoreScale
+			bWidth = barWidth * 0.694 * scoreScale
 			positionX = overlay.ScaledWidth - bWidth
 			positionY = 736
 			bWidth = 188
@@ -633,10 +663,10 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 		default:
 			positionX = overlay.ScaledWidth - (12+barWidth)*scoreScale
 			positionY = scoreSize - 2*scoreScale
-			bWidth = barWidth*scoreScale
+			bWidth = barWidth * scoreScale
 		}
 
-		positionY += thickness/2
+		positionY += thickness / 2
 
 		overlay.shapeRenderer.SetColor(1, 1, 0.5, 0.5*scoreAlpha)
 
