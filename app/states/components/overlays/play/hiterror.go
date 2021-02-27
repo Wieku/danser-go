@@ -1,11 +1,13 @@
 package play
 
 import (
+	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -28,6 +30,9 @@ type HitErrorMeter struct {
 	Width    float64
 	Height   float64
 	lastTime float64
+
+	errors       []float64
+	unstableRate float64
 }
 
 func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitErrorMeter {
@@ -50,7 +55,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	bg.SetAlpha(0.6)
 	meter.errorDisplay.Add(bg)
 
-	vals := []float64{float64(meter.diff.Hit300)*0.8, float64(meter.diff.Hit100)*0.8, float64(meter.diff.Hit50)*0.8}
+	vals := []float64{float64(meter.diff.Hit300) * 0.8, float64(meter.diff.Hit100) * 0.8, float64(meter.diff.Hit50) * 0.8}
 
 	for i, v := range vals {
 		pos := 0.0
@@ -124,6 +129,24 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 	meter.errorDisplayFade.Reset()
 	meter.errorDisplayFade.SetValue(1.0)
 	meter.errorDisplayFade.AddEventSEase(time+4000, time+5000, 1.0, 0.0, easing.InQuad)
+
+	meter.errors = append(meter.errors, error)
+
+	average := 0.0
+	for _, e := range meter.errors {
+		average += e
+	}
+
+	average /= float64(len(meter.errors))
+
+	urBase := 0.0
+	for _, e := range meter.errors {
+		urBase += math.Pow(e-average, 2)
+	}
+
+	urBase /= float64(len(meter.errors))
+
+	meter.unstableRate = math.Sqrt(urBase) * 10
 }
 
 func (meter *HitErrorMeter) Update(time float64) {
@@ -135,10 +158,25 @@ func (meter *HitErrorMeter) Update(time float64) {
 
 func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
+
 	meterAlpha := settings.Gameplay.HitErrorMeter.Opacity * meter.errorDisplayFade.GetValue() * alpha
 	if meterAlpha > 0.001 && settings.Gameplay.HitErrorMeter.Show {
 		batch.SetColor(1, 1, 1, meterAlpha)
 		meter.errorDisplay.Draw(meter.lastTime, batch)
+
+		if settings.Gameplay.HitErrorMeter.ShowUnstableRate {
+			batch.SetScale(1, -1)
+
+			pY := meter.Height - errorBase*2*settings.Gameplay.HitErrorMeter.Scale
+
+			scale := settings.Gameplay.HitErrorMeter.UnstableRateScale
+
+			fnt := font.GetFont("Exo 2 Bold")
+
+			urText := fmt.Sprintf("%.0fUR", meter.unstableRate)
+			fnt.DrawMonospaced(batch, meter.Width/2-fnt.GetWidthMonospaced(15*scale, urText)/2, pY-13.33, 15*scale, urText)
+		}
 	}
+
 	batch.ResetTransform()
 }

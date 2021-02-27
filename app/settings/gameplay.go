@@ -4,10 +4,14 @@ var Gameplay = initGameplay()
 
 func initGameplay() *gameplay {
 	return &gameplay{
-		HitErrorMeter: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		HitErrorMeter: &hitError {
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			ShowUnstableRate: true,
+			UnstableRateScale: 1.0,
 		},
 		Score: &score{
 			hudElement: &hudElement{
@@ -69,7 +73,7 @@ func initGameplay() *gameplay {
 }
 
 type gameplay struct {
-	HitErrorMeter *hudElement
+	HitErrorMeter *hitError
 	Score         *score
 	HpBar         *hudElement
 	ComboCounter  *hudElement
@@ -96,6 +100,12 @@ type hudElement struct {
 	Show    bool
 	Scale   float64
 	Opacity float64
+}
+
+type hitError struct {
+	*hudElement
+	ShowUnstableRate bool
+	UnstableRateScale float64
 }
 
 type score struct {
