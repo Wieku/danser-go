@@ -103,6 +103,8 @@ type subSet struct {
 	currentKatu   int
 	currentBad    int
 	hp            *HealthProcessor
+	gekiCount     int64
+	katuCount     int64
 }
 
 type MapTo struct {
@@ -203,7 +205,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		hp.CalculateRate()
 		hp.ResetHp()
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -507,8 +509,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 		if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
 			result |= GekiAddition
+			subSet.gekiCount++
 		} else if subSet.currentBad == 0 && allClicked {
 			result |= KatuAddition
+			subSet.katuCount++
 		} else {
 			result |= MuAddition
 		}
@@ -591,9 +595,19 @@ func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int6
 	return subSet.accuracy, subSet.maxCombo, subSet.score, subSet.grade
 }
 
+func (set *OsuRuleSet) GetHits(cursor *graphics.Cursor) (int64, int64, int64, int64, int64, int64) {
+	subSet := set.cursors[cursor]
+	return subSet.hits[Hit300], subSet.hits[Hit100], subSet.hits[Hit50], subSet.hits[Miss], subSet.gekiCount, subSet.katuCount
+}
+
 func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	subSet := set.cursors[cursor]
 	return subSet.hp.Health / MaxHp
+}
+
+func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) float64 {
+	subSet := set.cursors[cursor]
+	return subSet.ppv2.Total
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
