@@ -5,6 +5,7 @@ import (
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/rplpa"
 	"sort"
+	"time"
 
 	//"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
@@ -31,14 +32,15 @@ import (
 const replaysMaster = "replays"
 
 type RpData struct {
-	Name     string
-	Mods     string
-	ModsV    difficulty.Modifier
-	Accuracy float64
-	Combo    int64
-	MaxCombo int64
-	Grade    osu.Grade
-	scoreID  int64
+	Name      string
+	Mods      string
+	ModsV     difficulty.Modifier
+	Accuracy  float64
+	Combo     int64
+	MaxCombo  int64
+	Grade     osu.Grade
+	scoreID   int64
+	ScoreTime time.Time
 }
 
 type subControl struct {
@@ -221,7 +223,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods & displayedMods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID})
+		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods & displayedMods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("Expected score:", replay.Score)
@@ -328,7 +330,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append([]RpData{{settings.Knockout.DanserName, (difficulty.Autoplay | beatMap.Diff.Mods).String(), difficulty.Autoplay | beatMap.Diff.Mods, 100, 0, 0, osu.NONE, -1}}, controller.replays...)
+		controller.replays = append([]RpData{{settings.Knockout.DanserName, (difficulty.Autoplay | beatMap.Diff.Mods).String(), difficulty.Autoplay | beatMap.Diff.Mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
 	}
 
@@ -376,6 +378,7 @@ func (controller *ReplayController) InitCursors() {
 			cursor := graphics.NewCursor()
 			cursor.Name = controller.replays[i].Name
 			cursor.ScoreID = controller.replays[i].scoreID
+			cursor.ScoreTime = controller.replays[i].ScoreTime
 			cursor.OldSpinnerScoring = controller.controllers[i].oldSpinners
 
 			controller.cursors = append(controller.cursors, cursor)

@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
+	"time"
 )
 
 type cursorRenderer interface {
@@ -79,6 +80,7 @@ type Cursor struct {
 
 	Name    string
 	ScoreID int64
+	ScoreTime time.Time
 
 	lastSetting bool
 

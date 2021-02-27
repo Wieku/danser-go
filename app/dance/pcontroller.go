@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"strings"
+	"time"
 )
 
 type PlayerController struct {
@@ -34,6 +35,7 @@ func (controller *PlayerController) SetBeatMap(beatMap *beatmap.BeatMap) {
 func (controller *PlayerController) InitCursors() {
 	controller.cursors = []*graphics.Cursor{graphics.NewCursor()}
 	controller.cursors[0].IsPlayer = true
+	controller.cursors[0].ScoreTime = time.Now()
 	controller.window = glfw.GetCurrentContext()
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{controller.bMap.Diff.Mods})
 	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
