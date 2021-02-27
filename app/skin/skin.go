@@ -3,6 +3,7 @@ package skin
 import (
 	"fmt"
 	"github.com/faiface/mainthread"
+	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
@@ -39,6 +40,8 @@ var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
 
+var pathCache = make(map[string]string)
+
 var CurrentSkin = defaultName
 
 var info *SkinInfo
@@ -67,14 +70,23 @@ func checkInit() {
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
+		path := strings.ReplaceAll(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin), "\\", "/") + "/"
+		_ = godirwalk.Walk(path, &godirwalk.Options{
+			Callback: func(osPathname string, de *godirwalk.Dirent) error {
+				fixedPath := strings.TrimPrefix(strings.ReplaceAll(osPathname, "\\", "/"), path)
+
+				pathCache[strings.ToLower(fixedPath)] = fixedPath
+
+				return nil
+			},
+			Unsorted: true,
+		})
+
 		var err error
-		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
+		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache["skin.ini"]))
 		if err != nil {
-			info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "Skin.ini"))
-			if err != nil {
-				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
-				fallback()
-			}
+			log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
+			fallback()
 		}
 	}
 
@@ -150,7 +162,7 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 				return rg
 			}
 		} else {
-			rg := loadTexture(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name+".png"))
+			rg := loadTexture(name+".png", false)
 			skinCache[name] = rg
 
 			if rg != nil {
@@ -165,7 +177,7 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 			return rg
 		}
 
-		rg := loadTexture(filepath.Join("assets", "default-skin", name+".png"))
+		rg := loadTexture(name+".png", true)
 		defaultCache[name] = rg
 
 		if rg != nil {
@@ -254,24 +266,24 @@ func checkAtlas() {
 	}
 }
 
-func getPixmap(name string) (*texture.Pixmap, error) {
-	if strings.HasPrefix(name, "assets") {
-		return assets.GetPixmap(name)
+func getPixmap(name string, local bool) (*texture.Pixmap, error) {
+	if local {
+		return assets.GetPixmap(filepath.Join("assets", "default-skin", name))
 	}
 
-	return texture.NewPixmapFileString(name)
+	return texture.NewPixmapFileString(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[name]))
 }
 
-func loadTexture(name string) *texture.TextureRegion {
+func loadTexture(name string, local bool) *texture.TextureRegion {
 	ext := filepath.Ext(name)
 
 	x2Name := strings.TrimSuffix(name, ext) + "@2x" + ext
 
 	var region *texture.TextureRegion
 
-	image, err := getPixmap(x2Name)
+	image, err := getPixmap(x2Name, local)
 	if err != nil {
-		image, err = getPixmap(name)
+		image, err = getPixmap(name, local)
 		if err == nil {
 			region = &texture.TextureRegion{}
 			region.Width = float32(image.Width)
@@ -321,6 +333,7 @@ func loadTexture(name string) *texture.TextureRegion {
 
 func GetSample(name string) *bass.Sample {
 	checkInit()
+
 	if sample, exists := sampleCache[name]; exists {
 		return sample
 	}
@@ -328,11 +341,11 @@ func GetSample(name string) *bass.Sample {
 	var sample *bass.Sample
 
 	if CurrentSkin != defaultName {
-		sample = tryLoad(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name))
+		sample = tryLoad(name, false)
 	}
 
 	if sample == nil {
-		sample = tryLoad(filepath.Join("assets", "default-skin", name))
+		sample = tryLoad(name, true)
 	}
 
 	sampleCache[name] = sample
@@ -340,9 +353,9 @@ func GetSample(name string) *bass.Sample {
 	return sample
 }
 
-func getSample(name string) *bass.Sample {
-	if strings.HasPrefix(name, "assets") {
-		data, err := assets.GetBytes(name)
+func getSample(name string, local bool) *bass.Sample {
+	if local {
+		data, err := assets.GetBytes(filepath.Join("assets", "default-skin", name))
 		if err != nil {
 			return nil
 		}
@@ -350,19 +363,19 @@ func getSample(name string) *bass.Sample {
 		return bass.NewSampleData(data)
 	}
 
-	return bass.NewSample(name)
+	return bass.NewSample(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[name]))
 }
 
-func tryLoad(basePath string) *bass.Sample {
-	if sam := getSample(basePath + ".wav"); sam != nil {
+func tryLoad(basePath string, local bool) *bass.Sample {
+	if sam := getSample(basePath+".wav", local); sam != nil {
 		return sam
 	}
 
-	if sam := getSample(basePath + ".ogg"); sam != nil {
+	if sam := getSample(basePath+".ogg", local); sam != nil {
 		return sam
 	}
 
-	if sam := getSample(basePath + ".mp3"); sam != nil {
+	if sam := getSample(basePath+".mp3", local); sam != nil {
 		return sam
 	}
 
