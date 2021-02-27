@@ -33,6 +33,8 @@ type HitErrorMeter struct {
 
 	errors       []float64
 	unstableRate float64
+	avgPos       float64
+	avgNeg       float64
 }
 
 func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitErrorMeter {
@@ -132,12 +134,22 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 	meter.errors = append(meter.errors, error)
 
-	average := 0.0
+	averageN := 0.0
+	countN := 0
+
+	averageP := 0.0
+	countP := 0
 	for _, e := range meter.errors {
-		average += e
+		if e >= 0 {
+			averageP += e
+			countP++
+		} else {
+			averageN += e
+			countN++
+		}
 	}
 
-	average /= float64(len(meter.errors))
+	average := (averageN+averageP) / float64(countN+countP)
 
 	urBase := 0.0
 	for _, e := range meter.errors {
@@ -146,7 +158,9 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 	urBase /= float64(len(meter.errors))
 
-	meter.unstableRate = math.Sqrt(urBase) * 10 / meter.diff.Speed
+	meter.avgNeg = averageN / float64(countN)
+	meter.avgPos = averageP / float64(countP)
+	meter.unstableRate = math.Sqrt(urBase) * 10
 }
 
 func (meter *HitErrorMeter) Update(time float64) {
@@ -173,10 +187,34 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 
 			fnt := font.GetFont("Exo 2 Bold")
 
-			urText := fmt.Sprintf("%.0fUR", meter.unstableRate)
+			urText := fmt.Sprintf("%.0fUR", meter.GetUnstableRateConverted())
 			fnt.DrawMonospaced(batch, meter.Width/2-fnt.GetWidthMonospaced(15*scale, urText)/2, pY-13.33, 15*scale, urText)
 		}
 	}
 
 	batch.ResetTransform()
+}
+
+func (meter *HitErrorMeter) GetAvgNeg() float64 {
+	return meter.avgNeg
+}
+
+func (meter *HitErrorMeter) GetAvgNegConverted() float64 {
+	return meter.avgNeg / meter.diff.Speed
+}
+
+func (meter *HitErrorMeter) GetAvgPos() float64 {
+	return meter.avgPos
+}
+
+func (meter *HitErrorMeter) GetAvgPosConverted() float64 {
+	return meter.avgPos / meter.diff.Speed
+}
+
+func (meter *HitErrorMeter) GetUnstableRate() float64 {
+	return meter.unstableRate
+}
+
+func (meter *HitErrorMeter) GetUnstableRateConverted() float64 {
+	return meter.unstableRate / meter.diff.Speed
 }
