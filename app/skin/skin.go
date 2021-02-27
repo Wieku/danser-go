@@ -271,7 +271,7 @@ func getPixmap(name string, local bool) (*texture.Pixmap, error) {
 		return assets.GetPixmap(filepath.Join("assets", "default-skin", name))
 	}
 
-	return texture.NewPixmapFileString(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[name]))
+	return texture.NewPixmapFileString(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[strings.ToLower(name)]))
 }
 
 func loadTexture(name string, local bool) *texture.TextureRegion {
@@ -363,7 +363,7 @@ func getSample(name string, local bool) *bass.Sample {
 		return bass.NewSampleData(data)
 	}
 
-	return bass.NewSample(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[name]))
+	return bass.NewSample(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[strings.ToLower(name)]))
 }
 
 func tryLoad(basePath string, local bool) *bass.Sample {
