@@ -116,6 +116,7 @@ func (hpBar *HpBar) Update(time float64) {
 
 	hpBar.healthBar.SetCutX(1.0 - hpBar.displayHp)
 
+	hpBar.healthBar.Update(time)
 	hpBar.kiIcon.Update(time)
 
 	hpBar.explodes.Update(time)
