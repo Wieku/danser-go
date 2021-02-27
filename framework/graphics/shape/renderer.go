@@ -205,7 +205,7 @@ func (renderer *Renderer) DrawLine(x1, y1, x2, y2, thickness float32) {
 
 	length := math32.Sqrt(dx*dx + dy*dy)
 
-	tx := dy / length * thickHalf
+	tx := -dy / length * thickHalf
 	ty := dx / length * thickHalf
 
 	renderer.DrawQuad(x1-tx, y1-ty, x1+tx, y1+ty, x2+tx, y2+ty, x2-tx, y2-ty)
