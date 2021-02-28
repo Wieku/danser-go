@@ -341,18 +341,16 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 }
 
 func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
-	maniaFrameIndex := 0
+	// Remove mania seed frame if its present
 	for i, frame := range frames {
 		if frame.Time == -12345 {
-			maniaFrameIndex = i
+			frames = append(frames[:i], frames[i+1:]...)
 			break
 		}
 	}
 
-	frames = append(frames[:maniaFrameIndex], frames[maniaFrameIndex+1:]...)
-
-	// Hope this won't explode
-	if frames[0].Time < 0 {
+	// Remove incorrect first frame if its delta is 0
+	if frames[0].Time == 0 {
 		frames = frames[1:]
 	}
 
