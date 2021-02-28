@@ -318,9 +318,9 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 		currentHp := overlay.controller.GetRuleset().GetHP(overlay.controller.GetCursors()[player.oldIndex])
 
 		if player.displayHp < currentHp {
-			player.displayHp = math.Min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4 * delta/16.667)
+			player.displayHp = math.Min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4*delta/16.667)
 		} else if player.displayHp > currentHp {
-			player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6 * delta/16.667)
+			player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6*delta/16.667)
 		}
 
 	}
@@ -554,10 +554,6 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 func (overlay *KnockoutOverlay) IsBroken(cursor *graphics.Cursor) bool {
 	return overlay.players[overlay.names[cursor]].hasBroken
-}
-
-func (overlay *KnockoutOverlay) NormalBeforeCursor() bool {
-	return true
 }
 
 func humanize(number int64) string {

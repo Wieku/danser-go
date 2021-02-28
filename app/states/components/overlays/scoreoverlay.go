@@ -45,7 +45,6 @@ type Overlay interface {
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	IsBroken(cursor *graphics.Cursor) bool
-	NormalBeforeCursor() bool
 }
 
 type ScoreOverlay struct {
@@ -397,14 +396,14 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	if overlay.panel != nil {
 		overlay.panel.Update(time)
-	} else if !overlay.created && overlay.audioTime >= overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime() + float64(overlay.ruleset.GetBeatMap().Diff.Hit50) {
+	} else if !overlay.created && overlay.audioTime >= overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()+float64(overlay.ruleset.GetBeatMap().Diff.Hit50) {
 		overlay.created = true
 		cTime := overlay.normalTime
 
 		go func() {
 			overlay.panel = play.NewRankingPanel(overlay.cursor, overlay.ruleset, overlay.hitErrorMeter, overlay.hpSections)
 
-			s := cTime + 1500//settings.Playfield.FadeOutTime*1000
+			s := cTime + 1500 //settings.Playfield.FadeOutTime*1000
 
 			overlay.resultsFade.AddEventS(s, s+500, 0, 1)
 			overlay.resultsFade.AddEventS(s+5500, s+6000, 1, 0)
@@ -824,10 +823,6 @@ func (overlay *ScoreOverlay) isDrain() bool {
 
 func (overlay *ScoreOverlay) IsBroken(_ *graphics.Cursor) bool {
 	return false
-}
-
-func (overlay *ScoreOverlay) NormalBeforeCursor() bool {
-	return true
 }
 
 func (overlay *ScoreOverlay) showPassInfo() {
