@@ -192,71 +192,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.scoreFont = skin.GetFont("score")
 	overlay.comboFont = skin.GetFont("combo")
 
-	ruleset.SetListener(func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score1 int64) {
-		if result&(osu.BaseHitsM) > 0 {
-			overlay.results.AddResult(time, result, position)
-		}
-
-		_, hC := ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
-		allowCircle := hC && (result&osu.BaseHits > 0)
-		_, sl := ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
-		allowSlider := sl && result == osu.SliderStart
-
-		if allowCircle || allowSlider {
-			timeDiff := float64(time) - ruleset.GetBeatMap().HitObjects[number].GetStartTime()
-
-			overlay.hitErrorMeter.Add(float64(time), timeDiff)
-		}
-
-		if comboResult == osu.ComboResults.Increase {
-
-			overlay.newComboScaleB.Reset()
-			overlay.newComboScaleB.AddEventS(overlay.normalTime, overlay.normalTime+300, 2, 1.28)
-
-			overlay.newComboFadeB.Reset()
-			overlay.newComboFadeB.AddEventS(overlay.normalTime, overlay.normalTime+300, 0.6, 0.0)
-
-			overlay.animate(overlay.normalTime)
-
-			overlay.combo = overlay.newCombo
-			overlay.newCombo++
-			overlay.nextEnd = overlay.normalTime + 300
-		} else if comboResult == osu.ComboResults.Reset {
-			if overlay.newCombo > 20 && overlay.combobreak != nil {
-				overlay.combobreak.Play()
-			}
-			overlay.newCombo = 0
-		}
-
-		if overlay.flashlight != nil {
-			overlay.flashlight.UpdateCombo(overlay.newCombo)
-		}
-
-		accuracy, mCombo, score, grade := overlay.ruleset.GetResults(overlay.cursor)
-
-		overlay.entry.UpdatePlayer(score, mCombo)
-
-		overlay.ppGlider.Reset()
-		overlay.ppGlider.AddEvent(overlay.normalTime, overlay.normalTime+500, pp)
-
-		overlay.currentScore = score
-		overlay.currentAccuracy = accuracy
-
-		overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
-
-		if overlay.oldGrade != grade {
-			go func() {
-				gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
-
-				text := skin.GetTexture("ranking-" + gText + "-small")
-
-				overlay.rankBack.Textures[0] = text
-				overlay.rankFront.Textures[0] = text
-
-				overlay.oldGrade = grade
-			}()
-		}
-	})
+	ruleset.SetListener(overlay.hitReceived)
 
 	overlay.camera = camera2.NewCamera()
 	overlay.camera.SetViewportF(0, int(overlay.ScaledHeight), int(overlay.ScaledWidth), 0)
@@ -309,6 +245,72 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.entry.AddPlayer(overlay.cursor.Name)
 
 	return overlay
+}
+
+func (overlay *ScoreOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
+	if result&(osu.BaseHitsM) > 0 {
+		overlay.results.AddResult(time, result, position)
+	}
+
+	_, hC := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
+	allowCircle := hC && (result&osu.BaseHits > 0)
+	_, sl := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
+	allowSlider := sl && result == osu.SliderStart
+
+	if allowCircle || allowSlider {
+		timeDiff := float64(time) - overlay.ruleset.GetBeatMap().HitObjects[number].GetStartTime()
+
+		overlay.hitErrorMeter.Add(float64(time), timeDiff)
+	}
+
+	if comboResult == osu.ComboResults.Increase {
+
+		overlay.newComboScaleB.Reset()
+		overlay.newComboScaleB.AddEventS(overlay.normalTime, overlay.normalTime+300, 2, 1.28)
+
+		overlay.newComboFadeB.Reset()
+		overlay.newComboFadeB.AddEventS(overlay.normalTime, overlay.normalTime+300, 0.6, 0.0)
+
+		overlay.animate(overlay.normalTime)
+
+		overlay.combo = overlay.newCombo
+		overlay.newCombo++
+		overlay.nextEnd = overlay.normalTime + 300
+	} else if comboResult == osu.ComboResults.Reset {
+		if overlay.newCombo > 20 && overlay.combobreak != nil {
+			overlay.combobreak.Play()
+		}
+		overlay.newCombo = 0
+	}
+
+	if overlay.flashlight != nil {
+		overlay.flashlight.UpdateCombo(overlay.newCombo)
+	}
+
+	accuracy, mCombo, score, grade := overlay.ruleset.GetResults(overlay.cursor)
+
+	overlay.entry.UpdatePlayer(score, mCombo)
+
+	overlay.ppGlider.Reset()
+	overlay.ppGlider.AddEvent(overlay.normalTime, overlay.normalTime+500, pp)
+
+	overlay.currentScore = score
+	overlay.currentAccuracy = accuracy
+
+	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
+
+	if overlay.oldGrade != grade {
+		go func() {
+			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+
+			text := skin.GetTexture("ranking-" + gText + "-small")
+
+			overlay.rankBack.Textures[0] = text
+			overlay.rankFront.Textures[0] = text
+
+			overlay.oldGrade = grade
+		}()
+	}
 }
 
 func (overlay *ScoreOverlay) animate(time float64) {
