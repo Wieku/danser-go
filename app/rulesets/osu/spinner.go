@@ -134,9 +134,19 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			if player.diff.CheckModActive(difficulty.SpunOut) {
 				state.currentVelocity = 0.03
 			} else if state.theoreticalVelocity > state.currentVelocity {
-				state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, maxAccelThisFrame)
+				accel := maxAccelThisFrame
+				if state.currentVelocity < 0 && player.diff.CheckModActive(difficulty.Relax) {
+					accel /= 4
+				}
+
+				state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, accel)
 			} else {
-				state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, -maxAccelThisFrame)
+				accel := -maxAccelThisFrame
+				if state.currentVelocity > 0 && player.diff.CheckModActive(difficulty.Relax) {
+					accel /= 4
+				}
+
+				state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, accel)
 			}
 
 			state.currentVelocity = math.Max(-0.05, math.Min(state.currentVelocity, 0.05))
