@@ -10,7 +10,6 @@ import (
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -22,10 +21,8 @@ import (
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/graphics/font"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
-	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -78,11 +75,7 @@ type Player struct {
 	overlay         overlays.Overlay
 	blur            *effects.BlurEffect
 
-	LogoS1 *sprite.Sprite
-	LogoS2 *sprite.Sprite
-
-	cookieSize float64
-	visualiser *drawables.Visualiser
+	coin *common.DanserCoin
 
 	hudGlider *animation.Glider
 
@@ -99,8 +92,6 @@ type Player struct {
 	secDelta float64
 
 	startOffset float64
-
-	beatListener *common.BeatSynced
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -118,21 +109,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	log.Println("Playing:", player.mapFullName)
 
 	var err error
-
-	LogoT, err := utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/coinbig.png")
-	if err != nil {
-		panic(err)
-	}
-
-	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
-	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
-
-	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
-		player.cookieSize = 0.5 * settings.Graphics.GetHeightF()
-	} else {
-		player.cookieSize = 0.5 * settings.Graphics.GetWidthF()
-	}
-
 	player.Epi, err = utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/warning.png")
 
 	if err != nil {
@@ -307,8 +283,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 	player.background.SetTrack(musicPlayer)
-	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, vector.NewVec2d(0, 0))
-	player.visualiser.SetTrack(musicPlayer)
+
+	player.coin = common.NewDanserCoin()
+	player.coin.SetMap(beatMap, musicPlayer)
+
+	player.coin.SetScale(0.25 * math.Min(settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()))
 
 	player.profiler = frame.NewCounter()
 	player.musicPlayer = musicPlayer
@@ -317,9 +296,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
 	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
-
-	player.beatListener = common.NewBeatSynced()
-	player.beatListener.SetMap(beatMap, player.musicPlayer)
 
 	player.profilerU = frame.NewCounter()
 
@@ -462,8 +438,8 @@ func (player *Player) updateMain(delta float64) {
 		player.overlay.Update(player.progressMsF)
 	}
 
-	player.beatListener.Update(player.progressMsF)
-	player.visualiser.Update(player.progressMsF)
+	player.coin.Update(player.progressMsF)
+	player.coin.SetAlpha(float32(player.fxGlider.GetValue()))
 
 	var offset vector.Vector2d
 
@@ -495,7 +471,7 @@ func (player *Player) updateMusic(delta float64) {
 	target := bmath.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
 
 	if settings.Audio.BeatUseTimingPoints {
-		player.Scl = 1 + player.beatListener.Progress*(settings.Audio.BeatScale-1.0)
+		player.Scl = 1 + player.coin.Progress*(settings.Audio.BeatScale-1.0)
 	} else {
 		if player.Scl < target {
 			player.Scl += (target - player.Scl) * 30 / 100
@@ -571,7 +547,7 @@ func (player *Player) Draw(float64) {
 		player.batch.SetColor(1, 1, 1, player.epiGlider.GetValue())
 		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		scl := scaling.Fit.Apply(float32(player.Epi.Width), float32(player.Epi.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
+		scl := scaling.Fit.Apply(player.Epi.Width, player.Epi.Height, float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
 		scl = scl.Scl(0.5).Scl(0.66)
 		player.batch.SetScale(scl.X64(), scl.Y64())
 		player.batch.DrawUnit(*player.Epi)
@@ -602,30 +578,9 @@ func (player *Player) Draw(float64) {
 		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
 		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		innerCircleScale := 1.05 - easing.OutQuad(player.beatListener.Progress)*0.05
-		outerCircleScale := 1.05 + easing.OutQuad(player.beatListener.Progress)*0.03
+		player.coin.DrawVisualiser(settings.Playfield.Logo.DrawSpectrum)
+		player.coin.Draw(player.progressMsF, player.batch)
 
-		if settings.Playfield.Logo.DrawSpectrum {
-			player.visualiser.SetStartDistance(player.cookieSize * 0.5 * innerCircleScale)
-			player.visualiser.Draw(player.progressMsF, player.batch)
-		}
-
-		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
-
-		scl := (player.cookieSize / 2048.0) * 1.05
-
-		player.LogoS1.SetScale(innerCircleScale * scl)
-		player.LogoS2.SetScale(outerCircleScale * scl)
-
-		alpha := 0.3
-		if player.bMap.Timings.Current.Kiai {
-			alpha = 0.12
-		}
-
-		player.LogoS2.SetAlpha(float32(alpha * (1 - easing.OutQuad(player.beatListener.Progress))))
-
-		player.LogoS1.UpdateAndDraw(player.progressMsF, player.batch)
-		player.LogoS2.UpdateAndDraw(player.progressMsF, player.batch)
 		player.batch.ResetTransform()
 		player.batch.End()
 	}
