@@ -109,42 +109,42 @@ var modsStringFull = [...]string{
 	"Daycore",
 }
 
-func (modifier Modifier) GetScoreMultiplier() float64 {
+func (mods Modifier) GetScoreMultiplier() float64 {
 	multiplier := 1.0
 
-	if modifier&NoFail > 0 {
+	if mods&NoFail > 0 {
 		multiplier *= 0.5
 	}
 
-	if modifier&Easy > 0 {
+	if mods&Easy > 0 {
 		multiplier *= 0.5
 	}
 
-	if modifier&HalfTime > 0 {
+	if mods&HalfTime > 0 {
 		multiplier *= 0.3
 	}
 
-	if modifier&Hidden > 0 {
+	if mods&Hidden > 0 {
 		multiplier *= 1.06
 	}
 
-	if modifier&HardRock > 0 {
+	if mods&HardRock > 0 {
 		multiplier *= 1.06
 	}
 
-	if modifier&DoubleTime > 0 {
+	if mods&DoubleTime > 0 {
 		multiplier *= 1.12
 	}
 
-	if modifier&Flashlight > 0 {
+	if mods&Flashlight > 0 {
 		multiplier *= 1.12
 	}
 
-	if (modifier&Relax | modifier&Relax2) > 0 {
+	if (mods&Relax | mods&Relax2) > 0 {
 		multiplier = 0
 	}
 
-	if modifier&SpunOut > 0 {
+	if mods&SpunOut > 0 {
 		multiplier *= 0.9
 	}
 
@@ -169,8 +169,10 @@ func (mods Modifier) String() (s string) {
 		if activated {
 			s += modsString[i]
 		}
+
 		mods >>= 1
 	}
+
 	return
 }
 
@@ -192,8 +194,10 @@ func (mods Modifier) StringFull() (s []string) {
 		if activated {
 			s = append(s, modsStringFull[i])
 		}
+
 		mods >>= 1
 	}
+
 	return
 }
 
@@ -202,6 +206,7 @@ func ParseMods(mods string) (m Modifier) {
 	for n, modPart := range mods {
 		modsSl[n/2] += string(modPart)
 	}
+
 	for _, mod := range modsSl {
 		for index, availableMod := range modsString {
 			if availableMod == mod {
@@ -235,23 +240,11 @@ func (mods Modifier) Compatible() bool {
 		return true
 	}
 
-	if mods.Active(HardRock) && mods.Active(Easy) {
-		return false
-	}
-
-	if (mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore)) {
-		return false
-	}
-
-	if (mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail) {
-		return false
-	}
-
-	if mods.Active(Relax) && mods.Active(Relax2) {
-		return false
-	}
-
-	if (mods.Active(Relax) || mods.Active(Relax2)) && mods.Active(Autoplay) {
+	if (mods.Active(HardRock) && mods.Active(Easy)) ||
+		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
+		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
+		(mods.Active(Relax) && mods.Active(Relax2)) ||
+		((mods.Active(Relax) || mods.Active(Relax2)) && mods.Active(Autoplay)) {
 		return false
 	}
 
