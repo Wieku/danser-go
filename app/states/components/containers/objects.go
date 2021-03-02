@@ -20,7 +20,7 @@ import (
 
 type renderableProxy struct {
 	renderable   objects.Renderable
-	IsSliderBody bool
+	isSliderBody bool
 	depth        float64
 	endTime      float64
 }
@@ -34,59 +34,68 @@ type HitObjectContainer struct {
 }
 
 func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
-	log.Println("ocontainer")
-	container := new(HitObjectContainer)
-	container.beatMap = beatMap
-	container.objectQueue = beatMap.GetObjectsCopy()
-	container.spriteManager = sprite.NewSpriteManager()
-	container.renderables = make([]*renderableProxy, 0)
+	log.Println("Creating HitObject container...")
 
-	prempt := 800.0
-	postmt := 240.0
-	lineDist := 32.0
+	container := &HitObjectContainer{
+		beatMap:       beatMap,
+		objectQueue:   beatMap.GetObjectsCopy(),
+		spriteManager: sprite.NewSpriteManager(),
+		renderables:   make([]*renderableProxy, 0),
+	}
+
+	container.createFollowPoints()
+
+	return container
+}
+
+func (container *HitObjectContainer) createFollowPoints() {
+	const (
+		preEmpt  = 800.0
+		fadeOut  = 240.0
+		lineDist = 32.0
+	)
+
+	textures := skin.GetFrames("followpoint", true)
 
 	for i := 1; i < len(container.objectQueue); i++ {
 		_, ok1 := container.objectQueue[i-1].(*objects.Spinner)
 		_, ok2 := container.objectQueue[i].(*objects.Spinner)
-		if ok1 || ok2 || container.objectQueue[i].IsNewCombo() {
+		if ok1 || ok2 || container.objectQueue[i].IsNewCombo() { //suppress:wsl
 			continue
 		}
 
-		prevTime := float64(container.objectQueue[i-1].GetEndTime())
-		prevPos := container.objectQueue[i-1].GetStackedEndPositionMod(beatMap.Diff.Mods).Copy64()
+		prevTime := container.objectQueue[i-1].GetEndTime()
+		prevPos := container.objectQueue[i-1].GetStackedEndPositionMod(container.beatMap.Diff.Mods).Copy64()
 
-		nextTime := float64(container.objectQueue[i].GetStartTime())
-		nextPos := container.objectQueue[i].GetStackedStartPositionMod(beatMap.Diff.Mods).Copy64()
+		nextTime := container.objectQueue[i].GetStartTime()
+		nextPos := container.objectQueue[i].GetStackedStartPositionMod(container.beatMap.Diff.Mods).Copy64()
+
+		duration := nextTime - prevTime
 
 		vec := nextPos.Sub(prevPos)
-		duration := nextTime - prevTime
 		distance := vec.Len()
 		rotation := vec.AngleR()
 
-		for prog := lineDist * 1.5; prog < distance-lineDist; prog += lineDist {
-			t := prog / distance
+		for progress := lineDist * 1.5; progress < distance-lineDist; progress += lineDist {
+			t := progress / distance
 
-			tStart := prevTime + t*duration - prempt
+			tStart := prevTime + t*duration - preEmpt
 			tEnd := prevTime + t*duration
 
 			pos := prevPos.Add(vec.Scl(t))
 
-			textures := skin.GetFrames("followpoint", true)
+			followPoint := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, bmath.Origin.Centre)
+			followPoint.SetRotation(rotation)
+			followPoint.SetAlpha(0)
+			followPoint.ShowForever(false)
 
-			sprite := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, bmath.Origin.Centre)
-			sprite.SetRotation(rotation)
-			sprite.ShowForever(false)
+			followPoint.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tStart, tStart+fadeOut, 0, 1))
+			followPoint.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tEnd, tEnd+fadeOut, 1, 0))
+			followPoint.AdjustTimesToTransformations()
 
-			sprite.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tStart, tStart+postmt, 0, 1))
-			sprite.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tEnd, tEnd+postmt, 1, 0))
-			sprite.AdjustTimesToTransformations()
-			sprite.SetAlpha(0)
-
-			container.spriteManager.Add(sprite)
+			container.spriteManager.Add(followPoint)
 		}
 	}
-
-	return container
 }
 
 func (container *HitObjectContainer) addProxy(proxy *renderableProxy) {
@@ -105,34 +114,33 @@ func (container *HitObjectContainer) Update(time float64) {
 
 	if time > 0 {
 		delta := time - container.lastTime
+
 		settings.Objects.Colors.Color.Update(delta)
 		settings.Objects.Colors.Sliders.Border.Color.Update(delta)
 		settings.Objects.Colors.Sliders.Body.Color.Update(delta)
 
 		container.lastTime = time
 	}
-
 }
 
-func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
+func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, _ float32) {
 	divides := len(cameras)
 
 	if len(container.objectQueue) > 0 {
 		for i := 0; i < len(container.objectQueue); i++ {
 			if p := container.objectQueue[i]; p.GetStartTime()-15000 <= time {
 				if p := container.objectQueue[i]; p.GetStartTime()-math.Floor(container.beatMap.Diff.Preempt) <= time {
-
 					if _, ok := p.(*objects.Spinner); ok {
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
-							IsSliderBody: false,
+							isSliderBody: false,
 							depth:        math.MaxFloat64,
 							endTime:      p.GetEndTime() + difficulty.HitFadeOut,
 						})
 					} else {
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
-							IsSliderBody: false,
+							isSliderBody: false,
 							depth:        p.GetStartTime(),
 							endTime:      p.GetEndTime() + float64(container.beatMap.Diff.Hit50) + difficulty.HitFadeOut,
 						})
@@ -141,7 +149,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 					if _, ok := p.(*objects.Slider); ok {
 						container.addProxy(&renderableProxy{
 							renderable:   p.(objects.Renderable),
-							IsSliderBody: true,
+							isSliderBody: true,
 							depth:        p.GetEndTime() + 10,
 							endTime:      p.GetEndTime() + difficulty.HitFadeOut,
 						})
@@ -189,7 +197,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 		batch.SetScale(1, 1)
 
 		for i := len(container.renderables) - 1; i >= 0; i-- {
-			if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].IsSliderBody {
+			if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
 				s.DrawBodyBase(time, cameras[0])
 			}
 		}
@@ -204,9 +212,10 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 				}
 
 				for i := len(container.renderables) - 1; i >= 0; i-- {
-					if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].IsSliderBody {
+					if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
 						if !enabled {
 							enabled = true
+
 							sliderrenderer.BeginRendererMerge()
 						}
 
@@ -214,6 +223,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 					}
 				}
 			}
+
 			if enabled {
 				sliderrenderer.EndRendererMerge()
 			}
@@ -237,7 +247,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 			for i := len(container.renderables) - 1; i >= 0; i-- {
 				proxy := container.renderables[i]
 
-				if !proxy.IsSliderBody {
+				if !proxy.isSliderBody {
 					if enabled && !settings.Objects.Sliders.SliderMerge {
 						enabled = false
 
@@ -275,7 +285,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 				batch.SetCamera(cameras[j])
 
 				for i := len(container.renderables) - 1; i >= 0; i-- {
-					if s := container.renderables[i]; !s.IsSliderBody {
+					if s := container.renderables[i]; !s.isSliderBody {
 						s.renderable.DrawApproach(time, objectColors[j], batch)
 					}
 				}
