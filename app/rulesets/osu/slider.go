@@ -3,6 +3,7 @@ package osu
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -84,7 +85,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 		}
 
 		if len(slider.state[player].points) > 0 {
-			slider.state[player].points[len(slider.state[player].points)-1].time = int64(math.Max(float64(slider.hitSlider.GetStartTime()+(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2), float64(slider.hitSlider.GetEndTime()-36))) //slider ends 36ms before the real end for scoring
+			slider.state[player].points[len(slider.state[player].points)-1].time = bmath.MaxI64(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
 			slider.state[player].points[len(slider.state[player].points)-1].scoreGiven = SliderEnd
 		}
 	}
@@ -216,12 +217,13 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 		}
 
 		pointsPassed := 0
+
 		for _, point := range state.points {
-			if point.time <= time {
-				pointsPassed++
-			} else {
+			if point.time > time {
 				break
 			}
+
+			pointsPassed++
 		}
 
 		if state.scored+state.missed < pointsPassed {

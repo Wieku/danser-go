@@ -121,19 +121,17 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	//oppaiMaps []*oppai.Map
 	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]oppai.Stars
 
 	queue       []HitObject
 	processed   []HitObject
-	listener    func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
-	endlistener func(time int64, number int64)
+	hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
+	endListener func(time int64, number int64)
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
-
-	log.Println("rs")
+	log.Println("Creating osu! ruleset...")
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
@@ -160,19 +158,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 		ruleset.mapStats = append(ruleset.mapStats, mapTo)
 	}
-
-	//file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	//
-	//if err != nil {
-	//	panic("Could not open beatmap file.")
-	//}
-	//
-	//defer file.Close()
-	//
-	//for j := range beatMap.HitObjects {
-	//	ruleset.oppaiMaps = append(ruleset.oppaiMaps, oppai.ParsebyNum(file, j+1))
-	//	file.Seek(0, 0)
-	//}
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
@@ -201,6 +186,8 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
 		}
 
+		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
+
 		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
 		hp.CalculateRate()
 		hp.ResetHp()
@@ -214,11 +201,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			rCircle.Init(ruleset, circle, diffPlayers)
 			ruleset.queue = append(ruleset.queue, rCircle)
 		}
+
 		if slider, ok := obj.(*objects.Slider); ok {
 			rSlider := new(Slider)
 			rSlider.Init(ruleset, slider, diffPlayers)
 			ruleset.queue = append(ruleset.queue, rSlider)
 		}
+
 		if spinner, ok := obj.(*objects.Spinner); ok {
 			rSpinner := new(Spinner)
 			rSpinner.Init(ruleset, spinner, diffPlayers)
@@ -234,14 +223,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 }
 
 func (set *OsuRuleSet) Update(time int64) {
-
 	if len(set.processed) > 0 {
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
 			if isDone := g.UpdatePost(time); isDone {
-				if set.endlistener != nil {
-					set.endlistener(time, g.GetNumber())
+				if set.endListener != nil {
+					set.endListener(time, g.GetNumber())
 				}
 
 				set.processed = append(set.processed[:i], set.processed[i+1:]...)
@@ -275,6 +263,7 @@ func (set *OsuRuleSet) Update(time int64) {
 		for c := range set.cursors {
 			cs = append(cs, c)
 		}
+
 		sort.Slice(cs, func(i, j int) bool {
 			return set.cursors[cs[i]].score > set.cursors[cs[j]].score
 		})
@@ -334,7 +323,6 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 	player.alreadyStolen = false
 
 	if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
-
 		player.leftCond = !player.buttons.Left && player.cursor.LeftButton
 		player.rightCond = !player.buttons.Right && player.cursor.RightButton
 
@@ -343,13 +331,15 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 
 		if player.buttons.Left != player.cursor.LeftButton || player.buttons.Right != player.cursor.RightButton {
 			player.gameDownState = player.cursor.LeftButton || player.cursor.RightButton
-
 			player.lastButton2 = player.lastButton
 			player.lastButton = player.mouseDownButton
+
 			player.mouseDownButton = Buttons(0)
+
 			if player.cursor.LeftButton {
 				player.mouseDownButton |= Left
 			}
+
 			if player.cursor.RightButton {
 				player.mouseDownButton |= Right
 			}
@@ -418,7 +408,6 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	combo := bmath.MaxI64(subSet.combo-1, 0)
 
 	if result != SliderMiss {
-
 		increase := result.ScoreValue()
 
 		if raw {
@@ -523,8 +512,8 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 
 	subSet.hp.AddResult(result)
 
-	if set.listener != nil {
-		set.listener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
+	if set.hitListener != nil {
+		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
 	}
 
 	if len(set.cursors) == 1 && !settings.RECORD {
@@ -583,11 +572,11 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 }
 
 func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
-	set.listener = listener
+	set.hitListener = listener
 }
 
 func (set *OsuRuleSet) SetEndListener(endlistener func(time int64, number int64)) {
-	set.endlistener = endlistener
+	set.endListener = endlistener
 }
 
 func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {

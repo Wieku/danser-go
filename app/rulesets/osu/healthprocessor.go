@@ -100,7 +100,6 @@ func (hp *HealthProcessor) CalculateRate() {
 			if breakCount > 0 && breakNumber < breakCount {
 				pause := hp.beatMap.Pauses[breakNumber]
 				if pause.GetStartTime() >= float64(localLastTime) && pause.GetEndTime() <= o.GetStartTime() {
-					//TODO: calculations for beatmap version < 8
 					if hp.beatMap.Version < 8 {
 						breakTime = int64(pause.Length())
 					} else {
@@ -174,9 +173,9 @@ func (hp *HealthProcessor) CalculateRate() {
 		}
 	}
 
-	log.Println("drainrate", hp.PassiveDrain/2*1000)
-	log.Println("normalmult", hp.HpMultiplierNormal)
-	log.Println("combomult", hp.HpMultiplierComboEnd)
+	log.Println("Passive drain rate:", hp.PassiveDrain/2*1000)
+	log.Println("Normal multiplier:", hp.HpMultiplierNormal)
+	log.Println("Combo end multiplier:", hp.HpMultiplierComboEnd)
 
 	breakNumber := 0
 	lastDrainStart := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
