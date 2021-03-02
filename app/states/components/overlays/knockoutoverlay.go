@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -411,7 +412,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	//cL := strconv.FormatInt(highestCombo, 10)
 	cP := strconv.FormatInt(int64(highestPP), 10)
 	cA := strconv.FormatInt(int64(highestACC), 10)
-	cS := overlay.font.GetWidthMonospaced(scl, humanize(highestScore))
+	cS := overlay.font.GetWidthMonospaced(scl, utils.Humanize(highestScore))
 
 	rowPosY := settings.Graphics.GetHeightF() - (settings.Graphics.GetHeightF()-cumulativeHeight)/2
 	// Draw textures like keys, grade, hit values
@@ -520,7 +521,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 		overlay.font.DrawMonospaced(batch, 2*scl, rowBaseY-scl*1/3, scl, accuracy)
 
-		scorestr := humanize(int64(player.scoreDisp.GetValue()))
+		scorestr := utils.Humanize(int64(player.scoreDisp.GetValue()))
 
 		sWC := fmt.Sprintf("%dx ", overlay.players[r.Name].sCombo)
 
@@ -541,21 +542,4 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 func (overlay *KnockoutOverlay) IsBroken(cursor *graphics.Cursor) bool {
 	return overlay.players[overlay.names[cursor]].hasBroken
-}
-
-func humanize(number int64) string {
-	stringified := strconv.FormatInt(number, 10)
-
-	a := len(stringified) % 3
-	if a == 0 {
-		a = 3
-	}
-
-	humanized := stringified[0:a]
-
-	for i := a; i < len(stringified); i += 3 {
-		humanized += "," + stringified[i:i+3]
-	}
-
-	return humanized
 }

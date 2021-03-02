@@ -10,11 +10,11 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/oppai"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -276,15 +276,15 @@ func (set *OsuRuleSet) Update(time int64) {
 			var data []string
 			data = append(data, fmt.Sprintf("%d", i+1))
 			data = append(data, c.Name)
-			data = append(data, humanize(set.cursors[c].score))
+			data = append(data, utils.Humanize(set.cursors[c].score))
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].accuracy))
 			data = append(data, GradesText[set.cursors[c].grade])
-			data = append(data, humanize(set.cursors[c].hits[Hit300]))
-			data = append(data, humanize(set.cursors[c].hits[Hit100]))
-			data = append(data, humanize(set.cursors[c].hits[Hit50]))
-			data = append(data, humanize(set.cursors[c].hits[Miss]))
-			data = append(data, humanize(set.cursors[c].combo))
-			data = append(data, humanize(set.cursors[c].maxCombo))
+			data = append(data, utils.Humanize(set.cursors[c].hits[Hit300]))
+			data = append(data, utils.Humanize(set.cursors[c].hits[Hit100]))
+			data = append(data, utils.Humanize(set.cursors[c].hits[Hit50]))
+			data = append(data, utils.Humanize(set.cursors[c].hits[Miss]))
+			data = append(data, utils.Humanize(set.cursors[c].combo))
+			data = append(data, utils.Humanize(set.cursors[c].maxCombo))
 			data = append(data, set.cursors[c].player.diff.Mods.String())
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Total))
 			table.Append(data)
@@ -298,23 +298,6 @@ func (set *OsuRuleSet) Update(time int64) {
 
 		set.ended = true
 	}
-}
-
-func humanize(number int64) string {
-	stringified := strconv.FormatInt(number, 10)
-
-	a := len(stringified) % 3
-	if a == 0 {
-		a = 3
-	}
-
-	humanized := stringified[0:a]
-
-	for i := a; i < len(stringified); i += 3 {
-		humanized += "," + stringified[i:i+3]
-	}
-
-	return humanized
 }
 
 func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"strconv"
 )
 
 type ScoreboardEntry struct {
@@ -65,8 +65,8 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 }
 
 func (entry *ScoreboardEntry) UpdateData() {
-	entry.scoreHumanized = humanize(entry.score)
-	entry.comboHumanized = humanize(entry.combo)+"x"
+	entry.scoreHumanized = utils.Humanize(entry.score)
+	entry.comboHumanized = utils.Humanize(entry.combo)+"x"
 	entry.rankHumanized = fmt.Sprintf("%d", entry.rank)
 }
 
@@ -117,21 +117,4 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, 1)
-}
-
-func humanize(number int64) string {
-	stringified := strconv.FormatInt(number, 10)
-
-	a := len(stringified) % 3
-	if a == 0 {
-		a = 3
-	}
-
-	humanized := stringified[0:a]
-
-	for i := a; i < len(stringified); i += 3 {
-		humanized += "," + stringified[i:i+3]
-	}
-
-	return humanized
 }
