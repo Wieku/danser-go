@@ -56,6 +56,7 @@ func NewCircle(data []string) *Circle {
 	circle.sample = int(f)
 
 	circle.textureName = defaultCircleName
+
 	return circle
 }
 
@@ -74,6 +75,7 @@ func DummyCircleInherit(pos vector.Vector2f, time float64, inherit bool, inherit
 	circle.SliderPointEnd = inheritEnd
 	circle.silent = true
 	circle.textureName = "sliderstart"
+
 	return circle
 }
 
@@ -89,6 +91,7 @@ func NewSliderEndCircle(pos vector.Vector2f, appearTime, time float64, first, la
 	circle.silent = true
 	circle.textureName = "sliderend"
 	circle.appearTime = appearTime
+
 	return circle
 }
 
@@ -103,7 +106,7 @@ func (circle *Circle) Update(time float64) bool {
 	}
 
 	if circle.textFade != nil {
-		circle.textFade.Update(float64(time))
+		circle.textFade.Update(time)
 	}
 
 	circle.lastTime = time
@@ -135,13 +138,13 @@ func (circle *Circle) SetTiming(timings *Timings) {
 func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	circle.diff = diff
 
-	startTime := float64(circle.StartTime) - diff.Preempt
+	startTime := circle.StartTime - diff.Preempt
 
 	if circle.SliderPoint {
-		startTime = float64(circle.appearTime)
+		startTime = circle.appearTime
 	}
 
-	endTime := float64(circle.StartTime)
+	endTime := circle.StartTime
 
 	circle.textFade = animation.NewGlider(0)
 
@@ -240,15 +243,14 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 }
 
 func (circle *Circle) Shake(time float64) {
-	startTime := float64(time)
 	for _, s := range circle.sprites {
 		s.ClearTransformationsOfType(animation.MoveX)
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime, startTime+20, 0, 8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+20, startTime+40, 8, -8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+40, startTime+60, -8, 8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+60, startTime+80, 8, -8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+80, startTime+100, -8, 8))
-		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, startTime+100, startTime+120, 8, 0))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, time, time+20, 0, 8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, time+20, time+40, 8, -8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, time+40, time+60, -8, 8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, time+60, time+80, 8, -8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, time+80, time+100, -8, 8))
+		s.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.Linear, time+100, time+120, 8, 0))
 	}
 }
 
@@ -263,6 +265,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	batch.SetTranslation(position.Copy64())
 
 	alpha := 1.0
+
 	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
 		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
 		circle.hitCircle.Textures[0] = circle.fullTexture
@@ -283,16 +286,8 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	} else {
 		circle.hitCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
 	}
-	//circle.hitCircle.SetColor(color2.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 
 	circle.hitCircle.Draw(time, batch)
-
-	/*batch.SetColor(float64(color[0]), float64(color[1]), float64(color[2]), alpha)
-	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
-		batch.DrawUnit(*render.CircleFull)
-	} else {
-		batch.DrawUnit(*render.Circle)
-	}*/
 
 	if settings.DIVIDES < settings.Objects.Colors.MandalaTexturesTrigger {
 		if !skin.GetInfo().HitCircleOverlayAboveNumber {
@@ -344,7 +339,6 @@ func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batc
 	} else {
 		circle.approachCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
 	}
-	//circle.approachCircle.SetColor(color2.Color{R: float64(color.X()), G: float64(color.Y()), B: float64(color.Z()), A: 1.0})
 
 	circle.approachCircle.Draw(time, batch)
 }
