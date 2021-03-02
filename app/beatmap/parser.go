@@ -95,7 +95,7 @@ func parseEvents(line []string, beatMap *BeatMap) {
 }
 
 func parseHitObjects(line []string, beatMap *BeatMap) {
-	obj := objects.GetObject(line)
+	obj := objects.CreateObject(line)
 
 	if obj != nil {
 		beatMap.HitObjects = append(beatMap.HitObjects, obj)
@@ -125,6 +125,7 @@ func getSection(line string) string {
 	if strings.HasPrefix(line, "[") {
 		return strings.TrimRight(strings.TrimLeft(line, "["), "]")
 	}
+
 	return ""
 }
 

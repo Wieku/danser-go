@@ -67,10 +67,13 @@ type HitObject struct {
 	BasicHitSound audio.HitSoundInfo
 }
 
-func (hitObject *HitObject) Update(time float64) bool                          { return true }
-func (hitObject *HitObject) SetTiming(timings *Timings)                      {}
-func (hitObject *HitObject) UpdateStacking()                                 {}
-func (hitObject *HitObject) SetDifficulty(difficulty *difficulty.Difficulty) {}
+func (hitObject *HitObject) Update(_ float64) bool { return true }
+
+func (hitObject *HitObject) SetTiming(_ *Timings) {}
+
+func (hitObject *HitObject) UpdateStacking() {}
+
+func (hitObject *HitObject) SetDifficulty(_ *difficulty.Difficulty) {}
 
 func (hitObject *HitObject) GetStartTime() float64 {
 	return hitObject.StartTime

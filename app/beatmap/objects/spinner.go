@@ -124,7 +124,7 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 		spinner.middle.ResetValuesToTransforms()
 	} else {
 		spinner.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+350.4), bmath.Origin.Centre)
-		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5), bmath.Origin.TopLeft)
+		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5), bmath.Origin.TopLeft) //nolint:misspell
 		spinner.metre.SetCutOrigin(bmath.Origin.BottomCentre)
 
 		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 1.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
@@ -162,7 +162,6 @@ func (spinner *Spinner) Update(time float64) bool {
 
 	if time >= spinner.StartTime && time <= spinner.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-
 			rRPMS := rpms * bmath.ClampF32(float32(time-spinner.StartTime)/500, 0.0, 1.0)
 
 			spinner.rad = rRPMS * float32(time-spinner.StartTime) * 2 * math32.Pi

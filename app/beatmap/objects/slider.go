@@ -256,7 +256,6 @@ func (slider *Slider) SetTiming(timings *Timings) {
 		}
 
 		for j := start; j != end; j += direction {
-
 			line := lines[j]
 
 			p1, p2 := line.Point1, line.Point2
@@ -296,7 +295,7 @@ func (slider *Slider) SetTiming(timings *Timings) {
 
 		scoringLengthTotal += scoringDistance
 
-		scoreTime := slider.StartTime +  math.Floor((float64(float32(scoringLengthTotal))/velocity)*1000)
+		scoreTime := slider.StartTime + math.Floor((float64(float32(scoringLengthTotal))/velocity)*1000)
 		point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), nil, nil, true}
 
 		slider.TickReverse = append(slider.TickReverse, point)
@@ -310,7 +309,7 @@ func (slider *Slider) SetTiming(timings *Timings) {
 		}
 	}
 
-	slider.partLen = (slider.EndTime-slider.StartTime) / float64(slider.repeat)
+	slider.partLen = (slider.EndTime - slider.StartTime) / float64(slider.repeat)
 
 	slider.EndPosRaw = slider.GetPositionAt(slider.EndTime)
 
@@ -430,9 +429,9 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	}
 
 	for i, p := range slider.TickPoints {
-		a := (p.Time-slider.StartTime)/2+slider.StartTime - diff.Preempt*2/3
+		a := (p.Time-slider.StartTime)/2 + slider.StartTime - diff.Preempt*2/3
 
-		fs := (p.Time-slider.StartTime) / slider.partLen
+		fs := (p.Time - slider.StartTime) / slider.partLen
 
 		if fs < 1.0 {
 			a = math.Max(fs*(slSnInE-slSnInS)+slSnInS, a)
@@ -470,7 +469,6 @@ func (slider *Slider) IsRetarded() bool {
 
 func (slider *Slider) Update(time float64) bool {
 	if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-
 		for i := int64(0); i <= slider.repeat; i++ {
 			edgeTime := slider.StartTime + math.Floor(float64(i)*slider.partLen)
 
@@ -730,10 +728,6 @@ func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
 
 func (slider *Slider) PlayTick() {
 	audio.PlaySliderTick(slider.Timings.Current.SampleSet, slider.Timings.Current.SampleIndex, slider.Timings.Current.SampleVolume, slider.HitObjectID, slider.Pos.X64())
-}
-
-func (slider *Slider) playSample(sampleSet, additionSet, sample int) {
-	slider.playSampleT(sampleSet, additionSet, sampleSet, slider.Timings.Current, vector.NewVec2f(0, 0))
 }
 
 func (slider *Slider) playSampleT(sampleSet, additionSet, sample int, point TimingPoint, pos vector.Vector2f) {

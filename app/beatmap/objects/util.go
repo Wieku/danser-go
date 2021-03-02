@@ -5,12 +5,10 @@ import (
 	"strconv"
 )
 
-const FadeIn = 400.0
-const FadeOut = 240.0
-
-func GetObject(data []string) IHitObject {
+func CreateObject(data []string) IHitObject {
 	objTypeI, _ := strconv.Atoi(data[3])
 	objType := Type(objTypeI)
+
 	if (objType & CIRCLE) > 0 {
 		return NewCircle(data)
 	} else if (objType & SPINNER) > 0 {
@@ -18,13 +16,9 @@ func GetObject(data []string) IHitObject {
 			return NewSpinner(data)
 		}
 	} else if (objType & SLIDER) > 0 {
-		sl := NewSlider(data)
-		if sl == nil {
-			return nil
-		} else {
-			return sl
-		}
+		return NewSlider(data)
 	}
+
 	return nil
 }
 
