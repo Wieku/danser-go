@@ -4,13 +4,13 @@ var Gameplay = initGameplay()
 
 func initGameplay() *gameplay {
 	return &gameplay{
-		HitErrorMeter: &hitError {
+		HitErrorMeter: &hitError{
 			hudElement: &hudElement{
 				Show:    true,
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			ShowUnstableRate: true,
+			ShowUnstableRate:  true,
 			UnstableRateScale: 1.0,
 		},
 		Score: &score{
@@ -47,10 +47,13 @@ func initGameplay() *gameplay {
 			Scale:   1.0,
 			Opacity: 1.0,
 		},
-		ScoreBoard: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		ScoreBoard: &scoreBoard{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			HideOthers: false,
 		},
 		Boundaries: &boundaries{
 			Enabled:         true,
@@ -79,7 +82,7 @@ type gameplay struct {
 	ComboCounter  *hudElement
 	PPCounter     *ppCounter
 	KeyOverlay    *hudElement
-	ScoreBoard    *hudElement
+	ScoreBoard    *scoreBoard
 	Boundaries    *boundaries
 }
 
@@ -104,7 +107,7 @@ type hudElement struct {
 
 type hitError struct {
 	*hudElement
-	ShowUnstableRate bool
+	ShowUnstableRate  bool
 	UnstableRateScale float64
 }
 
@@ -119,4 +122,9 @@ type ppCounter struct {
 	XPosition float64
 	YPosition float64
 	Align     string
+}
+
+type scoreBoard struct {
+	*hudElement
+	HideOthers bool
 }

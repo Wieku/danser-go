@@ -37,7 +37,15 @@ type ScoreBoard struct {
 
 func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
-		first: true,
+		first:            true,
+		explosionManager: sprite.NewSpriteManager(),
+	}
+
+	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
+	skin.GetTextureSource("scoreboard-explosion-2", skin.LOCAL)
+
+	if settings.Gameplay.ScoreBoard.HideOthers {
+		return board
 	}
 
 	data, err := ioutil.ReadFile("api.txt")
@@ -52,14 +60,14 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 		} else {
 			beatMaps, err := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
 			if len(beatMaps) == 0 || err != nil {
-				log.Println("Online beatmap not found")
+				log.Println("Online beatmap not found!")
 				if err != nil {
 					log.Println(err)
 				}
 			} else {
 				scores, err := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMaps[0].BeatmapID, Limit: 51})
 				if len(scores) == 0 || err != nil {
-					log.Println("Can't find online scores")
+					log.Println("Can't find online scores!")
 					if err != nil {
 						log.Println(err)
 					}
@@ -89,11 +97,6 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 			}
 		}
 	}
-
-	board.explosionManager = sprite.NewSpriteManager()
-
-	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
-	skin.GetTextureSource("scoreboard-explosion-2", skin.LOCAL)
 
 	return board
 }
