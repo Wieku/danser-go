@@ -491,7 +491,7 @@ func (player *Player) Draw(float64) {
 	cameras1 := player.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha *= player.Scl
+		bgAlpha = bmath.ClampF64(bgAlpha * player.Scl, 0, 1)
 	}
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
