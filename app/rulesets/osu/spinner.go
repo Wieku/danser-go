@@ -112,7 +112,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 			} else {
 				state.zeroCount = 0
 
-				if !player.gameDownState || time < int64(spinner.hitSpinner.GetStartTime()) || time > int64(spinner.hitSpinner.GetEndTime()) {
+				if (!player.gameDownState && !player.diff.CheckModActive(difficulty.Relax)) || time < int64(spinner.hitSpinner.GetStartTime()) || time > int64(spinner.hitSpinner.GetEndTime()) {
 					angleDiff = 0
 				}
 

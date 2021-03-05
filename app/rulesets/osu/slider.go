@@ -198,7 +198,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 			state.downButton = Buttons(0)
 		}
 
-		mouseDownAcceptable = mouseDownAcceptable || mouseDownAcceptableSwap
+		mouseDownAcceptable = mouseDownAcceptable || mouseDownAcceptableSwap || player.diff.CheckModActive(difficulty.Relax)
 
 		radiusNeeded := player.diff.CircleRadius
 		if state.sliding {
