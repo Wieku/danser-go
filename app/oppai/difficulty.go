@@ -1,9 +1,11 @@
 package oppai
 
 import (
+	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"log"
 	"math"
 )
 
@@ -326,15 +328,29 @@ func CalcSingle(objects []objects.IHitObject, difficulty *difficulty.Difficulty)
 }
 
 func CalcStep(objects []objects.IHitObject, difficulty *difficulty.Difficulty) []Stars {
-	d := newDiffCalc(objects, difficulty)
+	log.Println("Calculating step SR for mods:", difficulty.Mods.String())
 
+	d := newDiffCalc(objects, difficulty)
 	stars := make([]Stars, 0, len(objects))
+	sum := len(objects) * (len(objects) + 1) / 2
+	lastProgress := -1
 
 	for i := 1; i <= len(objects); i++ {
 		d.NumObjects = i
-
 		stars = append(stars, d.Calc())
+
+		if len(objects) > 2500 {
+			progress := (50 * i * (i + 1)) / sum
+
+			if progress != lastProgress && progress%5 == 0 {
+				log.Println(fmt.Sprintf("Progress: %d%%", progress))
+			}
+
+			lastProgress = progress
+		}
 	}
+
+	log.Println("Calculations finished!")
 
 	return stars
 }
