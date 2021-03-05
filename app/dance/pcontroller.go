@@ -5,6 +5,9 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/dance/input"
+	"github.com/wieku/danser-go/app/dance/movers"
+	"github.com/wieku/danser-go/app/dance/schedulers"
+	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
@@ -24,6 +27,7 @@ type PlayerController struct {
 	leftClick       bool
 	rightClick      bool
 	relaxController *input.RelaxInputProcessor
+	mouseController schedulers.Scheduler
 }
 
 func NewPlayerController() Controller {
@@ -63,13 +67,22 @@ func (controller *PlayerController) InitCursors() {
 	} else {
 		controller.relaxController = input.NewRelaxInputProcessor(controller.ruleset, controller.cursors[0])
 	}
+
+	if controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
+		controller.mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
+		controller.mouseController.Init(controller.bMap.GetObjectsCopy(), controller.bMap.Diff.Mods, controller.cursors[0], spinners.NewCircleMover(), false)
+	}
 }
 
 func (controller *PlayerController) Update(time float64, delta float64) {
 	controller.bMap.Update(time)
 
 	if controller.window != nil {
-		controller.cursors[0].SetScreenPos(vector.NewVec2d(controller.window.GetCursorPos()).Copy32())
+		if !controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
+			controller.cursors[0].SetScreenPos(vector.NewVec2d(controller.window.GetCursorPos()).Copy32())
+		} else {
+			controller.mouseController.Update(time)
+		}
 
 		if !controller.bMap.Diff.CheckModActive(difficulty.Relax) {
 			mouseEnabled := !settings.Input.MouseButtonsDisabled

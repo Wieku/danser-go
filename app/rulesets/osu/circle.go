@@ -1,6 +1,7 @@
 package osu
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"math"
 )
@@ -46,7 +47,13 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
 
 		clicked := player.leftCondE || player.rightCondE
-		inRange := player.cursor.RawPosition.Dst(position) <= float32(player.diff.CircleRadius)
+
+		radius := float32(player.diff.CircleRadius)
+		if player.diff.CheckModActive(difficulty.Relax2) {
+			radius = 100
+		}
+
+		inRange := player.cursor.RawPosition.Dst(position) <= radius
 
 		if clicked && inRange {
 			action := circle.ruleSet.CanBeHit(time, circle, player)

@@ -115,8 +115,6 @@ func run() {
 			output = *out
 		}
 
-		incompatibleMods := difficulty2.Relax | difficulty2.Relax2
-
 		modsParsed := difficulty2.ParseMods(*mods)
 
 		if *replay != "" {
@@ -134,16 +132,10 @@ func run() {
 			modsParsed = difficulty2.Modifier(rp.Mods)
 			*knockout = true
 			settings.REPLAY = *replay
-
-			incompatibleMods &= ^difficulty2.Relax
 		}
 
 		if !modsParsed.Compatible() {
 			panic("Incompatible mods selected!")
-		}
-
-		if modsParsed.Active(incompatibleMods) {
-			panic(fmt.Sprintf("Those mods are not yet supported: %s", (modsParsed & incompatibleMods).String()))
 		}
 
 		closeAfterSettingsLoad := false

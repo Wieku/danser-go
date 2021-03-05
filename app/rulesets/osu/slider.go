@@ -97,7 +97,13 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
 
 	clicked := player.leftCondE || player.rightCondE
-	inRadius := player.cursor.RawPosition.Dst(position) <= float32(player.diff.CircleRadius)
+
+	radius := float32(player.diff.CircleRadius)
+	if player.diff.CheckModActive(difficulty.Relax2) {
+		radius = 100
+	}
+
+	inRadius := player.cursor.RawPosition.Dst(position) <= radius
 
 	if clicked && inRadius && !state.isStartHit && !state.isHit {
 		if slider.ruleSet.CanBeHit(time, slider, player) == Click {

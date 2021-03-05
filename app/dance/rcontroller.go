@@ -4,6 +4,9 @@ import (
 	"github.com/karrick/godirwalk"
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/dance/input"
+	"github.com/wieku/danser-go/app/dance/movers"
+	"github.com/wieku/danser-go/app/dance/schedulers"
+	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/rplpa"
 	"sort"
 	"time"
@@ -53,6 +56,7 @@ type subControl struct {
 	lastTime        int64
 	oldSpinners     bool
 	relaxController *input.RelaxInputProcessor
+	mouseController schedulers.Scheduler
 }
 
 func NewSubControl() *subControl {
@@ -284,15 +288,20 @@ func (controller *ReplayController) InitCursors() {
 		if controller.replays[i].ModsV.Active(difficulty.Relax) {
 			controller.controllers[i].relaxController = input.NewRelaxInputProcessor(controller.ruleset, controller.cursors[i])
 		}
+
+		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
+			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
+			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), controller.replays[i].ModsV, controller.cursors[i], spinners.NewCircleMover(), false)
+		}
 	}
 }
 
 func (controller *ReplayController) Update(time float64, delta float64) {
-	numSkipped := int(time-controller.lastTime)-1
+	numSkipped := int(time-controller.lastTime) - 1
 
 	if numSkipped >= 1 {
 		for nTime := numSkipped; nTime >= 1; nTime-- {
-			controller.updateMain(time-float64(nTime))
+			controller.updateMain(time - float64(nTime))
 		}
 	}
 
@@ -336,12 +345,19 @@ func (controller *ReplayController) updateMain(nTime float64) {
 			wasUpdated := false
 
 			isRelax := (controller.replays[i].ModsV & difficulty.Relax) > 0
+			isAutopilot := (controller.replays[i].ModsV & difficulty.Relax2) > 0
+
+			if isAutopilot {
+				c.mouseController.Update(nTime)
+			}
 
 			for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= int64(nTime) {
 				frame := c.frames[c.replayIndex]
 				c.replayTime += frame.Time
 
-				controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
+				if !isAutopilot {
+					controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
+				}
 
 				controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
 				controller.cursors[i].CurrentFrameTime = c.replayTime
@@ -382,16 +398,19 @@ func (controller *ReplayController) updateMain(nTime float64) {
 			}
 
 			if !wasUpdated {
-				localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
+				if !isAutopilot {
+					localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
 
-				progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
+					progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
 
-				prevIndex := bmath.MaxI(0, localIndex-1)
+					prevIndex := bmath.MaxI(0, localIndex-1)
 
-				mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
-				mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
+					mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
+					mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
 
-				controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
+					controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
+				}
+
 				controller.cursors[i].IsReplayFrame = false
 			}
 		}

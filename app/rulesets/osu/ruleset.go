@@ -547,7 +547,12 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 		}
 	}
 
-	if math.Abs(float64(time-int64(set.beatMap.HitObjects[object.GetNumber()].GetStartTime()))) >= difficulty.HittableRange {
+	hitRange := difficulty.HittableRange
+	if player.diff.CheckModActive(difficulty.Relax2) {
+		hitRange -= 200
+	}
+
+	if math.Abs(float64(time-int64(set.beatMap.HitObjects[object.GetNumber()].GetStartTime()))) >= hitRange {
 		return Shake
 	}
 

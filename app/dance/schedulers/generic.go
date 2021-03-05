@@ -26,13 +26,15 @@ func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
 	return &GenericScheduler{mover: mover()}
 }
 
-func (sched *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
+func (sched *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover, initKeys bool) {
 	sched.mods = mods
 	sched.spinnerMover = spinnerMover
 	sched.cursor = cursor
 	sched.queue = objs
 
-	sched.input = input.NewNaturalInputProcessor(objs, cursor)
+	if initKeys {
+		sched.input = input.NewNaturalInputProcessor(objs, cursor)
+	}
 
 	sched.mover.Reset(mods)
 
@@ -87,7 +89,9 @@ func (sched *GenericScheduler) Update(time float64) {
 		}
 	}
 
-	sched.input.Update(time)
+	if sched.input != nil {
+		sched.input.Update(time)
+	}
 
 	sched.lastTime = time
 }

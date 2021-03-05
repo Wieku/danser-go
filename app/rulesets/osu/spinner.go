@@ -131,7 +131,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 			maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * timeDiff)
 
-			if player.diff.CheckModActive(difficulty.SpunOut) {
+			if player.diff.CheckModActive(difficulty.SpunOut) || player.diff.CheckModActive(difficulty.Relax2) {
 				state.currentVelocity = 0.03
 			} else if state.theoreticalVelocity > state.currentVelocity {
 				accel := maxAccelThisFrame
