@@ -61,13 +61,13 @@ func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
 
 	vao.Attach(flShader)
 
-	size := animation.NewGlider(DefaultFlashlightSize * 2.5)
+	size := animation.NewGlider(DefaultFlashlightSize * 8)
 
 	startTime := beatMap.HitObjects[0].GetStartTime() / settings.SPEED
 	endTime := (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50+5)) / settings.SPEED
 
 	size.AddEvent(startTime-DefaultFlashlightDuration, startTime, DefaultFlashlightSize)
-	size.AddEvent(endTime, endTime+DefaultFlashlightDuration, DefaultFlashlightSize*2.5)
+	size.AddEvent(endTime, endTime+DefaultFlashlightDuration, DefaultFlashlightSize*8)
 
 	return &Flashlight{
 		flShader:   flShader,
