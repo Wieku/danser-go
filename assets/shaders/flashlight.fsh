@@ -14,5 +14,5 @@ void main()
 
     float t = pow(clamp(difference/radius, 0f, 1f), 5f);
 
-	color = vec4(vec3(0f), mix(t, 1f, dim));
+    color = vec4(vec3(0f), mix(t, 1f, dim));
 }
