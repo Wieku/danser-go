@@ -3,6 +3,7 @@ package schedulers
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
@@ -17,7 +18,7 @@ type GenericScheduler struct {
 	mover        movers.MultiPointMover
 	lastTime     float64
 	spinnerMover spinners.SpinnerMover
-	input        *InputProcessor
+	input        *input.NaturalInputProcessor
 	mods         difficulty.Modifier
 }
 
@@ -31,7 +32,7 @@ func (sched *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.M
 	sched.cursor = cursor
 	sched.queue = objs
 
-	sched.input = NewInputProcessor(objs, cursor)
+	sched.input = input.NewNaturalInputProcessor(objs, cursor)
 
 	sched.mover.Reset(mods)
 

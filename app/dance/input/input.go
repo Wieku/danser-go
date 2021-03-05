@@ -1,11 +1,11 @@
-package schedulers
+package input
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/graphics"
 )
 
-type InputProcessor struct {
+type NaturalInputProcessor struct {
 	queue  []objects.IHitObject
 	cursor *graphics.Cursor
 
@@ -19,8 +19,8 @@ type InputProcessor struct {
 	rightToRelease bool
 }
 
-func NewInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *InputProcessor {
-	processor := new(InputProcessor)
+func NewNaturalInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *NaturalInputProcessor {
+	processor := new(NaturalInputProcessor)
 	processor.cursor = cursor
 	processor.queue = make([]objects.IHitObject, len(objs))
 
@@ -29,7 +29,7 @@ func NewInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *Inpu
 	return processor
 }
 
-func (processor *InputProcessor) Update(time float64) {
+func (processor *NaturalInputProcessor) Update(time float64) {
 	if len(processor.queue) > 0 {
 		for i := 0; i < len(processor.queue); i++ {
 			g := processor.queue[i]

@@ -3,6 +3,7 @@ package dance
 import (
 	"github.com/karrick/godirwalk"
 	"github.com/thehowl/go-osuapi"
+	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/rplpa"
 	"sort"
 	"time"
@@ -48,10 +49,10 @@ type subControl struct {
 	replayIndex     int
 	replayTime      int64
 	frames          []*rplpa.ReplayData
-	wasLeft         bool
 	newHandling     bool
 	lastTime        int64
 	oldSpinners     bool
+	relaxController *input.RelaxInputProcessor
 }
 
 func NewSubControl() *subControl {
@@ -71,28 +72,6 @@ type ReplayController struct {
 func NewReplayController() Controller {
 	return new(ReplayController)
 }
-
-//func getReplay(scoreID int64) ([]byte, error) {
-//	values := url.Values{}
-//	values.Add("c", strconv.FormatInt(scoreID, 10))
-//	values.Add("m", "0")
-//	values.Add("u", settings.Knockout.Username)
-//	values.Add("h", settings.Knockout.MD5Pass)
-//	request, err := http.NewRequest(http.MethodGet, "https://osu.ppy.sh/web/osu-getreplay.php?"+values.Encode(), nil)
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	client := new(http.Client)
-//
-//	response, err := client.Do(request)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return ioutil.ReadAll(response.Body)
-//}
 
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	replayDir := filepath.Join(replaysMaster, beatMap.MD5)
@@ -233,97 +212,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		counter--
 	}
 
-	//}
-
-	//if settings.Knockout.OnlineReplays && counter > 0 {
-	//	client := osuapi.NewClient(settings.Knockout.ApiKey)
-	//	beatMapO, err := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
-	//	if len(beatMapO) == 0 || err != nil {
-	//		log.Println("Online beatmap not found")
-	//		if err != nil {
-	//			log.Println(err)
-	//		}
-	//
-	//		goto skip
-	//	}
-	//
-	//	scores, err := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMapO[0].BeatmapID, Limit: 200})
-	//	if len(scores) == 0 || err != nil {
-	//		log.Println("Can't find online scores")
-	//		if err != nil {
-	//			log.Println(err)
-	//		}
-	//
-	//		goto skip
-	//	}
-	//
-	//	sort.SliceStable(scores, func(i, j int) bool {
-	//		return scores[i].Score.Score > scores[j].Score.Score
-	//	})
-	//
-	//	excludedMods := osuapi.ParseMods(settings.Knockout.ExcludeMods)
-	//
-	//	for _, score := range scores {
-	//		if counter == 0 {
-	//			break
-	//		}
-	//
-	//		if score.Mods&excludedMods > 0 {
-	//			continue
-	//		}
-	//
-	//		fileName := filepath.Join(replayDir, strconv.FormatInt(score.ScoreID, 10)+".dsr")
-	//
-	//		file, err := os.Open(fileName)
-	//		if file != nil {
-	//			file.Close()
-	//		}
-	//
-	//		if os.IsNotExist(err) {
-	//			data, err := getReplay(score.ScoreID)
-	//			if err != nil {
-	//				panic(err)
-	//			} else if len(data) == 0 {
-	//				log.Println("Replay for:", score.Username, "doesn't exist. Skipping...")
-	//				continue
-	//			} else {
-	//				log.Println("Downloaded replay for:", score.Username)
-	//			}
-	//
-	//			err = ioutil.WriteFile(fileName, data, 0644)
-	//			if err != nil {
-	//				panic(err)
-	//			}
-	//		}
-	//
-	//		log.Println("Loading replay for:", score.Username)
-	//
-	//		control := NewSubControl()
-	//
-	//		data, err := ioutil.ReadFile(fileName)
-	//		if err != nil {
-	//			panic(err)
-	//		}
-	//
-	//		replay, _ := rplpa.ParseCompressed(data)
-	//
-	//		loadFrames(control, replay)
-	//
-	//		mxCombo := score.MaxCombo
-	//
-	//		controller.replays = append(controller.replays, RpData{score.Username, strings.Replace(strings.Replace(score.Mods.String(), "NF", "NF", -1), "NV", "TD", -1), difficulty.Modifier(score.Mods), 100, 0, int64(mxCombo), osu.NONE})
-	//		controller.controllers = append(controller.controllers, control)
-	//
-	//		log.Println("Expected score:", score.Score.Score)
-	//		log.Println("Expected pp:", score.PP)
-	//		log.Println("Replay loaded!")
-	//
-	//		counter--
-	//	}
-	//}
-
-	//skip:
-
 	if !localReplay && (settings.Knockout.AddDanser || counter == settings.Knockout.MaxPlayers) {
 		control := NewSubControl()
 
@@ -359,6 +247,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 func (controller *ReplayController) InitCursors() {
 	var modifiers []difficulty.Modifier
+
 	for i := range controller.controllers {
 		if controller.controllers[i].danceController != nil {
 			controller.controllers[i].danceController.InitCursors()
@@ -391,11 +280,14 @@ func (controller *ReplayController) InitCursors() {
 
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, modifiers)
 
-	//controller.Update(480000, 1)
+	for i := range controller.controllers {
+		if controller.replays[i].ModsV.Active(difficulty.Relax) {
+			controller.controllers[i].relaxController = input.NewRelaxInputProcessor(controller.ruleset, controller.cursors[i])
+		}
+	}
 }
 
 func (controller *ReplayController) Update(time float64, delta float64) {
-
 	numSkipped := int(time-controller.lastTime)-1
 
 	if numSkipped >= 1 {
@@ -465,34 +357,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
 					controller.cursors[i].RightButton = frame.KeyPressed.RightClick
 				} else {
-					processed := controller.ruleset.GetProcessed()
-					player := controller.ruleset.GetPlayer(controller.cursors[i])
-
-					click := false
-
-					for _, o := range processed {
-						circle, c1 := o.(*osu.Circle)
-						slider, c2 := o.(*osu.Slider)
-						_, c3 := o.(*osu.Spinner)
-
-						objectStartTime := int64(controller.bMap.HitObjects[o.GetNumber()].GetStartTime())
-						objectEndTime := int64(controller.bMap.HitObjects[o.GetNumber()].GetEndTime())
-
-						if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && c.replayTime > objectStartTime-12 {
-							click = true
-						}
-
-						if (c2 || c3) && c.replayTime >= objectStartTime && c.replayTime <= objectEndTime {
-							click = true
-						}
-					}
-
-					controller.cursors[i].LeftButton = click && !c.wasLeft
-					controller.cursors[i].RightButton = click && c.wasLeft
-
-					if click {
-						c.wasLeft = !c.wasLeft
-					}
+					c.relaxController.Update(float64(c.replayTime))
 				}
 
 				controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
