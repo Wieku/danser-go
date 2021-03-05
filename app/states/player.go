@@ -224,7 +224,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
-		fadeOut = 1500
+		beatmapEnd += 1000
+		fadeOut = 250
 	}
 
 	player.dimGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
