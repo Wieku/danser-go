@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/faiface/mainthread"
@@ -35,10 +36,13 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"time"
 	"unsafe"
 )
 
@@ -623,6 +627,61 @@ func setWorkingDirectory() {
 	}
 }
 
+func checkForUpdates() {
+	if build.Stream != "Release" || strings.Contains(build.VERSION, "dev") { //false positive, those are changed during compile
+		return
+	}
+
+	log.Println("Checking GitHub for a new version of danser...")
+
+	request, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/Wieku/danser-go/releases/latest", nil)
+	if err != nil  {
+		log.Println("Can't create request")
+		return
+	}
+
+	client := new(http.Client)
+	response, err := client.Do(request)
+
+	if err != nil || response.StatusCode != 200 {
+		log.Println("Can't get release info from GitHub")
+		return
+	}
+
+	var data struct {
+		URL string `json:"html_url"`
+		Tag string `json:"tag_name"`
+	}
+
+	err = json.NewDecoder(response.Body).Decode(&data)
+	if err != nil {
+		log.Println("Failed to decode the response from GitHub")
+	}
+
+	githubVersion, _ := strconv.Atoi(strings.ReplaceAll(strings.TrimSuffix(data.Tag, "b"), ".", "")+"9999")
+
+	currentSplit := strings.Split(build.VERSION, "-")
+
+	currentSub := "9999"
+	if len(currentSplit) > 1 {
+		currentSub = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
+	}
+
+	exeVersion, _ := strconv.Atoi(strings.ReplaceAll(currentSplit[0], ".", "")+currentSub)
+
+	if exeVersion >= githubVersion {
+		log.Println("You're using the newest version of danser.")
+
+		if strings.Contains(build.VERSION, "snapshot") {
+			log.Println("For newer version of snapshots please visit an official danser discord server at: https://discord.gg/UTPvbe8")
+		}
+	} else {
+		log.Println("You're using an older version of danser.")
+		log.Println("You can download a newer version here:", data.URL)
+		time.Sleep(2*time.Second)
+	}
+}
+
 func main() {
 	file, err := os.Create("danser.log")
 	if err != nil {
@@ -646,8 +705,12 @@ func main() {
 	}()
 
 	log.Println("Ran using:", os.Args)
+	log.Println("Starting danser version", build.VERSION)
 
 	setWorkingDirectory()
+
+	checkForUpdates()
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
