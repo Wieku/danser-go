@@ -55,7 +55,6 @@ type RankingPanel struct {
 	beatmapCreator string
 	playedBy       string
 	gradeS         *sprite.Sprite
-	grade          osu.Grade
 	hpSections     []vector.Vector2d
 	shapeRenderer  *shape.Renderer
 	hpGraph        []vector.Vector2d
@@ -115,7 +114,6 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		rCPos = vector.NewVec2d(8, 480)
 		rGPos = vector.NewVec2d(256, 608)
 		rRPos = vector.NewVec2d(panel.ScaledWidth-192, 320)
-
 	} else {
 		rPPos = vector.NewVec2d(0, 74)
 		rAPos = vector.NewVec2d(291, 500)
@@ -129,9 +127,8 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	rAcc := sprite.NewSpriteSingle(skin.GetTexture("ranking-accuracy"), 3, rAPos, bmath.Origin.TopLeft)
 	rCombo := sprite.NewSpriteSingle(skin.GetTexture("ranking-maxcombo"), 4, rCPos, bmath.Origin.TopLeft)
 
-	_, _, _, grade := panel.ruleset.GetResults(panel.cursor)
+	accuracy, maxCombo, score, grade := panel.ruleset.GetResults(panel.cursor)
 
-	panel.grade = grade
 	panel.gradeS = sprite.NewSpriteSingle(getTexture(grade), 5, rRPos, bmath.Origin.Centre)
 
 	p := graphics.Pixel.GetRegion()
@@ -173,8 +170,6 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	panel.beatmapCreator = fmt.Sprintf("Beatmap by %s", bMap.Creator)
 	panel.playedBy = fmt.Sprintf("Played by %s on %s", panel.cursor.Name, panel.cursor.ScoreTime.Format("2006-01-02 15:04:05"))
 
-	accuracy, maxCombo, score, grade := panel.ruleset.GetResults(panel.cursor)
-
 	panel.score = fmt.Sprintf("%08d", score)
 	panel.maxCombo = fmt.Sprintf("%dx", maxCombo)
 	panel.accuracy = fmt.Sprintf("%.2f%%", accuracy)
@@ -198,9 +193,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		panel.perfect = sprite.NewSpriteSingle(skin.GetTexture("ranking-perfect"), 0, pPos, bmath.Origin.Centre)
 	}
 
-
 	stats := "Accuracy:\n"
-
 	stats += fmt.Sprintf("Error: %.2fms - %.2fms avg", hitError.GetAvgNeg(), hitError.GetAvgPos())
 
 	if panel.ruleset.GetBeatMap().Diff.Speed != 1.0 {
@@ -227,8 +220,6 @@ func (panel *RankingPanel) loadMods() {
 		modSpriteName := "selection-mod-" + strings.ToLower(s)
 
 		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), bmath.Origin.Centre)
-		//mod.SetAlpha(0)
-		//mod.ShowForever(true)
 
 		panel.manager.Add(mod)
 
@@ -243,6 +234,7 @@ func (panel *RankingPanel) Add(time, hp float64) {
 func (panel *RankingPanel) Update(time float64) {
 	panel.time = time
 	panel.manager.Update(time)
+
 	if panel.perfect != nil {
 		panel.perfect.Update(time)
 	}
@@ -279,13 +271,15 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	fnt2.Draw(batch, 4, 30+22+22, 22, panel.playedBy)
 
-	pp := panel.ruleset.GetPP(panel.cursor)
-	ppText := fmt.Sprintf("%.0fpp", pp)
+	if settings.Gameplay.PPCounter.ShowInResults {
+		pp := panel.ruleset.GetPP(panel.cursor)
+		ppText := fmt.Sprintf("%.0fpp", pp)
 
-	batch.SetColor(0, 0, 0, alpha*0.5)
-	fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, bmath.Origin.Centre, 61, false, ppText)
-	batch.SetColor(1, 1, 1, alpha)
-	fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, bmath.Origin.Centre, 61, false, ppText)
+		batch.SetColor(0, 0, 0, alpha*0.5)
+		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, bmath.Origin.Centre, 61, false, ppText)
+		batch.SetColor(1, 1, 1, alpha)
+		fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, bmath.Origin.Centre, 61, false, ppText)
+	}
 
 	if panel.shapeRenderer == nil {
 		panel.shapeRenderer = shape.NewRenderer()
@@ -335,12 +329,11 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	sX := float32(256 + 28 + 298.0)
 	sY := float32(608 + 8 + 137.6*2/4)
 
-	fnt3 := font.GetFont("Ubuntu Regular")
-
 	sWidth := float32(0.0)
 	sHeight := 12.0*float32(len(panel.stats))+10
+
 	for _, s := range panel.stats {
-		sWidth = math32.Max(sWidth, float32(fnt3.GetWidth(12, s)+10))
+		sWidth = math32.Max(sWidth, float32(fnt2.GetWidth(12, s)+10))
 	}
 
 	sY -= sHeight/2
@@ -358,7 +351,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	panel.shapeRenderer.End()
 
 	for i, s := range panel.stats {
-		fnt3.Draw(batch, float64(sX)+5, float64(sY)+float64(i+1)*12+2, 12, s)
+		fnt2.Draw(batch, float64(sX)+5, float64(sY)+float64(i+1)*12+2, 12, s)
 	}
 }
 
