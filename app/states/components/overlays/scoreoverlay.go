@@ -340,7 +340,10 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 		mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
 
-		offset := -48.0
+		scale := settings.Gameplay.Mods.Scale
+		alpha := settings.Gameplay.Mods.Opacity
+
+		offset := -48.0 * scale
 		for i, s := range mods {
 			modSpriteName := "selection-mod-" + strings.ToLower(s)
 
@@ -350,19 +353,18 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 			timeStart := time + float64(i)*500
 
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0))
-			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2, 1.0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0*alpha))
+			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2*scale, 1.0*scale))
 
-			if overlay.cursor.Name == "" {
+			if overlay.cursor.Name == "" || settings.Gameplay.Mods.HideInReplays {
 				startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0, 0))
+				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0*alpha, 0))
+			}
 
-				endT := overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, endT, endT+500, 0.0, 1.0))
-
-				offset -= 16
+			if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
+				offset -= 16 * scale
 			} else {
-				offset -= 80
+				offset -= 80 * scale
 			}
 
 			overlay.mods.Add(mod)
@@ -595,7 +597,9 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, alpha)
 
-	overlay.mods.Draw(overlay.lastTime, batch)
+	if settings.Gameplay.Mods.Show {
+		overlay.mods.Draw(overlay.lastTime, batch)
+	}
 
 	if overlay.panel != nil {
 		overlay.panel.Draw(batch, overlay.resultsFade.GetValue())

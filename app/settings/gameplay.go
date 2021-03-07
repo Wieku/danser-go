@@ -55,6 +55,15 @@ func initGameplay() *gameplay {
 			},
 			HideOthers: false,
 		},
+		Mods: &mods{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			HideInReplays: false,
+			FoldInReplays: false,
+		},
 		Boundaries: &boundaries{
 			Enabled:         true,
 			BorderThickness: 1,
@@ -83,6 +92,7 @@ type gameplay struct {
 	PPCounter     *ppCounter
 	KeyOverlay    *hudElement
 	ScoreBoard    *scoreBoard
+	Mods          *mods
 	Boundaries    *boundaries
 }
 
@@ -127,4 +137,10 @@ type ppCounter struct {
 type scoreBoard struct {
 	*hudElement
 	HideOthers bool
+}
+
+type mods struct {
+	*hudElement
+	HideInReplays bool
+	FoldInReplays bool
 }
