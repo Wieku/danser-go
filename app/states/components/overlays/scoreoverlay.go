@@ -554,6 +554,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color
 func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
 	scale := overlay.ruleset.GetBeatMap().Diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
+	batch.SetColor(1, 1, 1, 1)
 
 	overlay.results.Draw(batch, 1.0)
 
