@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -36,6 +37,7 @@ type Storyboard struct {
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
+	pathCache   map[string]string
 }
 
 func getSection(line string) string {
@@ -67,6 +69,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
+	storyboard.pathCache = utils.GenerateFileMap(path)
 
 	var currentSection string
 	var currentSprite string
@@ -156,6 +159,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 		if currentSprite != "" {
 			counter++
+
 			storyboard.loadSprite(path, currentSprite, commands)
 		}
 
@@ -216,44 +220,42 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		if len(spl) > 8 && spl[8] == "LoopOnce" {
 			loopForever = false
 		}
+
 		extension := filepath.Ext(image)
 		baseFile := strings.TrimSuffix(image, extension)
 
 		for i := 0; i < int(frames); i++ {
-			texture := storyboard.getTexture(path, baseFile+strconv.Itoa(i)+extension)
-			if texture != nil {
-				textures = append(textures, texture)
+			if tex := storyboard.getTexture(path, baseFile+strconv.Itoa(i)+extension); tex != nil {
+				textures = append(textures, tex)
 			}
 		}
-
 	} else {
-		texture := storyboard.getTexture(path, image)
-		if texture != nil {
-			textures = append(textures, texture)
+		if tex := storyboard.getTexture(path, image); tex != nil {
+			textures = append(textures, tex)
 		}
 	}
 
 	storyboard.zIndex++
 
 	if len(textures) != 0 {
-		sprite := sprite.NewAnimation(textures, frameDelay, loopForever, float64(storyboard.zIndex), pos, origin)
+		sbSprite := sprite.NewAnimation(textures, frameDelay, loopForever, float64(storyboard.zIndex), pos, origin)
 
 		transforms := parseCommands(commands)
 
-		sprite.ShowForever(false)
-		sprite.AddTransforms(transforms)
-		sprite.AdjustTimesToTransformations()
-		sprite.ResetValuesToTransforms()
+		sbSprite.ShowForever(false)
+		sbSprite.AddTransforms(transforms)
+		sbSprite.AdjustTimesToTransformations()
+		sbSprite.ResetValuesToTransforms()
 
 		switch spl[1] {
 		case "0", "Background":
-			storyboard.background.Add(sprite)
+			storyboard.background.Add(sbSprite)
 		case "2", "Pass":
-			storyboard.pass.Add(sprite)
+			storyboard.pass.Add(sbSprite)
 		case "3", "Foreground":
-			storyboard.foreground.Add(sprite)
+			storyboard.foreground.Add(sbSprite)
 		case "4", "Overlay":
-			storyboard.overlay.Add(sprite)
+			storyboard.overlay.Add(sbSprite)
 		}
 
 		storyboard.numSprites++
@@ -267,7 +269,7 @@ func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureReg
 		if texture1 = skin.GetTexture(strings.TrimSuffix(image, filepath.Ext(image))); texture1 != nil {
 			storyboard.textures[image] = texture1
 		} else {
-			img, err := texture.NewPixmapFileString(path + string(os.PathSeparator) + image)
+			img, err := texture.NewPixmapFileString(filepath.Join(path, storyboard.pathCache[image]))
 
 			if err == nil {
 

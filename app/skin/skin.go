@@ -3,8 +3,8 @@ package skin
 import (
 	"fmt"
 	"github.com/faiface/mainthread"
-	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/font"
@@ -70,17 +70,7 @@ func checkInit() {
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
-		path := strings.ReplaceAll(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin), "\\", "/") + "/"
-		_ = godirwalk.Walk(path, &godirwalk.Options{
-			Callback: func(osPathname string, de *godirwalk.Dirent) error {
-				fixedPath := strings.TrimPrefix(strings.ReplaceAll(osPathname, "\\", "/"), path)
-
-				pathCache[strings.ToLower(fixedPath)] = fixedPath
-
-				return nil
-			},
-			Unsorted: true,
-		})
+		pathCache = utils.GenerateFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
 
 		var err error
 		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache["skin.ini"]))

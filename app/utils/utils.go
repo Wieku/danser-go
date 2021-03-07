@@ -131,5 +131,4 @@ func OpenURL(url string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
