@@ -60,23 +60,20 @@ func Init() {
 
 	log.Println("Database version: ", currentPreVersion)
 
-	if currentPreVersion == databaseVersion {
-		return
-	}
+	if currentPreVersion != databaseVersion {
+		log.Println("Database is too old! Updating...")
 
-	log.Println("Database is too old! Updating...")
-
-	if currentPreVersion < 20181111 {
-		_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN hpdrain REAL;
+		if currentPreVersion < 20181111 {
+			_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN hpdrain REAL;
 							 ALTER TABLE beatmaps ADD COLUMN od REAL;`)
 
-		if err != nil {
-			panic(err)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
 
-	if currentPreVersion < 20201027 {
-		_, err = dbFile.Exec(`
+		if currentPreVersion < 20201027 {
+			_, err = dbFile.Exec(`
 			BEGIN TRANSACTION;
 			CREATE TEMPORARY TABLE beatmaps_backup(dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);
 			INSERT INTO beatmaps_backup SELECT dir, file, lastModified, title, titleUnicode, artist, artistUnicode, creator, version, source, tags, cs, ar, sliderMultiplier, sliderTickRate, audioFile, previewTime, sampleSet, stackLeniency, mode, bg, md5, dateAdded, playCount, lastPlayed, hpdrain, od FROM beatmaps;
@@ -89,20 +86,20 @@ func Init() {
 			vacuum;
 		`)
 
-		if err != nil {
-			panic(err)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
 
-	if currentPreVersion < 20201117 {
-		_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN stars REAL DEFAULT -1;`)
-		if err != nil {
-			panic(err)
+		if currentPreVersion < 20201117 {
+			_, err = dbFile.Exec(`ALTER TABLE beatmaps ADD COLUMN stars REAL DEFAULT -1;`)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
 
-	if currentPreVersion < 20201118 {
-		_, err = dbFile.Exec(`
+		if currentPreVersion < 20201118 {
+			_, err = dbFile.Exec(`
 			ALTER TABLE beatmaps ADD COLUMN bpmMin REAL DEFAULT 0;
  			ALTER TABLE beatmaps ADD COLUMN bpmMax REAL DEFAULT 0;
   			ALTER TABLE beatmaps ADD COLUMN circles INTEGER DEFAULT 0;
@@ -111,8 +108,9 @@ func Init() {
      		ALTER TABLE beatmaps ADD COLUMN endTime INTEGER DEFAULT 0;
      	`)
 
-		if err != nil {
-			panic(err)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
