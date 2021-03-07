@@ -223,7 +223,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
 		beatmapEnd += 1000
 		fadeOut = 250
 	}
@@ -237,7 +238,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.MapEnd = beatmapEnd + fadeOut
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
 		player.MapEnd += 6000
 	}
 

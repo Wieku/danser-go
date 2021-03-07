@@ -81,19 +81,21 @@ func initGameplay() *gameplay {
 			},
 			BackgroundOpacity: 0.5,
 		},
+		ShowResultsScreen: true,
 	}
 }
 
 type gameplay struct {
-	HitErrorMeter *hitError
-	Score         *score
-	HpBar         *hudElement
-	ComboCounter  *hudElement
-	PPCounter     *ppCounter
-	KeyOverlay    *hudElement
-	ScoreBoard    *scoreBoard
-	Mods          *mods
-	Boundaries    *boundaries
+	HitErrorMeter     *hitError
+	Score             *score
+	HpBar             *hudElement
+	ComboCounter      *hudElement
+	PPCounter         *ppCounter
+	KeyOverlay        *hudElement
+	ScoreBoard        *scoreBoard
+	Mods              *mods
+	Boundaries        *boundaries
+	ShowResultsScreen bool
 }
 
 type boundaries struct {

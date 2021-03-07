@@ -400,7 +400,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	if overlay.panel != nil {
 		overlay.panel.Update(time)
-	} else if !overlay.created && overlay.audioTime >= overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()+float64(overlay.ruleset.GetBeatMap().Diff.Hit50+1000) {
+	} else if settings.Gameplay.ShowResultsScreen && !overlay.created && overlay.audioTime >= overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()+float64(overlay.ruleset.GetBeatMap().Diff.Hit50+1000) {
 		overlay.created = true
 		cTime := overlay.normalTime
 
