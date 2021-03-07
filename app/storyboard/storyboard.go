@@ -37,7 +37,7 @@ type Storyboard struct {
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
-	pathCache   map[string]string
+	pathCache   *utils.FileMap
 }
 
 func getSection(line string) string {
@@ -69,7 +69,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
-	storyboard.pathCache = utils.GenerateFileMap(path)
+	storyboard.pathCache = utils.NewFileMap(path)
 
 	var currentSection string
 	var currentSprite string
@@ -225,12 +225,12 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		baseFile := strings.TrimSuffix(image, extension)
 
 		for i := 0; i < int(frames); i++ {
-			if tex := storyboard.getTexture(path, baseFile+strconv.Itoa(i)+extension); tex != nil {
+			if tex := storyboard.getTexture(baseFile+strconv.Itoa(i)+extension); tex != nil {
 				textures = append(textures, tex)
 			}
 		}
 	} else {
-		if tex := storyboard.getTexture(path, image); tex != nil {
+		if tex := storyboard.getTexture(image); tex != nil {
 			textures = append(textures, tex)
 		}
 	}
@@ -262,14 +262,20 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 	}
 }
 
-func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureRegion {
+func (storyboard *Storyboard) getTexture(image string) *texture.TextureRegion {
 	var texture1 *texture.TextureRegion
 
 	if texture1 = storyboard.textures[image]; texture1 == nil {
 		if texture1 = skin.GetTexture(strings.TrimSuffix(image, filepath.Ext(image))); texture1 != nil {
 			storyboard.textures[image] = texture1
 		} else {
-			img, err := texture.NewPixmapFileString(filepath.Join(path, storyboard.pathCache[image]))
+			path, err := storyboard.pathCache.GetFile(image)
+			if err != nil {
+				log.Println("File:", image, "does not exist!")
+				return texture1
+			}
+
+			img, err := texture.NewPixmapFileString(path)
 
 			if err == nil {
 

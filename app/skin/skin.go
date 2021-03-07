@@ -40,7 +40,7 @@ var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
 
-var pathCache = make(map[string]string)
+var pathCache *utils.FileMap
 
 var CurrentSkin = defaultName
 
@@ -70,12 +70,18 @@ func checkInit() {
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
-		pathCache = utils.GenerateFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
+		pathCache = utils.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
 
-		var err error
-		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache["skin.ini"]))
+		path, err := pathCache.GetFile("skin.ini")
+		if err == nil {
+			if info, err = LoadInfo(path); err != nil {
+				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
+			}
+		} else {
+			log.Println("skin.ini does not exist! Falling back to default...")
+		}
+
 		if err != nil {
-			log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
 			fallback()
 		}
 	}
@@ -261,7 +267,12 @@ func getPixmap(name string, local bool) (*texture.Pixmap, error) {
 		return assets.GetPixmap(filepath.Join("assets", "default-skin", name))
 	}
 
-	return texture.NewPixmapFileString(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[strings.ToLower(name)]))
+	path, err := pathCache.GetFile(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return texture.NewPixmapFileString(path)
 }
 
 func loadTexture(name string, local bool) *texture.TextureRegion {
@@ -353,7 +364,12 @@ func getSample(name string, local bool) *bass.Sample {
 		return bass.NewSampleData(data)
 	}
 
-	return bass.NewSample(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, pathCache[strings.ToLower(name)]))
+	path, err := pathCache.GetFile(name)
+	if err != nil {
+		return nil
+	}
+
+	return bass.NewSample(path)
 }
 
 func tryLoad(basePath string, local bool) *bass.Sample {
