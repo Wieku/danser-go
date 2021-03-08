@@ -89,7 +89,7 @@ func (controller *GenericController) InitCursors() {
 			if s, ok := queue[i].(*objects.Slider); ok {
 				for j := i + 1; j < len(queue); j++ {
 					o := queue[j]
-					if (o.GetStartTime() > s.GetStartTime() && o.GetStartTime() < s.GetEndTime()) || (o.GetEndTime() > s.GetStartTime() && o.GetEndTime() < s.GetEndTime()) {
+					if (o.GetStartTime() >= s.GetStartTime() && o.GetStartTime() <= s.GetEndTime()) || (o.GetEndTime() >= s.GetStartTime() && o.GetEndTime() <= s.GetEndTime()) {
 						queue = schedulers.PreprocessQueue(i, queue, true)
 						break
 					}
