@@ -691,6 +691,7 @@ func main() {
 	log.SetOutput(io.MultiWriter(os.Stdout, file))
 
 	defer func() {
+		settings.CloseWatcher()
 		discord.Disconnect()
 
 		if err := recover(); err != nil {

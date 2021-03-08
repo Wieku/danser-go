@@ -11,6 +11,7 @@ import (
 
 var fileStorage *fileformat
 var fileName string
+var watcher *fsnotify.Watcher
 
 func initStorage() {
 	fileStorage = &fileformat{
@@ -58,11 +59,11 @@ func LoadSettings(version string) bool {
 }
 
 func setupWatcher(file string) {
-	watcher, err := fsnotify.NewWatcher()
+	var err error
+	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
-	//defer watcher.Close()
 
 	go func() {
 		for {
@@ -98,6 +99,15 @@ func setupWatcher(file string) {
 	err = watcher.Add(abs)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func CloseWatcher() {
+	if watcher != nil {
+		err := watcher.Close()
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
