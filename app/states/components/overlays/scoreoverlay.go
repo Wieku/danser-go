@@ -123,6 +123,7 @@ type ScoreOverlay struct {
 	hpSections  []vector.Vector2d
 	panel       *play.RankingPanel
 	created     bool
+	skipTo      float64
 }
 
 func loadFonts() {
@@ -219,14 +220,26 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hitErrorMeter = play.NewHitErrorMeter(overlay.ScaledWidth, overlay.ScaledHeight, ruleset.GetBeatMap().Diff)
 
-	start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime() - 2000
+	showAfterSkip := 2000.0
 
-	if start > 2000 {
+	beatLen := overlay.ruleset.GetBeatMap().Timings.GetPoint(0).BaseBpm
+	if beatLen > 0 {
+		showAfterSkip = beatLen
+		if beatLen < 500 {
+			showAfterSkip *= 8
+		} else {
+			showAfterSkip *= 4
+		}
+	}
+
+	overlay.skipTo = overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime() - showAfterSkip
+
+	if !settings.SKIP && overlay.skipTo > 1200+overlay.ruleset.GetBeatMap().Diff.Preempt {
 		skipFrames := skin.GetFrames("play-skip", true)
 		overlay.skip = sprite.NewAnimation(skipFrames, skin.GetInfo().GetFrameTime(len(skipFrames)), true, 0.0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight), bmath.Origin.BottomRight)
 		overlay.skip.SetAlpha(0.0)
-		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, 0, 500, 0.0, 0.6))
-		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, start, start+300, 0.6, 0.0))
+		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, 0, 400, 0.0, 0.6))
+		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, overlay.skipTo, overlay.skipTo+200, 0.6, 0.0))
 	}
 
 	overlay.hpBar = play.NewHpBar()
@@ -372,10 +385,9 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	}
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
-		if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
-			start := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-			if start-time > 4000 {
-				overlay.music.SetPosition((start - 2000) / 1000)
+		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+			if overlay.audioTime < overlay.skipTo {
+				overlay.music.SetPosition(overlay.skipTo / 1000)
 			}
 		}
 	}
