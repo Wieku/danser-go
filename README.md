@@ -47,7 +47,7 @@ You need to clone it or download as a .zip (and unpack it to desired directory)
 
 #### Prerequisites
 
-* [64-bit go (1.15 at least)](https://golang.org/dl/)
+* [64-bit go (1.16 at least)](https://golang.org/dl/)
 * gcc (Linux/Unix), [mingw-w64](http://mingw-w64.org/) or [WinLibs](http://winlibs.com/) (Windows, TDM-GCC won't work)
 * OpenGL library (shipped with drivers)
 * xorg-dev (Linux)
