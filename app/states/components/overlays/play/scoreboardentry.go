@@ -27,8 +27,9 @@ type ScoreboardEntry struct {
 }
 
 func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlayer bool) *ScoreboardEntry {
+	bg := skin.GetTexture("menu-button-background")
 	entry := &ScoreboardEntry{
-		Sprite: sprite.NewSpriteSingle(skin.GetTexture("menu-button-background"), 0, vector.NewVec2d(0, 0), bmath.Origin.CentreRight),
+		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.NewVec2d(float64(1-2*(bg.Width-470)/bg.Width), 0)),
 		name:   name,
 		score:  score,
 		combo:  combo,
@@ -66,7 +67,7 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 
 func (entry *ScoreboardEntry) UpdateData() {
 	entry.scoreHumanized = utils.Humanize(entry.score)
-	entry.comboHumanized = utils.Humanize(entry.combo)+"x"
+	entry.comboHumanized = utils.Humanize(entry.combo) + "x"
 	entry.rankHumanized = fmt.Sprintf("%d", entry.rank)
 }
 
@@ -88,19 +89,19 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X-padding+3.2, entryPos.Y+8.8, bmath.Origin.TopLeft, fnt.GetSize(), true, entry.scoreHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+3.2, entryPos.Y+8.8, bmath.Origin.TopLeft, fnt.GetSize(), true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawOrigin(batch, entryPos.X-10, entryPos.Y-22, bmath.Origin.TopRight, fnt.GetSize()*2.2, true, entry.rankHumanized)
+		fnt.DrawOrigin(batch, entryPos.X+padding-10, entryPos.Y-22, bmath.Origin.TopRight, fnt.GetSize()*2.2, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X-10, entryPos.Y+8.8, bmath.Origin.TopRight, fnt.GetSize(), true, entry.comboHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+padding-10, entryPos.Y+8.8, bmath.Origin.TopRight, fnt.GetSize(), true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
@@ -108,10 +109,10 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	batch.SetScale(1, -1)
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.Draw(batch, entryPos.X-padding+3.5, entryPos.Y-4.5, 20, entry.name)
+	ubu.Draw(batch, entryPos.X+3.5, entryPos.Y-4.5, 20, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.Draw(batch, entryPos.X-padding+3, entryPos.Y-5, 20, entry.name)
+	ubu.Draw(batch, entryPos.X+3, entryPos.Y-5, 20, entry.name)
 
 	ubu.Overlap = 0
 

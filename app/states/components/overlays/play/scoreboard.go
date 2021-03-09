@@ -170,7 +170,7 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			display = true
 		}
 
-		target := vector.NewVec2d(padding, start+float64(shiftI)*spacing)
+		target := vector.NewVec2d(0, start+float64(shiftI)*spacing)
 
 		if board.first {
 			entry.SetPosition(target)
