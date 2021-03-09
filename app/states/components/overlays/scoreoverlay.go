@@ -24,6 +24,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -37,6 +38,8 @@ const (
 	vAccOffset   = 4.8
 	barWidth     = 272.0
 	barThickness = 4.8
+	minBlinks    = 5
+	blinkTime    = 200
 )
 
 type Overlay interface {
@@ -96,7 +99,6 @@ type ScoreOverlay struct {
 	shapeRenderer *shape.Renderer
 
 	boundaries     *common.Boundaries
-	hpBasePosition vector.Vector2d
 
 	mods       *sprite.SpriteManager
 	notFirst   bool
@@ -118,6 +120,8 @@ type ScoreOverlay struct {
 	oldGrade osu.Grade
 
 	hpBar *play.HpBar
+
+	arrows *sprite.SpriteManager
 
 	resultsFade *animation.Glider
 	hpSections  []vector.Vector2d
@@ -257,10 +261,12 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.entry = play.NewScoreboard(overlay.ruleset.GetBeatMap(), overlay.cursor.ScoreID)
 	overlay.entry.AddPlayer(overlay.cursor.Name)
 
+	overlay.initArrows()
+
 	return overlay
 }
 
-func (overlay *ScoreOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
+func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
 	if result&(osu.BaseHitsM) > 0 {
 		overlay.results.AddResult(time, result, position)
 	}
@@ -351,37 +357,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	if !overlay.notFirst && time > -settings.Playfield.LeadInHold*1000 {
 		overlay.notFirst = true
 
-		mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
-
-		scale := settings.Gameplay.Mods.Scale
-		alpha := settings.Gameplay.Mods.Opacity
-
-		offset := -48.0 * scale
-		for i, s := range mods {
-			modSpriteName := "selection-mod-" + strings.ToLower(s)
-
-			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), bmath.Origin.Centre)
-			mod.SetAlpha(0)
-			mod.ShowForever(true)
-
-			timeStart := time + float64(i)*500
-
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0*alpha))
-			mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2*scale, 1.0*scale))
-
-			if overlay.cursor.Name == "" || settings.Gameplay.Mods.HideInReplays {
-				startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-				mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0*alpha, 0))
-			}
-
-			if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
-				offset -= 16 * scale
-			} else {
-				offset -= 80 * scale
-			}
-
-			overlay.mods.Add(mod)
-		}
+		overlay.initMods()
 	}
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
@@ -402,6 +378,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.passContainer.Update(overlay.audioTime)
 	overlay.rankBack.Update(overlay.audioTime)
 	overlay.rankFront.Update(overlay.audioTime)
+	overlay.arrows.Update(overlay.audioTime)
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
@@ -604,7 +581,6 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	overlay.drawScore(batch, alpha)
 	overlay.drawCombo(batch, alpha)
 	overlay.hpBar.Draw(batch, alpha)
-	overlay.drawPP(batch, alpha)
 	overlay.drawKeys(batch, alpha)
 
 	batch.ResetTransform()
@@ -613,6 +589,12 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	if settings.Gameplay.Mods.Show {
 		overlay.mods.Draw(overlay.lastTime, batch)
 	}
+
+	if settings.Gameplay.ShowWarningArrows {
+		overlay.arrows.Draw(overlay.audioTime, batch)
+	}
+
+	overlay.drawPP(batch, alpha)
 
 	if overlay.panel != nil {
 		overlay.panel.Draw(batch, overlay.resultsFade.GetValue())
@@ -883,4 +865,94 @@ func (overlay *ScoreOverlay) showPassInfo() {
 
 	overlay.rankFront.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, breakStart+400, breakStart+700, 0, 1))
 	overlay.rankFront.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, breakEnd-1000, breakEnd-700, 1, 0))
+}
+
+func (overlay *ScoreOverlay) initMods() {
+	mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
+
+	scale := settings.Gameplay.Mods.Scale
+	alpha := settings.Gameplay.Mods.Opacity
+
+	offset := -48.0 * scale
+	for i, s := range mods {
+		modSpriteName := "selection-mod-" + strings.ToLower(s)
+
+		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), bmath.Origin.Centre)
+		mod.SetAlpha(0)
+		mod.ShowForever(true)
+
+		timeStart := overlay.audioTime + float64(i)*500
+
+		mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0*alpha))
+		mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2*scale, 1.0*scale))
+
+		if overlay.cursor.Name == "" || settings.Gameplay.Mods.HideInReplays {
+			startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0*alpha, 0))
+		}
+
+		if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
+			offset -= 16 * scale
+		} else {
+			offset -= 80 * scale
+		}
+
+		overlay.mods.Add(mod)
+	}
+}
+
+func (overlay *ScoreOverlay) initArrows() {
+	overlay.arrows = sprite.NewSpriteManager()
+
+	createArrow := func(tex *texture.TextureRegion, color color2.Color, position vector.Vector2d, flip bool) *sprite.Sprite {
+		arrow := sprite.NewSpriteSingle(tex, 9999, position, bmath.Origin.Centre)
+		arrow.SetHFlip(flip)
+		arrow.SetColor(color)
+		arrow.SetAlpha(0)
+
+		return arrow
+	}
+
+	arrowTexture := skin.GetTexture("arrow-warning")
+	color := color2.NewL(1)
+
+	if arrowTexture == nil {
+		arrowTexture = skin.GetTexture("play-warningarrow")
+		if skin.GetInfo().Version >= 2.0 {
+			color = color2.NewRGB(1, 0, 0)
+		}
+	}
+
+	arrows := []*sprite.Sprite{
+		createArrow(arrowTexture, color, vector.NewVec2d(128, 160), false),
+		createArrow(arrowTexture, color, vector.NewVec2d(128, overlay.ScaledHeight-160), false),
+		createArrow(arrowTexture, color, vector.NewVec2d(overlay.ScaledWidth-128, 160), true),
+		createArrow(arrowTexture, color, vector.NewVec2d(overlay.ScaledWidth-128, overlay.ScaledHeight-160), true),
+	}
+
+	for _, arrow := range arrows {
+		overlay.arrows.Add(arrow)
+	}
+
+	addTransforms := func(start float64, times int) {
+		for _, arrow := range arrows {
+			for i := 0; i < times; i++ {
+				time := start + float64(i)*blinkTime
+				arrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time, 1, 1))
+				arrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+blinkTime/2, time+blinkTime/2, 0, 0))
+			}
+		}
+	}
+
+	bMap := overlay.ruleset.GetBeatMap()
+
+	if bMap.HitObjects[0].GetStartTime() > 6000 {
+		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime)))
+	}
+
+	for _, pause := range bMap.Pauses {
+		blinks := bmath.MinI(minBlinks, int(pause.Length()/blinkTime))
+		extra := bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime))
+		addTransforms(pause.EndTime-float64(blinks)*blinkTime, blinks+extra)
+	}
 }
