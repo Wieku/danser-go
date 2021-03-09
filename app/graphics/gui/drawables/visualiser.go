@@ -82,11 +82,17 @@ func (vis *Visualiser) Update(time float64) {
 func (vis *Visualiser) Draw(_ float64, batch *batch.QuadBatch) {
 	origin := vector.NewVec2d(-1, 0)
 
+	cutoff := 1 / vis.barLength
+
 	color := mgl32.Vec4{1, 1, 1, 0.3}
 	region := graphics.Pixel.GetRegion()
 
 	for i := 0; i < 5; i++ {
 		for j, v := range vis.fft {
+			if v < cutoff {
+				continue
+			}
+
 			rotation := (float64(i)/5 + float64(j)/float64(vis.bars)) * 2 * math.Pi
 			position := vector.NewVec2dRad(rotation, vis.startDistance).Add(vis.Position)
 			scale := vector.NewVec2d(vis.barLength*v, (2*math.Pi*vis.startDistance)/float64(vis.bars))
