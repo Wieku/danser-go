@@ -365,7 +365,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 func (player *Player) Update(delta float64) bool {
 	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
-		player.progressMsF += delta * settings.SPEED
+		player.progressMsF += delta * player.musicPlayer.GetTempo()
 	} else {
 		player.progressMsF += delta
 	}

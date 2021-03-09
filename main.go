@@ -420,7 +420,7 @@ func run() {
 		updateDelta := 1000 / updateFPS
 		fpsDelta := 1000 / fps
 
-		deltaSumF := 0.0
+		deltaSumF := fpsDelta
 
 		p, _ := player.(*states.Player)
 
