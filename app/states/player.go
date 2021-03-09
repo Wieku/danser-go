@@ -234,12 +234,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.playersGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.hudGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
-	player.volumeGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 
 	player.MapEnd = beatmapEnd + fadeOut
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
 		player.MapEnd += 6000
+		player.volumeGlider.AddEvent(player.MapEnd-6000, player.MapEnd, 0.0)
+	} else {
+		player.volumeGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	}
 
 	if settings.Playfield.SeizureWarning.Enabled {
