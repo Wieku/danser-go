@@ -347,7 +347,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	delta := time - overlay.audioTime
 
 	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
-		delta /= settings.SPEED
+		delta /= overlay.music.GetTempo()
 	}
 
 	overlay.normalTime += delta
@@ -398,8 +398,10 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 			s := cTime + 250
 
+			resultsTime := settings.Gameplay.ResultsScreenTime * 1000
+
 			overlay.resultsFade.AddEventS(s, s+500, 0, 1)
-			overlay.resultsFade.AddEventS(s+5500, s+6000, 1, 0)
+			overlay.resultsFade.AddEventS(s+resultsTime+500, s+resultsTime+1000, 1, 0)
 		}()
 	}
 

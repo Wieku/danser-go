@@ -31,10 +31,14 @@ type Track struct {
 	rightChannel     float64
 	lowMax           float64
 	lastVol          float64
+	speed            float64
+	pitch            float64
 }
 
 func NewTrack(path string) *Track {
 	player := new(Track)
+	player.speed = 1
+	player.pitch = 1
 	player.lastVol = -100000
 	player.fft = make([]float32, 512)
 
@@ -188,6 +192,12 @@ func (wv *Track) GetPosition() float64 {
 }
 
 func (wv *Track) SetTempo(tempo float64) {
+	if wv.speed == tempo {
+		return
+	}
+
+	wv.speed = tempo
+
 	if !Offscreen {
 		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
 
@@ -199,7 +209,17 @@ func (wv *Track) SetTempo(tempo float64) {
 	})
 }
 
+func (wv *Track) GetTempo() float64 {
+	return wv.speed
+}
+
 func (wv *Track) SetPitch(tempo float64) {
+	if wv.pitch == tempo {
+		return
+	}
+
+	wv.pitch = tempo
+
 	if !Offscreen {
 		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
 
@@ -209,6 +229,10 @@ func (wv *Track) SetPitch(tempo float64) {
 	addNormalEvent(func() {
 		C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
 	})
+}
+
+func (wv *Track) GetPitch() float64 {
+	return wv.pitch
 }
 
 func (wv *Track) GetState() int {

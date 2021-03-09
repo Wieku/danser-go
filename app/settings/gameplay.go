@@ -83,6 +83,7 @@ func initGameplay() *gameplay {
 			BackgroundOpacity: 0.5,
 		},
 		ShowResultsScreen: true,
+		ResultsScreenTime: 5,
 		ShowWarningArrows: true,
 	}
 }
@@ -98,6 +99,7 @@ type gameplay struct {
 	Mods              *mods
 	Boundaries        *boundaries
 	ShowResultsScreen bool
+	ResultsScreenTime float64
 	ShowWarningArrows bool
 }
 

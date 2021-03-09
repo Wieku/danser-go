@@ -78,7 +78,10 @@ type Player struct {
 
 	hudGlider *animation.Glider
 
-	volumeGlider  *animation.Glider
+	volumeGlider *animation.Glider
+	speedGlider  *animation.Glider
+	pitchGlider  *animation.Glider
+
 	startPoint    float64
 	baseLimit     int
 	updateLimiter *frame.Limiter
@@ -104,6 +107,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.bMap = beatMap
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
+
+	player.musicPlayer = bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
 
 	var err error
 	player.Epi, err = utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/warning.png")
@@ -173,6 +178,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeIn = 0.0
 
 	player.volumeGlider = animation.NewGlider(1)
+	player.speedGlider = animation.NewGlider(settings.SPEED)
+	player.pitchGlider = animation.NewGlider(settings.PITCH)
 	player.hudGlider = animation.NewGlider(1)
 	player.dimGlider = animation.NewGlider(0)
 	player.blurGlider = animation.NewGlider(0)
@@ -238,8 +245,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.MapEnd = beatmapEnd + fadeOut
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
-		player.MapEnd += 6000
-		player.volumeGlider.AddEvent(player.MapEnd-6000, player.MapEnd, 0.0)
+		player.speedGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 1)
+		player.pitchGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 1)
+
+		player.MapEnd += (settings.Gameplay.ResultsScreenTime + 1) * 1000
+		if player.MapEnd < player.musicPlayer.GetLength()*1000 {
+			player.volumeGlider.AddEvent(player.MapEnd-settings.Gameplay.ResultsScreenTime*1000-500, player.MapEnd, 0.0)
+		}
 	} else {
 		player.volumeGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	}
@@ -280,16 +292,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(endTime, endTime+100*settings.SPEED, 1.0)
 	}
 
-	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
-	player.background.SetTrack(musicPlayer)
+	player.background.SetTrack(player.musicPlayer)
 
 	player.coin = common.NewDanserCoin()
-	player.coin.SetMap(beatMap, musicPlayer)
+	player.coin.SetMap(beatMap, player.musicPlayer)
 
 	player.coin.SetScale(0.25 * math.Min(settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()))
 
 	player.profiler = frame.NewCounter()
-	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 	player.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
@@ -328,7 +338,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.profilerU.PutSample(float64(currtime-lastT) / 1000000.0)
 
-			if musicPlayer.GetState() == bass.MUSIC_STOPPED {
+			if player.musicPlayer.GetState() == bass.MUSIC_STOPPED {
 				player.progressMsF += float64(currtime-lastT) / 1000000.0
 			} else {
 				platformOffset := 0.0
@@ -336,7 +346,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 					platformOffset = windowsOffset
 				}
 
-				player.progressMsF = musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
+				player.progressMsF = player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
 			}
 
 			player.updateMain(float64(currtime-lastT) / 1000000.0)
@@ -346,7 +356,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			player.updateLimiter.Sync()
 		}
 
-		musicPlayer.Stop()
+		player.musicPlayer.Stop()
 		bass.StopLoops()
 	}()
 
@@ -386,9 +396,6 @@ func (player *Player) updateMain(delta float64) {
 	if player.progressMsF >= player.startPoint && !player.start {
 		player.musicPlayer.Play()
 
-		player.musicPlayer.SetTempo(settings.SPEED)
-		player.musicPlayer.SetPitch(settings.PITCH)
-
 		if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
 			ov.SetMusic(player.musicPlayer)
 		}
@@ -403,6 +410,12 @@ func (player *Player) updateMain(delta float64) {
 
 		player.start = true
 	}
+
+	player.speedGlider.Update(player.progressMsF)
+	player.pitchGlider.Update(player.progressMsF)
+
+	player.musicPlayer.SetTempo(player.speedGlider.GetValue())
+	player.musicPlayer.SetPitch(player.pitchGlider.GetValue())
 
 	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
 		if _, ok := player.controller.(*dance.GenericController); ok {
@@ -494,7 +507,7 @@ func (player *Player) Draw(float64) {
 	cameras1 := player.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha = bmath.ClampF64(bgAlpha * player.Scl, 0, 1)
+		bgAlpha = bmath.ClampF64(bgAlpha*player.Scl, 0, 1)
 	}
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
