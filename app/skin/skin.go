@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Source int
@@ -26,6 +27,10 @@ const (
 )
 
 const defaultName = "default"
+
+var fontLock = &sync.Mutex{}
+var soundLock = &sync.Mutex{}
+var textureLock = &sync.Mutex{}
 
 var atlas *texture.TextureAtlas
 
@@ -97,6 +102,9 @@ func GetInfo() *SkinInfo {
 func GetFont(name string) *font.Font {
 	checkInit()
 
+	fontLock.Lock()
+	defer fontLock.Unlock()
+
 	if fnt, exists := fontCache[name]; exists {
 		return fnt
 	}
@@ -145,6 +153,9 @@ func GetTexture(name string) *texture.TextureRegion {
 
 func GetTextureSource(name string, source Source) *texture.TextureRegion {
 	checkInit()
+
+	textureLock.Lock()
+	defer textureLock.Unlock()
 
 	source = source & (^BEATMAP)
 
@@ -334,6 +345,9 @@ func loadTexture(name string, local bool) *texture.TextureRegion {
 
 func GetSample(name string) *bass.Sample {
 	checkInit()
+
+	soundLock.Lock()
+	defer soundLock.Unlock()
 
 	if sample, exists := sampleCache[name]; exists {
 		return sample
