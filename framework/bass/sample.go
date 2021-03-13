@@ -14,6 +14,7 @@ import (
 )
 
 type SubSample struct {
+	bassSample C.DWORD
 	sampleChan C.HCHANNEL
 	streamChan C.HSTREAM
 }
@@ -37,20 +38,16 @@ func NewSample(path string) *Sample {
 		return nil
 	}
 
+	defer f.Close()
+
 	sample := new(Sample)
 
 	sample.data, err = ioutil.ReadAll(f)
-	if err != nil || len(sample.data) == 0 {
+	if err != nil {
 		return nil
 	}
-
-	f.Close()
 
 	sample.bassSample = C.LoadBassSample(C.CString(path), 32, C.BASS_SAMPLE_OVER_POS)
-
-	if sample.bassSample == 0 {
-		return nil
-	}
 
 	return sample
 }
@@ -64,15 +61,16 @@ func NewSampleData(data []byte) *Sample {
 	sample.data = data
 	sample.bassSample = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
 
-	if sample.bassSample == 0 {
-		return nil
-	}
-
 	return sample
 }
 
 func (sample *Sample) Play() *SubSample {
 	sub := new(SubSample)
+	sub.bassSample = sample.bassSample
+
+	if sample.bassSample == 0 {
+		return sub
+	}
 
 	if !Offscreen {
 		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
@@ -101,6 +99,11 @@ func (sample *Sample) PlayLoop() *SubSample {
 
 func (sample *Sample) PlayV(volume float64) *SubSample {
 	sub := new(SubSample)
+	sub.bassSample = sample.bassSample
+
+	if sample.bassSample == 0 {
+		return sub
+	}
 
 	if !Offscreen {
 		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
@@ -129,6 +132,11 @@ func (sample *Sample) PlayVLoop(volume float64) *SubSample {
 
 func (sample *Sample) PlayRV(volume float64) *SubSample {
 	sub := new(SubSample)
+	sub.bassSample = sample.bassSample
+
+	if sample.bassSample == 0 {
+		return sub
+	}
 
 	if !Offscreen {
 		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
@@ -157,6 +165,11 @@ func (sample *Sample) PlayRVLoop(volume float64) *SubSample {
 
 func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
 	sub := new(SubSample)
+	sub.bassSample = sample.bassSample
+
+	if sample.bassSample == 0 {
+		return sub
+	}
 
 	if !Offscreen {
 		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
@@ -205,6 +218,10 @@ func (sample *Sample) createPlayEvent(sSample *SubSample, delegate func()) {
 func setLoop(sSample *SubSample) {
 	loopingStreams[sSample] = 1
 
+	if sSample.bassSample == 0 {
+		return
+	}
+
 	if !Offscreen {
 		C.BASS_ChannelFlags(C.HCHANNEL(sSample.sampleChan), C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
 
@@ -219,6 +236,10 @@ func setLoop(sSample *SubSample) {
 }
 
 func SetRate(channel *SubSample, rate float64) {
+	if channel.bassSample == 0 {
+		return
+	}
+
 	if !Offscreen {
 		C.BASS_ChannelSetAttribute(C.HCHANNEL(channel.sampleChan), C.BASS_ATTRIB_FREQ, C.float(rate))
 
@@ -233,6 +254,10 @@ func SetRate(channel *SubSample, rate float64) {
 func StopSample(channel *SubSample) {
 	delete(loopingStreams, channel)
 
+	if channel.bassSample == 0 {
+		return
+	}
+
 	if !Offscreen {
 		C.BASS_ChannelPause(C.HCHANNEL(channel.sampleChan))
 
@@ -245,6 +270,10 @@ func StopSample(channel *SubSample) {
 }
 
 func PauseSample(channel *SubSample) {
+	if channel.bassSample == 0 {
+		return
+	}
+
 	if !Offscreen {
 		C.BASS_ChannelPause(C.HCHANNEL(channel.sampleChan))
 
@@ -257,6 +286,10 @@ func PauseSample(channel *SubSample) {
 }
 
 func PlaySample(channel *SubSample) {
+	if channel.bassSample == 0 {
+		return
+	}
+
 	if !Offscreen {
 		C.BASS_ChannelPlay(C.HCHANNEL(channel.sampleChan), 0)
 
