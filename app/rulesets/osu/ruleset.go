@@ -105,6 +105,7 @@ type subSet struct {
 	hp            *HealthProcessor
 	gekiCount     int64
 	katuCount     int64
+	recoveries    int
 }
 
 type MapTo struct {
@@ -192,7 +193,12 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		hp.CalculateRate()
 		hp.ResetHp()
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0}
+		recoveries := 0
+		if diff.CheckModActive(difficulty.Easy) {
+			recoveries = 2
+		}
+
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -494,6 +500,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	}
 
 	subSet.hp.AddResult(result)
+
+	if subSet.hp.Health == 0.0 && subSet.recoveries > 0 {
+		subSet.hp.Increase(160)
+		subSet.recoveries--
+	}
 
 	if set.hitListener != nil {
 		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.score)
