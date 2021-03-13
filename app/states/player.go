@@ -41,9 +41,12 @@ type Player struct {
 	font        *font.Font
 	bMap        *beatmap.BeatMap
 	bloomEffect *effects.BloomEffect
-	lastTime    int64
-	progressMsF float64
-	progressMs  int64
+
+	lastTime     int64
+	lastMusicPos float64
+	progressMsF  float64
+	progressMs   int64
+
 	batch       *batch2.QuadBatch
 	controller  dance.Controller
 	background  *common.Background
@@ -331,27 +334,36 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		runtime.LockOSThread()
 
-		var lastT = qpc.GetNanoTime()
+		var lastTimeNano = qpc.GetNanoTime()
 
 		for !input.Win.ShouldClose() {
-			currtime := qpc.GetNanoTime()
+			currentTimeNano := qpc.GetNanoTime()
 
-			player.profilerU.PutSample(float64(currtime-lastT) / 1000000.0)
+			delta := float64(currentTimeNano-lastTimeNano) / 1000000.0
+
+			player.profilerU.PutSample(delta)
 
 			if player.musicPlayer.GetState() == bass.MUSIC_STOPPED {
-				player.progressMsF += float64(currtime-lastT) / 1000000.0
+				player.progressMsF += delta
 			} else {
 				platformOffset := 0.0
 				if runtime.GOOS == "windows" {
 					platformOffset = windowsOffset
 				}
 
-				player.progressMsF = player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
+				musicPos := player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
+
+				if musicPos != player.lastMusicPos {
+					player.progressMsF = musicPos
+					player.lastMusicPos = musicPos
+				} else {
+					player.progressMsF += delta * settings.SPEED
+				}
 			}
 
-			player.updateMain(float64(currtime-lastT) / 1000000.0)
+			player.updateMain(delta)
 
-			lastT = currtime
+			lastTimeNano = currentTimeNano
 
 			player.updateLimiter.Sync()
 		}
