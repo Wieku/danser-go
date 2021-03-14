@@ -22,8 +22,8 @@ func Combine(output string) {
 		"-i", filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container),
 		"-i", filepath.Join(settings.Recording.OutputDir, filename+".wav"),
 		"-c:v", "copy",
-		"-c:a", "aac",
-		"-ab", "320k",
+		"-c:a", settings.Recording.AudioCodec,
+		"-ab", settings.Recording.AudioBitrate,
 		filepath.Join(settings.Recording.OutputDir, output+"."+settings.Recording.Container),
 	)
 	cmd2.Start()

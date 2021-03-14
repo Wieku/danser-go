@@ -13,6 +13,8 @@ func initRecording() *recording {
 		Preset:         "faster",
 		PixelFormat:    "yuv420p",
 		Filters:        "",
+		AudioCodec:     "aac",
+		AudioBitrate:   "320k",
 		OutputDir:      "videos",
 		Container:      "mp4",
 		MotionBlur: &motionblur{
@@ -39,6 +41,8 @@ type recording struct {
 	Preset         string
 	PixelFormat    string
 	Filters        string
+	AudioCodec     string
+	AudioBitrate   string
 	OutputDir      string
 	Container      string
 	MotionBlur     *motionblur
