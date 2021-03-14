@@ -33,6 +33,7 @@ type Track struct {
 	lastVol          float64
 	speed            float64
 	pitch            float64
+	playing          bool
 }
 
 func NewTrack(path string) *Track {
@@ -67,6 +68,8 @@ func setupFXChannel(channel C.HSTREAM) {
 func (wv *Track) Play() {
 	wv.SetVolume(settings.Audio.GeneralVolume * settings.Audio.MusicVolume)
 
+	wv.playing = true
+
 	if !Offscreen {
 		C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
 
@@ -84,6 +87,8 @@ func (wv *Track) Play() {
 func (wv *Track) PlayV(volume float64) {
 	wv.SetVolume(volume)
 
+	wv.playing = true
+
 	if !Offscreen {
 		C.BASS_ChannelPlay(C.DWORD(wv.channel), 0)
 
@@ -99,6 +104,8 @@ func (wv *Track) PlayV(volume float64) {
 }
 
 func (wv *Track) Pause() {
+	wv.playing = false
+
 	if !Offscreen {
 		C.BASS_ChannelPause(C.DWORD(wv.channel))
 
@@ -111,6 +118,8 @@ func (wv *Track) Pause() {
 }
 
 func (wv *Track) Resume() {
+	wv.playing = true
+
 	if !Offscreen {
 		C.BASS_ChannelPlay(C.DWORD(wv.channel), 0)
 
@@ -123,6 +132,8 @@ func (wv *Track) Resume() {
 }
 
 func (wv *Track) Stop() {
+	wv.playing = false
+
 	if !Offscreen {
 		C.BASS_ChannelStop(C.DWORD(wv.channel))
 
@@ -240,7 +251,13 @@ func (wv *Track) GetState() int {
 }
 
 func (wv *Track) Update() {
-	C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
+	if wv.playing {
+		C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
+	} else {
+		for i := range wv.fft {
+			wv.fft[i] = 0
+		}
+	}
 
 	toPeak := 0.0
 	beatAv := 0.0
