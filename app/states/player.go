@@ -67,7 +67,6 @@ type Player struct {
 	blurGlider      *animation.Glider
 	fxGlider        *animation.Glider
 	cursorGlider    *animation.Glider
-	playersGlider   *animation.Glider
 	counter         float64
 	storyboardLoad  float64
 	storyboardDrawn int
@@ -222,11 +221,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.volumeGlider = animation.NewGlider(1)
 	player.speedGlider = animation.NewGlider(settings.SPEED)
 	player.pitchGlider = animation.NewGlider(settings.PITCH)
-	player.hudGlider = animation.NewGlider(1)
+	player.hudGlider = animation.NewGlider(0)
 	player.dimGlider = animation.NewGlider(0)
 	player.blurGlider = animation.NewGlider(0)
 	player.fxGlider = animation.NewGlider(0)
-	player.playersGlider = animation.NewGlider(0)
 	player.cursorGlider = animation.NewGlider(0)
 	player.epiGlider = animation.NewGlider(0)
 	player.objectsAlpha = animation.NewGlider(1)
@@ -293,7 +291,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
 	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
 	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
-	player.playersGlider.AddEvent(startOffset-500, startOffset, 1.0)
+	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
 		player.cursorGlider.AddEvent(startOffset-500, startOffset, 0.0)
@@ -314,7 +312,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.dimGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.fxGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.cursorGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
-	player.playersGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.hudGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 
 	player.MapEnd = beatmapEnd + fadeOut
@@ -543,7 +540,6 @@ func (player *Player) updateMain(delta float64) {
 	player.blurGlider.Update(player.progressMsF)
 	player.fxGlider.Update(player.progressMsF)
 	player.cursorGlider.Update(player.progressMsF)
-	player.playersGlider.Update(player.progressMsF)
 	player.hudGlider.Update(player.progressMsF)
 	player.volumeGlider.Update(player.progressMsF)
 	player.objectsAlpha.Update(player.progressMsF)
@@ -616,7 +612,7 @@ func (player *Player) Draw(float64) {
 
 		player.batch.SetCamera(cameras[0])
 
-		player.overlay.DrawBeforeObjects(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
+		player.overlay.DrawBeforeObjects(player.batch, cursorColors, player.hudGlider.GetValue())
 
 		player.batch.End()
 		player.batch.ResetTransform()
@@ -687,7 +683,7 @@ func (player *Player) Draw(float64) {
 
 		player.batch.SetCamera(cameras[0])
 
-		player.overlay.DrawNormal(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
+		player.overlay.DrawNormal(player.batch, cursorColors, player.hudGlider.GetValue())
 
 		player.batch.End()
 	}
@@ -736,7 +732,7 @@ func (player *Player) Draw(float64) {
 
 		player.batch.SetCamera(player.scamera.GetProjectionView())
 
-		player.overlay.DrawHUD(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
+		player.overlay.DrawHUD(player.batch, cursorColors, player.hudGlider.GetValue())
 
 		player.batch.End()
 	}

@@ -269,7 +269,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	return overlay
 }
 
-func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
+func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, _ int64) {
 	if result&(osu.BaseHitsM) > 0 {
 		overlay.results.AddResult(time, result, position)
 	}
@@ -286,7 +286,6 @@ func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number 
 	}
 
 	if comboResult == osu.ComboResults.Increase {
-
 		overlay.newComboScaleB.Reset()
 		overlay.newComboScaleB.AddEventS(overlay.normalTime, overlay.normalTime+300, 2, 1.28)
 
@@ -409,7 +408,6 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 	}
 
 	if overlay.flashlight != nil && time >= 0 {
-
 		overlay.flashlight.Update(time)
 		overlay.flashlight.UpdatePosition(overlay.cursor.Position)
 
@@ -518,6 +516,7 @@ func (overlay *ScoreOverlay) updateBreaks(time float64) {
 		if b.GetEndTime()-b.GetStartTime() >= 1000 && overlay.audioTime >= b.GetStartTime() && overlay.audioTime <= b.GetEndTime() {
 			inBreak = true
 			overlay.currentBreak = b
+
 			break
 		}
 	}
@@ -548,7 +547,7 @@ func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color
 func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
 	scale := overlay.ruleset.GetBeatMap().Diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
-	batch.SetColor(1, 1, 1, 1)
+	batch.SetColor(1, 1, 1, alpha)
 
 	overlay.results.Draw(batch, 1.0)
 
@@ -924,6 +923,7 @@ func (overlay *ScoreOverlay) initArrows() {
 
 	if arrowTexture == nil {
 		arrowTexture = skin.GetTexture("play-warningarrow")
+
 		if skin.GetInfo().Version >= 2.0 {
 			color = color2.NewRGB(1, 0, 0)
 		}
