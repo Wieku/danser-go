@@ -123,7 +123,7 @@ func (container *HitObjectContainer) Update(time float64) {
 	}
 }
 
-func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, _ float32) {
+func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
 	divides := len(cameras)
 
 	if len(container.objectQueue) > 0 {
@@ -165,16 +165,16 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 	}
 
 	if settings.Playfield.DrawObjects {
-		objectColors := settings.Objects.Colors.Color.GetColors(divides, float64(scale), float64(scale))
+		objectColors := settings.Objects.Colors.Color.GetColors(divides, float64(scale), float64(alpha))
 		borderColors := objectColors
 		bodyColors := objectColors
 
 		if !settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
-			borderColors = settings.Objects.Colors.Sliders.Border.Color.GetColors(divides, float64(scale), float64(scale))
+			borderColors = settings.Objects.Colors.Sliders.Border.Color.GetColors(divides, float64(scale), float64(alpha))
 		}
 
 		if !settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
-			bodyColors = settings.Objects.Colors.Sliders.Body.Color.GetColors(divides, float64(scale), float64(scale))
+			bodyColors = settings.Objects.Colors.Sliders.Body.Color.GetColors(divides, float64(scale), float64(alpha))
 		}
 
 		if !settings.Objects.ScaleToTheBeat {
@@ -183,7 +183,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 		batch.Begin()
 		batch.ResetTransform()
-		batch.SetColor(1, 1, 1, 1)
+		batch.SetColor(1, 1, 1, float64(alpha))
 		batch.SetScale(float64(scale)*container.beatMap.Diff.CircleRadius/64, float64(scale)*container.beatMap.Diff.CircleRadius/64)
 
 		if divides < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawFollowPoints {
@@ -194,6 +194,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 		}
 
 		batch.Flush()
+		batch.SetColor(1, 1, 1, 1)
 		batch.SetScale(1, 1)
 
 		for i := len(container.renderables) - 1; i >= 0; i-- {

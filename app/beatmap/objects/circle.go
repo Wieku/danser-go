@@ -264,7 +264,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(position.Copy64())
 
-	alpha := 1.0
+	alpha := float64(color.A)
 
 	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
 		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
@@ -327,7 +327,7 @@ func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batc
 
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(position.Copy64())
-	batch.SetColor(1, 1, 1, 1)
+	batch.SetColor(1, 1, 1, float64(color.A))
 
 	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
 		color := skin.GetInfo().ComboColors[int(circle.ComboSet)%len(skin.GetInfo().ComboColors)]

@@ -754,7 +754,7 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 }
 
 func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
-	colorAlpha := slider.bodyFade.GetValue()
+	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
 	bodyOpacityInner := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
 	bodyOpacityOuter := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
@@ -824,7 +824,7 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 		return true
 	}
 
-	alpha := slider.fade.GetValue()
+	alpha := slider.fade.GetValue() * float64(color.A)
 
 	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
 		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
