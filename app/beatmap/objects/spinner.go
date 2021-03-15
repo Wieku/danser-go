@@ -200,7 +200,7 @@ func (spinner *Spinner) Update(time float64) bool {
 	return true
 }
 
-func (spinner *Spinner) Draw(time float64, _ color2.Color, batch *batch.QuadBatch) bool {
+func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	shiftX := -float32(settings.Playfield.ShiftX*spinner.ScaledHeight) / 480
@@ -217,7 +217,7 @@ func (spinner *Spinner) Draw(time float64, _ color2.Color, batch *batch.QuadBatc
 
 	scaledOrtho := mgl32.Ortho(-overdrawX+shiftX, float32(spinner.ScaledWidth)+overdrawX+shiftX, float32(spinner.ScaledHeight)+overdrawY+shiftY, -overdrawY+shiftY, -1, 1)
 
-	alpha := spinner.fade.GetValue()
+	alpha := spinner.fade.GetValue() * float64(color.A)
 
 	batch.SetColor(1, 1, 1, alpha)
 
