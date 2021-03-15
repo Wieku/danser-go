@@ -483,7 +483,7 @@ func (slider *Slider) Update(time float64) bool {
 
 		for _, p := range slider.TickPoints {
 			if slider.lastTime < p.Time && time >= p.Time {
-				audio.PlaySliderTick(slider.Timings.Current.SampleSet, slider.Timings.Current.SampleIndex, slider.Timings.Current.SampleVolume, slider.HitObjectID, p.Pos.X64())
+				slider.PlayTick()
 			}
 		}
 	} else if slider.isSliding {
@@ -497,7 +497,7 @@ func (slider *Slider) Update(time float64) bool {
 
 		for _, p := range slider.TickPoints {
 			if slider.lastTime < p.Time && time >= p.Time {
-				audio.PlaySliderTick(slider.Timings.Current.SampleSet, slider.Timings.Current.SampleIndex, slider.Timings.Current.SampleVolume, slider.HitObjectID, p.Pos.X64())
+				slider.PlayTick()
 			}
 		}
 	}
