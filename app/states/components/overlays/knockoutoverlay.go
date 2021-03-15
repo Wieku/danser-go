@@ -543,3 +543,5 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 func (overlay *KnockoutOverlay) IsBroken(cursor *graphics.Cursor) bool {
 	return overlay.players[overlay.names[cursor]].hasBroken
 }
+
+func (overlay *KnockoutOverlay) DisableAudioSubmission(_ bool) {}

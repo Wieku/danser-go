@@ -48,6 +48,7 @@ type Overlay interface {
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	IsBroken(cursor *graphics.Cursor) bool
+	DisableAudioSubmission(b bool)
 }
 
 type ScoreOverlay struct {
@@ -98,7 +99,7 @@ type ScoreOverlay struct {
 
 	shapeRenderer *shape.Renderer
 
-	boundaries     *common.Boundaries
+	boundaries *common.Boundaries
 
 	mods       *sprite.SpriteManager
 	notFirst   bool
@@ -128,6 +129,8 @@ type ScoreOverlay struct {
 	panel       *play.RankingPanel
 	created     bool
 	skipTo      float64
+
+	audioDisabled bool
 }
 
 func loadFonts() {
@@ -296,7 +299,7 @@ func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number 
 		overlay.newCombo++
 		overlay.nextEnd = overlay.normalTime + 300
 	} else if comboResult == osu.ComboResults.Reset {
-		if overlay.newCombo > 20 && overlay.combobreak != nil {
+		if overlay.newCombo > 20 && overlay.combobreak != nil && !overlay.audioDisabled {
 			overlay.combobreak.Play()
 		}
 		overlay.newCombo = 0
@@ -803,10 +806,7 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 	startTime := hObjects[0].GetStartTime()
 	endTime := hObjects[len(hObjects)-1].GetEndTime()
 
-	musicPos := 0.0
-	if overlay.music != nil {
-		musicPos = overlay.music.GetPosition() * 1000
-	}
+	musicPos := overlay.audioTime
 
 	progress := bmath.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
 	if musicPos < startTime {
@@ -838,7 +838,9 @@ func (overlay *ScoreOverlay) showPassInfo() {
 	time := math.Min(overlay.currentBreak.GetEndTime()-2880, overlay.currentBreak.GetEndTime()-overlay.currentBreak.Length()/2)
 
 	if pass {
-		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionpass"), time+20))
+		if !overlay.audioDisabled {
+			overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionpass"), time+20))
+		}
 
 		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+20, time+20, 0, 1))
 		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+100, time+100, 1, 0))
@@ -847,7 +849,9 @@ func (overlay *ScoreOverlay) showPassInfo() {
 		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+280, time+280, 0, 1))
 		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+1280, time+1480, 1, 0))
 	} else {
-		overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionfail"), time+130))
+		if !overlay.audioDisabled {
+			overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionfail"), time+130))
+		}
 
 		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+130, time+130, 0, 1))
 		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+230, time+230, 1, 0))
@@ -957,4 +961,8 @@ func (overlay *ScoreOverlay) initArrows() {
 		extra := bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime))
 		addTransforms(pause.EndTime-float64(blinks)*blinkTime, blinks+extra)
 	}
+}
+
+func (overlay *ScoreOverlay) DisableAudioSubmission(b bool) {
+	overlay.audioDisabled = b
 }
