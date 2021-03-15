@@ -115,6 +115,10 @@ func (circle *Circle) Update(time float64) bool {
 }
 
 func (circle *Circle) PlaySound() {
+	if circle.audioSubmissionDisabled {
+		return
+	}
+
 	point := circle.Timings.GetPoint(circle.StartTime)
 
 	index := circle.BasicHitSound.CustomIndex

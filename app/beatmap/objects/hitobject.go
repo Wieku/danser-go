@@ -39,6 +39,8 @@ type IHitObject interface {
 	IsNewCombo() bool
 
 	GetType() Type
+
+	DisableAudioSubmission(value bool)
 }
 
 type HitObject struct {
@@ -65,6 +67,8 @@ type HitObject struct {
 	ComboSet    int64
 
 	BasicHitSound audio.HitSoundInfo
+
+	audioSubmissionDisabled bool
 }
 
 func (hitObject *HitObject) Update(_ float64) bool { return true }
@@ -204,6 +208,10 @@ func (hitObject *HitObject) SetStackOffset(offset float32, modifier difficulty.M
 
 func (hitObject *HitObject) IsNewCombo() bool {
 	return hitObject.NewCombo
+}
+
+func (hitObject *HitObject) DisableAudioSubmission(value bool) {
+	hitObject.audioSubmissionDisabled = value
 }
 
 func ModifyPosition(hitObject *HitObject, basePosition vector.Vector2f, modifier difficulty.Modifier) vector.Vector2f {

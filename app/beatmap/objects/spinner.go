@@ -288,7 +288,7 @@ func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.Quad
 func (spinner *Spinner) DrawApproach(_ float64, _ color2.Color, _ *batch.QuadBatch) {}
 
 func (spinner *Spinner) Hit(_ float64, isHit bool) {
-	if !isHit {
+	if !isHit || spinner.audioSubmissionDisabled {
 		return
 	}
 
@@ -356,6 +356,10 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 }
 
 func (spinner *Spinner) StartSpinSample() {
+	if spinner.audioSubmissionDisabled {
+		return
+	}
+
 	if spinner.loopSample == nil {
 		sample := audio.LoadSample("spinnerspin")
 		if sample != nil {
@@ -371,6 +375,10 @@ func (spinner *Spinner) StartSpinSample() {
 }
 
 func (spinner *Spinner) StopSpinSample() {
+	if spinner.audioSubmissionDisabled {
+		return
+	}
+
 	if spinner.loopSample != nil {
 		bass.StopSample(spinner.loopSample)
 		spinner.loopSample = nil
@@ -387,7 +395,7 @@ func (spinner *Spinner) Bonus() {
 		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, spinner.lastTime, spinner.lastTime+difficulty.HitFadeOut, color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
 	}
 
-	if spinner.spinnerbonus != nil {
+	if spinner.spinnerbonus != nil && !spinner.audioSubmissionDisabled {
 		spinner.spinnerbonus.Play()
 	}
 

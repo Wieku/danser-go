@@ -695,6 +695,10 @@ func (slider *Slider) KillSlide(time float64) {
 }
 
 func (slider *Slider) PlaySlideSamples() {
+	if slider.audioSubmissionDisabled {
+		return
+	}
+
 	point := slider.Timings.Current
 
 	sampleSet := slider.BasicHitSound.SampleSet
@@ -706,10 +710,18 @@ func (slider *Slider) PlaySlideSamples() {
 }
 
 func (slider *Slider) StopSlideSamples() {
+	if slider.audioSubmissionDisabled {
+		return
+	}
+
 	audio.StopSliderLoops()
 }
 
 func (slider *Slider) PlayEdgeSample(index int) {
+	if slider.audioSubmissionDisabled {
+		return
+	}
+
 	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPoint(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
 }
 
@@ -727,6 +739,10 @@ func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
 }
 
 func (slider *Slider) PlayTick() {
+	if slider.audioSubmissionDisabled {
+		return
+	}
+
 	audio.PlaySliderTick(slider.Timings.Current.SampleSet, slider.Timings.Current.SampleIndex, slider.Timings.Current.SampleVolume, slider.HitObjectID, slider.Pos.X64())
 }
 
