@@ -1,6 +1,7 @@
 package audio
 
 import (
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
@@ -91,7 +92,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) {
 	balance := 0.0
 	if settings.DIVIDES == 1 {
-		balance = (xPos - 256) / 512 * settings.Audio.HitsoundPositionMultiplier
+		balance = bmath.ClampF64((xPos - 256) / 512 * settings.Audio.HitsoundPositionMultiplier, -1, 1)
 	}
 
 	if settings.Audio.IgnoreBeatmapSampleVolume {
