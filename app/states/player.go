@@ -89,12 +89,14 @@ type Player struct {
 	baseLimit     int
 	updateLimiter *frame.Limiter
 
+	objectsAlpha    *animation.Glider
 	objectContainer *containers.HitObjectContainer
 
 	MapEnd      float64
 	RunningTime float64
 
 	startOffset float64
+	lateStart   bool
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -118,6 +120,43 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	if err != nil {
 		log.Println(err)
+	}
+
+	if settings.SCRUB > 0.01 && settings.PLAY {
+		scrub := math.Max(0, settings.SCRUB*1000)
+
+		removed := false
+
+		for i := 0; i < len(beatMap.HitObjects); i++ {
+			o := beatMap.HitObjects[i]
+			if o.GetStartTime() > scrub {
+				break
+			}
+
+			beatMap.HitObjects = append(beatMap.HitObjects[:i], beatMap.HitObjects[i+1:]...)
+			i--
+
+			removed = true
+		}
+
+		for i := 0; i < len(beatMap.HitObjects); i++ {
+			beatMap.HitObjects[i].SetID(int64(i))
+		}
+
+		for i := 0; i < len(beatMap.Pauses); i++ {
+			o := beatMap.Pauses[i]
+			if o.GetStartTime() > scrub {
+				break
+			}
+
+			beatMap.Pauses = append(beatMap.Pauses[:i], beatMap.Pauses[i+1:]...)
+			i--
+		}
+
+		if removed {
+			settings.SCRUB = 0
+			settings.SKIP = true
+		}
 	}
 
 	player.background = common.NewBackground()
@@ -190,6 +229,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.playersGlider = animation.NewGlider(0)
 	player.cursorGlider = animation.NewGlider(0)
 	player.epiGlider = animation.NewGlider(0)
+	player.objectsAlpha = animation.NewGlider(1)
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].Name == "" {
 		player.cursorGlider.SetValue(1.0)
@@ -210,8 +250,40 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	if settings.SKIP || settings.SCRUB > 0.01 {
 		startOffset = math.Max(0, skipTime-beatMap.Diff.Preempt)
 		player.startPoint = startOffset
+
+		for _, o := range beatMap.HitObjects {
+			if o.GetEndTime() > player.startPoint {
+				break
+			}
+
+			o.DisableAudioSubmission(true)
+		}
+
 		player.volumeGlider.SetValue(0.0)
 		player.volumeGlider.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+
+		if settings.SCRUB > 0.01 {
+			player.objectsAlpha.SetValue(0.0)
+			player.objectsAlpha.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+
+			if player.overlay != nil {
+				player.overlay.DisableAudioSubmission(true)
+			}
+
+			for i := -1000.0; i < player.startPoint-player.bMap.Diff.Preempt; i += 1.0 {
+				player.controller.Update(i, 1)
+
+				if player.overlay != nil {
+					player.overlay.Update(i)
+				}
+			}
+
+			if player.overlay != nil {
+				player.overlay.DisableAudioSubmission(false)
+			}
+		}
+
+		player.lateStart = true
 	} else {
 		startOffset = -beatMap.Diff.Preempt
 	}
@@ -439,9 +511,15 @@ func (player *Player) updateMain(delta float64) {
 
 	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
 		player.controller.Update(player.progressMsF, delta)
+
+		if player.lateStart {
+			if player.overlay != nil {
+				player.overlay.Update(player.progressMsF)
+			}
+		}
 	}
 
-	if player.overlay != nil {
+	if player.overlay != nil && !player.lateStart {
 		player.overlay.Update(player.progressMsF)
 	}
 
@@ -468,6 +546,7 @@ func (player *Player) updateMain(delta float64) {
 	player.playersGlider.Update(player.progressMsF)
 	player.hudGlider.Update(player.progressMsF)
 	player.volumeGlider.Update(player.progressMsF)
+	player.objectsAlpha.Update(player.progressMsF)
 
 	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
 		player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
@@ -600,7 +679,7 @@ func (player *Player) Draw(float64) {
 		player.bloomEffect.Begin()
 	}
 
-	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), 1.0)
+	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), float32(player.objectsAlpha.GetValue()))
 
 	if player.overlay != nil {
 		player.batch.Begin()
