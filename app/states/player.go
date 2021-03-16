@@ -122,8 +122,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	if (settings.SCRUB > 0.01 || !math.IsInf(settings.END, 1)) && settings.PLAY {
-		scrub := math.Max(0, settings.SCRUB*1000)
+	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && settings.PLAY {
+		scrub := math.Max(0, settings.START*1000)
 		end := settings.END*1000
 
 		removed := false
@@ -154,8 +154,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			i--
 		}
 
-		if removed && settings.SCRUB > 0.01 {
-			settings.SCRUB = 0
+		if removed && settings.START > 0.01 {
+			settings.START = 0
 			settings.SKIP = true
 		}
 	}
@@ -240,9 +240,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		skipTime = beatMap.HitObjects[0].GetStartTime()
 	}
 
-	skipTime = math.Max(skipTime, settings.SCRUB*1000)
+	skipTime = math.Max(skipTime, settings.START*1000)
 
-	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.SCRUB*1000)
+	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.START*1000)
 	beatmapEnd := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50)
 
 	if !math.IsInf(settings.END, 1) {
@@ -252,7 +252,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset := 0.0
 
-	if settings.SKIP || settings.SCRUB > 0.01 {
+	if settings.SKIP || settings.START > 0.01 {
 		startOffset = math.Max(0, skipTime-beatMap.Diff.Preempt)
 		player.startPoint = startOffset
 
@@ -267,7 +267,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.volumeGlider.SetValue(0.0)
 		player.volumeGlider.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
 
-		if settings.SCRUB > 0.01 {
+		if settings.START > 0.01 {
 			player.objectsAlpha.SetValue(0.0)
 			player.objectsAlpha.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
 
