@@ -131,6 +131,7 @@ type ScoreOverlay struct {
 	skipTo      float64
 
 	audioDisabled bool
+	beatmapEnd    float64
 }
 
 func loadFonts() {
@@ -148,6 +149,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay := new(ScoreOverlay)
 
+	overlay.beatmapEnd = math.Inf(1)
 	overlay.oldGrade = -10
 
 	overlay.ScaledHeight = 768
@@ -391,14 +393,14 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	if overlay.panel != nil {
 		overlay.panel.Update(time)
-	} else if settings.Gameplay.ShowResultsScreen && !overlay.created && overlay.audioTime >= overlay.ruleset.GetBeatMap().HitObjects[len(overlay.ruleset.GetBeatMap().HitObjects)-1].GetEndTime()+float64(overlay.ruleset.GetBeatMap().Diff.Hit50+1000) {
+	} else if settings.Gameplay.ShowResultsScreen && !overlay.created && overlay.audioTime >= overlay.beatmapEnd {
 		overlay.created = true
 		cTime := overlay.normalTime
 
 		go func() {
 			overlay.panel = play.NewRankingPanel(overlay.cursor, overlay.ruleset, overlay.hitErrorMeter, overlay.hpSections)
 
-			s := cTime + 250
+			s := cTime
 
 			resultsTime := settings.Gameplay.ResultsScreenTime * 1000
 
@@ -965,4 +967,8 @@ func (overlay *ScoreOverlay) initArrows() {
 
 func (overlay *ScoreOverlay) DisableAudioSubmission(b bool) {
 	overlay.audioDisabled = b
+}
+
+func (overlay *ScoreOverlay) SetBeatmapEnd(end float64) {
+	overlay.beatmapEnd = end
 }

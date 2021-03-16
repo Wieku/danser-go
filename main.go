@@ -100,6 +100,7 @@ func run() {
 
 		play := flag.Bool("play", false, "Practice playing osu!standard maps")
 		scrub := flag.Float64("scrub", 0, "Start at the given time in seconds")
+		end := flag.Float64("end", math.Inf(1), "End at the given time in seconds")
 
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
 		record := flag.Bool("record", false, "Records a video")
@@ -158,6 +159,7 @@ func run() {
 		settings.PITCH = *pitch
 		settings.SKIP = *skip
 		settings.SCRUB = *scrub
+		settings.END = *end
 		settings.RECORD = *record
 
 		if settings.RECORD {

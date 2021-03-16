@@ -96,6 +96,7 @@ type Player struct {
 
 	startOffset float64
 	lateStart   bool
+	mapEndL     float64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -121,15 +122,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	if settings.SCRUB > 0.01 && settings.PLAY {
+	if (settings.SCRUB > 0.01 || !math.IsInf(settings.END, 1)) && settings.PLAY {
 		scrub := math.Max(0, settings.SCRUB*1000)
+		end := settings.END*1000
 
 		removed := false
 
 		for i := 0; i < len(beatMap.HitObjects); i++ {
 			o := beatMap.HitObjects[i]
-			if o.GetStartTime() > scrub {
-				break
+			if o.GetStartTime() > scrub && end > o.GetEndTime() {
+				continue
 			}
 
 			beatMap.HitObjects = append(beatMap.HitObjects[:i], beatMap.HitObjects[i+1:]...)
@@ -144,15 +146,15 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		for i := 0; i < len(beatMap.Pauses); i++ {
 			o := beatMap.Pauses[i]
-			if o.GetStartTime() > scrub {
-				break
+			if o.GetStartTime() > scrub && end > o.GetEndTime() {
+				continue
 			}
 
 			beatMap.Pauses = append(beatMap.Pauses[:i], beatMap.Pauses[i+1:]...)
 			i--
 		}
 
-		if removed {
+		if removed && settings.SCRUB > 0.01 {
 			settings.SCRUB = 0
 			settings.SKIP = true
 		}
@@ -243,6 +245,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.SCRUB*1000)
 	beatmapEnd := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50)
 
+	if !math.IsInf(settings.END, 1) {
+		end := settings.END*1000
+		beatmapEnd = math.Min(end, beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) + float64(beatMap.Diff.Hit50)
+	}
+
 	startOffset := 0.0
 
 	if settings.SKIP || settings.SCRUB > 0.01 {
@@ -250,7 +257,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.startPoint = startOffset
 
 		for _, o := range beatMap.HitObjects {
-			if o.GetEndTime() > player.startPoint {
+			if o.GetStartTime() > player.startPoint {
 				break
 			}
 
@@ -304,9 +311,27 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
-		beatmapEnd += 1000
-		fadeOut = 250
+	if s, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		if settings.Gameplay.ShowResultsScreen {
+			beatmapEnd += 1000
+			fadeOut = 250
+		}
+
+		s.SetBeatmapEnd(beatmapEnd+fadeOut)
+	}
+
+	if !math.IsInf(settings.END, 1) {
+		for _, o := range beatMap.HitObjects {
+			if o.GetEndTime() <= beatmapEnd {
+				continue
+			}
+
+			o.DisableAudioSubmission(true)
+		}
+
+		if !settings.PLAY {
+			player.objectsAlpha.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0)
+		}
 	}
 
 	player.dimGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
@@ -314,6 +339,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.cursorGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.hudGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 
+	player.mapEndL = beatmapEnd + fadeOut
 	player.MapEnd = beatmapEnd + fadeOut
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
@@ -327,6 +353,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	} else {
 		player.volumeGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	}
+
+	player.MapEnd += 100
 
 	if settings.Playfield.SeizureWarning.Enabled {
 		am := math.Max(1000, settings.Playfield.SeizureWarning.Duration*1000)
@@ -346,7 +374,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		startTime := p.GetStartTime()
 		endTime := p.GetEndTime()
 
-		if endTime-startTime < 1000 {
+		if endTime-startTime < 1000 || endTime < player.startPoint || startTime > player.MapEnd {
 			continue
 		}
 
@@ -506,8 +534,15 @@ func (player *Player) updateMain(delta float64) {
 		player.objectContainer.Update(player.progressMsF)
 	}
 
-	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
-		player.controller.Update(player.progressMsF, delta)
+	if player.progressMsF >= player.startPoint/*-player.bMap.Diff.Preempt*/ || settings.PLAY {
+		if player.progressMsF < player.mapEndL {
+			player.controller.Update(player.progressMsF, delta)
+		} else {
+			if player.overlay != nil {
+				player.overlay.DisableAudioSubmission(true)
+			}
+			player.controller.Update(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() + float64(player.bMap.Diff.Hit50) + 100, delta)
+		}
 
 		if player.lateStart {
 			if player.overlay != nil {
