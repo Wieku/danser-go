@@ -244,7 +244,8 @@ func (mods Modifier) Compatible() bool {
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
 		(mods.Active(Relax) && mods.Active(Relax2)) ||
-		((mods.Active(Relax) || mods.Active(Relax2)) && mods.Active(Autoplay)) {
+		((mods.Active(Relax) || mods.Active(Relax2)) && (mods.Active(SuddenDeath) || mods.Active(Perfect) || mods.Active(Autoplay) || mods.Active(NoFail))) ||
+		(mods.Active(Relax2) && mods.Active(SpunOut)) {
 		return false
 	}
 

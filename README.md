@@ -58,8 +58,8 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-scrub=20.5` - start the map at a given time (in seconds)
 * `-knockout` - knockout mode
 * `-record` - Records danser's output to a video file. Needs a globally accessible [ffmpeg](https://ffmpeg.org/download.html) installation.
-* `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings
-* `-replay="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\` with `\\` or `/`
+* `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings.
+* `-replay="path_to_replay.osr"` or `-r="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\` with `\\` or `/`. Overrides all map selection arguments
 * `-mods=HDHR` - displays the map with given mods. Overrides `-speed` and `-pitch` arguments if DT/NC/HT/DC mods are given
 * `-skin` - overrides `Skin.CurrentSkin` in settings
 

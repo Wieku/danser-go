@@ -12,7 +12,7 @@ void main()
 {
     float difference = length(cursorPosition - osuPosition);
 
-    float t = pow(clamp(difference/radius, 0, 1), 5);
+    float t = pow(clamp(difference/radius, 0.0, 1.0), 5.0);
 
-    color = vec4(vec3(0), mix(t, 1, dim));
+    color = vec4(vec3(0.0), mix(t, 1.0, dim));
 }

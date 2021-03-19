@@ -1,5 +1,7 @@
 package settings
 
+import "math"
+
 type fileformat struct {
 	General   *general   `icon:"\uF0AD"`
 	Graphics  *graphics  `icon:"\uF108"`
@@ -18,7 +20,8 @@ type fileformat struct {
 var DEBUG = false
 var PLAY = false
 var SKIP = false
-var SCRUB = 0.0
+var START = 0.0
+var END = math.Inf(1)
 var KNOCKOUT = false
 var PLAYERS = 1
 var DIVIDES = 2

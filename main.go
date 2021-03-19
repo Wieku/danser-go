@@ -52,6 +52,7 @@ const (
 	titleDesc      = base + " title of a song"
 	creatorDesc    = base + " creator of a map"
 	difficultyDesc = base + " difficulty(version) of a map"
+	replayDesc     = "Play a map from specific replay file. Overrides -knockout, -mods and all beatmap arguments."
 	shorthand      = " (shorthand)"
 )
 
@@ -99,18 +100,20 @@ func run() {
 		gldebug := flag.Bool("gldebug", false, "Turns on OpenGL debug logging, may reduce performance heavily")
 
 		play := flag.Bool("play", false, "Practice playing osu!standard maps")
-		scrub := flag.Float64("scrub", 0, "Start at the given time in seconds")
+		start := flag.Float64("start", 0, "Start at the given time in seconds")
+		end := flag.Float64("end", math.Inf(1), "End at the given time in seconds")
 
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
 		record := flag.Bool("record", false, "Records a video")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
 
-		replay := flag.String("replay", "", "Play map from specific replay file. Overrides -knockout, -mods and all beatmap arguments.")
+		replay := flag.String("replay", "", replayDesc)
+		flag.StringVar(replay, "r", "", replayDesc+shorthand)
 
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
-		out := flag.String("out", "", "Overrides -record flag. Specifies the name of recorded video file, extension is managed by settings")
+		out := flag.String("out", "", "Overrides -record flag. Specify the name of recorded video file, extension is managed by settings")
 
 		flag.Parse()
 
@@ -138,6 +141,10 @@ func run() {
 			settings.REPLAY = *replay
 		}
 
+		if modsParsed.Active(difficulty2.Target) {
+			panic("Target practice mod is not supported!")
+		}
+
 		if !modsParsed.Compatible() {
 			panic("Incompatible mods selected!")
 		}
@@ -157,7 +164,8 @@ func run() {
 		settings.SPEED = *speed
 		settings.PITCH = *pitch
 		settings.SKIP = *skip
-		settings.SCRUB = *scrub
+		settings.START = *start
+		settings.END = *end
 		settings.RECORD = *record
 
 		if settings.RECORD {
@@ -377,15 +385,15 @@ func run() {
 		audio.LoadSamples()
 
 		if modsParsed.Active(difficulty2.Nightcore) {
-			settings.SPEED = 1.5
-			settings.PITCH = 1.5
+			settings.SPEED *= 1.5
+			settings.PITCH *= 1.5
 		} else if modsParsed.Active(difficulty2.DoubleTime) {
-			settings.SPEED = 1.5
+			settings.SPEED *= 1.5
 		} else if modsParsed.Active(difficulty2.Daycore) {
-			settings.PITCH = 0.75
-			settings.SPEED = 0.75
+			settings.PITCH *= 0.75
+			settings.SPEED *= 0.75
 		} else if modsParsed.Active(difficulty2.HalfTime) {
-			settings.SPEED = 0.75
+			settings.SPEED *= 0.75
 		}
 
 		beatMap.Diff.SetMods(modsParsed)
