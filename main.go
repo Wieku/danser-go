@@ -52,6 +52,7 @@ const (
 	titleDesc      = base + " title of a song"
 	creatorDesc    = base + " creator of a map"
 	difficultyDesc = base + " difficulty(version) of a map"
+	replayDesc     = "Play a map from specific replay file. Overrides -knockout, -mods and all beatmap arguments."
 	shorthand      = " (shorthand)"
 )
 
@@ -107,11 +108,12 @@ func run() {
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
 
-		replay := flag.String("replay", "", "Play map from specific replay file. Overrides -knockout, -mods and all beatmap arguments.")
+		replay := flag.String("replay", "", replayDesc)
+		flag.StringVar(replay, "r", "", replayDesc+shorthand)
 
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
-		out := flag.String("out", "", "Overrides -record flag. Specifies the name of recorded video file, extension is managed by settings")
+		out := flag.String("out", "", "Overrides -record flag. Specify the name of recorded video file, extension is managed by settings")
 
 		flag.Parse()
 
