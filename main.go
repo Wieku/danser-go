@@ -381,15 +381,15 @@ func run() {
 		audio.LoadSamples()
 
 		if modsParsed.Active(difficulty2.Nightcore) {
-			settings.SPEED = 1.5
-			settings.PITCH = 1.5
+			settings.SPEED *= 1.5
+			settings.PITCH *= 1.5
 		} else if modsParsed.Active(difficulty2.DoubleTime) {
-			settings.SPEED = 1.5
+			settings.SPEED *= 1.5
 		} else if modsParsed.Active(difficulty2.Daycore) {
-			settings.PITCH = 0.75
-			settings.SPEED = 0.75
+			settings.PITCH *= 0.75
+			settings.SPEED *= 0.75
 		} else if modsParsed.Active(difficulty2.HalfTime) {
-			settings.SPEED = 0.75
+			settings.SPEED *= 0.75
 		}
 
 		beatMap.Diff.SetMods(modsParsed)
