@@ -203,7 +203,12 @@ func (slider *Slider) GetAsDummyCircles() []IHitObject {
 
 	var circles []IHitObject
 
-	for i := int64(0); i <= slider.repeat; i++ {
+	repeat := slider.repeat
+	if slider.IsRetarded() {
+		repeat = 0
+	}
+
+	for i := int64(0); i <= repeat; i++ {
 		time := slider.StartTime + float64(i*partLen)
 
 		if i == slider.repeat && settings.KNOCKOUT {

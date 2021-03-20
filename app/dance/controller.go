@@ -78,6 +78,12 @@ func (controller *GenericController) InitCursors() {
 
 	queue := controller.bMap.GetObjectsCopy()
 
+	for i := 0; i < len(queue); i++ {
+		if s, ok := queue[i].(*objects.Slider); ok && s.IsRetarded() {
+			queue = schedulers.PreprocessQueue(i, queue, true)
+		}
+	}
+
 	if !settings.Dance.Battle && settings.Dance.TAGSliderDance && settings.TAG > 1 {
 		for i := 0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
