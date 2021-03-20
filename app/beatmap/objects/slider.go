@@ -573,13 +573,13 @@ func (slider *Slider) Update(time float64) bool {
 		}
 	}
 
-	if slider.lastTime < slider.EndTime && time >= slider.EndTime && slider.isSliding {
-		slider.StopSlideSamples()
-		slider.isSliding = false
+	if slider.isSliding && time >= slider.StartTime && time <= slider.EndTime {
+		slider.PlaySlideSamples()
 	}
 
-	if slider.isSliding {
-		slider.PlaySlideSamples()
+	if slider.lastTime <= slider.EndTime && time > slider.EndTime && slider.isSliding {
+		slider.StopSlideSamples()
+		slider.isSliding = false
 	}
 
 	slider.Pos = pos
@@ -633,6 +633,10 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 }
 
 func (slider *Slider) InitSlide(time float64) {
+	if time < slider.StartTime || time > slider.EndTime {
+		return
+	}
+
 	slider.follower.ClearTransformations()
 
 	startTime := time
