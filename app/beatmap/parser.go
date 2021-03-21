@@ -3,6 +3,7 @@ package beatmap
 import (
 	"bufio"
 	"errors"
+	"github.com/dimchansky/utfbom"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -272,7 +273,11 @@ func ParseObjects(beatMap *BeatMap) {
 	if err != nil {
 		panic(err)
 	}
-	scanner := bufio.NewScanner(file)
+
+	fileBom := utfbom.SkipOnly(file)
+
+	scanner := bufio.NewScanner(fileBom)
+
 	buf := make([]byte, 0, 10*1024*1024)
 	scanner.Buffer(buf, cap(buf))
 	var currentSection string
