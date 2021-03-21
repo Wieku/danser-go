@@ -69,8 +69,12 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 		return nil, err
 	}
 
+	return NewPixmapFromBytes(fileData)
+}
+
+func NewPixmapFromBytes(bytes []byte) (*Pixmap, error) {
 	var x, y C.int
-	data := C.stbi_load_from_memory((*C.stbi_uc)(&fileData[0]), C.int(len(fileData)), &x, &y, nil, 4)
+	data := C.stbi_load_from_memory((*C.stbi_uc)(&bytes[0]), C.int(len(bytes)), &x, &y, nil, 4)
 
 	if data == nil {
 		return nil, errors.New(C.GoString(C.stbi_failure_reason()))
