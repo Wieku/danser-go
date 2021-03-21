@@ -55,7 +55,8 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-debug` - shows additional info when running Danser, overrides `Graphics.DrawFPS` setting
 * `-play` - play through the map in osu!standard mode
 * `-skip` - skips map's intro like in osu!
-* `-scrub=20.5` - start the map at a given time (in seconds)
+* `-start=20.5` - start the map at a given time (in seconds)
+* `-end=30.5` - end the map at the given time (in seconds)
 * `-knockout` - knockout mode
 * `-record` - Records danser's output to a video file. Needs a globally accessible [ffmpeg](https://ffmpeg.org/download.html) installation.
 * `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings.
