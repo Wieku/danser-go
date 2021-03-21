@@ -8,7 +8,7 @@ import (
 
 type CirArc struct {
 	pt1, pt2, pt3                  vector.Vector2f
-	centre                         vector.Vector2f
+	centre                         vector.Vector2f //nolint:misspell
 	startAngle, totalAngle, r, dir float32
 	Unstable                       bool
 }
@@ -16,11 +16,11 @@ type CirArc struct {
 func NewCirArc(pt1, pt2, pt3 vector.Vector2f) *CirArc {
 	arc := &CirArc{pt1: pt1, pt2: pt2, pt3: pt3}
 
-	aSq := pt2.DstSq(pt3)
-	bSq := pt1.DstSq(pt3)
-	cSq := pt1.DstSq(pt2)
+	aSq := float64(pt2.DstSq(pt3))
+	bSq := float64(pt1.DstSq(pt3))
+	cSq := float64(pt1.DstSq(pt2))
 
-	if math32.Abs(aSq) < 0.001 || math32.Abs(bSq) < 0.001 || math32.Abs(cSq) < 0.001 {
+	if math.Abs(aSq) < 0.001 || math.Abs(bSq) < 0.001 || math.Abs(cSq) < 0.001 {
 		arc.Unstable = true
 	}
 
@@ -30,11 +30,11 @@ func NewCirArc(pt1, pt2, pt3 vector.Vector2f) *CirArc {
 
 	sum := s + t + u
 
-	if math32.Abs(sum) < 0.001 {
+	if math.Abs(sum) < 0.001 {
 		arc.Unstable = true
 	}
 
-	centre := pt1.Scl(s).Add(pt2.Scl(t)).Add(pt3.Scl(u)).Scl(1 / sum)
+	centre := pt1.Copy64().Scl(s).Add(pt2.Copy64().Scl(t)).Add(pt3.Copy64().Scl(u)).Scl(1 / sum).Copy32() //nolint:misspell
 
 	dA := pt1.Sub(centre)
 	dC := pt3.Sub(centre)
@@ -53,6 +53,7 @@ func NewCirArc(pt1, pt2, pt3 vector.Vector2f) *CirArc {
 
 	aToC := pt3.Sub(pt1)
 	aToC = vector.NewVec2f(aToC.Y, -aToC.X)
+
 	if aToC.Dot(pt2.Sub(pt1)) < 0 {
 		dir = -dir
 		totalAngle = 2*math.Pi - totalAngle
