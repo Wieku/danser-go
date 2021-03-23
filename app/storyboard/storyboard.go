@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -136,7 +137,9 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					video.SetScaleV(vector.NewVec2d(1, 1).Scl(480.0 / float64(video.Textures[0].Height)))
 
 					offset, _ := strconv.ParseFloat(spl[1], 64)
-					video.Offset = offset
+					video.SetStartTime(offset)
+					video.SetEndTime(math.MaxFloat64)
+					video.ShowForever(false)
 
 					storyboard.background.Add(video)
 
