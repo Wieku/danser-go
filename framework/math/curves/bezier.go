@@ -46,15 +46,15 @@ func (bz *Bezier) PointAt(t float32) vector.Vector2f {
 	return vector.NewVec2f(x, y)
 }
 
-func (bz Bezier) GetLength() float32 {
+func (bz *Bezier) GetLength() float32 {
 	return bz.ApproxLength
 }
 
-func (bz Bezier) GetStartAngle() float32 {
+func (bz *Bezier) GetStartAngle() float32 {
 	return bz.points[0].AngleRV(bz.PointAt(1.0 / bz.ApproxLength))
 }
 
-func (bz Bezier) GetEndAngle() float32 {
+func (bz *Bezier) GetEndAngle() float32 {
 	return bz.points[len(bz.points)-1].AngleRV(bz.PointAt((bz.ApproxLength - 1) / bz.ApproxLength))
 }
 
