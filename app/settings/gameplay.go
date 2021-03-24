@@ -55,6 +55,7 @@ func initGameplay() *gameplay {
 				Opacity: 1.0,
 			},
 			HideOthers: false,
+			ShowAvatars: false,
 		},
 		Mods: &mods{
 			hudElement: &hudElement{
@@ -144,7 +145,8 @@ type ppCounter struct {
 
 type scoreBoard struct {
 	*hudElement
-	HideOthers bool
+	HideOthers  bool
+	ShowAvatars bool
 }
 
 type mods struct {

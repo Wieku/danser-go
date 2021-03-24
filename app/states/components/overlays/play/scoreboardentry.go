@@ -2,14 +2,20 @@ package play
 
 import (
 	"fmt"
+	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"strconv"
 )
 
 type ScoreboardEntry struct {
@@ -24,6 +30,8 @@ type ScoreboardEntry struct {
 	scoreHumanized string
 	comboHumanized string
 	rankHumanized  string
+	avatar         *sprite.Sprite
+	showAvatar     bool
 }
 
 func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlayer bool) *ScoreboardEntry {
@@ -78,6 +86,10 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 		return
 	}
 
+	if entry.showAvatar {
+		batch.SetTranslation(vector.NewVec2d(52, 0))
+	}
+
 	batch.SetColor(1, 1, 1, 0.6*alpha)
 
 	entry.Sprite.Draw(time, batch)
@@ -85,6 +97,16 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	batch.SetColor(1, 1, 1, a)
 
 	entryPos := entry.GetPosition()
+
+	if entry.showAvatar {
+		batch.SetTranslation(entryPos)
+
+		if entry.avatar != nil {
+			entry.avatar.Draw(time, batch)
+		}
+
+		entryPos.X += 52
+	}
 
 	fnt := skin.GetFont("scoreentry")
 
@@ -118,4 +140,78 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, 1)
+}
+
+func (entry *ScoreboardEntry) LoadAvatarID(id int) {
+	url := "https://a.ppy.sh/" + strconv.Itoa(id)
+
+	log.Println("Trying to fetch avatar from:", url)
+
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+
+	if err != nil {
+		log.Println("Can't create request")
+		return
+	}
+
+	client := new(http.Client)
+	response, err := client.Do(request)
+
+	if err != nil {
+		log.Println(fmt.Sprintf("Failed to create request to: \"%s\": %s", url, err))
+		return
+	}
+
+	if response.StatusCode != 200 {
+		log.Println("a.ppy.sh responded with:", response.StatusCode)
+
+		if response.StatusCode == 404 {
+			log.Println("Avatar for user", id, "not found!")
+		}
+
+		return
+	}
+
+	pixmap, err := texture.NewPixmapReader(response.Body, response.ContentLength)
+	if err != nil {
+		log.Println("Can't load avatar! Error:", err)
+		return
+	}
+
+	tex := texture.LoadTextureSingle(pixmap.RGBA(), 4)
+	region := tex.GetRegion()
+	pixmap.Dispose()
+
+	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), bmath.Origin.Centre)
+	entry.avatar.SetScale(float64(52 / region.Height))
+}
+
+func (entry *ScoreboardEntry) LoadAvatarUser(user string) {
+	data, err := ioutil.ReadFile("api.txt")
+	if err != nil {
+		log.Println("Please put your osu!api v1 key into 'api.txt' file")
+	} else {
+		client := osuapi.NewClient(string(data))
+		err := client.Test()
+
+		if err != nil {
+			log.Println("Can't connect to osu!api:", err)
+		} else {
+			sUser, err := client.GetUser(osuapi.GetUserOpts{Username: user})
+			if err != nil {
+				log.Println("Can't find user:", user)
+				log.Println(err)
+			} else {
+				entry.LoadAvatarID(sUser.UserID)
+			}
+		}
+	}
+}
+
+func (entry *ScoreboardEntry) IsAvatarLoaded() bool {
+	return entry.avatar != nil
+}
+
+func (entry *ScoreboardEntry) ShowAvatar(value bool) {
+	entry.showAvatar = value
 }
