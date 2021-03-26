@@ -199,32 +199,31 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 }
 
 func (slider *Slider) GetAsDummyCircles() []IHitObject {
-	partLen := int64(slider.Timings.GetSliderTimeP(slider.TPoint, slider.pixelLength))
+	circles := []IHitObject{slider.createDummyCircle(slider.GetStartTime(), true, false)}
 
-	var circles []IHitObject
-
-	repeat := slider.repeat
 	if slider.IsRetarded() {
-		repeat = 0
+		return circles
 	}
 
-	for i := int64(0); i <= repeat; i++ {
-		time := slider.StartTime + float64(i*partLen)
-
-		if i == slider.repeat && settings.KNOCKOUT {
+	for i, p := range slider.ScorePoints {
+		time := p.Time
+		if i == len(slider.ScorePoints)-1 && settings.KNOCKOUT {
 			time = math.Floor(math.Max(slider.StartTime+(slider.EndTime-slider.StartTime)/2, slider.EndTime-36))
 		}
 
-		circles = append(circles, DummyCircleInherit(slider.GetPositionAt(time), time, true, i == 0, i == slider.repeat))
+		circles = append(circles, slider.createDummyCircle(time, false, i == len(slider.ScorePoints)-1))
 	}
-
-	for _, p := range slider.TickPoints {
-		circles = append(circles, DummyCircleInherit(p.Pos, p.Time, true, false, false))
-	}
-
-	sort.Slice(circles, func(i, j int) bool { return circles[i].GetStartTime() < circles[j].GetStartTime() })
 
 	return circles
+}
+
+func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd bool) *Circle {
+	circle := DummyCircleInherit(slider.GetPositionAt(time), time, true, inheritStart, inheritEnd)
+	circle.StackOffset = slider.StackOffset
+	circle.StackOffsetHR = slider.StackOffsetHR
+	circle.StackOffsetEZ = slider.StackOffsetEZ
+
+	return circle
 }
 
 func (slider *Slider) SetTiming(timings *Timings) {
