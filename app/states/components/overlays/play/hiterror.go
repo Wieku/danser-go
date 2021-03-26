@@ -158,8 +158,8 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 	urBase /= float64(len(meter.errors))
 
-	meter.avgNeg = averageN / float64(countN)
-	meter.avgPos = averageP / float64(countP)
+	meter.avgNeg = averageN / math.Max(float64(countN), 1)
+	meter.avgPos = averageP / math.Max(float64(countP), 1)
 	meter.unstableRate = math.Sqrt(urBase) * 10
 }
 
