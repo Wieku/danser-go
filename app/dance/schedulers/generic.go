@@ -9,16 +9,17 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 	"math/rand"
 )
 
 type GenericScheduler struct {
-	cursor       *graphics.Cursor
-	queue        []objects.IHitObject
-	mover        movers.MultiPointMover
-	lastTime     float64
-	input        *input.NaturalInputProcessor
-	mods         difficulty.Modifier
+	cursor   *graphics.Cursor
+	queue    []objects.IHitObject
+	mover    movers.MultiPointMover
+	lastTime float64
+	input    *input.NaturalInputProcessor
+	mods     difficulty.Modifier
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
@@ -55,6 +56,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 func (scheduler *GenericScheduler) Update(time float64) {
 	if len(scheduler.queue) > 0 {
 		move := true
+		lastEndTime := 0.0
 
 		for i := 0; i < len(scheduler.queue); i++ {
 			g := scheduler.queue[i]
@@ -63,20 +65,31 @@ func (scheduler *GenericScheduler) Update(time float64) {
 				break
 			}
 
-			move = false
+			lastEndTime = math.Max(lastEndTime, g.GetEndTime())
 
-			if (scheduler.lastTime <= g.GetStartTime() && time >= g.GetStartTime()) || (time >= g.GetStartTime() && time <= g.GetEndTime()) {
+			if time >= g.GetStartTime() && time <= g.GetEndTime() {
+				if scheduler.lastTime <= g.GetStartTime() && time >= g.GetStartTime() { // brief movement lock for ExGon mover
+					move = false
+				}
+
 				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
 			} else if time > g.GetEndTime() {
+				upperLimit := len(scheduler.queue)
+				for j := i; j < len(scheduler.queue); j++ {
+					if scheduler.queue[j].GetEndTime() >= lastEndTime {
+						break
+					}
+
+					upperLimit = j + 1
+				}
+
 				toRemove := 1
-				if i+1 < len(scheduler.queue) {
-					toRemove = scheduler.mover.SetObjects(scheduler.queue[i:]) - 1
+				if upperLimit-i > 1 {
+					toRemove = scheduler.mover.SetObjects(scheduler.queue[i:upperLimit]) - 1
 				}
 
 				scheduler.queue = append(scheduler.queue[:i], scheduler.queue[i+toRemove:]...)
 				i--
-
-				move = true
 			}
 		}
 
