@@ -121,7 +121,7 @@ func (controller *GenericController) InitCursors() {
 			spinMover = settings.Dance.Spinners[i%len(settings.Dance.Spinners)]
 		}
 
-		controller.schedulers[i].Init(objs[i].objs, controller.bMap.Diff.Mods, controller.cursors[i], spinners.GetMoverByName(spinMover), true)
+		controller.schedulers[i].Init(objs[i].objs, controller.bMap.Diff.Mods, controller.cursors[i], spinners.GetMoverCtorByName(spinMover), true)
 	}
 }
 

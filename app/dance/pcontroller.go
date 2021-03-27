@@ -70,7 +70,7 @@ func (controller *PlayerController) InitCursors() {
 
 	if controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
 		controller.mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
-		controller.mouseController.Init(controller.bMap.GetObjectsCopy(), controller.bMap.Diff.Mods, controller.cursors[0], spinners.NewCircleMover(), false)
+		controller.mouseController.Init(controller.bMap.GetObjectsCopy(), controller.bMap.Diff.Mods, controller.cursors[0], spinners.GetMoverCtorByName("circle"), false)
 	}
 }
 

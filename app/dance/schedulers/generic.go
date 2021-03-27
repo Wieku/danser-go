@@ -17,7 +17,6 @@ type GenericScheduler struct {
 	queue        []objects.IHitObject
 	mover        movers.MultiPointMover
 	lastTime     float64
-	spinnerMover spinners.SpinnerMover
 	input        *input.NaturalInputProcessor
 	mods         difficulty.Modifier
 }
@@ -26,9 +25,8 @@ func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
 	return &GenericScheduler{mover: mover()}
 }
 
-func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover, initKeys bool) {
+func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMoverCtor func() spinners.SpinnerMover, initKeys bool) {
 	scheduler.mods = mods
-	scheduler.spinnerMover = spinnerMover
 	scheduler.cursor = cursor
 	scheduler.queue = objs
 
@@ -40,6 +38,12 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 
 	for i := 0; i < len(scheduler.queue); i++ {
 		scheduler.queue = PreprocessQueue(i, scheduler.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
+	}
+
+	for i := 0; i < len(scheduler.queue); i++ {
+		if s, ok := scheduler.queue[i].(*objects.Spinner); ok {
+			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor)
+		}
 	}
 
 	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, scheduler.queue...)
@@ -62,15 +66,7 @@ func (scheduler *GenericScheduler) Update(time float64) {
 			move = false
 
 			if (scheduler.lastTime <= g.GetStartTime() && time >= g.GetStartTime()) || (time >= g.GetStartTime() && time <= g.GetEndTime()) {
-				if _, ok := g.(*objects.Spinner); ok {
-					if scheduler.lastTime < g.GetStartTime() {
-						scheduler.spinnerMover.Init(g.GetStartTime(), g.GetEndTime())
-					}
-
-					scheduler.cursor.SetPos(scheduler.spinnerMover.GetPositionAt(time))
-				} else {
-					scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
-				}
+				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
 			} else if time > g.GetEndTime() {
 				toRemove := 1
 				if i+1 < len(scheduler.queue) {

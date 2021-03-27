@@ -8,6 +8,6 @@ import (
 )
 
 type Scheduler interface {
-	Init(objects []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover, initKeys bool)
+	Init(objects []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMoverCtor func() spinners.SpinnerMover, initKeys bool)
 	Update(time float64)
 }
