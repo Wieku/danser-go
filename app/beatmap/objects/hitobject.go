@@ -44,6 +44,20 @@ type IHitObject interface {
 	DisableAudioSubmission(value bool)
 }
 
+type ILongObject interface {
+	IHitObject
+
+	GetStartAngle() float32
+
+	GetStartAngleMod(modifier difficulty.Modifier) float32
+
+	GetEndAngle() float32
+
+	GetEndAngleMod(modifier difficulty.Modifier) float32
+
+	GetPartLen() float32
+}
+
 type HitObject struct {
 	StartPosRaw vector.Vector2f
 	EndPosRaw   vector.Vector2f
