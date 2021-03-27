@@ -469,71 +469,69 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		if err != nil {
 			panic(err)
 		}
-	} else {
-		res, _ := dbFile.Query("SELECT * FROM beatmaps")
+	}
 
-		for res.Next() {
-			beatmap := beatmap.NewBeatMap()
+	//Just scrape all loaded data above and load beatmaps from scratch with additional data
 
-			var cs float64
-			var ar float64
-			var hp float64
-			var od float64
+	res, _ := dbFile.Query("SELECT * FROM beatmaps")
 
-			res.Scan(
-				&beatmap.Dir,
-				&beatmap.File,
-				&beatmap.LastModified,
-				&beatmap.Name,
-				&beatmap.NameUnicode,
-				&beatmap.Artist,
-				&beatmap.ArtistUnicode,
-				&beatmap.Creator,
-				&beatmap.Difficulty,
-				&beatmap.Source,
-				&beatmap.Tags,
-				&cs,
-				&ar,
-				&beatmap.Timings.SliderMult,
-				&beatmap.Timings.TickRate,
-				&beatmap.Audio,
-				&beatmap.PreviewTime,
-				&beatmap.Timings.BaseSet,
-				&beatmap.StackLeniency,
-				&beatmap.Mode,
-				&beatmap.Bg,
-				&beatmap.MD5,
-				&beatmap.TimeAdded,
-				&beatmap.PlayCount,
-				&beatmap.LastPlayed,
-				&hp,
-				&od,
-				&beatmap.Stars,
-				&beatmap.MinBPM,
-				&beatmap.MaxBPM,
-				&beatmap.Circles,
-				&beatmap.Sliders,
-				&beatmap.Spinners,
-				&beatmap.Length,
-			)
+	for res.Next() {
+		beatMap := beatmap.NewBeatMap()
 
-			beatmap.Diff.SetCS(cs)
-			beatmap.Diff.SetAR(ar)
-			beatmap.Diff.SetHPDrain(hp)
-			beatmap.Diff.SetOD(od)
+		var cs, ar, hp, od float64
 
-			if beatmap.Name+beatmap.Artist+beatmap.Creator == "" {
-				log.Println("Corrupted cached beatmap found. Removing from database:", beatmap.File)
-				removeList = append(removeList, toRemove{beatmap.Dir, beatmap.File})
-				continue
-			}
+		res.Scan(
+			&beatMap.Dir,
+			&beatMap.File,
+			&beatMap.LastModified,
+			&beatMap.Name,
+			&beatMap.NameUnicode,
+			&beatMap.Artist,
+			&beatMap.ArtistUnicode,
+			&beatMap.Creator,
+			&beatMap.Difficulty,
+			&beatMap.Source,
+			&beatMap.Tags,
+			&cs,
+			&ar,
+			&beatMap.Timings.SliderMult,
+			&beatMap.Timings.TickRate,
+			&beatMap.Audio,
+			&beatMap.PreviewTime,
+			&beatMap.Timings.BaseSet,
+			&beatMap.StackLeniency,
+			&beatMap.Mode,
+			&beatMap.Bg,
+			&beatMap.MD5,
+			&beatMap.TimeAdded,
+			&beatMap.PlayCount,
+			&beatMap.LastPlayed,
+			&hp,
+			&od,
+			&beatMap.Stars,
+			&beatMap.MinBPM,
+			&beatMap.MaxBPM,
+			&beatMap.Circles,
+			&beatMap.Sliders,
+			&beatMap.Spinners,
+			&beatMap.Length,
+		)
 
-			key := beatmap.Dir + "/" + beatmap.File
+		beatMap.Diff.SetCS(cs)
+		beatMap.Diff.SetAR(ar)
+		beatMap.Diff.SetHPDrain(hp)
+		beatMap.Diff.SetOD(od)
 
-			if beatmaps[key] > 0 {
-				bMaps[beatmaps[key]-1] = beatmap
-			}
+		if beatMap.Name+beatMap.Artist+beatMap.Creator == "" {
+			log.Println("Corrupted cached beatMap found. Removing from database:", beatMap.File)
+			removeList = append(removeList, toRemove{beatMap.Dir, beatMap.File})
+			continue
+		}
 
+		key := beatMap.Dir + "/" + beatMap.File
+
+		if beatmaps[key] > 0 {
+			bMaps[beatmaps[key]-1] = beatMap
 		}
 	}
 
