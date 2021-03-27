@@ -169,6 +169,11 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 					return nil
 				}
 
+				if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+					log.Println("Excluding for incompatible mods:", replayD.Username)
+					return nil
+				}
+
 				if (replayD.Mods & uint32(excludedMods)) > 0 {
 					log.Println("Excluding for mods:", replayD.Username)
 					return nil
