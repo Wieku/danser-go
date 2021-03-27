@@ -72,6 +72,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	case "ApproachRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetAR(parsed)
+		beatMap.ARSpecified = true
 	case "CircleSize":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetCS(parsed)
@@ -201,6 +202,10 @@ func ParseBeatMap(beatMap *BeatMap) error {
 				beatMap.Length = bmath.MaxI(beatMap.Length, timeI)
 			}
 		}
+	}
+
+	if !beatMap.ARSpecified {
+		beatMap.Diff.SetAR(beatMap.Diff.GetOD())
 	}
 
 	//beatMap.LoadTimingPoints()

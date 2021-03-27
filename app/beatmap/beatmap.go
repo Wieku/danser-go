@@ -50,6 +50,8 @@ type BeatMap struct {
 	Pauses     []*Pause
 	Queue      []objects.IHitObject
 	Version    int
+
+	ARSpecified bool
 }
 
 func NewBeatMap() *BeatMap {
