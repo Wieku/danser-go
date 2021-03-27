@@ -47,8 +47,8 @@ func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 		bm.previousSpeed = dst / float32(startTime-endTime)
 	}
 
-	s1, ok1 := end.(*objects.Slider)
-	s2, ok2 := start.(*objects.Slider)
+	s1, ok1 := end.(objects.ILongObject)
+	s2, ok2 := start.(objects.ILongObject)
 
 	var points []vector.Vector2f
 

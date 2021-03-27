@@ -67,7 +67,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	if len(objs) > 2 {
 		if _, ok := objs[i+2].(*objects.Circle); ok {
 			hasNext = true
-		} else if v, ok := objs[i+2].(*objects.Slider); ok && v.IsRetarded() {
+		} else if _, ok := objs[i+2].(objects.ILongObject); ok {
 			hasNext = true
 		}
 		next = objs[i+2]
@@ -82,7 +82,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	fromSlider := false
 	for i++; i < len(objs); i++ {
 		o := objs[i]
-		if s, ok := o.(*objects.Slider); ok && !s.IsRetarded() {
+		if s, ok := o.(objects.ILongObject); ok {
 			a2 = s.GetStartAngleMod(bm.mods)
 			fromSlider = true
 			break
@@ -95,11 +95,6 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			a2 = o.GetStackedStartPositionMod(bm.mods).AngleRV(objs[i+1].GetStackedStartPositionMod(bm.mods))
 			break
 		}
-	}
-
-	s, ok1 := end.(*objects.Slider)
-	if ok1 {
-		ok1 = !s.IsRetarded()
 	}
 
 	var sq1, sq2 float32
@@ -125,7 +120,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	bm.wasStream = stream
 
 	var a1 float32
-	if s, ok := end.(*objects.Slider); ok {
+	if s, ok := end.(objects.ILongObject); ok {
 		a1 = s.GetEndAngleMod(bm.mods)
 	} else if bm.first {
 		a1 = a2 + math.Pi

@@ -36,52 +36,43 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	i := 0
 
 	for ; i < len(objs); i++ {
+		o := objs[i]
+		
 		if i == 0 {
-			if s, ok := objs[i].(*objects.Slider); ok {
-				points = append(points, s.GetStackedEndPositionMod(mover.mods), vector.NewVec2fRad(s.GetEndAngleMod(mover.mods), s.GetStackedEndPositionMod(mover.mods).Dst(objs[i+1].GetStackedStartPositionMod(mover.mods))*0.7).Add(s.GetStackedEndPositionMod(mover.mods)))
+			if s, ok := o.(objects.ILongObject); ok {
+				points = append(points, o.GetStackedEndPositionMod(mover.mods), vector.NewVec2fRad(s.GetEndAngleMod(mover.mods), o.GetStackedEndPositionMod(mover.mods).Dst(objs[i+1].GetStackedStartPositionMod(mover.mods))*0.7).Add(o.GetStackedEndPositionMod(mover.mods)))
 			}
 
-			if s, ok := objs[i].(*objects.Circle); ok {
+			if s, ok := o.(*objects.Circle); ok {
 				points = append(points, s.GetStackedEndPositionMod(mover.mods), objs[i+1].GetStackedStartPositionMod(mover.mods).Sub(s.GetStackedEndPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedEndPositionMod(mover.mods)))
 			}
 
-			if s, ok := objs[i].(*objects.Spinner); ok {
-				points = append(points, s.GetStackedEndPositionMod(mover.mods), objs[i+1].GetStackedStartPositionMod(mover.mods).Sub(s.GetStackedEndPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedEndPositionMod(mover.mods)))
-			}
-
-			timing = append(timing, int64(math.Max(objs[i].GetStartTime(), objs[i].GetEndTime())))
-			endTime = math.Max(objs[i].GetStartTime(), objs[i].GetEndTime())
+			timing = append(timing, int64(math.Max(o.GetStartTime(), o.GetEndTime())))
+			endTime = math.Max(o.GetStartTime(), o.GetEndTime())
 
 			continue
 		}
 
-		_, ok1 := objs[i].(*objects.Slider)
-		_, ok2 := objs[i].(*objects.Spinner)
-
-		ok := ok1 || ok2
+		_, ok := o.(objects.ILongObject)
 
 		if ok || i == len(objs)-1 {
-			if s, ok := objs[i].(*objects.Slider); ok {
-				points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.mods), s.GetStackedStartPositionMod(mover.mods).Dst(objs[i-1].GetStackedEndPositionMod(mover.mods))*0.7).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
+			if s, ok := o.(objects.ILongObject); ok {
+				points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.mods), o.GetStackedStartPositionMod(mover.mods).Dst(objs[i-1].GetStackedEndPositionMod(mover.mods))*0.7).Add(o.GetStackedStartPositionMod(mover.mods)), o.GetStackedStartPositionMod(mover.mods))
 			}
 
-			if s, ok := objs[i].(*objects.Circle); ok {
+			if s, ok := o.(*objects.Circle); ok {
 				points = append(points, objs[i-1].GetStackedEndPositionMod(mover.mods).Sub(s.GetStackedStartPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
 			}
 
-			if s, ok := objs[i].(*objects.Spinner); ok {
-				points = append(points, objs[i-1].GetStackedEndPositionMod(mover.mods).Sub(s.GetStackedStartPositionMod(mover.mods)).Scl(0.333).Add(s.GetStackedStartPositionMod(mover.mods)), s.GetStackedStartPositionMod(mover.mods))
-			}
+			timing = append(timing, int64(o.GetStartTime()))
 
-			timing = append(timing, int64(objs[i].GetStartTime()))
-
-			startTime = objs[i].GetStartTime()
+			startTime = o.GetStartTime()
 
 			break
 		} else if i < len(objs)-1 && i-1 > 0 {
-			if _, ok := objs[i].(*objects.Circle); ok {
+			if _, ok := o.(*objects.Circle); ok {
 				pos1 := objs[i-1].GetStackedStartPositionMod(mover.mods)
-				pos2 := objs[i].GetStackedStartPositionMod(mover.mods)
+				pos2 := o.GetStackedStartPositionMod(mover.mods)
 				pos3 := objs[i+1].GetStackedStartPositionMod(mover.mods)
 
 				min := float32(25.0)
@@ -149,19 +140,19 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 							p4 := mid.Sub(pos1).Scl(scale).Rotate(angle + float32(sign*t)*math32.Pi/6).Add(mid)
 
 							points = append(points, p4)
-							timing = append(timing, int64((objs[i].GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime()))
+							timing = append(timing, int64((o.GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime()))
 						}
 					} else {
 						p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
 
 						points = append(points, p4)
-						timing = append(timing, int64((objs[i].GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime()))
+						timing = append(timing, int64((o.GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime()))
 					}
 				}
 			}
 		}
 
-		if s, ok := objs[i].(*objects.Circle); ok {
+		if s, ok := o.(*objects.Circle); ok {
 			points = append(points, s.GetStackedEndPositionMod(mover.mods))
 			timing = append(timing, int64(s.GetStartTime()))
 		}

@@ -37,7 +37,7 @@ func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	scaledDistance := float32(startTime - endTime)
 
 	newAngle := bm.lastAngle + math.Pi
-	if s, ok := end.(*objects.Slider); ok {
+	if s, ok := end.(objects.ILongObject); ok {
 		newAngle = s.GetEndAngleMod(bm.mods)
 	}
 
@@ -47,7 +47,7 @@ func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 		bm.lastAngle = points[1].AngleRV(startPos)
 	}
 
-	if s, ok := start.(*objects.Slider); ok {
+	if s, ok := start.(objects.ILongObject); ok {
 		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(bm.mods), scaledDistance).Add(startPos))
 	}
 
