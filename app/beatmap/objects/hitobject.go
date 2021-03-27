@@ -14,6 +14,7 @@ type IHitObject interface {
 
 	GetStartTime() float64
 	GetEndTime() float64
+	GetDuration() float64
 
 	GetPositionAt(float64) vector.Vector2f
 	GetStackedPositionAt(float64) vector.Vector2f
@@ -85,6 +86,10 @@ func (hitObject *HitObject) GetStartTime() float64 {
 
 func (hitObject *HitObject) GetEndTime() float64 {
 	return hitObject.EndTime
+}
+
+func (hitObject *HitObject) GetDuration() float64 {
+	return hitObject.EndTime - hitObject.StartTime
 }
 
 func (hitObject *HitObject) GetPositionAt(time float64) vector.Vector2f {
