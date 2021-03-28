@@ -72,9 +72,7 @@ var lastVSync bool
 var output string
 
 func run() {
-
 	mainthread.Call(func() {
-
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
 
 		artist := flag.String("artist", "", artistDesc)
@@ -405,148 +403,158 @@ func run() {
 		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
 
+	if settings.RECORD {
+		mainLoopRecord()
+	} else {
+		mainLoopNormal()
+	}
+}
+
+func mainLoopRecord() {
 	count := 0
 
-	if settings.RECORD {
-		fps := float64(settings.Recording.FPS)
+	fps := float64(settings.Recording.FPS)
 
-		if settings.Recording.MotionBlur.Enabled {
-			fps *= float64(settings.Recording.MotionBlur.OversampleMultiplier)
-		}
+	if settings.Recording.MotionBlur.Enabled {
+		fps *= float64(settings.Recording.MotionBlur.OversampleMultiplier)
+	}
 
-		w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
 
-		var fbo *buffer.Framebuffer
+	var fbo *buffer.Framebuffer
 
-		mainthread.Call(func() {
-			fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
-		})
+	mainthread.Call(func() {
+		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
+	})
 
-		ffmpeg.StartFFmpeg(int(fps), w, h)
+	ffmpeg.StartFFmpeg(int(fps), w, h)
 
-		updateFPS := math.Max(fps, 1000)
-		updateDelta := 1000 / updateFPS
-		fpsDelta := 1000 / fps
+	updateFPS := math.Max(fps, 1000)
+	updateDelta := 1000 / updateFPS
+	fpsDelta := 1000 / fps
 
-		deltaSumF := fpsDelta
+	deltaSumF := fpsDelta
 
-		p, _ := player.(*states.Player)
+	p, _ := player.(*states.Player)
 
-		//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
+	//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
 
-		var lastProgress, progress int
+	var lastProgress, progress int
 
-		for !p.Update(updateDelta) {
-			deltaSumF += updateDelta
-			if deltaSumF >= fpsDelta {
-				mainthread.Call(func() {
-					fbo.Bind()
-
-					ffmpeg.PreFrame()
-
-					viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-					pushFrame()
-					viewport.Pop()
-
-					ffmpeg.MakeFrame()
-
-					fbo.Unbind()
-
-					count++
-
-					progress = int(math.Round(p.GetTimeOffset() / p.RunningTime /*float64(count) / float64(maxFrames)*/ * 100))
-
-					if progress%5 == 0 && lastProgress != progress {
-						fmt.Println()
-						log.Println(fmt.Sprintf("Progress: %d%%", progress))
-						lastProgress = progress
-					}
-				})
-
-				mainthread.Call(func() {
-					ffmpeg.CheckData()
-				})
-
-				deltaSumF -= fpsDelta
-			}
-		}
-
-		mainthread.Call(func() {
-			ffmpeg.StopFFmpeg()
-		})
-
-		bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
-
-		ffmpeg.Combine(output)
-	} else {
-		for !win.ShouldClose() {
+	for !p.Update(updateDelta) {
+		deltaSumF += updateDelta
+		if deltaSumF >= fpsDelta {
 			mainthread.Call(func() {
-				if lastVSync != settings.Graphics.VSync {
-					if settings.Graphics.VSync {
-						glfw.SwapInterval(1)
-					} else {
-						glfw.SwapInterval(0)
-					}
+				fbo.Bind()
 
-					lastVSync = settings.Graphics.VSync
-				}
+				ffmpeg.PreFrame()
 
+				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 				pushFrame()
+				viewport.Pop()
 
-				if win.GetKey(glfw.KeyF2) == glfw.Press {
+				ffmpeg.MakeFrame()
 
-					if !pressed {
-						utils.MakeScreenshot(*win)
-					}
+				fbo.Unbind()
 
-					pressed = true
+				count++
+
+				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime /*float64(count) / float64(maxFrames)*/ * 100))
+
+				if progress%5 == 0 && lastProgress != progress {
+					fmt.Println()
+					log.Println(fmt.Sprintf("Progress: %d%%", progress))
+					lastProgress = progress
 				}
-
-				if win.GetKey(glfw.KeyF2) == glfw.Release {
-					pressed = false
-				}
-
-				if win.GetKey(glfw.KeyEscape) == glfw.Press {
-					win.SetShouldClose(true)
-				}
-
-				if win.GetKey(glfw.KeyMinus) == glfw.Press {
-
-					if !pressedM {
-						if settings.DIVIDES > 1 {
-							settings.DIVIDES -= 1
-						}
-					}
-
-					pressedM = true
-				}
-
-				if win.GetKey(glfw.KeyMinus) == glfw.Release {
-					pressedM = false
-				}
-
-				if win.GetKey(glfw.KeyEqual) == glfw.Press {
-
-					if !pressedP {
-						settings.DIVIDES += 1
-					}
-
-					pressedP = true
-				}
-
-				if win.GetKey(glfw.KeyEqual) == glfw.Release {
-					pressedP = false
-				}
-
-				win.SwapBuffers()
-
-				if !settings.Graphics.VSync {
-					limiter.Sync()
-				}
-
 			})
+
+			mainthread.Call(func() {
+				ffmpeg.CheckData()
+			})
+
+			deltaSumF -= fpsDelta
 		}
 	}
+
+	mainthread.Call(func() {
+		ffmpeg.StopFFmpeg()
+	})
+
+	bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
+
+	ffmpeg.Combine(output)
+}
+
+func mainLoopNormal() {
+	for !win.ShouldClose() {
+		mainthread.Call(func() {
+			if lastVSync != settings.Graphics.VSync {
+				if settings.Graphics.VSync {
+					glfw.SwapInterval(1)
+				} else {
+					glfw.SwapInterval(0)
+				}
+
+				lastVSync = settings.Graphics.VSync
+			}
+
+			pushFrame()
+
+			if win.GetKey(glfw.KeyF2) == glfw.Press {
+
+				if !pressed {
+					utils.MakeScreenshot(*win)
+				}
+
+				pressed = true
+			}
+
+			if win.GetKey(glfw.KeyF2) == glfw.Release {
+				pressed = false
+			}
+
+			if win.GetKey(glfw.KeyEscape) == glfw.Press {
+				win.SetShouldClose(true)
+			}
+
+			if win.GetKey(glfw.KeyMinus) == glfw.Press {
+
+				if !pressedM {
+					if settings.DIVIDES > 1 {
+						settings.DIVIDES -= 1
+					}
+				}
+
+				pressedM = true
+			}
+
+			if win.GetKey(glfw.KeyMinus) == glfw.Release {
+				pressedM = false
+			}
+
+			if win.GetKey(glfw.KeyEqual) == glfw.Press {
+
+				if !pressedP {
+					settings.DIVIDES += 1
+				}
+
+				pressedP = true
+			}
+
+			if win.GetKey(glfw.KeyEqual) == glfw.Release {
+				pressedP = false
+			}
+
+			win.SwapBuffers()
+
+			if !settings.Graphics.VSync {
+				limiter.Sync()
+			}
+
+		})
+	}
+
+	settings.CloseWatcher()
 }
 
 func extensionCheck() {

@@ -108,6 +108,8 @@ func CloseWatcher() {
 		if err != nil {
 			log.Println(err)
 		}
+
+		watcher = nil
 	}
 }
 
