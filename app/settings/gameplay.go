@@ -38,9 +38,9 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			XPosition: 5,
-			YPosition: 150,
-			Align:     "CentreLeft",
+			XPosition:     5,
+			YPosition:     150,
+			Align:         "CentreLeft",
 			ShowInResults: true,
 		},
 		KeyOverlay: &hudElement{
@@ -54,8 +54,9 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			HideOthers: false,
+			HideOthers:  false,
 			ShowAvatars: false,
+			YOffset:     0,
 		},
 		Mods: &mods{
 			hudElement: &hudElement{
@@ -147,6 +148,7 @@ type scoreBoard struct {
 	*hudElement
 	HideOthers  bool
 	ShowAvatars bool
+	YOffset     float64
 }
 
 type mods struct {

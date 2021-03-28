@@ -193,7 +193,7 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			display = true
 		}
 
-		target := vector.NewVec2d(0, start+float64(shiftI)*spacing)
+		target := vector.NewVec2d(0, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
 
 		if board.first {
 			entry.SetPosition(target)
@@ -242,5 +242,8 @@ func (board *ScoreBoard) Draw(batch *batch.QuadBatch, alpha float64) {
 		e.Draw(board.time, batch, alpha)
 	}
 
+	scale := settings.Gameplay.ScoreBoard.Scale
+	batch.SetScale(scale, scale)
 	board.explosionManager.Draw(board.time, batch)
+	batch.SetScale(1, 1)
 }

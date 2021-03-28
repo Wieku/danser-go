@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -82,6 +83,8 @@ func (entry *ScoreboardEntry) UpdateData() {
 func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha float64) {
 	a := entry.Sprite.GetAlpha() * alpha
 
+	scale := settings.Gameplay.ScoreBoard.Scale
+
 	if a < 0.01 {
 		return
 	}
@@ -91,8 +94,11 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	}
 
 	batch.SetColor(1, 1, 1, 0.6*alpha)
+	batch.SetScale(scale, scale)
 
 	entry.Sprite.Draw(time, batch)
+
+	batch.SetScale(1, 1)
 
 	batch.SetColor(1, 1, 1, a)
 
@@ -105,25 +111,25 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 			entry.avatar.Draw(time, batch)
 		}
 
-		entryPos.X += 52
+		entryPos.X += 52*scale
 	}
 
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+3.2, entryPos.Y+8.8, bmath.Origin.TopLeft, fnt.GetSize(), true, entry.scoreHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+3.2*scale, entryPos.Y+8.8*scale, bmath.Origin.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawOrigin(batch, entryPos.X+padding-10, entryPos.Y-22, bmath.Origin.TopRight, fnt.GetSize()*2.2, true, entry.rankHumanized)
+		fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y-22*scale, bmath.Origin.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+padding-10, entryPos.Y+8.8, bmath.Origin.TopRight, fnt.GetSize(), true, entry.comboHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y+8.8*scale, bmath.Origin.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
@@ -131,10 +137,10 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	batch.SetScale(1, -1)
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.Draw(batch, entryPos.X+3.5, entryPos.Y-4.5, 20, entry.name)
+	ubu.Draw(batch, entryPos.X+3.5*scale, entryPos.Y-4.5*scale, 20*scale, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.Draw(batch, entryPos.X+3, entryPos.Y-5, 20, entry.name)
+	ubu.Draw(batch, entryPos.X+3*scale, entryPos.Y-5*scale, 20*scale, entry.name)
 
 	ubu.Overlap = 0
 
