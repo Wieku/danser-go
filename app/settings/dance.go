@@ -38,13 +38,13 @@ func initDance() *dance {
 		Momentum: &momentum{
 			SkipStackAngles: false,
 			StreamRestrict:  true,
+			StreamMult:      0.7,
 			DurationMult:    2,
 			DurationTrigger: 500,
-			StreamMult:      1,
-			StreamAngle:     90,
-			RestrictAngle:   89,
-			DistanceMult:    0.7,
-			DistanceMultEnd: 0.7,
+			RestrictAngle:   90,
+			RestrictArea:    40,
+			RestrictInvert:  true,
+			DistanceMult:    0.6,
 			DistanceMultOut: 0.45,
 		},
 		ExGon: &exgon{
@@ -102,10 +102,10 @@ type momentum struct {
 	DurationMult    float64
 	DurationTrigger float64
 	StreamMult      float64
-	StreamAngle     float64
 	RestrictAngle   float64
+	RestrictArea    float64
+	RestrictInvert  bool
 	DistanceMult    float64
-	DistanceMultEnd float64
 	DistanceMultOut float64
 }
 

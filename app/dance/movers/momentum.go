@@ -67,8 +67,6 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	if len(objs) > 2 {
 		if _, ok := objs[i+2].(*objects.Circle); ok {
 			hasNext = true
-		} else if _, ok := objs[i+2].(objects.ILongObject); ok {
-			hasNext = true
 		}
 		next = objs[i+2]
 	}
@@ -79,12 +77,12 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	dst := endPos.Dst(startPos)
 
 	var a2 float32
-	fromSlider := false
+	fromLong := false
 	for i++; i < len(objs); i++ {
 		o := objs[i]
 		if s, ok := o.(objects.ILongObject); ok {
 			a2 = s.GetStartAngleMod(bm.mods)
-			fromSlider = true
+			fromLong = true
 			break
 		}
 		if i == len(objs) - 1 {
@@ -108,7 +106,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	// stream detection logic stolen from spline mover
 	stream := false
-	if hasNext && !fromSlider && ms.StreamRestrict {
+	if hasNext && !fromLong && ms.StreamRestrict {
 		min := float32(25.0)
 		max := float32(10000.0)
 
@@ -128,33 +126,35 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		a1 = endPos.AngleRV(bm.last)
 	}
 
-	offset := float32(ms.RestrictAngle * math.Pi / 180.0)
 
-	multEnd := ms.DistanceMultOut
-	multStart := ms.DistanceMultOut
+	mult := ms.DistanceMultOut
 
-	if stream && math32.Abs(anorm(a2 - startPos.AngleRV(endPos))) < anorm((2 * math32.Pi) - offset) {
+	ac := a2 - startPos.AngleRV(endPos)
+	area := float32(ms.RestrictArea * math.Pi / 180.0)
+
+	if area > 0 && stream && anorm(ac) < anorm((2 * math32.Pi) - area) {
 		a := endPos.AngleRV(startPos)
-		sangle := float32(ms.StreamAngle * math.Pi / 180.0)
+
+		sangle := float32(0.5 * math.Pi)
 		if anorm(a1 - a) > math32.Pi {
 			a2 = a - sangle
 		} else {
 			a2 = a + sangle
 		}
 
-		multEnd = ms.StreamMult
-		multStart = ms.StreamMult
-	} else if !fromSlider && math32.Abs(anorm2(a2 - startPos.AngleRV(endPos))) < offset {
+		mult = ms.StreamMult
+	} else if !fromLong && area > 0 && math32.Abs(anorm2(ac)) < area {
 		a := startPos.AngleRV(endPos)
-		if anorm(a2 - a) < offset {
-			a2 = a - offset
-		} else {
+
+		offset := float32(ms.RestrictAngle * math.Pi / 180.0)
+		if (anorm(a2 - a) < offset) != ms.RestrictInvert {
 			a2 = a + offset
+		} else {
+			a2 = a - offset
 		}
 
-		multEnd = ms.DistanceMult
-		multStart = ms.DistanceMultEnd
-	} else if next != nil && !fromSlider {
+		mult = ms.DistanceMult
+	} else if next != nil && !fromLong {
 		r := sq1 / (sq1 + sq2)
 		a := endPos.AngleRV(startPos)
 		a2 = a + r * anorm2(a2 - a)
@@ -165,19 +165,19 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	duration := float64(startTime - endTime)
 
 	if ms.DurationTrigger > 0 && duration >= ms.DurationTrigger {
-		mult := ms.DurationMult * (float64(duration) / ms.DurationTrigger)
-		multEnd *= mult
-		multStart *= mult
+		mult *= ms.DurationMult * (float64(duration) / ms.DurationTrigger)
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst * float32(multEnd)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst * float32(multStart)).Add(startPos)
+	p1 := vector.NewVec2fRad(a1, dst * float32(mult)).Add(endPos)
+	p2 := vector.NewVec2fRad(a2, dst * float32(mult)).Add(startPos)
 
 	if !same(bm.mods, end, start) {
 		bm.last = p2
+		bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
+	} else {
+		bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, startPos})
 	}
 
-	bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
 	bm.endTime = end.GetEndTime()
 	bm.startTime = start.GetStartTime()
 	bm.first = false
