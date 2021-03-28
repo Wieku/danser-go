@@ -47,6 +47,37 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 		}
 	}
 
+	for i := 0; i < len(scheduler.queue); i++ {
+		if _, ok := scheduler.queue[i].(*objects.Circle); !ok {
+			continue
+		}
+
+		remove := false
+
+		if i > 0 {
+			p := scheduler.queue[i-1]
+			c := scheduler.queue[i]
+
+			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime() - p.GetEndTime() <= 3 {
+				remove = true
+			}
+		}
+
+		if i < len(scheduler.queue)-1 {
+			p := scheduler.queue[i]
+			c := scheduler.queue[i+1]
+
+			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime() - p.GetEndTime() <= 3 {
+				remove = true
+			}
+		}
+
+		if remove {
+			scheduler.queue = append(scheduler.queue[:i], scheduler.queue[i+1:]...)
+			//we don't do "i--" here because we don't want to remove too much
+		}
+	}
+
 	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, scheduler.queue...)
 
 	toRemove := scheduler.mover.SetObjects(scheduler.queue) - 1
