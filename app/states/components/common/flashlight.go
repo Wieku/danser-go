@@ -141,12 +141,14 @@ func (fl *Flashlight) Update(time float64) {
 
 func (fl *Flashlight) Draw(matrix mgl32.Mat4) {
 	blend.Push()
+	blend.Enable()
 	blend.SetFunctionSeparate(blend.SrcAlpha, blend.OneMinusSrcAlpha, blend.One, blend.One)
 
 	fl.flShader.Bind()
 	fl.flShader.SetUniform("cursorPosition", mgl32.Vec2{fl.position.X, fl.position.Y})
 	fl.flShader.SetUniform("radius", float32(fl.size.GetValue()))
 	fl.flShader.SetUniform("dim", float32(fl.dim.GetValue()))
+	fl.flShader.SetUniform("maxDim", float32(settings.Gameplay.FlashlightDim))
 	fl.flShader.SetUniform("invMatrix", matrix.Inv())
 
 	fl.vao.Bind()

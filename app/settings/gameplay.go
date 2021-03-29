@@ -87,6 +87,7 @@ func initGameplay() *gameplay {
 		ShowResultsScreen: true,
 		ResultsScreenTime: 5,
 		ShowWarningArrows: true,
+		FlashlightDim:     1,
 	}
 }
 
@@ -103,6 +104,7 @@ type gameplay struct {
 	ShowResultsScreen bool
 	ResultsScreenTime float64
 	ShowWarningArrows bool
+	FlashlightDim     float64
 }
 
 type boundaries struct {
