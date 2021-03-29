@@ -90,15 +90,13 @@ func (controller *GenericController) InitCursors() {
 		}
 	}
 
-	if settings.Dance.SliderDance2B {
-		for i := 0; i < len(queue); i++ {
-			if s, ok := queue[i].(*objects.Slider); ok {
-				for j := i + 1; j < len(queue); j++ {
-					o := queue[j]
-					if (o.GetStartTime() >= s.GetStartTime() && o.GetStartTime() <= s.GetEndTime()) || (o.GetEndTime() >= s.GetStartTime() && o.GetEndTime() <= s.GetEndTime()) {
-						queue = schedulers.PreprocessQueue(i, queue, true)
-						break
-					}
+	for i := 0; i < len(queue); i++ {
+		if s, ok := queue[i].(*objects.Slider); ok {
+			for j := i + 1; j < len(queue); j++ {
+				o := queue[j]
+				if (o.GetStartTime() >= s.GetStartTime() && o.GetStartTime() <= s.GetEndTime()) || (o.GetEndTime() >= s.GetStartTime() && o.GetEndTime() <= s.GetEndTime()) {
+					queue = schedulers.PreprocessQueue(i, queue, true)
+					break
 				}
 			}
 		}

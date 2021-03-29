@@ -12,7 +12,6 @@ func initDance() *dance {
 		SliderDance:        false,
 		RandomSliderDance:  false,
 		TAGSliderDance:     false,
-		SliderDance2B:      true,
 		Bezier: &bezier{
 			Aggressiveness:       60,
 			SliderAggressiveness: 3,
@@ -62,7 +61,6 @@ type dance struct {
 	SliderDance        bool
 	RandomSliderDance  bool
 	TAGSliderDance     bool
-	SliderDance2B      bool
 	Bezier             *bezier
 	Flower             *flower
 	HalfCircle         *circular
