@@ -240,7 +240,8 @@ func (mods Modifier) Compatible() bool {
 		return true
 	}
 
-	if (mods.Active(HardRock) && mods.Active(Easy)) ||
+	if mods.Active(Target) ||
+		(mods.Active(HardRock) && mods.Active(Easy)) ||
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
 		(mods.Active(Relax) && mods.Active(Relax2)) ||

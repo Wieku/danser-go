@@ -139,10 +139,6 @@ func run() {
 			settings.REPLAY = *replay
 		}
 
-		if modsParsed.Active(difficulty2.Target) {
-			panic("Target practice mod is not supported!")
-		}
-
 		if !modsParsed.Compatible() {
 			panic("Incompatible mods selected!")
 		}
