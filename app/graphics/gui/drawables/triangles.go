@@ -29,18 +29,16 @@ type Triangles struct {
 	fft          []float64
 	colorPalette []color2.Color
 	music        *bass.Track
+	density      float64
+	scale        float64
+	firstUpdate  bool
 }
 
 func NewTriangles(colors []color2.Color) *Triangles {
 	visualiser := &Triangles{triangles: make([]*sprite.Sprite, 0), velocity: 100}
 	visualiser.colorPalette = colors
+	visualiser.firstUpdate = true
 
-	for i := 0; i < maxTriangles; i++ {
-		visualiser.AddTriangle(false)
-	}
-	sort.Slice(visualiser.triangles, func(i, j int) bool {
-		return visualiser.triangles[i].GetDepth() > visualiser.triangles[j].GetDepth()
-	})
 	return visualiser
 }
 
@@ -49,7 +47,7 @@ func (vis *Triangles) SetTrack(track *bass.Track) {
 }
 
 func (vis *Triangles) AddTriangle(onscreen bool) {
-	size := (minSize + rand.Float64()*(maxSize-minSize)) * settings.Graphics.GetHeightF() / 768
+	size := (minSize + rand.Float64()*(maxSize-minSize)) * settings.Graphics.GetHeightF() / 768 * vis.scale
 	position := vector.NewVec2d((rand.Float64()-0.5)*settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()/2+size)
 
 	texture := graphics.Triangle
@@ -100,8 +98,6 @@ func (vis *Triangles) Update(time float64) {
 
 	vis.velocity *= 1.0 - 0.05*delta/16
 
-	toAdd := 0
-
 	velocity := vis.velocity + 0.5
 
 	for i := 0; i < len(vis.triangles); i++ {
@@ -112,14 +108,18 @@ func (vis *Triangles) Update(time float64) {
 		if t.GetPosition().Y < -settings.Graphics.GetHeightF()/2-t.GetScale().Y*float64(graphics.Triangle.Width)/2 {
 			vis.triangles = append(vis.triangles[:i], vis.triangles[i+1:]...)
 			i--
-			toAdd++
 		}
 	}
 
+	toAdd := int(maxTriangles*vis.density) - len(vis.triangles)
+
 	if toAdd > 0 {
 		for i := 0; i < toAdd; i++ {
-			vis.AddTriangle(false)
+			vis.AddTriangle(vis.firstUpdate)
 		}
+
+		vis.firstUpdate = false
+
 		sort.Slice(vis.triangles, func(i, j int) bool {
 			return vis.triangles[i].GetDepth() > vis.triangles[j].GetDepth()
 		})
@@ -132,4 +132,12 @@ func (vis *Triangles) Draw(time float64, batch *batch.QuadBatch) {
 	for _, t := range vis.triangles {
 		t.Draw(time, batch)
 	}
+}
+
+func (vis *Triangles) SetDensity(density float64) {
+	vis.density = density
+}
+
+func (vis *Triangles) SetScale(scale float64) {
+	vis.scale = scale
 }

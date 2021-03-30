@@ -112,6 +112,8 @@ func (bg *Background) Update(time float64, x, y float64) {
 		}
 	}
 
+	bg.triangles.SetDensity(settings.Playfield.Background.Triangles.Density)
+	bg.triangles.SetScale(settings.Playfield.Background.Triangles.Scale)
 	bg.triangles.Update(time)
 
 	pX := 0.0
