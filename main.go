@@ -120,6 +120,14 @@ func run() {
 			output = *out
 		}
 
+		if *record && *play {
+			panic("Incompatible flags selected: -record, -play")
+		} else if *replay != "" && *play {
+			panic("Incompatible flags selected: -replay, -play")
+		} else if *replay != "" && *knockout {
+			panic("Incompatible flags selected: -replay, -knockout")
+		}
+
 		modsParsed := difficulty2.ParseMods(*mods)
 
 		if *replay != "" {
