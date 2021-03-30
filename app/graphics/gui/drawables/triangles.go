@@ -110,7 +110,7 @@ func (vis *Triangles) Update(time float64) {
 		t := triangles[i]
 		t.Update(time)
 
-		scale := (t.GetScale().Y * float64(graphics.Triangle.Width)) / maxSize / (settings.Graphics.GetHeightF() / 768)
+		scale := (t.GetScale().Y * float64(graphics.Triangle.Width)) / maxSize / (settings.Graphics.GetHeightF() / 768) / vis.scale
 		t.SetPosition(t.GetPosition().AddS(0, -delta/16*velocity*(0.2+(1.0-scale*0.8)*separation)*settings.Graphics.GetHeightF()/768))
 
 		if t.GetPosition().Y < -settings.Graphics.GetHeightF()/2-t.GetScale().Y*float64(graphics.Triangle.Width)/2 {
