@@ -356,67 +356,81 @@ func (controller *ReplayController) updateMain(nTime float64) {
 				c.mouseController.Update(nTime)
 			}
 
-			for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= int64(nTime) {
-				frame := c.frames[c.replayIndex]
-				c.replayTime += frame.Time
+			if c.replayIndex < len(c.frames) {
+				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= int64(nTime) {
+					frame := c.frames[c.replayIndex]
+					c.replayTime += frame.Time
 
-				if !isAutopilot {
-					controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
-				}
-
-				controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
-				controller.cursors[i].CurrentFrameTime = c.replayTime
-				controller.cursors[i].IsReplayFrame = true
-
-				if !isRelax {
-					controller.cursors[i].LeftKey = frame.KeyPressed.LeftClick && frame.KeyPressed.Key1
-					controller.cursors[i].RightKey = frame.KeyPressed.RightClick && frame.KeyPressed.Key2
-
-					controller.cursors[i].LeftMouse = frame.KeyPressed.LeftClick && !frame.KeyPressed.Key1
-					controller.cursors[i].RightMouse = frame.KeyPressed.RightClick && !frame.KeyPressed.Key2
-
-					controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
-					controller.cursors[i].RightButton = frame.KeyPressed.RightClick
-				} else {
-					c.relaxController.Update(float64(c.replayTime))
-				}
-
-				controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
-				controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
-
-				// New replays (after 20190506) scores object ends only on replay frame
-				if c.newHandling || c.replayIndex == len(c.frames)-1 {
-					controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
-				} else {
-					localIndex := bmath.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
-					localFrame := c.frames[localIndex]
-
-					// HACK for older replays: update object ends till the next frame
-					for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
-						controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
+					if !isAutopilot {
+						controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
 					}
+
+					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
+					controller.cursors[i].CurrentFrameTime = c.replayTime
+					controller.cursors[i].IsReplayFrame = true
+
+					if !isRelax {
+						controller.cursors[i].LeftKey = frame.KeyPressed.LeftClick && frame.KeyPressed.Key1
+						controller.cursors[i].RightKey = frame.KeyPressed.RightClick && frame.KeyPressed.Key2
+
+						controller.cursors[i].LeftMouse = frame.KeyPressed.LeftClick && !frame.KeyPressed.Key1
+						controller.cursors[i].RightMouse = frame.KeyPressed.RightClick && !frame.KeyPressed.Key2
+
+						controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
+						controller.cursors[i].RightButton = frame.KeyPressed.RightClick
+					} else {
+						c.relaxController.Update(float64(c.replayTime))
+					}
+
+					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
+					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
+
+					// New replays (after 20190506) scores object ends only on replay frame
+					if c.newHandling || c.replayIndex == len(c.frames)-1 {
+						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
+					} else {
+						localIndex := bmath.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
+						localFrame := c.frames[localIndex]
+
+						// HACK for older replays: update object ends till the next frame
+						for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
+							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
+						}
+					}
+
+					wasUpdated = true
+
+					c.replayIndex++
 				}
 
-				wasUpdated = true
+				if !wasUpdated {
+					if !isAutopilot {
+						localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
 
-				c.replayIndex++
-			}
+						progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
 
-			if !wasUpdated {
-				if !isAutopilot {
-					localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
+						prevIndex := bmath.MaxI(0, localIndex-1)
 
-					progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
+						mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
+						mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
 
-					prevIndex := bmath.MaxI(0, localIndex-1)
+						controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
+					}
 
-					mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
-					mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
-
-					controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
+					controller.cursors[i].IsReplayFrame = false
 				}
+			} else {
+				controller.cursors[i].SetPos(vector.NewVec2f(-200, -200))
+				controller.cursors[i].LeftKey = false
+				controller.cursors[i].RightKey = false
+				controller.cursors[i].LeftMouse = false
+				controller.cursors[i].RightMouse = false
+				controller.cursors[i].LeftButton = false
+				controller.cursors[i].RightButton = false
 
-				controller.cursors[i].IsReplayFrame = false
+				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
 			}
 		}
 	}
