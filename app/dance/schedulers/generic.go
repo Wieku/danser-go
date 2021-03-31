@@ -58,7 +58,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 			p := scheduler.queue[i-1]
 			c := scheduler.queue[i]
 
-			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime() - p.GetEndTime() <= 3 {
+			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
 				remove = true
 			}
 		}
@@ -67,7 +67,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 			p := scheduler.queue[i]
 			c := scheduler.queue[i+1]
 
-			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime() - p.GetEndTime() <= 3 {
+			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
 				remove = true
 			}
 		}
@@ -86,7 +86,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 
 func (scheduler *GenericScheduler) Update(time float64) {
 	if len(scheduler.queue) > 0 {
-		move := true
+		useMover := true
 		lastEndTime := 0.0
 
 		for i := 0; i < len(scheduler.queue); i++ {
@@ -98,14 +98,15 @@ func (scheduler *GenericScheduler) Update(time float64) {
 
 			lastEndTime = math.Max(lastEndTime, g.GetEndTime())
 
-			if time >= g.GetStartTime() && time <= g.GetEndTime() {
-				if scheduler.lastTime <= g.GetStartTime() && time >= g.GetStartTime() { // brief movement lock for ExGon mover
-					move = false
+			if time <= g.GetEndTime() {
+				if scheduler.lastTime <= g.GetStartTime() { // brief movement lock for ExGon mover
+					useMover = false
 				}
 
 				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
-			} else if time > g.GetEndTime() {
+			} else {
 				upperLimit := len(scheduler.queue)
+
 				for j := i; j < len(scheduler.queue); j++ {
 					if scheduler.queue[j].GetEndTime() >= lastEndTime {
 						break
@@ -115,6 +116,7 @@ func (scheduler *GenericScheduler) Update(time float64) {
 				}
 
 				toRemove := 1
+
 				if upperLimit-i > 1 {
 					toRemove = scheduler.mover.SetObjects(scheduler.queue[i:upperLimit]) - 1
 				}
@@ -124,7 +126,7 @@ func (scheduler *GenericScheduler) Update(time float64) {
 			}
 		}
 
-		if move && scheduler.mover.GetEndTime() >= time {
+		if useMover && scheduler.mover.GetEndTime() >= time {
 			scheduler.cursor.SetPos(scheduler.mover.Update(time))
 		}
 	}
