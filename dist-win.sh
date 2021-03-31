@@ -50,6 +50,6 @@ echo $base > danser.rc
 windres -l 0 $WINDRESFLAGS -i danser.rc -o danser.syso
 
 go run tools/assets/assets.go ./
-go build -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -o danser-$exec.exe -v -x
-go run tools/pack/pack.go danser-$exec-win.zip danser-$exec.exe bass.dll bass_fx.dll bassenc.dll bassmix.dll assets.dpak libwinpthread-1.dll
-rm -f danser-$exec.exe assets.dpak danser.rc danser.syso
+go build -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -o danser.exe -v -x
+go run tools/pack/pack.go danser-$exec-win.zip danser.exe bass.dll bass_fx.dll bassenc.dll bassmix.dll assets.dpak libwinpthread-1.dll
+rm -f danser.exe assets.dpak danser.rc danser.syso
