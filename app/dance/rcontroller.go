@@ -420,7 +420,6 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					controller.cursors[i].IsReplayFrame = false
 				}
 			} else {
-				controller.cursors[i].SetPos(vector.NewVec2f(-200, -200))
 				controller.cursors[i].LeftKey = false
 				controller.cursors[i].RightKey = false
 				controller.cursors[i].LeftMouse = false
