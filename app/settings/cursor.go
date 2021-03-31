@@ -43,6 +43,7 @@ func initCursor() *cursor {
 		GlowEndScale:                0.4,
 		InnerLengthMult:             0.9,
 		AdditiveBlending:            true,
+		CursorRipples:               true,
 	}
 }
 
@@ -70,6 +71,7 @@ type cursor struct {
 	GlowEndScale                float64 //0.4
 	InnerLengthMult             float64 //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
 	AdditiveBlending            bool
+	CursorRipples               bool
 }
 
 func (cr *cursor) GetColors(divides, cursors int, beatScale, alpha float64) []color2.Color {

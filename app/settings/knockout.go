@@ -15,6 +15,7 @@ func initKnockout() *knockout {
 		BubbleMinimumCombo: 200,
 		RevivePlayersAtEnd: false,
 		LiveSort:           true,
+		SortBy:             "Score",
 		MinCursorSize:      3.0,
 		MaxCursorSize:      7.0,
 		AddDanser:          false,
@@ -54,6 +55,8 @@ type knockout struct {
 	// Whether scores should be sorted in real time
 	LiveSort bool
 
+	SortBy string
+
 	//Minimum cursor size (when all players are alive)
 	MinCursorSize float64
 
@@ -79,4 +82,7 @@ const (
 
 	// Players scores other than 300's will be shown on the map (NOTE: this overrides MaxPlayer value)
 	OneVsOne
+
+	//Other result than 300 will knock the player out
+	SSOrQuit
 )

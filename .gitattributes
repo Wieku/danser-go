@@ -1,3 +1,6 @@
 framework/bass/bass.h linguist-detectable=false
 framework/bass/bass_fx.h linguist-detectable=false
+framework/bass/bassmix.h linguist-detectable=false
+framework/bass/bassenc.h linguist-detectable=false
 framework/graphics/texture/stb_image.h linguist-detectable=false
+framework/graphics/texture/stb_image_write.h linguist-detectable=false

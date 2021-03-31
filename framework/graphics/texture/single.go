@@ -19,7 +19,7 @@ func NewTextureSingle(width, height, mipmaps int) *TextureSingle {
 func NewTextureSingleFormat(width, height int, format Format, mipmaps int) *TextureSingle {
 	texture := new(TextureSingle)
 	texture.store = newStore(1, width, height, format, mipmaps)
-	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, int32(width), int32(height), 0}
+	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, float32(width), float32(height), 0}
 
 	runtime.SetFinalizer(texture, (*TextureSingle).Dispose)
 
@@ -37,10 +37,10 @@ func (texture *TextureSingle) SetData(x, y, width, height int, data []uint8) {
 		panic("Wrong number of pixels given!")
 	}
 
-	gl.TexSubImage3D(gl.TEXTURE_2D_ARRAY, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
+	gl.TextureSubImage3D(texture.store.id, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
 
 	if texture.store.mipmaps > 1 {
-		gl.GenerateMipmap(gl.TEXTURE_2D_ARRAY)
+		gl.GenerateTextureMipmap(texture.store.id)
 	}
 }
 

@@ -8,61 +8,48 @@ import (
 
 type CirArc struct {
 	pt1, pt2, pt3                  vector.Vector2f
-	centre                         vector.Vector2f
+	centre                         vector.Vector2f //nolint:misspell
 	startAngle, totalAngle, r, dir float32
 	Unstable                       bool
 }
 
-func NewCirArc(pt1, pt2, pt3 vector.Vector2f) *CirArc {
-	arc := &CirArc{pt1: pt1, pt2: pt2, pt3: pt3}
+func NewCirArc(a, b, c vector.Vector2f) *CirArc {
+	arc := &CirArc{pt1: a, pt2: b, pt3: c, dir: 1}
 
-	aSq := pt2.DstSq(pt3)
-	bSq := pt1.DstSq(pt3)
-	cSq := pt1.DstSq(pt2)
-
-	if math32.Abs(aSq) < 0.001 || math32.Abs(bSq) < 0.001 || math32.Abs(cSq) < 0.001 {
+	if math32.Abs((b.Y-a.Y)*(c.X-a.X)-(b.X-a.X)*(c.Y-a.Y)) < 0.001 {
 		arc.Unstable = true
 	}
 
-	s := aSq * (bSq + cSq - aSq)
-	t := bSq * (aSq + cSq - bSq)
-	u := cSq * (aSq + bSq - cSq)
+	d := 2 * (a.X*(b.Y-c.Y) + b.X*(c.Y-a.Y) + c.X*(a.Y-b.Y))
+	aSq := a.LenSq()
+	bSq := b.LenSq()
+	cSq := c.LenSq()
 
-	sum := s + t + u
+	arc.centre = vector.NewVec2f(
+		aSq*(b.Y-c.Y)+bSq*(c.Y-a.Y)+cSq*(a.Y-b.Y),
+		aSq*(c.X-b.X)+bSq*(a.X-c.X)+cSq*(b.X-a.X)).Scl(1 / d) //nolint:misspell
 
-	if math32.Abs(sum) < 0.001 {
-		arc.Unstable = true
+	dA := a.Sub(arc.centre)
+	dC := c.Sub(arc.centre)
+
+	arc.r = dA.Len()
+	arc.startAngle = math32.Atan2(dA.Y, dA.X)
+
+	endAngle := math32.Atan2(dC.Y, dC.X)
+
+	for endAngle < arc.startAngle {
+		endAngle += 2 * math.Pi
 	}
 
-	centre := pt1.Scl(s).Add(pt2.Scl(t)).Add(pt3.Scl(u)).Scl(1 / sum)
+	arc.totalAngle = endAngle - arc.startAngle
 
-	dA := pt1.Sub(centre)
-	dC := pt3.Sub(centre)
-
-	r := dA.Len()
-
-	start := math32.Atan2(dA.Y, dA.X)
-	end := math32.Atan2(dC.Y, dC.X)
-
-	for end < start {
-		end += 2 * math.Pi
-	}
-
-	dir := 1
-	totalAngle := end - start
-
-	aToC := pt3.Sub(pt1)
+	aToC := c.Sub(a)
 	aToC = vector.NewVec2f(aToC.Y, -aToC.X)
-	if aToC.Dot(pt2.Sub(pt1)) < 0 {
-		dir = -dir
-		totalAngle = 2*math.Pi - totalAngle
-	}
 
-	arc.totalAngle = totalAngle
-	arc.dir = float32(dir)
-	arc.startAngle = start
-	arc.centre = centre
-	arc.r = r
+	if aToC.Dot(b.Sub(a)) < 0 {
+		arc.dir = -arc.dir
+		arc.totalAngle = 2*math.Pi - arc.totalAngle
+	}
 
 	return arc
 }

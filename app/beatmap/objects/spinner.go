@@ -27,17 +27,18 @@ var spinnerRed = color2.Color{R: 1, G: 0, B: 0, A: 1}
 var spinnerBlue = color2.Color{R: 0.05, G: 0.5, B: 1.0, A: 1}
 
 type Spinner struct {
-	objData  *basicData
+	*HitObject
+
 	Timings  *Timings
 	sample   int
 	rad      float32
 	pos      vector.Vector2f
 	fade     *animation.Glider
-	lastTime int64
+	lastTime float64
 	rpm      float64
 
 	spinnerbonus *bass.Sample
-	loopSample   bass.SubSample
+	loopSample   *bass.SubSample
 	completion   float64
 
 	newStyle     bool
@@ -63,26 +64,21 @@ type Spinner struct {
 	ScaledWidth  float64
 	ScaledHeight float64
 	background   *sprite.Sprite
-	metre        *sprite.Sprite
+	metre        *sprite.Sprite //nolint:misspell
 }
 
 func NewSpinner(data []string) *Spinner {
-	spinner := &Spinner{}
-	spinner.objData = commonParse(data)
-	spinner.objData.parseExtras(data, 6)
+	spinner := &Spinner{
+		HitObject: commonParse(data, 6),
+	}
 
-	spinner.objData.EndTime, _ = strconv.ParseInt(data[5], 10, 64)
+	spinner.EndTime, _ = strconv.ParseFloat(data[5], 64)
 
 	sample, _ := strconv.ParseInt(data[4], 10, 64)
 
 	spinner.sample = int(sample)
 
-	spinner.objData.EndPos = spinner.objData.StartPos
 	return spinner
-}
-
-func (spinner *Spinner) GetBasicData() *basicData {
-	return spinner.objData
 }
 
 func (spinner *Spinner) GetPosition() vector.Vector2f {
@@ -100,8 +96,8 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.ScaledWidth = settings.Graphics.GetAspectRatio() * spinner.ScaledHeight
 
 	spinner.fade = animation.NewGlider(0)
-	spinner.fade.AddEvent(float64(spinner.objData.StartTime)-difficulty.HitFadeIn, float64(spinner.objData.StartTime), 1)
-	spinner.fade.AddEvent(float64(spinner.objData.EndTime), float64(spinner.objData.EndTime)+difficulty.HitFadeOut, 0)
+	spinner.fade.AddEvent(spinner.StartTime-difficulty.HitFadeIn, spinner.StartTime, 1)
+	spinner.fade.AddEvent(spinner.EndTime, spinner.EndTime+difficulty.HitFadeOut, 0)
 
 	spinner.sprites = sprite.NewSpriteManager()
 	spinner.frontSprites = sprite.NewSpriteManager()
@@ -109,12 +105,12 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.newStyle = skin.GetTexture("spinner-background") == nil
 
 	if spinner.newStyle {
-		spinner.glow = sprite.NewSpriteSingle(skin.GetTexture("spinner-glow"), 0.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
+		spinner.glow = sprite.NewSpriteSingle(skin.GetTexture("spinner-glow"), 0.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
 		spinner.glow.SetAdditive(true)
-		spinner.bottom = sprite.NewSpriteSingle(skin.GetTexture("spinner-bottom"), 1.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
-		spinner.top = sprite.NewSpriteSingle(skin.GetTexture("spinner-top"), 2.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
-		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle2"), 3.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
-		spinner.middle = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle"), 4.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
+		spinner.bottom = sprite.NewSpriteSingle(skin.GetTexture("spinner-bottom"), 1.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.top = sprite.NewSpriteSingle(skin.GetTexture("spinner-top"), 2.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle2"), 3.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.middle = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle"), 4.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
 
 		spinner.sprites.Add(spinner.glow)
 		spinner.sprites.Add(spinner.bottom)
@@ -124,32 +120,33 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 		spinner.glow.SetColor(spinnerBlue)
 		spinner.glow.SetAlpha(0.0)
-		spinner.middle.AddTransform(animation.NewColorTransform(animation.Color3, easing.Linear, float64(spinner.objData.StartTime), float64(spinner.objData.EndTime), color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerRed))
+		spinner.middle.AddTransform(animation.NewColorTransform(animation.Color3, easing.Linear, spinner.StartTime, spinner.EndTime, color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerRed))
 		spinner.middle.ResetValuesToTransforms()
-
 	} else {
 		spinner.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+350.4), bmath.Origin.Centre)
-		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 1.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 46.5), bmath.Origin.TopLeft)
+		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5), bmath.Origin.TopLeft) //nolint:misspell
 		spinner.metre.SetCutOrigin(bmath.Origin.BottomCentre)
 
-		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 2.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
+		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 1.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
 
 		spinner.sprites.Add(spinner.middle2)
 	}
 
-	spinner.approach = sprite.NewSpriteSingle(skin.GetTexture("spinner-approachcircle"), 5.0, spinner.objData.StartPos.Copy64(), bmath.Origin.Centre)
-	spinner.sprites.Add(spinner.approach)
-	spinner.approach.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(spinner.objData.StartTime), float64(spinner.objData.EndTime), 1.9, 0.1))
-	spinner.approach.ResetValuesToTransforms()
+	if !diff.CheckModActive(difficulty.Hidden) {
+		spinner.approach = sprite.NewSpriteSingle(skin.GetTexture("spinner-approachcircle"), 5.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.sprites.Add(spinner.approach)
+		spinner.approach.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, spinner.StartTime, spinner.EndTime, 1.9, 0.1))
+		spinner.approach.ResetValuesToTransforms()
+	}
 
 	spinner.UpdateCompletion(0.0)
 
-	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+240), bmath.Origin.Centre)
+	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+240*/ 256-16-8), bmath.Origin.Centre)
 	spinner.clear.SetAlpha(0.0)
 
 	spinner.frontSprites.Add(spinner.clear)
 
-	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+536), bmath.Origin.Centre)
+	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+536*/ 608-12.8-16), bmath.Origin.Centre)
 
 	spinner.frontSprites.Add(spinner.spin)
 
@@ -158,45 +155,32 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.bonusScale = animation.NewGlider(0.0)
 
 	spinner.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2-139, spinner.ScaledHeight-56), bmath.Origin.TopLeft)
-
-	//spinner.frontSprites.Add(spinner.rpmBg)
 }
 
-func (spinner *Spinner) Update(time int64) bool {
-	spinner.fade.Update(float64(time))
+func (spinner *Spinner) Update(time float64) bool {
+	spinner.fade.Update(time)
 
-	if time >= spinner.objData.StartTime && time <= spinner.objData.EndTime {
+	if time >= spinner.StartTime && time <= spinner.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
+			rRPMS := rpms * bmath.ClampF32(float32(time-spinner.StartTime)/500, 0.0, 1.0)
 
-			rRPMS := rpms * bmath.ClampF32(float32(time-spinner.objData.StartTime)/500, 0.0, 1.0)
-
-			spinner.rad = rRPMS * float32(time-spinner.objData.StartTime) * 2 * math32.Pi
+			spinner.rad = rRPMS * float32(time-spinner.StartTime) * 2 * math32.Pi
 
 			spinner.rpm = float64(rRPMS) * 1000 * 60
 
 			spinner.SetRotation(float64(spinner.rad))
 
-			spinner.UpdateCompletion(float64(time-spinner.objData.StartTime) / float64(spinner.objData.EndTime-spinner.objData.StartTime))
+			spinner.UpdateCompletion((time - spinner.StartTime) / (spinner.EndTime - spinner.StartTime))
 
-			if spinner.lastTime < spinner.objData.StartTime {
+			if spinner.lastTime < spinner.StartTime {
 				spinner.StartSpinSample()
 			}
 		}
-
-		//frad := float32(easing.InQuad(float64(1.0 - math32.Abs((math32.Mod(spinner.rad, math32.Pi/2)-math32.Pi/4)/(math32.Pi/4)))))
-		//a := spinner.rad - math32.Pi/2*math32.Round(spinner.rad*2/math32.Pi)
-		//spinner.pos = vector.NewVec2fRad(spinner.rad*1.1, 100/math32.Cos(a) /*+ frad * (50 * (math32.Sqrt(2) - 1))*/).Add(spinner.objData.StartPos)
-
-		//spinner.pos.X = 16 * math32.Pow(math32.Sin(spinner.rad), 3)
-		//spinner.pos.Y = 13*math32.Cos(spinner.rad) - 5*math32.Cos(2*spinner.rad) - 2*math32.Cos(3*spinner.rad) - math32.Cos(4*spinner.rad)
-
-		//spinner.pos = spinner.pos.Scl(-6 - 2*math32.Sin(float32(time-spinner.objData.StartTime)/2000*2*math32.Pi)).Add(spinner.objData.StartPos)
-		//spinner.GetBasicData().EndPos = spinner.pos
 	}
 
-	spinner.pos = spinner.objData.StartPos
+	spinner.pos = spinner.StartPosRaw
 
-	if spinner.lastTime < spinner.objData.EndTime && time >= spinner.objData.EndTime {
+	if spinner.lastTime < spinner.EndTime && time >= spinner.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 			spinner.StopSpinSample()
 			spinner.Clear()
@@ -208,15 +192,15 @@ func (spinner *Spinner) Update(time int64) bool {
 
 	spinner.frontSprites.Update(time)
 
-	spinner.bonusFade.Update(float64(time))
-	spinner.bonusScale.Update(float64(time))
+	spinner.bonusFade.Update(time)
+	spinner.bonusScale.Update(time)
 
 	spinner.lastTime = time
 
 	return true
 }
 
-func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool {
+func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
 	shiftX := -float32(settings.Playfield.ShiftX*spinner.ScaledHeight) / 480
@@ -233,7 +217,7 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBa
 
 	scaledOrtho := mgl32.Ortho(-overdrawX+shiftX, float32(spinner.ScaledWidth)+overdrawX+shiftX, float32(spinner.ScaledHeight)+overdrawY+shiftY, -overdrawY+shiftY, -1, 1)
 
-	alpha := spinner.fade.GetValue()
+	alpha := spinner.fade.GetValue() * float64(color.A)
 
 	batch.SetColor(1, 1, 1, alpha)
 
@@ -246,21 +230,32 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBa
 		batch.SetCamera(scaledOrtho)
 
 		spinner.background.Draw(time, batch)
-		spinner.metre.Draw(time, batch)
 
 		batch.SetCamera(oldCamera)
 	}
 
-	batch.SetScale(384.0/480*0.8, 384.0/480*0.8)
+	batch.SetScale(384.0/480*0.78, 384.0/480*0.78)
 
 	spinner.sprites.Draw(time, batch)
+
+	if !spinner.newStyle {
+		batch.ResetTransform()
+		oldCamera := batch.Projection
+
+		batch.SetCamera(scaledOrtho)
+
+		spinner.metre.Draw(time, batch)
+
+		batch.SetCamera(oldCamera)
+		batch.SetScale(384.0/480*0.78, 384.0/480*0.78)
+	}
 
 	scoreFont := skin.GetFont("score")
 
 	if spinner.bonusFade.GetValue() > 0.01 {
 		batch.SetColor(1.0, 1.0, 1.0, spinner.bonusFade.GetValue())
 
-		scoreFont.DrawCentered(batch, 256, 192+100, spinner.bonusScale.GetValue()*scoreFont.GetSize(), strconv.Itoa(spinner.bonus))
+		scoreFont.DrawOrigin(batch, 256, 192+80, bmath.Origin.Centre, spinner.bonusScale.GetValue()*scoreFont.GetSize()*0.8, false, strconv.Itoa(spinner.bonus))
 	}
 
 	batch.ResetTransform()
@@ -277,39 +272,39 @@ func (spinner *Spinner) Draw(time int64, color color2.Color, batch *batch.QuadBa
 	spinner.rpmBg.Draw(time, batch)
 
 	rpmTxt := fmt.Sprintf("%d", int(spinner.rpm))
-	scoreFont.Draw(batch, spinner.ScaledWidth/2+139-scoreFont.GetWidth(scoreFont.GetSize(), rpmTxt), spinner.ScaledHeight-56+scoreFont.GetSize()/2, scoreFont.GetSize(), rpmTxt)
+	scoreFont.DrawOrigin(batch, spinner.ScaledWidth/2+139, spinner.ScaledHeight-56, bmath.Origin.TopRight, scoreFont.GetSize(), false, rpmTxt)
 
 	batch.SetCamera(oldCamera)
 	batch.ResetTransform()
 	batch.SetScale(scale.X, scale.Y)
 
-	if time >= spinner.objData.EndTime && spinner.fade.GetValue() <= 0.01 {
+	if time >= spinner.EndTime && spinner.fade.GetValue() <= 0.01 {
 		return true
 	}
 
 	return false
 }
 
-func (spinner *Spinner) DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch) {}
+func (spinner *Spinner) DrawApproach(_ float64, _ color2.Color, _ *batch.QuadBatch) {}
 
-func (spinner *Spinner) Hit(_ int64, isHit bool) {
-	if !isHit {
+func (spinner *Spinner) Hit(_ float64, isHit bool) {
+	if !isHit || spinner.audioSubmissionDisabled {
 		return
 	}
 
-	point := spinner.Timings.GetPoint(spinner.objData.EndTime)
+	point := spinner.Timings.GetPoint(spinner.EndTime)
 
-	index := spinner.objData.customIndex
+	index := spinner.BasicHitSound.CustomIndex
 	if index == 0 {
 		index = point.SampleIndex
 	}
 
-	sampleSet := spinner.objData.sampleSet
+	sampleSet := spinner.BasicHitSound.SampleSet
 	if sampleSet == 0 {
 		sampleSet = point.SampleSet
 	}
 
-	audio.PlaySample(sampleSet, spinner.objData.additionSet, spinner.sample, index, point.SampleVolume, spinner.objData.Number, spinner.GetBasicData().StartPos.X64())
+	audio.PlaySample(sampleSet, spinner.BasicHitSound.AdditionSet, spinner.sample, index, point.SampleVolume, spinner.HitObjectID, spinner.StartPosRaw.X64())
 }
 
 func (spinner *Spinner) SetRotation(f float64) {
@@ -330,12 +325,12 @@ func (spinner *Spinner) SetRPM(rpm float64) {
 
 func (spinner *Spinner) UpdateCompletion(completion float64) {
 	if completion > 0 && spinner.completion == 0 {
-		spinner.spin.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(spinner.lastTime), float64(spinner.lastTime+300), 1.0, 0.0))
+		spinner.spin.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, spinner.lastTime, spinner.lastTime+300, 1.0, 0.0))
 	}
 
 	spinner.completion = completion
 
-	if skin.GetInfo().SpinnerFrequencyModulate {
+	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
 		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*completion)))
 	}
 
@@ -361,36 +356,58 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 }
 
 func (spinner *Spinner) StartSpinSample() {
-	if spinner.loopSample == 0 {
-		spinner.loopSample = audio.LoadSample("spinnerspin").PlayLoop()
+	if spinner.audioSubmissionDisabled {
+		return
+	}
+
+	if spinner.loopSample == nil {
+		sample := audio.LoadSample("spinnerspin")
+		if sample != nil {
+			spinner.loopSample = sample.PlayLoop()
+		}
 	} else {
 		bass.PlaySample(spinner.loopSample)
 	}
 
-	bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
+	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
+		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
+	}
 }
 
 func (spinner *Spinner) StopSpinSample() {
-	bass.PauseSample(spinner.loopSample)
+	if spinner.audioSubmissionDisabled {
+		return
+	}
+
+	if spinner.loopSample != nil {
+		bass.StopSample(spinner.loopSample)
+		spinner.loopSample = nil
+	}
 }
 
 func (spinner *Spinner) Clear() {
-	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutBack, float64(spinner.lastTime), float64(spinner.lastTime+difficulty.HitFadeIn), 2.0, 1.0))
-	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(spinner.lastTime), float64(spinner.lastTime+difficulty.HitFadeIn), 0.0, 1.0))
+	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutBack, spinner.lastTime, spinner.lastTime+difficulty.HitFadeIn, 2.0, 1.0))
+	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, spinner.lastTime, spinner.lastTime+difficulty.HitFadeIn, 0.0, 1.0))
 }
 
 func (spinner *Spinner) Bonus() {
 	if spinner.glow != nil {
-		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, float64(spinner.lastTime), float64(spinner.lastTime+difficulty.HitFadeOut), color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
+		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, spinner.lastTime, spinner.lastTime+difficulty.HitFadeOut, color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
 	}
 
-	spinner.spinnerbonus.Play()
+	if spinner.spinnerbonus != nil && !spinner.audioSubmissionDisabled {
+		spinner.spinnerbonus.Play()
+	}
 
 	spinner.bonusFade.Reset()
-	spinner.bonusFade.AddEventS(float64(spinner.lastTime), float64(spinner.lastTime+800), 1.0, 0.0)
+	spinner.bonusFade.AddEventSEase(spinner.lastTime, spinner.lastTime+800, 1.0, 0.0, easing.OutQuad)
 
 	spinner.bonusScale.Reset()
-	spinner.bonusScale.AddEventS(float64(spinner.lastTime), float64(spinner.lastTime+800), 2.0, 1.0)
+	spinner.bonusScale.AddEventSEase(spinner.lastTime, spinner.lastTime+800, 2.0, 1.28, easing.OutQuad)
 
 	spinner.bonus += 1000
+}
+
+func (spinner *Spinner) GetType() Type {
+	return SPINNER
 }

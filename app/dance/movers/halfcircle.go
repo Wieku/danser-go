@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -11,28 +12,30 @@ import (
 
 type HalfCircleMover struct {
 	ca                 curves.Curve
-	startTime, endTime int64
+	startTime, endTime float64
 	invert             float32
+	mods               difficulty.Modifier
 }
 
 func NewHalfCircleMover() MultiPointMover {
 	return &HalfCircleMover{invert: -1}
 }
 
-func (bm *HalfCircleMover) Reset() {
+func (bm *HalfCircleMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.invert = -1
 }
 
-func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetBasicData().EndPos
-	startPos := start.GetBasicData().StartPos
-	bm.endTime = end.GetBasicData().EndTime
-	bm.startTime = start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPositionMod(bm.mods)
+	startPos := start.GetStackedStartPositionMod(bm.mods)
+	bm.endTime = end.GetEndTime()
+	bm.startTime = start.GetStartTime()
 
-	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < settings.Dance.HalfCircle.StreamTrigger {
+	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < float64(settings.Dance.HalfCircle.StreamTrigger) {
 		bm.invert = -1 * bm.invert
 	}
 
@@ -48,11 +51,11 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.BaseObject) int {
 	return 2
 }
 
-func (bm *HalfCircleMover) Update(time int64) vector.Vector2f {
+func (bm *HalfCircleMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
 	return bm.ca.PointAt(t)
 }
 
-func (bm *HalfCircleMover) GetEndTime() int64 {
+func (bm *HalfCircleMover) GetEndTime() float64 {
 	return bm.startTime
 }

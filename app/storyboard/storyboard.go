@@ -4,15 +4,19 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	video2 "github.com/wieku/danser-go/framework/graphics/video"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -30,10 +34,11 @@ type Storyboard struct {
 	bgFileUsed  bool
 	widescreen  bool
 	shouldRun   bool
-	currentTime int64
+	currentTime float64
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
+	pathCache   *utils.FileMap
 }
 
 func getSection(line string) string {
@@ -65,6 +70,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
+	storyboard.pathCache = utils.NewFileMap(path)
 
 	var currentSection string
 	var currentSprite string
@@ -72,6 +78,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	variables := make(map[string]string)
 	counter := 0
+	hasVideo := false
 
 	for _, fS := range files {
 		file, err := os.Open(fS)
@@ -116,23 +123,46 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					}
 				}
 
-				if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
-					if currentSprite != "" {
-						counter++
-						storyboard.loadSprite(path, currentSprite, commands)
+				if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
+					spl := strings.Split(line, ",")
+
+					log.Println(filepath.Join(path, fix(spl[2])))
+
+					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), bmath.Origin.Centre)
+
+					if video == nil {
+						continue
 					}
 
-					currentSprite = line
-					commands = make([]string, 0)
-				} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
-					commands = append(commands, line)
+					video.SetScaleV(vector.NewVec2d(1, 1).Scl(480.0 / float64(video.Textures[0].Height)))
+
+					offset, _ := strconv.ParseFloat(spl[1], 64)
+					video.SetStartTime(offset)
+					video.SetEndTime(math.MaxFloat64)
+					video.ShowForever(false)
+
+					storyboard.background.Add(video)
+
+					hasVideo = true
+				} else if settings.Playfield.Background.LoadStoryboards {
+					if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+						if currentSprite != "" {
+							counter++
+							storyboard.loadSprite(path, currentSprite, commands)
+						}
+
+						currentSprite = line
+						commands = make([]string, 0)
+					} else if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "_") {
+						commands = append(commands, line)
+					}
 				}
-				break
 			}
 		}
 
 		if currentSprite != "" {
 			counter++
+
 			storyboard.loadSprite(path, currentSprite, commands)
 		}
 
@@ -143,7 +173,12 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		if storyboard.atlas != nil {
 			storyboard.atlas.Dispose()
 		}
-		return nil
+
+		if !hasVideo {
+			return nil
+		} else if !storyboard.widescreen {
+			storyboard.widescreen = true
+		}
 	}
 
 	for k := range storyboard.textures {
@@ -188,58 +223,62 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		if len(spl) > 8 && spl[8] == "LoopOnce" {
 			loopForever = false
 		}
+
 		extension := filepath.Ext(image)
 		baseFile := strings.TrimSuffix(image, extension)
 
 		for i := 0; i < int(frames); i++ {
-			texture := storyboard.getTexture(path, baseFile+strconv.Itoa(i)+extension)
-			if texture != nil {
-				textures = append(textures, texture)
+			if tex := storyboard.getTexture(baseFile+strconv.Itoa(i)+extension); tex != nil {
+				textures = append(textures, tex)
 			}
 		}
-
 	} else {
-		texture := storyboard.getTexture(path, image)
-		if texture != nil {
-			textures = append(textures, texture)
+		if tex := storyboard.getTexture(image); tex != nil {
+			textures = append(textures, tex)
 		}
 	}
 
 	storyboard.zIndex++
 
 	if len(textures) != 0 {
-		sprite := sprite.NewAnimation(textures, frameDelay, loopForever, float64(storyboard.zIndex), pos, origin)
+		sbSprite := sprite.NewAnimation(textures, frameDelay, loopForever, float64(storyboard.zIndex), pos, origin)
 
 		transforms := parseCommands(commands)
 
-		sprite.ShowForever(false)
-		sprite.AddTransforms(transforms)
-		sprite.AdjustTimesToTransformations()
-		sprite.ResetValuesToTransforms()
+		sbSprite.ShowForever(false)
+		sbSprite.AddTransforms(transforms)
+		sbSprite.AdjustTimesToTransformations()
+		sbSprite.ResetValuesToTransforms()
 
 		switch spl[1] {
 		case "0", "Background":
-			storyboard.background.Add(sprite)
+			storyboard.background.Add(sbSprite)
 		case "2", "Pass":
-			storyboard.pass.Add(sprite)
+			storyboard.pass.Add(sbSprite)
 		case "3", "Foreground":
-			storyboard.foreground.Add(sprite)
+			storyboard.foreground.Add(sbSprite)
 		case "4", "Overlay":
-			storyboard.overlay.Add(sprite)
+			storyboard.overlay.Add(sbSprite)
 		}
 
 		storyboard.numSprites++
 	}
 }
 
-func (storyboard *Storyboard) getTexture(path, image string) *texture.TextureRegion {
+func (storyboard *Storyboard) getTexture(image string) *texture.TextureRegion {
 	var texture1 *texture.TextureRegion
 
 	if texture1 = storyboard.textures[image]; texture1 == nil {
 		if texture1 = skin.GetTexture(strings.TrimSuffix(image, filepath.Ext(image))); texture1 != nil {
 			storyboard.textures[image] = texture1
 		} else {
-			img, err := texture.NewPixmapFileString(path + string(os.PathSeparator) + image)
+			path, err := storyboard.pathCache.GetFile(image)
+			if err != nil {
+				log.Println("File:", image, "does not exist!")
+				return texture1
+			}
+
+			img, err := texture.NewPixmapFileString(path)
 
 			if err == nil {
 
@@ -300,7 +339,7 @@ func (storyboard *Storyboard) IsThreadRunning() bool {
 	return storyboard.shouldRun
 }
 
-func (storyboard *Storyboard) UpdateTime(time int64) {
+func (storyboard *Storyboard) UpdateTime(time float64) {
 	storyboard.currentTime = time
 }
 
@@ -312,14 +351,14 @@ func (storyboard *Storyboard) SetFPS(i int) {
 	storyboard.limiter.FPS = i
 }
 
-func (storyboard *Storyboard) Update(time int64) {
+func (storyboard *Storyboard) Update(time float64) {
 	storyboard.background.Update(time)
 	storyboard.pass.Update(time)
 	storyboard.foreground.Update(time)
 	storyboard.overlay.Update(time)
 }
 
-func (storyboard *Storyboard) Draw(time int64, batch *batch.QuadBatch) {
+func (storyboard *Storyboard) Draw(time float64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
@@ -327,7 +366,7 @@ func (storyboard *Storyboard) Draw(time int64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 }
 
-func (storyboard *Storyboard) DrawOverlay(time int64, batch *batch.QuadBatch) {
+func (storyboard *Storyboard) DrawOverlay(time float64, batch *batch.QuadBatch) {
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.overlay.Draw(time, batch)
 	batch.SetTranslation(vector.NewVec2d(0, 0))

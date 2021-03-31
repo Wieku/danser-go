@@ -9,7 +9,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -30,7 +32,6 @@ func LoadTexture(path string) (*texture.TextureSingle, error) {
 		defer img.Dispose()
 
 		tex := texture.NewTextureSingle(img.Width, img.Height, 0)
-		tex.Bind(0)
 		tex.SetData(0, 0, img.Width, img.Height, img.Data)
 
 		return tex, nil
@@ -112,4 +113,22 @@ func Unzip(src string, dest string) ([]string, error) {
 		}
 	}
 	return filenames, nil
+}
+
+func OpenURL(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
 }

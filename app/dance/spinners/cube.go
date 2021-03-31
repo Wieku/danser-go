@@ -21,18 +21,18 @@ var cubeVertices = []mgl32.Vec4{
 var cubeIndices = []int{0, 1, 2, 3, 0, 4, 5, 1, 5, 6, 2, 6, 7, 3, 7, 4}
 
 type CubeMover struct {
-	start int64
+	start float64
 }
 
 func NewCubeMover() *CubeMover {
 	return &CubeMover{}
 }
 
-func (c *CubeMover) Init(start, end int64) {
+func (c *CubeMover) Init(start, end float64) {
 	c.start = start
 }
 
-func (c *CubeMover) GetPositionAt(time int64) vector.Vector2f {
+func (c *CubeMover) GetPositionAt(time float64) vector.Vector2f {
 	radY := math32.Sin(float32(time-c.start)/9000*2*math32.Pi) * 3.0 / 18 * math32.Pi
 	radX := math32.Sin(float32(time-c.start)/5000*2*math32.Pi) * 3.0 / 18 * math32.Pi
 
@@ -40,7 +40,7 @@ func (c *CubeMover) GetPositionAt(time int64) vector.Vector2f {
 
 	mat := mgl32.HomogRotate3DY(radY).Mul4(mgl32.HomogRotate3DX(radX)).Mul4(mgl32.Scale3D(scale, scale, scale))
 
-	startIndex := ((time - c.start) / 4) % int64(len(cubeIndices))
+	startIndex := (int64(time - c.start) / 4) % int64(len(cubeIndices))
 
 	i1 := cubeIndices[startIndex]
 
@@ -52,7 +52,7 @@ func (c *CubeMover) GetPositionAt(time int64) vector.Vector2f {
 	pt1 := cubeVertices[i1]
 	pt2 := cubeVertices[i2]
 
-	t := float32((time-c.start)%4) / 4
+	t := float32(int64(time-c.start)%4) / 4
 
 	pt := mgl32.Vec4{(pt2.X()-pt1.X())*t + pt1.X(), (pt2.Y()-pt1.Y())*t + pt1.Y(), (pt2.Z()-pt1.Z())*t + pt1.Z(), 1.0}
 

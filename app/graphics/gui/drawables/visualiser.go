@@ -22,6 +22,7 @@ type Visualiser struct {
 	counter       float64
 	fft           []float64
 	music         *bass.Track
+	kiai          bool
 }
 
 func NewVisualiser(startDistance float64, barLength float64, position vector.Vector2d) *Visualiser {
@@ -45,12 +46,17 @@ func (vis *Visualiser) Update(time float64) {
 
 	decay := delta * vis.decayValue
 
+	mult := 0.5
+	if vis.kiai {
+		mult = 1.0
+	}
+
 	if vis.counter >= vis.updateDelay {
 		if vis.music != nil {
 			fft := vis.music.GetFFT()
 
 			for i := 0; i < vis.bars; i++ {
-				value := float64(fft[(i+vis.jumpCounter)%vis.bars]) * 0.5 // * math.Pow(float64((i+vis.jumpCounter)%vis.bars+1), 0.08)
+				value := float64(fft[(i+vis.jumpCounter)%vis.bars]) * mult
 				if value > vis.fft[i] {
 					vis.fft[i] = value
 				}
@@ -73,17 +79,28 @@ func (vis *Visualiser) Update(time float64) {
 	vis.lastTime = time
 }
 
-func (vis *Visualiser) Draw(time float64, batch *batch.QuadBatch) {
+func (vis *Visualiser) Draw(_ float64, batch *batch.QuadBatch) {
 	origin := vector.NewVec2d(-1, 0)
+
+	cutoff := 1 / vis.barLength
 
 	color := mgl32.Vec4{1, 1, 1, 0.3}
 	region := graphics.Pixel.GetRegion()
+
 	for i := 0; i < 5; i++ {
 		for j, v := range vis.fft {
+			if v < cutoff {
+				continue
+			}
+
 			rotation := (float64(i)/5 + float64(j)/float64(vis.bars)) * 2 * math.Pi
 			position := vector.NewVec2dRad(rotation, vis.startDistance).Add(vis.Position)
-			scale := vector.NewVec2d(vis.barLength*v, float64(2*math.Pi*vis.startDistance)/float64(vis.bars))
+			scale := vector.NewVec2d(vis.barLength*v, (2*math.Pi*vis.startDistance)/float64(vis.bars))
 			batch.DrawStObject(position, origin, scale, false, false, rotation, color, false, region)
 		}
 	}
+}
+
+func (vis *Visualiser) SetKiai(kiai bool) {
+	vis.kiai = kiai
 }

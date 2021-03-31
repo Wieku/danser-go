@@ -1,14 +1,13 @@
 package effects
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"math"
 )
 
@@ -37,7 +36,7 @@ func NewBlurEffect(width, height int) *BlurEffect {
 		panic(err)
 	}
 
-	effect.blurShader = shader.NewRShader(shader.NewSource(string(vert), shader.Vertex), shader.NewSource(string(frag), shader.Fragment))
+	effect.blurShader = shader.NewRShader(shader.NewSource(vert, shader.Vertex), shader.NewSource(frag, shader.Fragment))
 
 	effect.vao = buffer.NewVertexArrayObject()
 
@@ -55,9 +54,7 @@ func NewBlurEffect(width, height int) *BlurEffect {
 		-1, 1, 0, 0, 1,
 	})
 
-	effect.vao.Bind()
 	effect.vao.Attach(effect.blurShader)
-	effect.vao.Unbind()
 
 	effect.fbo1 = buffer.NewFrame(width, height, true, false)
 	effect.fbo2 = buffer.NewFrame(width, height, true, false)
@@ -106,9 +103,8 @@ func kernelSize(sigma float32) int {
 
 func (effect *BlurEffect) Begin() {
 	effect.fbo1.Bind()
-	gl.ClearColor(0, 0, 0, 1)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	gl.Viewport(0, 0, int32(effect.fbo1.Texture().GetWidth()), int32(effect.fbo1.Texture().GetHeight()))
+	effect.fbo1.ClearColor(0, 0, 0, 1)
+	viewport.Push(int(effect.fbo1.Texture().GetWidth()), int(effect.fbo1.Texture().GetHeight()))
 }
 
 func (effect *BlurEffect) EndAndProcess() texture.Texture {
@@ -124,8 +120,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.vao.Bind()
 
 	effect.fbo2.Bind()
-	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	effect.fbo2.ClearColor(0, 0, 0, 0)
 
 	effect.fbo1.Texture().Bind(0)
 
@@ -134,8 +129,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo2.Unbind()
 
 	effect.fbo1.Bind()
-	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	effect.fbo1.ClearColor(0, 0, 0, 0)
 
 	effect.fbo2.Texture().Bind(0)
 
@@ -146,6 +140,8 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 
 	effect.vao.Unbind()
 	effect.blurShader.Unbind()
-	gl.Viewport(0, 0, int32(settings.Graphics.GetWidth()), int32(settings.Graphics.GetHeight()))
+
+	viewport.Pop()
+
 	return effect.fbo1.Texture()
 }

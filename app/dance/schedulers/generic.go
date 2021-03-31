@@ -1,89 +1,139 @@
 package schedulers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 	"math/rand"
 )
 
 type GenericScheduler struct {
-	cursor       *graphics.Cursor
-	queue        []objects.BaseObject
-	mover        movers.MultiPointMover
-	lastTime     int64
-	spinnerMover spinners.SpinnerMover
-	input        *InputProcessor
+	cursor   *graphics.Cursor
+	queue    []objects.IHitObject
+	mover    movers.MultiPointMover
+	lastTime float64
+	input    *input.NaturalInputProcessor
+	mods     difficulty.Modifier
 }
 
 func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
 	return &GenericScheduler{mover: mover()}
 }
 
-func (sched *GenericScheduler) Init(objs []objects.BaseObject, cursor *graphics.Cursor, spinnerMover spinners.SpinnerMover) {
-	sched.spinnerMover = spinnerMover
-	sched.cursor = cursor
-	sched.queue = objs
+func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMoverCtor func() spinners.SpinnerMover, initKeys bool) {
+	scheduler.mods = mods
+	scheduler.cursor = cursor
+	scheduler.queue = objs
 
-	sched.input = NewInputProcessor(objs, cursor)
-
-	sched.mover.Reset()
-
-	for i := 0; i < len(sched.queue); i++ {
-		sched.queue = PreprocessQueue(i, sched.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
+	if initKeys {
+		scheduler.input = input.NewNaturalInputProcessor(objs, cursor)
 	}
 
-	sched.queue = append([]objects.BaseObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, sched.queue...)
+	scheduler.mover.Reset(mods)
 
-	toRemove := sched.mover.SetObjects(sched.queue) - 1
-	sched.queue = sched.queue[toRemove:]
+	for i := 0; i < len(scheduler.queue); i++ {
+		scheduler.queue = PreprocessQueue(i, scheduler.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
+	}
+
+	for i := 0; i < len(scheduler.queue); i++ {
+		if s, ok := scheduler.queue[i].(*objects.Spinner); ok {
+			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor)
+		}
+	}
+
+	for i := 0; i < len(scheduler.queue); i++ {
+		if _, ok := scheduler.queue[i].(*objects.Circle); !ok {
+			continue
+		}
+
+		remove := false
+
+		if i > 0 {
+			p := scheduler.queue[i-1]
+			c := scheduler.queue[i]
+
+			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
+				remove = true
+			}
+		}
+
+		if i < len(scheduler.queue)-1 {
+			p := scheduler.queue[i]
+			c := scheduler.queue[i+1]
+
+			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
+				remove = true
+			}
+		}
+
+		if remove {
+			scheduler.queue = append(scheduler.queue[:i], scheduler.queue[i+1:]...)
+			//we don't do "i--" here because we don't want to remove too much
+		}
+	}
+
+	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, scheduler.queue...)
+
+	toRemove := scheduler.mover.SetObjects(scheduler.queue) - 1
+	scheduler.queue = scheduler.queue[toRemove:]
 }
 
-func (sched *GenericScheduler) Update(time int64) {
-	if len(sched.queue) > 0 {
-		move := true
+func (scheduler *GenericScheduler) Update(time float64) {
+	if len(scheduler.queue) > 0 {
+		useMover := true
+		lastEndTime := 0.0
 
-		for i := 0; i < len(sched.queue); i++ {
-			g := sched.queue[i]
+		for i := 0; i < len(scheduler.queue); i++ {
+			g := scheduler.queue[i]
 
-			if g.GetBasicData().StartTime > time {
+			if g.GetStartTime() > time {
 				break
 			}
 
-			move = false
+			lastEndTime = math.Max(lastEndTime, g.GetEndTime())
 
-			if time >= g.GetBasicData().StartTime && time <= g.GetBasicData().EndTime {
-				if _, ok := g.(*objects.Spinner); ok {
-					if sched.lastTime < g.GetBasicData().StartTime {
-						sched.spinnerMover.Init(g.GetBasicData().StartTime, g.GetBasicData().EndTime)
+			if time <= g.GetEndTime() {
+				if scheduler.lastTime <= g.GetStartTime() { // brief movement lock for ExGon mover
+					useMover = false
+				}
+
+				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
+			} else {
+				upperLimit := len(scheduler.queue)
+
+				for j := i; j < len(scheduler.queue); j++ {
+					if scheduler.queue[j].GetEndTime() >= lastEndTime {
+						break
 					}
 
-					sched.cursor.SetPos(sched.spinnerMover.GetPositionAt(time))
-				} else {
-					sched.cursor.SetPos(g.GetPosition())
+					upperLimit = j + 1
 				}
-			} else if time > g.GetBasicData().EndTime {
+
 				toRemove := 1
-				if i+1 < len(sched.queue) {
-					toRemove = sched.mover.SetObjects(sched.queue[i:]) - 1
+
+				if upperLimit-i > 1 {
+					toRemove = scheduler.mover.SetObjects(scheduler.queue[i:upperLimit]) - 1
 				}
 
-				sched.queue = append(sched.queue[:i], sched.queue[i+toRemove:]...)
+				scheduler.queue = append(scheduler.queue[:i], scheduler.queue[i+toRemove:]...)
 				i--
-
-				move = true
 			}
 		}
 
-		if move && sched.mover.GetEndTime() >= time {
-			sched.cursor.SetPos(sched.mover.Update(time))
+		if useMover && scheduler.mover.GetEndTime() >= time {
+			scheduler.cursor.SetPos(scheduler.mover.Update(time))
 		}
 	}
 
-	sched.input.Update(time)
+	if scheduler.input != nil {
+		scheduler.input.Update(time)
+	}
 
-	sched.lastTime = time
+	scheduler.lastTime = time
 }

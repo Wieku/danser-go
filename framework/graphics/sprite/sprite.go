@@ -27,16 +27,15 @@ type Sprite struct {
 
 	startTime, endTime, depth float64
 
-	position         vector.Vector2d
-	positionRelative vector.Vector2d
-	origin           vector.Vector2d
-	scale            vector.Vector2d
-	flipX            bool
-	flipY            bool
-	rotation         float64
-	color            color2.Color
-	additive         bool
-	showForever      bool
+	position    vector.Vector2d
+	origin      vector.Vector2d
+	scale       vector.Vector2d
+	flipX       bool
+	flipY       bool
+	rotation    float64
+	color       color2.Color
+	additive    bool
+	showForever bool
 
 	cutX      float64
 	cutY      float64
@@ -47,38 +46,44 @@ type Sprite struct {
 
 func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
+
+	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.NewL(1), showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
+
 	return sprite
 }
 
 func NewSpriteSingleCentered(tex *texture.TextureRegion, size vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
+
+	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: vector.NewVec2d(0, 0), scale: vector.NewVec2d(1, 1), color: color2.NewL(1), showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
+
 	return sprite
 }
 
 func NewSpriteSingleOrigin(tex *texture.TextureRegion, size vector.Vector2d, origin vector.Vector2d) *Sprite {
 	textures := []*texture.TextureRegion{tex}
-	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
+
+	sprite := &Sprite{Textures: textures, frameDelay: 0.0, loopForever: true, depth: 0, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.NewL(1), showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	sprite.scaleTo = vector.NewVec2d(size.X/float64(tex.Width), size.Y/float64(tex.Height))
+
 	return sprite
 }
 
 func NewAnimation(textures []*texture.TextureRegion, frameDelay float64, loopForever bool, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
-	sprite := &Sprite{Textures: textures, frameDelay: frameDelay, loopForever: loopForever, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.Color{1, 1, 1, 1}, showForever: true}
+	sprite := &Sprite{Textures: textures, frameDelay: frameDelay, loopForever: loopForever, depth: depth, position: position, origin: origin, scale: vector.NewVec2d(1, 1), color: color2.NewL(1), showForever: true}
 	sprite.transforms = make([]*animation.Transformation, 0)
 	return sprite
 }
 
-func (sprite *Sprite) Update(time int64) {
+func (sprite *Sprite) Update(time float64) {
 	sprite.currentFrame = 0
 
 	if sprite.Textures != nil && len(sprite.Textures) > 1 && float64(time) >= sprite.startTime {
-		frame := int(math.Floor((float64(time) - sprite.startTime) / sprite.frameDelay))
+		frame := int(math.Floor((time - sprite.startTime) / sprite.frameDelay))
 		if !sprite.loopForever {
 			frame = bmath.MinI(frame, len(sprite.Textures)-1)
 		} else {
@@ -90,13 +95,13 @@ func (sprite *Sprite) Update(time int64) {
 
 	for i := 0; i < len(sprite.transforms); i++ {
 		transform := sprite.transforms[i]
-		if float64(time) < transform.GetStartTime() {
+		if time < transform.GetStartTime() {
 			break
 		}
 
 		sprite.updateTransform(transform, time)
 
-		if float64(time) >= transform.GetEndTime() {
+		if time >= transform.GetEndTime() {
 			copy(sprite.transforms[i:], sprite.transforms[i+1:])
 			sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
 			i--
@@ -104,10 +109,10 @@ func (sprite *Sprite) Update(time int64) {
 	}
 }
 
-func (sprite *Sprite) updateTransform(transform *animation.Transformation, time int64) {
+func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) {
 	switch transform.GetType() {
 	case animation.Fade, animation.Scale, animation.Rotate, animation.MoveX, animation.MoveY:
-		value := transform.GetSingle(float64(time))
+		value := transform.GetSingle(time)
 		switch transform.GetType() {
 		case animation.Fade:
 			sprite.color.A = float32(value)
@@ -122,7 +127,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 			sprite.position.Y = value
 		}
 	case animation.Move, animation.ScaleVector:
-		x, y := transform.GetDouble(float64(time))
+		x, y := transform.GetDouble(time)
 		switch transform.GetType() {
 		case animation.Move:
 			sprite.position.X = x
@@ -132,7 +137,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 			sprite.scale.Y = y
 		}
 	case animation.Additive, animation.HorizontalFlip, animation.VerticalFlip:
-		value := transform.GetBoolean(float64(time))
+		value := transform.GetBoolean(time)
 		switch transform.GetType() {
 		case animation.Additive:
 			sprite.additive = value
@@ -143,7 +148,7 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 		}
 
 	case animation.Color3, animation.Color4:
-		color := transform.GetColor(float64(time))
+		color := transform.GetColor(time)
 		sprite.color.R = color.R
 		sprite.color.G = color.G
 		sprite.color.B = color.B
@@ -210,7 +215,7 @@ func (sprite *Sprite) ResetValuesToTransforms() {
 
 	for _, t := range sprite.transforms {
 		if _, exists := applied[t.GetType()]; !exists {
-			sprite.updateTransform(t, int64(t.GetStartTime()-1))
+			sprite.updateTransform(t, t.GetStartTime()-1)
 
 			applied[t.GetType()] = 1
 		}
@@ -221,13 +226,17 @@ func (sprite *Sprite) ShowForever(value bool) {
 	sprite.showForever = value
 }
 
-func (sprite *Sprite) UpdateAndDraw(time int64, batch *batch.QuadBatch) {
+func (sprite *Sprite) IsAlwaysVisible() bool {
+	return sprite.showForever
+}
+
+func (sprite *Sprite) UpdateAndDraw(time float64, batch *batch.QuadBatch) {
 	sprite.Update(time)
 	sprite.Draw(time, batch)
 }
 
-func (sprite *Sprite) Draw(time int64, batch *batch.QuadBatch) {
-	if (!sprite.showForever && float64(time) < sprite.startTime && float64(time) >= sprite.endTime) || sprite.color.A < 0.01 {
+func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
+	if (!sprite.showForever && time < sprite.startTime && time >= sprite.endTime) || sprite.color.A < 0.01 {
 		return
 	}
 
@@ -261,7 +270,7 @@ func (sprite *Sprite) Draw(time int64, batch *batch.QuadBatch) {
 		ratio := float32(1 - sprite.cutX)
 		middle := float32(sprite.cutOrigin.X)/2*math32.Abs(region.U2-region.U1) + (region.U1+region.U2)/2
 
-		region.Width = int32(float32(region.Width) * ratio)
+		region.Width = region.Width * ratio
 		region.U1 = (region.U1-middle)*ratio + middle
 		region.U2 = (region.U2-middle)*ratio + middle
 	}
@@ -274,12 +283,12 @@ func (sprite *Sprite) Draw(time int64, batch *batch.QuadBatch) {
 		ratio := float32(1 - sprite.cutY)
 		middle := float32(sprite.cutOrigin.Y)/2*math32.Abs(region.V2-region.V1) + (region.V1+region.V2)/2
 
-		region.Height = int32(float32(region.Height) * ratio)
+		region.Height = region.Height * ratio
 		region.V1 = (region.V1-middle)*ratio + middle
 		region.V2 = (region.V2-middle)*ratio + middle
 	}
 
-	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, mgl32.Vec4{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B), float32(alpha)}, sprite.additive, region)
+	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, mgl32.Vec4{sprite.color.R, sprite.color.G, sprite.color.B, alpha}, sprite.additive, region)
 }
 
 func (sprite *Sprite) GetPosition() vector.Vector2d {
@@ -312,7 +321,7 @@ func (sprite *Sprite) SetRotation(rad float64) {
 }
 
 func (sprite *Sprite) GetColor() mgl32.Vec3 {
-	return mgl32.Vec3{float32(sprite.color.R), float32(sprite.color.G), float32(sprite.color.B)}
+	return mgl32.Vec3{sprite.color.R, sprite.color.G, sprite.color.B}
 }
 
 func (sprite *Sprite) SetColor(color color2.Color) {
@@ -359,8 +368,16 @@ func (sprite *Sprite) GetStartTime() float64 {
 	return sprite.startTime
 }
 
+func (sprite *Sprite) SetStartTime(startTime float64) {
+	sprite.startTime = startTime
+}
+
 func (sprite *Sprite) GetEndTime() float64 {
 	return sprite.endTime
+}
+
+func (sprite *Sprite) SetEndTime(endTime float64) {
+	sprite.endTime = endTime
 }
 
 func (sprite *Sprite) GetDepth() float64 {
@@ -371,5 +388,6 @@ func (sprite *Sprite) GetLoad() float64 {
 	if sprite.color.A >= 0.01 {
 		return math.Min((float64(sprite.Textures[0].Width)*sprite.scale.X*float64(sprite.Textures[0].Height)*sprite.scale.Y)/storyboardArea, maxLoad)
 	}
+
 	return 0
 }

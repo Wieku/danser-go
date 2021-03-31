@@ -10,8 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/graphics/font"
-	"github.com/wieku/danser-go/app/graphics/gui/drawables"
+	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/containers"
@@ -21,10 +20,9 @@ import (
 	"github.com/wieku/danser-go/framework/frame"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
-	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -35,16 +33,20 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"time"
 )
+
+const windowsOffset = 15
 
 type Player struct {
 	font        *font.Font
 	bMap        *beatmap.BeatMap
 	bloomEffect *effects.BloomEffect
-	lastTime    int64
-	progressMsF float64
-	progressMs  int64
+
+	lastTime     int64
+	lastMusicPos float64
+	progressMsF  float64
+	progressMs   int64
+
 	batch       *batch2.QuadBatch
 	controller  dance.Controller
 	background  *common.Background
@@ -65,8 +67,6 @@ type Player struct {
 	blurGlider      *animation.Glider
 	fxGlider        *animation.Glider
 	cursorGlider    *animation.Glider
-	playersGlider   *animation.Glider
-	unfold          *animation.Glider
 	counter         float64
 	storyboardLoad  float64
 	storyboardDrawn int
@@ -76,29 +76,27 @@ type Player struct {
 	overlay         overlays.Overlay
 	blur            *effects.BlurEffect
 
-	currentBeatVal float64
-	lastBeatLength float64
-	lastBeatStart  float64
-	beatProgress   float64
-	lastBeatProg   int64
-
-	progress, lastProgress float64
-	LogoS1                 *sprite.Sprite
-	LogoS2                 *sprite.Sprite
-
-	vol        float64
-	volAverage float64
-	cookieSize float64
-	visualiser *drawables.Visualiser
+	coin *common.DanserCoin
 
 	hudGlider *animation.Glider
 
-	volumeGlider  *animation.Glider
+	volumeGlider *animation.Glider
+	speedGlider  *animation.Glider
+	pitchGlider  *animation.Glider
+
 	startPoint    float64
 	baseLimit     int
 	updateLimiter *frame.Limiter
 
+	objectsAlpha    *animation.Glider
 	objectContainer *containers.HitObjectContainer
+
+	MapEnd      float64
+	RunningTime float64
+
+	startOffset float64
+	lateStart   bool
+	mapEndL     float64
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -115,26 +113,51 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
+	player.musicPlayer = bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+
 	var err error
-
-	LogoT, err := utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/coinbig.png")
-	if err != nil {
-		panic(err)
-	}
-
-	player.LogoS1 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
-	player.LogoS2 = sprite.NewSpriteSingle(LogoT, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
-
-	if settings.Graphics.GetWidthF() > settings.Graphics.GetHeightF() {
-		player.cookieSize = 0.5 * settings.Graphics.GetHeightF()
-	} else {
-		player.cookieSize = 0.5 * settings.Graphics.GetWidthF()
-	}
-
 	player.Epi, err = utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/warning.png")
 
 	if err != nil {
 		log.Println(err)
+	}
+
+	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && settings.PLAY {
+		scrub := math.Max(0, settings.START*1000)
+		end := settings.END*1000
+
+		removed := false
+
+		for i := 0; i < len(beatMap.HitObjects); i++ {
+			o := beatMap.HitObjects[i]
+			if o.GetStartTime() > scrub && end > o.GetEndTime() {
+				continue
+			}
+
+			beatMap.HitObjects = append(beatMap.HitObjects[:i], beatMap.HitObjects[i+1:]...)
+			i--
+
+			removed = true
+		}
+
+		for i := 0; i < len(beatMap.HitObjects); i++ {
+			beatMap.HitObjects[i].SetID(int64(i))
+		}
+
+		for i := 0; i < len(beatMap.Pauses); i++ {
+			o := beatMap.Pauses[i]
+			if o.GetStartTime() > scrub && end > o.GetEndTime() {
+				continue
+			}
+
+			beatMap.Pauses = append(beatMap.Pauses[:i], beatMap.Pauses[i+1:]...)
+			i--
+		}
+
+		if removed && settings.START > 0.01 {
+			settings.START = 0
+			settings.SKIP = true
+		}
 	}
 
 	player.background = common.NewBackground()
@@ -142,7 +165,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.camera = camera2.NewCamera()
 	player.camera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
-	//player.camera.SetOrigin(bmath.NewVec2d(256, 192.0-5))
 	player.camera.Update()
 
 	player.camera1 = camera2.NewCamera()
@@ -163,6 +185,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	graphics.Camera = player.camera
 
 	player.bMap.Reset()
+
 	if settings.PLAY {
 		player.controller = dance.NewPlayerController()
 
@@ -172,6 +195,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	} else if settings.KNOCKOUT {
 		controller := dance.NewReplayController()
 		player.controller = controller
+
 		player.controller.SetBeatMap(player.bMap)
 		player.controller.InitCursors()
 
@@ -190,69 +214,147 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.objectContainer = containers.NewHitObjectContainer(beatMap)
 
-	log.Println("Track:", beatMap.Audio)
+	log.Println("Audio track:", beatMap.Audio)
 
 	player.Scl = 1
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
 
-	player.volumeGlider = animation.NewGlider(1.0)
-	player.hudGlider = animation.NewGlider(1.0)
-	player.dimGlider = animation.NewGlider(0.0)
-	player.blurGlider = animation.NewGlider(0.0)
-	player.fxGlider = animation.NewGlider(0.0)
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
-		player.cursorGlider = animation.NewGlider(0.0)
-	} else {
-		player.cursorGlider = animation.NewGlider(1.0)
+	player.volumeGlider = animation.NewGlider(1)
+	player.speedGlider = animation.NewGlider(settings.SPEED)
+	player.pitchGlider = animation.NewGlider(settings.PITCH)
+	player.hudGlider = animation.NewGlider(0)
+	player.dimGlider = animation.NewGlider(0)
+	player.blurGlider = animation.NewGlider(0)
+	player.fxGlider = animation.NewGlider(0)
+	player.cursorGlider = animation.NewGlider(0)
+	player.epiGlider = animation.NewGlider(0)
+	player.objectsAlpha = animation.NewGlider(1)
+
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].Name == "" {
+		player.cursorGlider.SetValue(1.0)
 	}
-	player.playersGlider = animation.NewGlider(0.0)
 
 	skipTime := 0.0
 	if settings.SKIP {
-		skipTime = float64(beatMap.HitObjects[0].GetBasicData().StartTime)
+		skipTime = beatMap.HitObjects[0].GetStartTime()
 	}
 
-	skipTime = math.Max(skipTime, settings.SCRUB*1000)
+	skipTime = math.Max(skipTime, settings.START*1000)
 
-	tmS := math.Max(float64(beatMap.HitObjects[0].GetBasicData().StartTime), settings.SCRUB*1000)
-	tmE := float64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetBasicData().EndTime)
+	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.START*1000)
+	beatmapEnd := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50)
+
+	if !math.IsInf(settings.END, 1) {
+		end := settings.END*1000
+		beatmapEnd = math.Min(end, beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) + float64(beatMap.Diff.Hit50)
+	}
 
 	startOffset := 0.0
 
-	if settings.SKIP || settings.SCRUB > 0.01 {
-		startOffset = skipTime
-		player.startPoint = skipTime - beatMap.Diff.Preempt
+	if settings.SKIP || settings.START > 0.01 {
+		startOffset = math.Max(0, skipTime-beatMap.Diff.Preempt)
+		player.startPoint = startOffset
+
+		for _, o := range beatMap.HitObjects {
+			if o.GetStartTime() > player.startPoint {
+				break
+			}
+
+			o.DisableAudioSubmission(true)
+		}
+
 		player.volumeGlider.SetValue(0.0)
 		player.volumeGlider.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+
+		if settings.START > 0.01 {
+			player.objectsAlpha.SetValue(0.0)
+			player.objectsAlpha.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+
+			if player.overlay != nil {
+				player.overlay.DisableAudioSubmission(true)
+			}
+
+			for i := -1000.0; i < player.startPoint-player.bMap.Diff.Preempt; i += 1.0 {
+				player.controller.Update(i, 1)
+
+				if player.overlay != nil {
+					player.overlay.Update(i)
+				}
+			}
+
+			if player.overlay != nil {
+				player.overlay.DisableAudioSubmission(false)
+			}
+		}
+
+		player.lateStart = true
+	} else {
+		startOffset = -beatMap.Diff.Preempt
 	}
 
-	startOffset += -settings.Playfield.LeadInHold*1000 - beatMap.Diff.Preempt
+	startOffset += -settings.Playfield.LeadInHold * 1000
 
 	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
 	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
 	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
+	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
+
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
 		player.cursorGlider.AddEvent(startOffset-500, startOffset, 0.0)
 	}
-	player.playersGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
-	player.dimGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.Background.Dim.Normal)
-	player.blurGlider.AddEvent(tmS-750, tmS-250, settings.Playfield.Background.Blur.Values.Normal)
-	player.fxGlider.AddEvent(tmS-750, tmS-250, 1.0-settings.Playfield.Logo.Dim.Normal)
-	player.cursorGlider.AddEvent(tmS-750, tmS-250, 1.0)
+	player.dimGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0-settings.Playfield.Background.Dim.Normal)
+	player.blurGlider.AddEvent(beatmapStart-750, beatmapStart-250, settings.Playfield.Background.Blur.Values.Normal)
+	player.fxGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0-settings.Playfield.Logo.Dim.Normal)
+	player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
-	player.dimGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
-	player.fxGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
-	player.cursorGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
-	player.playersGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
 
-	player.hudGlider.AddEvent(tmE, tmE+fadeOut, 0.0)
+	if s, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		if settings.Gameplay.ShowResultsScreen {
+			beatmapEnd += 1000
+			fadeOut = 250
+		}
 
-	player.volumeGlider.AddEvent(tmE, tmE+settings.Playfield.FadeOutTime*1000, 0.0)
+		s.SetBeatmapEnd(beatmapEnd+fadeOut)
+	}
 
-	player.epiGlider = animation.NewGlider(0)
+	if !math.IsInf(settings.END, 1) {
+		for _, o := range beatMap.HitObjects {
+			if o.GetEndTime() <= beatmapEnd {
+				continue
+			}
+
+			o.DisableAudioSubmission(true)
+		}
+
+		if !settings.PLAY {
+			player.objectsAlpha.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0)
+		}
+	}
+
+	player.dimGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+	player.fxGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+	player.cursorGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+	player.hudGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+
+	player.mapEndL = beatmapEnd + fadeOut
+	player.MapEnd = beatmapEnd + fadeOut
+
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
+		player.speedGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 1)
+		player.pitchGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 1)
+
+		player.MapEnd += (settings.Gameplay.ResultsScreenTime + 1) * 1000
+		if player.MapEnd < player.musicPlayer.GetLength()*1000 {
+			player.volumeGlider.AddEvent(player.MapEnd-settings.Gameplay.ResultsScreenTime*1000-500, player.MapEnd, 0.0)
+		}
+	} else {
+		player.volumeGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+	}
+
+	player.MapEnd += 100
 
 	if settings.Playfield.SeizureWarning.Enabled {
 		am := math.Max(1000, settings.Playfield.SeizureWarning.Duration*1000)
@@ -261,53 +363,58 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.epiGlider.AddEvent(startOffset+am-500, startOffset+am, 0.0)
 	}
 
-	startOffset -= settings.Playfield.LeadInTime * 1000
+	startOffset -= math.Max(settings.Playfield.LeadInTime*1000, 1000)
 
+	player.startOffset = startOffset
 	player.progressMsF = startOffset
 
-	player.unfold = animation.NewGlider(1)
+	player.RunningTime = player.MapEnd - startOffset
 
 	for _, p := range beatMap.Pauses {
-		bd := p.GetBasicData()
+		startTime := p.GetStartTime()
+		endTime := p.GetEndTime()
 
-		if bd.EndTime-bd.StartTime < 1000 {
+		if endTime-startTime < 1000 || endTime < player.startPoint || startTime > player.MapEnd {
 			continue
 		}
 
-		//player.hudGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 0.0)
-		player.dimGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Background.Dim.Breaks)
-		player.blurGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, settings.Playfield.Background.Blur.Values.Breaks)
-		player.fxGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+500, 1.0-settings.Playfield.Logo.Dim.Breaks)
+		player.dimGlider.AddEvent(startTime, startTime+500*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Breaks)
+		player.blurGlider.AddEvent(startTime, startTime+500*settings.SPEED, settings.Playfield.Background.Blur.Values.Breaks)
+		player.fxGlider.AddEvent(startTime, startTime+500*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Breaks)
 
 		if !settings.Cursor.ShowCursorsOnBreaks {
-			player.cursorGlider.AddEvent(float64(bd.StartTime), float64(bd.StartTime)+100, 0.0)
+			player.cursorGlider.AddEvent(startTime, startTime+100*settings.SPEED, 0.0)
 		}
 
-		//player.hudGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0)
-		player.dimGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Background.Dim.Normal)
-		player.blurGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), settings.Playfield.Background.Blur.Values.Normal)
-		player.fxGlider.AddEvent(float64(bd.EndTime)-500, float64(bd.EndTime), 1.0-settings.Playfield.Logo.Dim.Normal)
-		player.cursorGlider.AddEvent(float64(bd.EndTime)-100, float64(bd.EndTime), 1.0)
+		player.dimGlider.AddEvent(endTime, endTime+500*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Normal)
+		player.blurGlider.AddEvent(endTime, endTime+500*settings.SPEED, settings.Playfield.Background.Blur.Values.Normal)
+		player.fxGlider.AddEvent(endTime, endTime+500*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Normal)
+		player.cursorGlider.AddEvent(endTime, endTime+100*settings.SPEED, 1.0)
 	}
 
-	musicPlayer := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
-	player.background.SetTrack(musicPlayer)
-	player.visualiser = drawables.NewVisualiser(player.cookieSize*0.66, player.cookieSize*2, vector.NewVec2d(0, 0))
-	player.visualiser.SetTrack(musicPlayer)
+	player.background.SetTrack(player.musicPlayer)
+
+	player.coin = common.NewDanserCoin()
+	player.coin.SetMap(beatMap, player.musicPlayer)
+
+	player.coin.SetScale(0.25 * math.Min(settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()))
 
 	player.profiler = frame.NewCounter()
-	player.musicPlayer = musicPlayer
 
 	player.bloomEffect = effects.NewBloomEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 	player.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
-	player.background.Update(0, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
+	player.background.Update(player.progressMsF, settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2)
 
 	player.profilerU = frame.NewCounter()
 
 	player.baseLimit = 2000
 
 	player.updateLimiter = frame.NewLimiter(player.baseLimit)
+
+	if settings.RECORD {
+		return player
+	}
 
 	go func() {
 		defer func() {
@@ -324,136 +431,171 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		runtime.LockOSThread()
 
-		var lastT = qpc.GetNanoTime()
+		var lastTimeNano = qpc.GetNanoTime()
 
-		for {
-			currtime := qpc.GetNanoTime()
+		for !input.Win.ShouldClose() {
+			currentTimeNano := qpc.GetNanoTime()
 
-			player.profilerU.PutSample(float64(currtime-lastT) / 1000000.0)
+			delta := float64(currentTimeNano-lastTimeNano) / 1000000.0
 
-			if musicPlayer.GetState() == bass.MUSIC_STOPPED {
-				player.progressMsF += float64(currtime-lastT) / 1000000.0
+			player.profilerU.PutSample(delta)
+
+			if player.musicPlayer.GetState() == bass.MUSIC_STOPPED {
+				player.progressMsF += delta
 			} else {
-				player.progressMsF = musicPlayer.GetPosition()*1000 + float64(settings.Audio.Offset)
-			}
-
-			if player.progressMsF >= player.startPoint && !player.start {
-				musicPlayer.Play()
-				musicPlayer.SetTempo(settings.SPEED)
-				musicPlayer.SetPitch(settings.PITCH)
-
-				if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
-					ov.SetMusic(musicPlayer)
+				platformOffset := 0.0
+				if runtime.GOOS == "windows" {
+					platformOffset = windowsOffset
 				}
 
-				musicPlayer.SetPosition(player.startPoint / 1000)
+				musicPos := player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
 
-				discord.SetDuration(int64((musicPlayer.GetLength() - musicPlayer.GetPosition()) * 1000 / settings.SPEED))
-
-				if player.overlay == nil {
-					discord.UpdateDance(settings.TAG, settings.DIVIDES)
+				if musicPos != player.lastMusicPos {
+					player.progressMsF = musicPos
+					player.lastMusicPos = musicPos
+				} else {
+					player.progressMsF += delta * settings.SPEED
 				}
-
-				player.start = true
 			}
 
-			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
-				if _, ok := player.controller.(*dance.GenericController); ok {
-					player.bMap.Update(int64(player.progressMsF))
-				}
+			player.updateMain(delta)
 
-				player.objectContainer.Update(player.progressMsF)
-			}
-
-			if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt || settings.PLAY {
-				player.controller.Update(int64(player.progressMsF), float64(currtime-lastT)/1000000)
-			}
-
-			if player.overlay != nil {
-				player.overlay.Update(int64(player.progressMsF))
-			}
-
-			bTime := player.bMap.Timings.Current.BaseBpm
-
-			if bTime != player.lastBeatLength {
-				player.lastBeatLength = bTime
-				player.lastBeatStart = float64(player.bMap.Timings.Current.Time)
-				player.lastBeatProg = int64((player.progressMsF-player.lastBeatStart)/player.lastBeatLength) - 1
-			}
-
-			if int64(float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength) > player.lastBeatProg {
-				player.lastBeatProg++
-			}
-
-			player.beatProgress = float64(player.progressMsF-player.lastBeatStart)/player.lastBeatLength - float64(player.lastBeatProg)
-			player.visualiser.Update(player.progressMsF)
-
-			var offset vector.Vector2d
-
-			for _, c := range player.controller.GetCursors() {
-				offset = offset.Add(player.camera.Project(c.Position.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF())))
-			}
-
-			offset = offset.Scl(1 / float64(len(player.controller.GetCursors())))
-
-			player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
-
-			player.epiGlider.Update(player.progressMsF)
-			player.dimGlider.Update(player.progressMsF)
-			player.blurGlider.Update(player.progressMsF)
-			player.fxGlider.Update(player.progressMsF)
-			player.cursorGlider.Update(player.progressMsF)
-			player.playersGlider.Update(player.progressMsF)
-			player.hudGlider.Update(player.progressMsF)
-			player.unfold.Update(player.progressMsF)
-
-			player.volumeGlider.Update(player.progressMsF)
-			player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
-
-			lastT = currtime
+			lastTimeNano = currentTimeNano
 
 			player.updateLimiter.Sync()
 		}
-	}()
 
-	go func() {
-		for {
-			musicPlayer.Update()
-
-			target := bmath.ClampF64(musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale) //math.Min(1.4*settings.Audio.BeatScale, math.Max(math.Sin(musicPlayer.GetBeat()*math.Pi/2)*0.4*settings.Audio.BeatScale+1.0, 1.0))
-
-			ratio1 := 15 / 16.6666666666667
-
-			player.vol = player.musicPlayer.GetLevelCombined()
-			player.volAverage = player.volAverage*0.9 + player.vol*0.1
-
-			vprog := 1 - ((player.vol - player.volAverage) / 0.5)
-			pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+player.beatProgress*0.5)))
-
-			ratio := math.Pow(0.5, ratio1)
-
-			player.progress = player.lastProgress*ratio + (pV)*(1-ratio)
-			player.lastProgress = player.progress
-
-			if settings.Audio.BeatUseTimingPoints {
-				player.Scl = 1 + player.progress*(settings.Audio.BeatScale-1.0)
-			} else {
-				if player.Scl < target {
-					player.Scl += (target - player.Scl) * 30 / 100
-				} else if player.Scl > target {
-					player.Scl -= (player.Scl - target) * 15 / 100
-				}
-			}
-
-			time.Sleep(15 * time.Millisecond)
-		}
+		player.musicPlayer.Stop()
+		bass.StopLoops()
 	}()
 
 	return player
 }
 
-func (player *Player) Show() {
+func (player *Player) Update(delta float64) bool {
+	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+		player.progressMsF += delta * player.musicPlayer.GetTempo()
+	} else {
+		player.progressMsF += delta
+	}
 
+	bass.GlobalTimeMs += delta
+
+	if player.progressMsF > player.startPoint && settings.RECORD {
+		player.musicPlayer.SetPositionF(player.progressMsF / 1000)
+	}
+
+	player.updateMain(delta)
+
+	if player.progressMsF >= player.MapEnd {
+		player.musicPlayer.Stop()
+		bass.StopLoops()
+
+		return true
+	}
+
+	return false
+}
+
+func (player *Player) GetTimeOffset() float64 {
+	return player.progressMsF - player.startOffset
+}
+
+func (player *Player) updateMain(delta float64) {
+	if player.progressMsF >= player.startPoint && !player.start {
+		player.musicPlayer.Play()
+
+		if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+			ov.SetMusic(player.musicPlayer)
+		}
+
+		player.musicPlayer.SetPosition(player.startPoint / 1000)
+
+		discord.SetDuration(int64((player.musicPlayer.GetLength() - player.musicPlayer.GetPosition()) * 1000 / settings.SPEED))
+
+		if player.overlay == nil {
+			discord.UpdateDance(settings.TAG, settings.DIVIDES)
+		}
+
+		player.start = true
+	}
+
+	player.speedGlider.Update(player.progressMsF)
+	player.pitchGlider.Update(player.progressMsF)
+
+	player.musicPlayer.SetTempo(player.speedGlider.GetValue())
+	player.musicPlayer.SetPitch(player.pitchGlider.GetValue())
+
+	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
+		if _, ok := player.controller.(*dance.GenericController); ok {
+			player.bMap.Update(player.progressMsF)
+		}
+
+		player.objectContainer.Update(player.progressMsF)
+	}
+
+	if player.progressMsF >= player.startPoint/*-player.bMap.Diff.Preempt*/ || settings.PLAY {
+		if player.progressMsF < player.mapEndL {
+			player.controller.Update(player.progressMsF, delta)
+		} else {
+			if player.overlay != nil {
+				player.overlay.DisableAudioSubmission(true)
+			}
+			player.controller.Update(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() + float64(player.bMap.Diff.Hit50) + 100, delta)
+		}
+
+		if player.lateStart {
+			if player.overlay != nil {
+				player.overlay.Update(player.progressMsF)
+			}
+		}
+	}
+
+	if player.overlay != nil && !player.lateStart {
+		player.overlay.Update(player.progressMsF)
+	}
+
+	player.updateMusic(delta)
+
+	player.coin.Update(player.progressMsF)
+	player.coin.SetAlpha(float32(player.fxGlider.GetValue()))
+
+	var offset vector.Vector2d
+
+	for _, c := range player.controller.GetCursors() {
+		offset = offset.Add(player.camera.Project(c.Position.Copy64()).Mult(vector.NewVec2d(2/settings.Graphics.GetWidthF(), -2/settings.Graphics.GetHeightF())))
+	}
+
+	offset = offset.Scl(1 / float64(len(player.controller.GetCursors())))
+
+	player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
+
+	player.epiGlider.Update(player.progressMsF)
+	player.dimGlider.Update(player.progressMsF)
+	player.blurGlider.Update(player.progressMsF)
+	player.fxGlider.Update(player.progressMsF)
+	player.cursorGlider.Update(player.progressMsF)
+	player.hudGlider.Update(player.progressMsF)
+	player.volumeGlider.Update(player.progressMsF)
+	player.objectsAlpha.Update(player.progressMsF)
+
+	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+		player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
+	}
+}
+
+func (player *Player) updateMusic(delta float64) {
+	player.musicPlayer.Update()
+
+	target := bmath.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
+
+	if settings.Audio.BeatUseTimingPoints {
+		player.Scl = 1 + player.coin.Progress*(settings.Audio.BeatScale-1.0)
+	} else if player.Scl < target {
+		player.Scl += (target - player.Scl) * 0.3 * delta / 16.66667
+	} else if player.Scl > target {
+		player.Scl -= (player.Scl - target) * 0.15 * delta / 16.66667
+	}
 }
 
 func (player *Player) Draw(float64) {
@@ -472,7 +614,7 @@ func (player *Player) Draw(float64) {
 		player.background.GetStoryboard().SetFPS(bmath.ClampI(int(fps*1.2), player.baseLimit, 10000))
 	}
 
-	if fps > 58 && timMs > 18 {
+	if fps > 58 && timMs > 18 && !settings.RECORD {
 		log.Println(fmt.Sprintf("Slow frame detected! Frame time: %.3fms | Av. frame time: %.3fms", timMs, 1000.0/fps))
 	}
 
@@ -483,14 +625,14 @@ func (player *Player) Draw(float64) {
 
 	bgAlpha := player.dimGlider.GetValue()
 
-	cameras := player.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**player.unfold.GetValue()*/)
-	cameras1 := player.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES) /**player.unfold.GetValue()*/)
+	cameras := player.camera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+	cameras1 := player.camera1.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha *= player.Scl
+		bgAlpha = bmath.ClampF64(bgAlpha*player.Scl, 0, 1)
 	}
 
-	player.background.Draw(player.progressMs, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
+	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
 
 	if player.start {
 		settings.Cursor.Colors.Update(timMs)
@@ -505,7 +647,7 @@ func (player *Player) Draw(float64) {
 
 		player.batch.SetCamera(cameras[0])
 
-		player.overlay.DrawBeforeObjects(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
+		player.overlay.DrawBeforeObjects(player.batch, cursorColors, player.hudGlider.GetValue())
 
 		player.batch.End()
 		player.batch.ResetTransform()
@@ -518,7 +660,7 @@ func (player *Player) Draw(float64) {
 		player.batch.SetColor(1, 1, 1, player.epiGlider.GetValue())
 		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		scl := scaling.Fit.Apply(float32(player.Epi.Width), float32(player.Epi.Height), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
+		scl := scaling.Fit.Apply(player.Epi.Width, player.Epi.Height, float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
 		scl = scl.Scl(0.5).Scl(0.66)
 		player.batch.SetScale(scl.X64(), scl.Y64())
 		player.batch.DrawUnit(*player.Epi)
@@ -549,36 +691,14 @@ func (player *Player) Draw(float64) {
 		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
 		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 
-		innerCircleScale := 1.05 - easing.OutQuad(player.progress)*0.05
-		outerCircleScale := 1.05 + easing.OutQuad(player.progress)*0.03
+		player.coin.DrawVisualiser(settings.Playfield.Logo.DrawSpectrum)
+		player.coin.Draw(player.progressMsF, player.batch)
 
-		if settings.Playfield.Logo.DrawSpectrum {
-			player.visualiser.SetStartDistance(player.cookieSize * 0.5 * innerCircleScale)
-			player.visualiser.Draw(player.progressMsF, player.batch)
-		}
-
-		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
-
-		scl := (player.cookieSize / 2048.0) * 1.05
-
-		player.LogoS1.SetScale(innerCircleScale * scl)
-		player.LogoS2.SetScale(outerCircleScale * scl)
-
-		alpha := 0.3
-		if player.bMap.Timings.Current.Kiai {
-			alpha = 0.12
-		}
-
-		player.LogoS2.SetAlpha(float32(alpha * (1 - easing.OutQuad(player.progress))))
-
-		player.LogoS1.UpdateAndDraw(player.progressMs, player.batch)
-		player.LogoS2.UpdateAndDraw(player.progressMs, player.batch)
 		player.batch.ResetTransform()
 		player.batch.End()
 	}
 
 	scale2 := player.Scl
-
 	if !settings.Cursor.ScaleToTheBeat {
 		scale2 = 1
 	}
@@ -590,20 +710,20 @@ func (player *Player) Draw(float64) {
 		player.bloomEffect.Begin()
 	}
 
-	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), 1.0)
+	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), float32(player.objectsAlpha.GetValue()))
 
-	if player.overlay != nil && player.overlay.NormalBeforeCursor() {
+	if player.overlay != nil {
 		player.batch.Begin()
 		player.batch.SetScale(1, 1)
 
 		player.batch.SetCamera(cameras[0])
 
-		player.overlay.DrawNormal(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
+		player.overlay.DrawNormal(player.batch, cursorColors, player.hudGlider.GetValue())
 
 		player.batch.End()
 	}
 
-	player.background.DrawOverlay(player.progressMs, player.batch, bgAlpha, cameras1[0])
+	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, cameras1[0])
 
 	if settings.Playfield.DrawCursors {
 		for _, g := range player.controller.GetCursors() {
@@ -645,13 +765,9 @@ func (player *Player) Draw(float64) {
 		player.batch.Begin()
 		player.batch.SetScale(1, 1)
 
-		if !player.overlay.NormalBeforeCursor() {
-			player.overlay.DrawNormal(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
-		}
-
 		player.batch.SetCamera(player.scamera.GetProjectionView())
 
-		player.overlay.DrawHUD(player.batch, cursorColors, player.playersGlider.GetValue()*player.hudGlider.GetValue())
+		player.overlay.DrawHUD(player.batch, cursorColors, player.hudGlider.GetValue())
 
 		player.batch.End()
 	}
@@ -660,6 +776,10 @@ func (player *Player) Draw(float64) {
 		player.bloomEffect.EndAndRender()
 	}
 
+	player.drawDebug()
+}
+
+func (player *Player) drawDebug() {
 	if settings.DEBUG || settings.Graphics.ShowFPS {
 		player.batch.Begin()
 		player.batch.SetColor(1, 1, 1, 1)
@@ -708,17 +828,24 @@ func (player *Player) Draw(float64) {
 			drawWithBackground(4, fmt.Sprintf("Blur: %t", settings.Playfield.Background.Blur.Enabled))
 			drawWithBackground(5, fmt.Sprintf("Bloom: %t", settings.Playfield.Bloom.Enabled))
 
-			drawWithBackground(6, fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
-			drawWithBackground(7, fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
-			drawWithBackground(8, fmt.Sprintf("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds)))
-			drawWithBackground(9, fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
-			drawWithBackground(10, fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
-			drawWithBackground(11, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
-			drawWithBackground(12, fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
+			msaa := "OFF"
+			if settings.Graphics.MSAA > 0 {
+				msaa = strconv.Itoa(int(settings.Graphics.MSAA)) + "x"
+			}
+
+			drawWithBackground(6, fmt.Sprintf("MSAA: %s", msaa))
+
+			drawWithBackground(7, fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
+			drawWithBackground(8, fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
+			drawWithBackground(9, fmt.Sprintf("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds)))
+			drawWithBackground(10, fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
+			drawWithBackground(11, fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
+			drawWithBackground(12, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
+			drawWithBackground(13, fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
-				drawWithBackground(13, fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
-				drawWithBackground(14, fmt.Sprintf("SB load: %.2f", player.storyboardLoad))
+				drawWithBackground(14, fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
+				drawWithBackground(15, fmt.Sprintf("SB load: %.2f", player.storyboardLoad))
 			}
 
 			for _, t := range queue {
@@ -728,7 +855,7 @@ func (player *Player) Draw(float64) {
 
 			currentTime := int(player.musicPlayer.GetPosition())
 			totalTime := int(player.musicPlayer.GetLength())
-			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetBasicData().EndTime / 1000)
+			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() / 1000)
 
 			drawShadowed(2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
 			drawShadowed(1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(player.processed)*/, 0, settings.DIVIDES, len(player.bMap.HitObjects)))
@@ -780,10 +907,8 @@ func (player *Player) Draw(float64) {
 	}
 }
 
-func (player *Player) Hide() {
+func (player *Player) Show() {}
 
-}
+func (player *Player) Hide() {}
 
-func (player *Player) Dispose() {
-
-}
+func (player *Player) Dispose() {}

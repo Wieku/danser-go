@@ -39,7 +39,7 @@ type Body struct {
 	distortionMatrix mgl32.Mat4
 }
 
-func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
+func NewBody(curve *curves.MultiCurve, hardRock bool, hitCircleRadius float32) *Body {
 	if sliderShader == nil {
 		InitRenderer()
 	}
@@ -50,7 +50,7 @@ func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
 	body.radius = hitCircleRadius
 	body.previousStart = -1
 
-	body.setupPoints(curve)
+	body.setupPoints(curve, hardRock)
 
 	if len(body.points) > 0 {
 		body.setupVAO()
@@ -59,16 +59,25 @@ func NewBody(curve *curves.MultiCurve, hitCircleRadius float32) *Body {
 	return body
 }
 
-func (body *Body) setupPoints(curve *curves.MultiCurve) {
+func pointAt(curve *curves.MultiCurve, t float32, hardRock bool) vector.Vector2f {
+	point := curve.PointAt(t)
+	if hardRock {
+		point.Y = 384 - point.Y
+	}
+
+	return point
+}
+
+func (body *Body) setupPoints(curve *curves.MultiCurve, hardRock bool) {
 	length := curve.GetLength()
 	numPoints := math32.Min(math32.Ceil(length*float32(settings.Objects.Sliders.Quality.PathLevelOfDetail)/100.0), maxSliderPoints)
 
 	if numPoints > 0 {
-		body.topLeft = curve.PointAt(0)
-		body.bottomRight = curve.PointAt(0)
+		body.topLeft = pointAt(curve, 0, hardRock)
+		body.bottomRight = pointAt(curve, 0, hardRock)
 
 		for i := 0; i <= int(numPoints); i++ {
-			point := curve.PointAt(float32(i) / numPoints)
+			point := pointAt(curve, float32(i) / numPoints, hardRock)
 
 			body.topLeft.X = math32.Min(body.topLeft.X, point.X)
 			body.topLeft.Y = math32.Min(body.topLeft.Y, point.Y)
@@ -91,7 +100,6 @@ func (body *Body) setupPoints(curve *curves.MultiCurve) {
 }
 
 func (body *Body) setupVAO() {
-
 	body.vao = buffer.NewVertexArrayObject()
 
 	unitCircle := createUnitCircle(int(settings.Objects.Sliders.Quality.CircleLevelOfDetail))
@@ -115,9 +123,7 @@ func (body *Body) setupVAO() {
 
 	body.vao.SetData("points", 0, points)
 
-	body.vao.Bind()
 	body.vao.Attach(sliderShader)
-	body.vao.Unbind()
 }
 
 func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
@@ -152,7 +158,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	gl.DepthMask(true)
 	gl.DepthFunc(gl.LESS)
 
-	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	body.framebuffer.ClearDepth()
 
 	sliderShader.Bind()
 
@@ -212,7 +218,7 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	}
 
 	tS := invProjView.Mul4x1(mgl32.Vec4{-1, 1, 0.0, 1.0})
-	body.distortionMatrix = mgl32.Translate3D(tS.X(), tS.Y(), 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(-tS.X(), -tS.Y(), 0))
+	body.distortionMatrix = mgl32.Translate3D(tS.X()*float32(scaleX), tS.Y()*float32(scaleY), 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(-tS.X(), -tS.Y(), 0))
 
 	multiplierX := float32(1.0)
 	multiplierY := float32(1.0)

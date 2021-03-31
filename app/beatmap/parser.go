@@ -3,6 +3,7 @@ package beatmap
 import (
 	"bufio"
 	"errors"
+	"github.com/dimchansky/utfbom"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -31,7 +32,7 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 		switch line[1] {
 		case "Normal", "All":
 			beatMap.Timings.BaseSet = 1
-		case "Soft":
+		case "Soft", "None":
 			beatMap.Timings.BaseSet = 2
 		case "Drum":
 			beatMap.Timings.BaseSet = 3
@@ -71,6 +72,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	case "ApproachRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetAR(parsed)
+		beatMap.ARSpecified = true
 	case "CircleSize":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetCS(parsed)
@@ -90,12 +92,12 @@ func parseEvents(line []string, beatMap *BeatMap) {
 	case "Background", "0":
 		beatMap.Bg = strings.Replace(line[2], "\"", "", -1)
 	case "Break", "2":
-		beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(line))
+		beatMap.Pauses = append(beatMap.Pauses, NewPause(line))
 	}
 }
 
 func parseHitObjects(line []string, beatMap *BeatMap) {
-	obj := objects.GetObject(line)
+	obj := objects.CreateObject(line)
 
 	if obj != nil {
 		beatMap.HitObjects = append(beatMap.HitObjects, obj)
@@ -103,13 +105,20 @@ func parseHitObjects(line []string, beatMap *BeatMap) {
 }
 
 func tokenize(line, delimiter string) []string {
+	return tokenizeN(line, delimiter, -1)
+}
+
+func tokenizeN(line, delimiter string, n int) []string {
 	if strings.HasPrefix(line, "//") || !strings.Contains(line, delimiter) {
 		return nil
 	}
-	divided := strings.Split(line, delimiter)
+
+	divided := strings.SplitN(line, delimiter, n)
+
 	for i, a := range divided {
 		divided[i] = strings.TrimSpace(a)
 	}
+
 	return divided
 }
 
@@ -118,6 +127,7 @@ func getSection(line string) string {
 	if strings.HasPrefix(line, "[") {
 		return strings.TrimRight(strings.TrimLeft(line, "["), "]")
 	}
+
 	return ""
 }
 
@@ -146,17 +156,17 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 		switch currentSection {
 		case "General":
-			if arr := tokenize(line, ":"); len(arr) > 1 {
+			if arr := tokenizeN(line, ":", 2); len(arr) > 1 {
 				if err := parseGeneral(arr, beatMap); err {
 					return errors.New("wrong mode")
 				}
 			}
 		case "Metadata":
-			if arr := tokenize(line, ":"); len(arr) > 1 {
+			if arr := tokenizeN(line, ":", 2); len(arr) > 1 {
 				parseMetadata(arr, beatMap)
 			}
 		case "Difficulty":
-			if arr := tokenize(line, ":"); len(arr) > 1 {
+			if arr := tokenizeN(line, ":", 2); len(arr) > 1 {
 				parseDifficulty(arr, beatMap)
 			}
 		case "Events":
@@ -172,7 +182,8 @@ func ParseBeatMap(beatMap *BeatMap) error {
 			if arr := tokenize(line, ","); arr != nil {
 				var time string
 
-				objType, _ := strconv.ParseInt(arr[3], 10, 64)
+				objTypeI, _ := strconv.Atoi(arr[3])
+				objType := objects.Type(objTypeI)
 				if (objType & objects.CIRCLE) > 0 {
 					beatMap.Circles++
 					time = arr[2]
@@ -191,6 +202,10 @@ func ParseBeatMap(beatMap *BeatMap) error {
 				beatMap.Length = bmath.MaxI(beatMap.Length, timeI)
 			}
 		}
+	}
+
+	if !beatMap.ARSpecified {
+		beatMap.Diff.SetAR(beatMap.Diff.GetOD())
 	}
 
 	//beatMap.LoadTimingPoints()
@@ -246,7 +261,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 		switch currentSection {
 		case "Events":
 			if arr := tokenize(line, ","); len(arr) > 1 && (arr[0] == "2" || arr[0] == "Break") {
-				beatMap.Pauses = append(beatMap.Pauses, objects.NewPause(arr))
+				beatMap.Pauses = append(beatMap.Pauses, NewPause(arr))
 			}
 		case "TimingPoints":
 			if arr := tokenize(line, ","); arr != nil {
@@ -263,12 +278,21 @@ func ParseObjects(beatMap *BeatMap) {
 	if err != nil {
 		panic(err)
 	}
-	scanner := bufio.NewScanner(file)
+
+	fileBom := utfbom.SkipOnly(file)
+
+	scanner := bufio.NewScanner(fileBom)
+
 	buf := make([]byte, 0, 10*1024*1024)
 	scanner.Buffer(buf, cap(buf))
 	var currentSection string
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		if strings.HasPrefix(line, "osu file format v") {
+			trim := strings.TrimPrefix(line, "osu file format v")
+			beatMap.Version, _ = strconv.Atoi(trim)
+		}
 
 		section := getSection(line)
 		if section != "" {
@@ -286,29 +310,24 @@ func ParseObjects(beatMap *BeatMap) {
 	}
 
 	sort.Slice(beatMap.HitObjects, func(i, j int) bool {
-		return beatMap.HitObjects[i].GetBasicData().StartTime < beatMap.HitObjects[j].GetBasicData().StartTime
+		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
 	num := 0
 	comboNumber := 1
 	comboSet := 0
-	for _, o := range beatMap.HitObjects {
-		_, ok := o.(*objects.Pause)
-
-		if !ok {
-			o.GetBasicData().Number = int64(num)
-			if o.GetBasicData().NewCombo {
-				comboNumber = 1
-				comboSet++
-			}
-
-			o.GetBasicData().ComboNumber = int64(comboNumber)
-			o.GetBasicData().ComboSet = int64(comboSet)
-
-			comboNumber++
-			num++
+	for _, iO := range beatMap.HitObjects {
+		if iO.IsNewCombo() {
+			comboNumber = 1
+			comboSet++
 		}
 
+		iO.SetID(int64(num))
+		iO.SetComboNumber(int64(comboNumber))
+		iO.SetComboSet(int64(comboSet))
+
+		comboNumber++
+		num++
 	}
 
 	for _, obj := range beatMap.HitObjects {

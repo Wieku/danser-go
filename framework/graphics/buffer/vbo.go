@@ -24,16 +24,13 @@ func NewVertexBufferObject(maxFloats int, mapped bool, mode DrawMode) *VertexBuf
 	vbo.capacity = maxFloats
 	vbo.mode = mode
 
-	gl.GenBuffers(1, &vbo.handle)
+	gl.CreateBuffers(1, &vbo.handle)
 
-	vbo.Bind()
-	gl.BufferData(gl.ARRAY_BUFFER, maxFloats*4, gl.Ptr(nil), uint32(mode))
+	gl.NamedBufferData(vbo.handle, maxFloats*4, gl.Ptr(nil), uint32(mode))
 
 	if mapped {
 		vbo.data = make([]float32, maxFloats)
 	}
-
-	vbo.Unbind()
 
 	runtime.SetFinalizer(vbo, (*VertexBufferObject).Dispose)
 
@@ -49,11 +46,6 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 		return
 	}
 
-	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
-	if currentVBO != vbo.handle {
-		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
-	}
-
 	if offset+len(data) > vbo.capacity {
 		panic(fmt.Sprintf("Data exceeds VBO's capacity. Data length: %d, offset: %d, capacity: %d", len(data), offset, vbo.capacity))
 	}
@@ -62,15 +54,10 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 		copy(vbo.data[offset:], data)
 	}
 
-	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, len(data)*4, gl.Ptr(data))
+	gl.NamedBufferSubData(vbo.handle, offset*4, len(data)*4, gl.Ptr(data))
 }
 
 func (vbo *VertexBufferObject) Resize(newCapacity int) {
-	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
-	if currentVBO != vbo.handle {
-		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
-	}
-
 	if vbo.data != nil {
 		data := make([]float32, newCapacity)
 		copy(data, vbo.data[:bmath.MinI(vbo.capacity, newCapacity)])
@@ -80,9 +67,9 @@ func (vbo *VertexBufferObject) Resize(newCapacity int) {
 	vbo.capacity = newCapacity
 
 	if vbo.data != nil && len(vbo.data) > 0 {
-		gl.BufferData(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(vbo.data), uint32(vbo.mode))
+		gl.NamedBufferData(vbo.handle, newCapacity*4, gl.Ptr(vbo.data), uint32(vbo.mode))
 	} else {
-		gl.BufferData(gl.ARRAY_BUFFER, newCapacity*4, gl.Ptr(nil), uint32(vbo.mode))
+		gl.NamedBufferData(vbo.handle, newCapacity*4, gl.Ptr(nil), uint32(vbo.mode))
 	}
 }
 
@@ -110,16 +97,11 @@ func (vbo *VertexBufferObject) Unmap(offset, size int) {
 		return
 	}
 
-	currentVBO := history.GetCurrent(gl.ARRAY_BUFFER_BINDING)
-	if currentVBO != vbo.handle {
-		panic(fmt.Sprintf("VBO mismatch. Target VBO: %d, current: %d", vbo.handle, currentVBO))
-	}
-
 	if offset+size > vbo.capacity {
 		panic(fmt.Sprintf("Data exceeds VBO's capacity. Data length: %d, Offset: %d, capacity: %d", size, offset, vbo.capacity))
 	}
 
-	gl.BufferSubData(gl.ARRAY_BUFFER, offset*4, size*4, gl.Ptr(vbo.data[offset:]))
+	gl.NamedBufferSubData(vbo.handle, offset*4, size*4, gl.Ptr(vbo.data[offset:]))
 }
 
 func (vbo *VertexBufferObject) Bind() {
@@ -164,4 +146,8 @@ func (vbo *VertexBufferObject) Dispose() {
 	}
 
 	vbo.disposed = true
+}
+
+func (vbo *VertexBufferObject) GetID() uint32 {
+	return vbo.handle
 }

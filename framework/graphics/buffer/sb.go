@@ -14,4 +14,5 @@ type StreamingBuffer interface {
 	Map(size int) MemoryChunk
 	Unmap(offset int, size int)
 	Dispose()
+	GetID() uint32
 }

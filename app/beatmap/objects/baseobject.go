@@ -1,7 +1,7 @@
 package objects
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -9,62 +9,49 @@ import (
 	"strings"
 )
 
-type BaseObject interface {
-	GetBasicData() *basicData
-	Update(time int64) bool
-	SetTiming(timings *Timings)
-	UpdateStacking()
-	SetDifficulty(difficulty *difficulty.Difficulty)
-	GetPosition() vector.Vector2f
-}
-
 type Renderable interface {
-	Draw(time int64, color color2.Color, batch *batch.QuadBatch) bool
-	DrawApproach(time int64, color color2.Color, batch *batch.QuadBatch)
+	Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool
+	DrawApproach(time float64, color color2.Color, batch *batch.QuadBatch)
 }
 
-type basicData struct {
-	StartPos, EndPos   vector.Vector2f
-	StartTime, EndTime int64
-	StackOffset        vector.Vector2f
-	StackIndex         int64
-	Number             int64
-	SliderPoint        bool
-	SliderPointStart   bool
-	SliderPointEnd     bool
-	NewCombo           bool
-	ComboNumber        int64
-	ComboSet           int64
-
-	sampleSet    int
-	additionSet  int
-	customIndex  int
-	customVolume float64
-}
-
-func commonParse(data []string) *basicData {
+func commonParse(data []string, extraIndex int) *HitObject {
 	x, _ := strconv.ParseFloat(data[0], 32)
 	y, _ := strconv.ParseFloat(data[1], 32)
 	time, _ := strconv.ParseInt(data[2], 10, 64)
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
-	return &basicData{StartPos: vector.NewVec2f(float32(x), float32(y)), StartTime: time, Number: -1, NewCombo: (objType & 4) == 4}
+
+	startPos := vector.NewVec2f(float32(x), float32(y))
+
+	hitObject := &HitObject{
+		StartPosRaw: startPos,
+		EndPosRaw:   startPos,
+		StartTime:   float64(time),
+		EndTime:     float64(time),
+		HitObjectID: -1,
+		NewCombo:    (objType & 4) == 4,
+	}
+
+	hitObject.BasicHitSound = parseExtras(data, extraIndex)
+
+	return hitObject
 }
 
-func (bData *basicData) parseExtras(data []string, extraIndex int) {
-	if extraIndex < len(data) {
+func parseExtras(data []string, extraIndex int) (info audio.HitSoundInfo) {
+	if extraIndex < len(data) && len(data[extraIndex]) > 0 {
 		extras := strings.Split(data[extraIndex], ":")
-		sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
-		additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
-		index, _ := strconv.ParseInt(extras[2], 10, 64)
-		if len(extras) > 3 {
-			volume, _ := strconv.ParseInt(extras[3], 10, 64)
-			bData.customVolume = float64(volume) / 100.0
-		} else {
-			bData.customVolume = 0
+
+		info.SampleSet, _ = strconv.Atoi(extras[0])
+		info.AdditionSet, _ = strconv.Atoi(extras[1])
+
+		if len(extras) > 2 {
+			info.CustomIndex, _ = strconv.Atoi(extras[2])
 		}
 
-		bData.sampleSet = int(sampleSet)
-		bData.additionSet = int(additionSet)
-		bData.customIndex = int(index)
+		if len(extras) > 3 {
+			volume, _ := strconv.Atoi(extras[3])
+			info.CustomVolume = float64(volume) / 100.0
+		}
 	}
+
+	return
 }

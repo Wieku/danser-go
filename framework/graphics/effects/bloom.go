@@ -2,6 +2,7 @@ package effects
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/blend"
@@ -58,17 +59,15 @@ func NewBloomEffect(width, height int) *BloomEffect {
 		-1, 1, 0, 0, 1,
 	})
 
-	effect.vao.Bind()
 	effect.vao.Attach(effect.filterShader)
-	effect.vao.Unbind()
 
-	effect.fbo = buffer.NewFrame(width, height, true, false)
+	effect.fbo = buffer.NewFrameMultisample(width, height, int(settings.Graphics.MSAA)) //TODO: use framework global MSAA setting
 
 	effect.threshold = 0.7
 	effect.blur = 0.3
 	effect.power = 1.2
 
-	effect.blurEffect = NewBlurEffect(width, height)
+	effect.blurEffect = NewBlurEffect(width/2, height/2)
 	effect.blurEffect.SetBlur(effect.blur, effect.blur)
 
 	return effect
@@ -89,8 +88,7 @@ func (effect *BloomEffect) SetPower(power float64) {
 
 func (effect *BloomEffect) Begin() {
 	effect.fbo.Bind()
-	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
+	effect.fbo.ClearColor(0, 0, 0, 0)
 }
 
 func (effect *BloomEffect) EndAndRender() {

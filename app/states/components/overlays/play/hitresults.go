@@ -129,7 +129,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 }
 
 func (results *HitResults) Update(time float64) {
-	results.manager.Update(int64(time))
+	results.manager.Update(time)
 	results.lastTime = time
 }
 
@@ -139,7 +139,7 @@ func (results *HitResults) Draw(batch *batch.QuadBatch, _ float64) {
 	scale := results.diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
 
-	results.manager.Draw(int64(results.lastTime), batch)
+	results.manager.Draw(results.lastTime, batch)
 
 	batch.ResetTransform()
 }

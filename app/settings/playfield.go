@@ -20,6 +20,7 @@ func initPlayfield() *playfield {
 		},
 		Background: &background{
 			LoadStoryboards: true,
+			LoadVideos:      false,
 			FlashToTheBeat:  false,
 			Dim: &dim{
 				Intro:  0,
@@ -43,6 +44,8 @@ func initPlayfield() *playfield {
 				Shadowed:           true,
 				DrawOverBlur:       true,
 				ParallaxMultiplier: 0.5,
+				Density:            1,
+				Scale:              1,
 			},
 		},
 		Logo: &logo{
@@ -93,6 +96,9 @@ type background struct {
 	// Whether storyboards should be loaded
 	LoadStoryboards bool
 
+	// Whether videos should be loaded
+	LoadVideos bool
+
 	FlashToTheBeat bool
 
 	// Dim controls
@@ -126,6 +132,8 @@ type triangles struct {
 	Shadowed           bool
 	DrawOverBlur       bool
 	ParallaxMultiplier float32
+	Density            float64
+	Scale              float64
 }
 
 type logo struct {

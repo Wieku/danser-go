@@ -31,7 +31,7 @@ type Texture interface {
 type TextureRegion struct {
 	Texture        Texture
 	U1, U2, V1, V2 float32
-	Width, Height  int32
+	Width, Height  float32
 	Layer          int32
 }
 
@@ -46,7 +46,8 @@ type textureStore struct {
 
 func newStore(layerNum, width, height int, format Format, mipmaps int) *textureStore {
 	store := new(textureStore)
-	gl.GenTextures(1, &store.id)
+
+	gl.CreateTextures(gl.TEXTURE_2D_ARRAY, 1, &store.id)
 
 	store.layers = int32(layerNum)
 	store.width = int32(width)
@@ -58,12 +59,11 @@ func newStore(layerNum, width, height int, format Format, mipmaps int) *textureS
 	}
 	store.mipmaps = int32(mipmaps)
 
-	store.Bind(0)
-	gl.TexStorage3D(gl.TEXTURE_2D_ARRAY, store.mipmaps, format.InternalFormat(), store.width, store.height, store.layers)
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_BASE_LEVEL, 0)
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAX_LEVEL, store.mipmaps-1)
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TextureStorage3D(store.id, store.mipmaps, format.InternalFormat(), store.width, store.height, store.layers)
+	gl.TextureParameteri(store.id, gl.TEXTURE_BASE_LEVEL, 0)
+	gl.TextureParameteri(store.id, gl.TEXTURE_MAX_LEVEL, store.mipmaps-1)
+	gl.TextureParameteri(store.id, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(store.id, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
 	if mipmaps > 1 {
 		store.SetFiltering(Filtering.MipMap, Filtering.Linear)
@@ -76,8 +76,8 @@ func newStore(layerNum, width, height int, format Format, mipmaps int) *textureS
 
 func (store *textureStore) Bind(loc uint) {
 	store.binding = loc
-	gl.ActiveTexture(gl.TEXTURE0 + uint32(loc))
-	gl.BindTexture(gl.TEXTURE_2D_ARRAY, store.id)
+
+	gl.BindTextureUnit(uint32(loc), store.id)
 }
 
 func (store *textureStore) Clear() {
@@ -88,8 +88,8 @@ func (store *textureStore) SetFiltering(min, mag Filter) {
 	store.min = min
 	store.mag = mag
 
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, int32(min))
-	gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, int32(mag))
+	gl.TextureParameteri(store.id, gl.TEXTURE_MIN_FILTER, int32(min))
+	gl.TextureParameteri(store.id, gl.TEXTURE_MAG_FILTER, int32(mag))
 }
 
 func (store *textureStore) Dispose() {

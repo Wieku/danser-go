@@ -1,9 +1,13 @@
 .idea/
 screenshots/
 replays/
+videos/
 settings.json
 settings-*
 danser.db
 danser*.exe
 danser*.zip
 danser.log
+assets.dpak
+api.txt
+*.osr

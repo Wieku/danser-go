@@ -3,15 +3,17 @@ package skin
 import (
 	"fmt"
 	"github.com/faiface/mainthread"
-	"github.com/wieku/danser-go/app/graphics/font"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Source int
@@ -26,6 +28,10 @@ const (
 
 const defaultName = "default"
 
+var fontLock = &sync.Mutex{}
+var soundLock = &sync.Mutex{}
+var textureLock = &sync.Mutex{}
+
 var atlas *texture.TextureAtlas
 
 var animationCache = make(map[string][]*texture.TextureRegion)
@@ -35,12 +41,11 @@ var defaultCache = make(map[string]*texture.TextureRegion)
 
 var sourceCache = make(map[*texture.TextureRegion]Source)
 
-//dead-locking single textures to not get swept by GC
-var singleTextures = make(map[string]*texture.TextureSingle)
-
 var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
+
+var pathCache *utils.FileMap
 
 var CurrentSkin = defaultName
 
@@ -70,10 +75,18 @@ func checkInit() {
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
-		var err error
-		info, err = LoadInfo(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, "skin.ini"))
+		pathCache = utils.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
+
+		path, err := pathCache.GetFile("skin.ini")
+		if err == nil {
+			if info, err = LoadInfo(path); err != nil {
+				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
+			}
+		} else {
+			log.Println("skin.ini does not exist! Falling back to default...")
+		}
+
 		if err != nil {
-			log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
 			fallback()
 		}
 	}
@@ -88,6 +101,9 @@ func GetInfo() *SkinInfo {
 
 func GetFont(name string) *font.Font {
 	checkInit()
+
+	fontLock.Lock()
+	defer fontLock.Unlock()
 
 	if fnt, exists := fontCache[name]; exists {
 		return fnt
@@ -138,6 +154,9 @@ func GetTexture(name string) *texture.TextureRegion {
 func GetTextureSource(name string, source Source) *texture.TextureRegion {
 	checkInit()
 
+	textureLock.Lock()
+	defer textureLock.Unlock()
+
 	source = source & (^BEATMAP)
 
 	if CurrentSkin == defaultName {
@@ -150,7 +169,7 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 				return rg
 			}
 		} else {
-			rg := loadTexture(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name+".png"))
+			rg := loadTexture(name+".png", false)
 			skinCache[name] = rg
 
 			if rg != nil {
@@ -165,7 +184,7 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 			return rg
 		}
 
-		rg := loadTexture(filepath.Join("assets", "default-skin", name+".png"))
+		rg := loadTexture(name+".png", true)
 		defaultCache[name] = rg
 
 		if rg != nil {
@@ -254,33 +273,38 @@ func checkAtlas() {
 	}
 }
 
-func getPixmap(name string) (*texture.Pixmap, error) {
-	if strings.HasPrefix(name, "assets") {
-		return assets.GetPixmap(name)
+func getPixmap(name string, local bool) (*texture.Pixmap, error) {
+	if local {
+		return assets.GetPixmap(filepath.Join("assets", "default-skin", name))
 	}
 
-	return texture.NewPixmapFileString(name)
+	path, err := pathCache.GetFile(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return texture.NewPixmapFileString(path)
 }
 
-func loadTexture(name string) *texture.TextureRegion {
+func loadTexture(name string, local bool) *texture.TextureRegion {
 	ext := filepath.Ext(name)
 
 	x2Name := strings.TrimSuffix(name, ext) + "@2x" + ext
 
 	var region *texture.TextureRegion
 
-	image, err := getPixmap(x2Name)
+	image, err := getPixmap(x2Name, local)
 	if err != nil {
-		image, err = getPixmap(name)
+		image, err = getPixmap(name, local)
 		if err == nil {
 			region = &texture.TextureRegion{}
-			region.Width = int32(image.Width)
-			region.Height = int32(image.Height)
+			region.Width = float32(image.Width)
+			region.Height = float32(image.Height)
 		}
 	} else {
 		region = &texture.TextureRegion{}
-		region.Width = int32(image.Width / 2)
-		region.Height = int32(image.Height / 2)
+		region.Width = float32(image.Width / 2)
+		region.Height = float32(image.Height / 2)
 	}
 
 	if region != nil {
@@ -297,12 +321,9 @@ func loadTexture(name string) *texture.TextureRegion {
 			// If texture is too big load it separately
 			if rg == nil {
 				tx := texture.NewTextureSingle(image.Width, image.Height, 0)
-				tx.Bind(0)
 				tx.SetData(0, 0, image.Width, image.Height, image.Data)
+
 				reg := tx.GetRegion()
-
-				singleTextures[name] = tx
-
 				rg = &reg
 
 				log.Println("SkinManager: Texture uploaded as single texture:", name)
@@ -324,6 +345,10 @@ func loadTexture(name string) *texture.TextureRegion {
 
 func GetSample(name string) *bass.Sample {
 	checkInit()
+
+	soundLock.Lock()
+	defer soundLock.Unlock()
+
 	if sample, exists := sampleCache[name]; exists {
 		return sample
 	}
@@ -331,11 +356,11 @@ func GetSample(name string) *bass.Sample {
 	var sample *bass.Sample
 
 	if CurrentSkin != defaultName {
-		sample = tryLoad(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin, name))
+		sample = tryLoad(name, false)
 	}
 
 	if sample == nil {
-		sample = tryLoad(filepath.Join("assets", "default-skin", name))
+		sample = tryLoad(name, true)
 	}
 
 	sampleCache[name] = sample
@@ -343,9 +368,9 @@ func GetSample(name string) *bass.Sample {
 	return sample
 }
 
-func getSample(name string) *bass.Sample {
-	if strings.HasPrefix(name, "assets") {
-		data, err := assets.GetBytes(name)
+func getSample(name string, local bool) *bass.Sample {
+	if local {
+		data, err := assets.GetBytes(filepath.Join("assets", "default-skin", name))
 		if err != nil {
 			return nil
 		}
@@ -353,19 +378,24 @@ func getSample(name string) *bass.Sample {
 		return bass.NewSampleData(data)
 	}
 
-	return bass.NewSample(name)
+	path, err := pathCache.GetFile(name)
+	if err != nil {
+		return nil
+	}
+
+	return bass.NewSample(path)
 }
 
-func tryLoad(basePath string) *bass.Sample {
-	if sam := getSample(basePath + ".wav"); sam != nil {
+func tryLoad(basePath string, local bool) *bass.Sample {
+	if sam := getSample(basePath+".wav", local); sam != nil {
 		return sam
 	}
 
-	if sam := getSample(basePath + ".ogg"); sam != nil {
+	if sam := getSample(basePath+".ogg", local); sam != nil {
 		return sam
 	}
 
-	if sam := getSample(basePath + ".mp3"); sam != nil {
+	if sam := getSample(basePath+".mp3", local); sam != nil {
 		return sam
 	}
 

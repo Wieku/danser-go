@@ -11,16 +11,17 @@ import (
 	"runtime"
 )
 
-type vboHolder struct {
-	vbo     StreamingBuffer
+type bufferHolder struct {
+	buffer  StreamingBuffer
 	divisor int
 	format  attribute.Format
+	binding int
 }
 
 type VertexArrayObject struct {
 	handle uint32
 
-	vbos map[string]*vboHolder
+	buffers map[string]*bufferHolder
 
 	capacity int
 
@@ -30,12 +31,9 @@ type VertexArrayObject struct {
 
 func NewVertexArrayObject() *VertexArrayObject {
 	vao := new(VertexArrayObject)
-	vao.vbos = make(map[string]*vboHolder)
+	vao.buffers = make(map[string]*bufferHolder)
 
-	gl.GenVertexArrays(1, &vao.handle)
-
-	vao.Bind()
-	vao.Unbind()
+	gl.CreateVertexArrays(1, &vao.handle)
 
 	runtime.SetFinalizer(vao, (*VertexArrayObject).Dispose)
 
@@ -51,43 +49,46 @@ func (vao *VertexArrayObject) AddMappedVBO(name string, maxVertices int, divisor
 }
 
 func (vao *VertexArrayObject) addVBO(name string, maxVertices int, divisor int, mapped bool, format attribute.Format) {
-	if _, exists := vao.vbos[name]; exists {
+	if _, exists := vao.buffers[name]; exists {
 		panic(fmt.Sprintf("VBO with name \"%s\" already exists", name))
 	}
 
-	holder := &vboHolder{
-		vbo:     NewVertexBufferObject(maxVertices*format.Size()/4, mapped, DynamicDraw),
+	holder := &bufferHolder{
+		buffer:  NewVertexBufferObject(maxVertices*format.Size()/4, mapped, DynamicDraw),
 		divisor: divisor,
 		format:  format,
+		binding: -1,
 	}
 
 	if divisor == 0 {
 		vao.capacity = maxVertices
 	}
 
-	vao.vbos[name] = holder
+	vao.buffers[name] = holder
 }
 
 func (vao *VertexArrayObject) AddPersistentVBO(name string, maxVertices int, divisor int, format attribute.Format) {
-	if _, exists := vao.vbos[name]; exists {
+	if _, exists := vao.buffers[name]; exists {
 		panic(fmt.Sprintf("VBO with name \"%s\" already exists", name))
 	}
 
-	holder := &vboHolder{
-		vbo:     NewPersistentBufferObject(maxVertices * format.Size() / 4),
+	holder := &bufferHolder{
+		buffer:  NewPersistentBufferObject(maxVertices / 100 * format.Size() / 4),
 		divisor: divisor,
 		format:  format,
 	}
+
+	holder.buffer.Resize(maxVertices * format.Size() / 4)
 
 	if divisor == 0 {
 		vao.capacity = maxVertices
 	}
 
-	vao.vbos[name] = holder
+	vao.buffers[name] = holder
 }
 
 func (vao *VertexArrayObject) GetVBOFormat(name string) attribute.Format {
-	if holder, exists := vao.vbos[name]; exists {
+	if holder, exists := vao.buffers[name]; exists {
 		return holder.format
 	}
 
@@ -95,20 +96,23 @@ func (vao *VertexArrayObject) GetVBOFormat(name string) attribute.Format {
 }
 
 func (vao *VertexArrayObject) GetVBO(name string) StreamingBuffer {
-	if holder, exists := vao.vbos[name]; exists {
-		return holder.vbo
+	if holder, exists := vao.buffers[name]; exists {
+		return holder.buffer
 	}
 
 	panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
 }
 
 func (vao *VertexArrayObject) Resize(name string, maxVertices int) {
-	if holder, exists := vao.vbos[name]; exists {
+	if holder, exists := vao.buffers[name]; exists {
 		size := maxVertices * holder.format.Size() / 4
-		if holder.vbo.Capacity() != size {
-			holder.vbo.Bind()
-			holder.vbo.Resize(size)
-			holder.vbo.Unbind()
+		if holder.buffer.Capacity() != size {
+			holder.buffer.Resize(size)
+
+			// If we have persistent buffer object that was bound we want to bind it again because new object was created on resize
+			if _, ok := holder.buffer.(*PersistentBufferObject); ok && holder.binding >= 0 {
+				gl.VertexArrayVertexBuffer(vao.handle, uint32(holder.binding), holder.buffer.GetID(), 0, int32(holder.format.Size()))
+			}
 		}
 
 		return
@@ -118,71 +122,63 @@ func (vao *VertexArrayObject) Resize(name string, maxVertices int) {
 }
 
 func (vao *VertexArrayObject) Attach(s *shader.RShader) {
-	currentVAO := history.GetCurrent(gl.VERTEX_ARRAY_BINDING)
-	if currentVAO != vao.handle {
-		panic(fmt.Sprintf("VAO mismatch. Target VAO: %d, current: %d", vao.handle, currentVAO))
-	}
-
-	for _, holder := range vao.vbos {
-
-		holder.vbo.Bind()
-
+	var index int
+	for _, holder := range vao.buffers {
 		var offset int
 		for _, attr := range holder.format {
-
 			location := s.GetAttributeInfo(attr.Name).Location
 
-			gl.VertexAttribPointer(
+			gl.EnableVertexArrayAttrib(vao.handle, uint32(location))
+
+			gl.VertexArrayAttribBinding(vao.handle, uint32(location), uint32(index))
+
+			gl.VertexArrayAttribFormat(
+				vao.handle,
 				uint32(location),
 				int32(attr.Type.Components()),
 				uint32(attr.Type.InternalType()),
 				attr.Type.Normalize(),
-				int32(holder.format.Size()),
-				gl.PtrOffset(offset),
+				uint32(offset),
 			)
-
-			gl.VertexAttribDivisor(uint32(location), uint32(holder.divisor))
-			gl.EnableVertexAttribArray(uint32(location))
 
 			offset += attr.Type.Size()
 		}
 
-		holder.vbo.Unbind()
+		holder.binding = index
+		gl.VertexArrayVertexBuffer(vao.handle, uint32(index), holder.buffer.GetID(), 0, int32(holder.format.Size()))
+		gl.VertexArrayBindingDivisor(vao.handle, uint32(index), uint32(holder.divisor))
 
+		index++
 	}
 }
 
 func (vao *VertexArrayObject) SetData(name string, offset int, data []float32) {
-	holder, exists := vao.vbos[name]
+	holder, exists := vao.buffers[name]
 	if !exists {
 		panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
 	}
 
-	holder.vbo.Bind()
-	holder.vbo.SetData(offset, data)
-	holder.vbo.Unbind()
+	holder.buffer.SetData(offset, data)
 
 	statistic.Add(statistic.VertexUpload, int64(len(data)*4/holder.format.Size()))
 }
 
 func (vao *VertexArrayObject) MapVBO(name string, size int) MemoryChunk {
-	holder, exists := vao.vbos[name]
+	holder, exists := vao.buffers[name]
 	if !exists {
 		panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
 	}
 
-	return holder.vbo.Map(size)
+	return holder.buffer.Map(size)
 }
 
 func (vao *VertexArrayObject) UnmapVBO(name string, offset int, size int) {
-	holder, exists := vao.vbos[name]
+	holder, exists := vao.buffers[name]
 	if !exists {
 		panic(fmt.Sprintf("VBO with name \"%s\" doesn't exist", name))
 	}
 
-	holder.vbo.Bind()
-	holder.vbo.Unmap(offset, size)
-	holder.vbo.Unbind()
+	holder.buffer.Unmap(offset, size)
 
 	statistic.Add(statistic.VertexUpload, int64(size*4/holder.format.Size()))
 }
@@ -260,9 +256,8 @@ func (vao *VertexArrayObject) Unbind() {
 
 func (vao *VertexArrayObject) Dispose() {
 	if !vao.disposed {
-
-		for _, holder := range vao.vbos {
-			holder.vbo.Dispose()
+		for _, holder := range vao.buffers {
+			holder.buffer.Dispose()
 		}
 
 		mainthread.CallNonBlock(func() {

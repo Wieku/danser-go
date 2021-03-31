@@ -1,6 +1,7 @@
 package movers
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -12,9 +13,10 @@ import (
 type BezierMover struct {
 	pt                 vector.Vector2f
 	bz                 *curves.Bezier
-	beginTime, endTime int64
+	beginTime, endTime float64
 	previousSpeed      float32
 	invert             float32
+	mods               difficulty.Modifier
 }
 
 func NewBezierMover() MultiPointMover {
@@ -24,19 +26,20 @@ func NewBezierMover() MultiPointMover {
 	return bm
 }
 
-func (bm *BezierMover) Reset() {
+func (bm *BezierMover) Reset(mods difficulty.Modifier) {
+	bm.mods = mods
 	bm.pt = vector.NewVec2f(512/2, 384/2)
 	bm.invert = 1
 	bm.previousSpeed = -1
 }
 
-func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
+func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
-	endPos := end.GetBasicData().EndPos
-	endTime := end.GetBasicData().EndTime
-	startPos := start.GetBasicData().StartPos
-	startTime := start.GetBasicData().StartTime
+	endPos := end.GetStackedEndPositionMod(bm.mods)
+	endTime := end.GetEndTime()
+	startPos := start.GetStackedStartPositionMod(bm.mods)
+	startTime := start.GetStartTime()
 
 	dst := endPos.Dst(startPos)
 
@@ -44,8 +47,8 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
 		bm.previousSpeed = dst / float32(startTime-endTime)
 	}
 
-	s1, ok1 := end.(*objects.Slider)
-	s2, ok2 := start.(*objects.Slider)
+	s1, ok1 := end.(objects.ILongObject)
+	s2, ok2 := start.(objects.ILongObject)
 
 	var points []vector.Vector2f
 
@@ -57,20 +60,20 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
 	if endPos == startPos {
 		points = []vector.Vector2f{endPos, startPos}
 	} else if ok1 && ok2 {
-		endAngle := s1.GetEndAngle()
-		startAngle := s2.GetStartAngle()
-		bm.pt = vector.NewVec2fRad(endAngle, s1.GetPointAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
-		pt2 := vector.NewVec2fRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		endAngle := s1.GetEndAngleMod(bm.mods)
+		startAngle := s2.GetStartAngleMod(bm.mods)
+		bm.pt = vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, bm.mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt2 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, bm.mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []vector.Vector2f{endPos, bm.pt, pt2, startPos}
 	} else if ok1 {
-		endAngle := s1.GetEndAngle()
-		pt1 := vector.NewVec2fRad(endAngle, s1.GetPointAt(endTime-10).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		endAngle := s1.GetEndAngleMod(bm.mods)
+		pt1 := vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, bm.mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
 		bm.pt = vector.NewVec2fRad(startPos.AngleRV(bm.pt), genScale*aggressiveness).Add(startPos)
 		points = []vector.Vector2f{endPos, pt1, bm.pt, startPos}
 	} else if ok2 {
-		startAngle := s2.GetStartAngle()
+		startAngle := s2.GetStartAngleMod(bm.mods)
 		bm.pt = vector.NewVec2fRad(endPos.AngleRV(bm.pt), genScale*aggressiveness).Add(endPos)
-		pt1 := vector.NewVec2fRad(startAngle, s2.GetPointAt(startTime+10).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		pt1 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, bm.mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []vector.Vector2f{endPos, bm.pt, pt1, startPos}
 	} else {
 		angle := endPos.AngleRV(bm.pt)
@@ -91,11 +94,11 @@ func (bm *BezierMover) SetObjects(objs []objects.BaseObject) int {
 	return 2
 }
 
-func (bm *BezierMover) Update(time int64) vector.Vector2f {
+func (bm *BezierMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.beginTime-bm.endTime), 0, 1)
 	return bm.bz.PointAt(t)
 }
 
-func (bm *BezierMover) GetEndTime() int64 {
+func (bm *BezierMover) GetEndTime() float64 {
 	return bm.beginTime
 }

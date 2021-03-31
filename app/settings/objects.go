@@ -15,7 +15,7 @@ func initObjects() *objects {
 			DrawEndCircles:         true,
 			DrawSliderFollowCircle: true,
 			DrawScorePoints:        true,
-			SliderMerge:            true,
+			SliderMerge:            false,
 			SliderDistortions:      true,
 			BorderWidth:            1.0,
 			Quality: &quality{

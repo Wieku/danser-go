@@ -46,9 +46,12 @@ type BeatMap struct {
 	MaxBPM float64
 
 	Timings    *objects.Timings
-	HitObjects []objects.BaseObject
-	Pauses     []objects.BaseObject
-	Queue      []objects.BaseObject
+	HitObjects []objects.IHitObject
+	Pauses     []*Pause
+	Queue      []objects.IHitObject
+	Version    int
+
+	ARSpecified bool
 }
 
 func NewBeatMap() *BeatMap {
@@ -60,12 +63,12 @@ func NewBeatMap() *BeatMap {
 		MinBPM:        math.Inf(0),
 		MaxBPM:        0,
 	}
-	//beatMap.Diff.SetMods(difficulty.Hidden)
+	//beatMap.Diff.SetMods(difficulty.HardRock|difficulty.Hidden)
 	return beatMap
 }
 
 func (b *BeatMap) Reset() {
-	b.Queue = make([]objects.BaseObject, len(b.HitObjects))
+	b.Queue = make([]objects.IHitObject, len(b.HitObjects))
 	copy(b.Queue, b.HitObjects)
 	b.Timings.Reset()
 	for _, o := range b.HitObjects {
@@ -73,18 +76,18 @@ func (b *BeatMap) Reset() {
 	}
 }
 
-func (b *BeatMap) Update(time int64) {
+func (b *BeatMap) Update(time float64) {
 	b.Timings.Update(time)
 
 	for i := 0; i < len(b.Queue); i++ {
 		g := b.Queue[i]
-		if g.GetBasicData().StartTime-int64(b.Diff.Preempt) > time {
+		if g.GetStartTime()-b.Diff.Preempt > time {
 			break
 		}
 
 		g.Update(time)
 
-		if time >= g.GetBasicData().EndTime+difficulty.HitFadeOut+b.Diff.Hit50 {
+		if time >= g.GetEndTime()+difficulty.HitFadeOut+float64(b.Diff.Hit50) {
 			if i < len(b.Queue)-1 {
 				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
 			} else if i < len(b.Queue) {
@@ -95,8 +98,8 @@ func (b *BeatMap) Update(time int64) {
 	}
 }
 
-func (beatMap *BeatMap) GetObjectsCopy() []objects.BaseObject {
-	queue := make([]objects.BaseObject, len(beatMap.HitObjects))
+func (beatMap *BeatMap) GetObjectsCopy() []objects.IHitObject {
+	queue := make([]objects.IHitObject, len(beatMap.HitObjects))
 	copy(queue, beatMap.HitObjects)
 	return queue
 }
@@ -135,9 +138,9 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 		}
 
 		beatMap.Timings.LastSet = int(sampleset)
-		beatMap.Timings.AddPoint(pointTime, bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, inherited, kiai)
+		beatMap.Timings.AddPoint(float64(pointTime), bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, inherited, kiai)
 	} else {
-		beatMap.Timings.AddPoint(pointTime, bpm, beatMap.Timings.LastSet, 1, 1, false, false)
+		beatMap.Timings.AddPoint(float64(pointTime), bpm, beatMap.Timings.LastSet, 1, 1, false, false)
 	}
 }
 

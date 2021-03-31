@@ -8,10 +8,10 @@ import (
 )
 
 type SpriteManager struct {
-	spriteQueue     []*Sprite
-	spriteProcessed []*Sprite
-	interArray      []*Sprite
-	drawArray       []*Sprite
+	spriteQueue     []ISprite
+	spriteProcessed []ISprite
+	interArray      []ISprite
+	drawArray       []ISprite
 	visibleObjects  int
 	interObjects    int
 	allSprites      int
@@ -24,9 +24,9 @@ func NewSpriteManager() *SpriteManager {
 	return &SpriteManager{mutex: &sync.Mutex{}}
 }
 
-func (layer *SpriteManager) Add(sprite *Sprite) {
+func (layer *SpriteManager) Add(sprite ISprite) {
 	startTime := sprite.GetStartTime()
-	if sprite.showForever {
+	if sprite.IsAlwaysVisible() {
 		startTime = -math.MaxFloat64
 	}
 
@@ -40,13 +40,13 @@ func (layer *SpriteManager) Add(sprite *Sprite) {
 	layer.spriteQueue[n] = sprite
 }
 
-func (layer *SpriteManager) Update(time int64) {
+func (layer *SpriteManager) Update(time float64) {
 	dirtyLocal := false
 	toRemove := 0
 
 	for i := 0; i < len(layer.spriteQueue); i++ {
 		c := layer.spriteQueue[i]
-		if float64(time) < c.GetStartTime() && !c.showForever {
+		if time < c.GetStartTime() && !c.IsAlwaysVisible() {
 			break
 		}
 
@@ -75,7 +75,7 @@ func (layer *SpriteManager) Update(time int64) {
 		c := layer.spriteProcessed[i]
 		c.Update(time)
 
-		if float64(time) >= c.GetEndTime() && !c.showForever {
+		if time >= c.GetEndTime() && !c.IsAlwaysVisible() {
 			copy(layer.spriteProcessed[i:], layer.spriteProcessed[i+1:])
 			layer.spriteProcessed = layer.spriteProcessed[:len(layer.spriteProcessed)-1]
 
@@ -88,7 +88,7 @@ func (layer *SpriteManager) Update(time int64) {
 		layer.mutex.Lock()
 
 		if len(layer.interArray) < len(layer.spriteProcessed) || len(layer.interArray) > len(layer.spriteProcessed)*3 {
-			layer.interArray = make([]*Sprite, len(layer.spriteProcessed)*2)
+			layer.interArray = make([]ISprite, len(layer.spriteProcessed)*2)
 		}
 
 		layer.interObjects = len(layer.spriteProcessed)
@@ -106,6 +106,7 @@ func (layer *SpriteManager) GetNumRendered() (sum int) {
 			sum++
 		}
 	}
+
 	return
 }
 
@@ -117,22 +118,27 @@ func (layer *SpriteManager) GetNumProcessed() int {
 	return len(layer.spriteProcessed)
 }
 
+func (layer *SpriteManager) GetProcessedSprites() []ISprite {
+	return layer.spriteProcessed
+}
+
 func (layer *SpriteManager) GetLoad() (sum float64) {
 	for i := 0; i < layer.visibleObjects; i++ {
 		if layer.drawArray[i] != nil && layer.drawArray[i].GetAlpha() >= 0.01 {
 			sum += layer.drawArray[i].GetLoad()
 		}
 	}
+
 	return
 }
 
-func (layer *SpriteManager) Draw(time int64, batch *batch.QuadBatch) {
+func (layer *SpriteManager) Draw(time float64, batch *batch.QuadBatch) {
 	layer.mutex.Lock()
 	if layer.dirty {
 		layer.visibleObjects = 0
 
 		if len(layer.interArray) != len(layer.drawArray) {
-			layer.drawArray = make([]*Sprite, len(layer.interArray))
+			layer.drawArray = make([]ISprite, len(layer.interArray))
 		}
 
 		copy(layer.drawArray, layer.interArray[:layer.interObjects])

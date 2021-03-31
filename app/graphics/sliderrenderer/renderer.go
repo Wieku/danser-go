@@ -35,7 +35,7 @@ func InitRenderer() {
 		panic(err)
 	}
 
-	sliderShader = shader.NewRShader(shader.NewSource(string(passSource), shader.Vertex))
+	sliderShader = shader.NewRShader(shader.NewSource(passSource, shader.Vertex))
 
 	colorVSource, err := assets.GetString("assets/shaders/slidercolor.vsh")
 
@@ -49,7 +49,7 @@ func InitRenderer() {
 		panic(err)
 	}
 
-	colorShader = shader.NewRShader(shader.NewSource(string(colorVSource), shader.Vertex), shader.NewSource(string(colorFSource), shader.Fragment))
+	colorShader = shader.NewRShader(shader.NewSource(colorVSource, shader.Vertex), shader.NewSource(colorFSource, shader.Fragment))
 
 	colorVAO = buffer.NewVertexArrayObject()
 
@@ -72,15 +72,12 @@ func InitRenderer() {
 		-0.5, -0.5, 0, 1,
 	})
 
-	colorVAO.Bind()
 	colorVAO.Attach(colorShader)
-	colorVAO.Unbind()
 
 	framebuffer = buffer.NewFrame(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false, true)
 	region := framebuffer.Texture().GetRegion()
 	fboSprite = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2), bmath.Origin.Centre)
 	batch = batch2.NewQuadBatchSize(1)
-	batch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
 }
 
 func BeginRenderer() {
@@ -111,8 +108,8 @@ func BeginRendererMerge() {
 	gl.DepthFunc(gl.LESS)
 
 	framebuffer.Bind()
-	gl.ClearColor(0, 0, 0, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	framebuffer.ClearColor(0, 0, 0, 0)
+	framebuffer.ClearDepth()
 
 	blend.Push()
 	blend.Disable()
@@ -129,6 +126,8 @@ func EndRendererMerge() {
 	EndRenderer()
 
 	batch.Begin()
+	batch.SetCamera(mgl32.Ortho(0, float32(settings.Graphics.GetWidth()), 0, float32(settings.Graphics.GetHeight()), -1, 1))
+
 	fboSprite.Draw(0, batch)
 	batch.End()
 }

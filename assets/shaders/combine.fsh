@@ -11,5 +11,5 @@ void main()
 {
     vec4 in_color = texture(tex, vec3(tex_coord, 0));
     vec4 in_color2 = texture(tex2, vec3(tex_coord, 0));
-	color = in_color + in_color2 * power;
+    color = in_color + in_color2 * power;
 }
