@@ -59,7 +59,53 @@ var syncPool = make([]*PBO, 0)
 
 var blend *effects.Blend
 
+// check used encoders exist
+func precheck() {
+	out, err := exec.Command("ffmpeg", "-encoders").Output()
+	if err != nil {
+		panic(err)
+	}
+
+	encoders := strings.Split(string(out[:]), "\n")
+	for i, v := range encoders {
+		if strings.TrimSpace(v) == "------" {
+			encoders = encoders[i+1:len(encoders)-1]
+			break
+		}
+	}
+
+	vcodec := settings.Recording.Encoder
+	acodec := settings.Recording.AudioCodec
+	vfound := false
+	afound := false
+
+	for _, v := range encoders {
+		encoder := strings.SplitN(strings.TrimSpace(v), " ", 3)
+		codec_type := string(encoder[0][0])
+
+		if string(encoder[0][3]) == "X" {
+			continue // experimental codec
+		}
+
+		if !vfound && codec_type == "V" {
+			vfound = encoder[1] == vcodec
+		} else if !afound && codec_type == "A" {
+			afound = encoder[1] == acodec
+		}
+	}
+
+	if !vfound {
+		panic(fmt.Sprintf("Video codec %q does not exist", vcodec))
+	}
+
+	if !afound {
+		panic(fmt.Sprintf("Audio codec %q does not exist", acodec))
+	}
+}
+
 func StartFFmpeg(fps, _w, _h int) {
+	precheck()
+
 	w, h = _w, _h
 
 	err := os.MkdirAll(settings.Recording.OutputDir, 0755)
