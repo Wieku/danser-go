@@ -27,6 +27,10 @@ func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
 		lines = append(lines, ApproximateCircularArc(points[0], points[1], points[2], 0.125)...)
 	case "L":
 		for i := 0; i < len(points)-1; i++ {
+			if points[i] == points[i+1] { // skip red anchors, present in old maps like 243
+				continue
+			}
+
 			lines = append(lines, NewLinear(points[i], points[i+1]))
 		}
 	case "B":
