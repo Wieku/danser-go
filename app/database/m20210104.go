@@ -6,13 +6,13 @@ import (
 
 type M20210104 struct {}
 
-func (m M20210104) RequiredSections() []string {
+func (m *M20210104) RequiredSections() []string {
 	return []string{
 		"Metadata",
 	}
 }
 
-func (m M20210104) FieldsToMigrate() []string {
+func (m *M20210104) FieldsToMigrate() []string {
 	return []string{
 		"title",
 		"titleUnicode",
@@ -25,7 +25,7 @@ func (m M20210104) FieldsToMigrate() []string {
 	}
 }
 
-func (m M20210104) GetValues(beatMap *beatmap.BeatMap) []interface{} {
+func (m *M20210104) GetValues(beatMap *beatmap.BeatMap) []interface{} {
 	return []interface{}{
 		beatMap.Name,
 		beatMap.NameUnicode,
@@ -38,10 +38,10 @@ func (m M20210104) GetValues(beatMap *beatmap.BeatMap) []interface{} {
 	}
 }
 
-func (m M20210104) Date() int {
+func (m *M20210104) Date() int {
 	return 20210104
 }
 
-func (m M20210104) GetMigrationStmts() string {
+func (m *M20210104) GetMigrationStmts() string {
 	return ""
 }

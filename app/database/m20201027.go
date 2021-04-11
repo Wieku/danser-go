@@ -6,23 +6,23 @@ import (
 
 type M20201027 struct {}
 
-func (m M20201027) RequiredSections() []string {
+func (m *M20201027) RequiredSections() []string {
 	return nil
 }
 
-func (m M20201027) FieldsToMigrate() []string {
+func (m *M20201027) FieldsToMigrate() []string {
 	return nil
 }
 
-func (m M20201027) GetValues(_ *beatmap.BeatMap) []interface{} {
+func (m *M20201027) GetValues(_ *beatmap.BeatMap) []interface{} {
 	return nil
 }
 
-func (m M20201027) Date() int {
+func (m *M20201027) Date() int {
 	return 20201027
 }
 
-func (m M20201027) GetMigrationStmts() string {
+func (m *M20201027) GetMigrationStmts() string {
 	return `
 		BEGIN TRANSACTION;
 		CREATE TEMPORARY TABLE beatmaps_backup(dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL);

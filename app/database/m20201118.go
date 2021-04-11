@@ -6,14 +6,14 @@ import (
 
 type M20201118 struct {}
 
-func (m M20201118) RequiredSections() []string {
+func (m *M20201118) RequiredSections() []string {
 	return []string{
 		"TimingPoints",
 		"HitObjectStats",
 	}
 }
 
-func (m M20201118) FieldsToMigrate() []string {
+func (m *M20201118) FieldsToMigrate() []string {
 	return []string{
 		"bpmMin",
 		"bpmMax",
@@ -24,7 +24,7 @@ func (m M20201118) FieldsToMigrate() []string {
 	}
 }
 
-func (m M20201118) GetValues(beatMap *beatmap.BeatMap) []interface{} {
+func (m *M20201118) GetValues(beatMap *beatmap.BeatMap) []interface{} {
 	return []interface{}{
 		beatMap.MinBPM,
 		beatMap.MaxBPM,
@@ -35,11 +35,11 @@ func (m M20201118) GetValues(beatMap *beatmap.BeatMap) []interface{} {
 	}
 }
 
-func (m M20201118) Date() int {
+func (m *M20201118) Date() int {
 	return 20201118
 }
 
-func (m M20201118) GetMigrationStmts() string {
+func (m *M20201118) GetMigrationStmts() string {
 	return `
 		ALTER TABLE beatmaps ADD COLUMN bpmMin REAL DEFAULT 0;
 		ALTER TABLE beatmaps ADD COLUMN bpmMax REAL DEFAULT 0;
