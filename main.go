@@ -141,6 +141,10 @@ func run() {
 				panic(err)
 			}
 
+			if rp.PlayMode != 0 {
+				panic("Modes other than osu!standard are not supported")
+			}
+
 			*md5 = rp.BeatmapMD5
 			modsParsed = difficulty2.Modifier(rp.Mods)
 			*knockout = true
