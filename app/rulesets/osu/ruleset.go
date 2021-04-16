@@ -485,14 +485,16 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 			}
 		}
 
-		if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
-			result |= GekiAddition
-			subSet.gekiCount++
-		} else if subSet.currentBad == 0 && allClicked {
-			result |= KatuAddition
-			subSet.katuCount++
-		} else {
-			result |= MuAddition
+		if result&BaseHits > 0 {
+			if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
+				result |= GekiAddition
+				subSet.gekiCount++
+			} else if subSet.currentBad == 0 && allClicked {
+				result |= KatuAddition
+				subSet.katuCount++
+			} else {
+				result |= MuAddition
+			}
 		}
 
 		subSet.currentBad = 0
