@@ -21,7 +21,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/oliamb/cutter v0.2.2 // indirect
 	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
-	github.com/wieku/rplpa v0.0.0-20210209184149-29f7b21aebfc
+	github.com/wieku/rplpa v0.0.0-20210416181635-bb7239e81d90
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
