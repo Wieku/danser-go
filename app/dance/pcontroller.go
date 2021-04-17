@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/dance/schedulers"
 	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
+	input2 "github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -47,23 +48,7 @@ func (controller *PlayerController) InitCursors() {
 	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 
 	if !controller.bMap.Diff.CheckModActive(difficulty.Relax) {
-		controller.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-			if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.LeftKey) {
-				if action == glfw.Press {
-					controller.cursors[0].LeftKey = true
-				} else if action == glfw.Release {
-					controller.cursors[0].LeftKey = false
-				}
-			}
-
-			if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.RightKey) {
-				if action == glfw.Press {
-					controller.cursors[0].RightKey = true
-				} else if action == glfw.Release {
-					controller.cursors[0].RightKey = false
-				}
-			}
-		})
+		input2.RegisterListener(controller.KeyEvent)
 	} else {
 		controller.relaxController = input.NewRelaxInputProcessor(controller.ruleset, controller.cursors[0])
 	}
@@ -71,6 +56,24 @@ func (controller *PlayerController) InitCursors() {
 	if controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
 		controller.mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
 		controller.mouseController.Init(controller.bMap.GetObjectsCopy(), controller.bMap.Diff.Mods, controller.cursors[0], spinners.GetMoverCtorByName("circle"), false)
+	}
+}
+
+func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.LeftKey) {
+		if action == glfw.Press {
+			controller.cursors[0].LeftKey = true
+		} else if action == glfw.Release {
+			controller.cursors[0].LeftKey = false
+		}
+	}
+
+	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.RightKey) {
+		if action == glfw.Press {
+			controller.cursors[0].RightKey = true
+		} else if action == glfw.Release {
+			controller.cursors[0].RightKey = false
+		}
 	}
 }
 

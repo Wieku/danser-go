@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
@@ -57,9 +58,8 @@ const (
 )
 
 var player states.State
-var pressed = false
-var pressedM = false
-var pressedP = false
+
+var scheduleScreenshot = false
 
 var batch *batch2.QuadBatch
 
@@ -494,6 +494,25 @@ func mainLoopRecord() {
 }
 
 func mainLoopNormal() {
+	mainthread.Call(func() {
+		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+			if action == glfw.Press {
+				switch key {
+				case glfw.KeyF2:
+					scheduleScreenshot = true
+				case glfw.KeyEscape:
+					win.SetShouldClose(true)
+				case glfw.KeyMinus:
+					settings.DIVIDES = bmath.MaxI(1, settings.DIVIDES - 1)
+				case glfw.KeyEqual:
+					settings.DIVIDES += 1
+				}
+			}
+
+			input.CallListeners(w, key, scancode, action, mods)
+		})
+	})
+
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
 			if lastVSync != settings.Graphics.VSync {
@@ -506,51 +525,13 @@ func mainLoopNormal() {
 				lastVSync = settings.Graphics.VSync
 			}
 
+			glfw.PollEvents()
+
 			pushFrame()
 
-			if win.GetKey(glfw.KeyF2) == glfw.Press {
-
-				if !pressed {
-					utils.MakeScreenshot(*win)
-				}
-
-				pressed = true
-			}
-
-			if win.GetKey(glfw.KeyF2) == glfw.Release {
-				pressed = false
-			}
-
-			if win.GetKey(glfw.KeyEscape) == glfw.Press {
-				win.SetShouldClose(true)
-			}
-
-			if win.GetKey(glfw.KeyMinus) == glfw.Press {
-
-				if !pressedM {
-					if settings.DIVIDES > 1 {
-						settings.DIVIDES -= 1
-					}
-				}
-
-				pressedM = true
-			}
-
-			if win.GetKey(glfw.KeyMinus) == glfw.Release {
-				pressedM = false
-			}
-
-			if win.GetKey(glfw.KeyEqual) == glfw.Press {
-
-				if !pressedP {
-					settings.DIVIDES += 1
-				}
-
-				pressedP = true
-			}
-
-			if win.GetKey(glfw.KeyEqual) == glfw.Release {
-				pressedP = false
+			if scheduleScreenshot {
+				utils.MakeScreenshot(*win)
+				scheduleScreenshot = false
 			}
 
 			win.SwapBuffers()
@@ -594,7 +575,6 @@ func extensionCheck() {
 
 func pushFrame() {
 	statistic.Reset()
-	glfw.PollEvents()
 
 	gl.Enable(gl.SCISSOR_TEST)
 	gl.Disable(gl.DITHER)
