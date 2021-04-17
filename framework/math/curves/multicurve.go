@@ -129,7 +129,7 @@ func NewMultiCurveT(typ string, points []vector.Vector2f, desiredLength float64)
 }
 
 func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
-	if len(mCurve.lines) == 0 {
+	if len(mCurve.lines) == 0 || mCurve.length == 0 {
 		return mCurve.firstPoint
 	}
 
@@ -141,6 +141,10 @@ func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
 	})
 
 	index = bmath.MinI(index, len(mCurve.lines)-1)
+
+	if mCurve.sections[index+1] - mCurve.sections[index] == 0 {
+		return mCurve.lines[index].Point1
+	}
 
 	return mCurve.lines[index].PointAt((desiredWidth - mCurve.sections[index]) / (mCurve.sections[index+1] - mCurve.sections[index]))
 }
