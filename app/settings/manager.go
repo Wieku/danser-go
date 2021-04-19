@@ -69,7 +69,7 @@ func LoadOverride(name string) bool {
 }
 
 func LoadSettings(version string) bool {
-	baseFileName := "settings"
+	baseFileName = "settings"
 
 	if version != "" {
 		baseFileName += "-" + version
@@ -177,6 +177,7 @@ func UpdateBase(updateJSON json.RawMessage) {
 		panic(err)
 	}
 	saveSettings(baseFileName, newBase)
+	SaveAll()
 }
 
 func SetAllSettingsFile(fileName string) {
