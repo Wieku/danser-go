@@ -11,11 +11,12 @@ import (
 )
 
 var fileStorage *fileformat
-var fileName string
 var watcher *fsnotify.Watcher
+var allSettingsFile string
+var baseFileName string
 
-func initStorage() {
-	fileStorage = &fileformat{
+func initSettings() *fileformat {
+	return &fileformat{
 		General:   General,
 		Graphics:  Graphics,
 		Audio:     Audio,
@@ -31,35 +32,72 @@ func initStorage() {
 	}
 }
 
-func LoadSettings(version string) bool {
-	initStorage()
-	fileName = "settings"
+func InitStorage() {
+	fileStorage = initSettings()
+}
 
-	if version != "" {
-		fileName += "-" + version
-	}
-	fileName += ".json"
+func LoadOverride(name string) bool {
+	newOverride := false
 
-	file, err := os.Open(fileName)
-	defer file.Close()
+	fileName := "overrides/local/" + name + ".json"
+	file, err := os.Open(fileName);
+
 	if os.IsNotExist(err) {
-		saveSettings(fileName, fileStorage)
-		return true
-	} else if err != nil {
+		fileName = "overrides/" + name + ".json"
+		file, err = os.Open(fileName)
+
+		if os.IsNotExist(err) {
+			fileName = "overrides/local/" + name + ".json"
+			createEmpty(fileName)
+			newOverride = true
+		}
+	}
+
+	defer file.Close()
+
+	if err != nil {
 		panic(err)
 	} else {
 		load(file, fileStorage)
-		saveSettings(fileName, fileStorage) //this is done to save additions from the current format
 	}
 
 	if !RECORD {
 		setupWatcher(fileName)
 	}
 
-	return false
+	return newOverride
 }
 
-func setupWatcher(file string) {
+func LoadSettings(version string) bool {
+	baseFileName := "settings"
+
+	if version != "" {
+		baseFileName += "-" + version
+	}
+	baseFileName += ".json"
+
+	newSettings := false
+
+	file, err := os.Open(baseFileName)
+	defer file.Close()
+	if os.IsNotExist(err) {
+		saveBase()
+		newSettings = true
+	} else if err != nil {
+		panic(err)
+	} else {
+		load(file, fileStorage)
+		saveBase()
+	}
+
+	if !RECORD {
+		setupWatcher(baseFileName)
+	}
+
+	return newSettings
+}
+
+func setupWatcher(fileName string) {
 	var err error
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
@@ -85,6 +123,8 @@ func setupWatcher(file string) {
 					load(file, fileStorage)
 
 					file.Close()
+
+					SaveAll()
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -95,7 +135,7 @@ func setupWatcher(file string) {
 		}
 	}()
 
-	abs, _ := filepath.Abs(file)
+	abs, _ := filepath.Abs(fileName)
 
 	err = watcher.Add(abs)
 	if err != nil {
@@ -121,8 +161,32 @@ func load(file *os.File, target interface{}) {
 	}
 }
 
-func Save() {
-	saveSettings(fileName, fileStorage)
+func saveBase() {
+	saveSettings(baseFileName, fileStorage)
+}
+
+func UpdateBase(updateJSON json.RawMessage) {
+	newBase := initSettings()
+	file, err := os.Open(baseFileName)
+	if err != nil{
+		panic(err)
+	}
+	defer file.Close()
+	load(file, newBase)
+	if err := json.Unmarshal(updateJSON, &newBase); err != nil {
+		panic(err)
+	}
+	saveSettings(baseFileName, newBase)
+}
+
+func SetAllSettingsFile(fileName string) {
+	allSettingsFile = fileName
+}
+
+func SaveAll() {
+	if allSettingsFile != "" {
+		saveSettings(allSettingsFile, fileStorage)
+	}
 }
 
 func saveSettings(path string, source interface{}) {
@@ -141,6 +205,14 @@ func saveSettings(path string, source interface{}) {
 	if err := file.Close(); err != nil {
 		panic(err)
 	}
+}
+
+func createEmpty(path string) {
+	file, err := os.Create(path)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+	file.Write([]byte("{}\n"))
 }
 
 func GetFormat() *fileformat {

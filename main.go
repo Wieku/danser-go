@@ -71,6 +71,17 @@ var lastVSync bool
 
 var output string
 
+type flagSlice []string
+
+func (slice *flagSlice) String() string {
+	return fmt.Sprint(*slice)
+}
+
+func (slice *flagSlice) Set(entry string) error {
+	*slice = append(*slice, entry)
+	return nil
+}
+
 func run() {
 	mainthread.Call(func() {
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
@@ -87,7 +98,11 @@ func run() {
 		creator := flag.String("creator", "", creatorDesc)
 		flag.StringVar(creator, "c", "", creatorDesc+shorthand)
 
-		settingsVersion := flag.String("settings", "", "Specify settings version, -settings=a means that settings-a.json will be loaded")
+		settingsVersion := flag.String("settings", "", "Specify base settings version, -settings=a means that settings-a.json will be loaded")
+		var settingsOverrides flagSlice;
+		flag.Var(&settingsOverrides, "override", "Specify override version, -override=a means that override-a.json will be loaded, can specify multiple")
+		allSettingsFile := flag.String("save-settings", ".all-settings.json","Specify json file to save all settings (including overrides) to")
+
 		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
 		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
 		knockout := flag.Bool("knockout", false, "Use knockout feature")
@@ -178,7 +193,16 @@ func run() {
 			bass.Offscreen = true
 		}
 
+		if *allSettingsFile != "" {
+			settings.SetAllSettingsFile(*allSettingsFile)
+		}
+
+		settings.InitStorage()
 		newSettings := settings.LoadSettings(*settingsVersion)
+		for _, override := range settingsOverrides {
+			settings.LoadOverride(override)
+		}
+		settings.SaveAll()
 
 		if !newSettings && len(os.Args) == 1 {
 			utils.OpenURL("https://youtu.be/dQw4w9WgXcQ")
@@ -188,7 +212,7 @@ func run() {
 		player = nil
 		var beatMap *beatmap.BeatMap = nil
 
-		if !closeAfterSettingsLoad {
+		if closeAfterSettingsLoad {
 			database.Init()
 			beatmaps := database.LoadBeatmaps()
 
@@ -254,7 +278,12 @@ func run() {
 
 		if newSettings {
 			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
-			settings.Save()
+			gJson, err := json.Marshal(settings.Graphics)
+			if err != nil {
+				panic(err)
+			}
+			updateJson := "{\"Graphics\":" + string(gJson) + "}"
+			settings.UpdateBase([]byte(updateJson))
 		}
 
 		if closeAfterSettingsLoad {
