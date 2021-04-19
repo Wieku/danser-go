@@ -38,6 +38,7 @@ type IHitObject interface {
 	SetStackOffset(offset float32, modifier difficulty.Modifier)
 
 	IsNewCombo() bool
+	SetNewCombo(b bool)
 
 	GetType() Type
 
@@ -227,6 +228,10 @@ func (hitObject *HitObject) SetStackOffset(offset float32, modifier difficulty.M
 
 func (hitObject *HitObject) IsNewCombo() bool {
 	return hitObject.NewCombo
+}
+
+func (hitObject *HitObject) SetNewCombo(b bool) {
+	hitObject.NewCombo = b
 }
 
 func (hitObject *HitObject) DisableAudioSubmission(value bool) {

@@ -316,10 +316,16 @@ func ParseObjects(beatMap *BeatMap) {
 	num := 0
 	comboNumber := 1
 	comboSet := 0
+	forceNewCombo := false
 	for _, iO := range beatMap.HitObjects {
-		if iO.IsNewCombo() {
+		if iO.GetType() == objects.SPINNER {
+			forceNewCombo = true
+		} else if iO.IsNewCombo() || forceNewCombo {
+			iO.SetNewCombo(true)
 			comboNumber = 1
 			comboSet++
+
+			forceNewCombo = false
 		}
 
 		iO.SetID(int64(num))
