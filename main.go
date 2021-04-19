@@ -245,6 +245,7 @@ func run() {
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 		glfw.WindowHint(glfw.Resizable, glfw.False)
 		glfw.WindowHint(glfw.Samples, 0)
+		glfw.WindowHint(glfw.Visible, glfw.False)
 
 		var err error
 
@@ -267,8 +268,6 @@ func run() {
 		}
 
 		if settings.RECORD {
-			glfw.WindowHint(glfw.Visible, glfw.False)
-
 			//HACK: some in-app variables depend on these settings so we force them here
 			settings.Graphics.VSync = false
 			settings.Graphics.ShowFPS = false
@@ -294,6 +293,13 @@ func run() {
 
 		if err != nil {
 			panic(err)
+		}
+
+		if !*record {
+			win.SetFocusCallback(func(w *glfw.Window, focused bool) {
+				log.Println("Focus changed: ", focused)
+				input.Focused = focused
+			})
 		}
 
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
@@ -360,6 +366,10 @@ func run() {
 			}, gl.Ptr(nil))
 
 			gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DONT_CARE, 0, nil, true)
+		}
+
+		if !settings.RECORD {
+			win.Show()
 		}
 
 		gl.Enable(gl.BLEND)
