@@ -212,7 +212,7 @@ func run() {
 		player = nil
 		var beatMap *beatmap.BeatMap = nil
 
-		if closeAfterSettingsLoad {
+		if !closeAfterSettingsLoad {
 			database.Init()
 			beatmaps := database.LoadBeatmaps()
 
