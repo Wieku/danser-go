@@ -4,10 +4,10 @@ var Graphics = initGraphics()
 
 func initGraphics() *graphics {
 	return &graphics{
-		Width:        240,
-		Height:       360,
-		WindowWidth:  96,
-		WindowHeight: 20,
+		Width:        1920,
+		Height:       1080,
+		WindowWidth:  1280,
+		WindowHeight: 720,
 		Fullscreen:   true,
 		VSync:        false,
 		FPSCap:       0,
