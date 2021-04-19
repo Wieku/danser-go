@@ -29,6 +29,7 @@ func commonParse(data []string, extraIndex int) *HitObject {
 		EndTime:     float64(time),
 		HitObjectID: -1,
 		NewCombo:    (objType & 4) == 4,
+		ColorOffset: (objType >> 4) & 7,
 	}
 
 	hitObject.BasicHitSound = parseExtras(data, extraIndex)

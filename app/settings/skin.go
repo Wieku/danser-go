@@ -6,6 +6,7 @@ func initSkin() *skin {
 	return &skin{
 		CurrentSkin:       "default",
 		UseColorsFromSkin: false,
+		UseBeatmapColors:  false,
 		Cursor: &skinCursor{
 			UseSkinCursor:    false,
 			Scale:            1.0,
@@ -19,6 +20,7 @@ func initSkin() *skin {
 type skin struct {
 	CurrentSkin       string
 	UseColorsFromSkin bool
+	UseBeatmapColors  bool
 
 	Cursor *skinCursor
 }

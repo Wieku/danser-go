@@ -377,6 +377,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.startCircle = DummyCircle(slider.StartPosRaw, slider.StartTime)
 	slider.startCircle.ComboNumber = slider.ComboNumber
 	slider.startCircle.ComboSet = slider.ComboSet
+	slider.startCircle.ComboSetHax = slider.ComboSetHax
 	slider.startCircle.HitObjectID = slider.HitObjectID
 	slider.startCircle.StackOffset = slider.StackOffset
 	slider.startCircle.StackOffsetHR = slider.StackOffsetHR
@@ -415,6 +416,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == slider.repeat)
 		circle.ComboNumber = slider.ComboNumber
 		circle.ComboSet = slider.ComboSet
+		circle.ComboSetHax = slider.ComboSetHax
 		circle.HitObjectID = slider.HitObjectID
 		circle.StackOffset = slider.StackOffset
 		circle.StackOffsetHR = slider.StackOffsetHR
@@ -800,7 +802,7 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 		if skin.GetInfo().SliderTrackOverride != nil {
 			baseTrack = *skin.GetInfo().SliderTrackOverride
 		} else {
-			baseTrack = skin.GetInfo().ComboColors[int(slider.ComboSet)%len(skin.GetInfo().ComboColors)]
+			baseTrack = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), baseTrack)
 		}
 
 		bodyOuter = baseTrack.Shade2(-0.1)
@@ -936,7 +938,7 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 		color := color2.NewL(1)
 
 		if skin.GetInfo().SliderBallTint {
-			color = skin.GetInfo().ComboColors[int(slider.ComboSet)%len(skin.GetInfo().ComboColors)]
+			color = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), color)
 		} else if skin.GetInfo().SliderBall != nil {
 			color = *skin.GetInfo().SliderBall
 		}
@@ -953,10 +955,6 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 	} else {
 		batch.SetColor(1, 1, 1, alpha)
 	}
-
-	//cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-	//r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-	//batch.SetColor(float64(r), float64(g), float64(b), alpha)
 
 	if useBallTexture {
 		batch.SetTranslation(vector.NewVec2d(0, 0))

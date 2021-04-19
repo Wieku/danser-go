@@ -279,17 +279,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 
 	batch.SetColor(1, 1, 1, alpha)
 
-	//TODO: REDO THIS
-	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
-		color := skin.GetInfo().ComboColors[int(circle.ComboSet)%len(skin.GetInfo().ComboColors)]
-		circle.hitCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
-	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
-		cHSV := settings.Objects.Colors.ComboColors[int(circle.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-		circle.hitCircle.SetColor(color2.NewRGB(r, g, b))
-	} else {
-		circle.hitCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
-	}
+	circle.hitCircle.SetColor(skin.GetColor(int(circle.ComboSet), int(circle.ComboSetHax), color))
 
 	circle.hitCircle.Draw(time, batch)
 
@@ -333,16 +323,7 @@ func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batc
 	batch.SetTranslation(position.Copy64())
 	batch.SetColor(1, 1, 1, float64(color.A))
 
-	if settings.Skin.UseColorsFromSkin && len(skin.GetInfo().ComboColors) > 0 {
-		color := skin.GetInfo().ComboColors[int(circle.ComboSet)%len(skin.GetInfo().ComboColors)]
-		circle.approachCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
-	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
-		cHSV := settings.Objects.Colors.ComboColors[int(circle.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-		r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-		circle.approachCircle.SetColor(color2.NewRGB(r, g, b))
-	} else {
-		circle.approachCircle.SetColor(color2.NewRGB(color.R, color.G, color.B))
-	}
+	circle.approachCircle.SetColor(skin.GetColor(int(circle.ComboSet), int(circle.ComboSetHax), color))
 
 	circle.approachCircle.Draw(time, batch)
 }

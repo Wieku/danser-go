@@ -32,11 +32,13 @@ type IHitObject interface {
 	SetID(int64)
 	SetComboNumber(cn int64)
 	SetComboSet(set int64)
+	SetComboSetHax(set int64)
 
 	GetStackIndex(modifier difficulty.Modifier) int64
 	SetStackIndex(index int64, modifier difficulty.Modifier)
 	SetStackOffset(offset float32, modifier difficulty.Modifier)
 
+	GetColorOffset() int64
 	IsNewCombo() bool
 	SetNewCombo(b bool)
 
@@ -81,9 +83,10 @@ type HitObject struct {
 	NewCombo    bool
 	ComboNumber int64
 	ComboSet    int64
+	ComboSetHax int64
+	ColorOffset int64
 
 	BasicHitSound audio.HitSoundInfo
-
 	audioSubmissionDisabled bool
 }
 
@@ -193,6 +196,10 @@ func (hitObject *HitObject) SetComboSet(set int64) {
 	hitObject.ComboSet = set
 }
 
+func (hitObject *HitObject) SetComboSetHax(set int64) {
+	hitObject.ComboSetHax = set
+}
+
 func (hitObject *HitObject) GetStackIndex(modifier difficulty.Modifier) int64 {
 	switch {
 	case modifier&difficulty.HardRock > 0:
@@ -224,6 +231,10 @@ func (hitObject *HitObject) SetStackOffset(offset float32, modifier difficulty.M
 	default:
 		hitObject.StackOffset = vector.NewVec2f(1, 1).Scl(offset)
 	}
+}
+
+func (hitObject *HitObject) GetColorOffset() int64 {
+	return hitObject.ColorOffset
 }
 
 func (hitObject *HitObject) IsNewCombo() bool {
