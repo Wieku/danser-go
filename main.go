@@ -287,6 +287,7 @@ func run() {
 		}
 
 		if closeAfterSettingsLoad {
+			settings.SaveAll()
 			os.Exit(0)
 		}
 
