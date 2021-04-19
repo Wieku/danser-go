@@ -2,6 +2,7 @@
 screenshots/
 replays/
 videos/
+.all-settings.json
 settings.json
 settings-*
 danser.db
