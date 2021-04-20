@@ -37,16 +37,19 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 
 	scheduler.mover.Reset(mods)
 
+	// Slider dance / random slider dance resolving
 	for i := 0; i < len(scheduler.queue); i++ {
 		scheduler.queue = PreprocessQueue(i, scheduler.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
+	// Convert spinners to pseudo spinners that have beginning and ending angles, simplifies mover codes as well
 	for i := 0; i < len(scheduler.queue); i++ {
 		if s, ok := scheduler.queue[i].(*objects.Spinner); ok {
 			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor)
 		}
 	}
 
+	// Skip (pseudo)circles if they are too close together
 	for i := 0; i < len(scheduler.queue); i++ {
 		if _, ok := scheduler.queue[i].(*objects.Circle); !ok {
 			continue
@@ -72,9 +75,8 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 			}
 		}
 
-		if remove {
+		if remove { //we don't do "i--" here because we don't want to remove too much
 			scheduler.queue = append(scheduler.queue[:i], scheduler.queue[i+1:]...)
-			//we don't do "i--" here because we don't want to remove too much
 		}
 	}
 
