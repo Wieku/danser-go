@@ -36,8 +36,8 @@ func InitStorage() {
 	fileStorage = initSettings()
 }
 
-func LoadOverride(name string) bool {
-	newOverride := false
+func LoadOverride(name string) (newOverride bool) {
+	newOverride = false
 
 	fileName := "overrides/local/" + name + ".json"
 	file, err := os.Open(fileName);
@@ -65,10 +65,12 @@ func LoadOverride(name string) bool {
 		setupWatcher(fileName)
 	}
 
-	return newOverride
+	return
 }
 
-func LoadSettings(version string) bool {
+func LoadSettings(version string) (newSettings bool) {
+	newSettings = false
+
 	baseFileName = "settings"
 
 	if version != "" {
@@ -76,7 +78,6 @@ func LoadSettings(version string) bool {
 	}
 	baseFileName += ".json"
 
-	newSettings := false
 
 	file, err := os.Open(baseFileName)
 	defer file.Close()
@@ -94,7 +95,7 @@ func LoadSettings(version string) bool {
 		setupWatcher(baseFileName)
 	}
 
-	return newSettings
+	return
 }
 
 func setupWatcher(fileName string) {
