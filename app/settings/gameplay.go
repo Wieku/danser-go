@@ -10,8 +10,9 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			ShowUnstableRate:  true,
-			UnstableRateScale: 1.0,
+			ShowUnstableRate:     true,
+			UnstableRateDecimals: 0,
+			UnstableRateScale:    1.0,
 		},
 		Score: &score{
 			hudElement: &hudElement{
@@ -128,8 +129,9 @@ type hudElement struct {
 
 type hitError struct {
 	*hudElement
-	ShowUnstableRate  bool
-	UnstableRateScale float64
+	ShowUnstableRate     bool
+	UnstableRateDecimals int
+	UnstableRateScale    float64
 }
 
 type score struct {
