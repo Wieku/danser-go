@@ -1,6 +1,9 @@
 package animation
 
-import "math"
+import (
+	"github.com/wieku/danser-go/app/bmath"
+	"math"
+)
 
 type TargetGlider struct {
 	value float64
@@ -15,7 +18,7 @@ func NewTargetGlider(startValue float64, decimals int) *TargetGlider {
 	return &TargetGlider{
 		value: startValue,
 		targetValue: startValue,
-		decimals: decimals,
+		decimals: bmath.ClampI(decimals, 0, 5),
 		firstTime: true,
 	}
 }
@@ -55,5 +58,5 @@ func (glider *TargetGlider) SetTarget(value float64) {
 }
 
 func (glider *TargetGlider) SetDecimals(decimals int) {
-	glider.decimals = decimals
+	glider.decimals = bmath.ClampI(decimals, 0, 5)
 }
