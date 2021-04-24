@@ -4,25 +4,22 @@ import (
 	"sync"
 )
 
-func Balance(threads int, candidates []interface{}, work func(a interface{}) interface{}) []interface{} {
+func Balance(workers int, candidates []interface{}, workerFunc func(a interface{}) interface{}) []interface{} {
+	results := make([]interface{}, 0, len(candidates))
 
-	var result []interface{}
-
-	channel := make(chan interface{}, threads)
+	channel := make(chan interface{}, workers)
 	channelB := make(chan interface{}, len(candidates))
+
 	var wg sync.WaitGroup
 
-	for i := 0; i < threads; i++ {
+	for i := 0; i < workers; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
-			for {
-				candidate, ok := <-channel
-				if !ok {
-					break
-				}
 
-				channelB <- work(candidate)
+			for candidate := range channel {
+				channelB <- workerFunc(candidate)
 			}
 		}()
 	}
@@ -35,9 +32,14 @@ func Balance(threads int, candidates []interface{}, work func(a interface{}) int
 	wg.Wait()
 
 	for len(channelB) > 0 {
-		beatmap := <-channelB
-		result = append(result, beatmap)
+		result := <-channelB
+
+		if result != nil {
+			results = append(results, result)
+		}
 	}
 
-	return result
+	close(channelB)
+
+	return results
 }
