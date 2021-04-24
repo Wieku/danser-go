@@ -73,6 +73,8 @@ var output string
 
 func run() {
 	mainthread.Call(func() {
+		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
+
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
 
 		artist := flag.String("artist", "", artistDesc)
@@ -146,6 +148,7 @@ func run() {
 			}
 
 			*md5 = rp.BeatmapMD5
+			*id = -1
 			modsParsed = difficulty2.Modifier(rp.Mods)
 			*knockout = true
 			settings.REPLAY = *replay
@@ -157,7 +160,7 @@ func run() {
 
 		closeAfterSettingsLoad := false
 
-		if (*md5 + *artist + *title + *difficulty + *creator) == "" {
+		if (*md5 + *artist + *title + *difficulty + *creator) == "" && *id < 0 {
 			log.Println("No beatmap specified, closing...")
 			closeAfterSettingsLoad = true
 		}
@@ -192,7 +195,16 @@ func run() {
 			database.Init()
 			beatmaps := database.LoadBeatmaps()
 
-			if *md5 != "" {
+			if *id > -1 {
+				for _, b := range beatmaps {
+					if b.ID == *id {
+						beatMap = b
+						beatMap.UpdatePlayStats()
+						database.UpdatePlayStats(beatMap)
+						break
+					}
+				}
+			} else if *md5 != "" {
 				for _, b := range beatmaps {
 					if strings.EqualFold(b.MD5, *md5) {
 						beatMap = b

@@ -47,6 +47,7 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-difficulty="Overdrive"` or `-d="Overdrive"`
 * `-creator="Skystar"` or `-c="Skystar"`
 * `-md5=hash` - overrides all map selection arguments and attempts to find `.osu` file matching the specified MD5 hash
+* `-id=433005` - overrides all map selection arguments and attempts to find `.osu` file with matching BeatmapID (not BeatmapSetID!)
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of cursors in TAG mode
 * `-speed=1.5` - music speed. Value of 1.5 is equal to osu!'s DoubleTime mod
