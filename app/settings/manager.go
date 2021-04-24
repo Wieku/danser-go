@@ -33,15 +33,17 @@ func initStorage() {
 
 func LoadSettings(version string) bool {
 	initStorage()
-	fileName = "settings"
 
+	fileName = "settings"
 	if version != "" {
 		fileName += "-" + version
 	}
 	fileName += ".json"
 
 	file, err := os.Open(fileName)
+
 	defer file.Close()
+
 	if os.IsNotExist(err) {
 		saveSettings(fileName, fileStorage)
 		return true
@@ -61,6 +63,7 @@ func LoadSettings(version string) bool {
 
 func setupWatcher(file string) {
 	var err error
+
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -70,26 +73,22 @@ func setupWatcher(file string) {
 		for {
 			select {
 			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				log.Println("event:", event)
-
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("modified file:", event.Name)
+				if ok && event.Op&fsnotify.Write == fsnotify.Write {
+					log.Println("SettingsManager: Detected", file, "modification, reloading...")
 
 					time.Sleep(time.Millisecond * 200)
 
-					file, _ := os.Open(fileName)
+					sFile, _ := os.Open(fileName)
 
-					load(file, fileStorage)
+					load(sFile, fileStorage)
 
-					file.Close()
+					sFile.Close()
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
+
 				log.Println("error:", err)
 			}
 		}
