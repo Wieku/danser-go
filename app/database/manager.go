@@ -22,7 +22,7 @@ import (
 
 var dbFile *sql.DB
 
-const databaseVersion = 20210326
+const databaseVersion = 20210423
 
 var currentPreVersion = databaseVersion
 
@@ -42,6 +42,7 @@ func Init() {
 		&M20201118{},
 		&M20210104{},
 		&M20210326{},
+		&M20210423{},
 	}
 
 	var err error
@@ -51,7 +52,7 @@ func Init() {
 	}
 
 	_, err = dbFile.Exec(`
-		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1, bpmMin REAL, bpmMax REAL, circles INTEGER, sliders INTEGER, spinners INTEGER, endTime INTEGER);
+		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1, bpmMin REAL, bpmMax REAL, circles INTEGER, sliders INTEGER, spinners INTEGER, endTime INTEGER, setID INTEGER, mapID INTEGER);
 		CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
 		CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);
 	`)
@@ -296,69 +297,78 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 		beatmaps[bMap.Dir+"/"+bMap.File] = i + 1
 	}
 
-	if currentPreVersion < 20210326 {
-		log.Println("Updating cached beatmaps...")
-
-		log.Println("Loading cached beatmaps from disk...")
-
-		toUpdate := make([]*beatmap.BeatMap, 0)
-
-		for _, bMap := range bMaps {
-			err2 := beatmap.ParseBeatMap(bMap)
-			if err2 != nil {
-				log.Println("Corrupted cached beatmap found. Removing from database:", bMap.File)
-				removeList = append(removeList, toRemove{bMap.Dir, bMap.File})
-			} else {
-				toUpdate = append(toUpdate, bMap)
+	if currentPreVersion < databaseVersion {
+		updateBeatmaps := false
+		for _, m := range migrations {
+			if currentPreVersion < m.Date() {
+				updateBeatmaps = updateBeatmaps || m.FieldsToMigrate() != nil
 			}
 		}
 
-		log.Println("Cached beatmaps loaded! Performing migrations...")
+		if updateBeatmaps {
+			log.Println("Updating cached beatmaps...")
 
-		tx, err := dbFile.Begin()
-		if err != nil {
-			panic(err)
-		}
+			log.Println("Loading cached beatmaps from disk...")
 
-		for _, m := range migrations {
-			if currentPreVersion < m.Date() {
-				log.Println("Performing", m.Date(), "migration...")
+			toUpdate := make([]*beatmap.BeatMap, 0)
 
-				if m.FieldsToMigrate() == nil {
-					continue
+			for _, bMap := range bMaps {
+				err2 := beatmap.ParseBeatMap(bMap)
+				if err2 != nil {
+					log.Println("Corrupted cached beatmap found. Removing from database:", bMap.File)
+					removeList = append(removeList, toRemove{bMap.Dir, bMap.File})
+				} else {
+					toUpdate = append(toUpdate, bMap)
 				}
+			}
 
-				fieldsArray := m.FieldsToMigrate()
-				for i := range fieldsArray {
-					fieldsArray[i] += " = ?"
-				}
+			log.Println("Cached beatmaps loaded! Performing migrations...")
 
-				st, err := tx.Prepare(fmt.Sprintf("UPDATE beatmaps SET %s WHERE dir = ? AND file = ?", strings.Join(fieldsArray, ", ")))
-				if err != nil {
-					panic(err)
-				}
+			tx, err := dbFile.Begin()
+			if err != nil {
+				panic(err)
+			}
 
-				for _, bMap := range toUpdate {
-					values := append(m.GetValues(bMap), bMap.Dir, bMap.File)
+			for _, m := range migrations {
+				if currentPreVersion < m.Date() {
+					log.Println("Performing", m.Date(), "migration...")
 
-					_, err = st.Exec(values...)
+					if m.FieldsToMigrate() == nil {
+						continue
+					}
 
+					fieldsArray := m.FieldsToMigrate()
+					for i := range fieldsArray {
+						fieldsArray[i] += " = ?"
+					}
+
+					st, err := tx.Prepare(fmt.Sprintf("UPDATE beatmaps SET %s WHERE dir = ? AND file = ?", strings.Join(fieldsArray, ", ")))
 					if err != nil {
 						panic(err)
 					}
-				}
 
-				if err = st.Close(); err != nil {
-					panic(err)
+					for _, bMap := range toUpdate {
+						values := append(m.GetValues(bMap), bMap.Dir, bMap.File)
+
+						_, err = st.Exec(values...)
+
+						if err != nil {
+							panic(err)
+						}
+					}
+
+					if err = st.Close(); err != nil {
+						panic(err)
+					}
 				}
 			}
-		}
 
-		log.Println("Committing migrations to database...")
+			log.Println("Committing migrations to database...")
 
-		err = tx.Commit()
-		if err != nil {
-			panic(err)
+			err = tx.Commit()
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
@@ -406,6 +416,8 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 			&beatMap.Sliders,
 			&beatMap.Spinners,
 			&beatMap.Length,
+			&beatMap.SetID,
+			&beatMap.ID,
 		)
 
 		beatMap.Diff.SetCS(cs)
@@ -436,7 +448,7 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	if err == nil {
 		var st *sql.Stmt
-		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
 		if err == nil {
 			for _, bMap := range bMaps {
@@ -474,6 +486,8 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.Sliders,
 					bMap.Spinners,
 					bMap.Length,
+					bMap.SetID,
+					bMap.ID,
 				)
 
 				if err1 != nil {
