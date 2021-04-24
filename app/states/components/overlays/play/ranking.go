@@ -20,6 +20,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -273,7 +274,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	if settings.Gameplay.PPCounter.ShowInResults {
 		pp := panel.ruleset.GetPP(panel.cursor)
-		ppText := fmt.Sprintf("%.0fpp", pp)
+		ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", pp)
 
 		batch.SetColor(0, 0, 0, alpha*0.5)
 		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, bmath.Origin.Centre, 61, false, ppText)
