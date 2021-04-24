@@ -62,6 +62,10 @@ func parseMetadata(line []string, beatMap *BeatMap) {
 		beatMap.Source = line[1]
 	case "Tags":
 		beatMap.Tags = line[1]
+	case "BeatmapID":
+		beatMap.ID, _ = strconv.ParseInt(line[1], 10, 64)
+	case "BeatmapSetID":
+		beatMap.SetID, _ = strconv.ParseInt(line[1], 10, 64)
 	}
 }
 

@@ -33,6 +33,9 @@ type BeatMap struct {
 	Bg    string
 	MD5   string
 
+	SetID int64
+	ID    int64
+
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 
 	Stars float64
