@@ -61,13 +61,10 @@ type ScoreOverlay struct {
 	newComboScaleB *animation.Glider
 	newComboFadeB  *animation.Glider
 
-	currentScore int64
-	displayScore float64
+	scoreGlider    *animation.TargetGlider
+	accuracyGlider *animation.TargetGlider
+	ppGlider       *animation.TargetGlider
 
-	currentAccuracy float64
-	displayAccuracy float64
-
-	ppGlider   *animation.Glider
 	ruleset    *osu.OsuRuleSet
 	cursor     *graphics.Cursor
 	combobreak *bass.Sample
@@ -166,8 +163,9 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.newComboScaleB = animation.NewGlider(1.28)
 	overlay.newComboFadeB = animation.NewGlider(0)
 
-	overlay.ppGlider = animation.NewGlider(0)
-	overlay.ppGlider.SetEasing(easing.OutQuint)
+	overlay.scoreGlider = animation.NewTargetGlider(0, 0)
+	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
+	overlay.ppGlider = animation.NewTargetGlider(0, 0)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -314,11 +312,9 @@ func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number 
 
 	overlay.entry.UpdatePlayer(score, mCombo)
 
-	overlay.ppGlider.Reset()
-	overlay.ppGlider.AddEvent(overlay.normalTime, overlay.normalTime+500, pp)
-
-	overlay.currentScore = score
-	overlay.currentAccuracy = accuracy
+	overlay.scoreGlider.SetTarget(float64(score))
+	overlay.accuracyGlider.SetTarget(accuracy)
+	overlay.ppGlider.SetTarget(pp)
 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
@@ -430,7 +426,6 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 	overlay.newComboScale.Update(time)
 	overlay.newComboScaleB.Update(time)
 	overlay.newComboFadeB.Update(time)
-	overlay.ppGlider.Update(time)
 	overlay.comboSlide.Update(time)
 
 	overlay.hpBar.SetHp(overlay.ruleset.GetHP(overlay.cursor))
@@ -452,19 +447,9 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 		overlay.nextEnd = math.MaxInt64
 	}
 
-	delta60 := (time - overlay.lastTime) / 16.667
-
-	if math.Abs(overlay.displayScore-float64(overlay.currentScore)) < 0.5 {
-		overlay.displayScore = float64(overlay.currentScore)
-	} else {
-		overlay.displayScore = float64(overlay.currentScore) + (overlay.displayScore-float64(overlay.currentScore))*math.Pow(0.75, delta60)
-	}
-
-	if math.Abs(overlay.displayAccuracy-overlay.currentAccuracy) < 0.005 {
-		overlay.displayAccuracy = overlay.currentAccuracy
-	} else {
-		overlay.displayAccuracy = overlay.currentAccuracy + (overlay.displayAccuracy-overlay.currentAccuracy)*math.Pow(0.5, delta60)
-	}
+	overlay.scoreGlider.Update(time)
+	overlay.accuracyGlider.Update(time)
+	overlay.ppGlider.Update(time)
 
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
 
@@ -686,10 +671,10 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, scoreAlpha)
 
-	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.displayScore)))
+	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
 	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap, 0, bmath.Origin.TopRight, scoreSize, true, scoreText)
 
-	accText := fmt.Sprintf("%5.2f%%", overlay.displayAccuracy)
+	accText := fmt.Sprintf("%5.2f%%", overlay.accuracyGlider.GetValue())
 	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap, accYPos, bmath.Origin.TopRight, accSize, true, accText)
 
 	batch.ResetTransform()
