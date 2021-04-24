@@ -449,6 +449,8 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	overlay.scoreGlider.Update(time)
 	overlay.accuracyGlider.Update(time)
+
+	overlay.ppGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
 	overlay.ppGlider.Update(time)
 
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
@@ -727,7 +729,7 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 	batch.SetScale(1, -1)
 	batch.SetSubScale(1, 1)
 
-	ppText := fmt.Sprintf("%.0fpp", overlay.ppGlider.GetValue())
+	ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", overlay.ppGlider.GetValue())
 
 	width := overlay.ppFont.GetWidthMonospaced(40*ppScale, ppText)
 	align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))

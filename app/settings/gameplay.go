@@ -41,6 +41,7 @@ func initGameplay() *gameplay {
 			},
 			XPosition:     5,
 			YPosition:     150,
+			Decimals:      0,
 			Align:         "CentreLeft",
 			ShowInResults: true,
 		},
@@ -144,6 +145,7 @@ type ppCounter struct {
 	*hudElement
 	XPosition     float64
 	YPosition     float64
+	Decimals      int
 	Align         string
 	ShowInResults bool
 }
