@@ -56,7 +56,7 @@ func addDelayedEvent(delay float64, delegate func()) {
 }
 
 func SaveToFile(file string) {
-	mixStream = C.BASS_Mixer_StreamCreate(44100, 2, C.BASS_STREAM_DECODE|C.BASS_MIXER_END)
+	mixStream = C.BASS_Mixer_StreamCreate(48000, 2, C.BASS_STREAM_DECODE|C.BASS_MIXER_END|C.BASS_SAMPLE_FLOAT)
 
 	log.Println("Mixer stream created, adding events for processing...")
 
