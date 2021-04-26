@@ -106,6 +106,8 @@ func precheck() {
 func StartFFmpeg(fps, _w, _h int) {
 	precheck()
 
+	log.Println("Starting encoding!")
+
 	w, h = _w, _h
 
 	err := os.MkdirAll(settings.Recording.OutputDir, 0755)

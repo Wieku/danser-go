@@ -58,7 +58,7 @@ func addDelayedEvent(delay float64, delegate func()) {
 func SaveToFile(file string) {
 	mixStream = C.BASS_Mixer_StreamCreate(48000, 2, C.BASS_STREAM_DECODE|C.BASS_MIXER_END|C.BASS_SAMPLE_FLOAT)
 
-	log.Println("Mixer stream created, adding events for processing...")
+	log.Println("Audio mixing stream created, adding events for processing...")
 
 	wasPlay := false
 
@@ -76,7 +76,7 @@ func SaveToFile(file string) {
 		C.SetSync(mixStream, pos, C.int(i))
 	}
 
-	log.Println("Events added, starting encoding...")
+	log.Println("Events added, starting encoding audio...")
 
 	C.BASS_Encode_Start(mixStream, C.CString(file), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
 
