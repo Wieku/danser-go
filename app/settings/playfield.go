@@ -46,6 +46,7 @@ func initPlayfield() *playfield {
 				ParallaxMultiplier: 0.5,
 				Density:            1,
 				Scale:              1,
+				Speed:              1,
 			},
 		},
 		Logo: &logo{
@@ -134,6 +135,7 @@ type triangles struct {
 	ParallaxMultiplier float32
 	Density            float64
 	Scale              float64
+	Speed              float64
 }
 
 type logo struct {
