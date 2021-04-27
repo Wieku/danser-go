@@ -147,3 +147,7 @@ func (v Vector2f) Copy() Vector2f {
 func (v Vector2f) Copy64() Vector2d {
 	return Vector2d{float64(v.X), float64(v.Y)}
 }
+
+func IsStraightLine32(a, b, c Vector2f) bool {
+	return (b.X - a.X) * (c.Y - a.Y) - (c.X - a.X) * (b.Y - a.Y) == 0
+}
