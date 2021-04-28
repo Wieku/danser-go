@@ -684,16 +684,8 @@ func checkForUpdates() {
 		log.Println("Failed to decode the response from GitHub")
 	}
 
-	githubVersion, _ := strconv.Atoi(strings.ReplaceAll(strings.TrimSuffix(data.Tag, "b"), ".", "")+"9999")
-
-	currentSplit := strings.Split(build.VERSION, "-")
-
-	currentSub := "9999"
-	if len(currentSplit) > 1 {
-		currentSub = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
-	}
-
-	exeVersion, _ := strconv.Atoi(strings.ReplaceAll(currentSplit[0], ".", "")+currentSub)
+	githubVersion, _ := strconv.ParseInt(transformVersion(data.Tag), 10, 64)
+	exeVersion, _ := strconv.ParseInt(transformVersion(build.VERSION), 10, 64)
 
 	if exeVersion >= githubVersion {
 		log.Println("You're using the newest version of danser.")
@@ -706,6 +698,22 @@ func checkForUpdates() {
 		log.Println("You can download a newer version here:", data.URL)
 		time.Sleep(2*time.Second)
 	}
+}
+
+func transformVersion(a string) string {
+	currentSplit := strings.Split(a, "-")
+	splitDots := strings.Split(strings.TrimSuffix(currentSplit[0], "b"), ".")
+
+	for i, s := range splitDots {
+		splitDots[i] = fmt.Sprintf("%04s", s)
+	}
+
+	snapshot := "9999"
+	if len(currentSplit) > 1 && !strings.HasPrefix(currentSplit[1], "dev") {
+		snapshot = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
+	}
+
+	return strings.Join(splitDots, "")+snapshot
 }
 
 func main() {
