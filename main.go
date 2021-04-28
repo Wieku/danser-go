@@ -409,7 +409,7 @@ func run() {
 		glfw.SwapInterval(1)
 		lastVSync = true
 
-		bass.Init()
+		bass.Init(settings.RECORD)
 		audio.LoadSamples()
 
 		if modsParsed.Active(difficulty2.Nightcore) {

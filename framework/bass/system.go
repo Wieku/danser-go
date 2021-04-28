@@ -17,7 +17,7 @@ import (
 	"runtime"
 )
 
-func Init() {
+func Init(offscreen bool) {
 	playbackBufferLength := 500
 	deviceBufferLength := 10
 	updatePeriod := 5
@@ -47,7 +47,12 @@ func Init() {
 	// BASS_CONFIG_MP3_OLDGAPS
 	C.BASS_SetConfig(C.DWORD(68), C.DWORD(1))
 
-	if C.BASS_Init(C.int(-1), C.DWORD(44100), C.DWORD(0), nil, nil) != 0 {
+	deviceId := -1 //default audio device
+	if offscreen {
+		deviceId = 0 //If we're rendering, we don't want BASS to be tied to specific device, especially in headless system
+	}
+
+	if C.BASS_Init(C.int(deviceId), C.DWORD(44100), C.DWORD(0), nil, nil) != 0 {
 		log.Println("BASS Initialized!")
 		log.Println("BASS Version:       ", parseVersion(int(C.BASS_GetVersion())))
 		log.Println("BASS FX Version:    ", parseVersion(int(C.BASS_FX_GetVersion())))
