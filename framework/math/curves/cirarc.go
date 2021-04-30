@@ -7,10 +7,11 @@ import (
 )
 
 type CirArc struct {
-	pt1, pt2, pt3                  vector.Vector2f
-	centre                         vector.Vector2f //nolint:misspell
-	startAngle, totalAngle, r, dir float32
-	Unstable                       bool
+	pt1, pt2, pt3               vector.Vector2f
+	centre                      vector.Vector2f //nolint:misspell
+	startAngle, totalAngle, dir float64
+	r                           float32
+	Unstable                    bool
 }
 
 func NewCirArc(a, b, c vector.Vector2f) *CirArc {
@@ -29,13 +30,10 @@ func NewCirArc(a, b, c vector.Vector2f) *CirArc {
 		aSq*(b.Y-c.Y)+bSq*(c.Y-a.Y)+cSq*(a.Y-b.Y),
 		aSq*(c.X-b.X)+bSq*(a.X-c.X)+cSq*(b.X-a.X)).Scl(1 / d) //nolint:misspell
 
-	dA := a.Sub(arc.centre)
-	dC := c.Sub(arc.centre)
+	arc.r = a.Dst(arc.centre)
+	arc.startAngle = math.Atan2(float64(a.Y)-float64(arc.centre.Y), float64(a.X)-float64(arc.centre.X))
 
-	arc.r = dA.Len()
-	arc.startAngle = math32.Atan2(dA.Y, dA.X)
-
-	endAngle := math32.Atan2(dC.Y, dC.X)
+	endAngle := math.Atan2(float64(c.Y)-float64(arc.centre.Y), float64(c.X)-float64(arc.centre.X))
 
 	for endAngle < arc.startAngle {
 		endAngle += 2 * math.Pi
@@ -55,11 +53,11 @@ func NewCirArc(a, b, c vector.Vector2f) *CirArc {
 }
 
 func (arc *CirArc) PointAt(t float32) vector.Vector2f {
-	return vector.NewVec2fRad(arc.startAngle+arc.dir*t*arc.totalAngle, arc.r).Add(arc.centre)
+	return vector.NewVec2dRad(arc.startAngle+arc.dir*float64(t)*arc.totalAngle, float64(arc.r)).Copy32().Add(arc.centre)
 }
 
 func (arc *CirArc) GetLength() float32 {
-	return arc.r * arc.totalAngle
+	return float32(float64(arc.r) * arc.totalAngle)
 }
 
 func (arc *CirArc) GetStartAngle() float32 {
