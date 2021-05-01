@@ -50,7 +50,7 @@ func getStars(aim, speed *Skill, diff *difficulty.Difficulty) Stars {
 
 // Calculate final star rating of a map
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Stars {
-	diffObjects := createObjects(objects, diff)
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := NewAimSkill(false, diff)
 	speedSkill := NewSpeedSkill(false, diff)
@@ -72,7 +72,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 
 	log.Println("Calculating step SR for mods:", modString)
 
-	diffObjects := createObjects(objects, diff)
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := NewAimSkill(false, diff)
 	speedSkill := NewSpeedSkill(false, diff)
@@ -101,34 +101,4 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 	log.Println("Calculations finished!")
 
 	return stars
-}
-
-// Creates difficulty objects needed for star rating calculations
-func createObjects(objsB []objects.IHitObject, d *difficulty.Difficulty) []*preprocessing.DifficultyObject {
-	objs := make([]objects.IHitObject, 0, len(objsB))
-
-	for _, o := range objsB {
-		if s, ok := o.(*objects.Slider); ok {
-			o = preprocessing.NewLazySlider(s, d)
-		}
-
-		objs = append(objs, o)
-	}
-
-	diffObjects := make([]*preprocessing.DifficultyObject, 0, len(objsB))
-
-	for i := 1; i < len(objs); i++ {
-		var lastLast, last, current objects.IHitObject
-
-		if i > 1 {
-			lastLast = objs[i-2]
-		}
-
-		last = objs[i-1]
-		current = objs[i]
-
-		diffObjects = append(diffObjects, preprocessing.NewDifficultyObject(current, lastLast, last, d))
-	}
-
-	return diffObjects
 }
