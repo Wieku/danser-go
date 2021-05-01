@@ -40,7 +40,6 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	maxCombo, nsliders, ncircles, nobjects,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty,
 	scoreVersion int) PPv2 {
-
 	maxCombo = bmath.MaxI(1, maxCombo)
 
 	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
@@ -68,7 +67,7 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	// accuracy
 
 	if totalhits == 0 {
-		pp.accuracy = 1.0
+		pp.accuracy = 0.0
 	} else {
 		acc := (float64(n50)*50 +
 			float64(n100)*100 +
