@@ -73,7 +73,11 @@ func setupWatcher(file string) {
 		for {
 			select {
 			case event, ok := <-watcher.Events:
-				if ok && event.Op&fsnotify.Write == fsnotify.Write {
+				if !ok {
+					return
+				}
+
+				if event.Op&fsnotify.Write == fsnotify.Write {
 					log.Println("SettingsManager: Detected", file, "modification, reloading...")
 
 					time.Sleep(time.Millisecond * 200)
