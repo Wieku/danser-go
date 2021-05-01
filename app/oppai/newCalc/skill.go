@@ -7,23 +7,39 @@ import (
 )
 
 type Skill struct {
+	// Strain values are multiplied by this number for the given skill. Used to balance the value of different skills between each other.
 	SkillMultiplier float64
-	StrainDecayBase float64
-	DecayWeight     float64
 
+	// Determines how quickly strain decays for the given skill.
+	// For example a value of 0.15 indicates that strain decays to 15% of its original value in one second.
+	StrainDecayBase float64
+
+	// The weight by which each strain value decays.
+	DecayWeight float64
+
+	// The length of each strain section.
 	SectionLength float64
 
+	// How many DifficultyObjects should be kept
+	HistoryLength int
+
+	// Keeps track of previous DifficultyObjects for strain section calculations
 	Previous []*DifficultyObject
 
+	// The current strain level
 	CurrentStrain float64
 
-	StrainValueOf      func(skill *Skill, obj *DifficultyObject) float64
+	// Delegate to calculate strain value of skill
+	StrainValueOf func(skill *Skill, obj *DifficultyObject) float64
+
 	currentSectionPeak float64
 	currentSectionEnd  float64
 
-	strainPeaks       []float64
-	HistoryLength     int
+	strainPeaks []float64
+
+	// Should fixed clock rate calculations be used, set to false to use current osu!stable calculations (2021.01)
 	fixedCalculations bool
+
 	diff              *difficulty.Difficulty
 }
 
@@ -37,7 +53,7 @@ func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 	}
 }
 
-func (skill *Skill) Process(current *DifficultyObject) {
+func (skill *Skill) processInternal(current *DifficultyObject) {
 	var startTime float64
 	if skill.fixedCalculations {
 		startTime = current.StartTime
@@ -66,12 +82,13 @@ func (skill *Skill) Process(current *DifficultyObject) {
 	skill.currentSectionPeak = math.Max(skill.CurrentStrain, skill.currentSectionPeak)
 }
 
-func (skill *Skill) ProcessInternal(current *DifficultyObject) {
+// Processes given DifficultyObject
+func (skill *Skill) Process(current *DifficultyObject) {
 	if len(skill.Previous) > skill.HistoryLength {
 		skill.Previous = skill.Previous[len(skill.Previous)-skill.HistoryLength:]
 	}
 
-	skill.Process(current)
+	skill.processInternal(current)
 
 	skill.Previous = append(skill.Previous, current)
 }
