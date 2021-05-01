@@ -97,7 +97,6 @@ type subSet struct {
 	modMultiplier float64
 	numObjects    int64
 	grade         Grade
-	diff          []oppai.DiffCalc
 	ppv2          *oppai.PPv2
 	hits          map[HitResult]int64
 	currentKatu   int
@@ -182,7 +181,12 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalculateStep(ruleset.beatMap.HitObjects, diff)
+
+			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
+			log.Println("Aim Stars:", star.Aim)
+			log.Println("Speed Stars:", star.Speed)
+			log.Println("Total Stars:", star.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
@@ -196,7 +200,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			recoveries = 2
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
 	}
 
 	for _, obj := range beatMap.HitObjects {

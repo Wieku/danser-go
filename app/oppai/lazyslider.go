@@ -1,4 +1,4 @@
-package newCalc
+package oppai
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
