@@ -31,7 +31,6 @@ type PPv2 struct {
 
 	diff *difficulty.Difficulty
 
-	ComputedAccuracy             Accuracy
 	totalHits                    int
 	accuracy                     float64
 	amountHitObjectsWithAccuracy int
@@ -66,16 +65,18 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	pp.countMeh = n50
 	pp.countMiss = nmiss
 
-	/* accuracy -------------------------------------------- */
+	// accuracy
 
-	pp.ComputedAccuracy = Accuracy{
-		N300:    n300,
-		N100:    n100,
-		N50:     n50,
-		NMisses: nmiss,
+	if totalhits == 0 {
+		pp.accuracy = 1.0
+	} else {
+		acc := (float64(n50)*50 +
+			float64(n100)*100 +
+			float64(n300)*300) /
+			(float64(totalhits) * 300)
+
+		pp.accuracy = bmath.ClampF64(acc, 0, 1)
 	}
-
-	pp.accuracy = pp.ComputedAccuracy.Value()
 
 	switch scoreVersion {
 	case 1:
@@ -86,7 +87,8 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		panic("unsupported score")
 	}
 
-	/* total pp -------------------------------------------- */
+	// total pp
+
 	finalMultiplier := 1.12
 
 	if diff.Mods.Active(difficulty.NoFail) {
