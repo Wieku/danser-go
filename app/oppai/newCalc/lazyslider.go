@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
 // utility struct that has LazyEndPosition and LazyTravelDistance for difficulty calculations
@@ -13,7 +14,7 @@ type LazySlider struct {
 	diff *difficulty.Difficulty
 
 	LazyEndPosition vector.Vector2f
-	LazyTravelDistance float64
+	LazyTravelDistance float32
 }
 
 func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider {
@@ -28,25 +29,28 @@ func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider
 }
 
 func (s *LazySlider) calculateEndPosition() {
-	startPos := s.GetStackedStartPositionMod(s.diff.Mods)
+	s.LazyEndPosition = s.GetStackedStartPositionMod(s.diff.Mods)
 
-	s.LazyEndPosition = startPos
-
-	approxFollowCircleRadius := s.diff.CircleRadius * 3
+	approxFollowCircleRadius := float32(s.diff.CircleRadius) * 3
 
 	compute := func(time float64) {
-		difference := startPos.Add(s.GetStackedPositionAtMod(time, s.diff.Mods)).Sub(s.LazyEndPosition)
-		dist := float64(difference.Len())
+		difference := s.GetStackedPositionAtMod(time, s.diff.Mods).Sub(s.LazyEndPosition)
+		dist := difference.Len()
 
 		if dist > approxFollowCircleRadius {
 			difference = difference.Nor()
 			dist -= approxFollowCircleRadius
-			s.LazyEndPosition = s.LazyEndPosition.Add(difference.Copy64().Scl(dist).Copy32())
+			s.LazyEndPosition = s.LazyEndPosition.Add(difference.Scl(dist))
 			s.LazyTravelDistance += dist
 		}
 	}
 
-	for _, p := range s.ScorePoints {
-		compute(p.Time)
+	for i, p := range s.ScorePoints {
+		time := p.Time
+		if i == len(s.ScorePoints) - 1 {
+			time = math.Floor(math.Max(s.StartTime+(s.EndTime-s.StartTime)/2, s.EndTime-36))
+		}
+
+		compute(time)
 	}
 }

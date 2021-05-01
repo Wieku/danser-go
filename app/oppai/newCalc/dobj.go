@@ -3,13 +3,14 @@ package newCalc
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
 const (
 	NormalizedRadius        = 52.0
-	CirclesizeBuffThreshold = 30.0
+	CircleSizeBuffThreshold = 30.0
 )
 
 type DifficultyObject struct {
@@ -55,22 +56,22 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 }
 
 func (o *DifficultyObject) setDistances() {
-	radius := o.diff.CircleRadius
-	scalingFactor := NormalizedRadius / radius
+	radius := o.diff.CircleRadius / 1.00041 // we need to undo that weird allowance mentioned in difficulty.Difficulty.calculate()
+	scalingFactor := NormalizedRadius / float32(radius)
 
-	if radius < CirclesizeBuffThreshold {
+	if radius < CircleSizeBuffThreshold {
 		scalingFactor *= 1.0 +
-			math.Min(CirclesizeBuffThreshold-radius, 5.0)/50.0
+			math32.Min(CircleSizeBuffThreshold-float32(radius), 5.0)/50.0
 	}
 
 	if s, ok := o.LastObject.(*LazySlider); ok {
-		o.TravelDistance = s.LazyTravelDistance * scalingFactor
+		o.TravelDistance = float64(s.LazyTravelDistance * scalingFactor)
 	}
 
 	lastCursorPosition := getEndCursorPosition(o.LastObject, o.diff)
 
 	if _, ok := o.BaseObject.(*objects.Spinner); !ok {
-		o.JumpDistance = (o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Copy64().Scl(scalingFactor)).Dst(lastCursorPosition.Copy64().Scl(scalingFactor))
+		o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
 	}
 
 	if o.lastLastObject != nil {
@@ -80,7 +81,7 @@ func (o *DifficultyObject) setDistances() {
 		v2 := o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Sub(lastCursorPosition)
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X
-		o.Angle = math.Abs(math.Atan2(float64(det), float64(dot)))
+		o.Angle = float64(math32.Abs(math32.Atan2(det, dot)))
 	}
 }
 
