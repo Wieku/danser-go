@@ -2,6 +2,7 @@ package oppai
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/bmath"
 	"math"
 )
 
@@ -41,10 +42,7 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty,
 	scoreVersion int) PPv2 {
 
-	if maxCombo <= 0 {
-		info("W: max_combo <= 0, changing to 1")
-		maxCombo = 1
-	}
+	maxCombo = bmath.MaxI(1, maxCombo)
 
 	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
 
@@ -159,9 +157,11 @@ func (pp *PPv2) computeAimValue() float64 {
 		if pp.totalHits > 200 {
 			flBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
 		}
+
 		if pp.totalHits > 500 {
 			flBonus += (float64(pp.totalHits) - 500.0) / 1200.0
 		}
+
 		aimValue *= flBonus
 	}
 
