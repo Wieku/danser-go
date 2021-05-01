@@ -13,14 +13,14 @@ type LazySlider struct {
 
 	diff *difficulty.Difficulty
 
-	LazyEndPosition vector.Vector2f
+	LazyEndPosition    vector.Vector2f
 	LazyTravelDistance float32
 }
 
 func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider {
 	decorated := &LazySlider{
-		Slider:             slider,
-		diff: d,
+		Slider: slider,
+		diff:   d,
 	}
 
 	decorated.calculateEndPosition()
@@ -47,7 +47,7 @@ func (s *LazySlider) calculateEndPosition() {
 
 	for i, p := range s.ScorePoints {
 		time := p.Time
-		if i == len(s.ScorePoints) - 1 {
+		if i == len(s.ScorePoints)-1 {
 			time = math.Floor(math.Max(s.StartTime+(s.EndTime-s.StartTime)/2, s.EndTime-36))
 		}
 
