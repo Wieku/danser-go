@@ -376,57 +376,9 @@ func loadBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	//Just scrape all loaded data above and load beatmaps from scratch with additional data
 
-	res, _ := dbFile.Query("SELECT * FROM beatmaps")
+	cachedMaps := loadBeatmapsFromDatabase()
 
-	for res.Next() {
-		beatMap := beatmap.NewBeatMap()
-
-		var cs, ar, hp, od float64
-
-		res.Scan(
-			&beatMap.Dir,
-			&beatMap.File,
-			&beatMap.LastModified,
-			&beatMap.Name,
-			&beatMap.NameUnicode,
-			&beatMap.Artist,
-			&beatMap.ArtistUnicode,
-			&beatMap.Creator,
-			&beatMap.Difficulty,
-			&beatMap.Source,
-			&beatMap.Tags,
-			&cs,
-			&ar,
-			&beatMap.Timings.SliderMult,
-			&beatMap.Timings.TickRate,
-			&beatMap.Audio,
-			&beatMap.PreviewTime,
-			&beatMap.Timings.BaseSet,
-			&beatMap.StackLeniency,
-			&beatMap.Mode,
-			&beatMap.Bg,
-			&beatMap.MD5,
-			&beatMap.TimeAdded,
-			&beatMap.PlayCount,
-			&beatMap.LastPlayed,
-			&hp,
-			&od,
-			&beatMap.Stars,
-			&beatMap.MinBPM,
-			&beatMap.MaxBPM,
-			&beatMap.Circles,
-			&beatMap.Sliders,
-			&beatMap.Spinners,
-			&beatMap.Length,
-			&beatMap.SetID,
-			&beatMap.ID,
-		)
-
-		beatMap.Diff.SetCS(cs)
-		beatMap.Diff.SetAR(ar)
-		beatMap.Diff.SetHPDrain(hp)
-		beatMap.Diff.SetOD(od)
-
+	for _, beatMap := range cachedMaps {
 		if beatMap.Name+beatMap.Artist+beatMap.Creator == "" {
 			log.Println("Corrupted cached beatMap found. Removing from database:", beatMap.File)
 			removeList = append(removeList, toRemove{beatMap.Dir, beatMap.File})
@@ -507,6 +459,65 @@ func updateBeatmaps(bMaps []*beatmap.BeatMap) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+//nolint:nakedret
+func loadBeatmapsFromDatabase() (beatmaps []*beatmap.BeatMap) {
+	res, _ := dbFile.Query("SELECT * FROM beatmaps")
+
+	for res.Next() {
+		beatMap := beatmap.NewBeatMap()
+
+		var cs, ar, hp, od float64
+
+		res.Scan(
+			&beatMap.Dir,
+			&beatMap.File,
+			&beatMap.LastModified,
+			&beatMap.Name,
+			&beatMap.NameUnicode,
+			&beatMap.Artist,
+			&beatMap.ArtistUnicode,
+			&beatMap.Creator,
+			&beatMap.Difficulty,
+			&beatMap.Source,
+			&beatMap.Tags,
+			&cs,
+			&ar,
+			&beatMap.Timings.SliderMult,
+			&beatMap.Timings.TickRate,
+			&beatMap.Audio,
+			&beatMap.PreviewTime,
+			&beatMap.Timings.BaseSet,
+			&beatMap.StackLeniency,
+			&beatMap.Mode,
+			&beatMap.Bg,
+			&beatMap.MD5,
+			&beatMap.TimeAdded,
+			&beatMap.PlayCount,
+			&beatMap.LastPlayed,
+			&hp,
+			&od,
+			&beatMap.Stars,
+			&beatMap.MinBPM,
+			&beatMap.MaxBPM,
+			&beatMap.Circles,
+			&beatMap.Sliders,
+			&beatMap.Spinners,
+			&beatMap.Length,
+			&beatMap.SetID,
+			&beatMap.ID,
+		)
+
+		beatMap.Diff.SetCS(cs)
+		beatMap.Diff.SetAR(ar)
+		beatMap.Diff.SetHPDrain(hp)
+		beatMap.Diff.SetOD(od)
+
+		beatmaps = append(beatmaps, beatMap)
+	}
+
+	return
 }
 
 func getLastModified() map[string]int64 {
