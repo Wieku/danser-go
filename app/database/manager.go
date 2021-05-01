@@ -119,22 +119,24 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 	newBeatmaps := make([]*beatmap.BeatMap, 0)
 	cachedBeatmaps := make([]*beatmap.BeatMap, 0)
 
-	_ = godirwalk.Walk(searchDir, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != searchDir {
-				return godirwalk.SkipThis
-			}
+	if settings.General.UnpackOszFiles {
+		_ = godirwalk.Walk(searchDir, &godirwalk.Options{
+			Callback: func(osPathname string, de *godirwalk.Dirent) error {
+				if de.IsDir() && osPathname != searchDir {
+					return godirwalk.SkipThis
+				}
 
-			if strings.HasSuffix(de.Name(), ".osz") {
-				log.Println("Unpacking", osPathname, "to", filepath.Dir(osPathname)+"/"+strings.TrimSuffix(de.Name(), ".osz"))
-				utils.Unzip(osPathname, filepath.Dir(osPathname)+"/"+strings.TrimSuffix(de.Name(), ".osz"))
-				os.Remove(osPathname)
-			}
+				if strings.HasSuffix(de.Name(), ".osz") {
+					log.Println("Unpacking", osPathname, "to", filepath.Dir(osPathname)+"/"+strings.TrimSuffix(de.Name(), ".osz"))
+					utils.Unzip(osPathname, filepath.Dir(osPathname)+"/"+strings.TrimSuffix(de.Name(), ".osz"))
+					os.Remove(osPathname)
+				}
 
-			return nil
-		},
-		Unsorted: true,
-	})
+				return nil
+			},
+			Unsorted: true,
+		})
+	}
 
 	err = godirwalk.Walk(searchDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
