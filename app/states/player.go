@@ -122,7 +122,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && settings.PLAY {
+	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && (settings.PLAY || !settings.KNOCKOUT) {
 		scrub := math.Max(0, settings.START*1000)
 		end := settings.END*1000
 
