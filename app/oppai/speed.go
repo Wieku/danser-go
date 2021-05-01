@@ -3,6 +3,7 @@ package oppai
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/oppai/preprocessing"
 	"math"
 )
 
@@ -26,7 +27,7 @@ func NewSpeedSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 	return skill
 }
 
-func speedStrainValue(_ *Skill, current *DifficultyObject) float64 {
+func speedStrainValue(_ *Skill, current *preprocessing.DifficultyObject) float64 {
 	if _, ok := current.BaseObject.(*objects.Spinner); ok {
 		return 0
 	}

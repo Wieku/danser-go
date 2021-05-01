@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/oppai/preprocessing"
 	"log"
 	"math"
 )
@@ -103,18 +104,18 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 }
 
 // Creates difficulty objects needed for star rating calculations
-func createObjects(objsB []objects.IHitObject, d *difficulty.Difficulty) []*DifficultyObject {
+func createObjects(objsB []objects.IHitObject, d *difficulty.Difficulty) []*preprocessing.DifficultyObject {
 	objs := make([]objects.IHitObject, 0, len(objsB))
 
 	for _, o := range objsB {
 		if s, ok := o.(*objects.Slider); ok {
-			o = NewLazySlider(s, d)
+			o = preprocessing.NewLazySlider(s, d)
 		}
 
 		objs = append(objs, o)
 	}
 
-	diffObjects := make([]*DifficultyObject, 0, len(objsB))
+	diffObjects := make([]*preprocessing.DifficultyObject, 0, len(objsB))
 
 	for i := 1; i < len(objs); i++ {
 		var lastLast, last, current objects.IHitObject
@@ -126,7 +127,7 @@ func createObjects(objsB []objects.IHitObject, d *difficulty.Difficulty) []*Diff
 		last = objs[i-1]
 		current = objs[i]
 
-		diffObjects = append(diffObjects, NewDifficultyObject(current, lastLast, last, d))
+		diffObjects = append(diffObjects, preprocessing.NewDifficultyObject(current, lastLast, last, d))
 	}
 
 	return diffObjects

@@ -2,6 +2,7 @@ package oppai
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/oppai/preprocessing"
 	"math"
 	"sort"
 )
@@ -24,13 +25,13 @@ type Skill struct {
 	HistoryLength int
 
 	// Keeps track of previous DifficultyObjects for strain section calculations
-	Previous []*DifficultyObject
+	Previous []*preprocessing.DifficultyObject
 
 	// The current strain level
 	CurrentStrain float64
 
 	// Delegate to calculate strain value of skill
-	StrainValueOf func(skill *Skill, obj *DifficultyObject) float64
+	StrainValueOf func(skill *Skill, obj *preprocessing.DifficultyObject) float64
 
 	currentSectionPeak float64
 	currentSectionEnd  float64
@@ -53,7 +54,7 @@ func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 	}
 }
 
-func (skill *Skill) processInternal(current *DifficultyObject) {
+func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
 	var startTime float64
 	if skill.fixedCalculations {
 		startTime = current.StartTime
@@ -83,7 +84,7 @@ func (skill *Skill) processInternal(current *DifficultyObject) {
 }
 
 // Processes given DifficultyObject
-func (skill *Skill) Process(current *DifficultyObject) {
+func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 	if len(skill.Previous) > skill.HistoryLength {
 		skill.Previous = skill.Previous[len(skill.Previous)-skill.HistoryLength:]
 	}
@@ -93,7 +94,7 @@ func (skill *Skill) Process(current *DifficultyObject) {
 	skill.Previous = append(skill.Previous, current)
 }
 
-func (skill *Skill) GetPrevious() *DifficultyObject {
+func (skill *Skill) GetPrevious() *preprocessing.DifficultyObject {
 	if len(skill.Previous) == 0 {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package oppai
+package preprocessing
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
