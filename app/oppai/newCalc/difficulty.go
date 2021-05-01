@@ -22,48 +22,49 @@ type Stars struct {
 	Total float64
 
 	// Aim stars, needed for Performance Points (aka PP) calculations
-	Aim   float64
+	Aim float64
 
 	// Speed stars, needed for Performance Points (aka PP) calculations
 	Speed float64
 }
 
-// Calc calculates beatmap difficulty and stores it in total, aim, speed
-func calculate(objects []*DifficultyObject, diff *difficulty.Difficulty) Stars {
-	aimSkill := NewAimSkill(true, diff)
-	speedSkill := NewSpeedSkill(true, diff)
-
-	for _, o := range objects {
-		aimSkill.Process(o)
-		speedSkill.Process(o)
-	}
-
-	aim := math.Sqrt(aimSkill.DifficultyValue()) * StarScalingFactor
-	speed := math.Sqrt(speedSkill.DifficultyValue()) * StarScalingFactor
+// Retrieves skills values and converts to Stars
+func getStars(aim, speed *Skill, diff *difficulty.Difficulty) Stars {
+	aimVal := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
+	speedVal := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
 
 	if diff.Mods.Active(difficulty.TouchDevice) {
-		aim = math.Pow(aim, 0.8)
+		aimVal = math.Pow(aimVal, 0.8)
 	}
 
 	// total stars
-	total := aim + speed +
-		math.Abs(speed-aim)*ExtremeScalingFactor
+	total := aimVal + speedVal + math.Abs(speedVal-aimVal)*ExtremeScalingFactor
 
 	return Stars{
 		Total: total,
-		Aim:   aim,
-		Speed: speed,
+		Aim:   aimVal,
+		Speed: speedVal,
 	}
 }
 
 // Calculate final star rating of a map
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Stars {
-	return calculate(createObjects(objects, diff), diff)
+	diffObjects := createObjects(objects, diff)
+
+	aimSkill := NewAimSkill(false, diff)
+	speedSkill := NewSpeedSkill(false, diff)
+
+	for _, o := range diffObjects {
+		aimSkill.Process(o)
+		speedSkill.Process(o)
+	}
+
+	return getStars(aimSkill, speedSkill, diff)
 }
 
 // Calculate successive star ratings for every part of a beatmap
 func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Stars {
-	modString := (diff.Mods&difficulty.DifficultyAdjustMask).String()
+	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
 	}
@@ -72,16 +73,21 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 
 	diffObjects := createObjects(objects, diff)
 
-	sum := len(diffObjects) * (len(diffObjects) + 1) / 2
-	lastProgress := -1
+	aimSkill := NewAimSkill(false, diff)
+	speedSkill := NewSpeedSkill(false, diff)
 
 	stars := make([]Stars, 1, len(objects))
 
-	for i := 0; i < len(diffObjects); i++ {
-		stars = append(stars, calculate(diffObjects[:i+1], diff))
+	lastProgress := -1
+
+	for i, o := range diffObjects {
+		aimSkill.Process(o)
+		speedSkill.Process(o)
+
+		stars = append(stars, getStars(aimSkill, speedSkill, diff))
 
 		if len(diffObjects) > 2500 {
-			progress := (50 * i * (i + 1)) / sum
+			progress := (100 * i) / (len(diffObjects) - 1)
 
 			if progress != lastProgress && progress%5 == 0 {
 				log.Println(fmt.Sprintf("Progress: %d%%", progress))
