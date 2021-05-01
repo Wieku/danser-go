@@ -181,7 +181,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalculateStep(ruleset.beatMap.HitObjects, diff)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalculateStep(ruleset.beatMap.HitObjects, diff, false)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 			log.Println("Aim Stars:", star.Aim)

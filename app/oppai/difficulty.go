@@ -50,11 +50,11 @@ func getStars(aim, speed *skills.Skill, diff *difficulty.Difficulty) Stars {
 }
 
 // Calculate final star rating of a map
-func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Stars {
+func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, useFixedCalculations bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(false, diff)
-	speedSkill := skills.NewSpeedSkill(false, diff)
+	aimSkill := skills.NewAimSkill(useFixedCalculations, diff)
+	speedSkill := skills.NewSpeedSkill(useFixedCalculations, diff)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
@@ -65,7 +65,7 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) 
 }
 
 // Calculate successive star ratings for every part of a beatmap
-func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Stars {
+func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, useFixedCalculations bool) []Stars {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
@@ -75,8 +75,8 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(false, diff)
-	speedSkill := skills.NewSpeedSkill(false, diff)
+	aimSkill := skills.NewAimSkill(useFixedCalculations, diff)
+	speedSkill := skills.NewSpeedSkill(useFixedCalculations, diff)
 
 	stars := make([]Stars, 1, len(objects))
 
