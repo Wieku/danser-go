@@ -231,7 +231,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.epiGlider = animation.NewGlider(0)
 	player.objectsAlpha = animation.NewGlider(1)
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].Name == "" {
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].IsPlayer && !player.controller.GetCursors()[0].IsAutoplay {
 		player.cursorGlider.SetValue(1.0)
 	}
 
