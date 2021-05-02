@@ -241,7 +241,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.skipTo = overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime() - showAfterSkip
 
-	if !settings.SKIP && overlay.skipTo > 1200+overlay.ruleset.GetBeatMap().Diff.Preempt {
+	if !settings.SKIP && overlay.skipTo > 1200+math.Min(1800, overlay.ruleset.GetBeatMap().Diff.Preempt) {
 		skipFrames := skin.GetFrames("play-skip", true)
 		overlay.skip = sprite.NewAnimation(skipFrames, skin.GetInfo().GetFrameTime(len(skipFrames)), true, 0.0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight), bmath.Origin.BottomRight)
 		overlay.skip.SetAlpha(0.0)
