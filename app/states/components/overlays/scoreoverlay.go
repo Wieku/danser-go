@@ -192,7 +192,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.passContainer.Add(overlay.sPass)
 	overlay.passContainer.Add(overlay.sFail)
 
-	discord.UpdatePlay(cursor.Name)
+	discord.UpdatePlay(cursor)
 
 	overlay.ppFont = font.GetFont("Exo 2 Bold")
 	overlay.keyFont = font.GetFont("Ubuntu Regular")

@@ -90,6 +90,7 @@ func initGameplay() *gameplay {
 		ResultsScreenTime: 5,
 		ShowWarningArrows: true,
 		FlashlightDim:     1,
+		PlayUsername:      "Guest",
 	}
 }
 
@@ -107,6 +108,7 @@ type gameplay struct {
 	ResultsScreenTime float64
 	ShowWarningArrows bool
 	FlashlightDim     float64
+	PlayUsername      string
 }
 
 type boundaries struct {

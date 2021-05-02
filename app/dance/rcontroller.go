@@ -260,7 +260,9 @@ func (controller *ReplayController) InitCursors() {
 	for i := range controller.controllers {
 		if controller.controllers[i].danceController != nil {
 			controller.controllers[i].danceController.InitCursors()
+
 			controller.controllers[i].danceController.GetCursors()[0].IsPlayer = true
+			controller.controllers[i].danceController.GetCursors()[0].IsAutoplay = true
 
 			cursors := controller.controllers[i].danceController.GetCursors()
 
