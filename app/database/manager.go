@@ -4,21 +4,19 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"github.com/karrick/godirwalk"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/wieku/danser-go/app/beatmap"
-	"strconv"
 )
 
 var dbFile *sql.DB
@@ -43,12 +41,12 @@ func Init() error {
 
 	songsDir, err = filepath.Abs(settings.General.OsuSongsDir)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Invalid song path given: %s", settings.General.OsuSongsDir))
+		return fmt.Errorf("invalid song path given: %s", settings.General.OsuSongsDir)
 	}
 
 	_, err = os.Open(songsDir)
 	if os.IsNotExist(err) {
-		return errors.New(fmt.Sprintf("%s does not exist!", songsDir))
+		return fmt.Errorf("%s does not exist", songsDir)
 	}
 
 	migrations = []Migration{
@@ -126,7 +124,7 @@ func Init() error {
 	return nil
 }
 
-func LoadBeatmaps() []*beatmap.BeatMap {
+func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 	if settings.General.UnpackOszFiles {
 		_ = godirwalk.Walk(songsDir, &godirwalk.Options{
 			Callback: func(osPathname string, de *godirwalk.Dirent) error {
@@ -146,121 +144,124 @@ func LoadBeatmaps() []*beatmap.BeatMap {
 		})
 	}
 
-	candidates := make([]mapLocation, 0)
-
-	log.Println(fmt.Sprintf("DatabaseManager: Scanning \"%s\" for .osu files...", songsDir))
-
-	err := godirwalk.Walk(songsDir, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != songsDir && filepath.Dir(osPathname) != songsDir {
-				return godirwalk.SkipThis
-			}
-
-			if strings.HasSuffix(de.Name(), ".osu") {
-				candidates = append(candidates, mapLocation{
-					dir:  filepath.Base(filepath.Dir(osPathname)),
-					file: de.Name(),
-				})
-			}
-
-			return nil
-		},
-		Unsorted: true,
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	log.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
-	log.Println("DatabaseManager: Comparing files with database...")
 	modified := getLastModified()
 
-	mapsToRemove := make([]mapLocation, 0)
-	mapsToLoad := make([]interface{}, 0)
+	if !skipDatabaseCheck {
+		candidates := make([]mapLocation, 0)
 
-	for _, candidate := range candidates {
-		partialPath := filepath.Join(candidate.dir, candidate.file)
-		mapPath := filepath.Join(songsDir, partialPath)
+		log.Println(fmt.Sprintf("DatabaseManager: Scanning \"%s\" for .osu files...", songsDir))
 
-		stat, err := os.Stat(mapPath)
+		err := godirwalk.Walk(songsDir, &godirwalk.Options{
+			Callback: func(osPathname string, de *godirwalk.Dirent) error {
+				if de.IsDir() && osPathname != songsDir && filepath.Dir(osPathname) != songsDir {
+					return godirwalk.SkipThis
+				}
+
+				if strings.HasSuffix(de.Name(), ".osu") {
+					candidates = append(candidates, mapLocation{
+						dir:  filepath.Base(filepath.Dir(osPathname)),
+						file: de.Name(),
+					})
+				}
+
+				return nil
+			},
+			Unsorted: true,
+		})
+
 		if err != nil {
-			log.Println("DatabaseManager: Failed to read file stats, skipping:", partialPath)
-			log.Println("DatabaseManager: Error:", err)
-			return nil
+			panic(err)
 		}
 
-		if lastModified, ok := modified[candidate]; ok {
-			if lastModified == stat.ModTime().UnixNano()/1000000 {
-				continue //Map is up to date, skip...
-			}
+		log.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
+		log.Println("DatabaseManager: Comparing files with database...")
 
-			// Remove that map from cached maps
-			mapsToRemove = append(mapsToRemove, candidate)
-			delete(modified, candidate)
+		mapsToRemove := make([]mapLocation, 0)
+		mapsToLoad := make([]interface{}, 0)
 
-			log.Println("DatabaseManager: New beatmap version found:", candidate.file)
-		} else {
-			log.Println("DatabaseManager: New beatmap found:", candidate.file)
-		}
-
-		mapsToLoad = append(mapsToLoad, candidate)
-	}
-
-	log.Println("DatabaseManager: Compare complete.")
-
-	if len(mapsToRemove) > 0 {
-		removeBeatmaps(mapsToRemove)
-	}
-
-	if len(mapsToLoad) > 0 {
-		log.Println("DatabaseManager: Starting import of", len(mapsToLoad), "maps...")
-
-		loaded := utils.Balance(4, mapsToLoad, func(a interface{}) interface{} {
-			candidate := a.(mapLocation)
-
+		for _, candidate := range candidates {
 			partialPath := filepath.Join(candidate.dir, candidate.file)
 			mapPath := filepath.Join(songsDir, partialPath)
 
-			file, err := os.Open(mapPath)
+			stat, err := os.Stat(mapPath)
 			if err != nil {
-				log.Println(fmt.Sprintf("\"DatabaseManager: Failed to read \"%s\", skipping. Error: %s", partialPath, err))
+				log.Println("DatabaseManager: Failed to read file stats, skipping:", partialPath)
+				log.Println("DatabaseManager: Error:", err)
 				return nil
 			}
 
-			defer file.Close()
-
-			log.Println("DatabaseManager: Importing:", partialPath)
-
-			if bMap := beatmap.ParseBeatMapFile(file); bMap != nil {
-				stat, _ := file.Stat()
-				bMap.LastModified = stat.ModTime().UnixNano() / 1000000
-				bMap.TimeAdded = time.Now().UnixNano() / 1000000
-
-				hash := md5.New()
-				if _, err := io.Copy(hash, file); err == nil {
-					bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
+			if lastModified, ok := modified[candidate]; ok {
+				if lastModified == stat.ModTime().UnixNano()/1000000 {
+					continue //Map is up to date, skip...
 				}
 
-				log.Println("DatabaseManager: Imported:", partialPath)
-				return bMap
+				// Remove that map from cached maps
+				mapsToRemove = append(mapsToRemove, candidate)
+				delete(modified, candidate)
+
+				log.Println("DatabaseManager: New beatmap version found:", candidate.file)
 			} else {
-				log.Println("DatabaseManager: Failed to import:", partialPath)
+				log.Println("DatabaseManager: New beatmap found:", candidate.file)
 			}
 
-			return nil
-		})
-
-		newBeatmaps := make([]*beatmap.BeatMap, len(loaded))
-		for i, o := range loaded {
-			newBeatmaps[i] = o.(*beatmap.BeatMap)
+			mapsToLoad = append(mapsToLoad, candidate)
 		}
 
-		log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
+		log.Println("DatabaseManager: Compare complete.")
 
-		insertBeatmaps(newBeatmaps)
+		if len(mapsToRemove) > 0 {
+			removeBeatmaps(mapsToRemove)
+		}
 
-		log.Println("DatabaseManager: Insert complete.")
+		if len(mapsToLoad) > 0 {
+			log.Println("DatabaseManager: Starting import of", len(mapsToLoad), "maps...")
+
+			loaded := utils.Balance(4, mapsToLoad, func(a interface{}) interface{} {
+				candidate := a.(mapLocation)
+
+				partialPath := filepath.Join(candidate.dir, candidate.file)
+				mapPath := filepath.Join(songsDir, partialPath)
+
+				file, err := os.Open(mapPath)
+				if err != nil {
+					log.Println(fmt.Sprintf("\"DatabaseManager: Failed to read \"%s\", skipping. Error: %s", partialPath, err))
+					return nil
+				}
+
+				defer file.Close()
+
+				log.Println("DatabaseManager: Importing:", partialPath)
+
+				if bMap := beatmap.ParseBeatMapFile(file); bMap != nil {
+					stat, _ := file.Stat()
+					bMap.LastModified = stat.ModTime().UnixNano() / 1000000
+					bMap.TimeAdded = time.Now().UnixNano() / 1000000
+
+					hash := md5.New()
+					if _, err := io.Copy(hash, file); err == nil {
+						bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
+					}
+
+					log.Println("DatabaseManager: Imported:", partialPath)
+					return bMap
+				} else {
+					log.Println("DatabaseManager: Failed to import:", partialPath)
+				}
+
+				return nil
+			})
+
+			newBeatmaps := make([]*beatmap.BeatMap, len(loaded))
+			for i, o := range loaded {
+				newBeatmaps[i] = o.(*beatmap.BeatMap)
+			}
+
+			log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
+
+			insertBeatmaps(newBeatmaps)
+
+			log.Println("DatabaseManager: Insert complete.")
+		}
 	}
 
 	log.Println("DatabaseManager: Found", len(modified), "cached beatmaps. Loading...")

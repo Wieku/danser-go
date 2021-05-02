@@ -115,7 +115,7 @@ func run() {
 
 		out := flag.String("out", "", "Overrides -record flag. Specify the name of recorded video file, extension is managed by settings")
 
-		//noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
+		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
 
 		flag.Parse()
 
@@ -198,14 +198,13 @@ func run() {
 			if err != nil {
 				log.Println("Failed to initialize database:", err)
 			} else {
-				beatmaps := database.LoadBeatmaps()
+				beatmaps := database.LoadBeatmaps(*noDbCheck)
 
 				if *id > -1 {
 					for _, b := range beatmaps {
 						if b.ID == *id {
 							beatMap = b
-							beatMap.UpdatePlayStats()
-							database.UpdatePlayStats(beatMap)
+
 							break
 						}
 					}
@@ -213,8 +212,7 @@ func run() {
 					for _, b := range beatmaps {
 						if strings.EqualFold(b.MD5, *md5) {
 							beatMap = b
-							beatMap.UpdatePlayStats()
-							database.UpdatePlayStats(beatMap)
+
 							break
 						}
 					}
@@ -225,8 +223,7 @@ func run() {
 							(*difficulty == "" || strings.EqualFold(*difficulty, b.Difficulty)) &&
 							(*creator == "" || strings.EqualFold(*creator, b.Creator)) {
 							beatMap = b
-							beatMap.UpdatePlayStats()
-							database.UpdatePlayStats(beatMap)
+
 							break
 						}
 					}
@@ -239,8 +236,7 @@ func run() {
 								(*difficulty == "" || strings.Contains(strings.ToLower(b.Difficulty), strings.ToLower(*difficulty))) &&
 								(*creator == "" || strings.Contains(strings.ToLower(b.Creator), strings.ToLower(*creator))) {
 								beatMap = b
-								beatMap.UpdatePlayStats()
-								database.UpdatePlayStats(beatMap)
+
 								break
 							}
 						}
@@ -251,6 +247,9 @@ func run() {
 			if beatMap == nil {
 				log.Println("Beatmap not found, closing...")
 				closeAfterSettingsLoad = true
+			} else {
+				beatMap.UpdatePlayStats()
+				database.UpdatePlayStats(beatMap)
 			}
 		}
 
