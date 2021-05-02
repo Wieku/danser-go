@@ -162,7 +162,7 @@ func run() {
 
 		closeAfterSettingsLoad := false
 
-		if (*md5 + *artist + *title + *difficulty + *creator) == "" && *id < 0 {
+		if (*md5+*artist+*title+*difficulty+*creator) == "" && *id < 0 {
 			log.Println("No beatmap specified, closing...")
 			closeAfterSettingsLoad = true
 		}
@@ -251,6 +251,8 @@ func run() {
 				beatMap.UpdatePlayStats()
 				database.UpdatePlayStats(beatMap)
 			}
+
+			database.Close()
 		}
 
 		assets.Init(build.Stream == "Dev")
@@ -530,7 +532,7 @@ func mainLoopNormal() {
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
-					settings.DIVIDES = bmath.MaxI(1, settings.DIVIDES - 1)
+					settings.DIVIDES = bmath.MaxI(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
 				}
@@ -666,7 +668,7 @@ func checkForUpdates() {
 	log.Println("Checking GitHub for a new version of danser...")
 
 	request, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/Wieku/danser-go/releases/latest", nil)
-	if err != nil  {
+	if err != nil {
 		log.Println("Can't create request")
 		return
 	}
@@ -701,7 +703,7 @@ func checkForUpdates() {
 	} else {
 		log.Println("You're using an older version of danser.")
 		log.Println("You can download a newer version here:", data.URL)
-		time.Sleep(2*time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }
 
@@ -718,7 +720,7 @@ func transformVersion(a string) string {
 		snapshot = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
 	}
 
-	return strings.Join(splitDots, "")+snapshot
+	return strings.Join(splitDots, "") + snapshot
 }
 
 func main() {
