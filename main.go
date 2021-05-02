@@ -424,6 +424,8 @@ func run() {
 		bass.Init(settings.RECORD)
 		audio.LoadSamples()
 
+		speedBefore := settings.SPEED
+
 		if modsParsed.Active(difficulty2.Nightcore) {
 			settings.SPEED *= 1.5
 			settings.PITCH *= 1.5
@@ -452,6 +454,8 @@ func run() {
 			if !math.IsNaN(*hp) {
 				beatMap.Diff.SetHPDrain(*ar)
 			}
+
+			beatMap.Diff.SetCustomSpeed(speedBefore)
 		}
 
 		beatMap.Diff.SetMods(modsParsed)
