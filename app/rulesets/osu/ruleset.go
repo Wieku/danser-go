@@ -176,6 +176,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	for i, cursor := range cursors {
 		diff := difficulty.NewDifficulty(beatMap.Diff.GetHPDrain(), beatMap.Diff.GetCS(), beatMap.Diff.GetOD(), beatMap.Diff.GetAR())
 		diff.SetMods(mods[i])
+		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
 
 		player := &difficultyPlayer{cursor: cursor, diff: diff}
 		diffPlayers = append(diffPlayers, player)

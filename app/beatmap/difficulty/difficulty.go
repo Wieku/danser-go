@@ -25,7 +25,7 @@ type Difficulty struct {
 
 	ARReal      float64
 	ODReal      float64
-	customSpeed float64
+	CustomSpeed float64
 }
 
 func NewDifficulty(hpDrain, cs, od, ar float64) *Difficulty {
@@ -34,6 +34,7 @@ func NewDifficulty(hpDrain, cs, od, ar float64) *Difficulty {
 	diff.cs = cs
 	diff.od = od
 	diff.ar = ar
+	diff.CustomSpeed = 1
 	diff.calculate()
 	return diff
 }
@@ -80,11 +81,11 @@ func (diff *Difficulty) CheckModActive(mods Modifier) bool {
 
 func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	if diff.Mods&DoubleTime > 0 {
-		return time / (1.5 * diff.customSpeed)
+		return time / (1.5 * diff.CustomSpeed)
 	} else if diff.Mods&HalfTime > 0 {
-		return time / (0.75 * diff.customSpeed)
+		return time / (0.75 * diff.CustomSpeed)
 	} else {
-		return time / diff.customSpeed
+		return time / diff.CustomSpeed
 	}
 }
 
@@ -125,7 +126,7 @@ func (diff *Difficulty) SetAR(ar float64) {
 }
 
 func (diff *Difficulty) SetCustomSpeed(speed float64) {
-	diff.customSpeed = speed
+	diff.CustomSpeed = speed
 	diff.calculate()
 }
 
