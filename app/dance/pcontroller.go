@@ -74,6 +74,10 @@ func (controller *PlayerController) InitCursors() {
 }
 
 func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
+	if key == glfw.KeyUnknown {
+		return
+	}
+
 	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.LeftKey) {
 		if action == glfw.Press {
 			controller.cursors[0].LeftKey = true
