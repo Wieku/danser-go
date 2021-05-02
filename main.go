@@ -452,7 +452,7 @@ func run() {
 			}
 
 			if !math.IsNaN(*hp) {
-				beatMap.Diff.SetHPDrain(*ar)
+				beatMap.Diff.SetHPDrain(*hp)
 			}
 
 			beatMap.Diff.SetCustomSpeed(speedBefore)
