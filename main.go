@@ -117,6 +117,11 @@ func run() {
 
 		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
 
+		ar := flag.Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
+		od := flag.Float64("od", math.NaN(), "Modify map's OD, only in cursordance/play modes")
+		cs := flag.Float64("cs", math.NaN(), "Modify map's CS, only in cursordance/play modes")
+		hp := flag.Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
+
 		flag.Parse()
 
 		if *out != "" {
@@ -429,6 +434,24 @@ func run() {
 			settings.SPEED *= 0.75
 		} else if modsParsed.Active(difficulty2.HalfTime) {
 			settings.SPEED *= 0.75
+		}
+
+		if settings.PLAY || !settings.KNOCKOUT {
+			if !math.IsNaN(*ar) {
+				beatMap.Diff.SetAR(*ar)
+			}
+
+			if !math.IsNaN(*od) {
+				beatMap.Diff.SetOD(*od)
+			}
+
+			if !math.IsNaN(*cs) {
+				beatMap.Diff.SetCS(*cs)
+			}
+
+			if !math.IsNaN(*hp) {
+				beatMap.Diff.SetHPDrain(*ar)
+			}
 		}
 
 		beatMap.Diff.SetMods(modsParsed)
