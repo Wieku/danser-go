@@ -115,6 +115,8 @@ func run() {
 
 		out := flag.String("out", "", "Overrides -record flag. Specify the name of recorded video file, extension is managed by settings")
 
+		//noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
+
 		flag.Parse()
 
 		if *out != "" {
@@ -192,51 +194,55 @@ func run() {
 		var beatMap *beatmap.BeatMap = nil
 
 		if !closeAfterSettingsLoad {
-			database.Init()
-			beatmaps := database.LoadBeatmaps()
-
-			if *id > -1 {
-				for _, b := range beatmaps {
-					if b.ID == *id {
-						beatMap = b
-						beatMap.UpdatePlayStats()
-						database.UpdatePlayStats(beatMap)
-						break
-					}
-				}
-			} else if *md5 != "" {
-				for _, b := range beatmaps {
-					if strings.EqualFold(b.MD5, *md5) {
-						beatMap = b
-						beatMap.UpdatePlayStats()
-						database.UpdatePlayStats(beatMap)
-						break
-					}
-				}
+			err := database.Init()
+			if err != nil {
+				log.Println("Failed to initialize database:", err)
 			} else {
-				for _, b := range beatmaps {
-					if (*artist == "" || strings.EqualFold(*artist, b.Artist)) &&
-						(*title == "" || strings.EqualFold(*title, b.Name)) &&
-						(*difficulty == "" || strings.EqualFold(*difficulty, b.Difficulty)) &&
-						(*creator == "" || strings.EqualFold(*creator, b.Creator)) {
-						beatMap = b
-						beatMap.UpdatePlayStats()
-						database.UpdatePlayStats(beatMap)
-						break
-					}
-				}
+				beatmaps := database.LoadBeatmaps()
 
-				if beatMap == nil {
-					log.Println("Beatmap with exact parameters not found, searching partially...")
+				if *id > -1 {
 					for _, b := range beatmaps {
-						if (*artist == "" || strings.Contains(strings.ToLower(b.Artist), strings.ToLower(*artist))) &&
-							(*title == "" || strings.Contains(strings.ToLower(b.Name), strings.ToLower(*title))) &&
-							(*difficulty == "" || strings.Contains(strings.ToLower(b.Difficulty), strings.ToLower(*difficulty))) &&
-							(*creator == "" || strings.Contains(strings.ToLower(b.Creator), strings.ToLower(*creator))) {
+						if b.ID == *id {
 							beatMap = b
 							beatMap.UpdatePlayStats()
 							database.UpdatePlayStats(beatMap)
 							break
+						}
+					}
+				} else if *md5 != "" {
+					for _, b := range beatmaps {
+						if strings.EqualFold(b.MD5, *md5) {
+							beatMap = b
+							beatMap.UpdatePlayStats()
+							database.UpdatePlayStats(beatMap)
+							break
+						}
+					}
+				} else {
+					for _, b := range beatmaps {
+						if (*artist == "" || strings.EqualFold(*artist, b.Artist)) &&
+							(*title == "" || strings.EqualFold(*title, b.Name)) &&
+							(*difficulty == "" || strings.EqualFold(*difficulty, b.Difficulty)) &&
+							(*creator == "" || strings.EqualFold(*creator, b.Creator)) {
+							beatMap = b
+							beatMap.UpdatePlayStats()
+							database.UpdatePlayStats(beatMap)
+							break
+						}
+					}
+
+					if beatMap == nil {
+						log.Println("Beatmap with exact parameters not found, searching partially...")
+						for _, b := range beatmaps {
+							if (*artist == "" || strings.Contains(strings.ToLower(b.Artist), strings.ToLower(*artist))) &&
+								(*title == "" || strings.Contains(strings.ToLower(b.Name), strings.ToLower(*title))) &&
+								(*difficulty == "" || strings.Contains(strings.ToLower(b.Difficulty), strings.ToLower(*difficulty))) &&
+								(*creator == "" || strings.Contains(strings.ToLower(b.Creator), strings.ToLower(*creator))) {
+								beatMap = b
+								beatMap.UpdatePlayStats()
+								database.UpdatePlayStats(beatMap)
+								break
+							}
 						}
 					}
 				}
