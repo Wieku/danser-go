@@ -808,18 +808,13 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 		bodyOuter = baseTrack.Shade2(-0.1)
 		bodyInner = baseTrack.Shade2(0.5)
 	} else {
-		if settings.Objects.Colors.UseComboColors {
-			cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-			comboColor := color2.NewHSV(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+		if settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
+			borderInner = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), borderInner)
+			borderOuter = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), borderOuter)
+		}
 
-			if settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
-				borderInner = comboColor
-				borderOuter = comboColor
-			}
-
-			if settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
-				bodyColor = comboColor
-			}
+		if settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
+			bodyColor = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), bodyColor)
 		}
 
 		if settings.Objects.Colors.Sliders.Border.EnableCustomGradientOffset {
@@ -945,13 +940,8 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 
 		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 	} else if settings.Objects.Colors.Sliders.SliderBallTint {
-		if settings.Objects.Colors.UseComboColors {
-			cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-			r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-			batch.SetColor(float64(r), float64(g), float64(b), alpha)
-		} else {
-			batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
-		}
+		color = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), color)
+		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 	} else {
 		batch.SetColor(1, 1, 1, alpha)
 	}

@@ -438,6 +438,8 @@ func GetColors() []color.Color {
 }
 
 func GetColor(comboSet, comboSetHax int, base color.Color) (col color.Color) {
+	col = color.NewRGB(base.R, base.G, base.B)
+
 	if settings.Skin.UseColorsFromSkin && len(GetColors()) > 0 {
 		cSet := comboSet
 		if settings.Skin.UseBeatmapColors {
@@ -445,13 +447,21 @@ func GetColor(comboSet, comboSetHax int, base color.Color) (col color.Color) {
 		}
 
 		col = GetColors()[cSet%len(GetColors())]
-		col.A = 1
-	} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
-		cHSV := settings.Objects.Colors.ComboColors[comboSet%len(settings.Objects.Colors.ComboColors)]
-		r, g, b := color.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-		col = color.NewRGB(r, g, b)
-	} else {
-		col = color.NewRGB(base.R, base.G, base.B)
+	} else if settings.Objects.Colors.UseComboColors || settings.Objects.Colors.UseSkinComboColors || settings.Objects.Colors.UseBeatmapComboColors {
+		cSet := comboSet
+		if settings.Objects.Colors.UseBeatmapComboColors {
+			cSet = comboSetHax
+		}
+
+		if settings.Objects.Colors.UseBeatmapComboColors && len(beatmapColors) > 0 {
+			col = beatmapColors[cSet%len(beatmapColors)]
+		} else if settings.Objects.Colors.UseSkinComboColors && len(info.ComboColors) > 0 {
+			col = info.ComboColors[cSet%len(info.ComboColors)]
+		} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
+			cHSV := settings.Objects.Colors.ComboColors[cSet%len(settings.Objects.Colors.ComboColors)]
+			r, g, b := color.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+			col = color.NewRGB(r, g, b)
+		}
 	}
 
 	return
