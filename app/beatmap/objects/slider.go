@@ -810,15 +810,15 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 	} else {
 		if settings.Objects.Colors.UseComboColors {
 			cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-			comnboColor := color2.NewHSV(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+			comboColor := color2.NewHSV(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
 
 			if settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
-				borderInner = comnboColor
-				borderOuter = comnboColor
+				borderInner = comboColor
+				borderOuter = comboColor
 			}
 
 			if settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
-				bodyColor = comnboColor
+				bodyColor = comboColor
 			}
 		}
 
