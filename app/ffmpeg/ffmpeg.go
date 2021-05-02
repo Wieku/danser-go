@@ -81,15 +81,15 @@ func precheck() {
 
 	for _, v := range encoders {
 		encoder := strings.SplitN(strings.TrimSpace(v), " ", 3)
-		codec_type := string(encoder[0][0])
+		codecType := string(encoder[0][0])
 
 		if string(encoder[0][3]) == "X" {
 			continue // experimental codec
 		}
 
-		if !vfound && codec_type == "V" {
+		if !vfound && codecType == "V" {
 			vfound = encoder[1] == vcodec
-		} else if !afound && codec_type == "A" {
+		} else if !afound && codecType == "A" {
 			afound = encoder[1] == acodec
 		}
 	}

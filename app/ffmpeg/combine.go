@@ -20,9 +20,17 @@ func Combine(output string) {
 		"-i", filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container),
 		"-i", filepath.Join(settings.Recording.OutputDir, filename+".wav"),
 		"-c:v", "copy",
+	}
+
+	filters := strings.TrimSpace(settings.Recording.AudioFilters)
+	if len(filters) > 0 {
+		options = append(options, "-af", filters)
+	}
+
+	options = append(options,
 		"-c:a", settings.Recording.AudioCodec,
 		"-ab", settings.Recording.AudioBitrate,
-	}
+		)
 
 	if settings.Recording.Container == "mp4" {
 		options = append(options, "-movflags", "+faststart")
