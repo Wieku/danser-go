@@ -107,6 +107,14 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 			controller.quickRestart = false
 		}
 	}
+
+	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.SmokeKey) {
+		if action == glfw.Press {
+			controller.cursors[0].SmokeKey = true
+		} else if action == glfw.Release {
+			controller.cursors[0].SmokeKey = false
+		}
+	}
 }
 
 func (controller *PlayerController) Update(time float64, delta float64) {

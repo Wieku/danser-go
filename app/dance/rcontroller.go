@@ -384,6 +384,8 @@ func (controller *ReplayController) updateMain(nTime float64) {
 						c.relaxController.Update(float64(c.replayTime))
 					}
 
+					controller.cursors[i].SmokeKey = frame.KeyPressed.Smoke
+
 					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
 					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
 

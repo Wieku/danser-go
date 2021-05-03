@@ -10,12 +10,14 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -66,9 +68,9 @@ type Cursor struct {
 	LeftKey, RightKey       bool
 	LeftMouse, RightMouse   bool
 
-	IsReplayFrame    bool // TODO: temporary hacky solution for spinners
-	IsPlayer         bool
-	IsAutoplay       bool
+	IsReplayFrame bool // TODO: temporary hacky solution for spinners
+	IsPlayer      bool
+	IsAutoplay    bool
 
 	OldSpinnerScoring bool
 
@@ -79,13 +81,19 @@ type Cursor struct {
 
 	Position vector.Vector2f
 
-	Name    string
-	ScoreID int64
+	Name      string
+	ScoreID   int64
 	ScoreTime time.Time
 
 	lastSetting bool
 
 	renderer cursorRenderer
+
+	SmokeKey          bool
+	lastSmokeKey      bool
+	lastSmokePosition vector.Vector2f
+	smokeTexture      *texture.TextureRegion
+	smokeContainer    *sprite.SpriteManager
 
 	rippleContainer *sprite.SpriteManager
 	time            float64
@@ -106,6 +114,9 @@ func NewCursor() *Cursor {
 	} else {
 		cursor.renderer = newDanserRenderer()
 	}
+
+	cursor.smokeTexture = skin.GetTexture("cursor-smoke")
+	cursor.smokeContainer = sprite.NewSpriteManager()
 
 	cursor.rippleContainer = sprite.NewSpriteManager()
 
@@ -189,11 +200,66 @@ func (cursor *Cursor) Update(delta float64) {
 		cursor.lastRightState = rightState
 	}
 
+	cursor.updateSmoke()
+
 	cursor.scale.UpdateD(delta)
 
 	cursor.renderer.Update(delta, cursor.Position)
 
 	cursor.rippleContainer.Update(cursor.time)
+}
+
+func (cursor *Cursor) updateSmoke() {
+	if settings.PLAYERS != 1 {
+		return
+	}
+
+	if cursor.SmokeKey && settings.PLAYERS == 1 {
+		if !cursor.lastSmokeKey {
+			cursor.lastSmokePosition = cursor.Position
+		}
+
+		distance := math32.Max(2/scaling, cursor.smokeTexture.Width * (0.5/scaling) * scaling / 4)
+		points := cursor.Position.Dst(cursor.lastSmokePosition)
+
+		if int(points/distance) > 0 {
+			temp := cursor.lastSmokePosition
+			for i := distance; i < points; i += distance {
+				temp = cursor.Position.Sub(cursor.lastSmokePosition).Scl(i / points).Add(cursor.lastSmokePosition)
+
+				smoke := sprite.NewSpriteSingle(cursor.smokeTexture, cursor.time*1000+float64(i), temp.Copy64(), bmath.Origin.Centre)
+				smoke.SetAdditive(true)
+				smoke.SetRotation(rand.Float64() * 2 * math.Pi)
+				smoke.SetScale(0.5/scaling)
+				smoke.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+4000, 0.6, 0.0))
+				smoke.ResetValuesToTransforms()
+				smoke.AdjustTimesToTransformations()
+				smoke.ShowForever(false)
+
+				cursor.smokeContainer.Add(smoke)
+			}
+
+			cursor.lastSmokePosition = temp
+		}
+	} else if cursor.lastSmokeKey {
+		smokes := cursor.smokeContainer.GetProcessedSprites()
+
+		delay := 0.0
+
+		for _, s := range smokes {
+			if (s.GetEndTime() - s.GetStartTime()) < 5000 {
+				s.ClearTransformations()
+				s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time+delay, cursor.time+delay+8000, 1.0, 0.0))
+				s.SetEndTime(cursor.time + delay + 8000)
+
+				delay += 2.0
+			}
+		}
+	}
+
+	cursor.lastSmokeKey = cursor.SmokeKey
+
+	cursor.smokeContainer.Update(cursor.time)
 }
 
 func (cursor *Cursor) UpdateRenderer() {
@@ -241,7 +307,7 @@ func (cursor *Cursor) Draw(scale float64, batch *batch.QuadBatch, color color2.C
 }
 
 func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
-	if cursor.rippleContainer.GetNumProcessed() > 0 {
+	if cursor.rippleContainer.GetNumProcessed() > 0 || cursor.smokeContainer.GetNumProcessed() > 0 {
 		batch.Begin()
 		batch.SetAdditive(false)
 		batch.ResetTransform()
@@ -249,6 +315,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.
 		batch.SetScale(scaling*scaling, scaling*scaling)
 		batch.SetSubScale(1, 1)
 
+		cursor.smokeContainer.Draw(cursor.time, batch)
 		cursor.rippleContainer.Draw(cursor.time, batch)
 
 		batch.End()
