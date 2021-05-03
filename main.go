@@ -332,6 +332,7 @@ func run() {
 		if screenshotMode {
 			settings.Playfield.LeadInHold = 0
 			settings.START = screenshotTime - 5
+			settings.SKIP = false
 		}
 
 		if settings.Graphics.Fullscreen {
