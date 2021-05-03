@@ -2,16 +2,13 @@ package utils
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
 	"os"
 	"time"
 )
 
-func MakeScreenshot(win glfw.Window, name string, async bool) {
-	w, h := win.GetFramebufferSize()
-
+func MakeScreenshot(w, h int, name string, async bool) {
 	pixmap := texture.NewPixMapC(w, h, 3)
 
 	gl.PixelStorei(gl.PACK_ALIGNMENT, int32(1))

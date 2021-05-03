@@ -603,7 +603,7 @@ func mainLoopSS() {
 				pushFrame()
 				viewport.Pop()
 
-				utils.MakeScreenshot(*win, output, false)
+				utils.MakeScreenshot(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), output, false)
 
 				fbo.Unbind()
 			})
@@ -650,7 +650,8 @@ func mainLoopNormal() {
 			pushFrame()
 
 			if scheduleScreenshot {
-				utils.MakeScreenshot(*win, "", true)
+				w, h := win.GetFramebufferSize()
+				utils.MakeScreenshot(w, h, "", true)
 				scheduleScreenshot = false
 			}
 
