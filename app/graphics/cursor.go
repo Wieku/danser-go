@@ -89,11 +89,13 @@ type Cursor struct {
 
 	renderer cursorRenderer
 
-	SmokeKey          bool
-	lastSmokeKey      bool
-	lastSmokePosition vector.Vector2f
-	smokeTexture      *texture.TextureRegion
-	smokeContainer    *sprite.SpriteManager
+	SmokeKey           bool
+	lastSmokeKey       bool
+	smokePointCount    int
+	firstSmokePosition vector.Vector2f
+	lastSmokePosition  vector.Vector2f
+	smokeTexture       *texture.TextureRegion
+	smokeContainer     *sprite.SpriteManager
 
 	rippleContainer *sprite.SpriteManager
 	time            float64
@@ -200,7 +202,7 @@ func (cursor *Cursor) Update(delta float64) {
 		cursor.lastRightState = rightState
 	}
 
-	cursor.updateSmoke()
+	cursor.smokeUpdate()
 
 	cursor.scale.UpdateD(delta)
 
@@ -209,7 +211,7 @@ func (cursor *Cursor) Update(delta float64) {
 	cursor.rippleContainer.Update(cursor.time)
 }
 
-func (cursor *Cursor) updateSmoke() {
+func (cursor *Cursor) smokeUpdate() {
 	if settings.PLAYERS != 1 {
 		return
 	}
@@ -217,9 +219,10 @@ func (cursor *Cursor) updateSmoke() {
 	if cursor.SmokeKey && settings.PLAYERS == 1 {
 		if !cursor.lastSmokeKey {
 			cursor.lastSmokePosition = cursor.Position
+			cursor.firstSmokePosition = cursor.Position
 		}
 
-		distance := math32.Max(2*scaling, cursor.smokeTexture.Width * scaling / 4)
+		distance := math32.Max(2*scaling, cursor.smokeTexture.Width*scaling/4)
 		points := cursor.Position.Dst(cursor.lastSmokePosition)
 
 		if int(points/distance) > 0 {
@@ -230,36 +233,48 @@ func (cursor *Cursor) updateSmoke() {
 				smoke := sprite.NewSpriteSingle(cursor.smokeTexture, cursor.time*1000+float64(i), temp.Copy64(), bmath.Origin.Centre)
 				smoke.SetAdditive(true)
 				smoke.SetRotation(rand.Float64() * 2 * math.Pi)
-				smoke.SetScale(0.5/scaling)
+				smoke.SetScale(0.5 / scaling)
 				smoke.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+4000, 0.6, 0.0))
 				smoke.ResetValuesToTransforms()
 				smoke.AdjustTimesToTransformations()
 				smoke.ShowForever(false)
 
+				cursor.smokePointCount++
+
 				cursor.smokeContainer.Add(smoke)
 			}
 
 			cursor.lastSmokePosition = temp
-		}
-	} else if cursor.lastSmokeKey {
-		smokes := cursor.smokeContainer.GetProcessedSprites()
 
-		delay := 0.0
-
-		for _, s := range smokes {
-			if (s.GetEndTime() - s.GetStartTime()) < 5000 {
-				s.ClearTransformations()
-				s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, cursor.time+delay, cursor.time+delay+8000, 1.0, 0.0))
-				s.SetEndTime(cursor.time + delay + 8000)
-
-				delay += 2.0
+			if cursor.smokePointCount > 30 && cursor.Position.Dst(cursor.firstSmokePosition) < 10*scaling {
+				cursor.smokeBrighten()
 			}
 		}
+	} else if cursor.lastSmokeKey {
+		cursor.smokeBrighten()
 	}
 
 	cursor.lastSmokeKey = cursor.SmokeKey
 
 	cursor.smokeContainer.Update(cursor.time)
+}
+
+func (cursor *Cursor) smokeBrighten() {
+	smokes := cursor.smokeContainer.GetProcessedSprites()
+
+	delay := 0.0
+
+	for _, s := range smokes {
+		if (s.GetEndTime() - s.GetStartTime()) < 5000 {
+			s.ClearTransformations()
+			s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, cursor.time+delay, cursor.time+delay+8000, 1.0, 0.0))
+			s.SetEndTime(cursor.time + delay + 8000)
+
+			delay += 2.0
+		}
+	}
+
+	cursor.smokePointCount = 0
 }
 
 func (cursor *Cursor) UpdateRenderer() {
