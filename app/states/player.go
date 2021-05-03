@@ -302,8 +302,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
 	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
-		player.cursorGlider.AddEvent(startOffset-500, startOffset, 0.0)
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		player.cursorGlider.AddEvent(startOffset-500, startOffset, 1.0)
 	}
 
 	player.dimGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0-settings.Playfield.Background.Dim.Normal)
