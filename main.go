@@ -11,6 +11,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
@@ -57,9 +58,8 @@ const (
 )
 
 var player states.State
-var pressed = false
-var pressedM = false
-var pressedP = false
+
+var scheduleScreenshot = false
 
 var batch *batch2.QuadBatch
 
@@ -71,8 +71,14 @@ var lastVSync bool
 
 var output string
 
+var recordMode bool
+var screenshotMode bool
+var screenshotTime float64
+
 func run() {
 	mainthread.Call(func() {
+		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
+
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
 
 		artist := flag.String("artist", "", artistDesc)
@@ -102,7 +108,12 @@ func run() {
 		end := flag.Float64("end", math.Inf(1), "End at the given time in seconds")
 
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
+
+		quickstart := flag.Bool("quickstart", false, "Sets -skip flag, sets LeadInTime and LeadInHold settings temporarily to 0")
+
 		record := flag.Bool("record", false, "Records a video")
+		out := flag.String("out", "", "If -ss flag is used, sets the name of screenshot, extension is PNG. If not, it overrides -record flag, specifies the name of recorded video file, extension is managed by settings")
+		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
 
@@ -111,14 +122,25 @@ func run() {
 
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
-		out := flag.String("out", "", "Overrides -record flag. Specify the name of recorded video file, extension is managed by settings")
+		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
+
+		ar := flag.Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
+		od := flag.Float64("od", math.NaN(), "Modify map's OD, only in cursordance/play modes")
+		cs := flag.Float64("cs", math.NaN(), "Modify map's CS, only in cursordance/play modes")
+		hp := flag.Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
 
 		flag.Parse()
 
 		if *out != "" {
-			*record = true
 			output = *out
+			if math.IsNaN(*ss) {
+				*record = true
+			}
 		}
+
+		recordMode = *record
+		screenshotMode = !math.IsNaN(*ss)
+		screenshotTime = *ss
 
 		if *record && *play {
 			panic("Incompatible flags selected: -record, -play")
@@ -126,6 +148,10 @@ func run() {
 			panic("Incompatible flags selected: -replay, -play")
 		} else if *replay != "" && *knockout {
 			panic("Incompatible flags selected: -replay, -knockout")
+		} else if screenshotMode && *play {
+			panic("Incompatible flags selected: -ss, -play")
+		} else if screenshotMode && recordMode {
+			panic("Incompatible flags selected: -ss, -record")
 		}
 
 		modsParsed := difficulty2.ParseMods(*mods)
@@ -141,7 +167,12 @@ func run() {
 				panic(err)
 			}
 
+			if rp.PlayMode != 0 {
+				panic("Modes other than osu!standard are not supported")
+			}
+
 			*md5 = rp.BeatmapMD5
+			*id = -1
 			modsParsed = difficulty2.Modifier(rp.Mods)
 			*knockout = true
 			settings.REPLAY = *replay
@@ -153,7 +184,7 @@ func run() {
 
 		closeAfterSettingsLoad := false
 
-		if (*md5 + *artist + *title + *difficulty + *creator) == "" {
+		if (*md5+*artist+*title+*difficulty+*creator) == "" && *id < 0 {
 			log.Println("No beatmap specified, closing...")
 			closeAfterSettingsLoad = true
 		}
@@ -168,7 +199,7 @@ func run() {
 		settings.SKIP = *skip
 		settings.START = *start
 		settings.END = *end
-		settings.RECORD = *record
+		settings.RECORD = recordMode || screenshotMode
 
 		if settings.RECORD {
 			bass.Offscreen = true
@@ -185,42 +216,51 @@ func run() {
 		var beatMap *beatmap.BeatMap = nil
 
 		if !closeAfterSettingsLoad {
-			database.Init()
-			beatmaps := database.LoadBeatmaps()
-
-			if *md5 != "" {
-				for _, b := range beatmaps {
-					if strings.EqualFold(b.MD5, *md5) {
-						beatMap = b
-						beatMap.UpdatePlayStats()
-						database.UpdatePlayStats(beatMap)
-						break
-					}
-				}
+			err := database.Init()
+			if err != nil {
+				log.Println("Failed to initialize database:", err)
 			} else {
-				for _, b := range beatmaps {
-					if (*artist == "" || strings.EqualFold(*artist, b.Artist)) &&
-						(*title == "" || strings.EqualFold(*title, b.Name)) &&
-						(*difficulty == "" || strings.EqualFold(*difficulty, b.Difficulty)) &&
-						(*creator == "" || strings.EqualFold(*creator, b.Creator)) {
-						beatMap = b
-						beatMap.UpdatePlayStats()
-						database.UpdatePlayStats(beatMap)
-						break
-					}
-				}
+				beatmaps := database.LoadBeatmaps(*noDbCheck)
 
-				if beatMap == nil {
-					log.Println("Beatmap with exact parameters not found, searching partially...")
+				if *id > -1 {
 					for _, b := range beatmaps {
-						if (*artist == "" || strings.Contains(strings.ToLower(b.Artist), strings.ToLower(*artist))) &&
-							(*title == "" || strings.Contains(strings.ToLower(b.Name), strings.ToLower(*title))) &&
-							(*difficulty == "" || strings.Contains(strings.ToLower(b.Difficulty), strings.ToLower(*difficulty))) &&
-							(*creator == "" || strings.Contains(strings.ToLower(b.Creator), strings.ToLower(*creator))) {
+						if b.ID == *id {
 							beatMap = b
-							beatMap.UpdatePlayStats()
-							database.UpdatePlayStats(beatMap)
+
 							break
+						}
+					}
+				} else if *md5 != "" {
+					for _, b := range beatmaps {
+						if strings.EqualFold(b.MD5, *md5) {
+							beatMap = b
+
+							break
+						}
+					}
+				} else {
+					for _, b := range beatmaps {
+						if (*artist == "" || strings.EqualFold(*artist, b.Artist)) &&
+							(*title == "" || strings.EqualFold(*title, b.Name)) &&
+							(*difficulty == "" || strings.EqualFold(*difficulty, b.Difficulty)) &&
+							(*creator == "" || strings.EqualFold(*creator, b.Creator)) {
+							beatMap = b
+
+							break
+						}
+					}
+
+					if beatMap == nil {
+						log.Println("Beatmap with exact parameters not found, searching partially...")
+						for _, b := range beatmaps {
+							if (*artist == "" || strings.Contains(strings.ToLower(b.Artist), strings.ToLower(*artist))) &&
+								(*title == "" || strings.Contains(strings.ToLower(b.Name), strings.ToLower(*title))) &&
+								(*difficulty == "" || strings.Contains(strings.ToLower(b.Difficulty), strings.ToLower(*difficulty))) &&
+								(*creator == "" || strings.Contains(strings.ToLower(b.Creator), strings.ToLower(*creator))) {
+								beatMap = b
+
+								break
+							}
 						}
 					}
 				}
@@ -229,10 +269,17 @@ func run() {
 			if beatMap == nil {
 				log.Println("Beatmap not found, closing...")
 				closeAfterSettingsLoad = true
+			} else {
+				beatMap.UpdatePlayStats()
+				database.UpdatePlayStats(beatMap)
 			}
+
+			database.Close()
 		}
 
 		assets.Init(build.Stream == "Dev")
+
+		log.Println("Initializing GLFW...")
 
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
@@ -241,6 +288,7 @@ func run() {
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 		glfw.WindowHint(glfw.Resizable, glfw.False)
 		glfw.WindowHint(glfw.Samples, 0)
+		glfw.WindowHint(glfw.Visible, glfw.False)
 
 		var err error
 
@@ -262,9 +310,13 @@ func run() {
 			settings.Skin.CurrentSkin = *skin
 		}
 
-		if settings.RECORD {
-			glfw.WindowHint(glfw.Visible, glfw.False)
+		if *quickstart {
+			settings.SKIP = true
+			settings.Playfield.LeadInTime = 0
+			settings.Playfield.LeadInHold = 0
+		}
 
+		if settings.RECORD {
 			//HACK: some in-app variables depend on these settings so we force them here
 			settings.Graphics.VSync = false
 			settings.Graphics.ShowFPS = false
@@ -275,6 +327,12 @@ func run() {
 			settings.Playfield.LeadInTime = 0
 		} else {
 			discord.Connect()
+		}
+
+		if screenshotMode {
+			settings.Playfield.LeadInHold = 0
+			settings.START = screenshotTime - 5
+			settings.SKIP = false
 		}
 
 		if settings.Graphics.Fullscreen {
@@ -290,6 +348,13 @@ func run() {
 
 		if err != nil {
 			panic(err)
+		}
+
+		if !*record {
+			win.SetFocusCallback(func(w *glfw.Window, focused bool) {
+				log.Println("Focus changed: ", focused)
+				input.Focused = focused
+			})
 		}
 
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
@@ -358,6 +423,10 @@ func run() {
 			gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DONT_CARE, 0, nil, true)
 		}
 
+		if !settings.RECORD {
+			win.Show()
+		}
+
 		gl.Enable(gl.BLEND)
 		gl.ClearColor(0, 0, 0, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -383,8 +452,10 @@ func run() {
 		glfw.SwapInterval(1)
 		lastVSync = true
 
-		bass.Init()
+		bass.Init(settings.RECORD)
 		audio.LoadSamples()
+
+		speedBefore := settings.SPEED
 
 		if modsParsed.Active(difficulty2.Nightcore) {
 			settings.SPEED *= 1.5
@@ -398,6 +469,26 @@ func run() {
 			settings.SPEED *= 0.75
 		}
 
+		if settings.PLAY || !settings.KNOCKOUT {
+			if !math.IsNaN(*ar) {
+				beatMap.Diff.SetAR(*ar)
+			}
+
+			if !math.IsNaN(*od) {
+				beatMap.Diff.SetOD(*od)
+			}
+
+			if !math.IsNaN(*cs) {
+				beatMap.Diff.SetCS(*cs)
+			}
+
+			if !math.IsNaN(*hp) {
+				beatMap.Diff.SetHPDrain(*hp)
+			}
+
+			beatMap.Diff.SetCustomSpeed(speedBefore)
+		}
+
 		beatMap.Diff.SetMods(modsParsed)
 		beatmap.ParseTimingPointsAndPauses(beatMap)
 		beatmap.ParseObjects(beatMap)
@@ -407,8 +498,10 @@ func run() {
 		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
 
-	if settings.RECORD {
+	if recordMode {
 		mainLoopRecord()
+	} else if screenshotMode {
+		mainLoopSS()
 	} else {
 		mainLoopNormal()
 	}
@@ -489,7 +582,57 @@ func mainLoopRecord() {
 	ffmpeg.Combine(output)
 }
 
+func mainLoopSS() {
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
+
+	var fbo *buffer.Framebuffer
+
+	mainthread.Call(func() {
+		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
+	})
+
+	p, _ := player.(*states.Player)
+
+	for !p.Update(1) {
+		if p.GetTime() >= screenshotTime*1000 {
+			log.Println("Scheduling screenshot")
+			mainthread.Call(func() {
+				fbo.Bind()
+
+				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+				pushFrame()
+				viewport.Pop()
+
+				utils.MakeScreenshot(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), output, false)
+
+				fbo.Unbind()
+			})
+
+			break
+		}
+	}
+}
+
 func mainLoopNormal() {
+	mainthread.Call(func() {
+		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+			if action == glfw.Press {
+				switch key {
+				case glfw.KeyF2:
+					scheduleScreenshot = true
+				case glfw.KeyEscape:
+					win.SetShouldClose(true)
+				case glfw.KeyMinus:
+					settings.DIVIDES = bmath.MaxI(1, settings.DIVIDES-1)
+				case glfw.KeyEqual:
+					settings.DIVIDES += 1
+				}
+			}
+
+			input.CallListeners(w, key, scancode, action, mods)
+		})
+	})
+
 	for !win.ShouldClose() {
 		mainthread.Call(func() {
 			if lastVSync != settings.Graphics.VSync {
@@ -502,51 +645,14 @@ func mainLoopNormal() {
 				lastVSync = settings.Graphics.VSync
 			}
 
+			glfw.PollEvents()
+
 			pushFrame()
 
-			if win.GetKey(glfw.KeyF2) == glfw.Press {
-
-				if !pressed {
-					utils.MakeScreenshot(*win)
-				}
-
-				pressed = true
-			}
-
-			if win.GetKey(glfw.KeyF2) == glfw.Release {
-				pressed = false
-			}
-
-			if win.GetKey(glfw.KeyEscape) == glfw.Press {
-				win.SetShouldClose(true)
-			}
-
-			if win.GetKey(glfw.KeyMinus) == glfw.Press {
-
-				if !pressedM {
-					if settings.DIVIDES > 1 {
-						settings.DIVIDES -= 1
-					}
-				}
-
-				pressedM = true
-			}
-
-			if win.GetKey(glfw.KeyMinus) == glfw.Release {
-				pressedM = false
-			}
-
-			if win.GetKey(glfw.KeyEqual) == glfw.Press {
-
-				if !pressedP {
-					settings.DIVIDES += 1
-				}
-
-				pressedP = true
-			}
-
-			if win.GetKey(glfw.KeyEqual) == glfw.Release {
-				pressedP = false
+			if scheduleScreenshot {
+				w, h := win.GetFramebufferSize()
+				utils.MakeScreenshot(w, h, "", true)
+				scheduleScreenshot = false
 			}
 
 			win.SwapBuffers()
@@ -590,7 +696,6 @@ func extensionCheck() {
 
 func pushFrame() {
 	statistic.Reset()
-	glfw.PollEvents()
 
 	gl.Enable(gl.SCISSOR_TEST)
 	gl.Disable(gl.DITHER)
@@ -655,7 +760,7 @@ func checkForUpdates() {
 	log.Println("Checking GitHub for a new version of danser...")
 
 	request, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/Wieku/danser-go/releases/latest", nil)
-	if err != nil  {
+	if err != nil {
 		log.Println("Can't create request")
 		return
 	}
@@ -678,16 +783,8 @@ func checkForUpdates() {
 		log.Println("Failed to decode the response from GitHub")
 	}
 
-	githubVersion, _ := strconv.Atoi(strings.ReplaceAll(strings.TrimSuffix(data.Tag, "b"), ".", "")+"9999")
-
-	currentSplit := strings.Split(build.VERSION, "-")
-
-	currentSub := "9999"
-	if len(currentSplit) > 1 {
-		currentSub = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
-	}
-
-	exeVersion, _ := strconv.Atoi(strings.ReplaceAll(currentSplit[0], ".", "")+currentSub)
+	githubVersion, _ := strconv.ParseInt(transformVersion(data.Tag), 10, 64)
+	exeVersion, _ := strconv.ParseInt(transformVersion(build.VERSION), 10, 64)
 
 	if exeVersion >= githubVersion {
 		log.Println("You're using the newest version of danser.")
@@ -698,8 +795,24 @@ func checkForUpdates() {
 	} else {
 		log.Println("You're using an older version of danser.")
 		log.Println("You can download a newer version here:", data.URL)
-		time.Sleep(2*time.Second)
+		time.Sleep(2 * time.Second)
 	}
+}
+
+func transformVersion(a string) string {
+	currentSplit := strings.Split(a, "-")
+	splitDots := strings.Split(strings.TrimSuffix(currentSplit[0], "b"), ".")
+
+	for i, s := range splitDots {
+		splitDots[i] = fmt.Sprintf("%04s", s)
+	}
+
+	snapshot := "9999"
+	if len(currentSplit) > 1 && !strings.HasPrefix(currentSplit[1], "dev") {
+		snapshot = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
+	}
+
+	return strings.Join(splitDots, "") + snapshot
 }
 
 func main() {

@@ -128,7 +128,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 	if len(container.objectQueue) > 0 {
 		for i := 0; i < len(container.objectQueue); i++ {
-			if p := container.objectQueue[i]; p.GetStartTime()-15000 <= time {
+			if p := container.objectQueue[i]; p.GetStartTime()-math.Max(15000, container.beatMap.Diff.Preempt) <= time {
 				if p := container.objectQueue[i]; p.GetStartTime()-math.Floor(container.beatMap.Diff.Preempt) <= time {
 					if _, ok := p.(*objects.Spinner); ok {
 						container.addProxy(&renderableProxy{

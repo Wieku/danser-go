@@ -45,7 +45,7 @@ func (tim *Timings) AddPoint(time float64, bpm float64, sampleset, sampleindex i
 	} else {
 		point.Bpm = tim.fullBPM
 		if !math.IsNaN(bpm) {
-			point.Bpm *= math.Max(10, math.Min(1000, -bpm)) / 100.0
+			point.Bpm *= float64(float32(math.Max(10, math.Min(1000, -bpm))) / 100.0)
 		}
 	}
 
@@ -76,11 +76,11 @@ func (tim *Timings) GetPoint(time float64) TimingPoint {
 	return tim.Points[len(tim.Points)-1]
 }
 
-func (tim Timings) GetSliderTime(pixelLength float64) int64 {
+func (tim *Timings) GetSliderTime(pixelLength float64) int64 {
 	return int64(tim.partBPM * pixelLength / (100.0 * tim.SliderMult))
 }
 
-func (tim Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) float64 {
+func (tim *Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) float64 {
 	return float64(float32(1000.0*pixelLength) / float32(100.0*tim.SliderMult*(1000.0/point.Bpm)))
 }
 
@@ -89,7 +89,7 @@ func (tim Timings) GetVelocity(point TimingPoint) float64 {
 	return scoringDistance * tim.TickRate * (1000.0 / point.Bpm)
 }
 
-func (tim Timings) GetTickDistance(point TimingPoint) float64 {
+func (tim *Timings) GetTickDistance(point TimingPoint) float64 {
 	scoringDistance := (100 * tim.SliderMult) / tim.TickRate
 	return scoringDistance / point.GetRatio()
 }

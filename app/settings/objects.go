@@ -44,8 +44,10 @@ func initObjects() *objects {
 				FlashAmplitude:        100,
 				currentHue:            0,
 			},
-			UseComboColors: false,
-			ComboColors:    []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
+			UseComboColors:        false,
+			ComboColors:           []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
+			UseSkinComboColors:    false,
+			UseBeatmapComboColors: false,
 			Sliders: &sliderColors{
 				WhiteScorePoints:      true,
 				ScorePointColorOffset: 0,
@@ -137,6 +139,8 @@ type objectcolors struct {
 	Color                  *color
 	UseComboColors         bool
 	ComboColors            []*hsv
+	UseSkinComboColors     bool
+	UseBeatmapComboColors  bool
 	Sliders                *sliderColors
 }
 

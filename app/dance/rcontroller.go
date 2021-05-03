@@ -260,7 +260,9 @@ func (controller *ReplayController) InitCursors() {
 	for i := range controller.controllers {
 		if controller.controllers[i].danceController != nil {
 			controller.controllers[i].danceController.InitCursors()
+
 			controller.controllers[i].danceController.GetCursors()[0].IsPlayer = true
+			controller.controllers[i].danceController.GetCursors()[0].IsAutoplay = true
 
 			cursors := controller.controllers[i].danceController.GetCursors()
 
@@ -381,6 +383,8 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					} else {
 						c.relaxController.Update(float64(c.replayTime))
 					}
+
+					controller.cursors[i].SmokeKey = frame.KeyPressed.Smoke
 
 					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
 					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)

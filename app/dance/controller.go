@@ -36,6 +36,7 @@ func (controller *GenericController) InitCursors() {
 	controller.cursors = make([]*graphics.Cursor, settings.TAG)
 	controller.schedulers = make([]schedulers.Scheduler, settings.TAG)
 
+	// Mover initialization
 	for i := range controller.cursors {
 		controller.cursors[i] = graphics.NewCursor()
 
@@ -78,18 +79,21 @@ func (controller *GenericController) InitCursors() {
 
 	queue := controller.bMap.GetObjectsCopy()
 
+	// Convert retarded (0 length / 0ms) sliders to pseudo-circles
 	for i := 0; i < len(queue); i++ {
 		if s, ok := queue[i].(*objects.Slider); ok && s.IsRetarded() {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}
 	}
 
+	// Convert sliders to pseudo-circles for tag cursors
 	if !settings.Dance.Battle && settings.Dance.TAGSliderDance && settings.TAG > 1 {
 		for i := 0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}
 	}
 
+	// Resolving 2B conflicts
 	for i := 0; i < len(queue); i++ {
 		if s, ok := queue[i].(*objects.Slider); ok {
 			for j := i + 1; j < len(queue); j++ {
@@ -102,6 +106,7 @@ func (controller *GenericController) InitCursors() {
 		}
 	}
 
+	// If DoSpinnersTogether is true with tag mode, allow all tag cursors to spin the same spinner with different movers
 	for j, o := range queue {
 		if _, ok := o.(*objects.Spinner); (ok && settings.Dance.DoSpinnersTogether) || settings.Dance.Battle {
 			for i := range objs {
@@ -113,6 +118,7 @@ func (controller *GenericController) InitCursors() {
 		}
 	}
 
+	//Initialize spinner movers
 	for i := range controller.cursors {
 		spinMover := "circle"
 		if len(settings.Dance.Spinners) > 0 {

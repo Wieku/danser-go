@@ -101,7 +101,7 @@ func (vis *Triangles) Update(time float64) {
 
 	vis.velocity *= 1.0 - 0.05*delta/16
 
-	velocity := vis.velocity + 0.5
+	velocity := (vis.velocity + 0.5) * settings.Playfield.Background.Triangles.Speed
 
 	triangles := vis.manager.GetProcessedSprites()
 	existingTriangles := len(triangles)

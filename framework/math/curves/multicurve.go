@@ -18,51 +18,15 @@ type MultiCurve struct {
 func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
 	lines := make([]Linear, 0)
 
-	if len(points) < 3 {
-		typ = "L"
-	}
-
 	switch typ {
 	case "P":
-		lines = append(lines, ApproximateCircularArc(points[0], points[1], points[2], 0.125)...)
+		lines = processPerfect(points)
 	case "L":
-		for i := 0; i < len(points)-1; i++ {
-			lines = append(lines, NewLinear(points[i], points[i+1]))
-		}
+		lines = processLinear(points)
 	case "B":
-		lastIndex := 0
-
-		for i := 0; i < len(points); i++ {
-			multi := i < len(points)-2 && points[i] == points[i+1]
-
-			if multi || i == len(points)-1 {
-				subPoints := points[lastIndex : i+1]
-
-				if len(subPoints) > 2 {
-					lines = append(lines, ApproximateBezier(subPoints)...)
-				} else if len(subPoints) == 2 {
-					lines = append(lines, NewLinear(subPoints[0], subPoints[1]))
-				}
-
-				if multi {
-					i++
-				}
-
-				lastIndex = i
-			}
-		}
+		lines = processBezier(points)
 	case "C":
-		if points[0] != points[1] {
-			points = append([]vector.Vector2f{points[0]}, points...)
-		}
-
-		if points[len(points)-1] != points[len(points)-2] {
-			points = append(points, points[len(points)-1])
-		}
-
-		for i := 0; i < len(points)-3; i++ {
-			lines = append(lines, ApproximateCatmullRom(points[i:i+4], 50)...)
-		}
+		lines = processCatmull(points)
 	}
 
 	length := float32(0.0)
@@ -125,7 +89,7 @@ func NewMultiCurveT(typ string, points []vector.Vector2f, desiredLength float64)
 }
 
 func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
-	if len(mCurve.lines) == 0 {
+	if len(mCurve.lines) == 0 || mCurve.length == 0 {
 		return mCurve.firstPoint
 	}
 
@@ -137,6 +101,10 @@ func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
 	})
 
 	index = bmath.MinI(index, len(mCurve.lines)-1)
+
+	if mCurve.sections[index+1]-mCurve.sections[index] == 0 {
+		return mCurve.lines[index].Point1
+	}
 
 	return mCurve.lines[index].PointAt((desiredWidth - mCurve.sections[index]) / (mCurve.sections[index+1] - mCurve.sections[index]))
 }
@@ -194,4 +162,84 @@ func (mCurve *MultiCurve) GetEndAngleAt(t float32) float32 {
 
 func (mCurve *MultiCurve) GetLines() []Linear {
 	return mCurve.lines
+}
+
+func processPerfect(points []vector.Vector2f) (lines []Linear) {
+	if len(points) > 3 {
+		lines = processBezier(points)
+	} else if len(points) < 3 || vector.IsStraightLine32(points[0], points[1], points[2]) {
+		lines = processLinear(points)
+	} else {
+		lines = append(lines, ApproximateCircularArc(points[0], points[1], points[2], 0.125)...)
+	}
+
+	return
+}
+
+func processLinear(points []vector.Vector2f) (lines []Linear) {
+	for i := 0; i < len(points)-1; i++ {
+		if points[i] == points[i+1] { // skip red anchors, present in old maps like 243
+			continue
+		}
+
+		lines = append(lines, NewLinear(points[i], points[i+1]))
+	}
+
+	return
+}
+
+func processBezier(points []vector.Vector2f) (lines []Linear) {
+	lastIndex := 0
+
+	for i := 0; i < len(points); i++ {
+		multi := i < len(points)-2 && points[i] == points[i+1]
+
+		if multi || i == len(points)-1 {
+			subPoints := points[lastIndex : i+1]
+
+			if len(subPoints) > 2 {
+				lines = append(lines, ApproximateBezier(subPoints)...)
+			} else if len(subPoints) == 2 {
+				lines = append(lines, NewLinear(subPoints[0], subPoints[1]))
+			}
+
+			if multi {
+				i++
+			}
+
+			lastIndex = i
+		}
+	}
+
+	return
+}
+
+func processCatmull(points []vector.Vector2f) (lines []Linear) {
+	for i := 0; i < len(points)-1; i++ {
+		var p1, p2, p3, p4 vector.Vector2f
+
+		if i-1 >= 0 {
+			p1 = points[i-1]
+		} else {
+			p1 = points[i]
+		}
+
+		p2 = points[i]
+
+		if i+1 < len(points) {
+			p3 = points[i+1]
+		} else {
+			p3 = p2.Add(p2.Sub(p1))
+		}
+
+		if i+2 < len(points) {
+			p4 = points[i+2]
+		} else {
+			p4 = p3.Add(p3.Sub(p2))
+		}
+
+		lines = append(lines, ApproximateCatmullRom([]vector.Vector2f{p1, p2, p3, p4}, 50)...)
+	}
+
+	return
 }

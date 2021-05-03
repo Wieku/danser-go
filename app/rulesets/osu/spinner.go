@@ -166,7 +166,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 			if len(spinner.players) == 1 {
 				spinner.hitSpinner.SetRotation(player.diff.GetModifiedTime(state.rotationCountFD))
-				spinner.hitSpinner.SetRPM(player.diff.GetModifiedTime(state.rpm))
+				spinner.hitSpinner.SetRPM(state.rpm)
 				spinner.hitSpinner.UpdateCompletion(state.rotationCountF / float64(state.requirement))
 			}
 

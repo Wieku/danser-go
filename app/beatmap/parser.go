@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
 	"math"
 	"os"
 	"path/filepath"
@@ -61,6 +62,10 @@ func parseMetadata(line []string, beatMap *BeatMap) {
 		beatMap.Source = line[1]
 	case "Tags":
 		beatMap.Tags = line[1]
+	case "BeatmapID":
+		beatMap.ID, _ = strconv.ParseInt(line[1], 10, 64)
+	case "BeatmapSetID":
+		beatMap.SetID, _ = strconv.ParseInt(line[1], 10, 64)
 	}
 }
 
@@ -301,11 +306,14 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 
 		switch currentSection {
+		case "Colours": //nolint:misspell
+			if arr := tokenize(line, ":"); arr != nil {
+				skin.AddBeatmapColor(arr)
+			}
 		case "HitObjects":
 			if arr := tokenize(line, ","); arr != nil {
 				parseHitObjects(arr, beatMap)
 			}
-			break
 		}
 	}
 
@@ -313,18 +321,30 @@ func ParseObjects(beatMap *BeatMap) {
 		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
+	skin.FinishBeatmapColors()
+
 	num := 0
 	comboNumber := 1
 	comboSet := 0
+	comboSetHax := 0
+	forceNewCombo := false
+
 	for _, iO := range beatMap.HitObjects {
-		if iO.IsNewCombo() {
+		if iO.GetType() == objects.SPINNER {
+			forceNewCombo = true
+		} else if iO.IsNewCombo() || forceNewCombo {
+			iO.SetNewCombo(true)
 			comboNumber = 1
 			comboSet++
+			comboSetHax += int(iO.GetColorOffset()) + 1
+
+			forceNewCombo = false
 		}
 
 		iO.SetID(int64(num))
 		iO.SetComboNumber(int64(comboNumber))
 		iO.SetComboSet(int64(comboSet))
+		iO.SetComboSetHax(int64(comboSetHax))
 
 		comboNumber++
 		num++

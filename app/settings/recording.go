@@ -15,6 +15,7 @@ func initRecording() *recording {
 		Filters:        "",
 		AudioCodec:     "aac",
 		AudioBitrate:   "320k",
+		AudioFilters:   "",
 		OutputDir:      "videos",
 		Container:      "mp4",
 		MotionBlur: &motionblur{
@@ -43,6 +44,7 @@ type recording struct {
 	Filters        string
 	AudioCodec     string
 	AudioBitrate   string
+	AudioFilters   string
 	OutputDir      string
 	Container      string
 	MotionBlur     *motionblur

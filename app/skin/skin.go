@@ -9,8 +9,10 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/color"
 	"log"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -400,4 +402,67 @@ func tryLoad(basePath string, local bool) *bass.Sample {
 	}
 
 	return nil
+}
+
+var beatmapColorsI []colorI
+var beatmapColors  []color.Color
+
+func AddBeatmapColor(data []string) {
+	index, _ := strconv.ParseInt(strings.TrimPrefix(data[0], "Combo"), 10, 64)
+	beatmapColorsI = append(beatmapColorsI, colorI{
+		index: int(index),
+		color: ParseColor(data[1], data[0]),
+	})
+}
+
+func FinishBeatmapColors() {
+	if len(beatmapColorsI) > 0 {
+		sort.SliceStable(beatmapColorsI, func(i, j int) bool {
+			return beatmapColorsI[i].index <= beatmapColorsI[j].index
+		})
+
+		beatmapColors = make([]color.Color, 0)
+
+		for _, c := range beatmapColorsI {
+			beatmapColors = append(beatmapColors, c.color)
+		}
+	}
+}
+
+func GetColors() []color.Color {
+	if settings.Skin.UseBeatmapColors && len(beatmapColors) > 0 {
+		return beatmapColors
+	}
+
+	return info.ComboColors
+}
+
+func GetColor(comboSet, comboSetHax int, base color.Color) (col color.Color) {
+	col = color.NewRGB(base.R, base.G, base.B)
+
+	if settings.Skin.UseColorsFromSkin && len(GetColors()) > 0 {
+		cSet := comboSet
+		if settings.Skin.UseBeatmapColors {
+			cSet = comboSetHax
+		}
+
+		col = GetColors()[cSet%len(GetColors())]
+	} else if settings.Objects.Colors.UseComboColors || settings.Objects.Colors.UseSkinComboColors || settings.Objects.Colors.UseBeatmapComboColors {
+		cSet := comboSet
+		if settings.Objects.Colors.UseBeatmapComboColors {
+			cSet = comboSetHax
+		}
+
+		if settings.Objects.Colors.UseBeatmapComboColors && len(beatmapColors) > 0 {
+			col = beatmapColors[cSet%len(beatmapColors)]
+		} else if settings.Objects.Colors.UseSkinComboColors && len(info.ComboColors) > 0 {
+			col = info.ComboColors[cSet%len(info.ComboColors)]
+		} else if settings.Objects.Colors.UseComboColors && len(settings.Objects.Colors.ComboColors) > 0 {
+			cHSV := settings.Objects.Colors.ComboColors[cSet%len(settings.Objects.Colors.ComboColors)]
+			r, g, b := color.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+			col = color.NewRGB(r, g, b)
+		}
+	}
+
+	return
 }

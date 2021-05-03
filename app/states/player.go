@@ -122,7 +122,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && settings.PLAY {
+	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && (settings.PLAY || !settings.KNOCKOUT) {
 		scrub := math.Max(0, settings.START*1000)
 		end := settings.END*1000
 
@@ -231,7 +231,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.epiGlider = animation.NewGlider(0)
 	player.objectsAlpha = animation.NewGlider(1)
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].Name == "" {
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].IsPlayer && !player.controller.GetCursors()[0].IsAutoplay {
 		player.cursorGlider.SetValue(1.0)
 	}
 
@@ -253,7 +253,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	startOffset := 0.0
 
 	if settings.SKIP || settings.START > 0.01 {
-		startOffset = math.Max(0, skipTime-beatMap.Diff.Preempt)
+		preempt := math.Min(1800, beatMap.Diff.Preempt)
+
+		startOffset = math.Max(0, skipTime-preempt)
 		player.startPoint = startOffset
 
 		for _, o := range beatMap.HitObjects {
@@ -265,17 +267,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 
 		player.volumeGlider.SetValue(0.0)
-		player.volumeGlider.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+		player.volumeGlider.AddEvent(skipTime-preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
 
 		if settings.START > 0.01 {
 			player.objectsAlpha.SetValue(0.0)
-			player.objectsAlpha.AddEvent(skipTime-beatMap.Diff.Preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+			player.objectsAlpha.AddEvent(skipTime-preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
 
 			if player.overlay != nil {
 				player.overlay.DisableAudioSubmission(true)
 			}
 
-			for i := -1000.0; i < player.startPoint-player.bMap.Diff.Preempt; i += 1.0 {
+			for i := -1000.0; i < player.startPoint-preempt; i += 1.0 {
 				player.controller.Update(i, 1)
 
 				if player.overlay != nil {
@@ -290,7 +292,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		player.lateStart = true
 	} else {
-		startOffset = -beatMap.Diff.Preempt
+		startOffset = -math.Min(1800, beatMap.Diff.Preempt)
 	}
 
 	startOffset += -settings.Playfield.LeadInHold * 1000
@@ -300,8 +302,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
 	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); !ok {
-		player.cursorGlider.AddEvent(startOffset-500, startOffset, 0.0)
+	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		player.cursorGlider.AddEvent(startOffset-500, startOffset, 1.0)
 	}
 
 	player.dimGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0-settings.Playfield.Background.Dim.Normal)
@@ -495,6 +497,10 @@ func (player *Player) Update(delta float64) bool {
 	}
 
 	return false
+}
+
+func (player *Player) GetTime() float64 {
+	return player.progressMsF
 }
 
 func (player *Player) GetTimeOffset() float64 {

@@ -14,6 +14,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
+	"strconv"
 )
 
 const errorBase = 4.8
@@ -35,6 +36,9 @@ type HitErrorMeter struct {
 	unstableRate float64
 	avgPos       float64
 	avgNeg       float64
+
+	urText   string
+	urGlider *animation.TargetGlider
 }
 
 func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitErrorMeter {
@@ -45,6 +49,8 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	meter.diff = diff
 	meter.errorDisplay = sprite.NewSpriteManager()
 	meter.errorDisplayFade = animation.NewGlider(0.0)
+	meter.urText = "0UR"
+	meter.urGlider = animation.NewTargetGlider(0, 0)
 
 	sum := float64(meter.diff.Hit50) * 0.8
 
@@ -161,6 +167,8 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 	meter.avgNeg = averageN / math.Max(float64(countN), 1)
 	meter.avgPos = averageP / math.Max(float64(countP), 1)
 	meter.unstableRate = math.Sqrt(urBase) * 10
+
+	meter.urGlider.SetTarget(meter.GetUnstableRateConverted())
 }
 
 func (meter *HitErrorMeter) Update(time float64) {
@@ -168,6 +176,10 @@ func (meter *HitErrorMeter) Update(time float64) {
 	meter.errorDisplay.Update(time)
 
 	meter.lastTime = time
+
+	meter.urGlider.SetDecimals(settings.Gameplay.HitErrorMeter.UnstableRateDecimals)
+	meter.urGlider.Update(time)
+	meter.urText = fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.HitErrorMeter.UnstableRateDecimals) + "fUR", meter.urGlider.GetValue())
 }
 
 func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
@@ -187,8 +199,8 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 
 			fnt := font.GetFont("Exo 2 Bold")
 
-			urText := fmt.Sprintf("%.0fUR", meter.GetUnstableRateConverted())
-			fnt.DrawMonospaced(batch, meter.Width/2-fnt.GetWidthMonospaced(15*scale, urText)/2, pY-13.33, 15*scale, urText)
+			mText := meter.urText
+			fnt.DrawMonospaced(batch, meter.Width/2-fnt.GetWidthMonospaced(15*scale, mText)/2, pY-13.33, 15*scale, mText)
 		}
 	}
 

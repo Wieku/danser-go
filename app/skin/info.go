@@ -15,6 +15,11 @@ import (
 
 const latestVersion = 2.7
 
+type colorI struct {
+	index int
+	color color.Color
+}
+
 type SkinInfo struct {
 	Name   string
 	Author string
@@ -180,11 +185,6 @@ func LoadInfo(path string) (*SkinInfo, error) {
 	scanner := bufio.NewScanner(fileBom)
 
 	info := newDefaultInfo()
-
-	type colorI struct {
-		index int
-		color color.Color
-	}
 
 	colorsI := make([]colorI, 0)
 

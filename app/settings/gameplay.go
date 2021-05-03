@@ -10,8 +10,9 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			ShowUnstableRate:  true,
-			UnstableRateScale: 1.0,
+			ShowUnstableRate:     true,
+			UnstableRateDecimals: 0,
+			UnstableRateScale:    1.0,
 		},
 		Score: &score{
 			hudElement: &hudElement{
@@ -40,6 +41,7 @@ func initGameplay() *gameplay {
 			},
 			XPosition:     5,
 			YPosition:     150,
+			Decimals:      0,
 			Align:         "CentreLeft",
 			ShowInResults: true,
 		},
@@ -88,6 +90,7 @@ func initGameplay() *gameplay {
 		ResultsScreenTime: 5,
 		ShowWarningArrows: true,
 		FlashlightDim:     1,
+		PlayUsername:      "Guest",
 	}
 }
 
@@ -105,6 +108,7 @@ type gameplay struct {
 	ResultsScreenTime float64
 	ShowWarningArrows bool
 	FlashlightDim     float64
+	PlayUsername      string
 }
 
 type boundaries struct {
@@ -128,8 +132,9 @@ type hudElement struct {
 
 type hitError struct {
 	*hudElement
-	ShowUnstableRate  bool
-	UnstableRateScale float64
+	ShowUnstableRate     bool
+	UnstableRateDecimals int
+	UnstableRateScale    float64
 }
 
 type score struct {
@@ -142,6 +147,7 @@ type ppCounter struct {
 	*hudElement
 	XPosition     float64
 	YPosition     float64
+	Decimals      int
 	Align         string
 	ShowInResults bool
 }

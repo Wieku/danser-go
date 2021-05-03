@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"github.com/nattawitc/rich-go/client"
+	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/build"
 	"log"
@@ -97,10 +98,10 @@ func UpdateKnockout(alive, players int) {
 	sendActivity(fmt.Sprintf("Watching knockout (%d of %d alive)", alive, players))
 }
 
-func UpdatePlay(name string) {
+func UpdatePlay(cursor *graphics.Cursor) {
 	state := "Clicking circles"
-	if name != "" {
-		state = fmt.Sprintf("Watching %s", name)
+	if !cursor.IsPlayer || cursor.IsAutoplay {
+		state = fmt.Sprintf("Watching %s", cursor.Name)
 	}
 
 	sendActivity(state)

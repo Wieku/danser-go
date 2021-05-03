@@ -377,6 +377,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.startCircle = DummyCircle(slider.StartPosRaw, slider.StartTime)
 	slider.startCircle.ComboNumber = slider.ComboNumber
 	slider.startCircle.ComboSet = slider.ComboSet
+	slider.startCircle.ComboSetHax = slider.ComboSetHax
 	slider.startCircle.HitObjectID = slider.HitObjectID
 	slider.startCircle.StackOffset = slider.StackOffset
 	slider.startCircle.StackOffsetHR = slider.StackOffsetHR
@@ -415,6 +416,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == slider.repeat)
 		circle.ComboNumber = slider.ComboNumber
 		circle.ComboSet = slider.ComboSet
+		circle.ComboSetHax = slider.ComboSetHax
 		circle.HitObjectID = slider.HitObjectID
 		circle.StackOffset = slider.StackOffset
 		circle.StackOffsetHR = slider.StackOffsetHR
@@ -800,24 +802,19 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 		if skin.GetInfo().SliderTrackOverride != nil {
 			baseTrack = *skin.GetInfo().SliderTrackOverride
 		} else {
-			baseTrack = skin.GetInfo().ComboColors[int(slider.ComboSet)%len(skin.GetInfo().ComboColors)]
+			baseTrack = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), baseTrack)
 		}
 
 		bodyOuter = baseTrack.Shade2(-0.1)
 		bodyInner = baseTrack.Shade2(0.5)
 	} else {
-		if settings.Objects.Colors.UseComboColors {
-			cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-			comnboColor := color2.NewHSV(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
+		if settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
+			borderInner = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), borderInner)
+			borderOuter = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), borderOuter)
+		}
 
-			if settings.Objects.Colors.Sliders.Border.UseHitCircleColor {
-				borderInner = comnboColor
-				borderOuter = comnboColor
-			}
-
-			if settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
-				bodyColor = comnboColor
-			}
+		if settings.Objects.Colors.Sliders.Body.UseHitCircleColor {
+			bodyColor = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), bodyColor)
 		}
 
 		if settings.Objects.Colors.Sliders.Border.EnableCustomGradientOffset {
@@ -922,13 +919,12 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 }
 
 func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {
-	batch.SetColor(1, 1, 1, alpha)
 	batch.SetTranslation(slider.ball.GetPosition())
 
 	isB := skin.GetSource("sliderb") != skin.SKIN && useBallTexture
 
 	if isB && skin.GetTexture("sliderb-nd") != nil {
-		batch.SetColor(0.1, 0.1, 0.1, alpha)
+		batch.SetColor(0.1, 0.1, 0.1, alpha*slider.ball.GetAlpha())
 		batch.DrawTexture(*skin.GetTexture("sliderb-nd"))
 	}
 
@@ -936,27 +932,18 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 		color := color2.NewL(1)
 
 		if skin.GetInfo().SliderBallTint {
-			color = skin.GetInfo().ComboColors[int(slider.ComboSet)%len(skin.GetInfo().ComboColors)]
+			color = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), color)
 		} else if skin.GetInfo().SliderBall != nil {
 			color = *skin.GetInfo().SliderBall
 		}
 
 		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 	} else if settings.Objects.Colors.Sliders.SliderBallTint {
-		if settings.Objects.Colors.UseComboColors {
-			cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-			r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-			batch.SetColor(float64(r), float64(g), float64(b), alpha)
-		} else {
-			batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
-		}
+		color = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), color)
+		batch.SetColor(float64(color.R), float64(color.G), float64(color.B), alpha)
 	} else {
 		batch.SetColor(1, 1, 1, alpha)
 	}
-
-	//cHSV := settings.Objects.Colors.ComboColors[int(slider.ComboSet)%len(settings.Objects.Colors.ComboColors)]
-	//r, g, b := color2.HSVToRGB(float32(cHSV.Hue), float32(cHSV.Saturation), float32(cHSV.Value))
-	//batch.SetColor(float64(r), float64(g), float64(b), alpha)
 
 	if useBallTexture {
 		batch.SetTranslation(vector.NewVec2d(0, 0))
@@ -966,9 +953,8 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 		batch.DrawTexture(*skin.GetTexture("hitcircle-full"))
 	}
 
-	batch.SetColor(1, 1, 1, alpha)
-
 	if isB && skin.GetTexture("sliderb-spec") != nil {
+		batch.SetColor(1, 1, 1, alpha*slider.ball.GetAlpha())
 		batch.SetAdditive(true)
 		batch.DrawTexture(*skin.GetTexture("sliderb-spec"))
 		batch.SetAdditive(false)

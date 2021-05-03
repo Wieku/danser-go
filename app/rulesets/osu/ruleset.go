@@ -97,7 +97,6 @@ type subSet struct {
 	modMultiplier float64
 	numObjects    int64
 	grade         Grade
-	diff          []oppai.DiffCalc
 	ppv2          *oppai.PPv2
 	hits          map[HitResult]int64
 	currentKatu   int
@@ -167,10 +166,8 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	drainTime := float32((int64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) - int64(beatMap.HitObjects[0].GetStartTime()) - pauses) / 1000)
 
-	// HACK HACK HACK:
-	// apparently .NET Framework treats doubles differently than other runtimes
-	// so we need to subtract a small amount from the value to have proper scoreMultiplier in edge cases (like 4.5 before rounding)
-	ruleset.scoreMultiplier = math.Round(float64((float32(beatMap.Diff.GetHPDrain())+float32(beatMap.Diff.GetOD())+float32(beatMap.Diff.GetCS())+bmath.ClampF32(float32(len(beatMap.HitObjects))/drainTime*8, 0, 16))/38*5) - 0.0000001)
+	// HACK: we need to cast to float32 then to float64 to lose some precision but calculate them again as float64s to have matching results with osu!stable
+	ruleset.scoreMultiplier = math.RoundToEven((float64(float32(beatMap.Diff.GetHPDrain())) + float64(float32(beatMap.Diff.GetOD())) + float64(float32(beatMap.Diff.GetCS())) + float64(bmath.ClampF32(float32(len(beatMap.HitObjects))/drainTime*8, 0, 16))) / 38 * 5)
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
@@ -179,12 +176,18 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	for i, cursor := range cursors {
 		diff := difficulty.NewDifficulty(beatMap.Diff.GetHPDrain(), beatMap.Diff.GetCS(), beatMap.Diff.GetOD(), beatMap.Diff.GetAR())
 		diff.SetMods(mods[i])
+		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
 
 		player := &difficultyPlayer{cursor: cursor, diff: diff}
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalcStep(ruleset.beatMap.HitObjects, diff)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalculateStep(ruleset.beatMap.HitObjects, diff, false)
+
+			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
+			log.Println("Aim Stars:", star.Aim)
+			log.Println("Speed Stars:", star.Speed)
+			log.Println("Total Stars:", star.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
@@ -198,7 +201,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			recoveries = 2
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, nil, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -485,14 +488,16 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 			}
 		}
 
-		if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
-			result |= GekiAddition
-			subSet.gekiCount++
-		} else if subSet.currentBad == 0 && allClicked {
-			result |= KatuAddition
-			subSet.katuCount++
-		} else {
-			result |= MuAddition
+		if result&BaseHits > 0 {
+			if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
+				result |= GekiAddition
+				subSet.gekiCount++
+			} else if subSet.currentBad == 0 && allClicked {
+				result |= KatuAddition
+				subSet.katuCount++
+			} else {
+				result |= MuAddition
+			}
 		}
 
 		subSet.currentBad = 0
