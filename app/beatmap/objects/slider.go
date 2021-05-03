@@ -919,13 +919,12 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 }
 
 func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {
-	batch.SetColor(1, 1, 1, alpha)
 	batch.SetTranslation(slider.ball.GetPosition())
 
 	isB := skin.GetSource("sliderb") != skin.SKIN && useBallTexture
 
 	if isB && skin.GetTexture("sliderb-nd") != nil {
-		batch.SetColor(0.1, 0.1, 0.1, alpha)
+		batch.SetColor(0.1, 0.1, 0.1, alpha*slider.ball.GetAlpha())
 		batch.DrawTexture(*skin.GetTexture("sliderb-nd"))
 	}
 
@@ -954,9 +953,8 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 		batch.DrawTexture(*skin.GetTexture("hitcircle-full"))
 	}
 
-	batch.SetColor(1, 1, 1, alpha)
-
 	if isB && skin.GetTexture("sliderb-spec") != nil {
+		batch.SetColor(1, 1, 1, alpha*slider.ball.GetAlpha())
 		batch.SetAdditive(true)
 		batch.DrawTexture(*skin.GetTexture("sliderb-spec"))
 		batch.SetAdditive(false)
