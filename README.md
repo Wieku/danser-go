@@ -60,10 +60,14 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-end=30.5` - end the map at the given time (in seconds)
 * `-knockout` - knockout mode
 * `-record` - Records danser's output to a video file. Needs a globally accessible [ffmpeg](https://ffmpeg.org/download.html) installation.
-* `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings.
+* `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings. When the `-ss` flag is used, this sets the output filename as well.
 * `-replay="path_to_replay.osr"` or `-r="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\` with `\\` or `/`. Overrides all map selection arguments
 * `-mods=HDHR` - displays the map with given mods. Overrides `-speed` and `-pitch` arguments if DT/NC/HT/DC mods are given
 * `-skin` - overrides `Skin.CurrentSkin` in settings
+* `-cs`, `-ar`, `-od`, `-hp` - overrides maps' difficulty settings (values outside of osu!'s normal limits accepted)
+* `-nodbcheck` - skips updating the database with new, changed or deleted maps
+* `-ss=20.5` - creates a screenshot at the given time in .png format
+* `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
 
 Since danser 0.4.0b artist, creator, difficulty names and titles don't have to exactly match the `.osu` file. 
 
