@@ -249,7 +249,7 @@ func (cursor *Cursor) updateSmoke() {
 		for _, s := range smokes {
 			if (s.GetEndTime() - s.GetStartTime()) < 5000 {
 				s.ClearTransformations()
-				s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time+delay, cursor.time+delay+8000, 1.0, 0.0))
+				s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, cursor.time+delay, cursor.time+delay+8000, 1.0, 0.0))
 				s.SetEndTime(cursor.time + delay + 8000)
 
 				delay += 2.0
