@@ -104,6 +104,9 @@ func run() {
 		end := flag.Float64("end", math.Inf(1), "End at the given time in seconds")
 
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
+
+		quickstart := flag.Bool("quickstart", false, "Sets -skip flag, sets LeadInTime and LeadInHold settings temporarily to 0")
+		
 		record := flag.Bool("record", false, "Records a video")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
@@ -262,6 +265,8 @@ func run() {
 
 		assets.Init(build.Stream == "Dev")
 
+		log.Println("Initializing GLFW...")
+
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
@@ -289,6 +294,12 @@ func run() {
 
 		if strings.TrimSpace(*skin) != "" {
 			settings.Skin.CurrentSkin = *skin
+		}
+
+		if *quickstart {
+			settings.SKIP = true
+			settings.Playfield.LeadInTime = 0
+			settings.Playfield.LeadInHold = 0
 		}
 
 		if settings.RECORD {
