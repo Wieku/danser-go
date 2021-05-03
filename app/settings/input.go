@@ -6,6 +6,7 @@ func initInput() *input {
 	return &input{
 		LeftKey:              "Z",
 		RightKey:             "X",
+		RestartKey:           "`",
 		MouseButtonsDisabled: true,
 		MouseHighPrecision:   false,
 		MouseSensitivity:     1,
@@ -15,6 +16,7 @@ func initInput() *input {
 type input struct {
 	LeftKey              string
 	RightKey             string
+	RestartKey           string
 	MouseButtonsDisabled bool
 	MouseHighPrecision   bool
 	MouseSensitivity     float64

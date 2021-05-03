@@ -13,6 +13,7 @@ import (
 	input2 "github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"strings"
@@ -33,8 +34,11 @@ type PlayerController struct {
 	previousPos     vector.Vector2f
 	position        vector.Vector2f
 
-	rawInput bool
-	inside   bool
+	rawInput         bool
+	inside           bool
+
+	quickRestart     bool
+	quickRestartTime float64
 }
 
 func NewPlayerController() Controller {
@@ -94,6 +98,15 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 			controller.cursors[0].RightKey = false
 		}
 	}
+
+	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.RestartKey) {
+		if action == glfw.Press {
+			controller.quickRestartTime = controller.lastTime
+			controller.quickRestart = true
+		} else if action == glfw.Release {
+			controller.quickRestart = false
+		}
+	}
 }
 
 func (controller *PlayerController) Update(time float64, delta float64) {
@@ -124,6 +137,12 @@ func (controller *PlayerController) Update(time float64, delta float64) {
 			controller.cursors[0].RightButton = controller.cursors[0].RightKey || controller.cursors[0].RightMouse
 		} else {
 			controller.relaxController.Update(time)
+		}
+
+		if controller.quickRestart && time - controller.quickRestartTime > 500 {
+			controller.quickRestart = false
+
+			utils.QuickRestart()
 		}
 	}
 
