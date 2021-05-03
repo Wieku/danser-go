@@ -129,6 +129,8 @@ type ScoreOverlay struct {
 
 	audioDisabled bool
 	beatmapEnd    float64
+
+	circularMetre *texture.TextureRegion
 }
 
 func loadFonts() {
@@ -199,6 +201,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
 	overlay.comboFont = skin.GetFont("combo")
+	overlay.circularMetre = skin.GetTextureSource("circularmetre", skin.LOCAL)
 
 	ruleset.SetListener(overlay.hitReceived)
 
@@ -635,7 +638,7 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 		batch.SetColor(1, 1, 1, scoreAlpha)
 		batch.SetScale(scoreScale, scoreScale)
 		batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
-		batch.DrawTexture(*skin.GetTextureSource("circularmetre", skin.LOCAL))
+		batch.DrawTexture(*overlay.circularMetre)
 
 		accOffset -= 44.8 * scoreScale
 	} else if progress > 0.0 {

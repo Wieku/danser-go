@@ -499,6 +499,10 @@ func (player *Player) Update(delta float64) bool {
 	return false
 }
 
+func (player *Player) GetTime() float64 {
+	return player.progressMsF
+}
+
 func (player *Player) GetTimeOffset() float64 {
 	return player.progressMsF - player.startOffset
 }

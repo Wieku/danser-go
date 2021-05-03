@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func MakeScreenshot(win glfw.Window) {
+func MakeScreenshot(win glfw.Window, name string, async bool) {
 	w, h := win.GetFramebufferSize()
 
 	pixmap := texture.NewPixMapC(w, h, 3)
@@ -17,7 +17,7 @@ func MakeScreenshot(win glfw.Window) {
 	gl.PixelStorei(gl.PACK_ALIGNMENT, int32(1))
 	gl.ReadPixels(0, 0, int32(w), int32(h), gl.RGB, gl.UNSIGNED_BYTE, pixmap.RawPointer)
 
-	go func() {
+	save := func() {
 		defer pixmap.Dispose()
 
 		err := os.Mkdir("screenshots", 0644)
@@ -26,7 +26,13 @@ func MakeScreenshot(win glfw.Window) {
 			return
 		}
 
-		fileName := "danser_" + time.Now().Format("2006-01-02_15-04-05") + ".png"
+		fileName := name
+
+		if fileName == "" {
+			fileName = "danser_" + time.Now().Format("2006-01-02_15-04-05")
+		}
+
+		fileName += ".png"
 
 		err = pixmap.WritePng("screenshots/"+fileName, true)
 		if err != nil {
@@ -35,5 +41,11 @@ func MakeScreenshot(win glfw.Window) {
 		}
 
 		log.Println("Screenshot", fileName, "saved!")
-	}()
+	}
+
+	if async {
+		go save()
+	} else {
+		save()
+	}
 }

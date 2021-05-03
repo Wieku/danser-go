@@ -155,6 +155,8 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.bonusScale = animation.NewGlider(0.0)
 
 	spinner.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2-139, spinner.ScaledHeight-56), bmath.Origin.TopLeft)
+
+	skin.GetFont("score")
 }
 
 func (spinner *Spinner) Update(time float64) bool {

@@ -71,6 +71,10 @@ var lastVSync bool
 
 var output string
 
+var recordMode bool
+var screenshotMode bool
+var screenshotTime float64
+
 func run() {
 	mainthread.Call(func() {
 		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
@@ -106,8 +110,10 @@ func run() {
 		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
 
 		quickstart := flag.Bool("quickstart", false, "Sets -skip flag, sets LeadInTime and LeadInHold settings temporarily to 0")
-		
+
 		record := flag.Bool("record", false, "Records a video")
+		out := flag.String("out", "", "If -ss flag is used, sets the name of screenshot, extension is PNG. If not, it overrides -record flag, specifies the name of recorded video file, extension is managed by settings")
+		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
 
@@ -115,8 +121,6 @@ func run() {
 		flag.StringVar(replay, "r", "", replayDesc+shorthand)
 
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
-
-		out := flag.String("out", "", "Overrides -record flag. Specify the name of recorded video file, extension is managed by settings")
 
 		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
 
@@ -128,9 +132,15 @@ func run() {
 		flag.Parse()
 
 		if *out != "" {
-			*record = true
 			output = *out
+			if math.IsNaN(*ss) {
+				*record = true
+			}
 		}
+
+		recordMode = *record
+		screenshotMode = !math.IsNaN(*ss)
+		screenshotTime = *ss
 
 		if *record && *play {
 			panic("Incompatible flags selected: -record, -play")
@@ -138,6 +148,10 @@ func run() {
 			panic("Incompatible flags selected: -replay, -play")
 		} else if *replay != "" && *knockout {
 			panic("Incompatible flags selected: -replay, -knockout")
+		} else if screenshotMode && *play {
+			panic("Incompatible flags selected: -ss, -play")
+		} else if screenshotMode && recordMode {
+			panic("Incompatible flags selected: -ss, -record")
 		}
 
 		modsParsed := difficulty2.ParseMods(*mods)
@@ -185,7 +199,7 @@ func run() {
 		settings.SKIP = *skip
 		settings.START = *start
 		settings.END = *end
-		settings.RECORD = *record
+		settings.RECORD = recordMode || screenshotMode
 
 		if settings.RECORD {
 			bass.Offscreen = true
@@ -313,6 +327,11 @@ func run() {
 			settings.Playfield.LeadInTime = 0
 		} else {
 			discord.Connect()
+		}
+
+		if screenshotMode {
+			settings.Playfield.LeadInHold = 0
+			settings.START = screenshotTime - 5
 		}
 
 		if settings.Graphics.Fullscreen {
@@ -478,8 +497,10 @@ func run() {
 		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
 
-	if settings.RECORD {
+	if recordMode {
 		mainLoopRecord()
+	} else if screenshotMode {
+		mainLoopSS()
 	} else {
 		mainLoopNormal()
 	}
@@ -560,6 +581,37 @@ func mainLoopRecord() {
 	ffmpeg.Combine(output)
 }
 
+func mainLoopSS() {
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight())
+
+	var fbo *buffer.Framebuffer
+
+	mainthread.Call(func() {
+		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
+	})
+
+	p, _ := player.(*states.Player)
+
+	for !p.Update(1) {
+		if p.GetTime() >= screenshotTime*1000 {
+			log.Println("Scheduling screenshot")
+			mainthread.Call(func() {
+				fbo.Bind()
+
+				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+				pushFrame()
+				viewport.Pop()
+
+				utils.MakeScreenshot(*win, output, false)
+
+				fbo.Unbind()
+			})
+
+			break
+		}
+	}
+}
+
 func mainLoopNormal() {
 	mainthread.Call(func() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
@@ -597,7 +649,7 @@ func mainLoopNormal() {
 			pushFrame()
 
 			if scheduleScreenshot {
-				utils.MakeScreenshot(*win)
+				utils.MakeScreenshot(*win, "", true)
 				scheduleScreenshot = false
 			}
 

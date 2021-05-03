@@ -216,6 +216,8 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		length := math.Min(300, endTime-t)
 		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, t, t+length, 1.3, 1.0))
 	}
+
+	skin.GetFont("default")
 }
 
 func (circle *Circle) Arm(clicked bool, time float64) {
