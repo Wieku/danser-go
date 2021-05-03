@@ -20,8 +20,8 @@ func MakeScreenshot(win glfw.Window, name string, async bool) {
 	save := func() {
 		defer pixmap.Dispose()
 
-		err := os.Mkdir("screenshots", 0644)
-		if !os.IsExist(err) {
+		err := os.Mkdir("screenshots", 0755)
+		if err != nil && !os.IsExist(err) {
 			log.Println("Failed to save the screenshot! Error:", err)
 			return
 		}
