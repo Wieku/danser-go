@@ -178,7 +178,7 @@ func (cursor *Cursor) Update(delta float64) {
 	leftState := cursor.LeftKey || cursor.LeftMouse
 	rightState := cursor.RightKey || cursor.RightMouse
 
-	if settings.Cursor.CursorRipples && ((!cursor.lastLeftState && leftState) || (!cursor.lastRightState && rightState)) {
+	if settings.Cursor.CursorRipples && settings.PLAYERS == 1 && ((!cursor.lastLeftState && leftState) || (!cursor.lastRightState && rightState)) {
 		spr := sprite.NewSpriteSingle(skin.GetTextureSource("ripple", skin.LOCAL), cursor.time, cursor.Position.Copy64(), bmath.Origin.Centre)
 		spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+700, 0.3, 0.0))
 		spr.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, cursor.time, cursor.time+700, 0.05, 0.5))
