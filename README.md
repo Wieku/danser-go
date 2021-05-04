@@ -31,12 +31,12 @@ After unpacking it to your desired directory, you need to run it using a command
 
 ##### Windows cmd:
 ```bash
-danser*** <arguments>
+danser <arguments>
 ```
 
 ##### Linux / Unix / git bash / Powershell:
 ```bash
-./danser*** <arguments>
+./danser <arguments>
 ```
 
 If you try to run Danser without any arguments there's a surprise waiting for you ;)
