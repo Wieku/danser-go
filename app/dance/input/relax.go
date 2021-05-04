@@ -28,16 +28,10 @@ func (processor *RelaxInputProcessor) Update(time float64) {
 	for _, o := range processed {
 		circle, c1 := o.(*osu.Circle)
 		slider, c2 := o.(*osu.Slider)
-		_, c3 := o.(*osu.Spinner)
 
 		objectStartTime := processor.ruleset.GetBeatMap().HitObjects[o.GetNumber()].GetStartTime()
-		objectEndTime := processor.ruleset.GetBeatMap().HitObjects[o.GetNumber()].GetEndTime()
 
 		if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && time > objectStartTime-12 {
-			click = true
-		}
-
-		if (c2 || c3) && time >= objectStartTime && time <= objectEndTime {
 			click = true
 		}
 	}
