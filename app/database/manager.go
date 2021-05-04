@@ -24,6 +24,7 @@ var dbFile *sql.DB
 const databaseVersion = 20210423
 
 var currentPreVersion = databaseVersion
+var currentSchemaPreVersion = databaseVersion
 
 type mapLocation struct {
 	dir  string
@@ -75,6 +76,8 @@ func Init() error {
 		return err
 	}
 
+	schemaVersionExists := false
+
 	res, err := dbFile.Query("SELECT key, value FROM info")
 	if err != nil {
 		return err
@@ -91,11 +94,21 @@ func Init() error {
 		if key == "version" {
 			currentPreVersion, _ = strconv.Atoi(value)
 		}
+
+		if key == "schema_version" {
+			schemaVersionExists = true
+			currentSchemaPreVersion, _ = strconv.Atoi(value)
+		}
 	}
 
-	log.Println("DatabaseManager: Database version:", currentPreVersion)
+	if !schemaVersionExists {
+		currentSchemaPreVersion = currentPreVersion
+	}
 
-	if currentPreVersion != databaseVersion {
+	log.Println("DatabaseManager: Database schema version:", currentSchemaPreVersion)
+	log.Println("DatabaseManager: Database data version:", currentPreVersion)
+
+	if currentSchemaPreVersion != databaseVersion {
 		log.Println("DatabaseManager: Database schema is too old! Updating...")
 
 		statement := ""
@@ -112,7 +125,14 @@ func Init() error {
 		}
 
 		log.Println("DatabaseManager: Schema has been updated!")
+	}
 
+	_, err = dbFile.Exec("REPLACE INTO info (key, value) VALUES ('schema_version', ?)", strconv.FormatInt(databaseVersion, 10))
+	if err != nil {
+		return err
+	}
+
+	if currentPreVersion != databaseVersion {
 		migrateBeatmaps()
 	}
 
