@@ -104,7 +104,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	graphics.LoadTextures()
 
-	player.batch = batch2.NewQuadBatch()
+	if settings.Graphics.Experimental.UsePersistentBuffers {
+		player.batch = batch2.NewQuadBatchPersistent()
+	} else {
+		player.batch = batch2.NewQuadBatch()
+	}
+
 	player.font = font.GetFont("Exo 2 Bold")
 
 	discord.SetMap(beatMap.Artist, beatMap.Name, beatMap.Difficulty)

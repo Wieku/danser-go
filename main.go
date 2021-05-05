@@ -675,7 +675,7 @@ func extensionCheck() {
 		"GL_ARB_vertex_attrib_binding",
 	}
 
-	if settings.RECORD {
+	if settings.RECORD || settings.Graphics.Experimental.UsePersistentBuffers {
 		extensions = append(extensions, "GL_ARB_buffer_storage")
 	}
 
