@@ -279,7 +279,9 @@ func run() {
 
 		assets.Init(build.Stream == "Dev")
 
-		log.Println("Initializing GLFW...")
+		if !closeAfterSettingsLoad {
+			log.Println("Initializing GLFW...")
+		}
 
 		glfw.Init()
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
