@@ -392,6 +392,11 @@ func run() {
 		glVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VERSION))))
 		glslVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.SHADING_LANGUAGE_VERSION))))
 
+		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/buffer.IsIntel for more info
+		if strings.Contains(strings.ToLower(glVendor), "intel") {
+			buffer.IsIntel = true
+		}
+
 		var extensions string
 
 		var numExtensions int32

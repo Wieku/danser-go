@@ -214,6 +214,10 @@ func (vao *VertexArrayObject) DrawPart(offset, length int) {
 		statistic.Increment(statistic.DrawCalls)
 
 		gl.DrawArrays(gl.TRIANGLES, int32(offset), int32(length))
+
+		if IsIntel {
+			gl.Flush()
+		}
 	}
 }
 
@@ -228,6 +232,10 @@ func (vao *VertexArrayObject) DrawPartInstanced(offset, length, baseInstance, in
 		statistic.Increment(statistic.DrawCalls)
 
 		gl.DrawArraysInstancedBaseInstance(gl.TRIANGLES, int32(offset), int32(length), int32(instanceCount), uint32(baseInstance))
+
+		if IsIntel {
+			gl.Flush()
+		}
 	}
 }
 

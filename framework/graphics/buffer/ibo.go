@@ -61,6 +61,10 @@ func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 	statistic.Increment(statistic.DrawCalls)
 
 	gl.DrawElements(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset*2))
+
+	if IsIntel {
+		gl.Flush()
+	}
 }
 
 func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, instanceCount int) {
@@ -70,6 +74,10 @@ func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, in
 	statistic.Increment(statistic.DrawCalls)
 
 	gl.DrawElementsInstancedBaseInstance(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset), int32(instanceCount), uint32(baseInstance))
+
+	if IsIntel {
+		gl.Flush()
+	}
 }
 
 func (ibo *IndexBufferObject) check(offset, length int) {
