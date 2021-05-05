@@ -93,7 +93,7 @@ func (ibo *IndexBufferObject) Bind() {
 
 	ibo.bound = true
 
-	history.Push(gl.ELEMENT_ARRAY_BUFFER_BINDING)
+	history.Push(gl.ELEMENT_ARRAY_BUFFER_BINDING, ibo.handle)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.handle)
 }

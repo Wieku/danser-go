@@ -115,7 +115,7 @@ func (vbo *PersistentBufferObject) Bind() {
 
 	vbo.bound = true
 
-	history.Push(gl.ARRAY_BUFFER_BINDING)
+	history.Push(gl.ARRAY_BUFFER_BINDING, vbo.handle)
 
 	statistic.Increment(statistic.VBOBinds)
 

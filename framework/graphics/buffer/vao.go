@@ -231,7 +231,7 @@ func (vao *VertexArrayObject) Bind() {
 
 	vao.bound = true
 
-	history.Push(gl.VERTEX_ARRAY_BINDING)
+	history.Push(gl.VERTEX_ARRAY_BINDING, vao.handle)
 
 	statistic.Increment(statistic.VAOBinds)
 

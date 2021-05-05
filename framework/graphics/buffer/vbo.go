@@ -55,6 +55,7 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 	}
 
 	gl.NamedBufferSubData(vbo.handle, offset*4, len(data)*4, gl.Ptr(data))
+	//gl.Flush()
 }
 
 func (vbo *VertexBufferObject) Resize(newCapacity int) {
@@ -115,7 +116,7 @@ func (vbo *VertexBufferObject) Bind() {
 
 	vbo.bound = true
 
-	history.Push(gl.ARRAY_BUFFER_BINDING)
+	history.Push(gl.ARRAY_BUFFER_BINDING, vbo.handle)
 
 	statistic.Increment(statistic.VBOBinds)
 
