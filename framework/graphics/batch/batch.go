@@ -33,7 +33,6 @@ type QuadBatch struct {
 	vertexSize    int
 	data          []float32
 	vao           *buffer.VertexArrayObject
-	ibo           *buffer.IndexBufferObject
 	currentSize   int
 	currentFloats int
 	drawing       bool
@@ -115,6 +114,8 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		0, 1, 2, 2, 3, 0,
 	})
 
+	vao.AttachIBO(ibo)
+
 	vertexSize := vao.GetVBOFormat("quads").Size() / 4
 
 	chunk := vao.MapVBO("quads", maxSprites*vertexSize)
@@ -130,7 +131,6 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		data:        chunk.Data,
 		chunkOffset: chunk.Offset,
 		vao:         vao,
-		ibo:         ibo,
 		maxSprites:  maxSprites,
 	}
 }
@@ -146,7 +146,6 @@ func (batch *QuadBatch) Begin() {
 	batch.shader.SetUniform("proj", batch.Projection)
 
 	batch.vao.Bind()
-	batch.ibo.Bind()
 
 	blend.Push()
 	blend.Enable()
@@ -178,7 +177,7 @@ func (batch *QuadBatch) Flush() {
 
 	batch.vao.UnmapVBO("quads", 0, batch.currentFloats)
 
-	batch.ibo.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
+	batch.vao.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
 
 	statistic.Add(statistic.SpritesDrawn, int64(batch.currentSize))
 
@@ -200,7 +199,6 @@ func (batch *QuadBatch) End() {
 
 	batch.Flush()
 
-	batch.ibo.Unbind()
 	batch.vao.Unbind()
 
 	batch.shader.Unbind()

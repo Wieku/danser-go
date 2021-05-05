@@ -14,6 +14,7 @@ type IndexBufferObject struct {
 	capacity int
 	bound    bool
 	disposed bool
+	attached bool
 }
 
 func NewIndexBufferObject(maxIndices int) *IndexBufferObject {
@@ -54,7 +55,7 @@ func (ibo *IndexBufferObject) DrawInstanced(baseInstance, instanceCount int) {
 }
 
 func (ibo *IndexBufferObject) DrawPart(offset, length int) {
-	ibo.check(offset, length, "Draw")
+	ibo.check(offset, length)
 
 	statistic.Add(statistic.VerticesDrawn, int64(length))
 	statistic.Increment(statistic.DrawCalls)
@@ -63,7 +64,7 @@ func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 }
 
 func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, instanceCount int) {
-	ibo.check(offset, length, "Draw")
+	ibo.check(offset, length)
 
 	statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
 	statistic.Increment(statistic.DrawCalls)
@@ -71,14 +72,16 @@ func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, in
 	gl.DrawElementsInstancedBaseInstance(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset), int32(instanceCount), uint32(baseInstance))
 }
 
-func (ibo *IndexBufferObject) check(offset, length int, checkTarget string) {
-	currentIBO := history.GetCurrent(gl.ELEMENT_ARRAY_BUFFER_BINDING)
-	if currentIBO != ibo.handle {
-		panic(fmt.Sprintf("IBO mismatch. Target IBO: %d, current: %d", ibo.handle, currentIBO))
+func (ibo *IndexBufferObject) check(offset, length int) {
+	if !ibo.attached {
+		currentIBO := history.GetCurrent(gl.ELEMENT_ARRAY_BUFFER_BINDING)
+		if currentIBO != ibo.handle {
+			panic(fmt.Sprintf("IBO mismatch. Target IBO: %d, current: %d", ibo.handle, currentIBO))
+		}
 	}
 
 	if offset+length > ibo.capacity {
-		panic(fmt.Sprintf("%[1]s exceeds IBO's capacity. %[1]s length: %d, offset: %d, capacity: %d", checkTarget, length, offset, ibo.capacity))
+		panic(fmt.Sprintf("Draw exceeds IBO's capacity. Draw length: %d, offset: %d, capacity: %d", length, offset, ibo.capacity))
 	}
 }
 
