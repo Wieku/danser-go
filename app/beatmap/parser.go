@@ -317,7 +317,7 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 	}
 
-	sort.Slice(beatMap.HitObjects, func(i, j int) bool {
+	sort.SliceStable(beatMap.HitObjects, func(i, j int) bool {
 		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
