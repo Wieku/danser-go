@@ -86,6 +86,8 @@ type Player struct {
 	pitchGlider  *animation.Glider
 
 	startPoint    float64
+	startPointE float64
+
 	baseLimit     int
 	updateLimiter *frame.Limiter
 
@@ -290,7 +292,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				player.overlay.DisableAudioSubmission(true)
 			}
 
-			for i := -1000.0; i < player.startPoint-preempt; i += 1.0 {
+			for i := -1000.0; i < startOffset; i += 1.0 {
 				player.controller.Update(i, 1)
 
 				if player.overlay != nil {
@@ -308,6 +310,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		startOffset = -preempt
 	}
 
+	player.startPointE = startOffset
+
 	startOffset += -settings.Playfield.LeadInHold * 1000
 
 	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
@@ -316,13 +320,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
-		player.cursorGlider.AddEvent(startOffset-500, startOffset, 1.0)
+		player.cursorGlider.AddEvent(startOffset-750, startOffset-250, 1.0)
+	} else {
+		player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 	}
 
 	player.dimGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Background.Dim.Normal)
 	player.blurGlider.AddEvent(beatmapStart, beatmapStart+1000, settings.Playfield.Background.Blur.Values.Normal)
 	player.fxGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Logo.Dim.Normal)
-	player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
 
@@ -545,7 +550,7 @@ func (player *Player) updateMain(delta float64) {
 	player.musicPlayer.SetTempo(player.speedGlider.GetValue())
 	player.musicPlayer.SetPitch(player.pitchGlider.GetValue())
 
-	if player.progressMsF >= player.startPoint-player.bMap.Diff.Preempt {
+	if player.progressMsF >= player.startPointE {
 		if _, ok := player.controller.(*dance.GenericController); ok {
 			player.bMap.Update(player.progressMsF)
 		}
@@ -553,7 +558,7 @@ func (player *Player) updateMain(delta float64) {
 		player.objectContainer.Update(player.progressMsF)
 	}
 
-	if player.progressMsF >= player.startPoint/*-player.bMap.Diff.Preempt*/ || settings.PLAY {
+	if player.progressMsF >= player.startPointE || settings.PLAY {
 		if player.progressMsF < player.mapEndL {
 			player.controller.Update(player.progressMsF, delta)
 		} else {
