@@ -1,4 +1,8 @@
 package bass
+
+/*
+#include "bass.h"
+*/
 import "C"
 
 type Error int
