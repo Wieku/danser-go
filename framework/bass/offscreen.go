@@ -20,6 +20,7 @@ static inline void SetSync(HSTREAM stream, QWORD pos, int eNum) {
 */
 import "C"
 import (
+	"fmt"
 	"log"
 	"unsafe"
 )
@@ -135,9 +136,9 @@ func processEvent(eventIndex int) {
 		}
 	}
 
-	errCode := C.BASS_ErrorGetCode()
+	errCode := GetError()
 	if errCode != 0 {
-		log.Println("BASS encountered an error: ", errCode, " at: ", event.time, ret)
+		log.Println(fmt.Sprintf("BASS encountered an error: %d (%s) at: %f, event id: %d", errCode, errCode.Message(), event.time, eventIndex))
 	}
 
 	event.called = true

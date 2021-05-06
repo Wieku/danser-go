@@ -59,7 +59,8 @@ func Init(offscreen bool) {
 		log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
 		log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
 	} else {
-		panic(fmt.Sprintf("Failed to run BASS, error: %d", int(C.BASS_ErrorGetCode())))
+		err := GetError()
+		panic(fmt.Sprintf("Failed to run BASS, error id: %d, message: %s", err, err.Message()))
 	}
 }
 
