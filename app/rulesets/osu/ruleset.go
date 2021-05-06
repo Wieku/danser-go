@@ -224,10 +224,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		}
 	}
 
-	sort.Slice(ruleset.queue, func(i, j int) bool {
-		return ruleset.queue[i].GetFadeTime() < ruleset.queue[j].GetFadeTime()
-	})
-
 	return ruleset
 }
 
