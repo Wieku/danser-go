@@ -82,6 +82,9 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 
 	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), 0)}, scheduler.queue...)
 
+	scheduler.cursor.SetPos(vector.NewVec2f(100, 100))
+	scheduler.cursor.Update(0)
+
 	toRemove := scheduler.mover.SetObjects(scheduler.queue) - 1
 	scheduler.queue = scheduler.queue[toRemove:]
 }
