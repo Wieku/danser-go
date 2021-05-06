@@ -23,6 +23,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -228,9 +229,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.volumeGlider = animation.NewGlider(1)
 	player.speedGlider = animation.NewGlider(settings.SPEED)
 	player.pitchGlider = animation.NewGlider(settings.PITCH)
+
 	player.hudGlider = animation.NewGlider(0)
+	player.hudGlider.SetEasing(easing.OutQuad)
+
 	player.dimGlider = animation.NewGlider(0)
+	player.dimGlider.SetEasing(easing.OutQuad)
+
 	player.blurGlider = animation.NewGlider(0)
+	player.blurGlider.SetEasing(easing.OutQuad)
+
 	player.fxGlider = animation.NewGlider(0)
 	player.cursorGlider = animation.NewGlider(0)
 	player.epiGlider = animation.NewGlider(0)
@@ -240,14 +248,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.SetValue(1.0)
 	}
 
+	preempt := math.Min(1800, beatMap.Diff.Preempt)
+
 	skipTime := 0.0
 	if settings.SKIP {
 		skipTime = beatMap.HitObjects[0].GetStartTime()
 	}
 
-	skipTime = math.Max(skipTime, settings.START*1000)
+	skipTime = math.Max(skipTime, settings.START*1000) - preempt
 
-	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.START*1000)
+	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.START*1000) - preempt
 	beatmapEnd := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50)
 
 	if !math.IsInf(settings.END, 1) {
@@ -258,10 +268,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	startOffset := 0.0
 
 	if settings.SKIP || settings.START > 0.01 {
-		preempt := math.Min(1800, beatMap.Diff.Preempt)
-
-		startOffset = math.Max(0, skipTime-preempt)
-		player.startPoint = startOffset
+		startOffset = skipTime
+		player.startPoint = math.Max(0, startOffset)
 
 		for _, o := range beatMap.HitObjects {
 			if o.GetStartTime() > player.startPoint {
@@ -272,11 +280,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 
 		player.volumeGlider.SetValue(0.0)
-		player.volumeGlider.AddEvent(skipTime-preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+		player.volumeGlider.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
 
 		if settings.START > 0.01 {
 			player.objectsAlpha.SetValue(0.0)
-			player.objectsAlpha.AddEvent(skipTime-preempt, skipTime-beatMap.Diff.Preempt+difficulty.HitFadeIn, 1.0)
+			player.objectsAlpha.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
 
 			if player.overlay != nil {
 				player.overlay.DisableAudioSubmission(true)
@@ -297,7 +305,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		player.lateStart = true
 	} else {
-		startOffset = -math.Min(1800, beatMap.Diff.Preempt)
+		startOffset = -preempt
 	}
 
 	startOffset += -settings.Playfield.LeadInHold * 1000
@@ -311,9 +319,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(startOffset-500, startOffset, 1.0)
 	}
 
-	player.dimGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0-settings.Playfield.Background.Dim.Normal)
-	player.blurGlider.AddEvent(beatmapStart-750, beatmapStart-250, settings.Playfield.Background.Blur.Values.Normal)
-	player.fxGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0-settings.Playfield.Logo.Dim.Normal)
+	player.dimGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Background.Dim.Normal)
+	player.blurGlider.AddEvent(beatmapStart, beatmapStart+1000, settings.Playfield.Background.Blur.Values.Normal)
+	player.fxGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Logo.Dim.Normal)
 	player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
@@ -381,22 +389,22 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		startTime := p.GetStartTime()
 		endTime := p.GetEndTime()
 
-		if endTime-startTime < 1000 || endTime < player.startPoint || startTime > player.MapEnd {
+		if endTime-startTime < 1000*settings.SPEED || endTime < player.startPoint || startTime > player.MapEnd {
 			continue
 		}
 
-		player.dimGlider.AddEvent(startTime, startTime+500*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Breaks)
-		player.blurGlider.AddEvent(startTime, startTime+500*settings.SPEED, settings.Playfield.Background.Blur.Values.Breaks)
-		player.fxGlider.AddEvent(startTime, startTime+500*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Breaks)
+		player.dimGlider.AddEvent(startTime, startTime+1000*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Breaks)
+		player.blurGlider.AddEvent(startTime, startTime+1000*settings.SPEED, settings.Playfield.Background.Blur.Values.Breaks)
+		player.fxGlider.AddEvent(startTime, startTime+1000*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Breaks)
 
 		if !settings.Cursor.ShowCursorsOnBreaks {
 			player.cursorGlider.AddEvent(startTime, startTime+100*settings.SPEED, 0.0)
 		}
 
-		player.dimGlider.AddEvent(endTime, endTime+500*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Normal)
-		player.blurGlider.AddEvent(endTime, endTime+500*settings.SPEED, settings.Playfield.Background.Blur.Values.Normal)
-		player.fxGlider.AddEvent(endTime, endTime+500*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Normal)
-		player.cursorGlider.AddEvent(endTime, endTime+100*settings.SPEED, 1.0)
+		player.dimGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Normal)
+		player.blurGlider.AddEvent(endTime, endTime+1000*settings.SPEED, settings.Playfield.Background.Blur.Values.Normal)
+		player.fxGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Normal)
+		player.cursorGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0)
 	}
 
 	player.background.SetTrack(player.musicPlayer)
