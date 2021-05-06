@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
-	"math"
 )
 
 type Color struct {
@@ -111,16 +110,11 @@ func (c Color) Lighten2(amount float32) Color {
 }
 
 func (c Color) PackInt() uint32 {
-	rI := uint32(c.R * 255)
-	gI := uint32(c.G * 255)
-	bI := uint32(c.B * 255)
-	aI := uint32(c.A * 255)
-
-	return aI<<24 | bI<<16 | gI<<8 | rI
+	return PackInt(c.R, c.G, c.B, c.A)
 }
 
 func (c Color) PackFloat() float32 {
-	return math.Float32frombits(c.PackInt())
+	return PackFloat(c.R, c.G, c.B, c.A)
 }
 
 func (c Color) ToVec4() mgl32.Vec4 {

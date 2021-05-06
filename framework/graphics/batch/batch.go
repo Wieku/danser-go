@@ -286,8 +286,8 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	scaleY := float32(batch.scale.Y * batch.subscale.Y)
 
 	if useTextureSize {
-		scaleX *= float32(texture.Width) / 2
-		scaleY *= float32(texture.Height) / 2
+		scaleX *= texture.Width / 2
+		scaleY *= texture.Height / 2
 	}
 
 	posX := float32(batch.position.X)
@@ -386,7 +386,7 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 	batch.data[idx+6] = packUV(u1, u2)
 	batch.data[idx+7] = packUV(v1, v2)
 	batch.data[idx+8] = layer
-	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+9] = color2.PackFloat(r, g, b, a)
 	batch.data[idx+10] = add
 	batch.data[idx+11] = 0
 
@@ -411,15 +411,6 @@ func (batch *QuadBatch) SetCamera(camera mgl32.Mat4) {
 	if batch.drawing {
 		batch.shader.SetUniform("proj", batch.Projection)
 	}
-}
-
-func pack(r, g, b, a float32) float32 {
-	rI := uint32(r * 255)
-	gI := uint32(g * 255)
-	bI := uint32(b * 255)
-	aI := uint32(a * 255)
-
-	return math.Float32frombits(aI<<24 | bI<<16 | gI<<8 | rI)
 }
 
 func packUV(c1, c2 float32) float32 {
