@@ -282,6 +282,9 @@ func (controller *ReplayController) InitCursors() {
 			cursor.SetPos(vector.NewVec2f(c.frames[0].MouseX, c.frames[0].MouseY))
 			cursor.Update(0)
 
+			c.replayTime += c.frames[0].Time
+			c.frames = c.frames[1:]
+
 			controller.cursors = append(controller.cursors, cursor)
 		}
 
