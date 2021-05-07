@@ -176,7 +176,7 @@ func (e Error) Message() string {
 		return "BASS_AAC: non-streamable due to MP4 atom order ('mdat' before 'moov')"
 	}
 
-	return "Unk"
+	return "Unknown error code"
 }
 
 func GetError() Error {
