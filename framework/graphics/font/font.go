@@ -1,12 +1,12 @@
 package font
 
 import (
-	"github.com/golang/freetype"
-	"github.com/golang/freetype/truetype"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
 	font2 "golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 	"image"
 	"io"
@@ -48,7 +48,7 @@ func LoadFont(reader io.Reader) *Font {
 		panic("Error reading font: " + err.Error())
 	}
 
-	ttf, err := truetype.Parse(data)
+	ttf, err := opentype.Parse(data)
 	if err != nil {
 		panic("Error reading font: " + err.Error())
 	}
@@ -61,57 +61,50 @@ func LoadFont(reader io.Reader) *Font {
 	font.atlas = texture.NewTextureAtlas(1024, 4)
 	font.atlas.SetManualMipmapping(true)
 
-	fc := truetype.NewFace(ttf, &truetype.Options{Size: font.initialSize, DPI: 72, Hinting: font2.HintingFull})
+	fc, err := opentype.NewFace(ttf, &opentype.FaceOptions{Size: font.initialSize, DPI: 72, Hinting: font2.HintingFull})
+	if err != nil {
+		panic("Error reading font: " + err.Error())
+	}
+
 	defer fc.Close()
 
-	context := freetype.NewContext()
-	context.SetFont(ttf)
-	context.SetFontSize(font.initialSize)
-	context.SetDPI(72)
-	context.SetHinting(font2.HintingFull)
-	context.SetSrc(image.White)
+	buff := &sfnt.Buffer{}
 
 	for i := rune(0); i <= unicode.MaxRune; i++ {
-		if ttf.Index(i) > 0 {
-			gBnd, gAdv, ok := fc.GlyphBounds(i)
-			if !ok {
-				continue
-			}
+		if idx, _ := ttf.GlyphIndex(buff, i); idx > 0 {
+			b, gAdv, _ := fc.GlyphBounds(i)
+			w, h := (b.Max.X - b.Min.X).Ceil(), (b.Max.Y - b.Min.Y).Ceil()
 
-			gw := int((gBnd.Max.X - gBnd.Min.X) >> 6)
-			gh := int((gBnd.Max.Y - gBnd.Min.Y) >> 6)
+			if w == 0 || h == 0 {
+				b, _ = ttf.Bounds(buff, fixed.Int26_6(20), font2.HintingFull)
 
-			//if gylph has no dimensions set to a max value
-			if gw == 0 || gh == 0 {
-				gBnd = ttf.Bounds(fixed.Int26_6(20))
-				gw = int((gBnd.Max.X - gBnd.Min.X) >> 6)
-				gh = int((gBnd.Max.Y - gBnd.Min.Y) >> 6)
+				w, h = (b.Max.X - b.Min.X).Ceil(), (b.Max.Y - b.Min.Y).Ceil()
 
-				//above can sometimes yield 0 for font smaller than 48pt, 1 is minimum
-				if gw == 0 || gh == 0 {
-					gw = 1
-					gh = 1
+				if w == 0 || h == 0 {
+					w = 1
+					h = 1
 				}
 			}
 
-			//The glyph's ascent and descent equal -bounds.Min.Y and +bounds.Max.Y.
-			gAscent := int(-gBnd.Min.Y) >> 6
-
-			pixmap := texture.NewPixMap(gw, gh)
-
-			context.SetClip(image.Rect(0, 0, gw, gh))
-			context.SetDst(pixmap.NRGBA())
-
-			px := -(int(gBnd.Min.X) >> 6)
-			py := gAscent
-			pt := freetype.Pt(px, py)
-
-			// Draw the text from mask to image
-			_, err = context.DrawString(string(i), pt)
-			if err != nil {
-				log.Println(string(i), err)
-				continue
+			if b.Min.X&((1<<6)-1) != 0 {
+				w++
 			}
+
+			if b.Min.Y&((1<<6)-1) != 0 {
+				h++
+			}
+
+			pixmap := texture.NewPixMap(w, h)
+
+			d := font2.Drawer{
+				Dst:  pixmap.NRGBA(),
+				Src:  image.White,
+				Face: fc,
+			}
+
+			x, y := fixed.I((-b.Min.X).Ceil()), fixed.I((-b.Min.Y).Ceil())
+			d.Dot = fixed.Point26_6{X: x, Y: y}
+			d.DrawString(string(i))
 
 			region := font.atlas.AddTexture(string(i), pixmap.Width, pixmap.Height, pixmap.Data)
 
@@ -121,8 +114,8 @@ func LoadFont(reader io.Reader) *Font {
 
 			//set w,h and adv, bearing V and bearing H in char
 			advance := float64(gAdv) / 64
-			bearingV := float64(gBnd.Max.Y) / 64
-			bearingH := float64(gBnd.Min.X) / 64
+			bearingV := float64(b.Max.Y) / 64
+			bearingH := float64(b.Min.X) / 64
 
 			font.glyphs[i] = &glyphData{region, advance, bearingH, bearingV}
 		}
@@ -142,9 +135,11 @@ func LoadFont(reader io.Reader) *Font {
 
 	font.biggest = font.glyphs['5'].advance
 
-	fonts[ttf.Name(truetype.NameIDFontFullName)] = font
+	name, _ := ttf.Name(buff, sfnt.NameIDFull)
 
-	log.Println(ttf.Name(truetype.NameIDFontFullName), "loaded!")
+	fonts[name] = font
+
+	log.Println(name, "loaded!")
 
 	return font
 }
