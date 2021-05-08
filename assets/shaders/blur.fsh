@@ -1,8 +1,9 @@
 #version 330
+#extension GL_ARB_bindless_texture : enable
 
 #define INVSQ2PI 0.398942
 
-uniform sampler2DArray tex;
+layout(bindless_sampler) uniform sampler2DArray tex;
 
 uniform vec2 kernelSize;
 uniform vec2 direction;

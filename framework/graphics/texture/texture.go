@@ -23,8 +23,9 @@ type Texture interface {
 	GetRegion() TextureRegion
 	GetLayers() int32
 	SetFiltering(min, mag Filter)
-	Bind(loc uint)
-	GetLocation() uint
+	//Bind(loc uint)
+	//GetLocation() uint
+	GetHandle() uint64
 	Dispose()
 }
 
@@ -42,6 +43,7 @@ type textureStore struct {
 	format                         Format
 	min, mag                       Filter
 	disposed                       bool
+	handle                         uint64
 }
 
 func newStore(layerNum, width, height int, format Format, mipmaps int) *textureStore {
@@ -71,14 +73,17 @@ func newStore(layerNum, width, height int, format Format, mipmaps int) *textureS
 		store.SetFiltering(Filtering.Linear, Filtering.Linear)
 	}
 
+	store.handle = gl.GetTextureHandleARB(store.id)
+	gl.MakeTextureHandleResidentARB(store.handle)
+
 	return store
 }
 
-func (store *textureStore) Bind(loc uint) {
-	store.binding = loc
-
-	gl.BindTextureUnit(uint32(loc), store.id)
-}
+//func (store *textureStore) Bind(loc uint) {
+//	store.binding = loc
+//
+//	gl.BindTextureUnit(uint32(loc), store.id)
+//}
 
 func (store *textureStore) Clear() {
 	gl.ClearTexImage(store.id, 0, store.format.Format(), store.format.Type(), gl.Ptr(nil))
@@ -94,6 +99,7 @@ func (store *textureStore) SetFiltering(min, mag Filter) {
 
 func (store *textureStore) Dispose() {
 	if !store.disposed {
+		gl.MakeTextureHandleNonResidentARB(store.handle)
 		gl.DeleteTextures(1, &store.id)
 	}
 

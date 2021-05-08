@@ -1,4 +1,6 @@
 #version 330
+#extension GL_ARB_bindless_texture : enable
+
 precision highp float;
 
 #define borderStart 0.06640625f // 34/512
@@ -15,7 +17,7 @@ uniform vec4 col_border;
 uniform vec4 col_body1;
 uniform vec4 col_body;
 
-uniform sampler2DArray tex;
+layout(bindless_sampler) uniform sampler2DArray tex;
 
 uniform float cutoff;
 

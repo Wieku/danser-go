@@ -111,7 +111,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo1.Unbind()
 
 	effect.blurShader.Bind()
-	effect.blurShader.SetUniform("tex", int32(0))
+	effect.blurShader.SetUniformHandle("tex", effect.fbo1.Texture().GetHandle())
 	effect.blurShader.SetUniform("kernelSize", effect.kernelSize)
 	effect.blurShader.SetUniform("direction", mgl32.Vec2{1, 0})
 	effect.blurShader.SetUniform("sigma", effect.sigma)
@@ -122,8 +122,6 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo2.Bind()
 	effect.fbo2.ClearColor(0, 0, 0, 0)
 
-	effect.fbo1.Texture().Bind(0)
-
 	effect.vao.Draw()
 
 	effect.fbo2.Unbind()
@@ -131,7 +129,7 @@ func (effect *BlurEffect) EndAndProcess() texture.Texture {
 	effect.fbo1.Bind()
 	effect.fbo1.ClearColor(0, 0, 0, 0)
 
-	effect.fbo2.Texture().Bind(0)
+	effect.blurShader.SetUniformHandle("tex", effect.fbo2.Texture().GetHandle())
 
 	effect.blurShader.SetUniform("direction", mgl32.Vec2{0, 1})
 	effect.vao.Draw()

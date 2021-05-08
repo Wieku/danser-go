@@ -22,7 +22,7 @@ var Hit100 *texture.TextureRegion
 
 func LoadTextures() {
 	Atlas = texture.NewTextureAtlas(4096, 4)
-	Atlas.Bind(16)
+	//Atlas.Bind(16)
 
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")

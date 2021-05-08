@@ -1,11 +1,12 @@
 #version 330
+#extension GL_ARB_bindless_texture : enable
 
 in vec4 col_tint;
 in vec3 tex_coord;
 in float additive;
 in float msdf;
 
-uniform sampler2DArray tex;
+layout(bindless_sampler) uniform sampler2DArray tex;
 
 out vec4 color;
 

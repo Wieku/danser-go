@@ -271,7 +271,7 @@ func GetSourceFromTexture(rg *texture.TextureRegion) Source {
 func checkAtlas() {
 	if atlas == nil {
 		atlas = texture.NewTextureAtlas(2048, 0)
-		atlas.Bind(27)
+		//atlas.Bind(27)
 	}
 }
 

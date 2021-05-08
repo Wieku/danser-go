@@ -48,6 +48,10 @@ func (texture *TextureSingle) GetID() uint32 {
 	return texture.store.id
 }
 
+func (texture *TextureSingle) GetHandle() uint64 {
+	return texture.store.handle
+}
+
 func (texture *TextureSingle) GetWidth() int32 {
 	return texture.store.width
 }
@@ -68,13 +72,13 @@ func (texture *TextureSingle) SetFiltering(min, mag Filter) {
 	texture.store.SetFiltering(min, mag)
 }
 
-func (texture *TextureSingle) Bind(loc uint) {
-	texture.store.Bind(loc)
-}
+//func (texture *TextureSingle) Bind(loc uint) {
+//	texture.store.Bind(loc)
+//}
 
-func (texture *TextureSingle) GetLocation() uint {
-	return texture.store.binding
-}
+//func (texture *TextureSingle) GetLocation() uint {
+//	return texture.store.binding
+//}
 
 func (texture *TextureSingle) Dispose() {
 	mainthread.CallNonBlock(func() {

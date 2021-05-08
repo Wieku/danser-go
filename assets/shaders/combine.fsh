@@ -1,7 +1,8 @@
 #version 330
+#extension GL_ARB_bindless_texture : enable
 
-uniform sampler2DArray tex;
-uniform sampler2DArray tex2;
+layout(bindless_sampler) uniform sampler2DArray tex;
+layout(bindless_sampler) uniform sampler2DArray tex2;
 uniform float power;
 
 in vec2 tex_coord;

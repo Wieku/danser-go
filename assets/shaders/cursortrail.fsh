@@ -1,6 +1,7 @@
 #version 330
+#extension GL_ARB_bindless_texture : enable
 
-uniform sampler2DArray tex;
+layout(bindless_sampler) uniform sampler2DArray tex;
 uniform vec4 col_tint;
 uniform float points;
 uniform float instances;

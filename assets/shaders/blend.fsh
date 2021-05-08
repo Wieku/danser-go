@@ -1,7 +1,9 @@
 #version 330
+#extension GL_ARB_bindless_texture : enable
+
 precision highp float;
 
-uniform sampler2DArray tex;
+layout(bindless_sampler) uniform sampler2DArray tex;
 
 uniform int layers;
 uniform int head;

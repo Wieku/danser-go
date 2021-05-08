@@ -93,8 +93,7 @@ func (effect *Blend) End() {
 }
 
 func (effect *Blend) Blend() {
-	effect.multiTexture.Bind(0)
-	effect.blendShader.SetUniform("tex", 0)
+	effect.blendShader.SetUniformHandle("tex", effect.multiTexture.GetHandle())
 	effect.blendShader.SetUniform("head", effect.head)
 
 	viewport.Push(effect.width, effect.height)

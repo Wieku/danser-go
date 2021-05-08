@@ -284,14 +284,14 @@ func (storyboard *Storyboard) getTexture(image string) *texture.TextureRegion {
 
 				if img.Width > 512 || img.Height > 512 {
 					tex := texture.NewTextureSingle(img.Width, img.Height, 0)
-					tex.Bind(0)
+					//tex.Bind(0)
 					tex.SetData(0, 0, img.Width, img.Height, img.Data)
 					rg := tex.GetRegion()
 					texture1 = &rg
 				} else {
 					if storyboard.atlas == nil {
 						storyboard.atlas = texture.NewTextureAtlas(4096, 0)
-						storyboard.atlas.Bind(17)
+						//storyboard.atlas.Bind(17)
 					}
 
 					texture1 = storyboard.atlas.AddTexture(image, img.Width, img.Height, img.Data)

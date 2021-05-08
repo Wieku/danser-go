@@ -205,6 +205,16 @@ func (s *RShader) SetUniform(name string, value interface{}) {
 	}
 }
 
+func (s *RShader) SetUniformHandle(name string, value uint64) {
+	uniform, exists := s.uniforms[name]
+	if !exists {
+		log.Println(s.uniforms)
+		panic(fmt.Sprintf("Uniform %s doesn't exist", name))
+	}
+
+	gl.ProgramUniformHandleui64ARB(s.handle, uniform.Location, value)
+}
+
 func (s *RShader) SetUniformArr(name string, offset int, value interface{}) {
 	name += "[0]"
 

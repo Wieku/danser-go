@@ -229,8 +229,7 @@ func (cursor *danserRenderer) DrawM(scale, expand float64, batch *batch.QuadBatc
 
 	danserShader.Bind()
 
-	CursorTrail.Bind(1)
-	danserShader.SetUniform("tex", int32(1))
+	danserShader.SetUniformHandle("tex", CursorTrail.GetHandle())
 
 	danserShader.SetUniform("proj", batch.Projection)
 	danserShader.SetUniform("points", float32(cursor.instances))

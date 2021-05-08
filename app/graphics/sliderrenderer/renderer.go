@@ -141,9 +141,7 @@ func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float3
 	colorShader.SetUniform("col_body", bodyInner)
 	colorShader.SetUniform("col_body1", bodyOuter)
 
-	text.Bind(0)
-
-	colorShader.SetUniform("tex", int32(0))
+	colorShader.SetUniformHandle("tex", text.GetHandle())
 	colorShader.SetUniform("position", mgl32.Vec2{sprite.GetPosition().X32() + stackOffset.X, sprite.GetPosition().Y32() + stackOffset.Y})
 	colorShader.SetUniform("size", mgl32.Vec2{sprite.GetScale().X32() * float32(text.GetWidth()), sprite.GetScale().Y32() * float32(text.GetHeight())})
 	colorShader.SetUniform("cutoff", scale/float32(settings.Audio.BeatScale))

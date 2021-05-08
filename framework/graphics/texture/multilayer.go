@@ -34,7 +34,7 @@ func (texture *TextureMultiLayer) NewLayer() {
 
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
 	dstStore.SetFiltering(texture.store.min, texture.store.mag)
-	dstStore.Bind(texture.store.binding)
+	//dstStore.Bind(texture.store.binding)
 
 	mMaps := int32(1)
 	if !texture.manualMipmaps {
@@ -97,12 +97,16 @@ func (texture *TextureMultiLayer) SetManualMipmapping(value bool) {
 	texture.manualMipmaps = value
 }
 
-func (texture *TextureMultiLayer) Bind(loc uint) {
-	texture.store.Bind(loc)
-}
+//func (texture *TextureMultiLayer) Bind(loc uint) {
+//	texture.store.Bind(loc)
+//}
+//
+//func (texture *TextureMultiLayer) GetLocation() uint {
+//	return texture.store.binding
+//}
 
-func (texture *TextureMultiLayer) GetLocation() uint {
-	return texture.store.binding
+func (texture *TextureMultiLayer) GetHandle() uint64 {
+	return texture.store.handle
 }
 
 func (texture *TextureMultiLayer) Dispose() {

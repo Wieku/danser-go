@@ -103,10 +103,8 @@ func (effect *BloomEffect) EndAndRender() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	effect.filterShader.Bind()
-	effect.filterShader.SetUniform("tex", int32(0))
+	effect.filterShader.SetUniformHandle("tex", effect.fbo.Texture().GetHandle())
 	effect.filterShader.SetUniform("threshold", float32(effect.threshold))
-
-	effect.fbo.Texture().Bind(0)
 
 	effect.vao.Bind()
 	effect.vao.Draw()
@@ -118,13 +116,9 @@ func (effect *BloomEffect) EndAndRender() {
 	texture := effect.blurEffect.EndAndProcess()
 
 	effect.combineShader.Bind()
-	effect.combineShader.SetUniform("tex", int32(0))
-	effect.combineShader.SetUniform("tex2", int32(1))
+	effect.combineShader.SetUniformHandle("tex", effect.fbo.Texture().GetHandle())
+	effect.combineShader.SetUniform("tex2", texture.GetHandle())
 	effect.combineShader.SetUniform("power", float32(effect.power))
-
-	effect.fbo.Texture().Bind(0)
-
-	texture.Bind(1)
 
 	effect.vao.Draw()
 	effect.vao.Unbind()

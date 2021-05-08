@@ -169,11 +169,11 @@ func (batch *QuadBatch) Flush() {
 		return
 	}
 
-	if batch.texture.GetLocation() == 0 {
-		batch.texture.Bind(0)
-	}
+	//if batch.texture.GetLocation() == 0 {
+	//	batch.texture.Bind(0)
+	//}
 
-	batch.shader.SetUniform("tex", int32(batch.texture.GetLocation()))
+	batch.shader.SetUniformHandle("tex", batch.texture.GetHandle())
 
 	batch.vao.UnmapVBO("quads", 0, batch.currentFloats)
 
