@@ -121,6 +121,9 @@ func (hpBar *HpBar) Update(time float64) {
 
 	hpBar.explodes.Update(time)
 
+	hpBar.hpSlide.Update(time)
+	hpBar.hpFade.Update(time)
+
 	hpBar.lastTime = time
 }
 
