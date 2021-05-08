@@ -90,7 +90,6 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		{Name: "in_layer", Type: attribute.Float},
 		{Name: "in_color", Type: attribute.ColorPacked},
 		{Name: "in_additive", Type: attribute.Float},
-		{Name: "in_msdf", Type: attribute.Float},
 	}
 
 	if persistent {
@@ -260,22 +259,14 @@ func (batch *QuadBatch) SetAdditive(additive bool) {
 }
 
 func (batch *QuadBatch) DrawUnit(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, false, false)
-}
-
-func (batch *QuadBatch) DrawUnitMSDF(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, false, true)
+	batch.drawTextureBase(texture, false)
 }
 
 func (batch *QuadBatch) DrawTexture(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, true, false)
+	batch.drawTextureBase(texture, true)
 }
 
-func (batch *QuadBatch) DrawTextureMSDF(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, true, true)
-}
-
-func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize, msdf bool) {
+func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize bool) {
 	if texture.Texture == nil || batch.color.A < 0.001 {
 		return
 	}
@@ -307,11 +298,6 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 		add = 0
 	}
 
-	msdfI := float32(0)
-	if msdf {
-		msdfI = 1
-	}
-
 	idx := batch.currentFloats
 
 	batch.data[idx] = packUV(0.5, 0.5)
@@ -325,7 +311,6 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	batch.data[idx+8] = layer
 	batch.data[idx+9] = batch.color.PackFloat()
 	batch.data[idx+10] = add
-	batch.data[idx+11] = msdfI
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -388,7 +373,6 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 	batch.data[idx+8] = layer
 	batch.data[idx+9] = color2.PackFloat(r, g, b, a)
 	batch.data[idx+10] = add
-	batch.data[idx+11] = 0
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
