@@ -81,6 +81,8 @@ func (entry *ScoreboardEntry) UpdateData() {
 }
 
 func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha float64) {
+	batch.ResetTransform()
+
 	a := entry.Sprite.GetAlpha() * alpha
 
 	scale := settings.Gameplay.ScoreBoard.Scale
@@ -114,22 +116,24 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 		entryPos.X += 52*scale
 	}
 
+	batch.SetTranslation(entryPos)
+
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+3.2*scale, entryPos.Y+8.8*scale, bmath.Origin.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
+	fnt.DrawOrigin(batch, 3.2*scale, 8.8*scale, bmath.Origin.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y-22*scale, bmath.Origin.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
+		fnt.DrawOrigin(batch, (padding-10)*scale, -22*scale, bmath.Origin.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y+8.8*scale, bmath.Origin.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
+	fnt.DrawOrigin(batch, (padding-10)*scale, 8.8*scale, bmath.Origin.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
@@ -137,10 +141,10 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	batch.SetScale(1, -1)
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.Draw(batch, entryPos.X+3.5*scale, entryPos.Y-4.5*scale, 20*scale, entry.name)
+	ubu.Draw(batch, 3.5*scale, -4.5*scale, 20*scale, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.Draw(batch, entryPos.X+3*scale, entryPos.Y-5*scale, 20*scale, entry.name)
+	ubu.Draw(batch, 3*scale, -5*scale, 20*scale, entry.name)
 
 	ubu.Overlap = 0
 
