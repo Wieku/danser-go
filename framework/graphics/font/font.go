@@ -139,7 +139,7 @@ func (font *Font) GetSize() float64 {
 
 func (font *Font) DrawOrigin(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, monospaced bool, text string) {
 	width := font.getWidthInternal(size, text, monospaced)
-	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -size/2)).Mult(renderer.GetScale())
+	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -size/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale())
 
 	font.drawInternal(renderer, x+align.X, y+align.Y, size, text, monospaced)
 }
