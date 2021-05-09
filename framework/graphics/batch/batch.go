@@ -247,6 +247,10 @@ func (batch *QuadBatch) SetSubScale(scaleX, scaleY float64) {
 	batch.subscale = vector.NewVec2d(scaleX, scaleY)
 }
 
+func (batch *QuadBatch) GetSubScale() vector.Vector2d {
+	return batch.subscale
+}
+
 func (batch *QuadBatch) ResetTransform() {
 	batch.scale = vector.NewVec2d(1, 1)
 	batch.subscale = vector.NewVec2d(1, 1)
