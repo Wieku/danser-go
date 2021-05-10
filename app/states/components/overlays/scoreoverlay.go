@@ -771,23 +771,19 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 
 		if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
 			if overlay.keyCounters[i] == 0 {
-				text = "K"
 				if i > 1 {
 					text = "M"
+				} else {
+					text = "K"
 				}
 
 				text += strconv.Itoa(i%2 + 1)
 			}
 
-			texLen := overlay.keyFont.GetWidthMonospaced(scale*14, text)
-
-			batch.SetScale(1, -1)
-			overlay.keyFont.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
+			overlay.keyFont.DrawOrigin(batch, posX, posY-scale*14*0.12, bmath.Origin.Centre, scale*14, true, text)
 		} else {
-			siz := scale * overlay.scoreEFont.GetSize()
-			batch.SetScale(1, 1)
 			overlay.scoreEFont.Overlap = 1.6
-			overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, siz, false, text)
+			overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, scale * overlay.scoreEFont.GetSize(), false, text)
 		}
 	}
 }
