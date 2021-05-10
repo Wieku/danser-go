@@ -29,6 +29,7 @@ func LoadFont(reader io.Reader) *Font {
 	}
 
 	fnt := new(Font)
+	fnt.flip = true
 	fnt.initialSize = 64.0
 	fnt.glyphs = make(map[rune]*glyphData)
 	fnt.kernTable = make(map[rune]map[rune]float64)
@@ -92,10 +93,10 @@ func LoadFont(reader io.Reader) *Font {
 
 			//set w,h and adv, bearing V and bearing H in char
 			advance := float64(gAdv) / 64
-			bearingV := float64(b.Max.Y) / 64
-			bearingH := float64(b.Min.X) / 64
+			offsetX := float64(b.Min.X) / 64
+			offsetY := fnt.Ascent - float64(-b.Min.Y) / 64
 
-			fnt.glyphs[i] = &glyphData{region, advance, bearingH, bearingV}
+			fnt.glyphs[i] = &glyphData{region, advance, offsetX, offsetY}
 		}
 	}
 

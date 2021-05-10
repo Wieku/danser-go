@@ -20,32 +20,34 @@ func GetFont(name string) *Font {
 }
 
 type glyphData struct {
-	region   *texture.TextureRegion
-	advance  float64
-	bearingX float64
-	bearingY float64
+	region  *texture.TextureRegion
+	advance float64
+	offsetX float64
+	offsetY float64
 }
 
 type Font struct {
 	atlas       *texture.TextureAtlas
 	glyphs      map[rune]*glyphData
 	initialSize float64
-	lineDist    float64
 	kernTable   map[rune]map[rune]float64
 	biggest     float64
 	Overlap     float64
 	Ascent      float64
 	Descent     float64
+	flip        bool
 }
 
 func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size float64, text string, monospaced bool) {
 	scale := size / font.initialSize
+
+	scBase := scale * renderer.GetScale().Y * renderer.GetSubScale().Y
+
 	scl := vector.NewVec2d(scale, scale)
 
-	batchScl := renderer.GetScale().Mult(renderer.GetSubScale())
 	col := mgl32.Vec4{1, 1, 1, 1}
 
-	posX := 0.0
+	advance := 0.0
 
 	for i, c := range text {
 		char := font.glyphs[c]
@@ -54,44 +56,37 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 		}
 
 		if i > 0 && font.kernTable != nil && !(monospaced && (unicode.IsDigit(c) || unicode.IsDigit(rune(text[i-1])))) {
-			posX += font.kernTable[rune(text[i-1])][c] * scale * batchScl.X
+			advance += font.kernTable[rune(text[i-1])][c]
 		}
 
 		if i > 0 {
-			posX -= font.Overlap * scale * batchScl.X
+			advance -= font.Overlap
 		}
 
-		bearX := char.bearingX
+		bearX := char.offsetX
 
 		if unicode.IsDigit(c) && monospaced {
 			bearX = (font.biggest - float64(char.region.Width)) / 2
 		}
 
-		tr := vector.NewVec2d(bearX, -char.bearingY).Scl(scale).Mult(batchScl).AddS(posX+x, y)
+		pos := vector.NewVec2d((advance+bearX)*scBase+x, char.offsetY*scBase+y)
 
-		renderer.DrawStObject(tr, bmath.Origin.TopLeft, scl, false, false, 0, col, false, *char.region)
-
-		xAdv := char.advance
+		renderer.DrawStObject(pos, bmath.Origin.TopLeft, scl, false, font.flip, 0, col, false, *char.region)
 
 		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
-			xAdv = font.biggest
+			advance += font.biggest
+		} else {
+			advance += char.advance
 		}
-
-		posX += scale * renderer.GetScale().X * xAdv
 	}
 }
 
 func (font *Font) Draw(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
-	font.drawInternal(renderer, x, y, size, text, false)
-}
-
-func (font *Font) DrawCentered(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
-	xpad := font.GetWidth(size, text) * renderer.GetScale().X
-	font.Draw(renderer, x-(xpad)/2, y, size, text)
+	font.DrawOrigin(renderer, x, y, bmath.Origin.BottomLeft, size, false, text)
 }
 
 func (font *Font) DrawMonospaced(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
-	font.drawInternal(renderer, x, y, size, text, true)
+	font.DrawOrigin(renderer, x, y, bmath.Origin.BottomLeft, size, true, text)
 }
 
 func (font *Font) getWidthInternal(size float64, text string, monospaced bool) float64 {
@@ -113,13 +108,11 @@ func (font *Font) getWidthInternal(size float64, text string, monospaced bool) f
 			advance -= font.Overlap
 		}
 
-		xAdv := char.advance
-
 		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
-			xAdv = font.biggest
+			advance += font.biggest
+		} else {
+			advance += char.advance
 		}
-
-		advance += xAdv
 	}
 
 	return advance * scale
