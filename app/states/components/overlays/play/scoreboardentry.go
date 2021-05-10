@@ -165,6 +165,8 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 		return
 	}
 
+	defer response.Body.Close()
+
 	if response.StatusCode != 200 {
 		log.Println("a.ppy.sh responded with:", response.StatusCode)
 
@@ -183,6 +185,7 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 
 	tex := texture.LoadTextureSingle(pixmap.RGBA(), 4)
 	region := tex.GetRegion()
+
 	pixmap.Dispose()
 
 	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), bmath.Origin.Centre)
