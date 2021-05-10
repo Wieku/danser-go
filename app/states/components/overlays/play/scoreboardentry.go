@@ -133,13 +133,11 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
 
-	batch.SetScale(1, -1)
-
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.Draw(batch, entryPos.X+3.5*scale, entryPos.Y-4.5*scale, 20*scale, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-24.5*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.Draw(batch, entryPos.X+3*scale, entryPos.Y-5*scale, 20*scale, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-25*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
 
 	ubu.Overlap = 0
 
