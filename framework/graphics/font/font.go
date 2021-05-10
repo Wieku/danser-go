@@ -1,10 +1,10 @@
 package font
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"unicode"
 )
@@ -45,7 +45,7 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 
 	scl := vector.NewVec2d(scale, scale)
 
-	col := mgl32.Vec4{1, 1, 1, 1}
+	col := color2.NewL(1)
 
 	advance := 0.0
 

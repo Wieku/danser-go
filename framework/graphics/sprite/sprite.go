@@ -288,7 +288,7 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 		region.V2 = (region.V2-middle)*ratio + middle
 	}
 
-	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, mgl32.Vec4{sprite.color.R, sprite.color.G, sprite.color.B, alpha}, sprite.additive, region)
+	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs().Mult(vector.NewVec2d(scaleX, scaleY)), sprite.flipX, sprite.flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
 }
 
 func (sprite *Sprite) GetPosition() vector.Vector2d {

@@ -1,10 +1,10 @@
 package drawables
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -84,7 +84,7 @@ func (vis *Visualiser) Draw(_ float64, batch *batch.QuadBatch) {
 
 	cutoff := 1 / vis.barLength
 
-	color := mgl32.Vec4{1, 1, 1, 0.3}
+	color := color2.NewLA(1, 0.3)
 	region := graphics.Pixel.GetRegion()
 
 	for i := 0; i < 5; i++ {

@@ -324,8 +324,8 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	}
 }
 
-func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
-	if texture.Texture == nil || color.W()*batch.color.A < 0.001 {
+func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color color2.Color, additive bool, texture texture.TextureRegion) {
+	if texture.Texture == nil || color.A*batch.color.A < 0.001 {
 		return
 	}
 
@@ -354,10 +354,10 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 		v1, v2 = v2, v1
 	}
 
-	r := color.X() * batch.color.R
-	g := color.Y() * batch.color.G
-	b := color.Z() * batch.color.B
-	a := color.W() * batch.color.A
+	r := color.R * batch.color.R
+	g := color.G * batch.color.G
+	b := color.B * batch.color.B
+	a := color.A * batch.color.A
 
 	add := float32(1)
 	if additive || batch.additive {
