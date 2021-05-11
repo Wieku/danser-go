@@ -446,12 +446,12 @@ func run() {
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
 		camera := camera2.NewCamera()
-		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
+		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
 		camera.SetOrigin(vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		font.GetFont("Exo 2 Bold").Draw(batch, 0, 10, 32, "Loading...")
+		font.GetFont("Exo 2 Bold").Draw(batch, 0, settings.Graphics.GetHeightF()-10, 32, "Loading...")
 
 		batch.End()
 		win.SwapBuffers()
