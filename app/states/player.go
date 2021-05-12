@@ -841,10 +841,10 @@ func (player *Player) drawDebug() {
 
 		if settings.DEBUG {
 			player.batch.SetColor(0, 0, 0, 1)
-			player.font.DrawOrigin(player.batch, size*1.5*0.1, size*1.5*0.1, bmath.Origin.TopLeft, size*1.5, false, player.mapFullName)
+			player.font.DrawOrigin(player.batch, size*1.5*0.1, padDown+size*1.5*0.1, bmath.Origin.TopLeft, size*1.5, false, player.mapFullName)
 
 			player.batch.SetColor(1, 1, 1, 1)
-			player.font.DrawOrigin(player.batch, 0, 0, bmath.Origin.TopLeft, size*1.5, false, player.mapFullName)
+			player.font.DrawOrigin(player.batch, 0, padDown, bmath.Origin.TopLeft, size*1.5, false, player.mapFullName)
 
 			type tx struct {
 				pos  float64
@@ -855,7 +855,7 @@ func (player *Player) drawDebug() {
 
 			drawWithBackground := func(pos float64, text string) {
 				width := player.font.GetWidthMonospaced(size, text)
-				player.batch.DrawStObject(vector.NewVec2d(0, (size+padDown)*pos), bmath.Origin.TopLeft, vector.NewVec2d(width, size+padDown), false, false, 0, color2.NewLA(0, 0.8), false, graphics.Pixel.GetRegion())
+				player.batch.DrawStObject(vector.NewVec2d(0, (size+padDown)*pos), bmath.Origin.CentreLeft, vector.NewVec2d(width, size+padDown), false, false, 0, color2.NewLA(0, 0.8), false, graphics.Pixel.GetRegion())
 
 				queue = append(queue, tx{pos, text})
 			}
@@ -887,7 +887,7 @@ func (player *Player) drawDebug() {
 			player.batch.ResetTransform()
 
 			for _, t := range queue {
-				player.font.DrawOrigin(player.batch, 0, (size+padDown)*t.pos, bmath.Origin.TopLeft, size, true, t.text)
+				player.font.DrawOrigin(player.batch, 0, (size+padDown)*t.pos, bmath.Origin.CentreLeft, size, true, t.text)
 			}
 
 			currentTime := int(player.musicPlayer.GetPosition())
