@@ -779,7 +779,7 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 				text += strconv.Itoa(i%2 + 1)
 			}
 
-			overlay.keyFont.DrawOrigin(batch, posX, posY-scale*14*0.12, bmath.Origin.Centre, scale*14, true, text)
+			overlay.keyFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, scale*14, true, text)
 		} else {
 			overlay.scoreEFont.Overlap = 1.6
 			overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, scale * overlay.scoreEFont.GetSize(), false, text)
