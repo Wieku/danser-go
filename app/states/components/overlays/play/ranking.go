@@ -262,15 +262,15 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	fnt2.Overlap = 0.7
 
-	fnt2.Draw(batch, 5, 30-2, 30, panel.beatmapName)
+	fnt2.Draw(batch, 5, 30-3, 30, panel.beatmapName)
 
 	fnt2.Overlap = 1
 
-	fnt2.Draw(batch, 5, 30+23, 22, panel.beatmapCreator)
+	fnt2.Draw(batch, 5, 30+22, 22, panel.beatmapCreator)
 
 	fnt2.Overlap = 0
 
-	fnt2.Draw(batch, 5, 30+23+23, 22, panel.playedBy)
+	fnt2.Draw(batch, 5, 30+22+22, 22, panel.playedBy)
 
 	if settings.Gameplay.PPCounter.ShowInResults {
 		pp := panel.ruleset.GetPP(panel.cursor)
@@ -351,7 +351,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	panel.shapeRenderer.End()
 
 	for i, s := range panel.stats {
-		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+3.5, bmath.Origin.TopLeft, 12, false, s)
+		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+6, bmath.Origin.TopLeft, 12, false, s)
 	}
 }
 
