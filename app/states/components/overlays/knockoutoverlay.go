@@ -113,7 +113,7 @@ type KnockoutOverlay struct {
 	Button        *texture.TextureRegion
 	ButtonClicked *texture.TextureRegion
 
-	ScaledHeight  float64
+	ScaledHeight float64
 	ScaledWidth  float64
 }
 
@@ -432,9 +432,8 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		rowPosY += overlay.ScaledHeight*0.9*1.04/(51) - player.height.GetValue()
 
 		//batch.SetColor(0.1, 0.8, 0.4, alpha*player.fade.GetValue()*0.4)
-		add := 0.3 + float64(int(math.Round(rep.index.GetValue()))%2)*0.2
-		batch.SetColor(add, add, add, alpha*player.fade.GetValue()*0.7)
-
+		//add := 0.3 + float64(int(math.Round(rep.index.GetValue()))%2)*0.2
+		//batch.SetColor(add, add, add, alpha*player.fade.GetValue()*0.7)
 		//batch.SetAdditive(true)
 		//batch.SetSubScale(player.displayHp*30.5*scl*0.9/2, scl*0.9/2)
 		//batch.SetTranslation(vector.NewVec2d(player.displayHp*30.5/2*scl*0.9/2 /*rowPosY*/, rowBaseY))
@@ -514,6 +513,8 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	batch.ResetTransform()
 
 	rowPosY = math.Max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
+	ascScl := overlay.font.GetAscent() * (scl / overlay.font.GetSize()) / 2
+
 	// Draw texts
 	for _, rep := range overlay.playersArray {
 		r := replays[rep.oldIndex]
@@ -529,23 +530,23 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		accuracy1 := cA + ".00% " + cP + ".00pp "
 		nWidth := overlay.font.GetWidthMonospaced(scl, accuracy1)
 
-		overlay.font.DrawMonospaced(batch, 2*scl, rowBaseY+scl*1/3, scl, accuracy)
+		overlay.font.DrawOrigin(batch, 2*scl, rowBaseY, bmath.Origin.CentreLeft, scl, true, accuracy)
 
 		scorestr := utils.Humanize(int64(player.scoreDisp.GetValue()))
 
 		sWC := fmt.Sprintf("%dx ", overlay.players[r.Name].sCombo)
 
-		overlay.font.DrawMonospaced(batch, overlay.ScaledWidth-cS-overlay.font.GetWidthMonospaced(scl, sWC)-0.5*scl, rowBaseY+scl*1/3, scl, sWC)
-		overlay.font.DrawMonospaced(batch, overlay.ScaledWidth-overlay.font.GetWidthMonospaced(scl, scorestr)-0.5*scl, rowBaseY+scl*1/3, scl, scorestr)
+		overlay.font.DrawOrigin(batch, overlay.ScaledWidth-cS-0.5*scl, rowBaseY, bmath.Origin.CentreRight, scl, true, sWC)
+		overlay.font.DrawOrigin(batch, overlay.ScaledWidth-0.5*scl, rowBaseY, bmath.Origin.CentreRight, scl, true, scorestr)
 
 		batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*player.fade.GetValue())
-		overlay.font.Draw(batch, 3*scl+nWidth, rowBaseY+scl*1/3, scl, r.Name)
+		overlay.font.DrawOrigin(batch, 3*scl+nWidth, rowBaseY, bmath.Origin.CentreLeft, scl, false, r.Name)
 		width := overlay.font.GetWidth(scl, r.Name)
 
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 
 		if r.Mods != "" {
-			overlay.font.Draw(batch, 3*scl+width+nWidth, rowBaseY+scl*1/3, scl*0.8, "+"+r.Mods)
+			overlay.font.DrawOrigin(batch, 3*scl+width+nWidth, rowBaseY+ascScl, bmath.Origin.BottomLeft, scl*0.8, false, "+"+r.Mods)
 		}
 	}
 }
