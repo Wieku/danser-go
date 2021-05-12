@@ -422,7 +422,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	cA := strconv.FormatInt(int64(highestACC), 10)
 	cS := overlay.font.GetWidthMonospaced(scl, utils.Humanize(highestScore))
 
-	rowPosY := (overlay.ScaledHeight-cumulativeHeight)/2
+	rowPosY := math.Max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
 	// Draw textures like keys, grade, hit values
 	for _, rep := range overlay.playersArray {
 		r := replays[rep.oldIndex]
@@ -513,7 +513,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 	batch.ResetTransform()
 
-	rowPosY = (overlay.ScaledHeight-cumulativeHeight)/2
+	rowPosY = math.Max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
 	// Draw texts
 	for _, rep := range overlay.playersArray {
 		r := replays[rep.oldIndex]
