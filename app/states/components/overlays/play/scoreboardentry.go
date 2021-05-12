@@ -134,10 +134,10 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	ubu.Overlap = 2.5
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-24.5*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-18.5*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-25*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-19*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
 
 	ubu.Overlap = 0
 
