@@ -42,9 +42,6 @@ func LoadFont(reader io.Reader) *Font {
 		panic("Error reading font: " + err.Error())
 	}
 
-	fnt.Ascent = float64(fc.Metrics().Ascent) / 64
-	fnt.Descent = float64(fc.Metrics().Descent) / 64
-
 	defer fc.Close()
 
 	buff := &sfnt.Buffer{}
@@ -94,15 +91,23 @@ func LoadFont(reader io.Reader) *Font {
 			//set w,h and adv, bearing V and bearing H in char
 			advance := float64(gAdv) / 64
 			offsetX := float64(b.Min.X) / 64
-			offsetY := fnt.Ascent - float64(-b.Min.Y) / 64
+			ascent := float64(-b.Min.Y) / 64
 
-			fnt.glyphs[i] = &glyphData{region, advance, offsetX, offsetY}
+			//Calculate real ascent from the tallest A-Z glyph, because glyphs like Ž may make it bigger
+			if i >= 'A' && i <= 'Z' {
+				fnt.ascent = math.Max(fnt.ascent, float64(-b.Min.Y) / 64)
+			}
+
+			fnt.glyphs[i] = &glyphData{region, advance, offsetX, ascent}
 		}
 	}
 
 	fnt.atlas.GenerateMipmaps()
 
-	for i := range fnt.glyphs {
+	for i, g := range fnt.glyphs {
+		//Calculate real offset based on ascent calculated above
+		g.offsetY = fnt.ascent - g.offsetY
+
 		fnt.kernTable[i] = make(map[rune]float64)
 
 		for j := range fnt.glyphs {
@@ -197,5 +202,5 @@ func setMeasures(font *Font) {
 		font.initialSize = float64(glyph.region.Height)
 	}
 
-	font.Ascent = font.initialSize
+	font.ascent = font.initialSize
 }

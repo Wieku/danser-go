@@ -33,8 +33,7 @@ type Font struct {
 	kernTable   map[rune]map[rune]float64
 	biggest     float64
 	Overlap     float64
-	Ascent      float64
-	Descent     float64
+	ascent      float64
 	flip        bool
 }
 
@@ -130,9 +129,13 @@ func (font *Font) GetSize() float64 {
 	return font.initialSize
 }
 
+func (font *Font) GetAscent() float64 {
+	return font.ascent
+}
+
 func (font *Font) DrawOrigin(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, monospaced bool, text string) {
 	width := font.getWidthInternal(size, text, monospaced)
-	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -size/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale())
+	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize * font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale())
 
 	font.drawInternal(renderer, x+align.X, y+align.Y, size, text, monospaced)
 }
