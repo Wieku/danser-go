@@ -342,11 +342,11 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	panel.shapeRenderer.SetColor(1, 1, 1, alpha)
 
-	panel.shapeRenderer.DrawLine(sX+0.5, sY, sX+sWidth-0.5, sY, 1)
-	panel.shapeRenderer.DrawLine(sX+0.5, sY+sHeight, sX+sWidth-0.5, sY+sHeight, 1)
+	panel.shapeRenderer.DrawLine(sX+1, sY, sX+sWidth-1, sY, 2)
+	panel.shapeRenderer.DrawLine(sX+1, sY+sHeight, sX+sWidth-1, sY+sHeight, 2)
 
-	panel.shapeRenderer.DrawLine(sX+sWidth, sY-0.5, sX+sWidth, sY+sHeight+0.5, 1)
-	panel.shapeRenderer.DrawLine(sX, sY-0.5, sX, sY+sHeight+0.5, 1)
+	panel.shapeRenderer.DrawLine(sX+sWidth, sY-1, sX+sWidth, sY+sHeight+1, 2)
+	panel.shapeRenderer.DrawLine(sX, sY-1, sX, sY+sHeight+1, 2)
 
 	panel.shapeRenderer.End()
 
