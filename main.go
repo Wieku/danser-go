@@ -30,6 +30,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/rplpa"
 	"image"
@@ -833,6 +834,7 @@ func main() {
 	defer func() {
 		settings.CloseWatcher()
 		discord.Disconnect()
+		platform.EnableQuickEdit()
 
 		if err := recover(); err != nil {
 			log.Println("panic:", err)
@@ -847,6 +849,8 @@ func main() {
 
 	log.Println("Ran using:", os.Args)
 	log.Println("Starting danser version", build.VERSION)
+
+	platform.DisableQuickEdit()
 
 	setWorkingDirectory()
 
