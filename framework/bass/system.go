@@ -18,6 +18,8 @@ import (
 )
 
 func Init(offscreen bool) {
+	log.Println("Initializing BASS...")
+
 	playbackBufferLength := 500
 	deviceBufferLength := 10
 	updatePeriod := 5
@@ -56,8 +58,12 @@ func Init(offscreen bool) {
 		log.Println("BASS Initialized!")
 		log.Println("BASS Version:       ", parseVersion(int(C.BASS_GetVersion())))
 		log.Println("BASS FX Version:    ", parseVersion(int(C.BASS_FX_GetVersion())))
-		log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
-		log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
+		if offscreen {
+			log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
+			log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
+		} else {
+			log.Println("BASS Audio device:  ", getDeviceName())
+		}
 	} else {
 		err := GetError()
 		panic(fmt.Sprintf("Failed to run BASS, error id: %d, message: %s", err, err.Message()))
@@ -71,4 +77,10 @@ func parseVersion(version int) string {
 	revision2 := version & 0xFF
 
 	return fmt.Sprintf("%d.%d.%d.%d", main, revision0, revision1, revision2)
+}
+
+func getDeviceName() string {
+	var info C.BASS_DEVICEINFO
+	C.BASS_GetDeviceInfo(C.BASS_GetDevice(), &info)
+	return C.GoString(info.name)
 }
