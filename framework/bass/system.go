@@ -61,7 +61,8 @@ func Init(offscreen bool) {
 
 		// We're not interested in BASSMix or BASSEnc in onscreen mode, show audio device instead
 		if !offscreen {
-			log.Println("BASS Audio device:  ", getDeviceName())
+			log.Println("BASS Audio Device:  ", getDeviceName())
+			log.Println("BASS Audio Latency: ", fmt.Sprintf("%dms", getLatency()))
 		} else {
 			log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
 			log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
@@ -87,4 +88,12 @@ func getDeviceName() string {
 	C.BASS_GetDeviceInfo(C.BASS_GetDevice(), &info)
 
 	return C.GoString(info.name)
+}
+
+func getLatency() int {
+	var info C.BASS_INFO
+
+	C.BASS_GetInfo(&info)
+
+	return int(info.latency)
 }
