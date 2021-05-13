@@ -58,11 +58,13 @@ func Init(offscreen bool) {
 		log.Println("BASS Initialized!")
 		log.Println("BASS Version:       ", parseVersion(int(C.BASS_GetVersion())))
 		log.Println("BASS FX Version:    ", parseVersion(int(C.BASS_FX_GetVersion())))
-		if offscreen {
+
+		// We're not interested in BASSMix or BASSEnc in onscreen mode, show audio device instead
+		if !offscreen {
+			log.Println("BASS Audio device:  ", getDeviceName())
+		} else {
 			log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
 			log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
-		} else {
-			log.Println("BASS Audio device:  ", getDeviceName())
 		}
 	} else {
 		err := GetError()
@@ -81,6 +83,8 @@ func parseVersion(version int) string {
 
 func getDeviceName() string {
 	var info C.BASS_DEVICEINFO
+
 	C.BASS_GetDeviceInfo(C.BASS_GetDevice(), &info)
+
 	return C.GoString(info.name)
 }
