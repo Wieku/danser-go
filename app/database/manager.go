@@ -157,17 +157,17 @@ func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 
 	allMaps := loadBeatmapsFromDatabase()
 
-	result := make([]*beatmap.BeatMap, 0)
+	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps) / 2)
 
 	for _, b := range allMaps {
 		if b.Mode == 0 {
-			result = append(result, b)
+			stdMaps = append(stdMaps, b)
 		}
 	}
 
-	log.Println("DatabaseManager: Loaded", len(allMaps), "total.")
+	log.Println("DatabaseManager: Loaded", len(stdMaps), "total.")
 
-	return result
+	return stdMaps
 }
 
 func unpackMaps() {
@@ -193,7 +193,7 @@ func unpackMaps() {
 }
 
 func importMaps() {
-	modified := getLastModified()
+	mapsInDB := getLastModified()
 	candidates := make([]mapLocation, 0)
 
 	log.Println(fmt.Sprintf("DatabaseManager: Scanning \"%s\" for .osu files...", songsDir))
@@ -223,8 +223,7 @@ func importMaps() {
 	log.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
 	log.Println("DatabaseManager: Comparing files with database...")
 
-	mapsToRemove := make([]mapLocation, 0)
-	mapsToLoad := make([]interface{}, 0)
+	mapsToImport := make([]interface{}, 0)
 
 	for _, candidate := range candidates {
 		partialPath := filepath.Join(candidate.dir, candidate.file)
@@ -234,36 +233,46 @@ func importMaps() {
 		if err != nil {
 			log.Println("DatabaseManager: Failed to read file stats, skipping:", partialPath)
 			log.Println("DatabaseManager: Error:", err)
+
 			continue
 		}
 
-		if lastModified, ok := modified[candidate]; ok {
+		if lastModified, ok := mapsInDB[candidate]; ok {
 			if lastModified == stat.ModTime().UnixNano()/1000000 {
-				continue //Map is up to date, skip...
-			}
+				//Map is up to date, so remove it from mapsInDB because values left in that map are later removed from database.
+				delete(mapsInDB, candidate)
 
-			// Remove that map from cached maps
-			mapsToRemove = append(mapsToRemove, candidate)
-			delete(modified, candidate)
+				continue
+			}
 
 			log.Println("DatabaseManager: New beatmap version found:", candidate.file)
 		} else {
 			log.Println("DatabaseManager: New beatmap found:", candidate.file)
 		}
 
-		mapsToLoad = append(mapsToLoad, candidate)
+		mapsToImport = append(mapsToImport, candidate)
 	}
 
 	log.Println("DatabaseManager: Compare complete.")
 
-	if len(mapsToRemove) > 0 {
+	if len(mapsInDB) > 0 {
+		log.Println("DatabaseManager: Removing leftover maps from database...")
+
+		mapsToRemove := make([]mapLocation, 0, len(mapsInDB))
+
+		for k := range mapsInDB {
+			mapsToRemove = append(mapsToRemove, k)
+		}
+
 		removeBeatmaps(mapsToRemove)
+
+		log.Println("DatabaseManager: Removal complete.")
 	}
 
-	if len(mapsToLoad) > 0 {
-		log.Println("DatabaseManager: Starting import of", len(mapsToLoad), "maps...")
+	if len(mapsToImport) > 0 {
+		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps...")
 
-		loaded := utils.Balance(4, mapsToLoad, func(a interface{}) interface{} {
+		loaded := utils.Balance(4, mapsToImport, func(a interface{}) interface{} {
 			candidate := a.(mapLocation)
 
 			partialPath := filepath.Join(candidate.dir, candidate.file)
