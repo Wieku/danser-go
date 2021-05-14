@@ -892,6 +892,8 @@ func main() {
 		}
 	}()
 
+	setWorkingDirectory()
+
 	file, err := os.Create("danser.log")
 	if err != nil {
 		panic(err)
@@ -904,8 +906,6 @@ func main() {
 	log.SetOutput(io.MultiWriter(os.Stdout, file))
 
 	platform.DisableQuickEdit()
-
-	setWorkingDirectory()
 
 	checkForUpdates()
 
