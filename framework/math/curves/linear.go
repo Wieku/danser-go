@@ -13,7 +13,7 @@ func NewLinear(pt1, pt2 vector.Vector2f) Linear {
 }
 
 func (ln Linear) PointAt(t float32) vector.Vector2f {
-	return ln.Point2.Sub(ln.Point1).Scl(t).Add(ln.Point1)
+	return ln.Point1.Lerp(ln.Point2, t)
 }
 
 func (ln Linear) GetStartAngle() float32 {

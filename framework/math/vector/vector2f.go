@@ -110,6 +110,10 @@ func (v Vector2f) AngleRV(v1 Vector2f) float32 {
 	return math32.Atan2(v.Y-v1.Y, v.X-v1.X)
 }
 
+func (v Vector2f) Lerp(v1 Vector2f, t float32) Vector2f {
+	return v1.Sub(v).Scl(t).Add(v)
+}
+
 func (v Vector2f) Rotate(rad float32) Vector2f {
 	cos := math32.Cos(rad)
 	sin := math32.Sin(rad)
