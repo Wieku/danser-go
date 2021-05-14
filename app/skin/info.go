@@ -1,11 +1,10 @@
 package skin
 
 import (
-	"bufio"
 	"fmt"
-	"github.com/dimchansky/utfbom"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"os"
 	"sort"
@@ -180,9 +179,7 @@ func LoadInfo(path string) (*SkinInfo, error) {
 
 	defer file.Close()
 
-	fileBom := utfbom.SkipOnly(file)
-
-	scanner := bufio.NewScanner(fileBom)
+	scanner := util.NewScanner(file)
 
 	info := newDefaultInfo()
 

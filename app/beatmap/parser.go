@@ -1,13 +1,12 @@
 package beatmap
 
 import (
-	"bufio"
 	"errors"
-	"github.com/dimchansky/utfbom"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/util"
 	"math"
 	"os"
 	"path/filepath"
@@ -138,16 +137,16 @@ func getSection(line string) string {
 
 func ParseBeatMap(beatMap *BeatMap) error {
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	defer file.Close()
-
 	if err != nil {
 		return err
 	}
-	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, cap(buf))
+
+	defer file.Close()
+
+	scanner := util.NewScannerBuf(file, 10*1024*1024)
 
 	var currentSection string
+
 	counter := 0
 
 	for scanner.Scan() {
@@ -245,15 +244,16 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 	}
 
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	defer file.Close()
-
 	if err != nil {
 		panic(err)
 	}
-	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, cap(buf))
+
+	defer file.Close()
+
+	scanner := util.NewScannerBuf(file, 10*1024*1024)
+
 	var currentSection string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -284,13 +284,10 @@ func ParseObjects(beatMap *BeatMap) {
 		panic(err)
 	}
 
-	fileBom := utfbom.SkipOnly(file)
+	scanner := util.NewScannerBuf(file, 10*1024*1024)
 
-	scanner := bufio.NewScanner(fileBom)
-
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, cap(buf))
 	var currentSection string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 

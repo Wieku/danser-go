@@ -1,7 +1,6 @@
 package storyboard
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/bmath"
@@ -15,6 +14,7 @@ import (
 	video2 "github.com/wieku/danser-go/framework/graphics/video"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
+	"github.com/wieku/danser-go/framework/util"
 	"log"
 	"math"
 	"os"
@@ -90,7 +90,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 			continue
 		}
 
-		scanner := bufio.NewScanner(file)
+		scanner := util.NewScannerBuf(file, 10*1024*1024)
 
 		for scanner.Scan() {
 			line := scanner.Text()
