@@ -234,12 +234,17 @@ func importMaps() {
 			log.Println("DatabaseManager: Failed to read file stats, skipping:", partialPath)
 			log.Println("DatabaseManager: Error:", err)
 
+			// If file does exist we assume it's a permission error, don't remove it from database in that case
+			if !os.IsNotExist(err) {
+				delete(mapsInDB, candidate)
+			}
+
 			continue
 		}
 
 		if lastModified, ok := mapsInDB[candidate]; ok {
 			if lastModified == stat.ModTime().UnixNano()/1000000 {
-				//Map is up to date, so remove it from mapsInDB because values left in that map are later removed from database.
+				// Map is up to date, so remove it from mapsInDB because values left in that map are later removed from database.
 				delete(mapsInDB, candidate)
 
 				continue
