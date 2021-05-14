@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+const bufferSize = 10*1024*1024
+
 func parseGeneral(line []string, beatMap *BeatMap) bool {
 	switch line[0] {
 	case "Mode":
@@ -72,7 +74,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	switch line[0] {
 	case "SliderMultiplier":
 		beatMap.SliderMultiplier, _ = strconv.ParseFloat(line[1], 64)
-		beatMap.Timings.SliderMult = float64(beatMap.SliderMultiplier)
+		beatMap.Timings.SliderMult = beatMap.SliderMultiplier
 	case "ApproachRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetAR(parsed)
@@ -88,6 +90,10 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	case "OverallDifficulty":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetOD(parsed)
+
+		if !beatMap.ARSpecified {
+			beatMap.Diff.SetAR(parsed)
+		}
 	}
 }
 
@@ -143,7 +149,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, 10*1024*1024)
+	scanner := util.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
@@ -208,12 +214,6 @@ func ParseBeatMap(beatMap *BeatMap) error {
 		}
 	}
 
-	if !beatMap.ARSpecified {
-		beatMap.Diff.SetAR(beatMap.Diff.GetOD())
-	}
-
-	//beatMap.LoadTimingPoints()
-
 	file.Seek(0, 0)
 
 	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || counter == 0 {
@@ -250,7 +250,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, 10*1024*1024)
+	scanner := util.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
@@ -278,13 +278,13 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 func ParseObjects(beatMap *BeatMap) {
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	defer file.Close()
-
 	if err != nil {
 		panic(err)
 	}
 
-	scanner := util.NewScannerBuf(file, 10*1024*1024)
+	defer file.Close()
+
+	scanner := util.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
