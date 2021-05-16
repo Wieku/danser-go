@@ -1,5 +1,5 @@
 package build
 
-var VERSION = "0.5.1-dev"
+var VERSION = "0.5.2-dev"
 
 var Stream = "Dev"
