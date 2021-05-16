@@ -656,14 +656,13 @@ func (player *Player) Draw(float64) {
 	player.lastTime = tim
 
 	cameras := player.mainCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
-	cameras1 := player.bgCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
 		bgAlpha = bmath.ClampF64(bgAlpha*player.Scl, 0, 1)
 	}
 
-	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, cameras1[0])
+	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
 
 	if player.start {
 		settings.Cursor.Colors.Update(timMs)
@@ -724,7 +723,7 @@ func (player *Player) Draw(float64) {
 		player.batch.End()
 	}
 
-	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, cameras1[0])
+	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, player.bgCamera.GetProjectionView())
 
 	if player.overlay != nil && player.overlay.ShouldDrawHUDBeforeCursor() {
 		player.drawHUD(cursorColors)
