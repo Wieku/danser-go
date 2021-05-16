@@ -33,7 +33,6 @@ type QuadBatch struct {
 	vertexSize    int
 	data          []float32
 	vao           *buffer.VertexArrayObject
-	ibo           *buffer.IndexBufferObject
 	currentSize   int
 	currentFloats int
 	drawing       bool
@@ -91,7 +90,6 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		{Name: "in_layer", Type: attribute.Float},
 		{Name: "in_color", Type: attribute.ColorPacked},
 		{Name: "in_additive", Type: attribute.Float},
-		{Name: "in_msdf", Type: attribute.Float},
 	}
 
 	if persistent {
@@ -115,6 +113,8 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		0, 1, 2, 2, 3, 0,
 	})
 
+	vao.AttachIBO(ibo)
+
 	vertexSize := vao.GetVBOFormat("quads").Size() / 4
 
 	chunk := vao.MapVBO("quads", maxSprites*vertexSize)
@@ -130,7 +130,6 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		data:        chunk.Data,
 		chunkOffset: chunk.Offset,
 		vao:         vao,
-		ibo:         ibo,
 		maxSprites:  maxSprites,
 	}
 }
@@ -146,7 +145,6 @@ func (batch *QuadBatch) Begin() {
 	batch.shader.SetUniform("proj", batch.Projection)
 
 	batch.vao.Bind()
-	batch.ibo.Bind()
 
 	blend.Push()
 	blend.Enable()
@@ -178,7 +176,7 @@ func (batch *QuadBatch) Flush() {
 
 	batch.vao.UnmapVBO("quads", 0, batch.currentFloats)
 
-	batch.ibo.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
+	batch.vao.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
 
 	statistic.Add(statistic.SpritesDrawn, int64(batch.currentSize))
 
@@ -200,7 +198,6 @@ func (batch *QuadBatch) End() {
 
 	batch.Flush()
 
-	batch.ibo.Unbind()
 	batch.vao.Unbind()
 
 	batch.shader.Unbind()
@@ -250,6 +247,10 @@ func (batch *QuadBatch) SetSubScale(scaleX, scaleY float64) {
 	batch.subscale = vector.NewVec2d(scaleX, scaleY)
 }
 
+func (batch *QuadBatch) GetSubScale() vector.Vector2d {
+	return batch.subscale
+}
+
 func (batch *QuadBatch) ResetTransform() {
 	batch.scale = vector.NewVec2d(1, 1)
 	batch.subscale = vector.NewVec2d(1, 1)
@@ -262,22 +263,14 @@ func (batch *QuadBatch) SetAdditive(additive bool) {
 }
 
 func (batch *QuadBatch) DrawUnit(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, false, false)
-}
-
-func (batch *QuadBatch) DrawUnitMSDF(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, false, true)
+	batch.drawTextureBase(texture, false)
 }
 
 func (batch *QuadBatch) DrawTexture(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, true, false)
+	batch.drawTextureBase(texture, true)
 }
 
-func (batch *QuadBatch) DrawTextureMSDF(texture texture.TextureRegion) {
-	batch.drawTextureBase(texture, true, true)
-}
-
-func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize, msdf bool) {
+func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextureSize bool) {
 	if texture.Texture == nil || batch.color.A < 0.001 {
 		return
 	}
@@ -288,8 +281,8 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	scaleY := float32(batch.scale.Y * batch.subscale.Y)
 
 	if useTextureSize {
-		scaleX *= float32(texture.Width) / 2
-		scaleY *= float32(texture.Height) / 2
+		scaleX *= texture.Width / 2
+		scaleY *= texture.Height / 2
 	}
 
 	posX := float32(batch.position.X)
@@ -309,11 +302,6 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 		add = 0
 	}
 
-	msdfI := float32(0)
-	if msdf {
-		msdfI = 1
-	}
-
 	idx := batch.currentFloats
 
 	batch.data[idx] = packUV(0.5, 0.5)
@@ -327,7 +315,6 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	batch.data[idx+8] = layer
 	batch.data[idx+9] = batch.color.PackFloat()
 	batch.data[idx+10] = add
-	batch.data[idx+11] = msdfI
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -337,8 +324,8 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	}
 }
 
-func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color mgl32.Vec4, additive bool, texture texture.TextureRegion) {
-	if texture.Texture == nil || color.W()*batch.color.A < 0.001 {
+func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, flipX, flipY bool, rotation float64, color color2.Color, additive bool, texture texture.TextureRegion) {
+	if texture.Texture == nil || color.A*batch.color.A < 0.001 {
 		return
 	}
 
@@ -367,10 +354,10 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 		v1, v2 = v2, v1
 	}
 
-	r := color.X() * batch.color.R
-	g := color.Y() * batch.color.G
-	b := color.Z() * batch.color.B
-	a := color.W() * batch.color.A
+	r := color.R * batch.color.R
+	g := color.G * batch.color.G
+	b := color.B * batch.color.B
+	a := color.A * batch.color.A
 
 	add := float32(1)
 	if additive || batch.additive {
@@ -388,9 +375,8 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 	batch.data[idx+6] = packUV(u1, u2)
 	batch.data[idx+7] = packUV(v1, v2)
 	batch.data[idx+8] = layer
-	batch.data[idx+9] = pack(r, g, b, a)
+	batch.data[idx+9] = color2.PackFloat(r, g, b, a)
 	batch.data[idx+10] = add
-	batch.data[idx+11] = 0
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -413,15 +399,6 @@ func (batch *QuadBatch) SetCamera(camera mgl32.Mat4) {
 	if batch.drawing {
 		batch.shader.SetUniform("proj", batch.Projection)
 	}
-}
-
-func pack(r, g, b, a float32) float32 {
-	rI := uint32(r * 255)
-	gI := uint32(g * 255)
-	bI := uint32(b * 255)
-	aI := uint32(a * 255)
-
-	return math.Float32frombits(aI<<24 | bI<<16 | gI<<8 | rI)
 }
 
 func packUV(c1, c2 float32) float32 {

@@ -257,7 +257,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 func (controller *ReplayController) InitCursors() {
 	var modifiers []difficulty.Modifier
 
-	for i := range controller.controllers {
+	for i, c := range controller.controllers {
 		if controller.controllers[i].danceController != nil {
 			controller.controllers[i].danceController.InitCursors()
 
@@ -278,6 +278,12 @@ func (controller *ReplayController) InitCursors() {
 			cursor.ScoreID = controller.replays[i].scoreID
 			cursor.ScoreTime = controller.replays[i].ScoreTime
 			cursor.OldSpinnerScoring = controller.controllers[i].oldSpinners
+
+			cursor.SetPos(vector.NewVec2f(c.frames[0].MouseX, c.frames[0].MouseY))
+			cursor.Update(0)
+
+			c.replayTime += c.frames[0].Time
+			c.frames = c.frames[1:]
 
 			controller.cursors = append(controller.cursors, cursor)
 		}

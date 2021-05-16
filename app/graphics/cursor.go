@@ -212,7 +212,7 @@ func (cursor *Cursor) Update(delta float64) {
 }
 
 func (cursor *Cursor) smokeUpdate() {
-	if settings.PLAYERS != 1 {
+	if !settings.Cursor.SmokeEnabled || settings.PLAYERS != 1 {
 		return
 	}
 

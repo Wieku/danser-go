@@ -1,14 +1,11 @@
 package history
 
-import "github.com/go-gl/gl/v3.3-core/gl"
-
 var history = make(map[int][]uint32)
+var current = make(map[int]uint32)
 
-func Push(binding int) {
-	var handle int32
-	gl.GetIntegerv(uint32(binding), &handle)
-
-	history[binding] = append(history[binding], uint32(handle))
+func Push(binding int, new uint32) {
+	history[binding] = append(history[binding], current[binding])
+	current[binding] = new
 }
 
 func Pop(binding int) uint32 {
@@ -19,11 +16,11 @@ func Pop(binding int) uint32 {
 		history[binding] = stack[:len(stack)-1]
 	}
 
+	current[binding] = handle
+
 	return handle
 }
 
 func GetCurrent(binding int) uint32 {
-	var handle int32
-	gl.GetIntegerv(uint32(binding), &handle)
-	return uint32(handle)
+	return current[binding]
 }

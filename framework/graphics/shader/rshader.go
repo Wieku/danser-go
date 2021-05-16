@@ -284,7 +284,7 @@ func (s *RShader) Bind() {
 
 	s.bound = true
 
-	history.Push(gl.CURRENT_PROGRAM)
+	history.Push(gl.CURRENT_PROGRAM, s.handle)
 	gl.UseProgram(s.handle)
 }
 

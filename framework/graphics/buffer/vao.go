@@ -27,6 +27,8 @@ type VertexArrayObject struct {
 
 	bound    bool
 	disposed bool
+
+	ibo *IndexBufferObject
 }
 
 func NewVertexArrayObject() *VertexArrayObject {
@@ -184,29 +186,57 @@ func (vao *VertexArrayObject) UnmapVBO(name string, offset int, size int) {
 }
 
 func (vao *VertexArrayObject) Draw() {
-	vao.DrawPart(0, vao.capacity)
+	if vao.ibo != nil {
+		vao.check(0, 0)
+		vao.ibo.Draw()
+	} else {
+		vao.DrawPart(0, vao.capacity)
+	}
 }
 
 func (vao *VertexArrayObject) DrawInstanced(baseInstance, instanceCount int) {
-	vao.DrawPartInstanced(0, vao.capacity, baseInstance, instanceCount)
+	if vao.ibo != nil {
+		vao.check(0, 0)
+		vao.ibo.DrawInstanced(baseInstance, instanceCount)
+	} else {
+		vao.DrawPartInstanced(0, vao.capacity, baseInstance, instanceCount)
+	}
 }
 
 func (vao *VertexArrayObject) DrawPart(offset, length int) {
-	vao.check(offset, length)
+	if vao.ibo != nil {
+		vao.check(0, 0)
+		vao.ibo.DrawPart(offset, length)
+	} else {
+		vao.check(offset, length)
 
-	statistic.Add(statistic.VerticesDrawn, int64(length))
-	statistic.Increment(statistic.DrawCalls)
+		statistic.Add(statistic.VerticesDrawn, int64(length))
+		statistic.Increment(statistic.DrawCalls)
 
-	gl.DrawArrays(gl.TRIANGLES, int32(offset), int32(length))
+		gl.DrawArrays(gl.TRIANGLES, int32(offset), int32(length))
+
+		if IsIntel {
+			gl.Flush()
+		}
+	}
 }
 
 func (vao *VertexArrayObject) DrawPartInstanced(offset, length, baseInstance, instanceCount int) {
-	vao.check(offset, length)
+	if vao.ibo != nil {
+		vao.check(0, 0)
+		vao.ibo.DrawPartInstanced(offset, length, baseInstance, instanceCount)
+	} else {
+		vao.check(offset, length)
 
-	statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
-	statistic.Increment(statistic.DrawCalls)
+		statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
+		statistic.Increment(statistic.DrawCalls)
 
-	gl.DrawArraysInstancedBaseInstance(gl.TRIANGLES, int32(offset), int32(length), int32(instanceCount), uint32(baseInstance))
+		gl.DrawArraysInstancedBaseInstance(gl.TRIANGLES, int32(offset), int32(length), int32(instanceCount), uint32(baseInstance))
+
+		if IsIntel {
+			gl.Flush()
+		}
+	}
 }
 
 func (vao *VertexArrayObject) check(offset, length int) {
@@ -231,7 +261,7 @@ func (vao *VertexArrayObject) Bind() {
 
 	vao.bound = true
 
-	history.Push(gl.VERTEX_ARRAY_BINDING)
+	history.Push(gl.VERTEX_ARRAY_BINDING, vao.handle)
 
 	statistic.Increment(statistic.VAOBinds)
 
@@ -266,4 +296,10 @@ func (vao *VertexArrayObject) Dispose() {
 	}
 
 	vao.disposed = true
+}
+
+func (vao *VertexArrayObject) AttachIBO(ibo *IndexBufferObject) {
+	ibo.attached = true
+	vao.ibo = ibo
+	gl.VertexArrayElementBuffer(vao.handle, ibo.handle)
 }

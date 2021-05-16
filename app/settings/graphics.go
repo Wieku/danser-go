@@ -13,6 +13,9 @@ func initGraphics() *graphics {
 		FPSCap:       0,
 		MSAA:         0,
 		ShowFPS:      true,
+		Experimental: &experimental{
+			UsePersistentBuffers: false,
+		},
 	}
 }
 
@@ -26,6 +29,12 @@ type graphics struct {
 	FPSCap       int64 //1000
 	MSAA         int32 //16
 	ShowFPS      bool
+	Experimental *experimental
+}
+
+type experimental struct {
+	// Should persistent buffer be used in main QuadBatch. Uses more VRAM, but for high-end gpus may give a little fps boost
+	UsePersistentBuffers bool
 }
 
 func (gr *graphics) SetDefaults(width, height int64) {

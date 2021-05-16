@@ -255,7 +255,7 @@ func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.Quad
 	scoreFont := skin.GetFont("score")
 
 	if spinner.bonusFade.GetValue() > 0.01 {
-		batch.SetColor(1.0, 1.0, 1.0, spinner.bonusFade.GetValue())
+		batch.SetColor(1.0, 1.0, 1.0, spinner.bonusFade.GetValue()*alpha)
 
 		scoreFont.DrawOrigin(batch, 256, 192+80, bmath.Origin.Centre, spinner.bonusScale.GetValue()*scoreFont.GetSize()*0.8, false, strconv.Itoa(spinner.bonus))
 	}

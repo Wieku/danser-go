@@ -3,6 +3,7 @@ package color
 import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"math"
 )
 
 func HSVToRGB(h, s, v float32) (r, g, b float32) {
@@ -84,4 +85,17 @@ func RGBToHSV(r, g, b float32) (h, s, v float32) {
 	}
 
 	return
+}
+
+func PackInt(r, g, b, a float32) uint32 {
+	rI := uint32(r * 255)
+	gI := uint32(g * 255)
+	bI := uint32(b * 255)
+	aI := uint32(a * 255)
+
+	return aI<<24 | bI<<16 | gI<<8 | rI
+}
+
+func PackFloat(r, g, b, a float32) float32 {
+	return math.Float32frombits(PackInt(r, g, b, a))
 }

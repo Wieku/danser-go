@@ -1,13 +1,26 @@
 package main
 
+/*
+#ifdef _WIN32
+#include <windows.h>
+// force switch to the high performance gpu in multi-gpu systems (mostly laptops)
+__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; // http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+__declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; // https://community.amd.com/thread/169965
+#endif
+ */
 import "C"
+
 import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -30,6 +43,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/rplpa"
 	"image"
@@ -279,9 +293,15 @@ func run() {
 
 		assets.Init(build.Stream == "Dev")
 
-		log.Println("Initializing GLFW...")
+		if !closeAfterSettingsLoad {
+			log.Println("Initializing GLFW...")
+		}
 
-		glfw.Init()
+		err := glfw.Init()
+		if err != nil {
+			panic("Failed to initialize GLFW: " + err.Error())
+		}
+
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
@@ -289,8 +309,6 @@ func run() {
 		glfw.WindowHint(glfw.Resizable, glfw.False)
 		glfw.WindowHint(glfw.Samples, 0)
 		glfw.WindowHint(glfw.Visible, glfw.False)
-
-		var err error
 
 		monitor := glfw.GetPrimaryMonitor()
 		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
@@ -390,6 +408,11 @@ func run() {
 		glVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VERSION))))
 		glslVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.SHADING_LANGUAGE_VERSION))))
 
+		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/buffer.IsIntel for more info
+		if strings.Contains(strings.ToLower(glVendor), "intel") {
+			buffer.IsIntel = true
+		}
+
 		var extensions string
 
 		var numExtensions int32
@@ -439,12 +462,12 @@ func run() {
 		batch.Begin()
 		batch.SetColor(1, 1, 1, 1)
 		camera := camera2.NewCamera()
-		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), false)
+		camera.SetViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), true)
 		camera.SetOrigin(vector.NewVec2d(settings.Graphics.GetWidthF()/2, settings.Graphics.GetHeightF()/2))
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		font.GetFont("Exo 2 Bold").Draw(batch, 0, 10, 32, "Loading...")
+		font.GetFont("Exo 2 Bold").Draw(batch, 0, settings.Graphics.GetHeightF()-10, 32, "Loading...")
 
 		batch.End()
 		win.SwapBuffers()
@@ -675,7 +698,7 @@ func extensionCheck() {
 		"GL_ARB_vertex_attrib_binding",
 	}
 
-	if settings.RECORD {
+	if settings.RECORD || settings.Graphics.Experimental.UsePersistentBuffers {
 		extensions = append(extensions, "GL_ARB_buffer_storage")
 	}
 
@@ -773,6 +796,13 @@ func checkForUpdates() {
 		return
 	}
 
+	defer func() {
+		err := response.Body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	var data struct {
 		URL string `json:"html_url"`
 		Tag string `json:"tag_name"`
@@ -781,6 +811,7 @@ func checkForUpdates() {
 	err = json.NewDecoder(response.Body).Decode(&data)
 	if err != nil {
 		log.Println("Failed to decode the response from GitHub")
+		return
 	}
 
 	githubVersion, _ := strconv.ParseInt(transformVersion(data.Tag), 10, 64)
@@ -815,17 +846,40 @@ func transformVersion(a string) string {
 	return strings.Join(splitDots, "") + snapshot
 }
 
-func main() {
-	file, err := os.Create("danser.log")
-	if err != nil {
-		panic(err)
+func printPlatformInfo() {
+	const unknown = "Unknown"
+
+	osName, cpuName, ramAmount := unknown, unknown, unknown
+
+	hStat, err := host.Info()
+	if err == nil {
+		osName = hStat.Platform + " " + hStat.PlatformVersion
 	}
 
-	log.SetOutput(io.MultiWriter(os.Stdout, file))
+	cStats, err := cpu.Info()
+	if err == nil && len(cStats) > 0 {
+		cpuName = fmt.Sprintf("%s, %d cores", cStats[0].ModelName, cStats[0].Cores)
+	}
 
+	mStat, err := mem.VirtualMemory()
+	if err == nil {
+		ramAmount = humanize.IBytes(mStat.Total)
+	}
+
+	log.Println("-------------------------------------------------------------------")
+	log.Println("danser-go version:", build.VERSION)
+	log.Println("Ran using:", os.Args)
+	log.Println("OS: ", osName)
+	log.Println("CPU:", cpuName)
+	log.Println("RAM:", ramAmount)
+	log.Println("-------------------------------------------------------------------")
+}
+
+func main() {
 	defer func() {
 		settings.CloseWatcher()
 		discord.Disconnect()
+		platform.EnableQuickEdit()
 
 		if err := recover(); err != nil {
 			log.Println("panic:", err)
@@ -838,10 +892,20 @@ func main() {
 		}
 	}()
 
-	log.Println("Ran using:", os.Args)
-	log.Println("Starting danser version", build.VERSION)
-
 	setWorkingDirectory()
+
+	file, err := os.Create("danser.log")
+	if err != nil {
+		panic(err)
+	}
+
+	log.SetOutput(file)
+
+	printPlatformInfo()
+
+	log.SetOutput(io.MultiWriter(os.Stdout, file))
+
+	platform.DisableQuickEdit()
 
 	checkForUpdates()
 

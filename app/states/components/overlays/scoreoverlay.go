@@ -49,6 +49,7 @@ type Overlay interface {
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	IsBroken(cursor *graphics.Cursor) bool
 	DisableAudioSubmission(b bool)
+	ShouldDrawHUDBeforeCursor() bool
 }
 
 type ScoreOverlay struct {
@@ -721,6 +722,8 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 }
 
 func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
+	batch.ResetTransform()
+
 	ppAlpha := settings.Gameplay.PPCounter.Opacity * alpha
 
 	if ppAlpha < 0.001 || !settings.Gameplay.PPCounter.Show {
@@ -729,18 +732,15 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 
 	ppScale := settings.Gameplay.PPCounter.Scale
 
-	batch.SetScale(1, -1)
-	batch.SetSubScale(1, 1)
-
 	ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", overlay.ppGlider.GetValue())
 
-	width := overlay.ppFont.GetWidthMonospaced(40*ppScale, ppText)
-	align := storyboard.Origin[settings.Gameplay.PPCounter.Align].AddS(1, -1).Mult(vector.NewVec2d(-width/2, -40*ppScale/2))
+	position := vector.NewVec2d(settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition)
+	origin := storyboard.Origin[settings.Gameplay.PPCounter.Align]
 
 	batch.SetColor(0, 0, 0, ppAlpha*0.8)
-	overlay.ppFont.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X+ppScale, settings.Gameplay.PPCounter.YPosition+align.Y+ppScale, 40*ppScale, ppText)
+	overlay.ppFont.DrawOriginV(batch, position.AddS(ppScale, ppScale), origin, 40*ppScale, true, ppText)
 	batch.SetColor(1, 1, 1, ppAlpha)
-	overlay.ppFont.DrawMonospaced(batch, settings.Gameplay.PPCounter.XPosition+align.X, settings.Gameplay.PPCounter.YPosition+align.Y, 40*ppScale, ppText)
+	overlay.ppFont.DrawOriginV(batch, position, origin, 40*ppScale, true, ppText)
 }
 
 func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
@@ -771,23 +771,19 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 
 		if overlay.keyCounters[i] == 0 || overlay.scoreEFont == nil {
 			if overlay.keyCounters[i] == 0 {
-				text = "K"
 				if i > 1 {
 					text = "M"
+				} else {
+					text = "K"
 				}
 
 				text += strconv.Itoa(i%2 + 1)
 			}
 
-			texLen := overlay.keyFont.GetWidthMonospaced(scale*14, text)
-
-			batch.SetScale(1, -1)
-			overlay.keyFont.DrawMonospaced(batch, posX-texLen/2, posY+scale*14/3, scale*14, text)
+			overlay.keyFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, scale*14, true, text)
 		} else {
-			siz := scale * overlay.scoreEFont.GetSize()
-			batch.SetScale(1, 1)
 			overlay.scoreEFont.Overlap = 1.6
-			overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, siz, false, text)
+			overlay.scoreEFont.DrawOrigin(batch, posX, posY, bmath.Origin.Centre, scale * overlay.scoreEFont.GetSize(), false, text)
 		}
 	}
 }
@@ -961,4 +957,8 @@ func (overlay *ScoreOverlay) DisableAudioSubmission(b bool) {
 
 func (overlay *ScoreOverlay) SetBeatmapEnd(end float64) {
 	overlay.beatmapEnd = end
+}
+
+func (overlay *ScoreOverlay) ShouldDrawHUDBeforeCursor() bool {
+	return true
 }

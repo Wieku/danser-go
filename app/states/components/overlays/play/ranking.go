@@ -243,6 +243,8 @@ func (panel *RankingPanel) Update(time float64) {
 
 func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	batch.SetColor(1, 1, 1, alpha)
+	batch.ResetTransform()
+
 	panel.manager.Draw(panel.time, batch)
 
 	fnt := skin.GetFont("score")
@@ -256,21 +258,19 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	fnt.DrawOrigin(batch, text1-65/0.625, row4+10/0.625, bmath.Origin.TopLeft, fnt.GetSize()*1.12, false, panel.maxCombo)
 	fnt.DrawOrigin(batch, text2-86/0.625, row4+10/0.625, bmath.Origin.TopLeft, fnt.GetSize()*1.12, false, panel.accuracy)
 
-	batch.SetScale(1, -1)
-
 	fnt2 := font.GetFont("Ubuntu Regular")
 
 	fnt2.Overlap = 0.7
 
-	fnt2.Draw(batch, 4, 30-3, 30, panel.beatmapName)
+	fnt2.Draw(batch, 5, 30-3, 30, panel.beatmapName)
 
 	fnt2.Overlap = 1
 
-	fnt2.Draw(batch, 4, 30+22, 22, panel.beatmapCreator)
+	fnt2.Draw(batch, 5, 30+22, 22, panel.beatmapCreator)
 
 	fnt2.Overlap = 0
 
-	fnt2.Draw(batch, 4, 30+22+22, 22, panel.playedBy)
+	fnt2.Draw(batch, 5, 30+22+22, 22, panel.playedBy)
 
 	if settings.Gameplay.PPCounter.ShowInResults {
 		pp := panel.ruleset.GetPP(panel.cursor)
@@ -320,7 +320,6 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 		batch.ResetTransform()
 		panel.perfect.Draw(panel.time, batch)
 		batch.Flush()
-		batch.SetScale(1, -1)
 	}
 
 	panel.shapeRenderer.Begin()
@@ -343,16 +342,16 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	panel.shapeRenderer.SetColor(1, 1, 1, alpha)
 
-	panel.shapeRenderer.DrawLine(sX+0.5, sY, sX+sWidth-0.5, sY, 1)
-	panel.shapeRenderer.DrawLine(sX+0.5, sY+sHeight, sX+sWidth-0.5, sY+sHeight, 1)
+	panel.shapeRenderer.DrawLine(sX+1, sY, sX+sWidth-1, sY, 2)
+	panel.shapeRenderer.DrawLine(sX+1, sY+sHeight, sX+sWidth-1, sY+sHeight, 2)
 
-	panel.shapeRenderer.DrawLine(sX+sWidth, sY-0.5, sX+sWidth, sY+sHeight+0.5, 1)
-	panel.shapeRenderer.DrawLine(sX, sY-0.5, sX, sY+sHeight+0.5, 1)
+	panel.shapeRenderer.DrawLine(sX+sWidth, sY-1, sX+sWidth, sY+sHeight+1, 2)
+	panel.shapeRenderer.DrawLine(sX, sY-1, sX, sY+sHeight+1, 2)
 
 	panel.shapeRenderer.End()
 
 	for i, s := range panel.stats {
-		fnt2.Draw(batch, float64(sX)+5, float64(sY)+float64(i+1)*12+2, 12, s)
+		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+6, bmath.Origin.TopLeft, 12, false, s)
 	}
 }
 

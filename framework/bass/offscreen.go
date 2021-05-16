@@ -20,6 +20,7 @@ static inline void SetSync(HSTREAM stream, QWORD pos, int eNum) {
 */
 import "C"
 import (
+	"fmt"
 	"log"
 	"unsafe"
 )
@@ -80,14 +81,11 @@ func SaveToFile(file string) {
 
 	C.BASS_Encode_Start(mixStream, C.CString(file), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
 
-	// TODO: test if buffer length affects latency
 	buffer := make([]byte, 512)
 
-	for {
-		ret := C.BASS_ChannelGetData(mixStream, unsafe.Pointer(&buffer[0]), C.DWORD(len(buffer))) // process the mixer
-		if int32(ret) == -1 {
-			break
-		}
+	var ret int32
+	for ret != -1 {
+		ret = int32(C.BASS_ChannelGetData(mixStream, unsafe.Pointer(&buffer[0]), C.DWORD(len(buffer)))) // process the mixer
 	}
 
 	C.BASS_Encode_Stop(mixStream) // close the WAV writer
@@ -135,9 +133,9 @@ func processEvent(eventIndex int) {
 		}
 	}
 
-	errCode := C.BASS_ErrorGetCode()
+	errCode := GetError()
 	if errCode != 0 {
-		log.Println("BASS encountered an error: ", errCode, " at: ", event.time, ret)
+		log.Println(fmt.Sprintf("BASS encountered an error: %d (%s) at: %f, event id: %d", errCode, errCode.Message(), event.time, eventIndex))
 	}
 
 	event.called = true

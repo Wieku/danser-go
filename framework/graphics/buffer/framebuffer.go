@@ -182,7 +182,7 @@ func (f *Framebuffer) GetID() uint32 {
 
 // Bind binds the Framebuffer. All draw operations will target this Framebuffer until Unbind is called.
 func (f *Framebuffer) Bind() {
-	history.Push(gl.FRAMEBUFFER_BINDING)
+	history.Push(gl.FRAMEBUFFER_BINDING, f.handle)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.handle)
 	statistic.Increment(statistic.FBOBinds)
 }

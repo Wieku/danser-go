@@ -19,7 +19,7 @@ import (
 
 const errorBase = 4.8
 
-var colors = []color2.Color{{0.2, 0.8, 1, 1}, {0.44, 0.98, 0.18, 1}, {0.85, 0.68, 0.27, 1}}
+var colors = []color2.Color{color2.NewRGBA(0.2, 0.8, 1, 1), color2.NewRGBA(0.44, 0.98, 0.18, 1), color2.NewRGBA(0.85, 0.68, 0.27, 1)}
 
 type HitErrorMeter struct {
 	diff             *difficulty.Difficulty
@@ -191,16 +191,11 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 		meter.errorDisplay.Draw(meter.lastTime, batch)
 
 		if settings.Gameplay.HitErrorMeter.ShowUnstableRate {
-			batch.SetScale(1, -1)
-
-			pY := meter.Height - errorBase*2*settings.Gameplay.HitErrorMeter.Scale
-
+			pY := meter.Height - (errorBase*4+3.75)*settings.Gameplay.HitErrorMeter.Scale
 			scale := settings.Gameplay.HitErrorMeter.UnstableRateScale
 
 			fnt := font.GetFont("Exo 2 Bold")
-
-			mText := meter.urText
-			fnt.DrawMonospaced(batch, meter.Width/2-fnt.GetWidthMonospaced(15*scale, mText)/2, pY-13.33, 15*scale, mText)
+			fnt.DrawOrigin(batch, meter.Width/2, pY, bmath.Origin.BottomCentre, 15*scale, true, meter.urText)
 		}
 	}
 

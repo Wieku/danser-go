@@ -1,13 +1,12 @@
 package beatmap
 
 import (
-	"bufio"
 	"errors"
-	"github.com/dimchansky/utfbom"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/util"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+const bufferSize = 10*1024*1024
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
 	switch line[0] {
@@ -73,7 +74,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	switch line[0] {
 	case "SliderMultiplier":
 		beatMap.SliderMultiplier, _ = strconv.ParseFloat(line[1], 64)
-		beatMap.Timings.SliderMult = float64(beatMap.SliderMultiplier)
+		beatMap.Timings.SliderMult = beatMap.SliderMultiplier
 	case "ApproachRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetAR(parsed)
@@ -89,6 +90,10 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 	case "OverallDifficulty":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetOD(parsed)
+
+		if !beatMap.ARSpecified {
+			beatMap.Diff.SetAR(parsed)
+		}
 	}
 }
 
@@ -138,16 +143,16 @@ func getSection(line string) string {
 
 func ParseBeatMap(beatMap *BeatMap) error {
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	defer file.Close()
-
 	if err != nil {
 		return err
 	}
-	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, cap(buf))
+
+	defer file.Close()
+
+	scanner := util.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
+
 	counter := 0
 
 	for scanner.Scan() {
@@ -209,12 +214,6 @@ func ParseBeatMap(beatMap *BeatMap) error {
 		}
 	}
 
-	if !beatMap.ARSpecified {
-		beatMap.Diff.SetAR(beatMap.Diff.GetOD())
-	}
-
-	//beatMap.LoadTimingPoints()
-
 	file.Seek(0, 0)
 
 	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || counter == 0 {
@@ -245,15 +244,16 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 	}
 
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	defer file.Close()
-
 	if err != nil {
 		panic(err)
 	}
-	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, cap(buf))
+
+	defer file.Close()
+
+	scanner := util.NewScannerBuf(file, bufferSize)
+
 	var currentSection string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -278,19 +278,16 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 func ParseObjects(beatMap *BeatMap) {
 	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
-	defer file.Close()
-
 	if err != nil {
 		panic(err)
 	}
 
-	fileBom := utfbom.SkipOnly(file)
+	defer file.Close()
 
-	scanner := bufio.NewScanner(fileBom)
+	scanner := util.NewScannerBuf(file, bufferSize)
 
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, cap(buf))
 	var currentSection string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -317,7 +314,7 @@ func ParseObjects(beatMap *BeatMap) {
 		}
 	}
 
-	sort.Slice(beatMap.HitObjects, func(i, j int) bool {
+	sort.SliceStable(beatMap.HitObjects, func(i, j int) bool {
 		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
