@@ -556,3 +556,7 @@ func (overlay *KnockoutOverlay) IsBroken(cursor *graphics.Cursor) bool {
 }
 
 func (overlay *KnockoutOverlay) DisableAudioSubmission(_ bool) {}
+
+func (overlay *KnockoutOverlay) ShouldDrawHUDBeforeCursor() bool {
+	return false
+}

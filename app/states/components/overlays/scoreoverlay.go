@@ -49,6 +49,7 @@ type Overlay interface {
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	IsBroken(cursor *graphics.Cursor) bool
 	DisableAudioSubmission(b bool)
+	ShouldDrawHUDBeforeCursor() bool
 }
 
 type ScoreOverlay struct {
@@ -956,4 +957,8 @@ func (overlay *ScoreOverlay) DisableAudioSubmission(b bool) {
 
 func (overlay *ScoreOverlay) SetBeatmapEnd(end float64) {
 	overlay.beatmapEnd = end
+}
+
+func (overlay *ScoreOverlay) ShouldDrawHUDBeforeCursor() bool {
+	return true
 }

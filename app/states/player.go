@@ -655,11 +655,10 @@ func (player *Player) Draw(float64) {
 	player.profiler.PutSample(timMs)
 	player.lastTime = tim
 
-	bgAlpha := player.dimGlider.GetValue()
-
 	cameras := player.mainCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 	cameras1 := player.bgCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
+	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
 		bgAlpha = bmath.ClampF64(bgAlpha*player.Scl, 0, 1)
 	}
@@ -686,26 +685,7 @@ func (player *Player) Draw(float64) {
 		player.batch.SetColor(1, 1, 1, 1)
 	}
 
-	if player.epiGlider.GetValue() > 0.01 {
-		player.batch.Begin()
-		player.batch.ResetTransform()
-		player.batch.SetColor(1, 1, 1, player.epiGlider.GetValue())
-		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-
-		scl := scaling.Fit.Apply(player.Epi.Width, player.Epi.Height, float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
-		scl = scl.Scl(0.5).Scl(0.66)
-		player.batch.SetScale(scl.X64(), scl.Y64())
-		player.batch.DrawUnit(*player.Epi)
-
-		//player.batch.SetScale(1.0, -1.0)
-		//s := "Support me on ko-fi.com/wiekus"
-		//width := player.font.GetWidth(settings.Graphics.GetHeightF()/40, s)
-		//player.font.Draw(player.batch, -width/2, (0.77)*(settings.Graphics.GetHeightF()/2), settings.Graphics.GetHeightF()/40, s)
-
-		player.batch.ResetTransform()
-		player.batch.End()
-		player.batch.SetColor(1, 1, 1, 1)
-	}
+	player.drawEpilepsyWarning()
 
 	player.counter += timMs
 
@@ -717,18 +697,7 @@ func (player *Player) Draw(float64) {
 		}
 	}
 
-	if player.fxGlider.GetValue() > 0.01 {
-		player.batch.Begin()
-		player.batch.ResetTransform()
-		player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
-		player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
-
-		player.coin.DrawVisualiser(settings.Playfield.Logo.DrawSpectrum)
-		player.coin.Draw(player.progressMsF, player.batch)
-
-		player.batch.ResetTransform()
-		player.batch.End()
-	}
+	player.drawCoin()
 
 	scale2 := player.Scl
 	if !settings.Cursor.ScaleToTheBeat {
@@ -756,6 +725,10 @@ func (player *Player) Draw(float64) {
 	}
 
 	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, cameras1[0])
+
+	if player.overlay != nil && player.overlay.ShouldDrawHUDBeforeCursor() {
+		player.drawHUD(cursorColors)
+	}
 
 	if settings.Playfield.DrawCursors {
 		for _, g := range player.controller.GetCursors() {
@@ -793,15 +766,8 @@ func (player *Player) Draw(float64) {
 
 	player.batch.SetAdditive(false)
 
-	if player.overlay != nil {
-		player.batch.Begin()
-		player.batch.SetScale(1, 1)
-
-		player.batch.SetCamera(player.uiCamera.GetProjectionView())
-
-		player.overlay.DrawHUD(player.batch, cursorColors, player.hudGlider.GetValue())
-
-		player.batch.End()
+	if player.overlay != nil && !player.overlay.ShouldDrawHUDBeforeCursor() {
+		player.drawHUD(cursorColors)
 	}
 
 	if settings.Playfield.Bloom.Enabled {
@@ -809,6 +775,54 @@ func (player *Player) Draw(float64) {
 	}
 
 	player.drawDebug()
+}
+
+func (player *Player) drawEpilepsyWarning() {
+	if player.epiGlider.GetValue() < 0.01 {
+		return
+	}
+
+	player.batch.Begin()
+	player.batch.ResetTransform()
+	player.batch.SetColor(1, 1, 1, player.epiGlider.GetValue())
+	player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+
+	scl := scaling.Fit.Apply(player.Epi.Width, player.Epi.Height, float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF()))
+	scl = scl.Scl(0.5).Scl(0.66)
+	player.batch.SetScale(scl.X64(), scl.Y64())
+	player.batch.DrawUnit(*player.Epi)
+
+	player.batch.ResetTransform()
+	player.batch.End()
+	player.batch.SetColor(1, 1, 1, 1)
+}
+
+func (player *Player) drawCoin() {
+	if player.fxGlider.GetValue() < 0.01 {
+		return
+	}
+
+	player.batch.Begin()
+	player.batch.ResetTransform()
+	player.batch.SetColor(1, 1, 1, player.fxGlider.GetValue())
+	player.batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
+
+	player.coin.DrawVisualiser(settings.Playfield.Logo.DrawSpectrum)
+	player.coin.Draw(player.progressMsF, player.batch)
+
+	player.batch.ResetTransform()
+	player.batch.End()
+}
+
+func (player *Player) drawHUD(cursorColors []color2.Color) {
+	player.batch.Begin()
+	player.batch.SetScale(1, 1)
+
+	player.batch.SetCamera(player.uiCamera.GetProjectionView())
+
+	player.overlay.DrawHUD(player.batch, cursorColors, player.hudGlider.GetValue())
+
+	player.batch.End()
 }
 
 func (player *Player) drawDebug() {
