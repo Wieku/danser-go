@@ -64,7 +64,7 @@ const (
 	ErrorMP4NoStream   Error = 6000
 )
 
-func (e Error) Message() string {
+func (e Error) Message() string { //nolint:gocyclo
 	switch e {
 	case Ok:
 		return "All is OK"

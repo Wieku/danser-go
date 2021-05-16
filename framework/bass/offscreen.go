@@ -81,14 +81,11 @@ func SaveToFile(file string) {
 
 	C.BASS_Encode_Start(mixStream, C.CString(file), C.BASS_ENCODE_PCM, (*C.ENCODEPROC)(nil), unsafe.Pointer(nil)) // set a WAV writer on the mixer
 
-	// TODO: test if buffer length affects latency
 	buffer := make([]byte, 512)
 
-	for {
-		ret := C.BASS_ChannelGetData(mixStream, unsafe.Pointer(&buffer[0]), C.DWORD(len(buffer))) // process the mixer
-		if int32(ret) == -1 {
-			break
-		}
+	var ret int32
+	for ret != -1 {
+		ret = int32(C.BASS_ChannelGetData(mixStream, unsafe.Pointer(&buffer[0]), C.DWORD(len(buffer)))) // process the mixer
 	}
 
 	C.BASS_Encode_Stop(mixStream) // close the WAV writer
