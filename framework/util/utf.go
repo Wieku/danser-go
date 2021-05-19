@@ -7,10 +7,12 @@ import (
 	"io"
 )
 
+func NewUnicodeReader(r io.Reader) io.Reader {
+	return transform.NewReader(r, unicode.BOMOverride(unicode.UTF8.NewDecoder()))
+}
 
 func NewScanner(r io.Reader) *bufio.Scanner {
-	reader := transform.NewReader(r, unicode.BOMOverride(unicode.UTF8.NewDecoder()))
-	return bufio.NewScanner(reader)
+	return bufio.NewScanner(NewUnicodeReader(r))
 }
 
 func NewScannerBuf(r io.Reader, bufSize int) *bufio.Scanner {
