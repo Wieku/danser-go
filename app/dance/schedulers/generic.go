@@ -103,13 +103,15 @@ func (scheduler *GenericScheduler) Update(time float64) {
 
 			lastEndTime = math.Max(lastEndTime, g.GetEndTime())
 
-			if time <= g.GetEndTime() {
+			if scheduler.lastTime <= g.GetStartTime() || time <= g.GetEndTime() {
 				if scheduler.lastTime <= g.GetStartTime() { // brief movement lock for ExGon mover
 					useMover = false
 				}
 
 				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
-			} else {
+			}
+
+			if time > g.GetEndTime() {
 				upperLimit := len(scheduler.queue)
 
 				for j := i; j < len(scheduler.queue); j++ {
