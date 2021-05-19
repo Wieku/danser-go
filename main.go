@@ -858,7 +858,7 @@ func printPlatformInfo() {
 
 	cStats, err := cpu.Info()
 	if err == nil && len(cStats) > 0 {
-		cpuName = fmt.Sprintf("%s, %d cores", cStats[0].ModelName, cStats[0].Cores)
+		cpuName = fmt.Sprintf("%s, %d cores", strings.TrimSpace(cStats[0].ModelName), cStats[0].Cores)
 	}
 
 	mStat, err := mem.VirtualMemory()
