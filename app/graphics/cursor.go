@@ -117,6 +117,8 @@ func NewCursor() *Cursor {
 		cursor.renderer = newDanserRenderer()
 	}
 
+	skin.GetTextureSource("ripple", skin.LOCAL)
+
 	cursor.smokeTexture = skin.GetTexture("cursor-smoke")
 	cursor.smokeContainer = sprite.NewSpriteManager()
 
