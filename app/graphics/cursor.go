@@ -326,7 +326,7 @@ func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.
 		batch.Begin()
 		batch.SetAdditive(false)
 		batch.ResetTransform()
-		batch.SetColor(1, 1, 1, 1)
+		batch.SetColor(1, 1, 1, float64(color.A))
 		batch.SetScale(scaling*scaling, scaling*scaling)
 		batch.SetSubScale(1, 1)
 
