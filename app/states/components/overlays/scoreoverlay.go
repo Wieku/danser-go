@@ -594,6 +594,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	overlay.drawPP(batch, alpha)
 
 	if overlay.panel != nil {
+		settings.Playfield.Bloom.Enabled = false
 		overlay.panel.Draw(batch, overlay.resultsFade.GetValue())
 	}
 
