@@ -703,7 +703,9 @@ func (player *Player) Draw(float64) {
 		scale2 = 1
 	}
 
-	if settings.Playfield.Bloom.Enabled {
+	bloomEnabled := settings.Playfield.Bloom.Enabled
+
+	if bloomEnabled {
 		player.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		player.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
 		player.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.Bloom.BloomBeatAddition*(player.Scl-1.0)/(settings.Audio.BeatScale*0.4))
@@ -769,7 +771,7 @@ func (player *Player) Draw(float64) {
 		player.drawHUD(cursorColors)
 	}
 
-	if settings.Playfield.Bloom.Enabled {
+	if bloomEnabled {
 		player.bloomEffect.EndAndRender()
 	}
 
