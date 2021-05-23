@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/framework/util"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -33,30 +35,40 @@ func initStorage() {
 }
 
 func LoadSettings(version string) bool {
+	err := os.Mkdir("settings", 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+
+	migrateSettings()
+
 	initStorage()
 
-	fileName = "settings"
+	fileName = "default"
 	if version != "" {
-		fileName += "-" + version
+		fileName = version
 	}
+
 	fileName += ".json"
 
-	file, err := os.Open(fileName)
+	filePath := filepath.Join("settings", fileName)
+
+	file, err := os.Open(filePath)
 
 	defer file.Close()
 
 	if os.IsNotExist(err) {
-		saveSettings(fileName, fileStorage)
+		saveSettings(filePath, fileStorage)
 		return true
 	} else if err != nil {
 		panic(err)
 	} else {
 		load(file, fileStorage)
-		saveSettings(fileName, fileStorage) //this is done to save additions from the current format
+		saveSettings(filePath, fileStorage) //this is done to save additions from the current format
 	}
 
 	if !RECORD {
-		setupWatcher(fileName)
+		setupWatcher(filePath)
 	}
 
 	return false
@@ -130,6 +142,11 @@ func Save() {
 }
 
 func saveSettings(path string, source interface{}) {
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+
 	file, err := os.Create(path)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
@@ -149,4 +166,34 @@ func saveSettings(path string, source interface{}) {
 
 func GetFormat() *fileformat {
 	return fileStorage
+}
+
+func migrateSettings() {
+	_ = godirwalk.Walk("", &godirwalk.Options {
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if osPathname != "." && de.IsDir() {
+				return godirwalk.SkipThis
+			}
+
+			if !strings.HasSuffix(osPathname, ".json") || !strings.HasPrefix(osPathname, "settings") {
+				return nil
+			}
+
+			var destName string
+
+			if osPathname == "settings.json" {
+				destName = "default.json"
+			} else {
+				destName = strings.TrimPrefix(osPathname, "settings-")
+			}
+
+			err := os.Rename(osPathname, filepath.Join("settings", destName))
+			if err != nil {
+				panic(err)
+			}
+
+			return nil
+		},
+		Unsorted: true,
+	})
 }
