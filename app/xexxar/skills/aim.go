@@ -25,6 +25,8 @@ func NewAimSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 	skill := NewSkill(useFixedCalculations, d)
 	skill.SkillMultiplier = 26.25
 	skill.StrainDecayBase = 0.15
+	skill.HistoryLength = 2
+	skill.currentStrain = 1
 	skill.StrainValueOf = aimStrainValue
 
 	return skill
@@ -148,13 +150,13 @@ func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float
 		sliderStrain := sliderStrainAt(osuPrevObj, osuCurrObj, osuNextObj)
 
 
-		currStrain := computeDecay(0.75, math.Max(50, osuCurrObj.StrainTime))
-		currStrain += snapStrain * snapStrainMultiplier
-		currStrain += flowStrain * flowStrainMultiplier
-		currStrain += hybridStrain * hybridStrainMultiplier
-		currStrain += sliderStrain * sliderStrainMultiplier
+		skill.currentStrain *= computeDecay(0.75, math.Max(50, osuCurrObj.StrainTime))
+		skill.currentStrain += snapStrain * snapStrainMultiplier
+		skill.currentStrain += flowStrain * flowStrainMultiplier
+		skill.currentStrain += hybridStrain * hybridStrainMultiplier
+		skill.currentStrain += sliderStrain * sliderStrainMultiplier
 
-		result = totalStrainMultiplier * currStrain
+		result = totalStrainMultiplier * skill.currentStrain
 	}
 
 	return result

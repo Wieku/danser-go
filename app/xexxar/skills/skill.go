@@ -41,7 +41,9 @@ type Skill struct {
 	// Should fixed clock rate calculations be used, set to false to use current osu!stable calculations (2021.01)
 	fixedCalculations bool
 
-	diff              *difficulty.Difficulty
+	diff          *difficulty.Difficulty
+
+	currentStrain float64
 }
 
 func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
