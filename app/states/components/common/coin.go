@@ -85,6 +85,8 @@ func (coin *DanserCoin) Update(time float64) {
 	coin.vis.Position = coin.GetPosition()
 	coin.coinBottom.SetPosition(coin.GetPosition())
 	coin.coinTop.SetPosition(coin.GetPosition())
+	coin.coinBottom.SetRotation(coin.GetRotation())
+	coin.coinTop.SetRotation(coin.GetRotation())
 
 	coin.coinBottom.Update(time)
 	coin.coinTop.Update(time)
