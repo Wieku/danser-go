@@ -19,18 +19,19 @@ var watcher *fsnotify.Watcher
 
 func initStorage() {
 	fileStorage = &fileformat{
-		General:   General,
-		Graphics:  Graphics,
-		Audio:     Audio,
-		Input:     Input,
-		Gameplay:  Gameplay,
-		Skin:      Skin,
-		Cursor:    Cursor,
-		Objects:   Objects,
-		Playfield: Playfield,
-		Dance:     Dance,
-		Knockout:  Knockout,
-		Recording: Recording,
+		General:     General,
+		Graphics:    Graphics,
+		Audio:       Audio,
+		Input:       Input,
+		Gameplay:    Gameplay,
+		Skin:        Skin,
+		Cursor:      Cursor,
+		Objects:     Objects,
+		Playfield:   Playfield,
+		Dance:       Dance,
+		CursorDance: CursorDance,
+		Knockout:    Knockout,
+		Recording:   Recording,
 	}
 }
 
@@ -169,7 +170,7 @@ func GetFormat() *fileformat {
 }
 
 func migrateSettings() {
-	_ = godirwalk.Walk("", &godirwalk.Options {
+	_ = godirwalk.Walk("", &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 			if osPathname != "." && de.IsDir() {
 				return godirwalk.SkipThis

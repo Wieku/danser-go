@@ -12,7 +12,8 @@ type fileformat struct {
 	Cursor    *cursor    `icon:"\uF245"`
 	Objects   *objects   `icon:"\uF1CD"`
 	Playfield *playfield `icon:"\uF853"`
-	Dance     *dance     `icon:"\uF5B7"`
+	Dance     *dance     `json:",omitempty" icon:"\uF5B7"`
+	CursorDance     *cursordance     `icon:"\uF5B7"`
 	Knockout  *knockout  `icon:"\uF0CB"`
 	Recording *recording `icon:"\uF03D"`
 }
