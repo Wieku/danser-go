@@ -121,14 +121,6 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	aimValue := ppBase(rawAim)
 
-	// Longer maps are worth more
-	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
-	if pp.totalHits > 2000 {
-		lengthBonus += math.Log10(float64(pp.totalHits)/2000.0) * 0.5
-	}
-
-	aimValue *= lengthBonus
-
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.countMiss > 0 {
 		aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), float64(pp.countMiss))
@@ -136,12 +128,12 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Combo scaling
 	if pp.maxCombo > 0 {
-		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+		aimValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
 	}
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.4 * (pp.diff.ARReal - 10.33)
+		approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
 		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
 	}
@@ -177,37 +169,27 @@ func (pp *PPv2) computeAimValue() float64 {
 func (pp *PPv2) computeSpeedValue() float64 {
 	speedValue := ppBase(pp.speedStrain)
 
-	// Longer maps are worth more
-	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
-	if pp.totalHits > 2000 {
-		lengthBonus += math.Log10(float64(pp.totalHits)/2000.0) * 0.5
+	approachRateFactor := 0.0
+	if pp.diff.ARReal > 10.33 {
+		approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
+	} else if pp.diff.ARReal < 8.0 {
+		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
 	}
 
-	speedValue *= lengthBonus
-
-	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
-	if pp.countMiss > 0 {
-		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.countMiss), 0.875))
-	}
+	speedValue *= 1.0 + approachRateFactor
 
 	// Combo scaling
 	if pp.maxCombo > 0 {
-		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+		speedValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
 	}
 
-	approachRateFactor := 0.0
-	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.4 * (pp.diff.ARReal - 10.33)
-	}
-
-	speedValue *= 1.0 + math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
-
-	if pp.diff.Mods.Active(difficulty.Hidden) {
-		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
+	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
+	if pp.countMiss > 0 {
+		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), float64(pp.countMiss))
 	}
 
 	// Scale the speed value with accuracy and OD
-	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
+	speedValue *= (0.575 + math.Pow(pp.diff.ODReal, 2)/250) * math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
 	// Scale the speed value with # of 50s to punish doubletapping.
 
 	mehMult := 0.0
