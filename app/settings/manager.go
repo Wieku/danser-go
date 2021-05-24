@@ -28,7 +28,7 @@ func initStorage() {
 		Cursor:      Cursor,
 		Objects:     Objects,
 		Playfield:   Playfield,
-		Dance:       Dance,
+		Dance:       OldDance,
 		CursorDance: CursorDance,
 		Knockout:    Knockout,
 		Recording:   Recording,

@@ -11,20 +11,24 @@ var indicesTriangle = []mgl32.Vec3{{-0.86602540378, -0.5, 0}, {0.86602540378, -0
 
 type TriangleMover struct {
 	start float64
+	id    int
 }
 
 func NewTriangleMover() *TriangleMover {
 	return &TriangleMover{}
 }
 
-func (c *TriangleMover) Init(start, end float64) {
+func (c *TriangleMover) Init(start, _ float64, id int) {
 	c.start = start
+	c.id = id
 }
 
 func (c *TriangleMover) GetPositionAt(time float64) vector.Vector2f {
-	mat := mgl32.Rotate3DZ(float32(time-c.start) / 2000 * 2 * math32.Pi).Mul3(mgl32.Scale2D(float32(settings.Dance.SpinnerRadius), float32(settings.Dance.SpinnerRadius)))
+	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
 
-	startIndex := (int64(time - c.start) / 10) % 3
+	mat := mgl32.Rotate3DZ(float32(time-c.start) / 2000 * 2 * math32.Pi).Mul3(mgl32.Scale2D(float32(radius), float32(radius)))
+
+	startIndex := (int64(time-c.start) / 10) % 3
 
 	pt1 := indicesTriangle[startIndex]
 

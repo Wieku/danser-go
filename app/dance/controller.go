@@ -126,8 +126,8 @@ func (controller *GenericController) InitCursors() {
 	//Initialize spinner movers
 	for i := range controller.cursors {
 		spinMover := "circle"
-		if len(settings.Dance.Spinners) > 0 {
-			spinMover = settings.Dance.Spinners[i%len(settings.Dance.Spinners)]
+		if len(settings.CursorDance.Spinners) > 0 {
+			spinMover = settings.CursorDance.Spinners[i%len(settings.CursorDance.Spinners)].Mover
 		}
 
 		controller.schedulers[i].Init(objs[i].objs, controller.bMap.Diff.Mods, controller.cursors[i], spinners.GetMoverCtorByName(spinMover), true)

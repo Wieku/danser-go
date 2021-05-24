@@ -12,19 +12,21 @@ type DanceSpinner struct {
 	*objects.HitObject
 
 	mover SpinnerMover
+	id    int
 }
 
-func NewSpinner(spinner *objects.Spinner, moverCtor func() SpinnerMover) *DanceSpinner {
+func NewSpinner(spinner *objects.Spinner, moverCtor func() SpinnerMover, id int) *DanceSpinner {
 	// data copy
 	hO := *spinner.HitObject
 
 	mover := moverCtor()
 
-	mover.Init(hO.StartTime, hO.EndTime)
+	mover.Init(hO.StartTime, hO.EndTime, id)
 
 	danceSpinner := &DanceSpinner{
 		HitObject: &hO,
 		mover:     mover,
+		id:        id,
 	}
 
 	danceSpinner.PositionDelegate = mover.GetPositionAt
@@ -51,7 +53,9 @@ func (spinner *DanceSpinner) GetEndAngleMod(modifier difficulty.Modifier) float3
 }
 
 func (spinner *DanceSpinner) GetPartLen() float32 {
-	return float32(20.0) / float32(spinner.GetDuration()) * float32(settings.Dance.SpinnerRadius)
+	radius := settings.CursorDance.Spinners[spinner.id%len(settings.CursorDance.Spinners)].Radius
+
+	return float32(20.0) / float32(spinner.GetDuration()) * float32(radius)
 }
 
 func (spinner *DanceSpinner) GetStackedPositionAtMod(time float64, _ difficulty.Modifier) vector.Vector2f {

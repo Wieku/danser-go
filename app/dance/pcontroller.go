@@ -66,7 +66,7 @@ func (controller *PlayerController) InitCursors() {
 	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 
 	if controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
-		controller.mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
+		controller.mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover, 0, 0)
 		controller.mouseController.Init(controller.bMap.GetObjectsCopy(), controller.bMap.Diff.Mods, controller.cursors[0], spinners.GetMoverCtorByName("circle"), false)
 	} else if settings.Input.MouseHighPrecision {
 		if glfw.RawMouseMotionSupported() {

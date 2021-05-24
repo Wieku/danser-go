@@ -49,7 +49,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 	// Convert spinners to pseudo spinners that have beginning and ending angles, simplifies mover codes as well
 	for i := 0; i < len(scheduler.queue); i++ {
 		if s, ok := scheduler.queue[i].(*objects.Spinner); ok {
-			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor)
+			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor, scheduler.index)
 		}
 	}
 

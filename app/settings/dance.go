@@ -1,6 +1,6 @@
 package settings
 
-var Dance *dance = initDance()
+var OldDance *dance = initDance()
 
 func initDance() *dance {
 	return &dance{

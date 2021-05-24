@@ -303,7 +303,7 @@ func (controller *ReplayController) InitCursors() {
 		}
 
 		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
-			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
+			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover, 0, 0)
 			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), controller.replays[i].ModsV, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
 		}
 	}
