@@ -14,7 +14,7 @@ import (
 )
 
 var fileStorage *fileformat
-var fileName string
+var filePath string
 var watcher *fsnotify.Watcher
 
 func initStorage() {
@@ -44,14 +44,14 @@ func LoadSettings(version string) bool {
 
 	initStorage()
 
-	fileName = "default"
+	fileName := "default"
 	if version != "" {
 		fileName = version
 	}
 
 	fileName += ".json"
 
-	filePath := filepath.Join("settings", fileName)
+	filePath = filepath.Join("settings", fileName)
 
 	file, err := os.Open(filePath)
 
@@ -95,7 +95,7 @@ func setupWatcher(file string) {
 
 					time.Sleep(time.Millisecond * 200)
 
-					sFile, _ := os.Open(fileName)
+					sFile, _ := os.Open(event.Name)
 
 					load(sFile, fileStorage)
 
@@ -140,7 +140,7 @@ func load(file *os.File, target interface{}) {
 }
 
 func Save() {
-	saveSettings(fileName, fileStorage)
+	saveSettings(filePath, fileStorage)
 }
 
 func saveSettings(path string, source interface{}) {
