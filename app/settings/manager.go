@@ -28,7 +28,6 @@ func initStorage() {
 		Cursor:      Cursor,
 		Objects:     Objects,
 		Playfield:   Playfield,
-		Dance:       OldDance,
 		CursorDance: CursorDance,
 		Knockout:    Knockout,
 		Recording:   Recording,
@@ -136,6 +135,8 @@ func load(file *os.File, target interface{}) {
 	if err := decoder.Decode(target); err != nil {
 		panic(fmt.Sprintf("Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err))
 	}
+
+	migrateCursorDance(target)
 }
 
 func Save() {
@@ -197,4 +198,63 @@ func migrateSettings() {
 		},
 		Unsorted: true,
 	})
+}
+
+func migrateCursorDance(target interface{}) {
+	tG := target.(*fileformat)
+
+	if tG.Dance == nil {
+		return
+	}
+
+	movers := make([]*mover, 0, len(tG.Dance.Movers))
+	spinners := make([]*spinner, 0, len(tG.Dance.Spinners))
+
+	for _, m := range tG.Dance.Movers {
+		movers = append(movers, &mover{
+			Mover:             m,
+			SliderDance:       tG.Dance.SliderDance,
+			RandomSliderDance: tG.Dance.RandomSliderDance,
+		})
+	}
+
+	for _, m := range tG.Dance.Spinners {
+		spinners = append(spinners, &spinner{
+			Mover:  m,
+			Radius: tG.Dance.SpinnerRadius,
+		})
+	}
+
+	tG.CursorDance.Movers = movers
+	tG.CursorDance.Spinners = spinners
+
+	tG.CursorDance.Battle = tG.Dance.Battle
+	tG.CursorDance.DoSpinnersTogether = tG.Dance.DoSpinnersTogether
+	tG.CursorDance.TAGSliderDance = tG.Dance.TAGSliderDance
+
+	tG.CursorDance.MoverSettings.Bezier = []*bezier{
+		tG.Dance.Bezier,
+	}
+
+	tG.CursorDance.MoverSettings.Flower = []*flower{
+		tG.Dance.Flower,
+	}
+
+	tG.CursorDance.MoverSettings.HalfCircle = []*circular{
+		tG.Dance.HalfCircle,
+	}
+
+	tG.CursorDance.MoverSettings.Spline = []*spline{
+		tG.Dance.Spline,
+	}
+
+	tG.CursorDance.MoverSettings.Momentum = []*momentum{
+		tG.Dance.Momentum,
+	}
+
+	tG.CursorDance.MoverSettings.ExGon = []*exgon{
+		tG.Dance.ExGon,
+	}
+
+	tG.Dance = nil
 }

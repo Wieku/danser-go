@@ -1,9 +1,9 @@
 package settings
 
-var CursorDance *cursordance = initCursorDance()
+var CursorDance = initCursorDance()
 
-func initCursorDance() *cursordance {
-	return &cursordance{
+func initCursorDance() *cursorDance {
+	return &cursorDance{
 		Movers: []*mover{
 			{
 				Mover:             "spline",
@@ -20,7 +20,7 @@ func initCursorDance() *cursordance {
 		Battle:             false,
 		DoSpinnersTogether: true,
 		TAGSliderDance:     false,
-		MoverSettings: &movers{
+		MoverSettings: &moverSettings{
 			Bezier: []*bezier{
 				{
 					Aggressiveness:       60,
@@ -85,16 +85,16 @@ type spinner struct {
 	Radius float64
 }
 
-type cursordance struct {
+type cursorDance struct {
 	Movers             []*mover
 	Spinners           []*spinner
 	Battle             bool
 	DoSpinnersTogether bool
 	TAGSliderDance     bool
-	MoverSettings      *movers
+	MoverSettings      *moverSettings
 }
 
-type movers struct {
+type moverSettings struct {
 	Bezier     []*bezier
 	Flower     []*flower
 	HalfCircle []*circular
