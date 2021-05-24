@@ -21,10 +21,9 @@ const (
 	tapStrainMultiplier float64 = 2.65
 )
 
-func NewSpeedSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(useFixedCalculations, d)
-	skill.SkillMultiplier = 1400
-	skill.StrainDecayBase = 0.3
+func NewSpeedSkill(d *difficulty.Difficulty) *Skill {
+	skill := NewSkill(d)
+	skill.StarsPerDouble = 1.075
 	skill.HistoryLength = 16
 	skill.StrainValueOf = speedStrainValue
 

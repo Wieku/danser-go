@@ -4,85 +4,47 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/xexxar/preprocessing"
 	"math"
-	"sort"
 )
 
 type Skill struct {
-	// Strain values are multiplied by this number for the given skill. Used to balance the value of different skills between each other.
-	SkillMultiplier float64
-
-	// Determines how quickly strain decays for the given skill.
-	// For example a value of 0.15 indicates that strain decays to 15% of its original value in one second.
-	StrainDecayBase float64
-
-	// The weight by which each strain value decays.
-	DecayWeight float64
-
-	// The length of each strain section.
-	SectionLength float64
-
 	// How many DifficultyObjects should be kept
 	HistoryLength int
 
 	// Keeps track of previous DifficultyObjects for strain section calculations
 	Previous []*preprocessing.DifficultyObject
 
-	// The current strain level
-	CurrentStrain float64
-
 	// Delegate to calculate strain value of skill
 	StrainValueOf func(skill *Skill, obj *preprocessing.DifficultyObject) float64
 
-	currentSectionPeak float64
-	currentSectionEnd  float64
-
-	strainPeaks []float64
-
-	// Should fixed clock rate calculations be used, set to false to use current osu!stable calculations (2021.01)
-	fixedCalculations bool
-
-	diff          *difficulty.Difficulty
+	diff *difficulty.Difficulty
 
 	currentStrain float64
+
+	StarsPerDouble float64
+
+	strains []float64
+	times   []float64
+
+	targetFcPrecision float64
+	targetFcTime      float64
 }
 
-func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
+func NewSkill(d *difficulty.Difficulty) *Skill {
 	return &Skill{
-		DecayWeight:       0.9,
-		SectionLength:     400,
 		HistoryLength:     1,
-		fixedCalculations: useFixedCalculations,
 		diff:              d,
+		targetFcPrecision: 0.01,
+		targetFcTime:      30 * 60 * 100,
 	}
+}
+
+func (skill *Skill) difficultyExponent() float64 {
+	return 1.0 / math.Log2(skill.StarsPerDouble)
 }
 
 func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
-	var startTime float64
-	if skill.fixedCalculations {
-		startTime = current.StartTime
-	} else {
-		startTime = current.BaseObject.GetStartTime()
-	}
-
-	if len(skill.Previous) == 0 {
-		skill.currentSectionEnd = math.Ceil(startTime/skill.SectionLength) * skill.SectionLength
-	}
-
-	for startTime > skill.currentSectionEnd {
-		skill.saveCurrentPeak()
-		skill.startNewSectionFrom(skill.currentSectionEnd)
-
-		if skill.fixedCalculations {
-			skill.currentSectionEnd += skill.SectionLength
-		} else {
-			skill.currentSectionEnd += skill.SectionLength * skill.diff.Speed
-		}
-	}
-
-	skill.CurrentStrain *= skill.strainDecay(current.DeltaTime)
-	skill.CurrentStrain += skill.StrainValueOf(skill, current) * skill.SkillMultiplier
-
-	skill.currentSectionPeak = math.Max(skill.CurrentStrain, skill.currentSectionPeak)
+	skill.strains = append(skill.strains, skill.StrainValueOf(skill, current))
+	skill.times = append(skill.times, current.StartTime)
 }
 
 // Processes given DifficultyObject
@@ -104,58 +66,68 @@ func (skill *Skill) GetPrevious(i int) *preprocessing.DifficultyObject {
 	return skill.Previous[len(skill.Previous)-1-i]
 }
 
-func (skill *Skill) GetCurrentStrainPeaks() []float64 {
-	peaks := make([]float64, len(skill.strainPeaks)+1)
-	copy(peaks, skill.strainPeaks)
-	peaks[len(peaks)-1] = skill.currentSectionPeak
+func (skill *Skill) calculateDifficultyValue() float64 {
+	difficultyExponent := 1.0 / math.Log2(skill.StarsPerDouble)
+	SR := 0.0
 
-	return peaks
+	for i := 0; i < len(skill.strains); i++ {
+		SR += math.Pow(skill.strains[i], difficultyExponent)
+	}
+
+	return math.Pow(SR, 1.0/difficultyExponent)
 }
 
 func (skill *Skill) DifficultyValue() float64 {
-	diff := 0.0
-	weight := 1.0
+	return skill.fcTimeSkillLevel(skill.calculateDifficultyValue())
+}
 
-	strains := reverseSortFloat64s(skill.GetCurrentStrainPeaks())
+/// <summary>
+/// The probability a player of the given skill full combos a map of the given difficulty.
+/// </summary>
+/// <param name="skill">The skill level of the player.</param>
+/// <param name="difficulty">The difficulty of a range of notes.</param>
+func (skill *Skill) fcProbability(skll, difficulty float64) float64 {
+	return math.Exp(-math.Pow(difficulty/math.Max(1e-10, skll), skill.difficultyExponent()))
+}
 
-	for _, strain := range strains {
-		diff += strain * weight
-		weight *= skill.DecayWeight
+/// <summary>
+/// Approximates the skill level of a player that can FC a map with the given <paramref name="difficulty"/>,
+/// if their probability of success in doing so is equal to <paramref name="probability"/>.
+/// </summary>
+func (skill *Skill) skillLevel(probability, difficulty float64) float64 {
+	return difficulty * math.Pow(-math.Log(probability), -1/skill.difficultyExponent())
+}
+
+func (skill *Skill) expectedFcTime(skll float64) float64 {
+	lastTimestamp := skill.times[0] - 5.0 // time taken to retry map
+	fcTime := 0.0
+
+	for i := 0; i < len(skill.strains); i++ {
+		dt := skill.times[i] - lastTimestamp
+		lastTimestamp = skill.times[i]
+		fcTime = (fcTime + dt) / skill.fcProbability(skll, skill.strains[i])
 	}
 
-	return diff
+	return fcTime - (skill.times[len(skill.times)-1] - skill.times[0])
 }
 
-func (skill *Skill) strainDecay(ms float64) float64 {
-	return math.Pow(skill.StrainDecayBase, ms/1000)
-}
+func (skill *Skill) fcTimeSkillLevel(totalDifficulty float64) float64 {
+	lengthEstimate := 0.4 * (skill.times[len(skill.times)-1] - skill.times[0])
 
-func (skill *Skill) saveCurrentPeak() {
-	skill.strainPeaks = append(skill.strainPeaks, skill.currentSectionPeak)
-}
+	skill.targetFcTime += 300000 * (math.Max(0, (skill.times[len(skill.times)-1]-skill.times[0])-180000) / 30000) // for every 30 seconds past 3 mins, add 5 mins to estimated time to FC.
 
-func (skill *Skill) startNewSectionFrom(end float64) {
-	var startTime float64
-	if skill.fixedCalculations {
-		startTime = skill.GetPrevious(0).StartTime
-	} else {
-		startTime = skill.GetPrevious(0).BaseObject.GetStartTime()
+	fcProb := lengthEstimate / skill.targetFcTime
+
+	skll := skill.skillLevel(fcProb, totalDifficulty)
+	for i := 0; i < 5; i++ {
+		fcTime := skill.expectedFcTime(skll)
+		lengthEstimate = fcTime * fcProb
+		fcProb = lengthEstimate / skill.targetFcTime
+		skll = skill.skillLevel(fcProb, totalDifficulty)
+		if math.Abs(fcTime-skill.targetFcTime) < skill.targetFcPrecision*skill.targetFcTime {
+			//enough precision
+			break
+		}
 	}
-
-	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-startTime)
-}
-
-func reverseSortFloat64s(arr []float64) []float64 {
-	x := make([]float64, len(arr))
-	copy(x, arr)
-
-	sort.Float64s(x)
-
-	n := len(x)
-	for i := 0; i < n/2; i++ {
-		j := n - i - 1
-		x[i], x[j] = x[j], x[i]
-	}
-
-	return x
+	return skll
 }

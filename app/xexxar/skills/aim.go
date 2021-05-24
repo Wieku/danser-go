@@ -21,10 +21,9 @@ const (
 	totalStrainMultiplier  float64 = 0.1675
 )
 
-func NewAimSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(useFixedCalculations, d)
-	skill.SkillMultiplier = 26.25
-	skill.StrainDecayBase = 0.15
+func NewAimSkill(d *difficulty.Difficulty) *Skill {
+	skill := NewSkill(d)
+	skill.StarsPerDouble = 1.1
 	skill.HistoryLength = 2
 	skill.currentStrain = 1
 	skill.StrainValueOf = aimStrainValue

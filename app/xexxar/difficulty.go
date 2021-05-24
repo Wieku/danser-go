@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/oppai/preprocessing"
-	"github.com/wieku/danser-go/app/oppai/skills"
+	"github.com/wieku/danser-go/app/xexxar/preprocessing"
+	"github.com/wieku/danser-go/app/xexxar/skills"
 	"log"
 	"math"
 )
@@ -53,8 +53,8 @@ func getStars(aim, speed *skills.Skill, diff *difficulty.Difficulty) Stars {
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, useFixedCalculations bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(useFixedCalculations, diff)
-	speedSkill := skills.NewSpeedSkill(useFixedCalculations, diff)
+	aimSkill := skills.NewAimSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
@@ -75,8 +75,8 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, us
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(useFixedCalculations, diff)
-	speedSkill := skills.NewSpeedSkill(useFixedCalculations, diff)
+	aimSkill := skills.NewAimSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff)
 
 	stars := make([]Stars, 1, len(objects))
 
