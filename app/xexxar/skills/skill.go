@@ -2,7 +2,7 @@ package skills
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/oppai/preprocessing"
+	"github.com/wieku/danser-go/app/xexxar/preprocessing"
 	"math"
 	"sort"
 )
@@ -94,12 +94,12 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 	skill.Previous = append(skill.Previous, current)
 }
 
-func (skill *Skill) GetPrevious() *preprocessing.DifficultyObject {
-	if len(skill.Previous) == 0 {
+func (skill *Skill) GetPrevious(i int) *preprocessing.DifficultyObject {
+	if len(skill.Previous)-i <= 0 {
 		return nil
 	}
 
-	return skill.Previous[len(skill.Previous)-1]
+	return skill.Previous[len(skill.Previous)-1-i]
 }
 
 func (skill *Skill) GetCurrentStrainPeaks() []float64 {
@@ -135,9 +135,9 @@ func (skill *Skill) saveCurrentPeak() {
 func (skill *Skill) startNewSectionFrom(end float64) {
 	var startTime float64
 	if skill.fixedCalculations {
-		startTime = skill.GetPrevious().StartTime
+		startTime = skill.GetPrevious(0).StartTime
 	} else {
-		startTime = skill.GetPrevious().BaseObject.GetStartTime()
+		startTime = skill.GetPrevious(0).BaseObject.GetStartTime()
 	}
 
 	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-startTime)
