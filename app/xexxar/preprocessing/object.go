@@ -3,6 +3,7 @@ package preprocessing
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -34,7 +35,10 @@ type DifficultyObject struct {
 
 	StrainTime float64
 
-	lastLastObject objects.IHitObject
+	lastLastObject  objects.IHitObject
+
+	DistanceVector  vector.Vector2f
+	FlowProbability float64
 }
 
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty) *DifficultyObject {
@@ -49,6 +53,7 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 	}
 
 	obj.setDistances()
+	obj.calculateFlowProbability()
 
 	obj.StrainTime = math.Max(50, obj.DeltaTime)
 
@@ -71,6 +76,7 @@ func (o *DifficultyObject) setDistances() {
 	lastCursorPosition := getEndCursorPosition(o.LastObject, o.diff)
 
 	if _, ok := o.BaseObject.(*objects.Spinner); !ok {
+		o.DistanceVector = (o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Sub(lastCursorPosition.Scl(scalingFactor))
 		o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
 	}
 
@@ -82,7 +88,25 @@ func (o *DifficultyObject) setDistances() {
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X
 		o.Angle = float64(math32.Abs(math32.Atan2(det, dot)))
+
+		if math.IsNaN(o.Angle) {
+			o.Angle = 0
+		}
 	}
+}
+
+func (o *DifficultyObject) calculateFlowProbability() {
+	deltaTime := o.DeltaTime
+	distance := o.JumpDistance
+	angle := o.Angle
+
+	angle = bmath.ClampF64(angle, math.Pi/6, math.Pi/2)
+
+	angleOffset := 10.0 * math.Sin(1.5 * (math.Pi / 2 - angle))
+
+	distanceOffset := math.Pow(distance, 1.7) / 325
+
+	o.FlowProbability = 1.0 / (1.0 + math.Pow(math.E, deltaTime - 126.0 + distanceOffset + angleOffset))
 }
 
 func getEndCursorPosition(obj objects.IHitObject, d *difficulty.Difficulty) (pos vector.Vector2f) {
