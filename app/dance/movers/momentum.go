@@ -21,20 +21,22 @@ type MomentumMover struct {
 	first     bool
 	wasStream bool
 	mods      difficulty.Modifier
+	id        int
 }
 
 func NewMomentumMover() MultiPointMover {
 	return &MomentumMover{last: vector.NewVec2f(0, 0), first: true}
 }
 
-func (bm *MomentumMover) Reset(mods difficulty.Modifier) {
+func (bm *MomentumMover) Reset(mods difficulty.Modifier, id int) {
 	bm.mods = mods
 	bm.first = true
 	bm.last = vector.NewVec2f(0, 0)
+	bm.id = id
 }
 
-func same(mods difficulty.Modifier, o1 objects.IHitObject, o2 objects.IHitObject) bool {
-	return o1.GetStackedStartPositionMod(mods) == o2.GetStackedStartPositionMod(mods) || (settings.Dance.Momentum.SkipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
+func same(mods difficulty.Modifier, o1 objects.IHitObject, o2 objects.IHitObject, skipStackAngles bool) bool {
+	return o1.GetStackedStartPositionMod(mods) == o2.GetStackedStartPositionMod(mods) || (skipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
 }
 
 func anorm(a float32) float32 {
@@ -57,6 +59,8 @@ func anorm2(a float32) float32 {
 }
 
 func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
+	ms := settings.CursorDance.MoverSettings.Momentum[bm.id%len(settings.CursorDance.MoverSettings.Momentum)]
+
 	i := 0
 
 	end := objs[i+0]
@@ -89,7 +93,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			a2 = bm.last.AngleRV(endPos)
 			break
 		}
-		if !same(bm.mods, o, objs[i+1]) {
+		if !same(bm.mods, o, objs[i+1], ms.SkipStackAngles) {
 			a2 = o.GetStackedStartPositionMod(bm.mods).AngleRV(objs[i+1].GetStackedStartPositionMod(bm.mods))
 			break
 		}
@@ -101,8 +105,6 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		sq1 = endPos.DstSq(startPos)
 		sq2 = startPos.DstSq(nextPos)
 	}
-
-	ms := settings.Dance.Momentum
 
 	// stream detection logic stolen from spline mover
 	stream := false
@@ -171,7 +173,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	p1 := vector.NewVec2fRad(a1, dst * float32(mult)).Add(endPos)
 	p2 := vector.NewVec2fRad(a2, dst * float32(mult)).Add(startPos)
 
-	if !same(bm.mods, end, start) {
+	if !same(bm.mods, end, start, ms.SkipStackAngles) {
 		bm.last = p2
 		bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
 	} else {

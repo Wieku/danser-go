@@ -20,7 +20,7 @@ func NewLinearMover() MultiPointMover {
 	return &LinearMover{}
 }
 
-func (bm *LinearMover) Reset(mods difficulty.Modifier) {
+func (bm *LinearMover) Reset(mods difficulty.Modifier, _ int) {
 	bm.mods = mods
 }
 
@@ -40,7 +40,7 @@ func (bm *LinearMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (bm LinearMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF64(float64(time-bm.endTime)/float64(bm.beginTime-bm.endTime), 0, 1)
+	t := bmath.ClampF64((time-bm.endTime)/(bm.beginTime-bm.endTime), 0, 1)
 	return bm.line.PointAt(float32(easing.OutQuad(t)))
 }
 

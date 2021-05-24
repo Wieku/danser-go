@@ -18,20 +18,24 @@ type AngleOffsetMover struct {
 	startTime, endTime float64
 	invert             float32
 	mods               difficulty.Modifier
+	id                 int
 }
 
 func NewAngleOffsetMover() MultiPointMover {
 	return &AngleOffsetMover{lastAngle: 0, invert: 1}
 }
 
-func (bm *AngleOffsetMover) Reset(mods difficulty.Modifier) {
+func (bm *AngleOffsetMover) Reset(mods difficulty.Modifier, id int) {
 	bm.mods = mods
 	bm.lastAngle = 0
 	bm.invert = 1
 	bm.lastPoint = vector.NewVec2f(0, 0)
+	bm.id = id
 }
 
 func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.Flower[bm.id%len(settings.CursorDance.MoverSettings.Flower)]
+
 	end := objs[0]
 	start := objs[1]
 
@@ -47,16 +51,16 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 	var points []vector.Vector2f
 
-	scaledDistance := distance * float32(settings.Dance.Flower.DistanceMult)
-	newAngle := float32(settings.Dance.Flower.AngleOffset) * math32.Pi / 180.0
+	scaledDistance := distance * float32(config.DistanceMult)
+	newAngle := float32(config.AngleOffset) * math32.Pi / 180.0
 
-	if end.GetStartTime() > 0 && settings.Dance.Flower.LongJump >= 0 && (startTime-endTime) > float64(settings.Dance.Flower.LongJump) {
-		scaledDistance = float32(startTime-endTime) * float32(settings.Dance.Flower.LongJumpMult)
+	if end.GetStartTime() > 0 && config.LongJump >= 0 && (startTime-endTime) > float64(config.LongJump) {
+		scaledDistance = float32(startTime-endTime) * float32(config.LongJumpMult)
 	}
 
 	if endPos == startPos {
-		if settings.Dance.Flower.LongJumpOnEqualPos {
-			scaledDistance = float32(startTime-endTime) * float32(settings.Dance.Flower.LongJumpMult)
+		if config.LongJumpOnEqualPos {
+			scaledDistance = float32(startTime-endTime) * float32(config.LongJumpMult)
 
 			bm.lastAngle += math.Pi
 
@@ -103,9 +107,9 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else {
-		if bmath.AngleBetween32(endPos, bm.lastPoint, startPos) >= float32(settings.Dance.Flower.AngleOffset)*math32.Pi/180.0 {
+		if bmath.AngleBetween32(endPos, bm.lastPoint, startPos) >= float32(config.AngleOffset)*math32.Pi/180.0 {
 			bm.invert = -1 * bm.invert
-			newAngle = float32(settings.Dance.Flower.StreamAngleOffset) * math32.Pi / 180.0
+			newAngle = float32(config.StreamAngleOffset) * math32.Pi / 180.0
 		}
 
 		angle := endPos.AngleRV(startPos) - newAngle*bm.invert

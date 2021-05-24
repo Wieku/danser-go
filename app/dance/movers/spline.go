@@ -21,17 +21,21 @@ type SplineMover struct {
 	curve              *curves.BSpline
 	startTime, endTime float64
 	mods               difficulty.Modifier
+	id                 int
 }
 
 func NewSplineMover() MultiPointMover {
 	return &SplineMover{}
 }
 
-func (mover *SplineMover) Reset(mods difficulty.Modifier) {
+func (mover *SplineMover) Reset(mods difficulty.Modifier, id int) {
 	mover.mods = mods
+	mover.id = id
 }
 
 func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.Spline[mover.id%len(settings.CursorDance.MoverSettings.Spline)]
+	
 	points := make([]vector.Vector2f, 0)
 	timing := make([]int64, 0)
 
@@ -98,7 +102,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			sq1 := pos1.DstSq(pos2)
 			sq2 := pos2.DstSq(pos3)
 
-			if sq1 > max && sq2 > max && settings.Dance.Spline.RotationalForce {
+			if sq1 > max && sq2 > max && config.RotationalForce {
 				if stream {
 					angle = 0
 					stream = false
@@ -111,7 +115,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 						angle = float32(ang) * 90 / 180 * math32.Pi
 					}
 				}
-			} else if sq1 >= min && sq1 <= max && sq2 >= min && sq2 <= max && (settings.Dance.Spline.StreamWobble || settings.Dance.Spline.StreamHalfCircle) {
+			} else if sq1 >= min && sq1 <= max && sq2 >= min && sq2 <= max && (config.StreamWobble || config.StreamHalfCircle) {
 				if stream {
 					angle *= -1
 
@@ -140,11 +144,11 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 				mid := pos1.Mid(pos2)
 
 				scale := float32(1.0)
-				if stream && !settings.Dance.Spline.StreamHalfCircle {
-					scale = float32(settings.Dance.Spline.WobbleScale)
+				if stream && !config.StreamHalfCircle {
+					scale = float32(config.WobbleScale)
 				}
 
-				if stream && settings.Dance.Spline.StreamHalfCircle {
+				if stream && config.StreamHalfCircle {
 					sign := -1
 					if angle < 0 {
 						sign = 1

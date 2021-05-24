@@ -15,18 +15,22 @@ type HalfCircleMover struct {
 	startTime, endTime float64
 	invert             float32
 	mods               difficulty.Modifier
+	id                 int
 }
 
 func NewHalfCircleMover() MultiPointMover {
 	return &HalfCircleMover{invert: -1}
 }
 
-func (bm *HalfCircleMover) Reset(mods difficulty.Modifier) {
+func (bm *HalfCircleMover) Reset(mods difficulty.Modifier, id int) {
 	bm.mods = mods
 	bm.invert = -1
+	bm.id = id
 }
 
 func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.HalfCircle[bm.id%len(settings.CursorDance.MoverSettings.HalfCircle)]
+
 	end := objs[0]
 	start := objs[1]
 
@@ -35,7 +39,7 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	bm.endTime = end.GetEndTime()
 	bm.startTime = start.GetStartTime()
 
-	if settings.Dance.HalfCircle.StreamTrigger < 0 || (bm.startTime-bm.endTime) < float64(settings.Dance.HalfCircle.StreamTrigger) {
+	if config.StreamTrigger < 0 || (bm.startTime-bm.endTime) < float64(config.StreamTrigger) {
 		bm.invert = -1 * bm.invert
 	}
 
@@ -45,7 +49,7 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	}
 
 	point := endPos.Mid(startPos)
-	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(float32(settings.Dance.HalfCircle.RadiusMultiplier)).Add(point)
+	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(float32(config.RadiusMultiplier)).Add(point)
 	bm.ca = curves.NewCirArc(endPos, p, startPos)
 
 	return 2

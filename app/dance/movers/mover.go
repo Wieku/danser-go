@@ -7,7 +7,7 @@ import (
 )
 
 type MultiPointMover interface {
-	Reset(mods difficulty.Modifier)
+	Reset(mods difficulty.Modifier, id int)
 	SetObjects(objs []objects.IHitObject) int
 	Update(time float64) vector.Vector2f
 	GetEndTime() float64

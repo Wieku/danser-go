@@ -19,7 +19,7 @@ func NewAxisMover() MultiPointMover {
 	return &AxisMover{}
 }
 
-func (bm *AxisMover) Reset(mods difficulty.Modifier) {
+func (bm *AxisMover) Reset(mods difficulty.Modifier, _ int) {
 	bm.mods = mods
 }
 

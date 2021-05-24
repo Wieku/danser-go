@@ -20,7 +20,7 @@ func NewAggressiveMover() MultiPointMover {
 	return &AggressiveMover{lastAngle: 0}
 }
 
-func (bm *AggressiveMover) Reset(mods difficulty.Modifier) {
+func (bm *AggressiveMover) Reset(mods difficulty.Modifier, _ int) {
 	bm.mods = mods
 	bm.lastAngle = 0
 }

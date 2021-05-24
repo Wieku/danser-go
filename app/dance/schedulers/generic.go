@@ -20,10 +20,12 @@ type GenericScheduler struct {
 	lastTime float64
 	input    *input.NaturalInputProcessor
 	mods     difficulty.Modifier
+	index    int
+	id       int
 }
 
-func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
-	return &GenericScheduler{mover: mover()}
+func NewGenericScheduler(mover func() movers.MultiPointMover, index, id int) Scheduler {
+	return &GenericScheduler{mover: mover(), index: index, id: id}
 }
 
 func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMoverCtor func() spinners.SpinnerMover, initKeys bool) {
@@ -35,11 +37,13 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 		scheduler.input = input.NewNaturalInputProcessor(objs, cursor)
 	}
 
-	scheduler.mover.Reset(mods)
+	scheduler.mover.Reset(mods, scheduler.id)
+
+	config := settings.CursorDance.Movers[scheduler.index%len(settings.CursorDance.Movers)]
 
 	// Slider dance / random slider dance resolving
 	for i := 0; i < len(scheduler.queue); i++ {
-		scheduler.queue = PreprocessQueue(i, scheduler.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
+		scheduler.queue = PreprocessQueue(i, scheduler.queue, (config.SliderDance && !config.RandomSliderDance) || (config.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
 	// Convert spinners to pseudo spinners that have beginning and ending angles, simplifies mover codes as well

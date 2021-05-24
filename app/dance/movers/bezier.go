@@ -17,23 +17,24 @@ type BezierMover struct {
 	previousSpeed      float32
 	invert             float32
 	mods               difficulty.Modifier
+	id                 int
 }
 
 func NewBezierMover() MultiPointMover {
-	bm := &BezierMover{invert: 1}
-	bm.pt = vector.NewVec2f(512/2, 384/2)
-	bm.previousSpeed = -1
-	return bm
+	return &BezierMover{invert: 1}
 }
 
-func (bm *BezierMover) Reset(mods difficulty.Modifier) {
+func (bm *BezierMover) Reset(mods difficulty.Modifier, id int) {
 	bm.mods = mods
 	bm.pt = vector.NewVec2f(512/2, 384/2)
 	bm.invert = 1
 	bm.previousSpeed = -1
+	bm.id = id
 }
 
 func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.Bezier[bm.id%len(settings.CursorDance.MoverSettings.Bezier)]
+
 	end := objs[0]
 	start := objs[1]
 	endPos := end.GetStackedEndPositionMod(bm.mods)
@@ -54,8 +55,8 @@ func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 
 	genScale := bm.previousSpeed
 
-	aggressiveness := float32(settings.Dance.Bezier.Aggressiveness)
-	sliderAggressiveness := float32(settings.Dance.Bezier.SliderAggressiveness)
+	aggressiveness := float32(config.Aggressiveness)
+	sliderAggressiveness := float32(config.SliderAggressiveness)
 
 	if endPos == startPos {
 		points = []vector.Vector2f{endPos, startPos}

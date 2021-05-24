@@ -18,18 +18,24 @@ type ExGonMover struct {
 
 	endTime float64
 	mods    difficulty.Modifier
+	id      int
+	delay   float64
 }
 
 func NewExGonMover() MultiPointMover {
 	return &ExGonMover{}
 }
 
-func (bm *ExGonMover) Reset(mods difficulty.Modifier) {
+func (bm *ExGonMover) Reset(mods difficulty.Modifier, id int) {
 	bm.mods = mods
 	bm.wasFirst = false
+	bm.id = id
 }
 
 func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.ExGon[bm.id%len(settings.CursorDance.MoverSettings.ExGon)]
+	bm.delay = float64(config.Delay)
+
 	if !bm.wasFirst {
 		bm.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + int64(objs[1].GetStartTime())))
 
@@ -38,7 +44,7 @@ func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 
 	prev, next := objs[0], objs[1]
 
-	bm.nextTime = prev.GetEndTime() + float64(settings.Dance.ExGon.Delay)
+	bm.nextTime = prev.GetEndTime() + bm.delay
 	bm.endTime = next.GetStartTime()
 
 	return 2
@@ -46,7 +52,7 @@ func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 
 func (bm *ExGonMover) Update(time float64) vector.Vector2f {
 	if time >= bm.nextTime {
-		bm.nextTime += float64(settings.Dance.ExGon.Delay)
+		bm.nextTime += bm.delay
 
 		bm.lastPos = vector.NewVec2f(568, 426).Mult(vector.NewVec2f(float32(easing.InOutCubic(bm.rand.Float64())), float32(easing.InOutCubic(bm.rand.Float64())))).SubS(28, 21)
 	}
