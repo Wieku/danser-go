@@ -33,6 +33,10 @@ func (bs *BeatSynced) SetMap(bMap *beatmap.BeatMap, track *bass.Track) {
 }
 
 func (bs *BeatSynced) Update(time float64) {
+	if bs.music == nil || bs.bMap == nil {
+		return
+	}
+
 	if bs.lastTime == 0 {
 		bs.lastTime = time
 	}
