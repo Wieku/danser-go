@@ -36,10 +36,12 @@ type Triangles struct {
 }
 
 func NewTriangles(colors []color2.Color) *Triangles {
-	visualiser := &Triangles{velocity: 100}
+	visualiser := &Triangles{velocity: 0}
 	visualiser.colorPalette = colors
 	visualiser.firstUpdate = true
 	visualiser.manager = sprite.NewSpriteManager()
+	visualiser.scale = 1.0
+	visualiser.density = 1.0
 
 	return visualiser
 }
@@ -60,7 +62,8 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 	triangle := sprite.NewSpriteSingle(texture, -size, position, vector.NewVec2d(0, 0))
 
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
-		triangle.SetColor(color2.NewRGB(rand.Float32(), rand.Float32(), rand.Float32()))
+		shade := rand.Float32()*0.2
+		triangle.SetColor(color2.NewL(shade))
 	} else {
 		col := vis.colorPalette[rand.Intn(len(vis.colorPalette))]
 		triangle.SetColor(col)
