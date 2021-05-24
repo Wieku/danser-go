@@ -368,6 +368,8 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	if diff.CheckModActive(difficulty.Hidden) {
 		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+difficulty.HitFadeIn, slider.EndTime, 0, easing.OutQuad)
+	} else if settings.Objects.Sliders.Snaking.Out && settings.Objects.Sliders.Snaking.OutFadeInstant {
+		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime, 0)
 	} else {
 		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 	}
