@@ -39,6 +39,7 @@ type DifficultyObject struct {
 
 	DistanceVector  vector.Vector2f
 	FlowProbability float64
+	SnapProbability float64
 }
 
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty) *DifficultyObject {
@@ -107,6 +108,7 @@ func (o *DifficultyObject) calculateFlowProbability() {
 	distanceOffset := math.Pow(distance, 1.7) / 325
 
 	o.FlowProbability = 1.0 / (1.0 + math.Pow(math.E, deltaTime - 126.0 + distanceOffset + angleOffset))
+	o.SnapProbability = 1.0 - o.FlowProbability
 }
 
 func getEndCursorPosition(obj objects.IHitObject, d *difficulty.Difficulty) (pos vector.Vector2f) {
