@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	NormalizedRadius        = 52.0
-	CircleSizeBuffThreshold = 30.0
+	NormalizedRadius        = 50.0
+	CircleSizeBuffThreshold = 32.0
 )
 
 type DifficultyObject struct {
@@ -78,7 +78,7 @@ func (o *DifficultyObject) setDistances() {
 
 	if _, ok := o.BaseObject.(*objects.Spinner); !ok {
 		o.DistanceVector = (o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Sub(lastCursorPosition.Scl(scalingFactor))
-		o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
+		o.JumpDistance = float64(o.DistanceVector.Len())
 	}
 
 	if o.lastLastObject != nil {
