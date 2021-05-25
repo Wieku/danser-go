@@ -1,24 +1,22 @@
-package xexxar
+package oppai
 
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/xexxar/preprocessing"
-	"github.com/wieku/danser-go/app/xexxar/skills"
+	"github.com/wieku/danser-go/app/pp/oppai/preprocessing"
+	"github.com/wieku/danser-go/app/pp/oppai/skills"
 	"log"
 	"math"
 )
 
 const (
 	// Global stars multiplier
-	StarScalingFactor float64 = 0.18
+	StarScalingFactor float64 = 0.0675
 
 	// 50% of the difference between aim and speed is added to total
 	// star rating to compensate for aim/speed only maps
 	ExtremeScalingFactor float64 = 0.5
-
-	DifficultyPower float64 = 0.75
 )
 
 type Stars struct {
@@ -33,9 +31,13 @@ type Stars struct {
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim, speed *skills.Skill) Stars {
-	aimVal := math.Pow(aim.DifficultyValue(), DifficultyPower) * StarScalingFactor
-	speedVal := math.Pow(speed.DifficultyValue(), DifficultyPower) * StarScalingFactor
+func getStars(aim, speed *skills.Skill, diff *difficulty.Difficulty) Stars {
+	aimVal := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
+	speedVal := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
+
+	if diff.Mods.Active(difficulty.TouchDevice) {
+		aimVal = math.Pow(aimVal, 0.8)
+	}
 
 	// total stars
 	total := aimVal + speedVal + math.Abs(speedVal-aimVal)*ExtremeScalingFactor
@@ -48,22 +50,22 @@ func getStars(aim, speed *skills.Skill) Stars {
 }
 
 // Calculate final star rating of a map
-func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Stars {
+func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, useFixedCalculations bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(diff)
-	speedSkill := skills.NewSpeedSkill(diff)
+	aimSkill := skills.NewAimSkill(useFixedCalculations, diff)
+	speedSkill := skills.NewSpeedSkill(useFixedCalculations, diff)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
 		speedSkill.Process(o)
 	}
 
-	return getStars(aimSkill, speedSkill)
+	return getStars(aimSkill, speedSkill, diff)
 }
 
 // Calculate successive star ratings for every part of a beatmap
-func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Stars {
+func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, useFixedCalculations bool) []Stars {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
@@ -73,8 +75,8 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(diff)
-	speedSkill := skills.NewSpeedSkill(diff)
+	aimSkill := skills.NewAimSkill(useFixedCalculations, diff)
+	speedSkill := skills.NewSpeedSkill(useFixedCalculations, diff)
 
 	stars := make([]Stars, 1, len(objects))
 
@@ -84,7 +86,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 		aimSkill.Process(o)
 		speedSkill.Process(o)
 
-		stars = append(stars, getStars(aimSkill, speedSkill))
+		stars = append(stars, getStars(aimSkill, speedSkill, diff))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)

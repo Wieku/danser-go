@@ -3,7 +3,7 @@ package skills
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/xexxar/preprocessing"
+	"github.com/wieku/danser-go/app/pp/tr3/preprocessing"
 	"math"
 )
 
@@ -18,7 +18,7 @@ const (
 	PiOver4 float64 = math.Pi / 4
 
 	averageLength int = 2
-	tapStrainMultiplier float64 = 2.65
+	tapStrainMultiplier float64 = 2.60
 )
 
 func NewSpeedSkill(d *difficulty.Difficulty) *Skill {

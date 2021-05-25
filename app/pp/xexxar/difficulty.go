@@ -1,11 +1,11 @@
-package tr3
+package xexxar
 
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/xexxar/preprocessing"
-	"github.com/wieku/danser-go/app/xexxar/skills"
+	"github.com/wieku/danser-go/app/pp/xexxar/preprocessing"
+	"github.com/wieku/danser-go/app/pp/xexxar/skills"
 	"log"
 	"math"
 )

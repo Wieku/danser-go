@@ -3,7 +3,7 @@ package skills
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/xexxar/preprocessing"
+	"github.com/wieku/danser-go/app/pp/xexxar/preprocessing"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
