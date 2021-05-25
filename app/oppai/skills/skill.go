@@ -51,30 +51,31 @@ func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 		HistoryLength:     1,
 		fixedCalculations: useFixedCalculations,
 		diff:              d,
+		CurrentStrain:     1,
+		currentSectionPeak: 1,
 	}
 }
 
 func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
-	var startTime float64
+	var startTime, sectionLength float64
+
 	if skill.fixedCalculations {
 		startTime = current.StartTime
+		sectionLength = skill.SectionLength
 	} else {
 		startTime = current.BaseObject.GetStartTime()
+		sectionLength = skill.SectionLength * skill.diff.Speed
 	}
 
 	if len(skill.Previous) == 0 {
-		skill.currentSectionEnd = math.Ceil(startTime/skill.SectionLength) * skill.SectionLength
+		skill.currentSectionEnd = math.Ceil(startTime/sectionLength) * sectionLength
 	}
 
 	for startTime > skill.currentSectionEnd {
 		skill.saveCurrentPeak()
 		skill.startNewSectionFrom(skill.currentSectionEnd)
 
-		if skill.fixedCalculations {
-			skill.currentSectionEnd += skill.SectionLength
-		} else {
-			skill.currentSectionEnd += skill.SectionLength * skill.diff.Speed
-		}
+		skill.currentSectionEnd += sectionLength
 	}
 
 	skill.CurrentStrain *= skill.strainDecay(current.DeltaTime)
