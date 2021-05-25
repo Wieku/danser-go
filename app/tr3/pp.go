@@ -135,14 +135,14 @@ func (pp *PPv2) computeAimValue() float64 {
 		aimValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
 	}
 
-	approachRateFactor := 0.0
-	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
-	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
-	}
-
-	aimValue *= 1.0 + math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
+	//approachRateFactor := 0.0
+	//if pp.diff.ARReal > 10.33 {
+	//	approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
+	//} else if pp.diff.ARReal < 8.0 {
+	//	approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
+	//}
+	//
+	//aimValue *= 1.0 + math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
@@ -175,7 +175,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
+		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
 		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
 	}
@@ -207,24 +207,45 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
-	// This percentage only considers HitCircles of any value - in this part of the calculation we focus on hitting the timing hit window
-	betterAccuracyPercentage := 0.0
+	sigmaCircle := 0.0
+	sigmaSlider := 0.0
+	sigmaTotal := 0.0
 
-	if pp.amountHitObjectsWithAccuracy > 0 {
-		betterAccuracyPercentage = float64((pp.countGreat-(pp.totalHits-pp.amountHitObjectsWithAccuracy))*6+pp.countOk*2+pp.countMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
+	zScore := 2.58
+	sqrt2 := math.Sqrt(2.0)
+	accMultiplier := 1200.0
+	accScale := 1.3
+	countHitCircles := pp.ncircles
+	countSliders := pp.nsliders
+
+	if countSliders > 0 {
+		sliderConst := math.Sqrt(2.0 / float64(countSliders)) * zScore
+		sliderProbability := (2.0 * pp.accuracy + math.Pow(sliderConst, 2.0) - sliderConst * math.Sqrt(4.0 * pp.accuracy + math.Pow(sliderConst, 2.0) - 4.0 * math.Pow(pp.accuracy, 2.0))) / (2.0 + 2.0 * math.Pow(sliderConst, 2.0))
+		sigmaSlider = (199.5 - 10.0 * pp.diff.ODReal) / (sqrt2 * math.Erfinv(sliderProbability))
 	}
 
-	// It is possible to reach a negative accuracy with this formula. Cap it at zero - zero points
-	if betterAccuracyPercentage < 0 {
-		betterAccuracyPercentage = 0
+	if countHitCircles > 0 {
+		circleConst := math.Sqrt(2.0 / float64(countHitCircles)) * zScore
+		circleProbability := (2.0 * pp.accuracy + math.Pow(circleConst, 2.0) - circleConst * math.Sqrt(4.0 * pp.accuracy + math.Pow(circleConst, 2.0) - 4.0 * math.Pow(pp.accuracy, 2.0))) / (2.0 + 2.0 * math.Pow(circleConst, 2.0))
+		sigmaCircle = (79.5 - 6.0 * pp.diff.ODReal) / (sqrt2 * math.Erfinv(circleProbability))
 	}
 
-	// Lots of arbitrary values from testing.
-	// Considering to use derivation from perfect accuracy in a probabilistic manner - assume normal distribution
-	accuracyValue := math.Pow(1.52163, pp.diff.ODReal) * math.Pow(betterAccuracyPercentage, 24) * 2.83
+	if sigmaSlider == 0 {
+		return accMultiplier * math.Pow(accScale, -sigmaCircle)
+	}
 
-	// Bonus for many hitcircles - it's harder to keep good accuracy up for longer
-	accuracyValue *= math.Min(1.15, math.Pow(float64(pp.amountHitObjectsWithAccuracy)/1000.0, 0.3))
+	if sigmaCircle == 0 {
+		return accMultiplier * math.Pow(accScale, -sigmaSlider)
+	}
+
+	sigmaTotal = 1.0 / (1.0 / sigmaCircle + 1.0 / sigmaSlider)
+
+	accuracyValue := accMultiplier * math.Pow(accScale, -sigmaTotal)
+
+	acc2ndScale := 0.5 + math.Pow(math.Sin(math.Max(0.0, math.Pi * (pp.accuracy - 0.75))), 2)
+	accuracyValue *= acc2ndScale
+
+	accuracyValue *= 0.95
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		accuracyValue *= 1.08
