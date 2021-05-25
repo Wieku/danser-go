@@ -82,8 +82,8 @@ func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 }
 
 func snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
-	currVector = osuCurrObj.DistanceVector.Scl(float32(snapScaling(osuCurrObj.JumpDistance / 104))).Scl(1/float32(osuCurrObj.StrainTime))
-	prevVector = osuPrevObj.DistanceVector.Scl(float32(snapScaling(osuPrevObj.JumpDistance / 104))).Scl(1/float32(osuPrevObj.StrainTime))
+	currVector = osuCurrObj.DistanceVector.Scl(float32(snapScaling(osuCurrObj.JumpDistance / 100))).Scl(1/float32(osuCurrObj.StrainTime))
+	prevVector = osuPrevObj.DistanceVector.Scl(float32(snapScaling(osuPrevObj.JumpDistance / 100))).Scl(1/float32(osuPrevObj.StrainTime))
 
 	//nextDiffVector := currVector.Add(nextVector)
 	prevDiffVector := prevVector.Add(currVector)
