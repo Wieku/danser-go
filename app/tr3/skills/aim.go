@@ -14,7 +14,7 @@ const (
 	AimAngleBonusBegin float64 = math.Pi / 3
 
 	decayExcessThreshold   float64 = 500
-	snapStrainMultiplier   float64 = 10
+	snapStrainMultiplier   float64 = 9.75
 	flowStrainMultiplier   float64 = 16.25
 	hybridStrainMultiplier float64 = 8.25
 	sliderStrainMultiplier float64 = 75
