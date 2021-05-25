@@ -139,13 +139,13 @@ func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float
 		osuCurrObj := skill.GetPrevious(0)
 		osuPrevObj := skill.GetPrevious(1)
 
-		//nextVector := osuNextObj.DistanceVector.Scl(1 / float32(osuNextObj.StrainTime))
+		nextVector := osuNextObj.DistanceVector.Scl(1 / float32(osuNextObj.StrainTime))
 		currVector := osuCurrObj.DistanceVector.Scl(1 / float32(osuCurrObj.StrainTime))
 		prevVector := osuPrevObj.DistanceVector.Scl(1 / float32(osuPrevObj.StrainTime))
 
-		snapStrain := snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, prevVector)
-		flowStrain := flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, prevVector)
-		hybridStrain := hybridStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, prevVector)
+		snapStrain := snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, nextVector)
+		flowStrain := flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, nextVector)
+		hybridStrain := hybridStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, nextVector)
 		sliderStrain := sliderStrainAt(osuPrevObj, osuCurrObj, osuNextObj)
 
 
