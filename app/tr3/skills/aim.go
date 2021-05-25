@@ -14,9 +14,9 @@ const (
 	AimAngleBonusBegin float64 = math.Pi / 3
 
 	decayExcessThreshold   float64 = 500
-	snapStrainMultiplier   float64 = 9.75
-	flowStrainMultiplier   float64 = 16.25
-	hybridStrainMultiplier float64 = 8.25
+	snapStrainMultiplier   float64 = 13.25
+	flowStrainMultiplier   float64 = 15.5
+	hybridStrainMultiplier float64 = 7.25
 	sliderStrainMultiplier float64 = 75
 	totalStrainMultiplier  float64 = 0.1675
 )
@@ -48,10 +48,13 @@ func snapScaling(distance float64) float64 {
 		return 0
 	}
 
-	return (3.75 * (math.Log(distance / 3.75 + 1) / math.Log(2))) / distance
+	return (2.5 * (math.Log(distance / 2.5 + 1) / math.Log(2))) / distance
 }
 
 func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
+	currVector = osuCurrObj.DistanceVector.Scl(float32(snapScaling(osuCurrObj.JumpDistance / 104))).Scl(1/float32(osuCurrObj.StrainTime))
+	prevVector = osuPrevObj.DistanceVector.Scl(float32(snapScaling(osuPrevObj.JumpDistance / 104))).Scl(1/float32(osuPrevObj.StrainTime))
+
 	//nextDiffVector := currVector.Sub(nextVector)
 	prevDiffVector := prevVector.Sub(currVector)
 
@@ -76,7 +79,7 @@ func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 		math.Min(math.Min(float64(currVector.Len()), float64(prevVector.Len())), math.Abs(float64(currVector.Len()) - float64(prevVector.Len()))) * osuCurrObj.FlowProbability * osuPrevObj.FlowProbability +
 		minDistance * osuCurrObj.FlowProbability * osuPrevObj.FlowProbability
 
-	strain *= math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 10), osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 10))
+	//strain *= math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 10), osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 10))
 
 	return strain
 }
@@ -104,7 +107,7 @@ func snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 
 	strain := currDistance + angleAdjustment * osuCurrObj.SnapProbability * osuPrevObj.SnapProbability
 
-	strain *= math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 20), osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 20))
+	//strain *= math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 20), osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 20))
 
 	return strain
 }

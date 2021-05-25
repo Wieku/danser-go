@@ -18,7 +18,7 @@ const (
 	PiOver4 float64 = math.Pi / 4
 
 	averageLength int = 2
-	tapStrainMultiplier float64 = 2.65
+	tapStrainMultiplier float64 = 2.60
 )
 
 func NewSpeedSkill(d *difficulty.Difficulty) *Skill {
