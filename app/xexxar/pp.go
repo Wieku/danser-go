@@ -42,6 +42,10 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	scoreVersion int) PPv2 {
 	maxCombo = bmath.MaxI(1, maxCombo)
 
+	if combo > maxCombo {
+		maxCombo = combo
+	}
+
 	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
 
 	if combo < 0 {

@@ -18,7 +18,7 @@ const (
 	// star rating to compensate for aim/speed only maps
 	ExtremeScalingFactor float64 = 0.5
 
-	DifficultyPower float64 = 0.18
+	DifficultyPower float64 = 0.75
 )
 
 type Stars struct {
@@ -63,7 +63,7 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) 
 }
 
 // Calculate successive star ratings for every part of a beatmap
-func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, useFixedCalculations bool) []Stars {
+func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Stars {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
