@@ -31,7 +31,7 @@ func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider
 func (s *LazySlider) calculateEndPosition() {
 	s.LazyEndPosition = s.GetStackedStartPositionMod(s.diff.Mods)
 
-	approxFollowCircleRadius := float32(s.diff.CircleRadius) * 3
+	approxFollowCircleRadius := float32(s.diff.CircleRadius / OsuStableAllowance) * 3
 
 	compute := func(time float64) {
 		difference := s.GetStackedPositionAtMod(time, s.diff.Mods).Sub(s.LazyEndPosition)

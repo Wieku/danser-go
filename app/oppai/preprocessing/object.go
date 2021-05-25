@@ -11,6 +11,7 @@ import (
 const (
 	NormalizedRadius        = 52.0
 	CircleSizeBuffThreshold = 30.0
+	OsuStableAllowance      = 1.00041
 )
 
 type DifficultyObject struct {
@@ -56,7 +57,7 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 }
 
 func (o *DifficultyObject) setDistances() {
-	radius := o.diff.CircleRadius / 1.00041 // we need to undo that weird allowance mentioned in difficulty.Difficulty.calculate()
+	radius := o.diff.CircleRadius / OsuStableAllowance // we need to undo that weird allowance mentioned in difficulty.Difficulty.calculate()
 	scalingFactor := NormalizedRadius / float32(radius)
 
 	if radius < CircleSizeBuffThreshold {
