@@ -34,7 +34,7 @@ func NewSkill(d *difficulty.Difficulty) *Skill {
 		HistoryLength:     1,
 		diff:              d,
 		targetFcPrecision: 0.01,
-		targetFcTime:      30 * 60 * 100,
+		targetFcTime:      30 * 60 * 1000,
 	}
 }
 
@@ -67,7 +67,7 @@ func (skill *Skill) GetPrevious(i int) *preprocessing.DifficultyObject {
 }
 
 func (skill *Skill) calculateDifficultyValue() float64 {
-	difficultyExponent := 1.0 / math.Log2(skill.StarsPerDouble)
+	difficultyExponent := skill.difficultyExponent()
 	SR := 0.0
 
 	for i := 0; i < len(skill.strains); i++ {
