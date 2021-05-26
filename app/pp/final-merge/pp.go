@@ -139,7 +139,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	if pp.diff.ARReal > 10.33 {
 		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
+		approachRateFactor += 0.05 * (8.0 - pp.diff.ARReal)
 	}
 
 	aimValue *= 1.0 + approachRateFactor * (0.33 + 0.66 * math.Min(1, float64(pp.totalHits) / 1000))//math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
@@ -150,7 +150,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	}
 
 	if pp.diff.Mods.Active(difficulty.Flashlight) {
-		flBonus := 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+		flBonus := 1.0 + 0.25*math.Min(1.0, float64(pp.totalHits)/200.0)
 		if pp.totalHits > 200 {
 			flBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
 		}
@@ -160,6 +160,10 @@ func (pp *PPv2) computeAimValue() float64 {
 		}
 
 		aimValue *= flBonus
+	}
+
+	if pp.diff.Mods.Active(difficulty.Hidden) && pp.diff.Mods.Active(difficulty.Flashlight) {
+		aimValue *= 1.2
 	}
 
 	// Scale the aim value with accuracy _slightly_
@@ -176,8 +180,6 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
 		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
-	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
 	}
 
 	speedValue *= 1.0 + approachRateFactor
