@@ -31,13 +31,9 @@ type Stars struct {
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim, speed *skills.Skill, diff *difficulty.Difficulty) Stars {
+func getStars(aim, speed *skills.Skill) Stars {
 	aimVal := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
 	speedVal := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
-
-	if diff.Mods.Active(difficulty.TouchDevice) {
-		aimVal = math.Pow(aimVal, 0.8)
-	}
 
 	// total stars
 	total := aimVal + speedVal + math.Abs(speedVal-aimVal)*ExtremeScalingFactor
@@ -61,7 +57,7 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, 
 		speedSkill.Process(o)
 	}
 
-	return getStars(aimSkill, speedSkill, diff)
+	return getStars(aimSkill, speedSkill)
 }
 
 // Calculate successive star ratings for every part of a beatmap
@@ -86,7 +82,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, us
 		aimSkill.Process(o)
 		speedSkill.Process(o)
 
-		stars = append(stars, getStars(aimSkill, speedSkill, diff))
+		stars = append(stars, getStars(aimSkill, speedSkill))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)
