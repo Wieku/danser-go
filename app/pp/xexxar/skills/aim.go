@@ -13,7 +13,6 @@ const (
 	AimTimingThreshold float64 = 107.0
 	AimAngleBonusBegin float64 = math.Pi / 3
 
-	decayExcessThreshold   float64 = 500
 	snapStrainMultiplier   float64 = 10
 	flowStrainMultiplier   float64 = 16.25
 	hybridStrainMultiplier float64 = 8.25
@@ -31,17 +30,7 @@ func NewAimSkill(d *difficulty.Difficulty) *Skill {
 	return skill
 }
 
-func computeDecay(baseDecay, ms float64) float64 {
-	decay := 0.0
 
-	if ms < decayExcessThreshold {
-		decay = baseDecay
-	} else {
-		decay = math.Pow(math.Pow(baseDecay, 1000.0 / math.Min(ms, decayExcessThreshold)), ms / 1000)
-	}
-
-	return decay
-}
 
 func snapScaling(distance float64) float64 {
 	if distance == 0.0 {

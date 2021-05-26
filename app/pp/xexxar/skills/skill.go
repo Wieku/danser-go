@@ -6,6 +6,10 @@ import (
 	"math"
 )
 
+const (
+	decayExcessThreshold float64 = 500
+)
+
 type Skill struct {
 	// How many DifficultyObjects should be kept
 	HistoryLength int
@@ -118,16 +122,30 @@ func (skill *Skill) fcTimeSkillLevel(totalDifficulty float64) float64 {
 
 	fcProb := lengthEstimate / skill.targetFcTime
 
-	skll := skill.skillLevel(fcProb, totalDifficulty)
+	skillLevel := skill.skillLevel(fcProb, totalDifficulty)
+
 	for i := 0; i < 5; i++ {
-		fcTime := skill.expectedFcTime(skll)
+		fcTime := skill.expectedFcTime(skillLevel)
 		lengthEstimate = fcTime * fcProb
 		fcProb = lengthEstimate / skill.targetFcTime
-		skll = skill.skillLevel(fcProb, totalDifficulty)
+		skillLevel = skill.skillLevel(fcProb, totalDifficulty)
+
 		if math.Abs(fcTime-skill.targetFcTime) < skill.targetFcPrecision*skill.targetFcTime {
-			//enough precision
-			break
+			break //enough precision
 		}
 	}
-	return skll
+
+	return skillLevel
+}
+
+func computeDecay(baseDecay, ms float64) float64 {
+	decay := 0.0
+
+	if ms < decayExcessThreshold {
+		decay = baseDecay
+	} else {
+		decay = math.Pow(math.Pow(baseDecay, 1000.0/math.Min(ms, decayExcessThreshold)), ms/1000)
+	}
+
+	return decay
 }
