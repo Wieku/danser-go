@@ -207,6 +207,10 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
+	if pp.amountHitObjectsWithAccuracy == 0 {
+		return 0
+	}
+
 	p100 := float64(pp.countOk) / float64(pp.amountHitObjectsWithAccuracy)
 	p50 := float64(pp.countMeh) / float64(pp.amountHitObjectsWithAccuracy)
 	pm := float64(pp.countMiss) / float64(pp.amountHitObjectsWithAccuracy)
