@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	snapStrainMultiplier   float64 = 9.875
-	flowStrainMultiplier   float64 = 16.25
+	snapStrainMultiplier   float64 = 10
+	flowStrainMultiplier   float64 = 15.75
 	hybridStrainMultiplier float64 = 8.25
 	sliderStrainMultiplier float64 = 75
 	totalStrainMultiplier  float64 = 0.1675

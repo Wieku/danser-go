@@ -137,12 +137,12 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.2 * (pp.diff.ARReal - 10.33)
+		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
 		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
 	}
 
-	aimValue *= 1.0 + approachRateFactor//math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
+	aimValue *= 1.0 + approachRateFactor * (0.33 + 0.66 * math.Min(1, float64(pp.totalHits) / 1000))//math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
@@ -175,7 +175,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.2 * (pp.diff.ARReal - 10.33)
+		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
 		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
 	}
@@ -184,7 +184,8 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	// Combo scaling
 	if pp.maxCombo > 0 {
-		speedValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
+		//speedValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
+		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8) / math.Pow(float64(pp.maxCombo), 0.8), 1)
 	}
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.

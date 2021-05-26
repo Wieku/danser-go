@@ -131,7 +131,7 @@ func (skill *Skill) expectedFcTime(skll float64) float64 {
 func (skill *Skill) fcTimeSkillLevel(totalDifficulty float64) float64 {
 	lengthEstimate := 0.4 * (skill.times[len(skill.times)-1] - skill.times[0])
 
-	skill.targetFcTime += 45 * math.Max(0, skill.expectedTargetTime(totalDifficulty) - 60000) // for every 30 seconds past 3 mins, add 5 mins to estimated time to FC.
+	skill.targetFcTime += 30 * math.Max(0, skill.expectedTargetTime(totalDifficulty) - 60000) // for every 30 seconds past 3 mins, add 5 mins to estimated time to FC.
 
 	fcProb := lengthEstimate / skill.targetFcTime
 
