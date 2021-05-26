@@ -106,8 +106,10 @@ func (skill *Skill) skillLevel(probability, difficulty float64) float64 {
 func (skill *Skill) expectedTargetTime(totalDifficulty float64) float64 {
 	targetTime := 0.0
 
-	for i := 1; i < len(skill.strains); i++ {
-		targetTime += math.Min(2000, skill.times[i]-skill.times[i-1]) * (skill.strains[i] / totalDifficulty)
+	if totalDifficulty > 0 {
+		for i := 1; i < len(skill.strains); i++ {
+			targetTime += math.Min(2000, skill.times[i]-skill.times[i-1]) * (skill.strains[i] / totalDifficulty)
+		}
 	}
 
 	return targetTime
