@@ -102,6 +102,19 @@ func (skill *Skill) skillLevel(probability, difficulty float64) float64 {
 	return difficulty * math.Pow(-math.Log(probability), -1/skill.difficultyExponent())
 }
 
+// A implementation to not overbuff length with a long map. Longer maps = more retries.
+func (skill *Skill) expectedTargetTime(totalDifficulty float64) float64 {
+	targetTime := 0.0
+
+	if totalDifficulty > 0 {
+		for i := 1; i < len(skill.strains); i++ {
+			targetTime += math.Min(2000, skill.times[i]-skill.times[i-1]) * (skill.strains[i] / totalDifficulty)
+		}
+	}
+
+	return targetTime
+}
+
 func (skill *Skill) expectedFcTime(skll float64) float64 {
 	lastTimestamp := skill.times[0] - 5.0 // time taken to retry map
 	fcTime := 0.0
@@ -118,7 +131,7 @@ func (skill *Skill) expectedFcTime(skll float64) float64 {
 func (skill *Skill) fcTimeSkillLevel(totalDifficulty float64) float64 {
 	lengthEstimate := 0.4 * (skill.times[len(skill.times)-1] - skill.times[0])
 
-	skill.targetFcTime += 300000 * (math.Max(0, (skill.times[len(skill.times)-1]-skill.times[0])-180000) / 30000) // for every 30 seconds past 3 mins, add 5 mins to estimated time to FC.
+	skill.targetFcTime += 30 * math.Max(0, skill.expectedTargetTime(totalDifficulty) - 60000) // for every 30 seconds past 3 mins, add 5 mins to estimated time to FC.
 
 	fcProb := lengthEstimate / skill.targetFcTime
 

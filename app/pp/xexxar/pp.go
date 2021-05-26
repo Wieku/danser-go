@@ -137,12 +137,12 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
+		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
+		approachRateFactor += 0.05 * (8.0 - pp.diff.ARReal)
 	}
 
-	aimValue *= 1.0 + math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
+	aimValue *= 1.0 + approachRateFactor * (0.33 + 0.66 * math.Min(1, float64(pp.totalHits) / 1000))//math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
@@ -150,7 +150,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	}
 
 	if pp.diff.Mods.Active(difficulty.Flashlight) {
-		flBonus := 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+		flBonus := 1.0 + 0.25*math.Min(1.0, float64(pp.totalHits)/200.0)
 		if pp.totalHits > 200 {
 			flBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
 		}
@@ -160,6 +160,10 @@ func (pp *PPv2) computeAimValue() float64 {
 		}
 
 		aimValue *= flBonus
+	}
+
+	if pp.diff.Mods.Active(difficulty.Hidden) && pp.diff.Mods.Active(difficulty.Flashlight) {
+		aimValue *= 1.2
 	}
 
 	// Scale the aim value with accuracy _slightly_
@@ -175,16 +179,15 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor += 0.25 * (pp.diff.ARReal - 10.33)
-	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor += 0.01 * (8.0 - pp.diff.ARReal)
+		approachRateFactor += 0.225 * (pp.diff.ARReal - 10.33)
 	}
 
 	speedValue *= 1.0 + approachRateFactor
 
 	// Combo scaling
 	if pp.maxCombo > 0 {
-		speedValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
+		//speedValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
+		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8) / math.Pow(float64(pp.maxCombo), 0.8), 1)
 	}
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
@@ -207,24 +210,28 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
-	// This percentage only considers HitCircles of any value - in this part of the calculation we focus on hitting the timing hit window
-	betterAccuracyPercentage := 0.0
-
-	if pp.amountHitObjectsWithAccuracy > 0 {
-		betterAccuracyPercentage = float64((pp.countGreat-(pp.totalHits-pp.amountHitObjectsWithAccuracy))*6+pp.countOk*2+pp.countMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
+	if pp.amountHitObjectsWithAccuracy == 0 {
+		return 0
 	}
 
-	// It is possible to reach a negative accuracy with this formula. Cap it at zero - zero points
-	if betterAccuracyPercentage < 0 {
-		betterAccuracyPercentage = 0
-	}
+	p100 := float64(pp.countOk) / float64(pp.amountHitObjectsWithAccuracy)
+	p50 := float64(pp.countMeh) / float64(pp.amountHitObjectsWithAccuracy)
+	pm := float64(pp.countMiss) / float64(pp.amountHitObjectsWithAccuracy)
+	p300 := 1.0 - pm - p100 - p50
 
-	// Lots of arbitrary values from testing.
-	// Considering to use derivation from perfect accuracy in a probabilistic manner - assume normal distribution
-	accuracyValue := math.Pow(1.52163, pp.diff.ODReal) * math.Pow(betterAccuracyPercentage, 24) * 2.83
+	m300 := 79.5 - 6.0 * pp.diff.ODReal
+	m100 := 139.5 - 8.0 * pp.diff.ODReal
+	m50 := 199.5 - 10.0 * pp.diff.ODReal
+	//acc := p300 + 1.0 / 3.0 * p100 + 1.0 / 6.0 * p50
 
-	// Bonus for many hitcircles - it's harder to keep good accuracy up for longer
-	accuracyValue *= math.Min(1.15, math.Pow(float64(pp.amountHitObjectsWithAccuracy)/1000.0, 0.3))
+	variance := p300 * math.Pow(m300 / 2.0, 2.0) +
+		p100 * math.Pow((m300 + m100) / 2.0, 2.0) +
+		p50 * math.Pow((m100 + m50) / 2.0, 2.0) +
+		pm * math.Pow(229.5 - 11 * pp.diff.ODReal, 2.0)
+
+	accuracyValue := 2.83 * math.Pow(1.52163, (79.5 - 2 * math.Sqrt(variance)) / 6.0) *
+		math.Pow(math.Log(1.0 + (math.E - 1.0) * (math.Min(float64(pp.amountHitObjectsWithAccuracy), 1600) / 1000.0)), 0.5)
+
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		accuracyValue *= 1.08
