@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
+	final_merge "github.com/wieku/danser-go/app/pp/final-merge"
 	"github.com/wieku/danser-go/app/pp/oppai"
 	"github.com/wieku/danser-go/app/pp/tr3"
 	"github.com/wieku/danser-go/app/pp/xexxar"
@@ -102,6 +103,7 @@ type subSet struct {
 	ppv2          *oppai.PPv2
 	ppv2X          *xexxar.PPv2
 	ppv2Y          *tr3.PPv2
+	ppv2Z          *final_merge.PPv2
 	hits          map[HitResult]int64
 	currentKatu   int
 	currentBad    int
@@ -130,10 +132,11 @@ type OsuRuleSet struct {
 
 	xexxarDiffs map[difficulty.Modifier][]xexxar.Stars
 	tr3Diffs map[difficulty.Modifier][]tr3.Stars
+	finalDiffs map[difficulty.Modifier][]final_merge.Stars
 
 	queue       []HitObject
 	processed   []HitObject
-	hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp, ppX, ppY float64, score int64)
+	hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp, ppX, ppY, ppZ float64, score int64)
 	endListener func(time int64, number int64)
 }
 
@@ -145,6 +148,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.Stars)
 	ruleset.xexxarDiffs = make(map[difficulty.Modifier][]xexxar.Stars)
 	ruleset.tr3Diffs = make(map[difficulty.Modifier][]tr3.Stars)
+	ruleset.finalDiffs = make(map[difficulty.Modifier][]final_merge.Stars)
 
 	ruleset.mapStats = make([]*MapTo, 0, len(ruleset.beatMap.HitObjects))
 
@@ -197,6 +201,8 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 			ruleset.tr3Diffs[mods[i]&difficulty.DifficultyAdjustMask] = tr3.CalculateStep(ruleset.beatMap.HitObjects, diff)
 
+			ruleset.finalDiffs[mods[i]&difficulty.DifficultyAdjustMask] = final_merge.CalculateStep(ruleset.beatMap.HitObjects, diff)
+
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 			log.Println("Aim Stars:", star.Aim)
 			log.Println("Speed Stars:", star.Speed)
@@ -224,7 +230,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			recoveries = 2
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, &oppai.PPv2{}, &xexxar.PPv2{}, &tr3.PPv2{},make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, &oppai.PPv2{}, &xexxar.PPv2{}, &tr3.PPv2{}, &final_merge.PPv2{},make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -478,10 +484,12 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 	diffX := set.xexxarDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 	diffY := set.tr3Diffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
+	diffZ := set.finalDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
 	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
 	subSet.ppv2X.PPv2x(diffX.Aim, diffX.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
 	subSet.ppv2Y.PPv2x(diffY.Aim, diffY.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
+	subSet.ppv2Z.PPv2x(diffZ.Aim, diffZ.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
 
 	switch result {
 	case Hit100:
@@ -535,12 +543,12 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 	}
 
 	if set.hitListener != nil {
-		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.ppv2X.Total, subSet.ppv2Y.Total, subSet.score)
+		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.ppv2X.Total, subSet.ppv2Y.Total, subSet.ppv2Z.Total, subSet.score)
 	}
 
 	if len(set.cursors) == 1 && !settings.RECORD {
 		log.Println(fmt.Sprintf(
-			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f, ppX: %.2f, ppY: %.2f",
+			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f, ppX: %.2f, ppY: %.2f, ppZ: %.2f",
 			result.ScoreValue(),
 			subSet.combo,
 			subSet.maxCombo,
@@ -557,7 +565,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number in
 			subSet.ppv2.Total,
 			subSet.ppv2X.Total,
 			subSet.ppv2Y.Total,
+			subSet.ppv2Z.Total,
 		))
+		log.Println(diffZ.Aim)
+		log.Println(diffZ.Speed)
+		log.Println(diffZ.Total)
 	}
 }
 
@@ -600,7 +612,7 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 	return Click
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp, ppX, ppY float64, score int64)) {
+func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp, ppX, ppY, ppZ float64, score int64)) {
 	set.hitListener = listener
 }
 
