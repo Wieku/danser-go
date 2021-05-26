@@ -225,7 +225,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	return overlay
 }
 
-func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp, _, _, _ float64, score int64) {
+func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp, _ float64, score int64) {
 	player := overlay.players[overlay.names[cursor]]
 
 	if overlay.controller.GetRuleset().GetBeatMap().Diff.Mods.Active(difficulty.HardRock) != overlay.controller.GetReplays()[player.oldIndex].ModsV.Active(difficulty.HardRock) {

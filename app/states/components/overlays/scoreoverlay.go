@@ -66,8 +66,6 @@ type ScoreOverlay struct {
 	accuracyGlider *animation.TargetGlider
 	ppGlider       *animation.TargetGlider
 	ppXGlider       *animation.TargetGlider
-	ppYGlider       *animation.TargetGlider
-	ppZGlider       *animation.TargetGlider
 
 	ruleset    *osu.OsuRuleSet
 	cursor     *graphics.Cursor
@@ -173,8 +171,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
 	overlay.ppGlider = animation.NewTargetGlider(0, 0)
 	overlay.ppXGlider = animation.NewTargetGlider(0, 0)
-	overlay.ppYGlider = animation.NewTargetGlider(0, 0)
-	overlay.ppZGlider = animation.NewTargetGlider(0, 0)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -279,7 +275,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	return overlay
 }
 
-func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp, ppX, ppY, ppZ float64, _ int64) {
+func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp, ppX float64, _ int64) {
 	if result&(osu.BaseHitsM) > 0 {
 		overlay.results.AddResult(time, result, position)
 	}
@@ -327,8 +323,6 @@ func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number 
 
 	overlay.ppGlider.SetTarget(pp)
 	overlay.ppXGlider.SetTarget(ppX)
-	overlay.ppYGlider.SetTarget(ppY)
-	overlay.ppZGlider.SetTarget(ppZ)
 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
@@ -469,12 +463,6 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	overlay.ppXGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
 	overlay.ppXGlider.Update(time)
-
-	overlay.ppYGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
-	overlay.ppYGlider.Update(time)
-
-	overlay.ppZGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
-	overlay.ppZGlider.Update(time)
 
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
 
@@ -759,8 +747,6 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 
 	overlay.drawPP2(batch, "stable:", overlay.ppGlider.GetValue(), position, length, ppScale, ppAlpha, origin)
 	overlay.drawPP2(batch, "xexxar:", overlay.ppXGlider.GetValue(), position.AddS(0, 40*ppScale), length, ppScale, ppAlpha, origin)
-	overlay.drawPP2(batch, "tr3acc:", overlay.ppYGlider.GetValue(), position.AddS(0, 80*ppScale), length, ppScale, ppAlpha, origin)
-	overlay.drawPP2(batch, "final:", overlay.ppZGlider.GetValue(), position.AddS(0, 120*ppScale), length, ppScale, ppAlpha, origin)
 }
 
 func (overlay *ScoreOverlay) drawPP2(batch *batch.QuadBatch, title string, pp float64, position vector.Vector2d, length float64, ppScale, ppAlpha float64, origin vector.Vector2d) {
