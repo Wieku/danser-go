@@ -738,15 +738,15 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 		return
 	}
 
-	ppScale := settings.Gameplay.PPCounter.Scale
+	ppScale := settings.Gameplay.PPCounter.Scale / 2
 
-	length := overlay.ppFont.GetWidthMonospaced(40*ppScale, "xexxar: ")
+	length := overlay.ppFont.GetWidthMonospaced(40*ppScale, "new: ")
 
 	position := vector.NewVec2d(settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition)
 	origin := storyboard.Origin[settings.Gameplay.PPCounter.Align]
 
-	overlay.drawPP2(batch, "stable:", overlay.ppGlider.GetValue(), position, length, ppScale, ppAlpha, origin)
-	overlay.drawPP2(batch, "xexxar:", overlay.ppXGlider.GetValue(), position.AddS(0, 40*ppScale), length, ppScale, ppAlpha, origin)
+	overlay.drawPP2(batch, "old:", overlay.ppGlider.GetValue(), position, length, ppScale, ppAlpha, origin)
+	overlay.drawPP2(batch, "new:", overlay.ppXGlider.GetValue(), position.AddS(0, 40*ppScale), length, ppScale, ppAlpha, origin)
 }
 
 func (overlay *ScoreOverlay) drawPP2(batch *batch.QuadBatch, title string, pp float64, position vector.Vector2d, length float64, ppScale, ppAlpha float64, origin vector.Vector2d) {
