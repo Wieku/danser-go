@@ -56,7 +56,7 @@ func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 }
 
 func snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
-	observedDistance := currVector.Sub(prevVector.Scl(0.35))
+	observedDistance := currVector.Add(prevVector.Scl(0.35))
 
 	strain := (observedDistance.Len64() * snapScaling((observedDistance.Len64() * osuCurrObj.StrainTime) / 100)) * osuCurrObj.SnapProbability
 
