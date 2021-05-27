@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	snapStrainMultiplier   float64 = 23.5
-	flowStrainMultiplier   float64 = 27.27
+	snapStrainMultiplier   float64 = 23.727
+	flowStrainMultiplier   float64 = 30.727
 	sliderStrainMultiplier float64 = 75
 	totalStrainMultiplier  float64 = 0.1675
-	distanceConstant       float64 = 2.5
+	distanceConstant       float64 = 3.5
 	baseDecayAim           float64 = 0.75
 )
 
@@ -36,18 +36,18 @@ func snapScaling(distance float64) float64 {
 }
 
 func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
-	//observedDistance := currVector.Sub(prevVector.Scl(0.1))
+	observedDistance := currVector.Sub(prevVector.Scl(0.1))
 
 	prevAngularMomentumChange := math.Abs(osuCurrObj.Angle*currVector.Len64() - osuPrevObj.Angle*prevVector.Len64())
 	nextAngularMomentumChange := math.Abs(osuCurrObj.Angle*currVector.Len64() - osuNextObj.Angle*nextVector.Len64())
 
 	angularMomentumChange := math.Sqrt(math.Min(currVector.Len64(), prevVector.Len64()) * math.Abs(nextAngularMomentumChange-prevAngularMomentumChange) / (2 * math.Pi))
 
-	momentumChange := math.Sqrt(math.Abs(currVector.Len64()-prevVector.Len64()) * math.Min(currVector.Len64(), prevVector.Len64()))
+	momentumChange := math.Sqrt(math.Max(0, prevVector.Len64()-currVector.Len64()) * math.Min(currVector.Len64(), prevVector.Len64()))
 
-	strain := osuCurrObj.FlowProbability * (currVector.Len64() +
-		momentumChange +
-		angularMomentumChange*osuPrevObj.FlowProbability)
+	strain := osuCurrObj.FlowProbability * (observedDistance.Len64() +
+		math.Max(momentumChange * (0.5 + 0.5 * osuPrevObj.FlowProbability),
+		angularMomentumChange*osuPrevObj.FlowProbability))
 
 	strain *= math.Min(osuCurrObj.StrainTime/(osuCurrObj.StrainTime-10), osuPrevObj.StrainTime/(osuPrevObj.StrainTime-10))
 	// buff high BPM slightly.
@@ -56,9 +56,12 @@ func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 }
 
 func snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
-	observedDistance := currVector.Add(prevVector.Scl(float32(0.35 * osuPrevObj.SnapProbability)))
+	currVector = currVector.Scl(float32(snapScaling(osuCurrObj.JumpDistance / 100)))
+	prevVector = prevVector.Scl(float32(snapScaling(osuPrevObj.JumpDistance / 100)))
 
-	strain := (observedDistance.Len64() * snapScaling((observedDistance.Len64() * osuCurrObj.StrainTime) / 100)) * osuCurrObj.SnapProbability
+	observedDistance := currVector.Add(prevVector.Scl(float32(0.35)))
+
+	strain := observedDistance.Len64() * osuCurrObj.SnapProbability//(observedDistance.Len64() * snapScaling((observedDistance.Len64() * osuCurrObj.StrainTime) / 100)) * osuCurrObj.SnapProbability
 
 	strain *= math.Min(osuCurrObj.StrainTime/(osuCurrObj.StrainTime-20), osuPrevObj.StrainTime/(osuPrevObj.StrainTime-20))
 

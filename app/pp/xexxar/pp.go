@@ -3,6 +3,7 @@ package xexxar
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/bmath"
+	"log"
 	"math"
 )
 
@@ -108,6 +109,10 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	speed := pp.computeSpeedValue()
 	accuracy := pp.computeAccuracyValue()
 
+	log.Println("Aim:", aim)
+	log.Println("Tap:", speed)
+	log.Println("Acc:", accuracy)
+
 	pp.Total = math.Pow(
 		math.Pow(aim, 1.1)+math.Pow(speed, 1.1)+
 			math.Pow(accuracy, 1.1),
@@ -132,7 +137,7 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Combo scaling
 	if pp.maxCombo > 0 {
-		aimValue *= math.Pow((math.Tan(math.Pi / 4 * (2 * (float64(pp.scoreMaxCombo) / float64(pp.maxCombo)) - 1)) + 1) / 2, 0.8)
+		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8) / math.Pow(float64(pp.maxCombo), 0.8), 1.0)
 	}
 
 	approachRateFactor := 0.0
@@ -196,7 +201,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	}
 
 	// Scale the speed value with accuracy and OD
-	speedValue *= (0.575 + math.Pow(pp.diff.ODReal, 2)/250) * math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
+	speedValue *= (0.575 + math.Pow(pp.diff.ODReal, 2)/250) * math.Pow(pp.accuracy, 2.75)//* math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
 	// Scale the speed value with # of 50s to punish doubletapping.
 
 	mehMult := 0.0

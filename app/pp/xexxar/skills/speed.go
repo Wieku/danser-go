@@ -9,7 +9,8 @@ import (
 
 const (
 	averageLength       int     = 2
-	tapStrainMultiplier float64 = 2.525
+	tapSingleMultiplier float64 = 2.375
+	tapStrainMultiplier float64 = 2.725
 
 	baseDecayTap        float64 = 0.9
 	rhythmMultiplier    float64 = 1
@@ -20,6 +21,8 @@ func NewSpeedSkill(d *difficulty.Difficulty) *Skill {
 	skill := NewSkill(d)
 	skill.StarsPerDouble = 1.075
 	skill.HistoryLength = 16
+	skill.currentStrain = 1
+	skill.currentSingleStrain = 1
 	skill.StrainValueOf = speedStrainValue
 
 	return skill
@@ -106,7 +109,7 @@ func speedStrainValue(skill *Skill, current *preprocessing.DifficultyObject) flo
 
 	strainValue := 0.25
 
-	avgDeltaTime := (current.StrainTime + skill.GetPrevious(0).StrainTime) / 2
+	avgDeltaTime := (current.StrainTime + math.Max(50, skill.GetPrevious(0).DeltaTime)) / 2
 
 	rhythmComplexity := calculateRhythmDifficulty(skill)
 
@@ -116,10 +119,14 @@ func speedStrainValue(skill *Skill, current *preprocessing.DifficultyObject) flo
 		strainValue += math.Pow(strainTimeBuffRange/avgDeltaTime, 1)
 	}
 
-	//skill.currentStrain *= computeDecay(baseDecayTap, current.StrainTime)
-	skill.currentStrain *= math.Pow(0.3, current.StrainTime / 1000)
+	skill.currentSingleStrain *= computeDecay(baseDecayTap, current.StrainTime)
+	skill.currentSingleStrain += (.5 + current.SnapProbability) * strainValue * tapSingleMultiplier
+
+	skill.currentStrain *= computeDecay(baseDecayTap, current.StrainTime)
+	//skill.currentStrain *= math.Pow(0.3, current.StrainTime / 1000)
 	skill.currentStrain += strainValue * tapStrainMultiplier
 
-	return (1 + .5 * current.SnapProbability) * math.Min((1 / (1 - baseDecayTap)) * strainValue * tapStrainMultiplier,
-		skill.currentStrain * (float64(len(skill.Previous)) / float64(skill.HistoryLength)) * rhythmComplexity + 0.75 * current.SnapProbability * skill.currentStrain)
+	return math.Max(math.Min((1/(1-baseDecayTap))*strainValue*tapStrainMultiplier, // prevent over buffing strain past death stream level
+		skill.currentStrain*rhythmComplexity),
+		skill.currentSingleStrain)
 }
