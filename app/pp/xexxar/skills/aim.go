@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	snapStrainMultiplier   float64 = 24.5
-	flowStrainMultiplier   float64 = 23.75
+	snapStrainMultiplier   float64 = 23.5
+	flowStrainMultiplier   float64 = 27.27
 	sliderStrainMultiplier float64 = 75
 	totalStrainMultiplier  float64 = 0.1675
 	distanceConstant       float64 = 2.5
@@ -36,7 +36,7 @@ func snapScaling(distance float64) float64 {
 }
 
 func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
-	observedDistance := currVector.Sub(prevVector.Scl(0.1))
+	//observedDistance := currVector.Sub(prevVector.Scl(0.1))
 
 	prevAngularMomentumChange := math.Abs(osuCurrObj.Angle*currVector.Len64() - osuPrevObj.Angle*prevVector.Len64())
 	nextAngularMomentumChange := math.Abs(osuCurrObj.Angle*currVector.Len64() - osuNextObj.Angle*nextVector.Len64())
@@ -45,18 +45,18 @@ func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 
 	momentumChange := math.Sqrt(math.Abs(currVector.Len64()-prevVector.Len64()) * math.Min(currVector.Len64(), prevVector.Len64()))
 
-	strain := osuCurrObj.FlowProbability * (observedDistance.Len64() +
+	strain := osuCurrObj.FlowProbability * (currVector.Len64() +
 		momentumChange +
 		angularMomentumChange*osuPrevObj.FlowProbability)
 
-	strain *= math.Min(osuCurrObj.StrainTime/(osuCurrObj.StrainTime-20), osuPrevObj.StrainTime/(osuPrevObj.StrainTime-20))
+	strain *= math.Min(osuCurrObj.StrainTime/(osuCurrObj.StrainTime-10), osuPrevObj.StrainTime/(osuPrevObj.StrainTime-10))
 	// buff high BPM slightly.
 
 	return strain
 }
 
 func snapStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyObject, prevVector, currVector, nextVector vector.Vector2f) float64 {
-	observedDistance := currVector.Add(prevVector.Scl(0.35))
+	observedDistance := currVector.Add(prevVector.Scl(float32(0.35 * osuPrevObj.SnapProbability)))
 
 	strain := (observedDistance.Len64() * snapScaling((observedDistance.Len64() * osuCurrObj.StrainTime) / 100)) * osuCurrObj.SnapProbability
 

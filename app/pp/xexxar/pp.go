@@ -142,7 +142,7 @@ func (pp *PPv2) computeAimValue() float64 {
 		approachRateFactor += 0.05 * (8.0 - pp.diff.ARReal)
 	}
 
-	aimValue *= 1.0 + approachRateFactor * (math.Min(1, float64(pp.totalHits) / 1000))//* (0.33 + 0.66 * math.Min(1, float64(pp.totalHits) / 1000))//math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
+	aimValue *= 1.0 + approachRateFactor * (0.33 + 0.66 * math.Min(1, float64(pp.totalHits) / 1000))//* (0.33 + 0.66 * math.Min(1, float64(pp.totalHits) / 1000))//math.Min(approachRateFactor, approachRateFactor*(float64(pp.totalHits)/1000.0))
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
@@ -196,7 +196,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	}
 
 	// Scale the speed value with accuracy and OD
-	speedValue *= (0.575 + math.Pow(pp.diff.ODReal, 2)/250) * math.Pow(pp.accuracy, 2.75)//* math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
+	speedValue *= (0.575 + math.Pow(pp.diff.ODReal, 2)/250) * math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
 	// Scale the speed value with # of 50s to punish doubletapping.
 
 	mehMult := 0.0
