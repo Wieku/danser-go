@@ -9,7 +9,7 @@ import (
 
 const (
 	averageLength       int     = 2
-	tapStrainMultiplier float64 = 2.575
+	tapStrainMultiplier float64 = 2.625
 
 	baseDecayTap        float64 = 0.9
 	rhythmMultiplier    float64 = 1
@@ -119,5 +119,6 @@ func speedStrainValue(skill *Skill, current *preprocessing.DifficultyObject) flo
 	skill.currentStrain *= computeDecay(baseDecayTap, current.StrainTime)
 	skill.currentStrain += strainValue * tapStrainMultiplier
 
-	return math.Min(10 * strainValue * tapStrainMultiplier, skill.currentStrain * (float64(len(skill.Previous)) / float64(skill.HistoryLength)) * rhythmComplexity)
+	return math.Min((1 / (1 - baseDecayTap)) * strainValue * tapStrainMultiplier,
+		skill.currentStrain * (float64(len(skill.Previous)) / float64(skill.HistoryLength)) * rhythmComplexity)
 }
