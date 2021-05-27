@@ -124,6 +124,10 @@ func (v Vector2f) Len() float32 {
 	return math32.Sqrt(v.X*v.X + v.Y*v.Y)
 }
 
+func (v Vector2f) Len64() float64 {
+	return float64(v.Len())
+}
+
 func (v Vector2f) LenSq() float32 {
 	return v.X*v.X + v.Y*v.Y
 }
