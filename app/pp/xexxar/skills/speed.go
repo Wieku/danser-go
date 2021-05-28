@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	averageLength       int     = 2
 	tapSingleMultiplier float64 = 2.375
 	tapStrainMultiplier float64 = 2.725
 
@@ -22,7 +21,7 @@ func NewSpeedSkill(d *difficulty.Difficulty) *Skill {
 	skill.StarsPerDouble = 1.075
 	skill.HistoryLength = 16
 	skill.currentStrain = 1
-	skill.currentSingleStrain = 1
+	skill.singleStrain = 1
 	skill.StrainValueOf = speedStrainValue
 
 	return skill
@@ -119,8 +118,8 @@ func speedStrainValue(skill *Skill, current *preprocessing.DifficultyObject) flo
 		strainValue += math.Pow(strainTimeBuffRange/avgDeltaTime, 1)
 	}
 
-	skill.currentSingleStrain *= computeDecay(baseDecayTap, current.StrainTime)
-	skill.currentSingleStrain += (.5 + current.SnapProbability) * strainValue * tapSingleMultiplier
+	skill.singleStrain *= computeDecay(baseDecayTap, current.StrainTime)
+	skill.singleStrain += (.5 + current.SnapProbability) * strainValue * tapSingleMultiplier
 
 	skill.currentStrain *= computeDecay(baseDecayTap, current.StrainTime)
 	//skill.currentStrain *= math.Pow(0.3, current.StrainTime / 1000)
@@ -128,5 +127,5 @@ func speedStrainValue(skill *Skill, current *preprocessing.DifficultyObject) flo
 
 	return math.Max(math.Min((1/(1-baseDecayTap))*strainValue*tapStrainMultiplier, // prevent over buffing strain past death stream level
 		skill.currentStrain*rhythmComplexity),
-		skill.currentSingleStrain)
+		skill.singleStrain)
 }

@@ -23,15 +23,15 @@ type Skill struct {
 	diff *difficulty.Difficulty
 
 	currentStrain float64
+	singleStrain  float64
 
 	StarsPerDouble float64
 
 	strains []float64
 	times   []float64
 
-	targetFcPrecision   float64
-	targetFcTime        float64
-	currentSingleStrain float64
+	targetFcPrecision float64
+	targetFcTime      float64
 }
 
 func NewSkill(d *difficulty.Difficulty) *Skill {
@@ -132,7 +132,10 @@ func (skill *Skill) expectedFcTime(skll float64) float64 {
 func (skill *Skill) fcTimeSkillLevel(totalDifficulty float64) float64 {
 	lengthEstimate := 0.4 * (skill.times[len(skill.times)-1] - skill.times[0])
 
-	skill.targetFcTime += 45 * math.Max(0, skill.expectedTargetTime(totalDifficulty) - 60000) // for every 30 seconds past 3 mins, add 5 mins to estimated time to FC.
+	skill.targetFcTime = 30 * 60 * 1000
+
+	skill.targetFcTime += 45 * math.Max(0, skill.expectedTargetTime(totalDifficulty)-60000)
+	// for every minute of straining time past 1 minute, add 45 mins to estimated time to FC.
 
 	fcProb := lengthEstimate / skill.targetFcTime
 

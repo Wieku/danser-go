@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/pp/xexxar/preprocessing"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -43,7 +44,7 @@ func flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj *preprocessing.DifficultyOb
 
 	angularMomentumChange := math.Sqrt(math.Min(currVector.Len64(), prevVector.Len64()) * math.Abs(nextAngularMomentumChange-prevAngularMomentumChange) / (2 * math.Pi))
 
-	momentumChange := math.Sqrt(math.Max(0, prevVector.Len64()-currVector.Len64()) * math.Min(currVector.Len64(), prevVector.Len64()))
+	momentumChange := math.Sqrt(float64(math32.Max(0, prevVector.Len()-currVector.Len()) * math32.Min(currVector.Len(), prevVector.Len())))
 
 	strain := osuCurrObj.FlowProbability * (observedDistance.Len64() +
 		math.Max(momentumChange * (0.5 + 0.5 * osuPrevObj.FlowProbability),
@@ -92,7 +93,7 @@ func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float
 		flowStrain := flowStrainAt(osuPrevObj, osuCurrObj, osuNextObj, prevVector, currVector, nextVector)
 		sliderStrain := sliderStrainAt(osuPrevObj, osuCurrObj, osuNextObj)
 
-		skill.currentStrain *= computeDecay(baseDecayAim, osuCurrObj.StrainTime)
+		skill.currentStrain *= computeDecay(baseDecayAim, current.StrainTime)
 		skill.currentStrain += snapStrain * snapStrainMultiplier
 		skill.currentStrain += flowStrain * flowStrainMultiplier
 		skill.currentStrain += sliderStrain * sliderStrainMultiplier
