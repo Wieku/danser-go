@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/color"
@@ -47,7 +47,7 @@ var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
 
-var pathCache *utils.FileMap
+var pathCache *files.FileMap
 
 var CurrentSkin = defaultName
 
@@ -77,7 +77,7 @@ func checkInit() {
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
-		pathCache = utils.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
+		pathCache = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
 
 		path, err := pathCache.GetFile("skin.ini")
 		if err == nil {

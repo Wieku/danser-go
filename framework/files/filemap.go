@@ -1,4 +1,4 @@
-package utils
+package files
 
 import (
 	"github.com/karrick/godirwalk"

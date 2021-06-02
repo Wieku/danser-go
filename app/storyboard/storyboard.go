@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/app/utils"
 	files2 "github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -37,7 +36,7 @@ type Storyboard struct {
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
-	pathCache   *utils.FileMap
+	pathCache   *files2.FileMap
 }
 
 func getSection(line string) string {
@@ -69,7 +68,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
-	storyboard.pathCache = utils.NewFileMap(path)
+	storyboard.pathCache = files2.NewFileMap(path)
 
 	var currentSection string
 	var currentSprite string
