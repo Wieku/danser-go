@@ -17,7 +17,6 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
-	"github.com/wieku/danser-go/app/storyboard"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -736,7 +735,7 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 	ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", overlay.ppGlider.GetValue())
 
 	position := vector.NewVec2d(settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition)
-	origin := storyboard.Origin[settings.Gameplay.PPCounter.Align]
+	origin := vector.ParseOrigin(settings.Gameplay.PPCounter.Align)
 
 	batch.SetColor(0, 0, 0, ppAlpha*0.8)
 	overlay.ppFont.DrawOriginV(batch, position.AddS(ppScale, ppScale), origin, 40*ppScale, true, ppText)

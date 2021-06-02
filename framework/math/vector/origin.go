@@ -13,3 +13,27 @@ var (
 	BottomRight  = Vector2d{1, 1}
 )
 
+func ParseOrigin(v string) Vector2d {
+	switch v {
+	case "TopLeft":
+		return TopLeft
+	case "Centre": //nolint:misspell
+		return Centre //nolint:misspell
+	case "CentreLeft":
+		return CentreLeft
+	case "TopRight":
+		return TopRight
+	case "BottomCentre":
+		return BottomCentre
+	case "TopCentre":
+		return TopCentre
+	case "CentreRight":
+		return CentreRight
+	case "BottomLeft":
+		return BottomLeft
+	case "BottomRight":
+		return BottomRight
+	default:
+		return TopLeft
+	}
+}

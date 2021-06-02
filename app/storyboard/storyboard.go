@@ -198,7 +198,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []string) {
 	spl := strings.Split(currentSprite, ",")
 
-	origin := Origin[spl[2]]
+	origin := parseOrigin(spl[2])
 
 	x, _ := strconv.ParseFloat(spl[4], 64)
 	y, _ := strconv.ParseFloat(spl[5], 64)
