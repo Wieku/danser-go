@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
+	files2 "github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -13,7 +14,6 @@ import (
 	video2 "github.com/wieku/danser-go/framework/graphics/video"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/util"
 	"log"
 	"math"
 	"os"
@@ -89,7 +89,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 			continue
 		}
 
-		scanner := util.NewScannerBuf(file, 10*1024*1024)
+		scanner := files2.NewScannerBuf(file, 10*1024*1024)
 
 		for scanner.Scan() {
 			line := scanner.Text()

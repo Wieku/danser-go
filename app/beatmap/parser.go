@@ -6,7 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/framework/util"
+	"github.com/wieku/danser-go/framework/files"
 	"math"
 	"os"
 	"path/filepath"
@@ -149,7 +149,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
@@ -250,7 +250,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
@@ -284,7 +284,7 @@ func ParseObjects(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 

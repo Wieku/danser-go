@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/karrick/godirwalk"
-	"github.com/wieku/danser-go/framework/util"
+	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"os"
 	"path/filepath"
@@ -131,7 +131,7 @@ func CloseWatcher() {
 }
 
 func load(file *os.File, target interface{}) {
-	decoder := json.NewDecoder(util.NewUnicodeReader(file))
+	decoder := json.NewDecoder(files.NewUnicodeReader(file))
 	if err := decoder.Decode(target); err != nil {
 		panic(fmt.Sprintf("Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err))
 	}
