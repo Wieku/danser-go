@@ -156,14 +156,14 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 				playerPos := board.playerEntry.GetPosition()
 				playerPos.X = 0
 
-				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, bmath.Origin.CentreLeft)
+				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, vector.CentreLeft)
 				sprite2.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+400, 1, 0))
 				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, 16, 1.2))
 				sprite2.ResetValuesToTransforms()
 				sprite2.AdjustTimesToTransformations()
 				sprite2.ShowForever(false)
 
-				sprite1 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-1"), 1, playerPos, bmath.Origin.CentreLeft)
+				sprite1 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-1"), 1, playerPos, vector.CentreLeft)
 				sprite1.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+700, 1, 0))
 				sprite1.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+700, 1, 1, 1, 1.3))
 				sprite1.ResetValuesToTransforms()

@@ -391,7 +391,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	sixty := 1000.0 / 60
 	frameDelay := math.Max(150/slider.Timings.GetVelocity(slider.TPoint)*sixty, sixty)
 
-	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 
 	if settings.Objects.Sliders.Snaking.Out {
 		slider.ball.SetAlpha(0)
@@ -404,7 +404,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	followerFrames := skin.GetFrames("sliderfollowcircle", true)
 
-	slider.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	slider.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 	slider.follower.SetAlpha(0.0)
 
 	for i := int64(1); i <= slider.repeat; i++ {

@@ -1,7 +1,6 @@
 package play
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -20,7 +19,7 @@ type HitCounter struct {
 func NewHitCounter(hitText string, value string, position vector.Vector2d) *HitCounter {
 	aSprite := &HitCounter{
 		Sprite: sprite.NewSpriteSingle(nil, 3, position, vector.NewVec2d(0,0)),
-		hit: sprite.NewSpriteSingle(skin.GetTexture(hitText), 0, vector.NewVec2d(0,0), bmath.Origin.Centre),
+		hit: sprite.NewSpriteSingle(skin.GetTexture(hitText), 0, vector.NewVec2d(0,0), vector.Centre),
 		value: value,
 	}
 
@@ -48,6 +47,6 @@ func (sprite *HitCounter) Draw(time float64, batch *batch.QuadBatch) {
 
 	fnt := skin.GetFont("score")
 
-	fnt.DrawOriginV(batch, pos.AddS(40/0.625, sprite.yOffset), bmath.Origin.TopLeft, fnt.GetSize()*1.12, false, sprite.value)
+	fnt.DrawOriginV(batch, pos.AddS(40/0.625, sprite.yOffset), vector.TopLeft, fnt.GetSize()*1.12, false, sprite.value)
 	batch.ResetTransform()
 }

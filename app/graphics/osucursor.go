@@ -116,9 +116,9 @@ func newOsuRenderer() *osuRenderer {
 
 	cursorTexture := skin.GetTexture("cursor")
 
-	origin := bmath.Origin.Centre
+	origin := vector.Centre
 	if !skin.GetInfo().CursorCentre {
-		origin = bmath.Origin.TopLeft
+		origin = vector.TopLeft
 	}
 
 	cursor.cursor = sprite.NewSpriteSingle(cursorTexture, 0, vector.NewVec2d(0, 0), origin)
@@ -155,7 +155,7 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 
 		cursor.sixtyDelta += delta
 		if cursor.sixtyDelta >= 16.6667 {
-			spr := sprite.NewSpriteSingle(cursor.trail, cursor.currentTime, cursor.Position.Copy64(), bmath.Origin.Centre)
+			spr := sprite.NewSpriteSingle(cursor.trail, cursor.currentTime, cursor.Position.Copy64(), vector.Centre)
 			spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.currentTime, cursor.currentTime+150, 1.0, 0.0))
 			spr.ResetValuesToTransforms()
 			spr.AdjustTimesToTransformations()

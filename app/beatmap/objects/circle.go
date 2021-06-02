@@ -3,7 +3,6 @@ package objects
 import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -164,10 +163,10 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	circle.hitCircleTexture = skin.GetTexture(name)
 	circle.fullTexture = skin.GetTexture("hitcircle-full")
 
-	circle.hitCircle = sprite.NewSpriteSingle(circle.hitCircleTexture, 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
-	circle.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTextureSource(name+"overlay", skin.GetSource(name)), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
-	circle.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
-	circle.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	circle.hitCircle = sprite.NewSpriteSingle(circle.hitCircleTexture, 0, vector.NewVec2d(0, 0), vector.Centre)
+	circle.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTextureSource(name+"overlay", skin.GetSource(name)), 0, vector.NewVec2d(0, 0), vector.Centre)
+	circle.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), vector.Centre)
+	circle.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), vector.Centre)
 
 	circle.sprites = append(circle.sprites, circle.hitCircle, circle.hitCircleOverlay, circle.approachCircle, circle.reverseArrow)
 
@@ -294,7 +293,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
 				fnt := skin.GetFont("default")
 				batch.SetColor(1, 1, 1, alpha*circle.textFade.GetValue())
-				fnt.DrawOriginV(batch, circle.hitCircle.GetPosition(), bmath.Origin.Centre, 0.8*fnt.GetSize(), false, strconv.Itoa(int(circle.ComboNumber)))
+				fnt.DrawOriginV(batch, circle.hitCircle.GetPosition(), vector.Centre, 0.8*fnt.GetSize(), false, strconv.Itoa(int(circle.ComboNumber)))
 			}
 		} else if !circle.SliderPointEnd {
 			circle.reverseArrow.SetRotation(circle.ArrowRotation)

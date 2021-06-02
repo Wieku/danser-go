@@ -3,7 +3,6 @@ package storyboard
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
@@ -128,7 +127,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 					log.Println(filepath.Join(path, fix(spl[2])))
 
-					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), bmath.Origin.Centre)
+					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
 
 					if video == nil {
 						continue

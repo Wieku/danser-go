@@ -263,7 +263,7 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	tex := body.framebuffer.Texture().GetRegion()
 
-	body.bodySprite = sprite.NewSpriteSingle(&tex, 0, bottomRightScreenE.Sub(topLeftScreenE).Scl(0.5).Add(topLeftScreenE).Copy64(), bmath.Origin.Centre)
+	body.bodySprite = sprite.NewSpriteSingle(&tex, 0, bottomRightScreenE.Sub(topLeftScreenE).Scl(0.5).Add(topLeftScreenE).Copy64(), vector.Centre)
 	body.bodySprite.SetScale(float64((bottomRightScreenE.X - topLeftScreenE.X) / dimensions.X))
 	body.bodySprite.SetVFlip(true)
 

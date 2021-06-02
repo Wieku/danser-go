@@ -1,7 +1,6 @@
 package font
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -70,7 +69,7 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 
 		pos := vector.NewVec2d((advance+bearX)*scBase+x, char.offsetY*scBase+y)
 
-		renderer.DrawStObject(pos, bmath.Origin.TopLeft, scl, false, font.flip, 0, col, false, *char.region)
+		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, 0, col, false, *char.region)
 
 		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
 			advance += font.biggest
@@ -81,11 +80,11 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 }
 
 func (font *Font) Draw(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
-	font.DrawOrigin(renderer, x, y, bmath.Origin.BottomLeft, size, false, text)
+	font.DrawOrigin(renderer, x, y, vector.BottomLeft, size, false, text)
 }
 
 func (font *Font) DrawMonospaced(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
-	font.DrawOrigin(renderer, x, y, bmath.Origin.BottomLeft, size, true, text)
+	font.DrawOrigin(renderer, x, y, vector.BottomLeft, size, true, text)
 }
 
 func (font *Font) getWidthInternal(size float64, text string, monospaced bool) float64 {

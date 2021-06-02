@@ -3,7 +3,6 @@ package play
 import (
 	"fmt"
 	"github.com/thehowl/go-osuapi"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
@@ -116,28 +115,28 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+3.2*scale, entryPos.Y+8.8*scale, bmath.Origin.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+3.2*scale, entryPos.Y+8.8*scale, vector.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y-22*scale, bmath.Origin.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
+		fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y-22*scale, vector.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y+8.8*scale, bmath.Origin.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y+8.8*scale, vector.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-18.5*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-18.5*scale, vector.TopLeft, 20*scale, false, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-19*scale, bmath.Origin.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-19*scale, vector.TopLeft, 20*scale, false, entry.name)
 
 	ubu.Overlap = 0
 
@@ -188,7 +187,7 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 
 	pixmap.Dispose()
 
-	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), bmath.Origin.Centre)
+	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), vector.Centre)
 	entry.avatar.SetScale(float64(52 / region.Height))
 }
 

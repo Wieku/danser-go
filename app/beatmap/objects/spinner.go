@@ -105,12 +105,12 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.newStyle = skin.GetTexture("spinner-background") == nil
 
 	if spinner.newStyle {
-		spinner.glow = sprite.NewSpriteSingle(skin.GetTexture("spinner-glow"), 0.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.glow = sprite.NewSpriteSingle(skin.GetTexture("spinner-glow"), 0.0, spinner.StartPosRaw.Copy64(), vector.Centre)
 		spinner.glow.SetAdditive(true)
-		spinner.bottom = sprite.NewSpriteSingle(skin.GetTexture("spinner-bottom"), 1.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
-		spinner.top = sprite.NewSpriteSingle(skin.GetTexture("spinner-top"), 2.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
-		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle2"), 3.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
-		spinner.middle = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle"), 4.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.bottom = sprite.NewSpriteSingle(skin.GetTexture("spinner-bottom"), 1.0, spinner.StartPosRaw.Copy64(), vector.Centre)
+		spinner.top = sprite.NewSpriteSingle(skin.GetTexture("spinner-top"), 2.0, spinner.StartPosRaw.Copy64(), vector.Centre)
+		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle2"), 3.0, spinner.StartPosRaw.Copy64(), vector.Centre)
+		spinner.middle = sprite.NewSpriteSingle(skin.GetTexture("spinner-middle"), 4.0, spinner.StartPosRaw.Copy64(), vector.Centre)
 
 		spinner.sprites.Add(spinner.glow)
 		spinner.sprites.Add(spinner.bottom)
@@ -123,17 +123,17 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 		spinner.middle.AddTransform(animation.NewColorTransform(animation.Color3, easing.Linear, spinner.StartTime, spinner.EndTime, color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerRed))
 		spinner.middle.ResetValuesToTransforms()
 	} else {
-		spinner.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+350.4), bmath.Origin.Centre)
-		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5), bmath.Origin.TopLeft) //nolint:misspell
-		spinner.metre.SetCutOrigin(bmath.Origin.BottomCentre)
+		spinner.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+350.4), vector.Centre)
+		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5), vector.TopLeft) //nolint:misspell
+		spinner.metre.SetCutOrigin(vector.BottomCentre)
 
-		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 1.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 1.0, spinner.StartPosRaw.Copy64(), vector.Centre)
 
 		spinner.sprites.Add(spinner.middle2)
 	}
 
 	if !diff.CheckModActive(difficulty.Hidden) {
-		spinner.approach = sprite.NewSpriteSingle(skin.GetTexture("spinner-approachcircle"), 5.0, spinner.StartPosRaw.Copy64(), bmath.Origin.Centre)
+		spinner.approach = sprite.NewSpriteSingle(skin.GetTexture("spinner-approachcircle"), 5.0, spinner.StartPosRaw.Copy64(), vector.Centre)
 		spinner.sprites.Add(spinner.approach)
 		spinner.approach.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, spinner.StartTime, spinner.EndTime, 1.9, 0.1))
 		spinner.approach.ResetValuesToTransforms()
@@ -141,12 +141,12 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 	spinner.UpdateCompletion(0.0)
 
-	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+240*/ 256-16-8), bmath.Origin.Centre)
+	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+240*/ 256-16-8), vector.Centre)
 	spinner.clear.SetAlpha(0.0)
 
 	spinner.frontSprites.Add(spinner.clear)
 
-	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+536*/ 608-12.8-16), bmath.Origin.Centre)
+	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+536*/ 608-12.8-16), vector.Centre)
 
 	spinner.frontSprites.Add(spinner.spin)
 
@@ -154,7 +154,7 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.bonusFade = animation.NewGlider(0.0)
 	spinner.bonusScale = animation.NewGlider(0.0)
 
-	spinner.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2-139, spinner.ScaledHeight-56), bmath.Origin.TopLeft)
+	spinner.rpmBg = sprite.NewSpriteSingle(skin.GetTexture("spinner-rpm"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2-139, spinner.ScaledHeight-56), vector.TopLeft)
 
 	skin.GetFont("score")
 }
@@ -257,7 +257,7 @@ func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.Quad
 	if spinner.bonusFade.GetValue() > 0.01 {
 		batch.SetColor(1.0, 1.0, 1.0, spinner.bonusFade.GetValue()*alpha)
 
-		scoreFont.DrawOrigin(batch, 256, 192+80, bmath.Origin.Centre, spinner.bonusScale.GetValue()*scoreFont.GetSize()*0.8, false, strconv.Itoa(spinner.bonus))
+		scoreFont.DrawOrigin(batch, 256, 192+80, vector.Centre, spinner.bonusScale.GetValue()*scoreFont.GetSize()*0.8, false, strconv.Itoa(spinner.bonus))
 	}
 
 	batch.ResetTransform()
@@ -274,7 +274,7 @@ func (spinner *Spinner) Draw(time float64, color color2.Color, batch *batch.Quad
 	spinner.rpmBg.Draw(time, batch)
 
 	rpmTxt := fmt.Sprintf("%d", int(spinner.rpm))
-	scoreFont.DrawOrigin(batch, spinner.ScaledWidth/2+139, spinner.ScaledHeight-56, bmath.Origin.TopRight, scoreFont.GetSize(), false, rpmTxt)
+	scoreFont.DrawOrigin(batch, spinner.ScaledWidth/2+139, spinner.ScaledHeight-56, vector.TopRight, scoreFont.GetSize(), false, rpmTxt)
 
 	batch.SetCamera(oldCamera)
 	batch.ResetTransform()
