@@ -176,6 +176,10 @@ func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, obj
 		volume = 1.0
 	}
 
+	if sampleSet < 1 || sampleSet > 3 {
+		sampleSet = 1
+	}
+
 	for _, f := range listeners {
 		f(sampleSet, hitsoundIndex, index, volume, objNum)
 	}
