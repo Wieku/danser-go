@@ -99,7 +99,9 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 		volume = 1.0
 	}
 
-	if sampleSet < 1 || sampleSet > 3 {
+	if sampleSet == 0 {
+		sampleSet = 2
+	} else if sampleSet < 0 || sampleSet > 3 {
 		sampleSet = 1
 	}
 
@@ -176,7 +178,9 @@ func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, obj
 		volume = 1.0
 	}
 
-	if sampleSet < 1 || sampleSet > 3 {
+	if sampleSet == 0 {
+		sampleSet = 2
+	} else if sampleSet < 0 || sampleSet > 3 {
 		sampleSet = 1
 	}
 
