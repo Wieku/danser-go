@@ -86,7 +86,7 @@ func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 		points = []vector.Vector2f{endPos, bm.pt, startPos}
 	}
 
-	bm.bz = curves.NewBezier(points)
+	bm.bz = curves.NewBezierNA(points)
 
 	bm.endTime = endTime
 	bm.beginTime = startTime
