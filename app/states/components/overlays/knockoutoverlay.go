@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -120,7 +121,13 @@ type KnockoutOverlay struct {
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
 	overlay := new(KnockoutOverlay)
 	overlay.controller = replayController
-	overlay.font = font.GetFont("Exo 2 Bold")
+
+	fontFile, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+
+	overlay.font = font.LoadFont(fontFile)
+
+	fontFile.Close()
+
 	overlay.players = make(map[string]*knockoutPlayer)
 	overlay.playersArray = make([]*knockoutPlayer, 0)
 	overlay.deathBubbles = make([]*bubble, 0)
