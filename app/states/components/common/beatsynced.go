@@ -46,7 +46,7 @@ func (bs *BeatSynced) Update(time float64) {
 	mTime := bs.music.GetPosition() * 1000
 
 	point := bs.bMap.Timings.GetPoint(mTime)
-	bTime := point.BaseBpm
+	bTime := point.GetBaseBeatLength()
 
 	bs.Kiai = point.Kiai
 
