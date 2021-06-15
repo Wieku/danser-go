@@ -136,13 +136,17 @@ type ScoreOverlay struct {
 }
 
 func loadFonts() {
-	if font.GetFont("Ubuntu Regular") != nil {
-		return
+	if font.GetFont("Ubuntu Regular") == nil {
+		file, _ := assets.Open("assets/fonts/Ubuntu-Regular.ttf")
+		font.LoadFont(file)
+		file.Close()
 	}
 
-	file2, _ := assets.Open("assets/fonts/Ubuntu-Regular.ttf")
-	font.LoadFont(file2)
-	file2.Close()
+	if font.GetFont("Quicksand Bold") == nil {
+		file, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+		font.LoadFont(file)
+		file.Close()
+	}
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -198,15 +202,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	discord.UpdatePlay(cursor)
 
-	fontFile, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
-
-	overlay.ppFont = font.LoadFont(fontFile)
-
-	fontFile.Close()
-
-	//overlay.ppFont = font.GetFont("Exo 2 Bold")
-	//overlay.keyFont = font.GetFont("Ubuntu Regular")
-	overlay.keyFont = overlay.ppFont
+	overlay.ppFont = font.GetFont("Quicksand Bold")
+	overlay.keyFont = font.GetFont("Quicksand Bold")
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
 	overlay.comboFont = skin.GetFont("combo")
