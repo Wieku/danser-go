@@ -19,7 +19,7 @@ func ParseOrigin(v string) Vector2d {
 		return TopLeft
 	case "Centre": //nolint:misspell
 		return Centre //nolint:misspell
-	case "CentreLeft":
+	case "CentreLeft", "Left":
 		return CentreLeft
 	case "TopRight":
 		return TopRight
@@ -27,7 +27,7 @@ func ParseOrigin(v string) Vector2d {
 		return BottomCentre
 	case "TopCentre":
 		return TopCentre
-	case "CentreRight":
+	case "CentreRight", "Right":
 		return CentreRight
 	case "BottomLeft":
 		return BottomLeft
