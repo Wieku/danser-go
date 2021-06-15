@@ -119,6 +119,8 @@ Afterwards type:
 
 Default skin was created by [Haskorion](https://osu.ppy.sh/users/3252321): [Redd Glass HD](https://osu.ppy.sh/community/forums/topics/211396)
 
-Uses [Exo2](https://fonts.google.com/specimen/Exo+2) font under [SIL Open Font License](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL_web)
+Uses [Exo2](https://fonts.google.com/specimen/Exo+2) font under [SIL Open Font License](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)
 
 Uses [Ubuntu](https://fonts.google.com/specimen/Ubuntu) font under [Ubuntu Font License](https://ubuntu.com/legal/font-licence)
+
+Uses [Quicksand](https://fonts.google.com/specimen/Quicksand) font under [SIL Open Font License](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)
