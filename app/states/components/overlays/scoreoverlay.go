@@ -132,7 +132,7 @@ type ScoreOverlay struct {
 
 	circularMetre *texture.TextureRegion
 
-	hitCounts     *play.HitDisplay
+	hitCounts *play.HitDisplay
 }
 
 func loadFonts() {
@@ -746,14 +746,16 @@ func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 
 	ppScale := settings.Gameplay.PPCounter.Scale
 
-	ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", overlay.ppGlider.GetValue())
+	ppText := fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", overlay.ppGlider.GetValue())
 
 	position := vector.NewVec2d(settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition)
 	origin := vector.ParseOrigin(settings.Gameplay.PPCounter.Align)
 
 	batch.SetColor(0, 0, 0, ppAlpha*0.8)
 	overlay.ppFont.DrawOriginV(batch, position.AddS(ppScale, ppScale), origin, 40*ppScale, true, ppText)
-	batch.SetColor(1, 1, 1, ppAlpha)
+
+	cS := settings.Gameplay.PPCounter.Color
+	batch.SetColorM(color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), float32(ppAlpha)))
 	overlay.ppFont.DrawOriginV(batch, position, origin, 40*ppScale, true, ppText)
 }
 
@@ -797,7 +799,7 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 			overlay.keyFont.DrawOrigin(batch, posX, posY, vector.Centre, scale*14, true, text)
 		} else {
 			overlay.scoreEFont.Overlap = 1.6
-			overlay.scoreEFont.DrawOrigin(batch, posX, posY, vector.Centre, scale * overlay.scoreEFont.GetSize(), false, text)
+			overlay.scoreEFont.DrawOrigin(batch, posX, posY, vector.Centre, scale*overlay.scoreEFont.GetSize(), false, text)
 		}
 	}
 }
