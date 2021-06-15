@@ -51,6 +51,13 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
+			Color: []*hsv{
+				{
+					Hue:        0,
+					Saturation: 0,
+					Value:      1,
+				},
+			},
 			XPosition:  5,
 			YPosition:  190,
 			Spacing:    48,
@@ -168,6 +175,7 @@ type ppCounter struct {
 
 type hitCounter struct {
 	*hudElement
+	Color      []*hsv
 	XPosition  float64
 	YPosition  float64
 	Spacing    float64

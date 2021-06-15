@@ -65,7 +65,7 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	batch.ResetTransform()
 
-	color := color2.NewLA(1, float32(settings.Gameplay.HitCounter.Opacity*alpha))
+	cA := float32(settings.Gameplay.HitCounter.Opacity*alpha)
 
 	scale := settings.Gameplay.HitCounter.Scale
 	hSpacing := settings.Gameplay.HitCounter.Spacing * scale
@@ -77,14 +77,18 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 	baseX := settings.Gameplay.HitCounter.XPosition - alignX*hSpacing
 	baseY := settings.Gameplay.HitCounter.YPosition
 
-	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, color, sprite.hit100Text)
-	sprite.drawShadowed(batch, baseX+hSpacing, baseY, valueAlign, fontScale, color, sprite.hit50Text)
-	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY, valueAlign, fontScale, color, sprite.hitMissText)
+	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, 0, cA, sprite.hit100Text)
+	sprite.drawShadowed(batch, baseX+hSpacing, baseY, valueAlign, fontScale, 1, cA, sprite.hit50Text)
+	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY, valueAlign, fontScale, 2, cA, sprite.hitMissText)
 
 	batch.ResetTransform()
 }
 
-func (sprite *HitDisplay) drawShadowed(batch *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, color color2.Color, text string) {
+func (sprite *HitDisplay) drawShadowed(batch *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, cI int, alpha float32, text string) {
+
+	cS := settings.Gameplay.HitCounter.Color[cI%len(settings.Gameplay.HitCounter.Color)]
+	color := color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), alpha)
+
 	batch.SetColor(0, 0, 0, float64(color.A)*0.8)
 	sprite.fnt.DrawOrigin(batch, x+size, y+size, origin, 20*size, true, text)
 	batch.SetColorM(color)
