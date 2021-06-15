@@ -16,6 +16,9 @@ type HitDisplay struct {
 	cursor  *graphics.Cursor
 	fnt     *font.Font
 
+	hit300     int
+	hit300Text string
+
 	hit100     int
 	hit100Text string
 
@@ -39,8 +42,13 @@ func NewHitDisplay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor, fnt *font.F
 	return aSprite
 }
 
-func (sprite *HitDisplay) Update(time float64) {
-	_, h100, h50, hMiss, _, _ := sprite.ruleset.GetHits(sprite.cursor)
+func (sprite *HitDisplay) Update(_ float64) {
+	h300, h100, h50, hMiss, _, _ := sprite.ruleset.GetHits(sprite.cursor)
+
+	if sprite.hit300 != int(h300) {
+		sprite.hit300 = int(h300)
+		sprite.hit300Text = strconv.Itoa(sprite.hit300)
+	}
 
 	if sprite.hit100 != int(h100) {
 		sprite.hit100 = int(h100)
@@ -65,27 +73,39 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	batch.ResetTransform()
 
-	cA := float32(settings.Gameplay.HitCounter.Opacity*alpha)
-
+	alpha *= settings.Gameplay.HitCounter.Opacity
 	scale := settings.Gameplay.HitCounter.Scale
 	hSpacing := settings.Gameplay.HitCounter.Spacing * scale
 	fontScale := scale * settings.Gameplay.HitCounter.FontScale
 
 	alignX := vector.ParseOrigin(settings.Gameplay.HitCounter.Align).AddS(1, 1).X
+
+	if settings.Gameplay.HitCounter.Show300 {
+		alignX *= 1.5
+	}
+
 	valueAlign := vector.ParseOrigin(settings.Gameplay.HitCounter.ValueAlign)
 
 	baseX := settings.Gameplay.HitCounter.XPosition - alignX*hSpacing
 	baseY := settings.Gameplay.HitCounter.YPosition
 
-	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, 0, cA, sprite.hit100Text)
-	sprite.drawShadowed(batch, baseX+hSpacing, baseY, valueAlign, fontScale, 1, cA, sprite.hit50Text)
-	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY, valueAlign, fontScale, 2, cA, sprite.hitMissText)
+	offsetI := 0
+
+	if settings.Gameplay.HitCounter.Show300 {
+		sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, 0, float32(alpha), sprite.hit300Text)
+
+		offsetI = 1
+		baseX += hSpacing
+	}
+
+	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, offsetI, float32(alpha), sprite.hit100Text)
+	sprite.drawShadowed(batch, baseX+hSpacing, baseY, valueAlign, fontScale, offsetI+1, float32(alpha), sprite.hit50Text)
+	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY, valueAlign, fontScale, offsetI+2, float32(alpha), sprite.hitMissText)
 
 	batch.ResetTransform()
 }
 
 func (sprite *HitDisplay) drawShadowed(batch *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, cI int, alpha float32, text string) {
-
 	cS := settings.Gameplay.HitCounter.Color[cI%len(settings.Gameplay.HitCounter.Color)]
 	color := color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), alpha)
 
