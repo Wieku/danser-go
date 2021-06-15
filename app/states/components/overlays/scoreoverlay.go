@@ -131,6 +131,8 @@ type ScoreOverlay struct {
 	beatmapEnd    float64
 
 	circularMetre *texture.TextureRegion
+
+	hitCounts     *play.HitDisplay
 }
 
 func loadFonts() {
@@ -196,8 +198,15 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	discord.UpdatePlay(cursor)
 
-	overlay.ppFont = font.GetFont("Exo 2 Bold")
-	overlay.keyFont = font.GetFont("Ubuntu Regular")
+	fontFile, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+
+	overlay.ppFont = font.LoadFont(fontFile)
+
+	fontFile.Close()
+
+	//overlay.ppFont = font.GetFont("Exo 2 Bold")
+	//overlay.keyFont = font.GetFont("Ubuntu Regular")
+	overlay.keyFont = overlay.ppFont
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
 	overlay.comboFont = skin.GetFont("combo")
@@ -253,6 +262,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	}
 
 	overlay.hpBar = play.NewHpBar()
+
+	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor, overlay.ppFont)
 
 	overlay.shapeRenderer = shape.NewRenderer()
 
@@ -456,6 +467,8 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 	overlay.ppGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
 	overlay.ppGlider.Update(time)
 
+	overlay.hitCounts.Update(time)
+
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
 
 	for i, state := range currentStates {
@@ -591,6 +604,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	}
 
 	overlay.drawPP(batch, alpha)
+	overlay.hitCounts.Draw(batch, alpha)
 
 	if overlay.panel != nil {
 		settings.Playfield.Bloom.Enabled = false

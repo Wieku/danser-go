@@ -45,6 +45,19 @@ func initGameplay() *gameplay {
 			Align:         "CentreLeft",
 			ShowInResults: true,
 		},
+		HitCounter: &hitCounter{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XPosition:  5,
+			YPosition:  190,
+			Spacing:    48,
+			FontScale:  1,
+			Align:      "Left",
+			ValueAlign: "Left",
+		},
 		KeyOverlay: &hudElement{
 			Show:    true,
 			Scale:   1.0,
@@ -100,6 +113,7 @@ type gameplay struct {
 	HpBar             *hudElement
 	ComboCounter      *hudElement
 	PPCounter         *ppCounter
+	HitCounter        *hitCounter
 	KeyOverlay        *hudElement
 	ScoreBoard        *scoreBoard
 	Mods              *mods
@@ -150,6 +164,16 @@ type ppCounter struct {
 	Decimals      int
 	Align         string
 	ShowInResults bool
+}
+
+type hitCounter struct {
+	*hudElement
+	XPosition  float64
+	YPosition  float64
+	Spacing    float64
+	FontScale  float64
+	Align      string
+	ValueAlign string
 }
 
 type scoreBoard struct {
