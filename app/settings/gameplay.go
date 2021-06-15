@@ -64,6 +64,7 @@ func initGameplay() *gameplay {
 			FontScale:  1,
 			Align:      "Left",
 			ValueAlign: "Left",
+			Vertical:   false,
 			Show300:    false,
 		},
 		KeyOverlay: &hudElement{
@@ -183,6 +184,7 @@ type hitCounter struct {
 	FontScale  float64
 	Align      string
 	ValueAlign string
+	Vertical   bool
 	Show300    bool
 }
 

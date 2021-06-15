@@ -34,6 +34,7 @@ func NewHitDisplay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor, fnt *font.F
 		ruleset:     ruleset,
 		cursor:      cursor,
 		fnt:         fnt,
+		hit300Text:  "0",
 		hit100Text:  "0",
 		hit50Text:   "0",
 		hitMissText: "0",
@@ -76,18 +77,25 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 	alpha *= settings.Gameplay.HitCounter.Opacity
 	scale := settings.Gameplay.HitCounter.Scale
 	hSpacing := settings.Gameplay.HitCounter.Spacing * scale
+	vSpacing := 0.0
+
+	if settings.Gameplay.HitCounter.Vertical {
+		vSpacing = hSpacing
+		hSpacing = 0
+	}
+
 	fontScale := scale * settings.Gameplay.HitCounter.FontScale
 
-	alignX := vector.ParseOrigin(settings.Gameplay.HitCounter.Align).AddS(1, 1).X
+	align := vector.ParseOrigin(settings.Gameplay.HitCounter.Align).AddS(1, 1)
 
 	if settings.Gameplay.HitCounter.Show300 {
-		alignX *= 1.5
+		align = align.Scl(1.5)
 	}
 
 	valueAlign := vector.ParseOrigin(settings.Gameplay.HitCounter.ValueAlign)
 
-	baseX := settings.Gameplay.HitCounter.XPosition - alignX*hSpacing
-	baseY := settings.Gameplay.HitCounter.YPosition
+	baseX := settings.Gameplay.HitCounter.XPosition - align.X*hSpacing
+	baseY := settings.Gameplay.HitCounter.YPosition - align.Y*vSpacing
 
 	offsetI := 0
 
@@ -96,11 +104,12 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 
 		offsetI = 1
 		baseX += hSpacing
+		baseY += vSpacing
 	}
 
 	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, offsetI, float32(alpha), sprite.hit100Text)
-	sprite.drawShadowed(batch, baseX+hSpacing, baseY, valueAlign, fontScale, offsetI+1, float32(alpha), sprite.hit50Text)
-	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY, valueAlign, fontScale, offsetI+2, float32(alpha), sprite.hitMissText)
+	sprite.drawShadowed(batch, baseX+hSpacing, baseY+vSpacing, valueAlign, fontScale, offsetI+1, float32(alpha), sprite.hit50Text)
+	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY+vSpacing*2, valueAlign, fontScale, offsetI+2, float32(alpha), sprite.hitMissText)
 
 	batch.ResetTransform()
 }
