@@ -116,7 +116,7 @@ func NewCursor() *Cursor {
 		cursor.renderer = newDanserRenderer()
 	}
 
-	skin.GetTextureSource("ripple", skin.LOCAL)
+	skin.GetTexture("cursor-ripple")
 
 	cursor.smokeTexture = skin.GetTexture("cursor-smoke")
 	cursor.smokeContainer = sprite.NewSpriteManager()
@@ -182,7 +182,7 @@ func (cursor *Cursor) Update(delta float64) {
 	rightState := cursor.RightKey || cursor.RightMouse
 
 	if settings.Cursor.CursorRipples && settings.PLAYERS == 1 && ((!cursor.lastLeftState && leftState) || (!cursor.lastRightState && rightState)) {
-		spr := sprite.NewSpriteSingle(skin.GetTextureSource("ripple", skin.LOCAL), cursor.time, cursor.Position.Copy64(), vector.Centre)
+		spr := sprite.NewSpriteSingle(skin.GetTexture("cursor-ripple"), cursor.time, cursor.Position.Copy64(), vector.Centre)
 		spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+700, 0.3, 0.0))
 		spr.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, cursor.time, cursor.time+700, 0.05, 0.5))
 		spr.ResetValuesToTransforms()
