@@ -2,6 +2,7 @@ package video
 
 import (
 	"github.com/faiface/mainthread"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -66,6 +67,7 @@ func (video *Video) Update(time float64) {
 		video.decoder.Free(frame)
 
 		mainthread.CallNonBlock(func() {
+			gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
 			video.texture.SetData(0, 0, video.decoder.Metadata.Width, video.decoder.Metadata.Height, data)
 		})
 	}
