@@ -174,7 +174,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	player.background = common.NewBackground()
-	player.background.SetBeatmap(beatMap, settings.Playfield.Background.LoadStoryboards)
+	player.background.SetBeatmap(beatMap, settings.Playfield.Background.LoadStoryboards || settings.Playfield.Background.LoadVideos)
 
 	player.mainCamera = camera2.NewCamera()
 	player.mainCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
