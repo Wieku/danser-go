@@ -135,6 +135,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
+	settings.START = math.Min(settings.START, (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime()-1)/1000) // cap start to start time of the last HitObject - 1ms
+
 	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && (settings.PLAY || !settings.KNOCKOUT) {
 		scrub := math.Max(0, settings.START*1000)
 		end := settings.END * 1000
