@@ -1,6 +1,8 @@
 package dance
 
 import (
+	"strings"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/dance/movers"
@@ -8,7 +10,6 @@ import (
 	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
-	"strings"
 )
 
 type Controller interface {
@@ -66,6 +67,8 @@ func (controller *GenericController) InitCursors() {
 			moverCtor = movers.NewAggressiveMover
 		case "momentum":
 			moverCtor = movers.NewMomentumMover
+		case "pippi":
+			moverCtor = movers.NewPippiMover
 		default:
 			moverCtor = movers.NewAngleOffsetMover
 			mover = "flower"

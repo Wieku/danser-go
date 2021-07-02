@@ -1,6 +1,9 @@
 package schedulers
 
 import (
+	"math"
+	"math/rand"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/dance/input"
@@ -9,8 +12,6 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
-	"math/rand"
 )
 
 type GenericScheduler struct {
@@ -111,8 +112,6 @@ func (scheduler *GenericScheduler) Update(time float64) {
 				if scheduler.lastTime <= g.GetStartTime() { // brief movement lock for ExGon mover
 					useMover = false
 				}
-
-				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
 			}
 
 			if time > g.GetEndTime() {
