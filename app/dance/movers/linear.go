@@ -62,7 +62,7 @@ func (mover *LinearMover) Update(time float64) vector.Vector2f {
 func (mover *LinearMover) GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f {
 	config := settings.CursorDance.MoverSettings.Linear[mover.id%len(settings.CursorDance.MoverSettings.Linear)]
 
-	if !config.ChoppyLongObjects || mover.simple {
+	if !config.ChoppyLongObjects || mover.simple || object.GetType() == objects.CIRCLE {
 		return mover.basicMover.GetObjectsPosition(time, object)
 	}
 
@@ -77,5 +77,4 @@ func (mover *LinearMover) GetObjectsPosition(time float64, object objects.IHitOb
 	pos2 := object.GetStackedPositionAtMod(time2, mover.diff.Mods)
 
 	return pos1.Lerp(pos2, float32((time - time1)/sixtyTime))
-
 }
