@@ -20,7 +20,7 @@ const (
 type SplineMover struct {
 	curve              *curves.BSpline
 	startTime, endTime float64
-	mods               difficulty.Modifier
+	diff               *difficulty.Difficulty
 	id                 int
 }
 
@@ -28,8 +28,8 @@ func NewSplineMover() MultiPointMover {
 	return &SplineMover{}
 }
 
-func (mover *SplineMover) Reset(mods difficulty.Modifier, id int) {
-	mover.mods = mods
+func (mover *SplineMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.diff = diff
 	mover.id = id
 }
 
@@ -49,14 +49,14 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 		o := objs[i]
 
 		if i == 0 {
-			cEnd := o.GetStackedEndPositionMod(mover.mods)
-			nStart := objs[i+1].GetStackedStartPositionMod(mover.mods)
+			cEnd := o.GetStackedEndPositionMod(mover.diff.Mods)
+			nStart := objs[i+1].GetStackedStartPositionMod(mover.diff.Mods)
 
 			var wPoint vector.Vector2f
 
 			switch s := o.(type) {
 			case objects.ILongObject:
-				wPoint = cEnd.Add(vector.NewVec2fRad(s.GetEndAngleMod(mover.mods), cEnd.Dst(nStart)*0.7))
+				wPoint = cEnd.Add(vector.NewVec2fRad(s.GetEndAngleMod(mover.diff.Mods), cEnd.Dst(nStart)*0.7))
 			default:
 				wPoint = cEnd.Lerp(nStart, 0.333)
 			}
@@ -70,14 +70,14 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 		}
 
 		if _, ok := o.(objects.ILongObject); ok || i == len(objs)-1 {
-			pEnd := objs[i-1].GetStackedEndPositionMod(mover.mods)
-			cStart := o.GetStackedStartPositionMod(mover.mods)
+			pEnd := objs[i-1].GetStackedEndPositionMod(mover.diff.Mods)
+			cStart := o.GetStackedStartPositionMod(mover.diff.Mods)
 
 			var wPoint vector.Vector2f
 
 			switch s := o.(type) {
 			case objects.ILongObject:
-				wPoint = cStart.Add(vector.NewVec2fRad(s.GetStartAngleMod(mover.mods), cStart.Dst(pEnd)*0.7))
+				wPoint = cStart.Add(vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), cStart.Dst(pEnd)*0.7))
 			default:
 				wPoint = cStart.Lerp(pEnd, 0.333)
 			}
@@ -89,9 +89,9 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 			break
 		} else if i > 1 && i < len(objs)-1 {
-			pos1 := objs[i-1].GetStackedStartPositionMod(mover.mods)
-			pos2 := o.GetStackedStartPositionMod(mover.mods)
-			pos3 := objs[i+1].GetStackedStartPositionMod(mover.mods)
+			pos1 := objs[i-1].GetStackedStartPositionMod(mover.diff.Mods)
+			pos2 := o.GetStackedStartPositionMod(mover.diff.Mods)
+			pos3 := objs[i+1].GetStackedStartPositionMod(mover.diff.Mods)
 
 			min := float32(streamEntryMin)
 			max := float32(streamEntryMax)
@@ -169,7 +169,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			}
 		}
 
-		points = append(points, o.GetStackedEndPositionMod(mover.mods))
+		points = append(points, o.GetStackedEndPositionMod(mover.diff.Mods))
 		timing = append(timing, int64(o.GetStartTime()))
 	}
 

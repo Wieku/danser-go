@@ -16,7 +16,7 @@ type BezierMover struct {
 	beginTime, endTime float64
 	previousSpeed      float32
 	invert             float32
-	mods               difficulty.Modifier
+	diff               *difficulty.Difficulty
 	id                 int
 }
 
@@ -24,8 +24,8 @@ func NewBezierMover() MultiPointMover {
 	return &BezierMover{invert: 1}
 }
 
-func (bm *BezierMover) Reset(mods difficulty.Modifier, id int) {
-	bm.mods = mods
+func (bm *BezierMover) Reset(diff *difficulty.Difficulty, id int) {
+	bm.diff = diff
 	bm.pt = vector.NewVec2f(512/2, 384/2)
 	bm.invert = 1
 	bm.previousSpeed = -1
@@ -37,9 +37,9 @@ func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 
 	end := objs[0]
 	start := objs[1]
-	endPos := end.GetStackedEndPositionMod(bm.mods)
+	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.mods)
+	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
 	startTime := start.GetStartTime()
 
 	dst := endPos.Dst(startPos)
@@ -61,20 +61,20 @@ func (bm *BezierMover) SetObjects(objs []objects.IHitObject) int {
 	if endPos == startPos {
 		points = []vector.Vector2f{endPos, startPos}
 	} else if ok1 && ok2 {
-		endAngle := s1.GetEndAngleMod(bm.mods)
-		startAngle := s2.GetStartAngleMod(bm.mods)
-		bm.pt = vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, bm.mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
-		pt2 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, bm.mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		endAngle := s1.GetEndAngleMod(bm.diff.Mods)
+		startAngle := s2.GetStartAngleMod(bm.diff.Mods)
+		bm.pt = vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, bm.diff.Mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		pt2 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, bm.diff.Mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []vector.Vector2f{endPos, bm.pt, pt2, startPos}
 	} else if ok1 {
-		endAngle := s1.GetEndAngleMod(bm.mods)
-		pt1 := vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, bm.mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		endAngle := s1.GetEndAngleMod(bm.diff.Mods)
+		pt1 := vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, bm.diff.Mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
 		bm.pt = vector.NewVec2fRad(startPos.AngleRV(bm.pt), genScale*aggressiveness).Add(startPos)
 		points = []vector.Vector2f{endPos, pt1, bm.pt, startPos}
 	} else if ok2 {
-		startAngle := s2.GetStartAngleMod(bm.mods)
+		startAngle := s2.GetStartAngleMod(bm.diff.Mods)
 		bm.pt = vector.NewVec2fRad(endPos.AngleRV(bm.pt), genScale*aggressiveness).Add(endPos)
-		pt1 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, bm.mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		pt1 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, bm.diff.Mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
 		points = []vector.Vector2f{endPos, bm.pt, pt1, startPos}
 	} else {
 		angle := endPos.AngleRV(bm.pt)

@@ -304,7 +304,12 @@ func (controller *ReplayController) InitCursors() {
 
 		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
 			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover, 0, 0)
-			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), controller.replays[i].ModsV, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
+
+			diff := difficulty.NewDifficulty(controller.bMap.Diff.GetHPDrain(), controller.bMap.Diff.GetCS(), controller.bMap.Diff.GetOD(), controller.bMap.Diff.GetAR())
+			diff.SetMods(controller.replays[i].ModsV)
+			diff.SetCustomSpeed(controller.bMap.Diff.CustomSpeed)
+
+			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), diff, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
 		}
 	}
 }

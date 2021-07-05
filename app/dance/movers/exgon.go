@@ -17,7 +17,7 @@ type ExGonMover struct {
 	nextTime float64
 
 	endTime float64
-	mods    difficulty.Modifier
+	diff    *difficulty.Difficulty
 	id      int
 	delay   float64
 }
@@ -26,8 +26,8 @@ func NewExGonMover() MultiPointMover {
 	return &ExGonMover{}
 }
 
-func (bm *ExGonMover) Reset(mods difficulty.Modifier, id int) {
-	bm.mods = mods
+func (bm *ExGonMover) Reset(diff *difficulty.Difficulty, id int) {
+	bm.diff = diff
 	bm.wasFirst = false
 	bm.id = id
 }

@@ -20,7 +20,7 @@ type MomentumMover struct {
 	endTime   float64
 	first     bool
 	wasStream bool
-	mods      difficulty.Modifier
+	diff      *difficulty.Difficulty
 	id        int
 }
 
@@ -28,8 +28,8 @@ func NewMomentumMover() MultiPointMover {
 	return &MomentumMover{last: vector.NewVec2f(0, 0), first: true}
 }
 
-func (bm *MomentumMover) Reset(mods difficulty.Modifier, id int) {
-	bm.mods = mods
+func (bm *MomentumMover) Reset(diff *difficulty.Difficulty, id int) {
+	bm.diff = diff
 	bm.first = true
 	bm.last = vector.NewVec2f(0, 0)
 	bm.id = id
@@ -75,8 +75,8 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		next = objs[i+2]
 	}
 
-	endPos := end.GetStackedEndPositionMod(bm.mods)
-	startPos := start.GetStackedStartPositionMod(bm.mods)
+	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
 
 	dst := endPos.Dst(startPos)
 
@@ -85,7 +85,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	for i++; i < len(objs); i++ {
 		o := objs[i]
 		if s, ok := o.(objects.ILongObject); ok {
-			a2 = s.GetStartAngleMod(bm.mods)
+			a2 = s.GetStartAngleMod(bm.diff.Mods)
 			fromLong = true
 			break
 		}
@@ -93,15 +93,15 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			a2 = bm.last.AngleRV(endPos)
 			break
 		}
-		if !same(bm.mods, o, objs[i+1], ms.SkipStackAngles) {
-			a2 = o.GetStackedStartPositionMod(bm.mods).AngleRV(objs[i+1].GetStackedStartPositionMod(bm.mods))
+		if !same(bm.diff.Mods, o, objs[i+1], ms.SkipStackAngles) {
+			a2 = o.GetStackedStartPositionMod(bm.diff.Mods).AngleRV(objs[i+1].GetStackedStartPositionMod(bm.diff.Mods))
 			break
 		}
 	}
 
 	var sq1, sq2 float32
 	if next != nil {
-		nextPos := next.GetStackedStartPositionMod(bm.mods)
+		nextPos := next.GetStackedStartPositionMod(bm.diff.Mods)
 		sq1 = endPos.DstSq(startPos)
 		sq2 = startPos.DstSq(nextPos)
 	}
@@ -121,7 +121,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	var a1 float32
 	if s, ok := end.(objects.ILongObject); ok {
-		a1 = s.GetEndAngleMod(bm.mods)
+		a1 = s.GetEndAngleMod(bm.diff.Mods)
 	} else if bm.first {
 		a1 = a2 + math.Pi
 	} else {
@@ -164,16 +164,16 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	endTime := end.GetEndTime()
 	startTime := start.GetStartTime()
-	duration := float64(startTime - endTime)
+	duration := startTime - endTime
 
 	if ms.DurationTrigger > 0 && duration >= ms.DurationTrigger {
-		mult *= ms.DurationMult * (float64(duration) / ms.DurationTrigger)
+		mult *= ms.DurationMult * (duration / ms.DurationTrigger)
 	}
 
 	p1 := vector.NewVec2fRad(a1, dst * float32(mult)).Add(endPos)
 	p2 := vector.NewVec2fRad(a2, dst * float32(mult)).Add(startPos)
 
-	if !same(bm.mods, end, start, ms.SkipStackAngles) {
+	if !same(bm.diff.Mods, end, start, ms.SkipStackAngles) {
 		bm.last = p2
 		bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
 	} else {

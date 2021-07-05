@@ -13,22 +13,22 @@ import (
 type LinearMover struct {
 	line               curves.Linear
 	beginTime, endTime float64
-	mods               difficulty.Modifier
+	diff               *difficulty.Difficulty
 }
 
 func NewLinearMover() MultiPointMover {
 	return &LinearMover{}
 }
 
-func (bm *LinearMover) Reset(mods difficulty.Modifier, _ int) {
-	bm.mods = mods
+func (bm *LinearMover) Reset(diff *difficulty.Difficulty, _ int) {
+	bm.diff = diff
 }
 
 func (bm *LinearMover) SetObjects(objs []objects.IHitObject) int {
 	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(bm.mods)
+	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.mods)
+	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
 	startTime := start.GetStartTime()
 
 	bm.line = curves.NewLinear(endPos, startPos)

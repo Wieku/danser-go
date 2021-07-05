@@ -12,22 +12,22 @@ import (
 type AxisMover struct {
 	bz                 *curves.MultiCurve
 	beginTime, endTime float64
-	mods               difficulty.Modifier
+	diff               *difficulty.Difficulty
 }
 
 func NewAxisMover() MultiPointMover {
 	return &AxisMover{}
 }
 
-func (bm *AxisMover) Reset(mods difficulty.Modifier, _ int) {
-	bm.mods = mods
+func (bm *AxisMover) Reset(diff *difficulty.Difficulty, _ int) {
+	bm.diff = diff
 }
 
 func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(bm.mods)
+	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.mods)
+	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
 	startTime := start.GetStartTime()
 
 	var midP vector.Vector2f

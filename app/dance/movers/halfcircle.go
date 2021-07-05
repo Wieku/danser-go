@@ -14,7 +14,7 @@ type HalfCircleMover struct {
 	ca                 curves.Curve
 	startTime, endTime float64
 	invert             float32
-	mods               difficulty.Modifier
+	diff               *difficulty.Difficulty
 	id                 int
 }
 
@@ -22,8 +22,8 @@ func NewHalfCircleMover() MultiPointMover {
 	return &HalfCircleMover{invert: -1}
 }
 
-func (bm *HalfCircleMover) Reset(mods difficulty.Modifier, id int) {
-	bm.mods = mods
+func (bm *HalfCircleMover) Reset(diff *difficulty.Difficulty, id int) {
+	bm.diff = diff
 	bm.invert = -1
 	bm.id = id
 }
@@ -34,8 +34,8 @@ func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPositionMod(bm.mods)
-	startPos := start.GetStackedStartPositionMod(bm.mods)
+	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
 	bm.endTime = end.GetEndTime()
 	bm.startTime = start.GetStartTime()
 
