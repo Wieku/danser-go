@@ -66,6 +66,8 @@ func (controller *GenericController) InitCursors() {
 			moverCtor = movers.NewAggressiveMover
 		case "momentum":
 			moverCtor = movers.NewMomentumMover
+		case "pippi":
+			moverCtor = movers.NewPippiMover
 		default:
 			moverCtor = movers.NewAngleOffsetMover
 			mover = "flower"

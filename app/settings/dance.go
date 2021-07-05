@@ -64,3 +64,9 @@ type linear struct {
 	ReactionTime      float64
 	ChoppyLongObjects bool
 }
+
+type pippi struct {
+	RotationSpeed    float64
+	RadiusMultiplier float64
+	SpinnerRadius    float64
+}

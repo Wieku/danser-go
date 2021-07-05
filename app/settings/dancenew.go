@@ -77,6 +77,13 @@ func initCursorDance() *cursorDance {
 					ChoppyLongObjects: false,
 				},
 			},
+			Pippi: []*pippi{
+				{
+					RotationSpeed: 1.6,
+					RadiusMultiplier: 0.98,
+					SpinnerRadius: 100,
+				},
+			},
 		},
 	}
 }
@@ -109,4 +116,5 @@ type moverSettings struct {
 	Momentum   []*momentum
 	ExGon      []*exgon
 	Linear     []*linear
+	Pippi      []*pippi
 }
