@@ -64,8 +64,6 @@ func (mover *LinearMover) GetObjectsPosition(time float64, object objects.IHitOb
 		return mover.basicMover.GetObjectsPosition(time, object)
 	}
 
-	const sixtyTime = 1000.0 / 60
-
 	timeDiff := math.Mod(time-object.GetStartTime(), sixtyTime)
 
 	time1 := time - timeDiff

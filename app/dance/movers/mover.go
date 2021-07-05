@@ -6,6 +6,8 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
+const sixtyTime = 1000.0 / 60
+
 type MultiPointMover interface {
 	Reset(diff *difficulty.Difficulty, id int)
 	SetObjects(objs []objects.IHitObject) int

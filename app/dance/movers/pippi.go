@@ -13,7 +13,7 @@ import (
 type PippiMover struct {
 	*basicMover
 
-	line curves.Linear
+	curve curves.Curve
 }
 
 func NewPippiMover() MultiPointMover {
@@ -23,22 +23,33 @@ func NewPippiMover() MultiPointMover {
 func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 	start, end := objs[0], objs[1]
 
-	mover.startTime = start.GetEndTime()
+	mover.startTime = math.Max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	mover.endTime = end.GetStartTime()
 
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
 	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
 
-	mover.line = curves.NewLinear(startPos, endPos)
+	timeDifference := mover.endTime - mover.startTime
+
+	points := make([]vector.Vector2f, 0, int(math.Ceil(timeDifference/sixtyTime)))
+
+	points = append(points, mover.modifyPos(start.GetEndTime(), start.GetType() == objects.SPINNER, startPos))
+
+	for t := sixtyTime; t < timeDifference; t += sixtyTime {
+		f := t / timeDifference
+		points = append(points, mover.modifyPos(mover.startTime+t, false, startPos.Lerp(endPos, float32(f))))
+	}
+
+	points = append(points, mover.modifyPos(mover.endTime, end.GetType() == objects.SPINNER, endPos))
+
+	mover.curve = curves.NewMultiCurve("L", points)
 
 	return 2
 }
 
 func (mover *PippiMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
-	pos := mover.line.PointAt(float32(easing.OutQuad(t)))
-
-	return mover.modifyPos(time, false, pos)
+	return mover.curve.PointAt(float32(easing.OutQuad(t)))
 }
 
 func (mover *PippiMover) GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f {
