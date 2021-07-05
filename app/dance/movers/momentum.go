@@ -62,8 +62,7 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	i := 0
 
-	start := objs[i+0]
-	end := objs[i+1]
+	start, end := objs[i], objs[i+1]
 
 	hasNext := false
 	var next objects.IHitObject
@@ -186,6 +185,6 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *MomentumMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
-	return mover.bz.PointAt(t)
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	return mover.bz.PointAt(float32(t))
 }
