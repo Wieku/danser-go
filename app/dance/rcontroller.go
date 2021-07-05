@@ -303,7 +303,7 @@ func (controller *ReplayController) InitCursors() {
 		}
 
 		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
-			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover, 0, 0)
+			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMoverSimple, 0, 0)
 
 			diff := difficulty.NewDifficulty(controller.bMap.Diff.GetHPDrain(), controller.bMap.Diff.GetCS(), controller.bMap.Diff.GetOD(), controller.bMap.Diff.GetAR())
 			diff.SetMods(controller.replays[i].ModsV)

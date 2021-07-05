@@ -14,10 +14,15 @@ type LinearMover struct {
 	line               curves.Linear
 	beginTime, endTime float64
 	diff               *difficulty.Difficulty
+	simple             bool
 }
 
 func NewLinearMover() MultiPointMover {
 	return &LinearMover{}
+}
+
+func NewLinearMoverSimple() MultiPointMover {
+	return &LinearMover{simple: true}
 }
 
 func (bm *LinearMover) Reset(diff *difficulty.Difficulty, _ int) {
