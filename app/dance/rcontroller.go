@@ -268,6 +268,7 @@ func (controller *ReplayController) InitCursors() {
 
 			for _, cursor := range cursors {
 				cursor.Name = controller.replays[i].Name
+				cursor.ScoreTime = time.Now()
 				cursor.ScoreID = -1
 			}
 
