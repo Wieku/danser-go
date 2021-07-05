@@ -60,6 +60,7 @@ type exgon struct {
 }
 
 type linear struct {
-	WaitForPreempt bool
-	ReactionTime   float64
+	WaitForPreempt    bool
+	ReactionTime      float64
+	ChoppyLongObjects bool
 }

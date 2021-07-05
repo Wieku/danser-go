@@ -72,8 +72,9 @@ func initCursorDance() *cursorDance {
 			},
 			Linear: []*linear{
 				{
-					WaitForPreempt: true,
-					ReactionTime:   100,
+					WaitForPreempt:    true,
+					ReactionTime:      100,
+					ChoppyLongObjects: false,
 				},
 			},
 		},
