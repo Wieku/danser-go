@@ -13,8 +13,9 @@ import (
 type BezierMover struct {
 	*basicMover
 
+	curve *curves.Bezier
+
 	pt            vector.Vector2f
-	bz            *curves.Bezier
 	startTime       float64
 	previousSpeed float32
 	invert        float32
@@ -87,7 +88,7 @@ func (mover *BezierMover) SetObjects(objs []objects.IHitObject) int {
 		points = []vector.Vector2f{startPos, mover.pt, endPos}
 	}
 
-	mover.bz = curves.NewBezierNA(points)
+	mover.curve = curves.NewBezierNA(points)
 
 	mover.previousSpeed = (dst + 1.0) / float32(mover.endTime-mover.startTime)
 
@@ -95,6 +96,6 @@ func (mover *BezierMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *BezierMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
-	return mover.bz.PointAt(t)
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	return mover.curve.PointAt(float32(t))
 }

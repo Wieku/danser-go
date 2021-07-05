@@ -62,6 +62,6 @@ func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *AggressiveMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
-	return mover.curve.PointAt(t)
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	return mover.curve.PointAt(float32(t))
 }
