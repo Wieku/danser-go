@@ -3,6 +3,7 @@ package movers
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -11,7 +12,8 @@ import (
 type AxisMover struct {
 	*basicMover
 
-	bz      *curves.MultiCurve
+	curve *curves.MultiCurve
+
 	startTime float64
 }
 
@@ -21,10 +23,12 @@ func NewAxisMover() MultiPointMover {
 
 func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	start, end := objs[0], objs[1]
+
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
+
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	startTime := start.GetEndTime()
 	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
-	endTime := end.GetStartTime()
 
 	var midP vector.Vector2f
 
@@ -34,15 +38,12 @@ func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 		midP = vector.NewVec2f(endPos.X, startPos.Y)
 	}
 
-	mover.bz = curves.NewMultiCurve("L", []vector.Vector2f{startPos, midP, endPos})
-	mover.startTime = startTime
-	mover.endTime = endTime
+	mover.curve = curves.NewMultiCurve("L", []vector.Vector2f{startPos, midP, endPos})
 
 	return 2
 }
 
 func (mover AxisMover) Update(time float64) vector.Vector2f {
-	t := float32(time-mover.startTime) / float32(mover.endTime-mover.startTime)
-	tr := bmath.ClampF32(math32.Sin(t*math32.Pi/2), 0, 1)
-	return mover.bz.PointAt(tr)
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	return mover.curve.PointAt(float32(easing.OutSine(t)))
 }
