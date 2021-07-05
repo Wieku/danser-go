@@ -112,7 +112,7 @@ func (scheduler *GenericScheduler) Update(time float64) {
 					useMover = false
 				}
 
-				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.diff.Mods))
+				scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
 			}
 
 			if time > g.GetEndTime() {
