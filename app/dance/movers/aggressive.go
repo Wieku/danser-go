@@ -12,9 +12,10 @@ import (
 type AggressiveMover struct {
 	*basicMover
 
+	curve *curves.Bezier
+
 	lastAngle float32
-	bz        *curves.Bezier
-	startTime   float64
+	startTime float64
 }
 
 func NewAggressiveMover() MultiPointMover {
@@ -28,15 +29,15 @@ func (mover *AggressiveMover) Reset(diff *difficulty.Difficulty, id int) {
 }
 
 func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
-	start := objs[0]
-	end := objs[1]
+	start, end := objs[0], objs[1]
+
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
 
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	startTime := start.GetEndTime()
 	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
-	endTime := end.GetStartTime()
 
-	scaledDistance := float32(endTime - startTime)
+	scaledDistance := float32(mover.endTime - mover.startTime)
 
 	newAngle := mover.lastAngle + math.Pi
 	if s, ok := start.(objects.ILongObject); ok {
@@ -55,14 +56,12 @@ func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 
 	points = append(points, endPos)
 
-	mover.bz = curves.NewBezierNA(points)
-	mover.startTime = startTime
-	mover.endTime = endTime
+	mover.curve = curves.NewBezierNA(points)
 
 	return 2
 }
 
 func (mover *AggressiveMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
-	return mover.bz.PointAt(t)
+	return mover.curve.PointAt(t)
 }
