@@ -58,3 +58,8 @@ type momentum struct {
 type exgon struct {
 	Delay int64
 }
+
+type linear struct {
+	ReactionTime   float64
+	WaitForPreempt bool
+}

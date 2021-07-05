@@ -70,6 +70,12 @@ func initCursorDance() *cursorDance {
 					Delay: 50,
 				},
 			},
+			Linear: []*linear{
+				{
+					ReactionTime:   100,
+					WaitForPreempt: true,
+				},
+			},
 		},
 	}
 }
@@ -101,4 +107,5 @@ type moverSettings struct {
 	Spline     []*spline
 	Momentum   []*momentum
 	ExGon      []*exgon
+	Linear     []*linear
 }
