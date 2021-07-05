@@ -15,6 +15,8 @@ type ExGonMover struct {
 	wasFirst bool
 	rand     *rand.Rand
 
+	endPos vector.Vector2f
+
 	lastPos  vector.Vector2f
 	nextTime float64
 
@@ -47,10 +49,17 @@ func (mover *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 	mover.startTime = start.GetStartTime()
 	mover.endTime = end.GetStartTime()
 
+	mover.lastPos = start.GetStackedEndPositionMod(mover.diff.Mods)
+	mover.endPos = end.GetStackedStartPositionMod(mover.diff.Mods)
+
 	return 2
 }
 
 func (mover *ExGonMover) Update(time float64) vector.Vector2f {
+	if mover.endTime - time < mover.delay {
+		return mover.endPos
+	}
+
 	if time >= mover.nextTime {
 		mover.nextTime += mover.delay
 
