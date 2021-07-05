@@ -14,25 +14,24 @@ import (
 // https://github.com/TechnoJo4/osu/blob/master/osu.Game.Rulesets.Osu/Replays/Movers/MomentumMover.cs
 
 type MomentumMover struct {
+	*basicMover
+
 	bz        *curves.Bezier
 	last      vector.Vector2f
-	startTime float64
 	endTime   float64
 	first     bool
 	wasStream bool
-	diff      *difficulty.Difficulty
-	id        int
 }
 
 func NewMomentumMover() MultiPointMover {
-	return &MomentumMover{last: vector.NewVec2f(0, 0), first: true}
+	return &MomentumMover{basicMover: &basicMover{}}
 }
 
-func (bm *MomentumMover) Reset(diff *difficulty.Difficulty, id int) {
-	bm.diff = diff
-	bm.first = true
-	bm.last = vector.NewVec2f(0, 0)
-	bm.id = id
+func (mover *MomentumMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.basicMover.Reset(diff, id)
+
+	mover.first = true
+	mover.last = vector.NewVec2f(0, 0)
 }
 
 func same(mods difficulty.Modifier, o1 objects.IHitObject, o2 objects.IHitObject, skipStackAngles bool) bool {
@@ -52,14 +51,14 @@ func anorm(a float32) float32 {
 func anorm2(a float32) float32 {
 	a = anorm(a)
 	if a > math32.Pi {
-		a = -(2 * math32.Pi - a)
+		a = -(2*math32.Pi - a)
 	}
 
 	return a
 }
 
-func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
-	ms := settings.CursorDance.MoverSettings.Momentum[bm.id%len(settings.CursorDance.MoverSettings.Momentum)]
+func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
+	ms := settings.CursorDance.MoverSettings.Momentum[mover.id%len(settings.CursorDance.MoverSettings.Momentum)]
 
 	i := 0
 
@@ -75,8 +74,8 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		next = objs[i+2]
 	}
 
-	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
-	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
+	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
 
 	dst := endPos.Dst(startPos)
 
@@ -85,23 +84,23 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	for i++; i < len(objs); i++ {
 		o := objs[i]
 		if s, ok := o.(objects.ILongObject); ok {
-			a2 = s.GetStartAngleMod(bm.diff.Mods)
+			a2 = s.GetStartAngleMod(mover.diff.Mods)
 			fromLong = true
 			break
 		}
-		if i == len(objs) - 1 {
-			a2 = bm.last.AngleRV(endPos)
+		if i == len(objs)-1 {
+			a2 = mover.last.AngleRV(endPos)
 			break
 		}
-		if !same(bm.diff.Mods, o, objs[i+1], ms.SkipStackAngles) {
-			a2 = o.GetStackedStartPositionMod(bm.diff.Mods).AngleRV(objs[i+1].GetStackedStartPositionMod(bm.diff.Mods))
+		if !same(mover.diff.Mods, o, objs[i+1], ms.SkipStackAngles) {
+			a2 = o.GetStackedStartPositionMod(mover.diff.Mods).AngleRV(objs[i+1].GetStackedStartPositionMod(mover.diff.Mods))
 			break
 		}
 	}
 
 	var sq1, sq2 float32
 	if next != nil {
-		nextPos := next.GetStackedStartPositionMod(bm.diff.Mods)
+		nextPos := next.GetStackedStartPositionMod(mover.diff.Mods)
 		sq1 = endPos.DstSq(startPos)
 		sq2 = startPos.DstSq(nextPos)
 	}
@@ -112,33 +111,32 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		min := float32(25.0)
 		max := float32(10000.0)
 
-		if sq1 >= min && sq1 <= max && bm.wasStream || (sq2 >= min && sq2 <= max) {
+		if sq1 >= min && sq1 <= max && mover.wasStream || (sq2 >= min && sq2 <= max) {
 			stream = true
 		}
 	}
 
-	bm.wasStream = stream
+	mover.wasStream = stream
 
 	var a1 float32
 	if s, ok := end.(objects.ILongObject); ok {
-		a1 = s.GetEndAngleMod(bm.diff.Mods)
-	} else if bm.first {
+		a1 = s.GetEndAngleMod(mover.diff.Mods)
+	} else if mover.first {
 		a1 = a2 + math.Pi
 	} else {
-		a1 = endPos.AngleRV(bm.last)
+		a1 = endPos.AngleRV(mover.last)
 	}
-
 
 	mult := ms.DistanceMultOut
 
 	ac := a2 - startPos.AngleRV(endPos)
 	area := float32(ms.RestrictArea * math.Pi / 180.0)
 
-	if area > 0 && stream && anorm(ac) < anorm((2 * math32.Pi) - area) {
+	if area > 0 && stream && anorm(ac) < anorm((2*math32.Pi)-area) {
 		a := endPos.AngleRV(startPos)
 
 		sangle := float32(0.5 * math.Pi)
-		if anorm(a1 - a) > math32.Pi {
+		if anorm(a1-a) > math32.Pi {
 			a2 = a - sangle
 		} else {
 			a2 = a + sangle
@@ -149,7 +147,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		a := startPos.AngleRV(endPos)
 
 		offset := float32(ms.RestrictAngle * math.Pi / 180.0)
-		if (anorm(a2 - a) < offset) != ms.RestrictInvert {
+		if (anorm(a2-a) < offset) != ms.RestrictInvert {
 			a2 = a + offset
 		} else {
 			a2 = a - offset
@@ -159,7 +157,7 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	} else if next != nil && !fromLong {
 		r := sq1 / (sq1 + sq2)
 		a := endPos.AngleRV(startPos)
-		a2 = a + r * anorm2(a2 - a)
+		a2 = a + r*anorm2(a2-a)
 	}
 
 	endTime := end.GetEndTime()
@@ -170,28 +168,24 @@ func (bm *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		mult *= ms.DurationMult * (duration / ms.DurationTrigger)
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst * float32(mult)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst * float32(mult)).Add(startPos)
+	p1 := vector.NewVec2fRad(a1, dst*float32(mult)).Add(endPos)
+	p2 := vector.NewVec2fRad(a2, dst*float32(mult)).Add(startPos)
 
-	if !same(bm.diff.Mods, end, start, ms.SkipStackAngles) {
-		bm.last = p2
-		bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
+	if !same(mover.diff.Mods, end, start, ms.SkipStackAngles) {
+		mover.last = p2
+		mover.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
 	} else {
-		bm.bz = curves.NewBezierNA([]vector.Vector2f{endPos, startPos})
+		mover.bz = curves.NewBezierNA([]vector.Vector2f{endPos, startPos})
 	}
 
-	bm.endTime = end.GetEndTime()
-	bm.startTime = start.GetStartTime()
-	bm.first = false
+	mover.endTime = end.GetEndTime()
+	mover.startTime = start.GetStartTime()
+	mover.first = false
 
 	return 2
 }
 
-func (bm *MomentumMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
-	return bm.bz.PointAt(t)
-}
-
-func (bm *MomentumMover) GetEndTime() float64 {
-	return bm.startTime
+func (mover *MomentumMover) Update(time float64) vector.Vector2f {
+	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	return mover.bz.PointAt(t)
 }

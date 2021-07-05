@@ -10,61 +10,59 @@ import (
 )
 
 type AggressiveMover struct {
-	lastAngle          float32
-	bz                 *curves.Bezier
-	startTime, endTime float64
-	diff               *difficulty.Difficulty
+	*basicMover
+
+	lastAngle float32
+	bz        *curves.Bezier
+	endTime   float64
 }
 
 func NewAggressiveMover() MultiPointMover {
-	return &AggressiveMover{lastAngle: 0}
+	return &AggressiveMover{basicMover: &basicMover{}}
 }
 
-func (bm *AggressiveMover) Reset(diff *difficulty.Difficulty, _ int) {
-	bm.diff = diff
-	bm.lastAngle = 0
+func (mover *AggressiveMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.basicMover.Reset(diff, id)
+
+	mover.lastAngle = 0
 }
 
-func (bm *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
+func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
+	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
 	startTime := start.GetStartTime()
 
 	scaledDistance := float32(startTime - endTime)
 
-	newAngle := bm.lastAngle + math.Pi
+	newAngle := mover.lastAngle + math.Pi
 	if s, ok := end.(objects.ILongObject); ok {
-		newAngle = s.GetEndAngleMod(bm.diff.Mods)
+		newAngle = s.GetEndAngleMod(mover.diff.Mods)
 	}
 
 	points := []vector.Vector2f{endPos, vector.NewVec2fRad(newAngle, scaledDistance).Add(endPos)}
 
 	if scaledDistance > 1 {
-		bm.lastAngle = points[1].AngleRV(startPos)
+		mover.lastAngle = points[1].AngleRV(startPos)
 	}
 
 	if s, ok := start.(objects.ILongObject); ok {
-		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(bm.diff.Mods), scaledDistance).Add(startPos))
+		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(startPos))
 	}
 
 	points = append(points, startPos)
 
-	bm.bz = curves.NewBezierNA(points)
-	bm.endTime = endTime
-	bm.startTime = startTime
+	mover.bz = curves.NewBezierNA(points)
+	mover.endTime = endTime
+	mover.startTime = startTime
 
 	return 2
 }
 
-func (bm *AggressiveMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
-	return bm.bz.PointAt(t)
-}
-
-func (bm *AggressiveMover) GetEndTime() float64 {
-	return bm.startTime
+func (mover *AggressiveMover) Update(time float64) vector.Vector2f {
+	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	return mover.bz.PointAt(t)
 }

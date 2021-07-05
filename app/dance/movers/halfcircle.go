@@ -11,55 +11,51 @@ import (
 )
 
 type HalfCircleMover struct {
-	ca                 curves.Curve
-	startTime, endTime float64
-	invert             float32
-	diff               *difficulty.Difficulty
-	id                 int
+	*basicMover
+
+	ca      curves.Curve
+	endTime float64
+	invert  float32
 }
 
 func NewHalfCircleMover() MultiPointMover {
-	return &HalfCircleMover{invert: -1}
+	return &HalfCircleMover{basicMover: &basicMover{}}
 }
 
-func (bm *HalfCircleMover) Reset(diff *difficulty.Difficulty, id int) {
-	bm.diff = diff
-	bm.invert = -1
-	bm.id = id
+func (mover *HalfCircleMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.basicMover.Reset(diff, id)
+
+	mover.invert = -1
 }
 
-func (bm *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
-	config := settings.CursorDance.MoverSettings.HalfCircle[bm.id%len(settings.CursorDance.MoverSettings.HalfCircle)]
+func (mover *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.HalfCircle[mover.id%len(settings.CursorDance.MoverSettings.HalfCircle)]
 
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
-	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
-	bm.endTime = end.GetEndTime()
-	bm.startTime = start.GetStartTime()
+	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
+	mover.endTime = end.GetEndTime()
+	mover.startTime = start.GetStartTime()
 
-	if config.StreamTrigger < 0 || (bm.startTime-bm.endTime) < float64(config.StreamTrigger) {
-		bm.invert = -1 * bm.invert
+	if config.StreamTrigger < 0 || (mover.startTime-mover.endTime) < float64(config.StreamTrigger) {
+		mover.invert = -1 * mover.invert
 	}
 
 	if endPos == startPos {
-		bm.ca = curves.NewLinear(endPos, startPos)
+		mover.ca = curves.NewLinear(endPos, startPos)
 		return 2
 	}
 
 	point := endPos.Mid(startPos)
-	p := point.Sub(endPos).Rotate(bm.invert * math.Pi / 2).Scl(float32(config.RadiusMultiplier)).Add(point)
-	bm.ca = curves.NewCirArc(endPos, p, startPos)
+	p := point.Sub(endPos).Rotate(mover.invert * math.Pi / 2).Scl(float32(config.RadiusMultiplier)).Add(point)
+	mover.ca = curves.NewCirArc(endPos, p, startPos)
 
 	return 2
 }
 
-func (bm *HalfCircleMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
-	return bm.ca.PointAt(t)
-}
-
-func (bm *HalfCircleMover) GetEndTime() float64 {
-	return bm.startTime
+func (mover *HalfCircleMover) Update(time float64) vector.Vector2f {
+	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	return mover.ca.PointAt(t)
 }

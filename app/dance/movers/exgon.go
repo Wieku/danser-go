@@ -10,56 +10,50 @@ import (
 )
 
 type ExGonMover struct {
+	*basicMover
+
 	wasFirst bool
 	rand     *rand.Rand
 
 	lastPos  vector.Vector2f
 	nextTime float64
 
-	endTime float64
-	diff    *difficulty.Difficulty
-	id      int
 	delay   float64
 }
 
 func NewExGonMover() MultiPointMover {
-	return &ExGonMover{}
+	return &ExGonMover{basicMover: &basicMover{}}
 }
 
-func (bm *ExGonMover) Reset(diff *difficulty.Difficulty, id int) {
-	bm.diff = diff
-	bm.wasFirst = false
-	bm.id = id
+func (mover *ExGonMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.basicMover.Reset(diff, id)
+	mover.wasFirst = false
 }
 
-func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
-	config := settings.CursorDance.MoverSettings.ExGon[bm.id%len(settings.CursorDance.MoverSettings.ExGon)]
-	bm.delay = float64(config.Delay)
+func (mover *ExGonMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.ExGon[mover.id%len(settings.CursorDance.MoverSettings.ExGon)]
+	mover.delay = float64(config.Delay)
 
-	if !bm.wasFirst {
-		bm.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + int64(objs[1].GetStartTime())))
+	if !mover.wasFirst {
+		mover.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + int64(objs[1].GetStartTime())))
 
-		bm.wasFirst = true
+		mover.wasFirst = true
 	}
 
 	prev, next := objs[0], objs[1]
 
-	bm.nextTime = prev.GetEndTime() + bm.delay
-	bm.endTime = next.GetStartTime()
+	mover.nextTime = prev.GetEndTime() + mover.delay
+	mover.startTime = next.GetStartTime()
 
 	return 2
 }
 
-func (bm *ExGonMover) Update(time float64) vector.Vector2f {
-	if time >= bm.nextTime {
-		bm.nextTime += bm.delay
+func (mover *ExGonMover) Update(time float64) vector.Vector2f {
+	if time >= mover.nextTime {
+		mover.nextTime += mover.delay
 
-		bm.lastPos = vector.NewVec2f(568, 426).Mult(vector.NewVec2f(float32(easing.InOutCubic(bm.rand.Float64())), float32(easing.InOutCubic(bm.rand.Float64())))).SubS(28, 21)
+		mover.lastPos = vector.NewVec2f(568, 426).Mult(vector.NewVec2f(float32(easing.InOutCubic(mover.rand.Float64())), float32(easing.InOutCubic(mover.rand.Float64())))).SubS(28, 21)
 	}
 
-	return bm.lastPos
-}
-
-func (bm *ExGonMover) GetEndTime() float64 {
-	return bm.endTime
+	return mover.lastPos
 }

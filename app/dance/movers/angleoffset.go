@@ -12,36 +12,36 @@ import (
 )
 
 type AngleOffsetMover struct {
-	lastAngle          float32
-	lastPoint          vector.Vector2f
-	bz                 *curves.Bezier
-	startTime, endTime float64
-	invert             float32
-	diff               *difficulty.Difficulty
-	id                 int
+	*basicMover
+
+	lastAngle float32
+	lastPoint vector.Vector2f
+	bz        *curves.Bezier
+	endTime   float64
+	invert    float32
 }
 
 func NewAngleOffsetMover() MultiPointMover {
-	return &AngleOffsetMover{lastAngle: 0, invert: 1}
+	return &AngleOffsetMover{basicMover: &basicMover{}}
 }
 
-func (bm *AngleOffsetMover) Reset(diff *difficulty.Difficulty, id int) {
-	bm.diff = diff
-	bm.lastAngle = 0
-	bm.invert = 1
-	bm.lastPoint = vector.NewVec2f(0, 0)
-	bm.id = id
+func (mover *AngleOffsetMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.basicMover.Reset(diff, id)
+
+	mover.lastAngle = 0
+	mover.invert = 1
+	mover.lastPoint = vector.NewVec2f(0, 0)
 }
 
-func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
-	config := settings.CursorDance.MoverSettings.Flower[bm.id%len(settings.CursorDance.MoverSettings.Flower)]
+func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.Flower[mover.id%len(settings.CursorDance.MoverSettings.Flower)]
 
 	end := objs[0]
 	start := objs[1]
 
-	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
+	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
 	startTime := start.GetStartTime()
 
 	distance := endPos.Dst(startPos)
@@ -62,79 +62,75 @@ func (bm *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 		if config.LongJumpOnEqualPos {
 			scaledDistance = float32(startTime-endTime) * float32(config.LongJumpMult)
 
-			bm.lastAngle += math.Pi
+			mover.lastAngle += math.Pi
 
-			pt1 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
+			pt1 := vector.NewVec2fRad(mover.lastAngle, scaledDistance).Add(endPos)
 
 			if ok1 {
-				pt1 = vector.NewVec2fRad(s1.GetEndAngleMod(bm.diff.Mods), scaledDistance).Add(endPos)
+				pt1 = vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff.Mods), scaledDistance).Add(endPos)
 			}
 
 			if !ok2 {
-				angle := bm.lastAngle - newAngle*bm.invert
+				angle := mover.lastAngle - newAngle*mover.invert
 				pt2 := vector.NewVec2fRad(angle, scaledDistance).Add(startPos)
 
-				bm.lastAngle = angle
+				mover.lastAngle = angle
 
 				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			} else {
-				pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(bm.diff.Mods), scaledDistance).Add(startPos)
+				pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(startPos)
 				points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 			}
 		} else {
 			points = []vector.Vector2f{endPos, startPos}
 		}
 	} else if ok1 && ok2 {
-		bm.invert = -1 * bm.invert
+		mover.invert = -1 * mover.invert
 
-		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(bm.diff.Mods), scaledDistance).Add(endPos)
-		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(bm.diff.Mods), scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff.Mods), scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(startPos)
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else if ok1 {
-		bm.invert = -1 * bm.invert
-		bm.lastAngle = endPos.AngleRV(startPos) - newAngle*bm.invert
+		mover.invert = -1 * mover.invert
+		mover.lastAngle = endPos.AngleRV(startPos) - newAngle*mover.invert
 
-		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(bm.diff.Mods), scaledDistance).Add(endPos)
-		pt2 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff.Mods), scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(mover.lastAngle, scaledDistance).Add(startPos)
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else if ok2 {
-		bm.lastAngle += math.Pi
+		mover.lastAngle += math.Pi
 
-		pt1 := vector.NewVec2fRad(bm.lastAngle, scaledDistance).Add(endPos)
-		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(bm.diff.Mods), scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(mover.lastAngle, scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(startPos)
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	} else {
-		if bmath.AngleBetween32(endPos, bm.lastPoint, startPos) >= float32(config.AngleOffset)*math32.Pi/180.0 {
-			bm.invert = -1 * bm.invert
+		if bmath.AngleBetween32(endPos, mover.lastPoint, startPos) >= float32(config.AngleOffset)*math32.Pi/180.0 {
+			mover.invert = -1 * mover.invert
 			newAngle = float32(config.StreamAngleOffset) * math32.Pi / 180.0
 		}
 
-		angle := endPos.AngleRV(startPos) - newAngle*bm.invert
+		angle := endPos.AngleRV(startPos) - newAngle*mover.invert
 
-		pt1 := vector.NewVec2fRad(bm.lastAngle+math.Pi, scaledDistance).Add(endPos)
+		pt1 := vector.NewVec2fRad(mover.lastAngle+math.Pi, scaledDistance).Add(endPos)
 		pt2 := vector.NewVec2fRad(angle, scaledDistance).Add(startPos)
 
-		bm.lastAngle = angle
+		mover.lastAngle = angle
 
 		points = []vector.Vector2f{endPos, pt1, pt2, startPos}
 	}
 
-	bm.bz = curves.NewBezierNA(points)
-	bm.endTime = endTime
-	bm.startTime = startTime
-	bm.lastPoint = endPos
+	mover.bz = curves.NewBezierNA(points)
+	mover.endTime = endTime
+	mover.startTime = startTime
+	mover.lastPoint = endPos
 
 	return 2
 }
 
-func (bm *AngleOffsetMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-bm.endTime)/float32(bm.startTime-bm.endTime), 0, 1)
-	return bm.bz.PointAt(t)
-}
-
-func (bm *AngleOffsetMover) GetEndTime() float64 {
-	return bm.startTime
+func (mover *AngleOffsetMover) Update(time float64) vector.Vector2f {
+	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	return mover.bz.PointAt(t)
 }

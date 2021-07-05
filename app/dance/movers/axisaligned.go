@@ -1,7 +1,6 @@
 package movers
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/curves"
@@ -10,24 +9,21 @@ import (
 )
 
 type AxisMover struct {
-	bz                 *curves.MultiCurve
-	beginTime, endTime float64
-	diff               *difficulty.Difficulty
+	*basicMover
+
+	bz      *curves.MultiCurve
+	endTime float64
 }
 
 func NewAxisMover() MultiPointMover {
-	return &AxisMover{}
+	return &AxisMover{basicMover: &basicMover{}}
 }
 
-func (bm *AxisMover) Reset(diff *difficulty.Difficulty, _ int) {
-	bm.diff = diff
-}
-
-func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
+func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(bm.diff.Mods)
+	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
 	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.diff.Mods)
+	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
 	startTime := start.GetStartTime()
 
 	var midP vector.Vector2f
@@ -38,19 +34,15 @@ func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
 		midP = vector.NewVec2f(startPos.X, endPos.Y)
 	}
 
-	bm.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos})
-	bm.endTime = endTime
-	bm.beginTime = startTime
+	mover.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos})
+	mover.endTime = endTime
+	mover.startTime = startTime
 
 	return 2
 }
 
-func (bm AxisMover) Update(time float64) vector.Vector2f {
-	t := float32(time-bm.endTime) / float32(bm.beginTime-bm.endTime)
+func (mover AxisMover) Update(time float64) vector.Vector2f {
+	t := float32(time-mover.endTime) / float32(mover.startTime-mover.endTime)
 	tr := bmath.ClampF32(math32.Sin(t*math32.Pi/2), 0, 1)
-	return bm.bz.PointAt(tr)
-}
-
-func (bm *AxisMover) GetEndTime() float64 {
-	return bm.beginTime
+	return mover.bz.PointAt(tr)
 }

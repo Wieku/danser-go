@@ -1,7 +1,6 @@
 package movers
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -18,24 +17,19 @@ const (
 )
 
 type SplineMover struct {
-	curve              *curves.BSpline
-	startTime, endTime float64
-	diff               *difficulty.Difficulty
-	id                 int
+	*basicMover
+
+	curve   *curves.BSpline
+	endTime float64
 }
 
 func NewSplineMover() MultiPointMover {
-	return &SplineMover{}
-}
-
-func (mover *SplineMover) Reset(diff *difficulty.Difficulty, id int) {
-	mover.diff = diff
-	mover.id = id
+	return &SplineMover{basicMover: &basicMover{}}
 }
 
 func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	config := settings.CursorDance.MoverSettings.Spline[mover.id%len(settings.CursorDance.MoverSettings.Spline)]
-	
+
 	points := make([]vector.Vector2f, 0)
 	timing := make([]int64, 0)
 
@@ -183,8 +177,4 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 func (mover *SplineMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
 	return mover.curve.PointAt(t)
-}
-
-func (mover *SplineMover) GetEndTime() float64 {
-	return mover.startTime
 }
