@@ -16,7 +16,6 @@ type BezierMover struct {
 	curve *curves.Bezier
 
 	pt            vector.Vector2f
-	startTime       float64
 	previousSpeed float32
 	invert        float32
 }

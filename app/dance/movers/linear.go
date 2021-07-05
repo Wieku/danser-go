@@ -13,9 +13,8 @@ import (
 type LinearMover struct {
 	*basicMover
 
-	line    curves.Linear
-	startTime float64
-	simple  bool
+	line   curves.Linear
+	simple bool
 }
 
 func NewLinearMover() MultiPointMover {

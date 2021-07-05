@@ -16,8 +16,6 @@ type AngleOffsetMover struct {
 
 	curve *curves.Bezier
 
-	startTime float64
-
 	lastAngle float32
 	lastPoint vector.Vector2f
 	invert    float32

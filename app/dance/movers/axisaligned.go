@@ -13,8 +13,6 @@ type AxisMover struct {
 	*basicMover
 
 	curve *curves.MultiCurve
-
-	startTime float64
 }
 
 func NewAxisMover() MultiPointMover {

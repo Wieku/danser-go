@@ -13,8 +13,7 @@ import (
 type PippiMover struct {
 	*basicMover
 
-	line    curves.Linear
-	startTime float64
+	line curves.Linear
 }
 
 func NewPippiMover() MultiPointMover {

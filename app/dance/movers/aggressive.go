@@ -15,7 +15,6 @@ type AggressiveMover struct {
 	curve *curves.Bezier
 
 	lastAngle float32
-	startTime float64
 }
 
 func NewAggressiveMover() MultiPointMover {

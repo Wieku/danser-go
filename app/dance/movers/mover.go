@@ -11,12 +11,16 @@ type MultiPointMover interface {
 	SetObjects(objs []objects.IHitObject) int
 	Update(time float64) vector.Vector2f
 	GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f
+	GetStartTime() float64
 	GetEndTime() float64
 }
 
 type basicMover struct {
+	startTime float64
 	endTime float64
+
 	id      int
+
 	diff    *difficulty.Difficulty
 }
 
@@ -27,6 +31,10 @@ func (mover *basicMover) Reset(diff *difficulty.Difficulty, id int) {
 
 func (mover *basicMover) GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f {
 	return object.GetStackedPositionAtMod(time, mover.diff.Mods)
+}
+
+func (mover *basicMover) GetStartTime() float64 {
+	return mover.startTime
 }
 
 func (mover *basicMover) GetEndTime() float64 {

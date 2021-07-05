@@ -19,9 +19,7 @@ const (
 type SplineMover struct {
 	*basicMover
 
-	curve   *curves.BSpline
-
-	startTime float64
+	curve *curves.BSpline
 }
 
 func NewSplineMover() MultiPointMover {

@@ -40,10 +40,12 @@ func (mover *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 		mover.wasFirst = true
 	}
 
-	prev, next := objs[0], objs[1]
+	start, end := objs[0], objs[1]
 
-	mover.nextTime = prev.GetEndTime() + mover.delay
-	mover.endTime = next.GetStartTime()
+	mover.nextTime = start.GetEndTime() + mover.delay
+
+	mover.startTime = start.GetStartTime()
+	mover.endTime = end.GetStartTime()
 
 	return 2
 }

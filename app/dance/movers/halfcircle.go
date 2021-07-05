@@ -15,8 +15,6 @@ type HalfCircleMover struct {
 
 	curve curves.Curve
 
-	startTime float64
-
 	invert float32
 }
 

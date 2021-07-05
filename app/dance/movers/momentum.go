@@ -16,9 +16,9 @@ import (
 type MomentumMover struct {
 	*basicMover
 
-	bz        *curves.Bezier
+	curve *curves.Bezier
+
 	last      vector.Vector2f
-	startTime   float64
 	first     bool
 	wasStream bool
 }
@@ -172,9 +172,9 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	if !same(mover.diff.Mods, start, end, ms.SkipStackAngles) {
 		mover.last = p2
-		mover.bz = curves.NewBezierNA([]vector.Vector2f{startPos, p1, p2, endPos})
+		mover.curve = curves.NewBezierNA([]vector.Vector2f{startPos, p1, p2, endPos})
 	} else {
-		mover.bz = curves.NewBezierNA([]vector.Vector2f{startPos, endPos})
+		mover.curve = curves.NewBezierNA([]vector.Vector2f{startPos, endPos})
 	}
 
 	mover.startTime = start.GetEndTime()
@@ -186,5 +186,5 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 func (mover *MomentumMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
-	return mover.bz.PointAt(float32(t))
+	return mover.curve.PointAt(float32(t))
 }
