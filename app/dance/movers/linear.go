@@ -38,7 +38,7 @@ func (bm *LinearMover) SetObjects(objs []objects.IHitObject) int {
 
 	bm.line = curves.NewLinear(endPos, startPos)
 
-	bm.endTime = math.Max(endTime, start.GetStartTime()-380*bm.diff.Speed)
+	bm.endTime = math.Max(endTime, start.GetStartTime()-(bm.diff.Preempt-bm.diff.GetModifiedTime(100)))
 	bm.beginTime = startTime
 
 	return 2
