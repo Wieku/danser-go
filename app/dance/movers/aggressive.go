@@ -14,7 +14,7 @@ type AggressiveMover struct {
 
 	lastAngle float32
 	bz        *curves.Bezier
-	endTime   float64
+	startTime   float64
 }
 
 func NewAggressiveMover() MultiPointMover {
@@ -28,41 +28,41 @@ func (mover *AggressiveMover) Reset(diff *difficulty.Difficulty, id int) {
 }
 
 func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
-	end := objs[0]
-	start := objs[1]
+	start := objs[0]
+	end := objs[1]
 
-	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
-	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
-	startTime := start.GetStartTime()
+	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
+	startTime := start.GetEndTime()
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	endTime := end.GetStartTime()
 
-	scaledDistance := float32(startTime - endTime)
+	scaledDistance := float32(endTime - startTime)
 
 	newAngle := mover.lastAngle + math.Pi
-	if s, ok := end.(objects.ILongObject); ok {
+	if s, ok := start.(objects.ILongObject); ok {
 		newAngle = s.GetEndAngleMod(mover.diff.Mods)
 	}
 
-	points := []vector.Vector2f{endPos, vector.NewVec2fRad(newAngle, scaledDistance).Add(endPos)}
+	points := []vector.Vector2f{startPos, vector.NewVec2fRad(newAngle, scaledDistance).Add(startPos)}
 
 	if scaledDistance > 1 {
-		mover.lastAngle = points[1].AngleRV(startPos)
+		mover.lastAngle = points[1].AngleRV(endPos)
 	}
 
-	if s, ok := start.(objects.ILongObject); ok {
-		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(startPos))
+	if s, ok := end.(objects.ILongObject); ok {
+		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(endPos))
 	}
 
-	points = append(points, startPos)
+	points = append(points, endPos)
 
 	mover.bz = curves.NewBezierNA(points)
-	mover.endTime = endTime
 	mover.startTime = startTime
+	mover.endTime = endTime
 
 	return 2
 }
 
 func (mover *AggressiveMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
 	return mover.bz.PointAt(t)
 }

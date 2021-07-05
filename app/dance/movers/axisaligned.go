@@ -12,7 +12,7 @@ type AxisMover struct {
 	*basicMover
 
 	bz      *curves.MultiCurve
-	endTime float64
+	startTime float64
 }
 
 func NewAxisMover() MultiPointMover {
@@ -20,29 +20,29 @@ func NewAxisMover() MultiPointMover {
 }
 
 func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
-	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
-	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
-	startTime := start.GetStartTime()
+	start, end := objs[0], objs[1]
+	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
+	startTime := start.GetEndTime()
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	endTime := end.GetStartTime()
 
 	var midP vector.Vector2f
 
-	if math32.Abs(startPos.Sub(endPos).X) < math32.Abs(startPos.Sub(startPos).X) {
-		midP = vector.NewVec2f(endPos.X, startPos.Y)
-	} else {
+	if math32.Abs(endPos.Sub(startPos).X) < math32.Abs(endPos.Sub(endPos).X) {
 		midP = vector.NewVec2f(startPos.X, endPos.Y)
+	} else {
+		midP = vector.NewVec2f(endPos.X, startPos.Y)
 	}
 
-	mover.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos})
-	mover.endTime = endTime
+	mover.bz = curves.NewMultiCurve("L", []vector.Vector2f{startPos, midP, endPos})
 	mover.startTime = startTime
+	mover.endTime = endTime
 
 	return 2
 }
 
 func (mover AxisMover) Update(time float64) vector.Vector2f {
-	t := float32(time-mover.endTime) / float32(mover.startTime-mover.endTime)
+	t := float32(time-mover.startTime) / float32(mover.endTime-mover.startTime)
 	tr := bmath.ClampF32(math32.Sin(t*math32.Pi/2), 0, 1)
 	return mover.bz.PointAt(tr)
 }

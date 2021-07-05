@@ -15,7 +15,7 @@ type BezierMover struct {
 
 	pt            vector.Vector2f
 	bz            *curves.Bezier
-	endTime       float64
+	startTime       float64
 	previousSpeed float32
 	invert        float32
 }
@@ -35,21 +35,22 @@ func (mover *BezierMover) Reset(diff *difficulty.Difficulty, id int) {
 func (mover *BezierMover) SetObjects(objs []objects.IHitObject) int {
 	config := settings.CursorDance.MoverSettings.Bezier[mover.id%len(settings.CursorDance.MoverSettings.Bezier)]
 
-	end := objs[0]
-	start := objs[1]
-	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
-	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
-	startTime := start.GetStartTime()
+	fff := objs[0]
+	end := objs[1]
 
-	dst := endPos.Dst(startPos)
+	startPos := fff.GetStackedEndPositionMod(mover.diff.Mods)
+	startTime := fff.GetEndTime()
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	endTime := end.GetStartTime()
+
+	dst := startPos.Dst(endPos)
 
 	if mover.previousSpeed < 0 {
-		mover.previousSpeed = dst / float32(startTime-endTime)
+		mover.previousSpeed = dst / float32(endTime-startTime)
 	}
 
-	s1, ok1 := end.(objects.ILongObject)
-	s2, ok2 := start.(objects.ILongObject)
+	s1, ok1 := fff.(objects.ILongObject)
+	s2, ok2 := end.(objects.ILongObject)
 
 	var points []vector.Vector2f
 
@@ -58,44 +59,44 @@ func (mover *BezierMover) SetObjects(objs []objects.IHitObject) int {
 	aggressiveness := float32(config.Aggressiveness)
 	sliderAggressiveness := float32(config.SliderAggressiveness)
 
-	if endPos == startPos {
-		points = []vector.Vector2f{endPos, startPos}
+	if startPos == endPos {
+		points = []vector.Vector2f{startPos, endPos}
 	} else if ok1 && ok2 {
 		endAngle := s1.GetEndAngleMod(mover.diff.Mods)
 		startAngle := s2.GetStartAngleMod(mover.diff.Mods)
-		mover.pt = vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, mover.diff.Mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
-		pt2 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, mover.diff.Mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
-		points = []vector.Vector2f{endPos, mover.pt, pt2, startPos}
+		mover.pt = vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(startTime-10, mover.diff.Mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		pt2 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(endTime+10, mover.diff.Mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		points = []vector.Vector2f{startPos, mover.pt, pt2, endPos}
 	} else if ok1 {
 		endAngle := s1.GetEndAngleMod(mover.diff.Mods)
-		pt1 := vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(endTime-10, mover.diff.Mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
-		mover.pt = vector.NewVec2fRad(startPos.AngleRV(mover.pt), genScale*aggressiveness).Add(startPos)
-		points = []vector.Vector2f{endPos, pt1, mover.pt, startPos}
+		pt1 := vector.NewVec2fRad(endAngle, s1.GetStackedPositionAtMod(startTime-10, mover.diff.Mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
+		mover.pt = vector.NewVec2fRad(endPos.AngleRV(mover.pt), genScale*aggressiveness).Add(endPos)
+		points = []vector.Vector2f{startPos, pt1, mover.pt, endPos}
 	} else if ok2 {
 		startAngle := s2.GetStartAngleMod(mover.diff.Mods)
-		mover.pt = vector.NewVec2fRad(endPos.AngleRV(mover.pt), genScale*aggressiveness).Add(endPos)
-		pt1 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(startTime+10, mover.diff.Mods).Dst(startPos)*aggressiveness*sliderAggressiveness/10).Add(startPos)
-		points = []vector.Vector2f{endPos, mover.pt, pt1, startPos}
+		mover.pt = vector.NewVec2fRad(startPos.AngleRV(mover.pt), genScale*aggressiveness).Add(startPos)
+		pt1 := vector.NewVec2fRad(startAngle, s2.GetStackedPositionAtMod(endTime+10, mover.diff.Mods).Dst(endPos)*aggressiveness*sliderAggressiveness/10).Add(endPos)
+		points = []vector.Vector2f{startPos, mover.pt, pt1, endPos}
 	} else {
-		angle := endPos.AngleRV(mover.pt)
+		angle := startPos.AngleRV(mover.pt)
 		if math32.IsNaN(angle) {
 			angle = 0
 		}
-		mover.pt = vector.NewVec2fRad(angle, mover.previousSpeed*aggressiveness).Add(endPos)
+		mover.pt = vector.NewVec2fRad(angle, mover.previousSpeed*aggressiveness).Add(startPos)
 
-		points = []vector.Vector2f{endPos, mover.pt, startPos}
+		points = []vector.Vector2f{startPos, mover.pt, endPos}
 	}
 
 	mover.bz = curves.NewBezierNA(points)
 
-	mover.endTime = endTime
 	mover.startTime = startTime
-	mover.previousSpeed = (dst + 1.0) / float32(startTime-endTime)
+	mover.endTime = endTime
+	mover.previousSpeed = (dst + 1.0) / float32(endTime-startTime)
 
 	return 2
 }
 
 func (mover *BezierMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
 	return mover.bz.PointAt(t)
 }

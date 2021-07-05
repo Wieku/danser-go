@@ -14,7 +14,7 @@ type PippiMover struct {
 	*basicMover
 
 	line    curves.Linear
-	endTime float64
+	startTime float64
 }
 
 func NewPippiMover() MultiPointMover {
@@ -22,22 +22,22 @@ func NewPippiMover() MultiPointMover {
 }
 
 func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
-	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
-	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
-	startTime := start.GetStartTime()
+	start, end := objs[0], objs[1]
+	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
+	startTime := start.GetEndTime()
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	endTime := end.GetStartTime()
 
-	mover.line = curves.NewLinear(endPos, startPos)
+	mover.line = curves.NewLinear(startPos, endPos)
 
-	mover.endTime = endTime
 	mover.startTime = startTime
+	mover.endTime = endTime
 
 	return 2
 }
 
 func (mover *PippiMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF64((time-mover.endTime)/(mover.startTime-mover.endTime), 0, 1)
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	pos := mover.line.PointAt(float32(easing.OutQuad(t)))
 
 	return mover.modifyPos(time, false, pos)

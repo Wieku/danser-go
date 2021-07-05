@@ -20,7 +20,7 @@ type SplineMover struct {
 	*basicMover
 
 	curve   *curves.BSpline
-	endTime float64
+	startTime float64
 }
 
 func NewSplineMover() MultiPointMover {
@@ -33,7 +33,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	points := make([]vector.Vector2f, 0)
 	timing := make([]int64, 0)
 
-	var endTime, startTime float64
+	var startTime, endTime float64
 	var angle float32
 	var stream bool
 
@@ -58,7 +58,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			points = append(points, cEnd, wPoint)
 			timing = append(timing, int64(math.Max(o.GetStartTime(), o.GetEndTime())))
 
-			endTime = math.Max(o.GetStartTime(), o.GetEndTime())
+			startTime = math.Max(o.GetStartTime(), o.GetEndTime())
 
 			continue
 		}
@@ -79,7 +79,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			points = append(points, wPoint, cStart)
 			timing = append(timing, int64(o.GetStartTime()))
 
-			startTime = o.GetStartTime()
+			endTime = o.GetStartTime()
 
 			break
 		} else if i > 1 && i < len(objs)-1 {
@@ -169,12 +169,13 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 	mover.startTime = startTime
 	mover.endTime = endTime
+
 	mover.curve = curves.NewBSpline(points, timing)
 
 	return i + 1
 }
 
 func (mover *SplineMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(t)
 }

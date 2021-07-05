@@ -15,7 +15,7 @@ type MultiPointMover interface {
 }
 
 type basicMover struct {
-	startTime float64
+	endTime float64
 	id      int
 	diff    *difficulty.Difficulty
 }
@@ -30,5 +30,5 @@ func (mover *basicMover) GetObjectsPosition(time float64, object objects.IHitObj
 }
 
 func (mover *basicMover) GetEndTime() float64 {
-	return mover.startTime
+	return mover.endTime
 }

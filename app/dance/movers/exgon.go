@@ -43,7 +43,7 @@ func (mover *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 	prev, next := objs[0], objs[1]
 
 	mover.nextTime = prev.GetEndTime() + mover.delay
-	mover.startTime = next.GetStartTime()
+	mover.endTime = next.GetStartTime()
 
 	return 2
 }

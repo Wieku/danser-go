@@ -18,7 +18,7 @@ type MomentumMover struct {
 
 	bz        *curves.Bezier
 	last      vector.Vector2f
-	endTime   float64
+	startTime   float64
 	first     bool
 	wasStream bool
 }
@@ -62,8 +62,8 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	i := 0
 
-	end := objs[i+0]
-	start := objs[i+1]
+	start := objs[i+0]
+	end := objs[i+1]
 
 	hasNext := false
 	var next objects.IHitObject
@@ -74,10 +74,10 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		next = objs[i+2]
 	}
 
-	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
-	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
 
-	dst := endPos.Dst(startPos)
+	dst := startPos.Dst(endPos)
 
 	var a2 float32
 	fromLong := false
@@ -89,7 +89,7 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			break
 		}
 		if i == len(objs)-1 {
-			a2 = mover.last.AngleRV(endPos)
+			a2 = mover.last.AngleRV(startPos)
 			break
 		}
 		if !same(mover.diff.Mods, o, objs[i+1], ms.SkipStackAngles) {
@@ -101,8 +101,8 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	var sq1, sq2 float32
 	if next != nil {
 		nextPos := next.GetStackedStartPositionMod(mover.diff.Mods)
-		sq1 = endPos.DstSq(startPos)
-		sq2 = startPos.DstSq(nextPos)
+		sq1 = startPos.DstSq(endPos)
+		sq2 = endPos.DstSq(nextPos)
 	}
 
 	// stream detection logic stolen from spline mover
@@ -119,21 +119,21 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	mover.wasStream = stream
 
 	var a1 float32
-	if s, ok := end.(objects.ILongObject); ok {
+	if s, ok := start.(objects.ILongObject); ok {
 		a1 = s.GetEndAngleMod(mover.diff.Mods)
 	} else if mover.first {
 		a1 = a2 + math.Pi
 	} else {
-		a1 = endPos.AngleRV(mover.last)
+		a1 = startPos.AngleRV(mover.last)
 	}
 
 	mult := ms.DistanceMultOut
 
-	ac := a2 - startPos.AngleRV(endPos)
+	ac := a2 - endPos.AngleRV(startPos)
 	area := float32(ms.RestrictArea * math.Pi / 180.0)
 
 	if area > 0 && stream && anorm(ac) < anorm((2*math32.Pi)-area) {
-		a := endPos.AngleRV(startPos)
+		a := startPos.AngleRV(endPos)
 
 		sangle := float32(0.5 * math.Pi)
 		if anorm(a1-a) > math32.Pi {
@@ -144,7 +144,7 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 		mult = ms.StreamMult
 	} else if !fromLong && area > 0 && math32.Abs(anorm2(ac)) < area {
-		a := startPos.AngleRV(endPos)
+		a := endPos.AngleRV(startPos)
 
 		offset := float32(ms.RestrictAngle * math.Pi / 180.0)
 		if (anorm(a2-a) < offset) != ms.RestrictInvert {
@@ -156,36 +156,36 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		mult = ms.DistanceMult
 	} else if next != nil && !fromLong {
 		r := sq1 / (sq1 + sq2)
-		a := endPos.AngleRV(startPos)
+		a := startPos.AngleRV(endPos)
 		a2 = a + r*anorm2(a2-a)
 	}
 
-	endTime := end.GetEndTime()
-	startTime := start.GetStartTime()
-	duration := startTime - endTime
+	startTime := start.GetEndTime()
+	endTime := end.GetStartTime()
+	duration := endTime - startTime
 
 	if ms.DurationTrigger > 0 && duration >= ms.DurationTrigger {
 		mult *= ms.DurationMult * (duration / ms.DurationTrigger)
 	}
 
-	p1 := vector.NewVec2fRad(a1, dst*float32(mult)).Add(endPos)
-	p2 := vector.NewVec2fRad(a2, dst*float32(mult)).Add(startPos)
+	p1 := vector.NewVec2fRad(a1, dst*float32(mult)).Add(startPos)
+	p2 := vector.NewVec2fRad(a2, dst*float32(mult)).Add(endPos)
 
-	if !same(mover.diff.Mods, end, start, ms.SkipStackAngles) {
+	if !same(mover.diff.Mods, start, end, ms.SkipStackAngles) {
 		mover.last = p2
-		mover.bz = curves.NewBezierNA([]vector.Vector2f{endPos, p1, p2, startPos})
+		mover.bz = curves.NewBezierNA([]vector.Vector2f{startPos, p1, p2, endPos})
 	} else {
-		mover.bz = curves.NewBezierNA([]vector.Vector2f{endPos, startPos})
+		mover.bz = curves.NewBezierNA([]vector.Vector2f{startPos, endPos})
 	}
 
-	mover.endTime = end.GetEndTime()
-	mover.startTime = start.GetStartTime()
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
 	mover.first = false
 
 	return 2
 }
 
 func (mover *MomentumMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
+	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
 	return mover.bz.PointAt(t)
 }

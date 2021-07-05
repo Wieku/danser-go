@@ -14,7 +14,7 @@ type LinearMover struct {
 	*basicMover
 
 	line    curves.Linear
-	endTime float64
+	startTime float64
 	simple  bool
 }
 
@@ -30,24 +30,24 @@ func NewLinearMoverSimple() MultiPointMover {
 }
 
 func (mover *LinearMover) SetObjects(objs []objects.IHitObject) int {
-	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(mover.diff.Mods)
-	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(mover.diff.Mods)
-	startTime := start.GetStartTime()
+	start, end := objs[0], objs[1]
+	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
+	startTime := start.GetEndTime()
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	endTime := end.GetStartTime()
 
-	mover.line = curves.NewLinear(endPos, startPos)
+	mover.line = curves.NewLinear(startPos, endPos)
 
-	mover.endTime = endTime
 	mover.startTime = startTime
+	mover.endTime = endTime
 
 	if mover.simple {
-		mover.endTime = math.Max(endTime, start.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
+		mover.startTime = math.Max(startTime, end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	} else {
 		config := settings.CursorDance.MoverSettings.Linear[mover.id%len(settings.CursorDance.MoverSettings.Linear)]
 
 		if config.WaitForPreempt {
-			mover.endTime = math.Max(endTime, start.GetStartTime()-(mover.diff.Preempt-config.ReactionTime*mover.diff.Speed))
+			mover.startTime = math.Max(startTime, end.GetStartTime()-(mover.diff.Preempt-config.ReactionTime*mover.diff.Speed))
 		}
 	}
 
@@ -55,7 +55,7 @@ func (mover *LinearMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *LinearMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF64((time-mover.endTime)/(mover.startTime-mover.endTime), 0, 1)
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.line.PointAt(float32(easing.OutQuad(t)))
 }
 
