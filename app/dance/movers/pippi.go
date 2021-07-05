@@ -23,15 +23,14 @@ func NewPippiMover() MultiPointMover {
 
 func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 	start, end := objs[0], objs[1]
+
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
+
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	startTime := start.GetEndTime()
 	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
-	endTime := end.GetStartTime()
 
 	mover.line = curves.NewLinear(startPos, endPos)
-
-	mover.startTime = startTime
-	mover.endTime = endTime
 
 	return 2
 }

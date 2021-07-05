@@ -31,23 +31,22 @@ func NewLinearMoverSimple() MultiPointMover {
 
 func (mover *LinearMover) SetObjects(objs []objects.IHitObject) int {
 	start, end := objs[0], objs[1]
+
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
+
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	startTime := start.GetEndTime()
 	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
-	endTime := end.GetStartTime()
 
 	mover.line = curves.NewLinear(startPos, endPos)
 
-	mover.startTime = startTime
-	mover.endTime = endTime
-
 	if mover.simple {
-		mover.startTime = math.Max(startTime, end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
+		mover.startTime = math.Max(mover.startTime, end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	} else {
 		config := settings.CursorDance.MoverSettings.Linear[mover.id%len(settings.CursorDance.MoverSettings.Linear)]
 
 		if config.WaitForPreempt {
-			mover.startTime = math.Max(startTime, end.GetStartTime()-(mover.diff.Preempt-config.ReactionTime*mover.diff.Speed))
+			mover.startTime = math.Max(mover.startTime, end.GetStartTime()-(mover.diff.Preempt-config.ReactionTime*mover.diff.Speed))
 		}
 	}
 
