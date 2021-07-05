@@ -60,6 +60,6 @@ type exgon struct {
 }
 
 type linear struct {
-	ReactionTime   float64
 	WaitForPreempt bool
+	ReactionTime   float64
 }
