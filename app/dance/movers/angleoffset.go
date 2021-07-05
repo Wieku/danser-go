@@ -14,10 +14,12 @@ import (
 type AngleOffsetMover struct {
 	*basicMover
 
+	curve *curves.Bezier
+
+	startTime float64
+
 	lastAngle float32
 	lastPoint vector.Vector2f
-	bz        *curves.Bezier
-	startTime   float64
 	invert    float32
 }
 
@@ -36,13 +38,15 @@ func (mover *AngleOffsetMover) Reset(diff *difficulty.Difficulty, id int) {
 func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	config := settings.CursorDance.MoverSettings.Flower[mover.id%len(settings.CursorDance.MoverSettings.Flower)]
 
-	start := objs[0]
-	end := objs[1]
+	start, end := objs[0], objs[1]
+
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
+
+	timeDelta := mover.endTime - mover.startTime
 
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	startTime := start.GetEndTime()
 	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
-	endTime := end.GetStartTime()
 
 	distance := startPos.Dst(endPos)
 
@@ -54,13 +58,13 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	scaledDistance := distance * float32(config.DistanceMult)
 	newAngle := float32(config.AngleOffset) * math32.Pi / 180.0
 
-	if start.GetStartTime() > 0 && config.LongJump >= 0 && (endTime-startTime) > float64(config.LongJump) {
-		scaledDistance = float32(endTime-startTime) * float32(config.LongJumpMult)
+	if start.GetStartTime() > 0 && config.LongJump >= 0 && timeDelta > float64(config.LongJump) {
+		scaledDistance = float32(timeDelta) * float32(config.LongJumpMult)
 	}
 
 	if startPos == endPos {
 		if config.LongJumpOnEqualPos {
-			scaledDistance = float32(endTime-startTime) * float32(config.LongJumpMult)
+			scaledDistance = float32(timeDelta) * float32(config.LongJumpMult)
 
 			mover.lastAngle += math.Pi
 
@@ -122,9 +126,7 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 		points = []vector.Vector2f{startPos, pt1, pt2, endPos}
 	}
 
-	mover.bz = curves.NewBezierNA(points)
-	mover.startTime = startTime
-	mover.endTime = endTime
+	mover.curve = curves.NewBezierNA(points)
 	mover.lastPoint = startPos
 
 	return 2
@@ -132,5 +134,5 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 func (mover *AngleOffsetMover) Update(time float64) vector.Vector2f {
 	t := bmath.ClampF32(float32(time-mover.startTime)/float32(mover.endTime-mover.startTime), 0, 1)
-	return mover.bz.PointAt(t)
+	return mover.curve.PointAt(t)
 }
