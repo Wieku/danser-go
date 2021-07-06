@@ -44,10 +44,11 @@ type Player struct {
 	bMap        *beatmap.BeatMap
 	bloomEffect *effects.BloomEffect
 
-	lastTime     int64
-	lastMusicPos float64
-	progressMsF  float64
-	progressMs   int64
+	lastTime        int64
+	lastMusicPos    float64
+	lastProgressMsF float64
+	progressMsF     float64
+	progressMs      int64
 
 	batch       *batch2.QuadBatch
 	controller  dance.Controller
@@ -666,8 +667,10 @@ func (player *Player) Draw(float64) {
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
 
-	if player.start {
-		settings.Cursor.Colors.Update(timMs)
+	if player.progressMsF > 0 {
+		timeDiff := player.progressMsF - player.lastProgressMsF
+		settings.Cursor.Colors.Update(timeDiff)
+		player.lastProgressMsF = player.progressMsF
 	}
 
 	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(player.controller.GetCursors()), player.Scl, player.cursorGlider.GetValue())
