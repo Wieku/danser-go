@@ -168,7 +168,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 
 	panel.beatmapName = fmt.Sprintf("%s - %s [%s]", bMap.Artist, bMap.Name, bMap.Difficulty)
 	panel.beatmapCreator = fmt.Sprintf("Beatmap by %s", bMap.Creator)
-	panel.playedBy = fmt.Sprintf("Played by %s on %s", panel.cursor.Name, panel.cursor.ScoreTime.Local().Format("2006-01-02 15:04:05"))
+	panel.playedBy = fmt.Sprintf("Played by %s on %s", panel.cursor.Name, panel.cursor.ScoreTime.Local().Format("2006-01-02 15:04:05 MST"))
 
 	panel.score = fmt.Sprintf("%08d", score)
 	panel.maxCombo = fmt.Sprintf("%dx", maxCombo)
