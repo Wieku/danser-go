@@ -404,7 +404,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 		overlay.created = true
 		cTime := overlay.normalTime
 
-		go func() {
+		createPanel := func() {
 			overlay.panel = play.NewRankingPanel(overlay.cursor, overlay.ruleset, overlay.hitErrorMeter, overlay.hpSections)
 
 			s := cTime
@@ -413,7 +413,13 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 			overlay.resultsFade.AddEventS(s, s+500, 0, 1)
 			overlay.resultsFade.AddEventS(s+resultsTime+500, s+resultsTime+1000, 1, 0)
-		}()
+		}
+
+		if settings.RECORD {
+			createPanel()
+		} else {
+			go createPanel()
+		}
 	}
 
 	if overlay.flashlight != nil && time >= 0 {
