@@ -113,30 +113,32 @@ func initGameplay() *gameplay {
 			},
 			BackgroundOpacity: 0.5,
 		},
-		ShowResultsScreen: true,
-		ResultsScreenTime: 5,
-		ShowWarningArrows: true,
-		FlashlightDim:     1,
-		PlayUsername:      "Guest",
+		ShowResultsScreen:       true,
+		ResultsScreenTime:       5,
+		ResultsUseLocalTimeZone: false,
+		ShowWarningArrows:       true,
+		FlashlightDim:           1,
+		PlayUsername:            "Guest",
 	}
 }
 
 type gameplay struct {
-	HitErrorMeter     *hitError
-	Score             *score
-	HpBar             *hudElement
-	ComboCounter      *hudElement
-	PPCounter         *ppCounter
-	HitCounter        *hitCounter
-	KeyOverlay        *hudElement
-	ScoreBoard        *scoreBoard
-	Mods              *mods
-	Boundaries        *boundaries
-	ShowResultsScreen bool
-	ResultsScreenTime float64
-	ShowWarningArrows bool
-	FlashlightDim     float64
-	PlayUsername      string
+	HitErrorMeter           *hitError
+	Score                   *score
+	HpBar                   *hudElement
+	ComboCounter            *hudElement
+	PPCounter               *ppCounter
+	HitCounter              *hitCounter
+	KeyOverlay              *hudElement
+	ScoreBoard              *scoreBoard
+	Mods                    *mods
+	Boundaries              *boundaries
+	ShowResultsScreen       bool
+	ResultsScreenTime       float64
+	ResultsUseLocalTimeZone bool
+	ShowWarningArrows       bool
+	FlashlightDim           float64
+	PlayUsername            string
 }
 
 type boundaries struct {
