@@ -1,8 +1,8 @@
 package dance
 
 import (
+	"fmt"
 	"github.com/karrick/godirwalk"
-	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
@@ -57,6 +57,7 @@ type subControl struct {
 	oldSpinners     bool
 	relaxController *input.RelaxInputProcessor
 	mouseController schedulers.Scheduler
+	mods            difficulty.Modifier
 }
 
 func NewSubControl() *subControl {
@@ -129,8 +130,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	counter := settings.Knockout.MaxPlayers
 
-	excludedMods := osuapi.ParseMods(settings.Knockout.ExcludeMods)
-	displayedMods := uint32(^osuapi.ParseMods(settings.Knockout.HideMods))
+	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
+	displayedMods := ^difficulty.ParseMods(settings.Knockout.HideMods)
 
 	candidates := make([]*rplpa.Replay, 0)
 
@@ -203,6 +204,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		log.Println("Loading replay for:", replay.Username)
 
 		control := NewSubControl()
+		control.mods = difficulty.Modifier(replay.Mods)
 
 		loadFrames(control, replay.ReplayData)
 
@@ -211,7 +213,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods & displayedMods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
+		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("Expected score:", replay.Score)
@@ -223,11 +225,12 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	if !localReplay && (settings.Knockout.AddDanser || counter == settings.Knockout.MaxPlayers) {
 		control := NewSubControl()
+		control.mods = difficulty.Autoplay | beatMap.Diff.Mods
 
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append([]RpData{{settings.Knockout.DanserName, (difficulty.Autoplay | beatMap.Diff.Mods).String(), difficulty.Autoplay | beatMap.Diff.Mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
+		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
 	}
 
@@ -249,6 +252,36 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 	// Remove incorrect first frame if its delta is 0
 	if frames[0].Time == 0 {
 		frames = frames[1:]
+	}
+
+	times := make([]float64, 0, len(frames))
+
+	for _, frame := range frames {
+		if frame.Time >= 0 {
+			times = append(times, float64(frame.Time))
+		}
+	}
+
+	sort.Float64s(times)
+
+	var meanFrameTime float64
+
+	l := len(times)
+	if l%2 == 0 {
+		meanFrameTime = (times[l/2] + times[l/2-1]) / 2
+	} else {
+		meanFrameTime = times[l/2]
+	}
+
+	diff := difficulty.NewDifficulty(5, 5, 5, 5)
+	diff.SetMods(subController.mods)
+
+	meanFrameTime = diff.GetModifiedTime(meanFrameTime)
+
+	log.Println(fmt.Sprintf("Mean cv frametime: %.2fms", meanFrameTime))
+
+	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay) {
+		log.Println("WARNING!!! This replay was probably timewarped!!!")
 	}
 
 	subController.frames = frames
