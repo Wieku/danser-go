@@ -185,6 +185,10 @@ func run() {
 				panic("Modes other than osu!standard are not supported")
 			}
 
+			if rp.ReplayData == nil || len(rp.ReplayData) == 0 {
+				panic("Replay is missing input data")
+			}
+
 			*md5 = rp.BeatmapMD5
 			*id = -1
 			modsParsed = difficulty2.Modifier(rp.Mods)
