@@ -201,10 +201,12 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	}
 
 	for i, replay := range candidates {
-		log.Println("Loading replay for:", replay.Username)
+		log.Println(fmt.Sprintf("Loading replay for \"%s\":", replay.Username))
 
 		control := NewSubControl()
 		control.mods = difficulty.Modifier(replay.Mods)
+
+		log.Println("Mods:", control.mods.String())
 
 		loadFrames(control, replay.ReplayData)
 
@@ -281,7 +283,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 	log.Println(fmt.Sprintf("Mean cv frametime: %.2fms", meanFrameTime))
 
 	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay | difficulty.Relax | difficulty.Relax2) {
-		log.Println("WARNING!!! This replay was probably timewarped!!!")
+		log.Println("WARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
 
 	subController.frames = frames
