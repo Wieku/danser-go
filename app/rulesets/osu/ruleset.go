@@ -185,9 +185,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalculateStep(ruleset.beatMap.HitObjects, diff, false)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
-			log.Println("Aim Stars:", star.Aim)
-			log.Println("Speed Stars:", star.Speed)
-			log.Println("Total Stars:", star.Total)
+			log.Println("\tAim Stars:", star.Aim)
+			log.Println("\tSpeed Stars:", star.Speed)
+			log.Println("\tTotal Stars:", star.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
@@ -196,9 +196,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		hp.CalculateRate()
 		hp.ResetHp()
 
-		log.Println("Passive drain rate:", hp.PassiveDrain/2*1000)
-		log.Println("Normal multiplier:", hp.HpMultiplierNormal)
-		log.Println("Combo end multiplier:", hp.HpMultiplierComboEnd)
+		log.Println("\tPassive drain rate:", hp.PassiveDrain/2*1000)
+		log.Println("\tNormal multiplier:", hp.HpMultiplierNormal)
+		log.Println("\tCombo end multiplier:", hp.HpMultiplierComboEnd)
 
 		recoveries := 0
 		if diff.CheckModActive(difficulty.Easy) {

@@ -123,7 +123,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control := NewSubControl()
 		control.mods = difficulty.Modifier(replay.Mods)
 
-		log.Println("Mods:", control.mods.String())
+		log.Println("\tMods:", control.mods.String())
 
 		loadFrames(control, replay.ReplayData)
 
@@ -135,9 +135,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
 
-		log.Println("Expected score:", replay.Score)
-		log.Println("Expected pp:", math.NaN())
-		log.Println("Replay loaded!")
+		log.Println("\tExpected score:", replay.Score)
+		log.Println("\tExpected pp:", math.NaN())
+		log.Println("\tReplay loaded!")
 	}
 
 	if !localReplay && (settings.Knockout.AddDanser || len(candidates) == 0) {
@@ -285,10 +285,10 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	meanFrameTime = diff.GetModifiedTime(meanFrameTime)
 
-	log.Println(fmt.Sprintf("Mean cv frametime: %.2fms", meanFrameTime))
+	log.Println(fmt.Sprintf("\tMean cv frametime: %.2fms", meanFrameTime))
 
 	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay | difficulty.Relax | difficulty.Relax2) {
-		log.Println("WARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
+		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
 
 	subController.frames = frames
