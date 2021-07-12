@@ -196,6 +196,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		hp.CalculateRate()
 		hp.ResetHp()
 
+		log.Println("Passive drain rate:", hp.PassiveDrain/2*1000)
+		log.Println("Normal multiplier:", hp.HpMultiplierNormal)
+		log.Println("Combo end multiplier:", hp.HpMultiplierComboEnd)
+
 		recoveries := 0
 		if diff.CheckModActive(difficulty.Easy) {
 			recoveries = 2
