@@ -280,7 +280,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	log.Println(fmt.Sprintf("Mean cv frametime: %.2fms", meanFrameTime))
 
-	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay) {
+	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay | difficulty.Relax | difficulty.Relax2) {
 		log.Println("WARNING!!! This replay was probably timewarped!!!")
 	}
 
