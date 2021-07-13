@@ -7,16 +7,16 @@ import (
 )
 
 type Bezier struct {
-	points       []vector.Vector2f
+	Points       []vector.Vector2f
 	ApproxLength float32
 }
 
 func NewBezier(points []vector.Vector2f) *Bezier {
-	bz := &Bezier{points: points}
+	bz := &Bezier{Points: points}
 
 	pointLength := float32(0.0)
-	for i := 1; i < len(points); i++ {
-		pointLength += points[i].Dst(points[i-1])
+	for i := 1; i < len(bz.Points); i++ {
+		pointLength += bz.Points[i].Dst(bz.Points[i-1])
 	}
 
 	pointLength = math32.Ceil(pointLength * 30)
@@ -29,7 +29,7 @@ func NewBezier(points []vector.Vector2f) *Bezier {
 }
 
 func NewBezierNA(points []vector.Vector2f) *Bezier {
-	bz := &Bezier{points: points}
+	bz := &Bezier{Points: points}
 	bz.ApproxLength = 0.0
 	return bz
 }
@@ -37,11 +37,11 @@ func NewBezierNA(points []vector.Vector2f) *Bezier {
 func (bz *Bezier) PointAt(t float32) vector.Vector2f {
 	x := float32(0.0)
 	y := float32(0.0)
-	n := len(bz.points) - 1
+	n := len(bz.Points) - 1
 	for i := 0; i <= n; i++ {
 		b := bernstein(int64(i), int64(n), t)
-		x += bz.points[i].X * b
-		y += bz.points[i].Y * b
+		x += bz.Points[i].X * b
+		y += bz.Points[i].Y * b
 	}
 	return vector.NewVec2f(x, y)
 }
@@ -51,11 +51,11 @@ func (bz *Bezier) GetLength() float32 {
 }
 
 func (bz *Bezier) GetStartAngle() float32 {
-	return bz.points[0].AngleRV(bz.PointAt(1.0 / bz.ApproxLength))
+	return bz.Points[0].AngleRV(bz.PointAt(1.0 / bz.ApproxLength))
 }
 
 func (bz *Bezier) GetEndAngle() float32 {
-	return bz.points[len(bz.points)-1].AngleRV(bz.PointAt((bz.ApproxLength - 1) / bz.ApproxLength))
+	return bz.Points[len(bz.Points)-1].AngleRV(bz.PointAt((bz.ApproxLength - 1) / bz.ApproxLength))
 }
 
 func BinomialCoefficient(n, k int64) int64 {
