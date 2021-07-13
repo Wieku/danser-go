@@ -4,6 +4,8 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
+// NewBSpline creates a spline that goes through all given control points.
+// points[1] and points[len(points)-2] are terminal tangents.
 func NewBSpline(points []vector.Vector2f) *Spline {
 	beziers := SolveBSpline(points)
 	beziersC := make([]Curve, len(beziers))
@@ -16,6 +18,8 @@ func NewBSpline(points []vector.Vector2f) *Spline {
 	return NewSpline(beziersC)
 }
 
+// NewBSplineW creates a spline that goes through all given control points with forced weights(lengths), useful when control points have to be passed at certain times.
+// points[1] and points[len(points)-2] are terminal tangents.
 func NewBSplineW(points []vector.Vector2f, weights []float32) *Spline {
 	beziers := SolveBSpline(points)
 	beziersC := make([]Curve, len(beziers))

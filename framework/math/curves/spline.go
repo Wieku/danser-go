@@ -12,6 +12,7 @@ type Spline struct {
 	length   float32
 }
 
+// NewSpline creates a spline with weights determined by sub-curves lengths
 func NewSpline(curves []Curve) *Spline {
 	sections := make([]float32, len(curves)+1)
 	length := float32(0.0)
@@ -24,7 +25,13 @@ func NewSpline(curves []Curve) *Spline {
 	return &Spline{sections, curves, length}
 }
 
+// NewSplineW creates a spline with forced weights(lengths), useful when sub-curves have to be finished at certain times.
+// Length of weights has to be the same as curves, otherwise function will panic.
 func NewSplineW(curves []Curve, weights []float32) *Spline {
+	if len(weights) != len(curves) {
+		panic("incorrect number of weights")
+	}
+
 	sections := make([]float32, len(curves)+1)
 	length := float32(0.0)
 
