@@ -29,21 +29,18 @@ func NewBezier(points []vector.Vector2f) *Bezier {
 }
 
 func NewBezierNA(points []vector.Vector2f) *Bezier {
-	bz := &Bezier{Points: points}
-	bz.ApproxLength = 0.0
-	return bz
+	return &Bezier{Points: points}
 }
 
-func (bz *Bezier) PointAt(t float32) vector.Vector2f {
-	x := float32(0.0)
-	y := float32(0.0)
+func (bz *Bezier) PointAt(t float32) (p vector.Vector2f) {
 	n := len(bz.Points) - 1
 	for i := 0; i <= n; i++ {
 		b := bernstein(int64(i), int64(n), t)
-		x += bz.Points[i].X * b
-		y += bz.Points[i].Y * b
+		p.X += bz.Points[i].X * b
+		p.Y += bz.Points[i].Y * b
 	}
-	return vector.NewVec2f(x, y)
+
+	return
 }
 
 func (bz *Bezier) GetLength() float32 {
@@ -62,13 +59,15 @@ func BinomialCoefficient(n, k int64) int64 {
 	if k < 0 || k > n {
 		return 0
 	}
+
 	if k == 0 || k == n {
 		return 1
 	}
+
 	k = bmath.MinI64(k, n-k)
-	var c int64 = 1
-	var i int64 = 0
-	for ; i < k; i++ {
+
+	c := int64(1)
+	for i := int64(0); i < k; i++ {
 		c = c * (n - i) / (i + 1)
 	}
 
