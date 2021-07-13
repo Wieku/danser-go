@@ -19,7 +19,7 @@ const (
 type SplineMover struct {
 	*basicMover
 
-	curve *curves.BSpline
+	curve *curves.Spline
 }
 
 func NewSplineMover() MultiPointMover {
@@ -30,7 +30,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	config := settings.CursorDance.MoverSettings.Spline[mover.id%len(settings.CursorDance.MoverSettings.Spline)]
 
 	points := make([]vector.Vector2f, 0)
-	timing := make([]int64, 0)
+	timing := make([]float64, 0)
 
 	var angle float32
 	var stream bool
@@ -54,7 +54,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			}
 
 			points = append(points, cEnd, wPoint)
-			timing = append(timing, int64(math.Max(o.GetStartTime(), o.GetEndTime())))
+			timing = append(timing, math.Max(o.GetStartTime(), o.GetEndTime()))
 
 			mover.startTime = math.Max(o.GetStartTime(), o.GetEndTime())
 
@@ -75,7 +75,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			}
 
 			points = append(points, wPoint, cStart)
-			timing = append(timing, int64(o.GetStartTime()))
+			timing = append(timing, o.GetStartTime())
 
 			mover.endTime = o.GetStartTime()
 
@@ -150,22 +150,43 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 						p4 := mid.Sub(pos1).Scl(scale).Rotate(angle + float32(sign*t)*math32.Pi/6).Add(mid)
 
 						points = append(points, p4)
-						timing = append(timing, int64((o.GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime()))
+						timing = append(timing, (o.GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime())
 					}
 				} else {
 					p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
 
 					points = append(points, p4)
-					timing = append(timing, int64((o.GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime()))
+					timing = append(timing, (o.GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime())
 				}
 			}
 		}
 
 		points = append(points, o.GetStackedEndPositionMod(mover.diff.Mods))
-		timing = append(timing, int64(o.GetStartTime()))
+		timing = append(timing, o.GetStartTime())
 	}
 
-	mover.curve = curves.NewBSpline(points, timing)
+	timeDiff := make([]float32, len(timing)-1)
+
+	for j:=0; j < len(timeDiff); j++ {
+		timeDiff[j] = float32(timing[j+1] - timing[j])
+	}
+
+	beziers := curves.SolveBSpline(points)
+	beziersC := make([]curves.Curve, len(beziers))
+
+	for j, b := range beziers {
+		scl := float32(1.0)
+		if timeDiff[j] > 600 {
+			scl = timeDiff[j] / 2
+		}
+
+		b.Points[1] = b.Points[0].Add(b.Points[1].Sub(b.Points[0]).SclOrDenorm(scl))
+		b.Points[2] = b.Points[3].Add(b.Points[2].Sub(b.Points[3]).SclOrDenorm(scl))
+
+		beziersC[j] = b
+	}
+
+	mover.curve = curves.NewSplineW(beziersC, timeDiff)
 
 	return i + 1
 }

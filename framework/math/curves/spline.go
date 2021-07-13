@@ -7,9 +7,9 @@ import (
 )
 
 type Spline struct {
-	sections   []float32
-	path       []Curve
-	length     float32
+	sections []float32
+	path     []Curve
+	length   float32
 }
 
 func NewSpline(curves []Curve) *Spline {
@@ -24,12 +24,12 @@ func NewSpline(curves []Curve) *Spline {
 	return &Spline{sections, curves, length}
 }
 
-func NewSplineW(curves []Curve, widths []float32) *Spline {
+func NewSplineW(curves []Curve, weights []float32) *Spline {
 	sections := make([]float32, len(curves)+1)
 	length := float32(0.0)
 
-	for i, c := range widths {
-		length += c
+	for i, w := range weights {
+		length += w
 		sections[i+1] = length
 	}
 
