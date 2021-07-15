@@ -436,7 +436,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		player := overlay.players[r.Name]
 
 		rowBaseY := rowPosY + rep.index.GetValue()*(overlay.ScaledHeight*0.9*1.04/(51)) + player.height.GetValue()/2 /*+margin*10*/
-		rowPosY += overlay.ScaledHeight*0.9*1.04/(51) - player.height.GetValue()
+		rowPosY -= overlay.ScaledHeight*0.9*1.04/(51) - player.height.GetValue()
 
 		//batch.SetColor(0.1, 0.8, 0.4, alpha*player.fade.GetValue()*0.4)
 		//add := 0.3 + float64(int(math.Round(rep.index.GetValue()))%2)*0.2
@@ -528,7 +528,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		player := overlay.players[r.Name]
 
 		rowBaseY := rowPosY + rep.index.GetValue()*(overlay.ScaledHeight*0.9*1.04/(51)) + player.height.GetValue()/2 /*+margin*10*/
-		rowPosY += overlay.ScaledHeight*0.9*1.04/(51) - player.height.GetValue()
+		rowPosY -= overlay.ScaledHeight*0.9*1.04/(51) - player.height.GetValue()
 
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 
