@@ -1,6 +1,6 @@
 /*
 	BASSenc 2.4 C/C++ header file
-	Copyright (c) 2003-2018 Un4seen Developments Ltd.
+	Copyright (c) 2003-2020 Un4seen Developments Ltd.
 
 	See the BASSENC.CHM file for more detailed documentation
 */
@@ -27,6 +27,7 @@ typedef DWORD HENCODE;		// encoder handle
 // Additional error codes returned by BASS_ErrorGetCode
 #define BASS_ERROR_ACM_CANCEL	2000	// ACM codec selection cancelled
 #define BASS_ERROR_CAST_DENIED	2100	// access denied (invalid password)
+#define BASS_ERROR_SERVER_CERT	2101	// missing/invalid certificate
 
 // Additional BASS_SetConfig options
 #define BASS_CONFIG_ENCODE_PRIORITY		0x10300
@@ -36,6 +37,9 @@ typedef DWORD HENCODE;		// encoder handle
 // Additional BASS_SetConfigPtr options
 #define BASS_CONFIG_ENCODE_ACM_LOAD		0x10302
 #define BASS_CONFIG_ENCODE_CAST_PROXY	0x10311
+#define BASS_CONFIG_ENCODE_CAST_BIND	0x10312
+#define BASS_CONFIG_ENCODE_SERVER_CERT	0x10320
+#define BASS_CONFIG_ENCODE_SERVER_KEY	0x10321
 
 // BASS_Encode_Start flags
 #define BASS_ENCODE_NOHEAD		1		// don't send a WAV header to the encoder
@@ -70,6 +74,7 @@ typedef DWORD HENCODE;		// encoder handle
 #define BASS_ENCODE_COUNT_QUEUE			3	// queued
 #define BASS_ENCODE_COUNT_QUEUE_LIMIT	4	// queue limit
 #define BASS_ENCODE_COUNT_QUEUE_FAIL	5	// failed to queue
+#define BASS_ENCODE_COUNT_IN_FP			6	// sent to encoder before floating-point conversion
 
 // BASS_Encode_CastInit content MIME types
 #define BASS_ENCODE_TYPE_MP3	"audio/mpeg"
@@ -126,6 +131,7 @@ user   : The 'user' parameter value given when calling BASS_Encode_SetNotify */
 // Encoder notifications
 #define BASS_ENCODE_NOTIFY_ENCODER		1	// encoder died
 #define BASS_ENCODE_NOTIFY_CAST			2	// cast server connection died
+#define BASS_ENCODE_NOTIFY_SERVER		3	// server died
 #define BASS_ENCODE_NOTIFY_CAST_TIMEOUT	0x10000 // cast timeout
 #define BASS_ENCODE_NOTIFY_QUEUE_FULL	0x10001	// queue is out of space
 #define BASS_ENCODE_NOTIFY_FREE			0x10002	// encoder has been freed
@@ -133,8 +139,9 @@ user   : The 'user' parameter value given when calling BASS_Encode_SetNotify */
 // BASS_Encode_ServerInit flags
 #define BASS_ENCODE_SERVER_NOHTTP		1	// no HTTP headers
 #define BASS_ENCODE_SERVER_META			2	// Shoutcast metadata
+#define BASS_ENCODE_SERVER_SSL			4
 
-DWORD BASSENCDEF(BASS_Encode_GetVersion)();
+DWORD BASSENCDEF(BASS_Encode_GetVersion)(void);
 
 HENCODE BASSENCDEF(BASS_Encode_Start)(DWORD handle, const char *cmdline, DWORD flags, ENCODEPROC *proc, void *user);
 HENCODE BASSENCDEF(BASS_Encode_StartLimit)(DWORD handle, const char *cmdline, DWORD flags, ENCODEPROC *proc, void *user, DWORD limit);
