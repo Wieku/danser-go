@@ -1,7 +1,6 @@
 package bass
 
 /*
-#include "bass_util.h"
 #include "bass.h"
 */
 import "C"
@@ -14,14 +13,13 @@ import (
 )
 
 type SubSample struct {
-	bassSample C.DWORD
+	bassSample C.HSAMPLE
 	sampleChan C.HCHANNEL
 	streamChan C.HSTREAM
 }
 
 type Sample struct {
 	bassSample C.DWORD
-	data       []byte
 }
 
 var loopingStreams = make(map[*SubSample]int)
@@ -40,16 +38,12 @@ func NewSample(path string) *Sample {
 
 	defer f.Close()
 
-	sample := new(Sample)
-
-	sample.data, err = ioutil.ReadAll(f)
+	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil
 	}
 
-	sample.bassSample = C.LoadBassSample(C.CString(path), 32, C.BASS_SAMPLE_OVER_POS)
-
-	return sample
+	return NewSampleData(data)
 }
 
 func NewSampleData(data []byte) *Sample {
@@ -58,7 +52,6 @@ func NewSampleData(data []byte) *Sample {
 	}
 
 	sample := new(Sample)
-	sample.data = data
 	sample.bassSample = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
 
 	return sample
@@ -73,7 +66,7 @@ func (sample *Sample) Play() *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
+		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
 		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
 		C.BASS_ChannelPlay(channel, 1)
 
@@ -106,7 +99,7 @@ func (sample *Sample) PlayV(volume float64) *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
+		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
 		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(volume))
 		C.BASS_ChannelPlay(channel, 1)
 
@@ -139,7 +132,7 @@ func (sample *Sample) PlayRV(volume float64) *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
+		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
 		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
 		C.BASS_ChannelPlay(channel, 1)
 
@@ -172,7 +165,7 @@ func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(C.DWORD(sample.bassSample), 0)
+		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
 		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
 		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_PAN, C.float(balance))
 		C.BASS_ChannelPlay(channel, 1)
@@ -204,7 +197,7 @@ func (sample *Sample) createPlayEvent(sSample *SubSample, delegate func()) {
 		time:    GlobalTimeMs,
 		play:    true,
 		delegate: func() C.DWORD {
-			sSample.streamChan = C.BASS_StreamCreateFile(1, unsafe.Pointer(&sample.data[0]), C.QWORD(0), C.QWORD(len(sample.data)), C.BASS_STREAM_DECODE)
+			sSample.streamChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
 			if sSample.streamChan != 0 {
 				delegate()
@@ -223,7 +216,7 @@ func setLoop(sSample *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelFlags(C.HCHANNEL(sSample.sampleChan), C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
+		C.BASS_ChannelFlags(sSample.sampleChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
 
 		return
 	}
@@ -241,13 +234,13 @@ func SetRate(channel *SubSample, rate float64) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelSetAttribute(C.HCHANNEL(channel.sampleChan), C.BASS_ATTRIB_FREQ, C.float(rate))
+		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_FREQ, C.float(rate))
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelSetAttribute(C.HCHANNEL(channel.streamChan), C.BASS_ATTRIB_FREQ, C.float(rate))
+		C.BASS_ChannelSetAttribute(channel.streamChan, C.BASS_ATTRIB_FREQ, C.float(rate))
 	})
 }
 
@@ -259,13 +252,13 @@ func StopSample(channel *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelPause(C.HCHANNEL(channel.sampleChan))
+		C.BASS_ChannelPause(channel.sampleChan)
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelStop(C.HCHANNEL(channel.streamChan))
+		C.BASS_ChannelStop(channel.streamChan)
 	})
 }
 
@@ -275,13 +268,13 @@ func PauseSample(channel *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelPause(C.HCHANNEL(channel.sampleChan))
+		C.BASS_ChannelPause(channel.sampleChan)
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelPause(C.HCHANNEL(channel.streamChan))
+		C.BASS_ChannelPause(channel.streamChan)
 	})
 }
 
@@ -291,12 +284,12 @@ func PlaySample(channel *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelPlay(C.HCHANNEL(channel.sampleChan), 0)
+		C.BASS_ChannelPlay(channel.sampleChan, 0)
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelPlay(C.HCHANNEL(channel.streamChan), 0)
+		C.BASS_ChannelPlay(channel.streamChan, 0)
 	})
 }
