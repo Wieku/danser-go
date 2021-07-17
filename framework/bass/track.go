@@ -9,9 +9,8 @@ package bass
 import "C"
 import (
 	"github.com/wieku/danser-go/app/settings"
-	"unsafe"
-	//"log"
 	"math"
+	"unsafe"
 )
 
 const (
