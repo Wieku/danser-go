@@ -43,7 +43,13 @@ func NewTrack(path string) *Track {
 	player.lastVol = -100000
 	player.fft = make([]float32, 512)
 
-	player.channel = C.CreateBassStream(C.CString(path), C.BASS_ASYNCFILE|C.BASS_STREAM_DECODE|C.BASS_STREAM_PRESCAN)
+	normalChannelFlags := C.BASS_STREAM_DECODE | C.BASS_STREAM_PRESCAN
+	if !Offscreen {
+		normalChannelFlags |= C.BASS_ASYNCFILE
+	}
+
+	player.channel = C.CreateBassStream(C.CString(path), C.DWORD(normalChannelFlags))
+
 	if !Offscreen {
 		player.channel = C.BASS_FX_TempoCreate(player.channel, C.BASS_FX_FREESOURCE)
 		setupFXChannel(player.channel)
@@ -51,8 +57,8 @@ func NewTrack(path string) *Track {
 		return player
 	}
 
-	second := C.CreateBassStream(C.CString(path), C.BASS_STREAM_DECODE|C.BASS_STREAM_PRESCAN)
-	player.offscreenChannel = C.BASS_FX_TempoCreate(second, C.BASS_STREAM_DECODE|C.BASS_FX_FREESOURCE)
+	offscreenChannel := C.CreateBassStream(C.CString(path), C.BASS_STREAM_DECODE|C.BASS_STREAM_PRESCAN)
+	player.offscreenChannel = C.BASS_FX_TempoCreate(offscreenChannel, C.BASS_STREAM_DECODE|C.BASS_FX_FREESOURCE)
 
 	setupFXChannel(player.offscreenChannel)
 
@@ -190,7 +196,7 @@ func (wv *Track) SetPosition(pos float64) {
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelSetPosition(wv.offscreenChannel, C.BASS_ChannelSeconds2Bytes(wv.offscreenChannel, C.double(pos /*+tMs/1000*/)), C.BASS_POS_BYTE|C.BASS_POS_DECODETO)
+		C.BASS_ChannelSetPosition(wv.offscreenChannel, C.BASS_ChannelSeconds2Bytes(wv.offscreenChannel, C.double(pos)), C.BASS_POS_BYTE|C.BASS_POS_DECODETO)
 	})
 }
 
