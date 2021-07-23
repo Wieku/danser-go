@@ -148,25 +148,28 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
 
-	aimValue *= 1.0 + (0.03 + 0.37 * approachRateTotalHitsFactor) * approachRateFactor
+	approachRateBonus := 1.0 + (0.03 + 0.37 * approachRateTotalHitsFactor) * approachRateFactor
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
+	flashlightBonus := 1.0
+
 	if pp.diff.Mods.Active(difficulty.Flashlight) {
-		flBonus := 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+		flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+
 		if pp.totalHits > 200 {
-			flBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
+			flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
 		}
 
 		if pp.totalHits > 500 {
-			flBonus += (float64(pp.totalHits) - 500.0) / 1200.0
+			flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
 		}
-
-		aimValue *= flBonus
 	}
+
+	aimValue *= math.Max(flashlightBonus, approachRateBonus)
 
 	// Scale the aim value with accuracy _slightly_
 	aimValue *= 0.5 + pp.accuracy/2.0
