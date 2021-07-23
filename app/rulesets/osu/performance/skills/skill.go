@@ -126,7 +126,8 @@ func (skill *Skill) DifficultyValue() float64 {
 	diff := 0.0
 	weight := 1.0
 
-	strains := reverseSortFloat64s(skill.GetCurrentStrainPeaks())
+	strains := skill.GetCurrentStrainPeaks()
+	reverseSortFloat64s(strains)
 
 	numReduced := bmath.MinI(len(strains), skill.ReducedSectionCount)
 
@@ -135,7 +136,7 @@ func (skill *Skill) DifficultyValue() float64 {
 		strains[i] *= bmath.LerpF64(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 
-	strains = reverseSortFloat64s(strains)
+	reverseSortFloat64s(strains)
 
 	for _, strain := range strains {
 		diff += strain * weight
@@ -164,19 +165,12 @@ func (skill *Skill) startNewSectionFrom(end float64) {
 	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-startTime)
 }
 
-func reverseSortFloat64s(arr []float64) []float64 {
-	x := make([]float64, len(arr))
-	copy(x, arr)
+func reverseSortFloat64s(arr []float64) {
+	sort.Float64s(arr)
 
-	sort.Float64s(x)
-
-	n := len(x)
+	n := len(arr)
 	for i := 0; i < n/2; i++ {
 		j := n - i - 1
-		x[i], x[j] = x[j], x[i]
+		arr[i], arr[j] = arr[j], arr[i]
 	}
-
-	return x
 }
-
-
