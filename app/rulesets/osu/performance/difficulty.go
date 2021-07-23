@@ -1,11 +1,11 @@
-package oppai
+package performance
 
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/oppai/preprocessing"
-	"github.com/wieku/danser-go/app/oppai/skills"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/skills"
 	"log"
 	"math"
 )

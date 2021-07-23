@@ -8,7 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/oppai"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -97,7 +97,7 @@ type subSet struct {
 	modMultiplier float64
 	numObjects    int64
 	grade         Grade
-	ppv2          *oppai.PPv2
+	ppv2          *performance.PPv2
 	hits          map[HitResult]int64
 	currentKatu   int
 	currentBad    int
@@ -122,7 +122,7 @@ type OsuRuleSet struct {
 	ended bool
 
 	mapStats []*MapTo
-	oppDiffs map[difficulty.Modifier][]oppai.Stars
+	oppDiffs map[difficulty.Modifier][]performance.Stars
 
 	queue       []HitObject
 	processed   []HitObject
@@ -135,7 +135,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]oppai.Stars)
+	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Stars)
 
 	ruleset.mapStats = make([]*MapTo, 0, len(ruleset.beatMap.HitObjects))
 
@@ -182,7 +182,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = oppai.CalculateStep(ruleset.beatMap.HitObjects, diff, false)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff, false)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 			log.Println("\tAim Stars:", star.Aim)
@@ -205,7 +205,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			recoveries = 2
 		}
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, &oppai.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
+		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, 0, 0, mods[i].GetScoreMultiplier(), 0, NONE, &performance.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries}
 	}
 
 	for _, obj := range beatMap.HitObjects {
