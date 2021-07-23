@@ -175,13 +175,12 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	beziersC := make([]curves.Curve, len(beziers))
 
 	for j, b := range beziers {
-		scl := float32(1.0)
 		if timeDiff[j] > 600 {
-			scl = timeDiff[j] / 2
-		}
+			scl := timeDiff[j] / 2
 
-		b.Points[1] = b.Points[0].Add(b.Points[1].Sub(b.Points[0]).SclOrDenorm(scl))
-		b.Points[2] = b.Points[3].Add(b.Points[2].Sub(b.Points[3]).SclOrDenorm(scl))
+			b.Points[1] = b.Points[0].Add(b.Points[1].Sub(b.Points[0]).Nor().Scl(scl))
+			b.Points[2] = b.Points[3].Add(b.Points[2].Sub(b.Points[3]).Nor().Scl(scl))
+		}
 
 		beziersC[j] = b
 	}
