@@ -22,6 +22,8 @@ func NewSpeedSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 	skill := NewSkill(useFixedCalculations, d)
 	skill.SkillMultiplier = 1400
 	skill.StrainDecayBase = 0.3
+	skill.ReducedSectionCount = 5
+	skill.DifficultyMultiplier = 1.04
 	skill.StrainValueOf = speedStrainValue
 
 	return skill

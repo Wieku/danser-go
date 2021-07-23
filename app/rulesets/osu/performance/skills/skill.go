@@ -2,6 +2,7 @@ package skills
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/preprocessing"
 	"math"
 	"sort"
@@ -21,8 +22,17 @@ type Skill struct {
 	// The length of each strain section.
 	SectionLength float64
 
-	// How many DifficultyObjects should be kept
+	// How many DifficultyObjects should be kept.
 	HistoryLength int
+
+	// Number of sections which strain value will be reduced.
+	ReducedSectionCount int
+
+	// Multiplier applied to the section with the biggest strain.
+	ReducedStrainBaseline float64
+
+	// Final multiplier after calculations.
+	DifficultyMultiplier float64
 
 	// Keeps track of previous DifficultyObjects for strain section calculations
 	Previous []*preprocessing.DifficultyObject
@@ -41,16 +51,19 @@ type Skill struct {
 	// Should fixed clock rate calculations be used, set to false to use current osu!stable calculations (2021.01)
 	fixedCalculations bool
 
-	diff              *difficulty.Difficulty
+	diff *difficulty.Difficulty
 }
 
 func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 	return &Skill{
-		DecayWeight:       0.9,
-		SectionLength:     400,
-		HistoryLength:     1,
-		fixedCalculations: useFixedCalculations,
-		diff:              d,
+		DecayWeight:           0.9,
+		SectionLength:         400,
+		HistoryLength:         1,
+		ReducedSectionCount:   10,
+		ReducedStrainBaseline: 0.75,
+		DifficultyMultiplier:  1.06,
+		fixedCalculations:     useFixedCalculations,
+		diff:                  d,
 	}
 }
 
@@ -115,12 +128,21 @@ func (skill *Skill) DifficultyValue() float64 {
 
 	strains := reverseSortFloat64s(skill.GetCurrentStrainPeaks())
 
+	numReduced := bmath.MinI(len(strains), skill.ReducedSectionCount)
+
+	for i := 0; i < numReduced; i++ {
+		scale := math.Log10(bmath.LerpF64(1, 10, bmath.ClampF64(float64(i) / float64(skill.ReducedSectionCount), 0, 1)))
+		strains[i] *= bmath.LerpF64(skill.ReducedStrainBaseline, 1.0, scale)
+	}
+
+	strains = reverseSortFloat64s(strains)
+
 	for _, strain := range strains {
 		diff += strain * weight
 		weight *= skill.DecayWeight
 	}
 
-	return diff
+	return diff * skill.DifficultyMultiplier
 }
 
 func (skill *Skill) strainDecay(ms float64) float64 {
@@ -156,3 +178,5 @@ func reverseSortFloat64s(arr []float64) []float64 {
 
 	return x
 }
+
+
