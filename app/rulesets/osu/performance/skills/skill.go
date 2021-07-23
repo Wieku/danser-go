@@ -48,13 +48,10 @@ type Skill struct {
 
 	strainPeaks []float64
 
-	// Should fixed clock rate calculations be used, set to false to use current osu!stable calculations (2021.01)
-	fixedCalculations bool
-
 	diff *difficulty.Difficulty
 }
 
-func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
+func NewSkill(d *difficulty.Difficulty) *Skill {
 	return &Skill{
 		DecayWeight:           0.9,
 		SectionLength:         400,
@@ -62,21 +59,13 @@ func NewSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
 		ReducedSectionCount:   10,
 		ReducedStrainBaseline: 0.75,
 		DifficultyMultiplier:  1.06,
-		fixedCalculations:     useFixedCalculations,
 		diff:                  d,
 	}
 }
 
 func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
-	var startTime, sectionLength float64
-
-	if skill.fixedCalculations {
-		startTime = current.StartTime
-		sectionLength = skill.SectionLength
-	} else {
-		startTime = current.BaseObject.GetStartTime()
-		sectionLength = skill.SectionLength * skill.diff.Speed
-	}
+	startTime := current.StartTime
+	sectionLength := skill.SectionLength
 
 	if len(skill.Previous) == 0 {
 		skill.currentSectionEnd = math.Ceil(startTime/sectionLength) * sectionLength
@@ -155,14 +144,7 @@ func (skill *Skill) saveCurrentPeak() {
 }
 
 func (skill *Skill) startNewSectionFrom(end float64) {
-	var startTime float64
-	if skill.fixedCalculations {
-		startTime = skill.GetPrevious().StartTime
-	} else {
-		startTime = skill.GetPrevious().BaseObject.GetStartTime()
-	}
-
-	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-startTime)
+	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-skill.GetPrevious().StartTime)
 }
 
 func reverseSortFloat64s(arr []float64) {

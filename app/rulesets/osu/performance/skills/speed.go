@@ -18,8 +18,8 @@ const (
 	PiOver4 float64 = math.Pi / 4
 )
 
-func NewSpeedSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(useFixedCalculations, d)
+func NewSpeedSkill(d *difficulty.Difficulty) *Skill {
+	skill := NewSkill(d)
 	skill.SkillMultiplier = 1400
 	skill.StrainDecayBase = 0.3
 	skill.ReducedSectionCount = 5

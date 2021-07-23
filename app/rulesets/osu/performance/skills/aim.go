@@ -13,8 +13,8 @@ const (
 	AimAngleBonusBegin float64 = math.Pi / 3
 )
 
-func NewAimSkill(useFixedCalculations bool, d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(useFixedCalculations, d)
+func NewAimSkill(d *difficulty.Difficulty) *Skill {
+	skill := NewSkill(d)
 	skill.SkillMultiplier = 26.25
 	skill.StrainDecayBase = 0.15
 	skill.StrainValueOf = aimStrainValue
