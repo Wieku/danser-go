@@ -36,7 +36,7 @@ func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float
 					math.Pow(math.Sin(current.Angle-AimAngleBonusBegin), 2.0) *
 					math.Max(current.JumpDistance-AngleBonusScale, 0.0))
 
-			result = 1.5 * applyDiminishingExp(math.Max(0, angleBonus)) / math.Max(AimTimingThreshold, previous.StrainTime)
+			result = 1.4 * applyDiminishingExp(math.Max(0, angleBonus)) / math.Max(AimTimingThreshold, previous.StrainTime)
 		}
 	}
 
