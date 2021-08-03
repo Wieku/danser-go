@@ -23,7 +23,7 @@ func (t TimingPoint) GetRatio() float64 {
 		return 1.0
 	}
 
-	return float64(float32(math.Max(10, math.Min(-t.beatLength, 1000))) / 100)
+	return float64(float32(bmath.ClampF64(-t.beatLength, 10, 1000)) / 100)
 }
 
 func (t TimingPoint) GetBaseBeatLength() float64 {
@@ -99,7 +99,15 @@ func (tim *Timings) GetSliderTimeP(point TimingPoint, pixelLength float64) float
 }
 
 func (tim *Timings) GetVelocity(point TimingPoint) float64 {
-	return tim.GetScoringDistance() * tim.TickRate * (1000.0 / point.GetBeatLength())
+	velocity := tim.GetScoringDistance() * tim.TickRate
+
+	beatLength := point.GetBeatLength()
+
+	if beatLength >= 0 {
+		velocity *= 1000.0 / beatLength
+	}
+
+	return velocity
 }
 
 func (tim *Timings) GetTickDistance(point TimingPoint) float64 {
