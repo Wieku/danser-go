@@ -52,22 +52,24 @@ func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
 func NewMultiCurveT(typ string, points []vector.Vector2f, desiredLength float64) *MultiCurve {
 	mCurve := NewMultiCurve(typ, points)
 
-	diff := float64(mCurve.length) - desiredLength
+	if mCurve.length > 0 {
+		diff := float64(mCurve.length) - desiredLength
 
-	for len(mCurve.lines) > 0 {
-		line := mCurve.lines[len(mCurve.lines)-1]
+		for len(mCurve.lines) > 0 {
+			line := mCurve.lines[len(mCurve.lines)-1]
 
-		if float64(line.GetLength()) > diff+minPartWidth {
-			if line.Point1 != line.Point2 {
-				pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
-				mCurve.lines[len(mCurve.lines)-1] = NewLinear(line.Point1, pt)
+			if float64(line.GetLength()) > diff+minPartWidth {
+				if line.Point1 != line.Point2 {
+					pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
+					mCurve.lines[len(mCurve.lines)-1] = NewLinear(line.Point1, pt)
+				}
+
+				break
 			}
 
-			break
+			diff -= float64(line.GetLength())
+			mCurve.lines = mCurve.lines[:len(mCurve.lines)-1]
 		}
-
-		diff -= float64(line.GetLength())
-		mCurve.lines = mCurve.lines[:len(mCurve.lines)-1]
 	}
 
 	mCurve.length = 0.0
@@ -197,10 +199,10 @@ func processBezier(points []vector.Vector2f) (lines []Linear) {
 		if multi || i == len(points)-1 {
 			subPoints := points[lastIndex : i+1]
 
-			if len(subPoints) > 2 {
-				lines = append(lines, ApproximateBezier(subPoints)...)
-			} else if len(subPoints) == 2 {
+			if len(subPoints) == 2 {
 				lines = append(lines, NewLinear(subPoints[0], subPoints[1]))
+			} else {
+				lines = append(lines, ApproximateBezier(subPoints)...)
 			}
 
 			if multi {

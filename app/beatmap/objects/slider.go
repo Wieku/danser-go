@@ -241,7 +241,10 @@ func (slider *Slider) SetTiming(timings *Timings) {
 	scoringLengthTotal := 0.0
 	scoringDistance := 0.0
 
-	tickDistance := math.Min(slider.Timings.GetTickDistance(slider.TPoint), slider.pixelLength)
+	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
+		tickDistance = slider.pixelLength
+	}
 
 	for i := int64(0); i < slider.repeat; i++ {
 		distanceToEnd := float64(slider.multiCurve.GetLength())
