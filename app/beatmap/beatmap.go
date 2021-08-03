@@ -149,6 +149,10 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 	}
 }
 
+func (beatMap *BeatMap) FinalizePoints() {
+	beatMap.Timings.FinalizePoints()
+}
+
 func (beatMap *BeatMap) LoadCustomSamples() {
 	audio.LoadBeatmapSamples(beatMap.Dir)
 }

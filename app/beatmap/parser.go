@@ -214,6 +214,8 @@ func ParseBeatMap(beatMap *BeatMap) error {
 		}
 	}
 
+	beatMap.FinalizePoints()
+
 	file.Seek(0, 0)
 
 	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || counter == 0 {
@@ -274,6 +276,8 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 			}
 		}
 	}
+
+	beatMap.FinalizePoints()
 }
 
 func ParseObjects(beatMap *BeatMap) {

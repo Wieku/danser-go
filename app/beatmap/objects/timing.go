@@ -3,6 +3,7 @@ package objects
 import (
 	"github.com/wieku/danser-go/app/bmath"
 	"math"
+	"sort"
 )
 
 type TimingPoint struct {
@@ -15,7 +16,8 @@ type TimingPoint struct {
 	SampleIndex  int
 	SampleVolume float64
 
-	Kiai bool
+	Inherited bool
+	Kiai      bool
 }
 
 func (t TimingPoint) GetRatio() float64 {
@@ -58,16 +60,26 @@ func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex in
 		SampleSet:      sampleSet,
 		SampleIndex:    sampleIndex,
 		SampleVolume:   sampleVolume,
+		Inherited:      inherited,
 		Kiai:           kiai,
 	}
 
-	if inherited && len(tim.Points) > 0 {
-		lastPoint := tim.Points[len(tim.Points)-1]
-		point.beatLengthBase = lastPoint.beatLengthBase
-	}
-
 	tim.Points = append(tim.Points, point)
-	tim.queue = append(tim.queue, point)
+}
+
+func (tim *Timings) FinalizePoints() {
+	sort.SliceStable(tim.Points, func(i, j int) bool {
+		return tim.Points[i].Time < tim.Points[j].Time
+	})
+
+	for i, point := range tim.Points {
+		if point.Inherited && i > 0 {
+			lastPoint := tim.Points[i-1]
+			point.beatLengthBase = lastPoint.beatLengthBase
+
+			tim.Points[i] = point
+		}
+	}
 }
 
 func (tim *Timings) Update(time float64) {
