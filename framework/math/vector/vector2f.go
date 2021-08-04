@@ -148,5 +148,5 @@ func (v Vector2f) Copy64() Vector2d {
 }
 
 func IsStraightLine32(a, b, c Vector2f) bool {
-	return (b.X-a.X)*(c.Y-a.Y)-(c.X-a.X)*(b.Y-a.Y) == 0
+	return math32.Abs((b.Y-a.Y)*(c.X-a.X)-(b.X-a.X)*(c.Y-a.Y)) < 0.001
 }
