@@ -79,10 +79,10 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	type Queue struct {
-		objs []objects.IHitObject
+		hitObjects []objects.IHitObject
 	}
 
-	objs := make([]Queue, settings.TAG)
+	queues := make([]Queue, settings.TAG)
 
 	queue := controller.bMap.GetObjectsCopy()
 
@@ -94,7 +94,7 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	// Convert sliders to pseudo-circles for tag cursors
-	if !settings.CursorDance.Battle && settings.CursorDance.TAGSliderDance && settings.TAG > 1 {
+	if !settings.CursorDance.ComboTag && !settings.CursorDance.Battle && settings.CursorDance.TAGSliderDance && settings.TAG > 1 {
 		for i := 0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}
@@ -115,13 +115,18 @@ func (controller *GenericController) InitCursors() {
 
 	// If DoSpinnersTogether is true with tag mode, allow all tag cursors to spin the same spinner with different movers
 	for j, o := range queue {
-		if _, ok := o.(*objects.Spinner); (ok && settings.CursorDance.DoSpinnersTogether) || settings.CursorDance.Battle {
-			for i := range objs {
-				objs[i].objs = append(objs[i].objs, o)
+		_, isSpinner := o.(*objects.Spinner)
+
+		if (isSpinner && settings.CursorDance.DoSpinnersTogether) || settings.CursorDance.Battle {
+			for i := range queues {
+				queues[i].hitObjects = append(queues[i].hitObjects, o)
 			}
+		} else if settings.CursorDance.ComboTag {
+			i := int(o.GetComboSet()) % settings.TAG
+			queues[i].hitObjects = append(queues[i].hitObjects, o)
 		} else {
 			i := j % settings.TAG
-			objs[i].objs = append(objs[i].objs, o)
+			queues[i].hitObjects = append(queues[i].hitObjects, o)
 		}
 	}
 
@@ -132,7 +137,7 @@ func (controller *GenericController) InitCursors() {
 			spinMover = settings.CursorDance.Spinners[i%len(settings.CursorDance.Spinners)].Mover
 		}
 
-		controller.schedulers[i].Init(objs[i].objs, controller.bMap.Diff, controller.cursors[i], spinners.GetMoverCtorByName(spinMover), true)
+		controller.schedulers[i].Init(queues[i].hitObjects, controller.bMap.Diff, controller.cursors[i], spinners.GetMoverCtorByName(spinMover), true)
 	}
 }
 

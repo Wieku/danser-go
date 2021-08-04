@@ -17,6 +17,7 @@ func initCursorDance() *cursorDance {
 				Radius: 100,
 			},
 		},
+		ComboTag:           false,
 		Battle:             false,
 		DoSpinnersTogether: true,
 		TAGSliderDance:     false,
@@ -102,6 +103,7 @@ type spinner struct {
 type cursorDance struct {
 	Movers             []*mover
 	Spinners           []*spinner
+	ComboTag           bool
 	Battle             bool
 	DoSpinnersTogether bool
 	TAGSliderDance     bool

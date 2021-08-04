@@ -222,6 +222,7 @@ func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd b
 	circle.StackOffset = slider.StackOffset
 	circle.StackOffsetHR = slider.StackOffsetHR
 	circle.StackOffsetEZ = slider.StackOffsetEZ
+	circle.ComboSet = slider.ComboSet
 
 	return circle
 }

@@ -31,6 +31,7 @@ type IHitObject interface {
 	GetID() int64
 	SetID(int64)
 	SetComboNumber(cn int64)
+	GetComboSet() int64
 	SetComboSet(set int64)
 	SetComboSetHax(set int64)
 
@@ -190,6 +191,10 @@ func (hitObject *HitObject) SetID(id int64) {
 
 func (hitObject *HitObject) SetComboNumber(cn int64) {
 	hitObject.ComboNumber = cn
+}
+
+func (hitObject *HitObject) GetComboSet() int64 {
+	return hitObject.ComboSet
 }
 
 func (hitObject *HitObject) SetComboSet(set int64) {
