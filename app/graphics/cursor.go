@@ -21,7 +21,8 @@ import (
 )
 
 type cursorRenderer interface {
-	Update(delta float64, position vector.Vector2f)
+	SetPosition(position vector.Vector2f)
+	Update(delta float64)
 	UpdateRenderer()
 	DrawM(scale, expand float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color)
 }
@@ -168,6 +169,7 @@ func (cursor *Cursor) SetPos(pt vector.Vector2f) {
 	}
 
 	cursor.Position = tmp
+	cursor.renderer.SetPosition(cursor.Position)
 }
 
 func (cursor *Cursor) SetScreenPos(pt vector.Vector2f) {
@@ -207,7 +209,7 @@ func (cursor *Cursor) Update(delta float64) {
 
 	cursor.scale.UpdateD(delta)
 
-	cursor.renderer.Update(delta, cursor.Position)
+	cursor.renderer.Update(delta)
 
 	cursor.rippleContainer.Update(cursor.time)
 }

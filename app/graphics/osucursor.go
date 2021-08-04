@@ -69,6 +69,7 @@ type osuRenderer struct {
 	manager     *sprite.SpriteManager
 	currentTime float64
 	sixtyDelta  float64
+	firstTime   bool
 }
 
 func newOsuRenderer() *osuRenderer {
@@ -109,7 +110,7 @@ func newOsuRenderer() *osuRenderer {
 
 	vao.Attach(osuShader)
 
-	cursor := &osuRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3)}
+	cursor := &osuRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3), firstTime: true}
 	cursor.vecSize = 3
 
 	cursor.trail = skin.GetTexture("cursortrail")
@@ -129,7 +130,18 @@ func newOsuRenderer() *osuRenderer {
 	return cursor
 }
 
-func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
+func (cursor *osuRenderer) SetPosition(position vector.Vector2f) {
+	cursor.Position = position
+
+	if cursor.firstTime {
+		cursor.LastPos = position
+		cursor.VaoPos = position
+
+		cursor.firstTime = false
+	}
+}
+
+func (cursor *osuRenderer) Update(delta float64) {
 	dirtyLocal := false
 
 	cursor.clock += delta / 100
@@ -146,8 +158,6 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 
 	cursor.currentTime = cursor.clock * 100
 	cursor.manager.Update(cursor.currentTime)
-
-	cursor.Position = position
 
 	if cursor.middle.Textures[0] == nil && !settings.Skin.Cursor.ForceLongTrail {
 		cursor.VaoPos = cursor.Position

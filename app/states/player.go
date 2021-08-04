@@ -280,7 +280,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset := 0.0
 
-	if settings.SKIP || settings.START > 0.01 {
+	if math.Max(0, skipTime) > 0.01 {
 		startOffset = skipTime
 		player.startPoint = math.Max(0, startOffset)
 
@@ -295,25 +295,23 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.volumeGlider.SetValue(0.0)
 		player.volumeGlider.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
 
-		if settings.START > 0.01 {
-			player.objectsAlpha.SetValue(0.0)
-			player.objectsAlpha.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
+		player.objectsAlpha.SetValue(0.0)
+		player.objectsAlpha.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
+
+		if player.overlay != nil {
+			player.overlay.DisableAudioSubmission(true)
+		}
+
+		for i := -1000.0; i < startOffset; i += 1.0 {
+			player.controller.Update(i, 1)
 
 			if player.overlay != nil {
-				player.overlay.DisableAudioSubmission(true)
+				player.overlay.Update(i)
 			}
+		}
 
-			for i := -1000.0; i < startOffset; i += 1.0 {
-				player.controller.Update(i, 1)
-
-				if player.overlay != nil {
-					player.overlay.Update(i)
-				}
-			}
-
-			if player.overlay != nil {
-				player.overlay.DisableAudioSubmission(false)
-			}
+		if player.overlay != nil {
+			player.overlay.DisableAudioSubmission(false)
 		}
 
 		player.lateStart = true

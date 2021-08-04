@@ -53,6 +53,8 @@ type danserRenderer struct {
 	hueBase   float64
 	vecSize   int
 	instances int
+
+	firstTime bool
 }
 
 func newDanserRenderer() *danserRenderer {
@@ -93,15 +95,24 @@ func newDanserRenderer() *danserRenderer {
 
 	vao.Attach(danserShader)
 
-	cursor := &danserRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3)}
+	cursor := &danserRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3), firstTime: true}
 	cursor.vecSize = 3
 
 	return cursor
 }
 
-func (cursor *danserRenderer) Update(delta float64, position vector.Vector2f) {
+func (cursor *danserRenderer) SetPosition(position vector.Vector2f) {
 	cursor.Position = position
 
+	if cursor.firstTime {
+		cursor.LastPos = position
+		cursor.VaoPos = position
+
+		cursor.firstTime = false
+	}
+}
+
+func (cursor *danserRenderer) Update(delta float64) {
 	if settings.Cursor.TrailStyle == 3 {
 		cursor.hueBase += settings.Cursor.Style23Speed / 360.0 * delta
 		if cursor.hueBase > 1.0 {
