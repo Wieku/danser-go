@@ -135,6 +135,8 @@ func (mCurve *MultiCurve) getLineAt(t float32) Linear {
 		return withoutFirst[i] >= desiredWidth
 	})
 
+	index = bmath.MinI(index, len(mCurve.lines)-1)
+
 	return mCurve.lines[index]
 }
 
