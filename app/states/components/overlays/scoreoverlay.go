@@ -43,6 +43,7 @@ const (
 
 type Overlay interface {
 	Update(float64)
+	SetMusic(*bass.Track)
 	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)

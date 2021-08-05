@@ -538,8 +538,8 @@ func (player *Player) updateMain(delta float64) {
 	if player.progressMsF >= player.startPoint && !player.start {
 		player.musicPlayer.Play()
 
-		if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
-			ov.SetMusic(player.musicPlayer)
+		if player.overlay != nil {
+			player.overlay.SetMusic(player.musicPlayer)
 		}
 
 		player.musicPlayer.SetPosition(player.startPoint / 1000)
