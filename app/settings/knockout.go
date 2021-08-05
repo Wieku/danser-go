@@ -4,38 +4,24 @@ var Knockout = initKnockout()
 
 func initKnockout() *knockout {
 	return &knockout{
-		//Username:           "",
-		//MD5Pass:            "",
-		//ApiKey:             "",
-		Mode: ComboBreak,
-		//LocalReplays:       false,
-		//OnlineReplays:      true,
-		ExcludeMods:        "EZHT",
-		MaxPlayers:         50,
-		BubbleMinimumCombo: 200,
-		RevivePlayersAtEnd: false,
-		LiveSort:           true,
-		SortBy:             "Score",
-		MinCursorSize:      3.0,
-		MaxCursorSize:      7.0,
-		AddDanser:          false,
-		DanserName:         "danser",
+		Mode:                ComboBreak,
+		ExcludeMods:         "EZHT",
+		MaxPlayers:          50,
+		BubbleMinimumCombo:  200,
+		RevivePlayersAtEnd:  false,
+		LiveSort:            true,
+		SortBy:              "Score",
+		HideOverlayOnBreaks: false,
+		MinCursorSize:       3.0,
+		MaxCursorSize:       7.0,
+		AddDanser:           false,
+		DanserName:          "danser",
 	}
 }
 
 type knockout struct {
-	//Username string
-	//MD5Pass  string
-	//ApiKey   string
-
 	// Knockout mode. More info below
 	Mode KnockoutMode
-
-	// Whether to load local replays. They have to be put in ./replays/beatmapMD5/
-	//LocalReplays bool
-
-	// Whether to load online replays using osu!api
-	//OnlineReplays bool
 
 	// Exclude plays which contain one of the mods set here
 	ExcludeMods string
@@ -55,7 +41,11 @@ type knockout struct {
 	// Whether scores should be sorted in real time
 	LiveSort bool
 
+	// Whether players should be sorted by Score or PP
 	SortBy string
+
+	// Whether knockout overlay (player list with stats) should be hidden in breaks
+	HideOverlayOnBreaks bool
 
 	//Minimum cursor size (when all players are alive)
 	MinCursorSize float64

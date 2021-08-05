@@ -120,7 +120,10 @@ type KnockoutOverlay struct {
 	ScaledHeight float64
 	ScaledWidth  float64
 
-	music     *bass.Track
+	music *bass.Track
+
+	breakMode bool
+	fade      *animation.Glider
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -141,7 +144,8 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	overlay.ScaledHeight = 1080.0
 	overlay.ScaledWidth = overlay.ScaledHeight * settings.Graphics.GetAspectRatio()
-	//overlay.deaths = make(map[int64]int64)
+
+	overlay.fade = animation.NewGlider(1)
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
@@ -321,6 +325,9 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 
 	overlay.audioTime = time
 
+	overlay.updateBreaks(overlay.normalTime)
+	overlay.fade.Update(overlay.normalTime)
+
 	for _, r := range overlay.controller.GetReplays() {
 		player := overlay.players[r.Name]
 		player.height.Update(overlay.normalTime)
@@ -347,10 +354,13 @@ func (overlay *KnockoutOverlay) SetMusic(music *bass.Track) {
 }
 
 func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
+	alpha *= overlay.fade.GetValue()
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.controller.GetBeatMap().Diff.CircleRadius), float32(alpha))
 }
 
 func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
+	alpha *= overlay.fade.GetValue()
+
 	scl := 384.0 * (1080.0 / 900.0 * 0.9) / (51)
 
 	batch.ResetTransform()
@@ -421,6 +431,8 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 }
 
 func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
+	alpha *= overlay.fade.GetValue()
+
 	batch.ResetTransform()
 
 	controller := overlay.controller
@@ -578,6 +590,32 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 func (overlay *KnockoutOverlay) IsBroken(cursor *graphics.Cursor) bool {
 	return overlay.players[overlay.names[cursor]].hasBroken
+}
+
+func (overlay *KnockoutOverlay) updateBreaks(time float64) {
+	inBreak := false
+
+	for _, b := range overlay.controller.GetRuleset().GetBeatMap().Pauses {
+		if overlay.audioTime < b.GetStartTime() {
+			break
+		}
+
+		if b.GetEndTime()-b.GetStartTime() >= 1000 && overlay.audioTime >= b.GetStartTime() && overlay.audioTime <= b.GetEndTime() {
+			inBreak = true
+
+			break
+		}
+	}
+
+	if !overlay.breakMode && inBreak {
+		if settings.Knockout.HideOverlayOnBreaks {
+			overlay.fade.AddEventEase(time, time+1000, 0, easing.OutQuad)
+		}
+	} else if overlay.breakMode && !inBreak {
+		overlay.fade.AddEventEase(time, time+1000, 1, easing.OutQuad)
+	}
+
+	overlay.breakMode = inBreak
 }
 
 func (overlay *KnockoutOverlay) DisableAudioSubmission(_ bool) {}
