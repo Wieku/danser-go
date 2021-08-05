@@ -70,6 +70,14 @@ func setupFXChannel(channel C.HSTREAM) {
 	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, C.float(30.0))
 }
 
+func (wv *Track) AddSilence(seconds float64) {
+	C.BASS_ChannelSetAttribute(wv.channel, C.BASS_ATTRIB_TAIL, C.float(seconds))
+
+	if wv.offscreenChannel != 0 {
+		C.BASS_ChannelSetAttribute(wv.offscreenChannel, C.BASS_ATTRIB_TAIL, C.float(seconds))
+	}
+}
+
 func (wv *Track) Play() {
 	wv.SetVolume(settings.Audio.GeneralVolume * settings.Audio.MusicVolume)
 

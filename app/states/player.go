@@ -385,6 +385,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.MapEnd += 100
 
+	// See https://github.com/Wieku/danser-go/issues/121
+	player.musicPlayer.AddSilence(math.Max(0, player.MapEnd/1000-player.musicPlayer.GetLength()))
+
 	if settings.Playfield.SeizureWarning.Enabled {
 		am := math.Max(1000, settings.Playfield.SeizureWarning.Duration*1000)
 		startOffset -= am
