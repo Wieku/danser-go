@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/EdlinOrg/prominentcolor v1.0.0
+	github.com/Microsoft/go-winio v0.5.0
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/bnch/uleb128 v0.0.0-20160221084957-fac1fe18ad59 // indirect
 	github.com/dustin/go-humanize v1.0.0
