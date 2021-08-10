@@ -5,13 +5,14 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,7 +24,7 @@ const MaxBuffers = 10
 var filename string
 
 var cmd *exec.Cmd
-var pipe io.WriteCloser
+var pipe *files.NamedPipe
 
 var queue chan func()
 var endSync *sync.WaitGroup
@@ -127,6 +128,11 @@ func StartFFmpeg(fps, _w, _h int) {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
 
+	pipe, err = files.NewNamedPipe("")
+	if err != nil {
+		panic(err)
+	}
+
 	options := []string{
 		"-y", //(optional) overwrite output file if it exists
 		"-f", "rawvideo",
@@ -134,7 +140,7 @@ func StartFFmpeg(fps, _w, _h int) {
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", "rgb24",
 		"-r", strconv.Itoa(fps), //frames per second
-		"-i", "-", //The input comes from a pipe
+		"-i", pipe.Name(), //The input comes from a pipe
 		"-vf", "vflip" + filters,
 		"-profile:v", settings.Recording.Profile,
 		"-preset", settings.Recording.Preset,
@@ -157,11 +163,6 @@ func StartFFmpeg(fps, _w, _h int) {
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	pipe, err = cmd.StdinPipe()
-	if err != nil {
-		panic(err)
-	}
 
 	err = cmd.Start()
 	if err != nil {
@@ -188,6 +189,8 @@ func StartFFmpeg(fps, _w, _h int) {
 	endSync.Add(1)
 
 	go func() {
+		runtime.LockOSThread()
+
 		for {
 			f, keepOpen := <-queue
 
