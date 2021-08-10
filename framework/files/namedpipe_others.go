@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/framework/util"
 	"os"
 	"strings"
+	"syscall"
 )
 
 type NamedPipe struct {
