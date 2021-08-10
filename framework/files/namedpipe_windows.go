@@ -7,11 +7,15 @@ import (
 	"github.com/wieku/danser-go/framework/util"
 	"net"
 	"strings"
+	"sync"
 )
 
 type NamedPipe struct {
 	listener   net.Listener
 	connection net.Conn
+
+	wg *sync.WaitGroup
+	connErr error
 
 	name string
 }
@@ -26,42 +30,52 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 
 	name = "\\\\.\\pipe\\ro2d" + name
 
-	listener, err := winio.ListenPipe(name, &winio.PipeConfig{
-		SecurityDescriptor: "",
-		MessageMode:        false,
-		InputBufferSize:    0,
-		OutputBufferSize:   0,
-	})
+	listener, err := winio.ListenPipe(name, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &NamedPipe{
+	pipe := &NamedPipe{
 		listener: listener,
+		wg: &sync.WaitGroup{},
 		name:     name,
-	}, nil
+	}
+
+	pipe.wg.Add(1)
+
+	wg2 := &sync.WaitGroup{}
+	wg2.Add(1)
+
+	go func() {
+		wg2.Done()
+
+		pipe.connection, pipe.connErr = pipe.listener.Accept()
+
+		pipe.wg.Done()
+	}()
+
+	// wait until goroutine starts
+	wg2.Wait()
+
+	return pipe, nil
 }
 
 func (namedPipe *NamedPipe) Read(p []byte) (n int, err error) {
-	if namedPipe.connection == nil {
-		namedPipe.connection, err = namedPipe.listener.Accept()
+	namedPipe.wg.Wait()
 
-		if err != nil {
-			return
-		}
+	if namedPipe.connErr != nil {
+		return -1, namedPipe.connErr
 	}
 
 	return namedPipe.connection.Read(p)
 }
 
 func (namedPipe *NamedPipe) Write(p []byte) (n int, err error) {
-	if namedPipe.connection == nil {
-		namedPipe.connection, err = namedPipe.listener.Accept()
+	namedPipe.wg.Wait()
 
-		if err != nil {
-			return
-		}
+	if namedPipe.connErr != nil {
+		return -1, namedPipe.connErr
 	}
 
 	return namedPipe.connection.Write(p)
