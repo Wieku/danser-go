@@ -26,12 +26,13 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 	name = "ro2d" + name
 
 	os.Remove(name)
+
 	err := syscall.Mkfifo(name, 0666)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.OpenFile(name, os.O_CREATE, os.ModeNamedPipe)
+	file, err := os.OpenFile(name, os.O_RDWR, os.ModeNamedPipe)
 	if err != nil {
 		return nil, err
 	}
