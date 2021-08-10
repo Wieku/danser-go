@@ -1,15 +1,14 @@
 package ffmpeg
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/effects"
+	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,10 +114,7 @@ func StartFFmpeg(fps, _w, _h int) {
 		panic(err)
 	}
 
-	b := make([]byte, 16)
-	rand.Read(b)
-
-	filename = hex.EncodeToString(b)
+	filename = util.RandomHexString(32)
 
 	split := strings.Split(settings.Recording.EncoderOptions, " ")
 
