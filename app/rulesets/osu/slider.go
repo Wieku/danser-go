@@ -248,7 +248,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 					scoreGiven = SliderPoint
 				}
 
-				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, scoreGiven, true, ComboResults.Increase)
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), sliderPosition.X, sliderPosition.Y, scoreGiven, true, ComboResults.Increase)
 			} else {
 				state.missed++
 
@@ -257,7 +257,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 					combo = ComboResults.Hold
 				}
 
-				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, combo)
+				slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), sliderPosition.X, sliderPosition.Y, SliderMiss, true, combo)
 			}
 		}
 
@@ -281,7 +281,9 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 			slider.hitSlider.ArmStart(false, float64(time))
 		}
 
-		slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, SliderMiss, true, ComboResults.Reset)
+		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
+
+		slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), position.X, position.Y, SliderMiss, true, ComboResults.Reset)
 
 		if player.leftCond {
 			state.downButton = Left
@@ -320,7 +322,9 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 			combo = ComboResults.Hold
 		}
 
-		slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), slider.hitSlider.GetPosition().X, slider.hitSlider.GetPosition().Y, hit, false, combo)
+		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
+
+		slider.ruleSet.SendResult(time, player.cursor, slider.hitSlider.GetID(), position.X, position.Y, hit, false, combo)
 
 		state.isHit = true
 	}
