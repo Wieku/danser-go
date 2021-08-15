@@ -28,6 +28,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/wieku/rplpa v0.0.0-20210416181635-bb7239e81d90
 	golang.org/x/image v0.0.0-20210504121937-7319ad40d33e
+	golang.org/x/sys v0.0.0-20210316164454-77fc1eacc6aa
 	golang.org/x/text v0.3.6
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )

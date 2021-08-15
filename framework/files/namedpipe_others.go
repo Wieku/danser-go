@@ -4,6 +4,7 @@ package files
 
 import (
 	"github.com/wieku/danser-go/framework/util"
+	"golang.org/x/sys/unix"
 	"os"
 	"strings"
 	"syscall"
@@ -33,6 +34,11 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 	}
 
 	file, err := os.OpenFile(name, os.O_RDWR, os.ModeNamedPipe)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = unix.FcntlInt(file.Fd(), unix.F_SETPIPE_SZ, 65536)
 	if err != nil {
 		return nil, err
 	}
