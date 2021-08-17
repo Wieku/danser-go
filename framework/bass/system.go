@@ -20,14 +20,16 @@ import (
 func Init(offscreen bool) {
 	log.Println("Initializing BASS...")
 
-	playbackBufferLength := 500
+	playbackBufferLength := 100
 	deviceBufferLength := 10
 	updatePeriod := 5
+	devUpdatePeriod := 10
 
 	if runtime.GOOS != "windows" {
 		playbackBufferLength = int(settings.Audio.NonWindows.BassPlaybackBufferLength)
 		deviceBufferLength = int(settings.Audio.NonWindows.BassDeviceBufferLength)
 		updatePeriod = int(settings.Audio.NonWindows.BassUpdatePeriod)
+		devUpdatePeriod = int(settings.Audio.NonWindows.BassDeviceUpdatePeriod)
 	}
 
 	// Output data regardless if audio is playing
@@ -36,15 +38,17 @@ func Init(offscreen bool) {
 	// Worse time resolution but lower latency with DirectSound
 	C.BASS_SetConfig(C.BASS_CONFIG_VISTA_TRUEPOS, C.DWORD(0))
 
-	// Smaller buffer length, reduces latency
+	// Smaller stream buffer length, reduces latency
+	C.BASS_SetConfig(C.BASS_CONFIG_BUFFER, C.DWORD(playbackBufferLength))
+
+	// Update BASS stream buffer more frequently
+	C.BASS_SetConfig(C.BASS_CONFIG_UPDATEPERIOD, C.DWORD(updatePeriod))
+
+	// Smaller device buffer length, reduces latency
 	C.BASS_SetConfig(C.BASS_CONFIG_DEV_BUFFER, C.DWORD(deviceBufferLength))
 
-	if runtime.GOOS != "windows" {
-		C.BASS_SetConfig(C.BASS_CONFIG_BUFFER, C.DWORD(playbackBufferLength))
-	}
-
-	// Update BASS more frequently
-	C.BASS_SetConfig(C.BASS_CONFIG_DEV_PERIOD, C.DWORD(updatePeriod))
+	// Update BASS device buffer more frequently
+	C.BASS_SetConfig(C.BASS_CONFIG_DEV_PERIOD, C.DWORD(devUpdatePeriod))
 
 	// BASS_CONFIG_MP3_OLDGAPS
 	C.BASS_SetConfig(C.DWORD(68), C.DWORD(1))
