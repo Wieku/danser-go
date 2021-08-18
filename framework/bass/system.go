@@ -17,6 +17,8 @@ import (
 	"runtime"
 )
 
+var masterMixer C.HSTREAM
+
 func Init(offscreen bool) {
 	log.Println("Initializing BASS...")
 
@@ -62,15 +64,20 @@ func Init(offscreen bool) {
 		log.Println("BASS Initialized!")
 		log.Println("BASS Version:       ", parseVersion(int(C.BASS_GetVersion())))
 		log.Println("BASS FX Version:    ", parseVersion(int(C.BASS_FX_GetVersion())))
+		log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
 
-		// We're not interested in BASSMix or BASSEnc in onscreen mode, show audio device instead
+		// We're not interested in BASSEnc in onscreen mode, show audio device instead
 		if !offscreen {
 			log.Println("BASS Audio Device:  ", getDeviceName())
 			log.Println("BASS Audio Latency: ", fmt.Sprintf("%dms", getLatency()))
 		} else {
-			log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
 			log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
 		}
+
+		masterMixer = C.BASS_Mixer_StreamCreate(44100, 2, C.BASS_MIXER_NONSTOP)
+		C.BASS_ChannelSetAttribute(masterMixer, C.BASS_ATTRIB_BUFFER, 0)
+		C.BASS_ChannelSetDevice(masterMixer, C.BASS_GetDevice())
+		C.BASS_ChannelPlay(masterMixer, 0)
 	} else {
 		err := GetError()
 		panic(fmt.Sprintf("Failed to run BASS, error id: %d, message: %s", err, err.Message()))

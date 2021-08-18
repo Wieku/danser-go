@@ -21,8 +21,8 @@ const (
 )
 
 type Track struct {
-	channel          C.DWORD
-	offscreenChannel C.DWORD
+	channel          C.HSTREAM
+	offscreenChannel C.HSTREAM
 	fft              []float32
 	boost            float64
 	peak             float64
@@ -33,6 +33,7 @@ type Track struct {
 	speed            float64
 	pitch            float64
 	playing          bool
+	addedToMixer     bool
 }
 
 func NewTrack(path string) *Track {
@@ -50,7 +51,7 @@ func NewTrack(path string) *Track {
 	player.channel = C.CreateBassStream(C.CString(path), C.DWORD(normalChannelFlags))
 
 	if !Offscreen {
-		player.channel = C.BASS_FX_TempoCreate(player.channel, C.BASS_FX_FREESOURCE)
+		player.channel = C.BASS_FX_TempoCreate(player.channel, C.BASS_FX_FREESOURCE | C.BASS_STREAM_DECODE)
 		setupFXChannel(player.channel)
 
 		return player
@@ -70,212 +71,241 @@ func setupFXChannel(channel C.HSTREAM) {
 	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, C.float(30.0))
 }
 
-func (wv *Track) AddSilence(seconds float64) {
-	C.BASS_ChannelSetAttribute(wv.channel, C.BASS_ATTRIB_TAIL, C.float(seconds))
+func (track *Track) AddSilence(seconds float64) {
+	C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_TAIL, C.float(seconds))
 
-	if wv.offscreenChannel != 0 {
-		C.BASS_ChannelSetAttribute(wv.offscreenChannel, C.BASS_ATTRIB_TAIL, C.float(seconds))
+	if track.offscreenChannel != 0 {
+		C.BASS_ChannelSetAttribute(track.offscreenChannel, C.BASS_ATTRIB_TAIL, C.float(seconds))
 	}
 }
 
-func (wv *Track) Play() {
-	wv.SetVolume(settings.Audio.GeneralVolume * settings.Audio.MusicVolume)
+func (track *Track) Play() {
+	track.SetVolume(settings.Audio.GeneralVolume * settings.Audio.MusicVolume)
 
-	wv.playing = true
+	track.playing = true
 
 	if !Offscreen {
-		C.BASS_ChannelPlay(C.DWORD(wv.channel), 1)
+		C.BASS_Mixer_StreamAddChannel(masterMixer, track.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_MIXER_CHAN_BUFFER)
+		track.addedToMixer = true
 
 		return
 	}
 
 	trackEvents = append(trackEvents, trackEvent{
-		channel:  wv.offscreenChannel,
+		channel:  track.offscreenChannel,
 		time:     GlobalTimeMs,
 		play:     true,
 		delegate: nil,
 	})
 }
 
-func (wv *Track) PlayV(volume float64) {
-	wv.SetVolume(volume)
+func (track *Track) PlayV(volume float64) {
+	track.SetVolume(volume)
 
-	wv.playing = true
+	track.playing = true
 
 	if !Offscreen {
-		C.BASS_ChannelPlay(C.DWORD(wv.channel), 0)
+		C.BASS_Mixer_StreamAddChannel(masterMixer, track.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_MIXER_CHAN_BUFFER)
+		track.addedToMixer = true
 
 		return
 	}
 
 	trackEvents = append(trackEvents, trackEvent{
-		channel:  wv.offscreenChannel,
+		channel:  track.offscreenChannel,
 		time:     GlobalTimeMs,
 		play:     true,
 		delegate: nil,
 	})
 }
 
-func (wv *Track) Pause() {
-	wv.playing = false
+func (track *Track) Pause() {
+	track.playing = false
 
 	if !Offscreen {
-		C.BASS_ChannelPause(C.DWORD(wv.channel))
+		C.BASS_Mixer_ChannelFlags(track.channel, 0, C.BASS_MIXER_CHAN_PAUSE)
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelPause(C.DWORD(wv.offscreenChannel))
+		C.BASS_Mixer_ChannelFlags(track.offscreenChannel, 0, C.BASS_MIXER_CHAN_PAUSE)
 	})
 }
 
-func (wv *Track) Resume() {
-	wv.playing = true
+func (track *Track) Resume() {
+	track.playing = true
 
 	if !Offscreen {
-		C.BASS_ChannelPlay(C.DWORD(wv.channel), 0)
+		C.BASS_Mixer_ChannelFlags(track.channel, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelPlay(C.DWORD(wv.offscreenChannel), 0)
+		C.BASS_Mixer_ChannelFlags(track.offscreenChannel, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
 	})
 }
 
-func (wv *Track) Stop() {
-	wv.playing = false
+func (track *Track) Stop() {
+	track.playing = false
 
 	if !Offscreen {
-		C.BASS_ChannelStop(C.DWORD(wv.channel))
+		C.BASS_ChannelStop(track.channel)
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelStop(C.DWORD(wv.offscreenChannel))
+		C.BASS_ChannelStop(track.offscreenChannel)
 	})
 }
 
-func (wv *Track) SetVolume(vol float64) {
+func (track *Track) SetVolume(vol float64) {
 	if !Offscreen {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(vol))
+		C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_VOL, C.float(vol))
 
 		return
 	}
 
-	if math.Abs(wv.lastVol-vol) > 0.001 {
+	if math.Abs(track.lastVol-vol) > 0.001 {
 		addNormalEvent(func() {
-			C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_VOL, C.float(vol))
+			C.BASS_ChannelSetAttribute(track.offscreenChannel, C.BASS_ATTRIB_VOL, C.float(vol))
 		})
 
-		wv.lastVol = vol
+		track.lastVol = vol
 	}
 }
 
-func (wv *Track) SetVolumeRelative(vol float64) {
+func (track *Track) SetVolumeRelative(vol float64) {
 	combined := settings.Audio.GeneralVolume * settings.Audio.MusicVolume * vol
+
 	if !Offscreen {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_VOL, C.float(combined))
+		C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_VOL, C.float(combined))
 
 		return
 	}
 
-	if math.Abs(wv.lastVol-combined) > 0.001 {
+	if math.Abs(track.lastVol-combined) > 0.001 {
 		addNormalEvent(func() {
-			C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_VOL, C.float(combined))
+			C.BASS_ChannelSetAttribute(track.offscreenChannel, C.BASS_ATTRIB_VOL, C.float(combined))
 		})
 
-		wv.lastVol = combined
+		track.lastVol = combined
 	}
 }
 
-func (wv *Track) GetLength() float64 {
-	return float64(C.BASS_ChannelBytes2Seconds(wv.channel, C.BASS_ChannelGetLength(wv.channel, C.BASS_POS_BYTE)))
+func (track *Track) GetLength() float64 {
+	return float64(C.BASS_ChannelBytes2Seconds(track.channel, C.BASS_ChannelGetLength(track.channel, C.BASS_POS_BYTE)))
 }
 
-func (wv *Track) SetPosition(pos float64) {
+func (track *Track) SetPosition(pos float64) {
 	if !Offscreen {
-		C.BASS_ChannelSetPosition(wv.channel, C.BASS_ChannelSeconds2Bytes(wv.channel, C.double(pos)), C.BASS_POS_BYTE)
+		if track.addedToMixer {
+			C.BASS_Mixer_ChannelSetPosition(track.channel, C.BASS_ChannelSeconds2Bytes(track.channel, C.double(pos)), C.BASS_POS_BYTE)
+		} else {
+			C.BASS_ChannelSetPosition(track.channel, C.BASS_ChannelSeconds2Bytes(track.channel, C.double(pos)), C.BASS_POS_BYTE)
+		}
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelSetPosition(wv.offscreenChannel, C.BASS_ChannelSeconds2Bytes(wv.offscreenChannel, C.double(pos)), C.BASS_POS_BYTE|C.BASS_POS_DECODETO)
+		C.BASS_Mixer_ChannelSetPosition(track.offscreenChannel, C.BASS_ChannelSeconds2Bytes(track.offscreenChannel, C.double(pos)), C.BASS_POS_BYTE|C.BASS_POS_DECODETO)
 	})
 }
 
-func (wv *Track) SetPositionF(pos float64) {
-	C.BASS_ChannelSetPosition(wv.channel, C.BASS_ChannelSeconds2Bytes(wv.channel, C.double(pos)), C.BASS_POS_BYTE)
+func (track *Track) SetPositionF(pos float64) {
+	C.BASS_ChannelSetPosition(track.channel, C.BASS_ChannelSeconds2Bytes(track.channel, C.double(pos)), C.BASS_POS_BYTE)
 }
 
-func (wv *Track) GetPosition() float64 {
-	return float64(C.BASS_ChannelBytes2Seconds(wv.channel, C.BASS_ChannelGetPosition(wv.channel, C.BASS_POS_BYTE)))
-}
+func (track *Track) GetPosition() float64 {
+	var bassPos float64
 
-func (wv *Track) SetTempo(tempo float64) {
-	if wv.speed == tempo {
-		return
-	}
-
-	wv.speed = tempo
-
-	if !Offscreen {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
-
-		return
-	}
-
-	addNormalEvent(func() {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
-	})
-}
-
-func (wv *Track) GetTempo() float64 {
-	return wv.speed
-}
-
-func (wv *Track) SetPitch(tempo float64) {
-	if wv.pitch == tempo {
-		return
-	}
-
-	wv.pitch = tempo
-
-	if !Offscreen {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.channel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
-
-		return
-	}
-
-	addNormalEvent(func() {
-		C.BASS_ChannelSetAttribute(C.DWORD(wv.offscreenChannel), C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
-	})
-}
-
-func (wv *Track) GetPitch() float64 {
-	return wv.pitch
-}
-
-func (wv *Track) GetState() int {
-	return int(C.BASS_ChannelIsActive(wv.channel))
-}
-
-func (wv *Track) Update() {
-	if wv.playing {
-		C.BASS_ChannelGetData(wv.channel, unsafe.Pointer(&wv.fft[0]), C.BASS_DATA_FFT1024)
+	if track.addedToMixer {
+		bassPos = float64(C.BASS_ChannelBytes2Seconds(track.channel, C.BASS_Mixer_ChannelGetPosition(track.channel, C.BASS_POS_BYTE)))
 	} else {
-		for i := range wv.fft {
-			wv.fft[i] = 0
+		bassPos = float64(C.BASS_ChannelBytes2Seconds(track.channel, C.BASS_ChannelGetPosition(track.channel, C.BASS_POS_BYTE)))
+	}
+
+	return bassPos
+}
+
+func (track *Track) SetTempo(tempo float64) {
+	if track.speed == tempo {
+		return
+	}
+
+	track.speed = tempo
+
+	if !Offscreen {
+		C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
+
+		return
+	}
+
+	addNormalEvent(func() {
+		C.BASS_ChannelSetAttribute(track.offscreenChannel, C.BASS_ATTRIB_TEMPO, C.float((tempo-1.0)*100))
+	})
+}
+
+func (track *Track) GetTempo() float64 {
+	return track.speed
+}
+
+func (track *Track) SetPitch(tempo float64) {
+	if track.pitch == tempo {
+		return
+	}
+
+	track.pitch = tempo
+
+	if !Offscreen {
+		C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
+
+		return
+	}
+
+	addNormalEvent(func() {
+		C.BASS_ChannelSetAttribute(track.offscreenChannel, C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
+	})
+}
+
+func (track *Track) GetPitch() float64 {
+	return track.pitch
+}
+
+func (track *Track) GetState() int {
+	if !track.addedToMixer {
+		return MUSIC_STOPPED
+	}
+
+	state := int(C.BASS_ChannelIsActive(track.channel))
+
+	if state == MUSIC_PLAYING && track.addedToMixer && C.BASS_Mixer_ChannelFlags(track.channel, 0, 0) & C.BASS_MIXER_CHAN_PAUSE > 0 {
+		return MUSIC_PAUSED
+	}
+
+	return state
+}
+
+func (track *Track) Update() {
+	if track.playing {
+		if track.addedToMixer {
+			C.BASS_Mixer_ChannelGetData(track.channel, unsafe.Pointer(&track.fft[0]), C.BASS_DATA_FFT1024)
+		} else {
+			C.BASS_ChannelGetData(track.channel, unsafe.Pointer(&track.fft[0]), C.BASS_DATA_FFT1024)
+		}
+	} else {
+		for i := range track.fft {
+			track.fft[i] = 0
 		}
 	}
 
 	toPeak := 0.0
 	beatAv := 0.0
 
-	for i, g := range wv.fft {
+	for i, g := range track.fft {
 		h := math.Abs(float64(g))
 
 		toPeak = math.Max(toPeak, h)
@@ -288,46 +318,52 @@ func (wv *Track) Update() {
 	boost := 0.0
 
 	for i := 0; i < 10; i++ {
-		boost += float64(wv.fft[i]*wv.fft[i]) * float64(10-i) / float64(10)
+		boost += float64(track.fft[i]*track.fft[i]) * float64(10-i) / float64(10)
 	}
 
-	wv.lowMax = beatAv
-	wv.boost = boost
-	wv.peak = toPeak
+	track.lowMax = beatAv
+	track.boost = boost
+	track.peak = toPeak
 
-	level := int(C.BASS_ChannelGetLevel(wv.channel))
+	var level int
+
+	if track.addedToMixer {
+		level = int(C.BASS_Mixer_ChannelGetLevel(track.channel))
+	} else {
+		level = int(C.BASS_ChannelGetLevel(track.channel))
+	}
 
 	left := level & 65535
 	right := level >> 16
 
-	wv.leftChannel = float64(left) / 32768
-	wv.rightChannel = float64(right) / 32768
+	track.leftChannel = float64(left) / 32768
+	track.rightChannel = float64(right) / 32768
 }
 
-func (wv *Track) GetFFT() []float32 {
-	return wv.fft
+func (track *Track) GetFFT() []float32 {
+	return track.fft
 }
 
-func (wv *Track) GetPeak() float64 {
-	return wv.peak
+func (track *Track) GetPeak() float64 {
+	return track.peak
 }
 
-func (wv *Track) GetLevelCombined() float64 {
-	return (wv.leftChannel + wv.rightChannel) / 2
+func (track *Track) GetLevelCombined() float64 {
+	return (track.leftChannel + track.rightChannel) / 2
 }
 
-func (wv *Track) GetLeftLevel() float64 {
-	return wv.leftChannel
+func (track *Track) GetLeftLevel() float64 {
+	return track.leftChannel
 }
 
-func (wv *Track) GetRightLevel() float64 {
-	return wv.rightChannel
+func (track *Track) GetRightLevel() float64 {
+	return track.rightChannel
 }
 
-func (wv *Track) GetBoost() float64 {
-	return wv.boost
+func (track *Track) GetBoost() float64 {
+	return track.boost
 }
 
-func (wv *Track) GetBeat() float64 {
-	return wv.lowMax
+func (track *Track) GetBeat() float64 {
+	return track.lowMax
 }
