@@ -123,20 +123,6 @@ func (track *Track) Pause() {
 	track.playing = false
 
 	if !Offscreen {
-		C.BASS_Mixer_ChannelFlags(track.channel, 0, C.BASS_MIXER_CHAN_PAUSE)
-
-		return
-	}
-
-	addNormalEvent(func() {
-		C.BASS_Mixer_ChannelFlags(track.offscreenChannel, 0, C.BASS_MIXER_CHAN_PAUSE)
-	})
-}
-
-func (track *Track) Resume() {
-	track.playing = true
-
-	if !Offscreen {
 		C.BASS_Mixer_ChannelFlags(track.channel, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
 
 		return
@@ -144,6 +130,20 @@ func (track *Track) Resume() {
 
 	addNormalEvent(func() {
 		C.BASS_Mixer_ChannelFlags(track.offscreenChannel, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
+	})
+}
+
+func (track *Track) Resume() {
+	track.playing = true
+
+	if !Offscreen {
+		C.BASS_Mixer_ChannelFlags(track.channel, 0, C.BASS_MIXER_CHAN_PAUSE)
+
+		return
+	}
+
+	addNormalEvent(func() {
+		C.BASS_Mixer_ChannelFlags(track.offscreenChannel, 0, C.BASS_MIXER_CHAN_PAUSE)
 	})
 }
 
