@@ -2,6 +2,7 @@ package bass
 
 /*
 #include "bass.h"
+#include "bassmix.h"
 */
 import "C"
 
@@ -14,7 +15,7 @@ import (
 
 type SubSample struct {
 	bassSample C.HSAMPLE
-	sampleChan C.HCHANNEL
+	sampleChan C.HSTREAM
 	streamChan C.HSTREAM
 }
 
@@ -66,11 +67,13 @@ func (sample *Sample) Play() *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
-		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
-		C.BASS_ChannelPlay(channel, 1)
+		sub.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-		sub.sampleChan = channel
+		if sub.sampleChan != 0 {
+			C.BASS_ChannelSetAttribute(sub.sampleChan, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
+
+			C.BASS_Mixer_StreamAddChannel(masterMixer, sub.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		}
 
 		return sub
 	}
@@ -99,11 +102,13 @@ func (sample *Sample) PlayV(volume float64) *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
-		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(volume))
-		C.BASS_ChannelPlay(channel, 1)
+		sub.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-		sub.sampleChan = channel
+		if sub.sampleChan != 0 {
+			C.BASS_ChannelSetAttribute(sub.sampleChan, C.BASS_ATTRIB_VOL, C.float(volume))
+
+			C.BASS_Mixer_StreamAddChannel(masterMixer, sub.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		}
 
 		return sub
 	}
@@ -132,11 +137,13 @@ func (sample *Sample) PlayRV(volume float64) *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
-		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
-		C.BASS_ChannelPlay(channel, 1)
+		sub.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-		sub.sampleChan = channel
+		if sub.sampleChan != 0 {
+			C.BASS_ChannelSetAttribute(sub.sampleChan, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
+
+			C.BASS_Mixer_StreamAddChannel(masterMixer, sub.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		}
 
 		return sub
 	}
@@ -165,12 +172,14 @@ func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
 	}
 
 	if !Offscreen {
-		channel := C.BASS_SampleGetChannel(sample.bassSample, 0)
-		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
-		C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_PAN, C.float(balance))
-		C.BASS_ChannelPlay(channel, 1)
+		sub.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-		sub.sampleChan = channel
+		if sub.sampleChan != 0 {
+			C.BASS_ChannelSetAttribute(sub.sampleChan, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
+			C.BASS_ChannelSetAttribute(sub.sampleChan, C.BASS_ATTRIB_PAN, C.float(balance))
+
+			C.BASS_Mixer_StreamAddChannel(masterMixer, sub.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		}
 
 		return sub
 	}
@@ -216,7 +225,9 @@ func setLoop(sSample *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelFlags(sSample.sampleChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
+		if sSample.sampleChan != 0 {
+			C.BASS_ChannelFlags(sSample.sampleChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
+		}
 
 		return
 	}
@@ -234,13 +245,17 @@ func SetRate(channel *SubSample, rate float64) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_FREQ, C.float(rate))
+		if channel.sampleChan != 0 {
+			C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_FREQ, C.float(rate))
+		}
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelSetAttribute(channel.streamChan, C.BASS_ATTRIB_FREQ, C.float(rate))
+		if channel.streamChan != 0 {
+			C.BASS_ChannelSetAttribute(channel.streamChan, C.BASS_ATTRIB_FREQ, C.float(rate))
+		}
 	})
 }
 
@@ -252,13 +267,21 @@ func StopSample(channel *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelPause(channel.sampleChan)
+		if channel.sampleChan != 0 {
+			C.BASS_Mixer_ChannelRemove(channel.sampleChan)
+
+			C.BASS_ChannelFree(channel.sampleChan)
+		}
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelStop(channel.streamChan)
+		if channel.streamChan != 0 {
+			C.BASS_Mixer_ChannelRemove(channel.streamChan)
+
+			C.BASS_ChannelFree(channel.streamChan)
+		}
 	})
 }
 
@@ -268,13 +291,17 @@ func PauseSample(channel *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelPause(channel.sampleChan)
+		if channel.sampleChan != 0 {
+			C.BASS_Mixer_ChannelFlags(channel.sampleChan, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
+		}
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelPause(channel.streamChan)
+		if channel.streamChan != 0 {
+			C.BASS_Mixer_ChannelFlags(channel.streamChan, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
+		}
 	})
 }
 
@@ -284,12 +311,16 @@ func PlaySample(channel *SubSample) {
 	}
 
 	if !Offscreen {
-		C.BASS_ChannelPlay(channel.sampleChan, 0)
+		if channel.sampleChan != 0 {
+			C.BASS_Mixer_ChannelFlags(channel.sampleChan, 0, C.BASS_MIXER_CHAN_PAUSE)
+		}
 
 		return
 	}
 
 	addNormalEvent(func() {
-		C.BASS_ChannelPlay(channel.streamChan, 0)
+		if channel.streamChan != 0 {
+			C.BASS_Mixer_ChannelFlags(channel.streamChan, 0, C.BASS_MIXER_CHAN_PAUSE)
+		}
 	})
 }
