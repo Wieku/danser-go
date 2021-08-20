@@ -376,6 +376,16 @@ func (spinner *Spinner) StartSpinSample() {
 	}
 }
 
+func (spinner *Spinner) PauseSpinSample() {
+	if spinner.audioSubmissionDisabled {
+		return
+	}
+
+	if spinner.loopSample != nil {
+		bass.PauseSample(spinner.loopSample)
+	}
+}
+
 func (spinner *Spinner) StopSpinSample() {
 	if spinner.audioSubmissionDisabled {
 		return
