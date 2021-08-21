@@ -16,7 +16,6 @@ import (
 type SubSample struct {
 	source     C.HSAMPLE
 	sampleChan C.HSTREAM
-	streamChan C.HSTREAM
 }
 
 type Sample struct {
