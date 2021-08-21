@@ -38,7 +38,7 @@ type Spinner struct {
 	rpm      float64
 
 	spinnerbonus *bass.Sample
-	loopSample   *bass.SubSample
+	loopSample   *bass.SampleChannel
 	completion   float64
 
 	newStyle     bool

@@ -13,7 +13,7 @@ import (
 	"unsafe"
 )
 
-type SubSample struct {
+type SampleChannel struct {
 	source  C.HSAMPLE
 	channel C.HSTREAM
 }
@@ -22,7 +22,7 @@ type Sample struct {
 	bassSample C.DWORD
 }
 
-var loopingStreams = make(map[*SubSample]int)
+var loopingStreams = make(map[*SampleChannel]int)
 
 func StopLoops() {
 	for k := range loopingStreams {
@@ -57,8 +57,8 @@ func NewSampleData(data []byte) *Sample {
 	return sample
 }
 
-func (sample *Sample) Play() *SubSample {
-	channel := &SubSample{source: sample.bassSample}
+func (sample *Sample) Play() *SampleChannel {
+	channel := &SampleChannel{source: sample.bassSample}
 
 	if channel.source == 0 {
 		return channel
@@ -75,7 +75,7 @@ func (sample *Sample) Play() *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayLoop() *SubSample {
+func (sample *Sample) PlayLoop() *SampleChannel {
 	channel := sample.Play()
 
 	setLoop(channel)
@@ -83,8 +83,8 @@ func (sample *Sample) PlayLoop() *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayV(volume float64) *SubSample {
-	channel := &SubSample{source: sample.bassSample}
+func (sample *Sample) PlayV(volume float64) *SampleChannel {
+	channel := &SampleChannel{source: sample.bassSample}
 
 	if channel.source == 0 {
 		return channel
@@ -101,7 +101,7 @@ func (sample *Sample) PlayV(volume float64) *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayVLoop(volume float64) *SubSample {
+func (sample *Sample) PlayVLoop(volume float64) *SampleChannel {
 	channel := sample.PlayV(volume)
 
 	setLoop(channel)
@@ -109,8 +109,8 @@ func (sample *Sample) PlayVLoop(volume float64) *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayRV(volume float64) *SubSample {
-	channel := &SubSample{source: sample.bassSample}
+func (sample *Sample) PlayRV(volume float64) *SampleChannel {
+	channel := &SampleChannel{source: sample.bassSample}
 
 	if channel.source == 0 {
 		return channel
@@ -127,7 +127,7 @@ func (sample *Sample) PlayRV(volume float64) *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayRVLoop(volume float64) *SubSample {
+func (sample *Sample) PlayRVLoop(volume float64) *SampleChannel {
 	channel := sample.PlayRV(volume)
 
 	setLoop(channel)
@@ -135,8 +135,8 @@ func (sample *Sample) PlayRVLoop(volume float64) *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
-	channel := &SubSample{source: sample.bassSample}
+func (sample *Sample) PlayRVPos(volume float64, balance float64) *SampleChannel {
+	channel := &SampleChannel{source: sample.bassSample}
 
 	if channel.source == 0 {
 		return channel
@@ -154,7 +154,7 @@ func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
 	return channel
 }
 
-func (sample *Sample) PlayRVPosLoop(volume float64, balance float64) *SubSample {
+func (sample *Sample) PlayRVPosLoop(volume float64, balance float64) *SampleChannel {
 	channel := sample.PlayRVPos(volume, balance)
 
 	setLoop(channel)
@@ -162,7 +162,7 @@ func (sample *Sample) PlayRVPosLoop(volume float64, balance float64) *SubSample 
 	return channel
 }
 
-func setLoop(channel *SubSample) {
+func setLoop(channel *SampleChannel) {
 	loopingStreams[channel] = 1
 
 	if channel.channel != 0 {
@@ -170,13 +170,13 @@ func setLoop(channel *SubSample) {
 	}
 }
 
-func SetRate(channel *SubSample, rate float64) {
+func SetRate(channel *SampleChannel, rate float64) {
 	if channel.channel != 0 {
 		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_FREQ, C.float(rate))
 	}
 }
 
-func StopSample(channel *SubSample) {
+func StopSample(channel *SampleChannel) {
 	delete(loopingStreams, channel)
 
 	if channel.channel != 0 {
@@ -186,13 +186,13 @@ func StopSample(channel *SubSample) {
 	}
 }
 
-func PauseSample(channel *SubSample) {
+func PauseSample(channel *SampleChannel) {
 	if channel.channel != 0 {
 		C.BASS_Mixer_ChannelFlags(channel.channel, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
 	}
 }
 
-func PlaySample(channel *SubSample) {
+func PlaySample(channel *SampleChannel) {
 	if channel.channel != 0 {
 		C.BASS_Mixer_ChannelFlags(channel.channel, 0, C.BASS_MIXER_CHAN_PAUSE)
 	}
