@@ -165,20 +165,12 @@ func (sample *Sample) PlayRVPosLoop(volume float64, balance float64) *SubSample 
 func setLoop(sSample *SubSample) {
 	loopingStreams[sSample] = 1
 
-	if sSample.source == 0 {
-		return
-	}
-
 	if sSample.sampleChan != 0 {
 		C.BASS_ChannelFlags(sSample.sampleChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
 	}
 }
 
 func SetRate(channel *SubSample, rate float64) {
-	if channel.source == 0 {
-		return
-	}
-
 	if channel.sampleChan != 0 {
 		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_FREQ, C.float(rate))
 	}
@@ -186,10 +178,6 @@ func SetRate(channel *SubSample, rate float64) {
 
 func StopSample(channel *SubSample) {
 	delete(loopingStreams, channel)
-
-	if channel.source == 0 {
-		return
-	}
 
 	if channel.sampleChan != 0 {
 		C.BASS_Mixer_ChannelRemove(channel.sampleChan)
@@ -199,20 +187,12 @@ func StopSample(channel *SubSample) {
 }
 
 func PauseSample(channel *SubSample) {
-	if channel.source == 0 {
-		return
-	}
-
 	if channel.sampleChan != 0 {
 		C.BASS_Mixer_ChannelFlags(channel.sampleChan, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
 	}
 }
 
 func PlaySample(channel *SubSample) {
-	if channel.source == 0 {
-		return
-	}
-
 	if channel.sampleChan != 0 {
 		C.BASS_Mixer_ChannelFlags(channel.sampleChan, 0, C.BASS_MIXER_CHAN_PAUSE)
 	}
