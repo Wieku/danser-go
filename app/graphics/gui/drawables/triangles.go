@@ -29,7 +29,7 @@ type Triangles struct {
 
 	colorPalette []color2.Color
 
-	music *bass.Track
+	music bass.ITrack
 
 	density float64
 	scale   float64
@@ -46,7 +46,7 @@ func NewTriangles(colors []color2.Color) *Triangles {
 	return visualiser
 }
 
-func (vis *Triangles) SetTrack(track *bass.Track) {
+func (vis *Triangles) SetTrack(track bass.ITrack) {
 	vis.music = track
 }
 

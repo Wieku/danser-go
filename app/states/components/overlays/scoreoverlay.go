@@ -43,7 +43,7 @@ const (
 
 type Overlay interface {
 	Update(float64)
-	SetMusic(*bass.Track)
+	SetMusic(bass.ITrack)
 	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
@@ -69,7 +69,7 @@ type ScoreOverlay struct {
 	ruleset    *osu.OsuRuleSet
 	cursor     *graphics.Cursor
 	combobreak *bass.Sample
-	music      *bass.Track
+	music      bass.ITrack
 	nextEnd    float64
 	results    *play.HitResults
 
@@ -545,7 +545,7 @@ func (overlay *ScoreOverlay) updateBreaks(time float64) {
 	overlay.breakMode = inBreak
 }
 
-func (overlay *ScoreOverlay) SetMusic(music *bass.Track) {
+func (overlay *ScoreOverlay) SetMusic(music bass.ITrack) {
 	overlay.music = music
 }
 

@@ -50,7 +50,7 @@ func NewDanserCoin() *DanserCoin {
 	return coin
 }
 
-func (coin *DanserCoin) SetMap(bMap *beatmap.BeatMap, track *bass.Track) {
+func (coin *DanserCoin) SetMap(bMap *beatmap.BeatMap, track bass.ITrack) {
 	coin.BeatSynced.SetMap(bMap, track)
 	coin.vis.SetTrack(track)
 }

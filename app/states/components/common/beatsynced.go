@@ -11,7 +11,7 @@ type BeatSynced struct {
 	*sprite.Sprite
 
 	bMap           *beatmap.BeatMap
-	music          *bass.Track
+	music          bass.ITrack
 	lastBeatStart  float64
 	lastBeatLength float64
 	lastBeatProg   float64
@@ -27,7 +27,7 @@ func NewBeatSynced() *BeatSynced {
 	return &BeatSynced{Sprite: &sprite.Sprite{}}
 }
 
-func (bs *BeatSynced) SetMap(bMap *beatmap.BeatMap, track *bass.Track) {
+func (bs *BeatSynced) SetMap(bMap *beatmap.BeatMap, track bass.ITrack) {
 	bs.bMap = bMap
 	bs.music = track
 }

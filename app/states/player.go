@@ -59,7 +59,7 @@ type Player struct {
 	fadeOut     float64
 	fadeIn      float64
 	start       bool
-	musicPlayer *bass.Track
+	musicPlayer bass.ITrack
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
 
@@ -127,7 +127,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	player.musicPlayer = bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	track := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+
+	if track == nil {
+		log.Println("Failed to create music stream, creating a dummy stream...")
+
+		player.musicPlayer = bass.NewTrackVirtual(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()/1000+1)
+	} else {
+		log.Println("Audio track:", beatMap.Audio)
+
+		player.musicPlayer = track
+	}
 
 	var err error
 	player.Epi, err = utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/warning.png")
@@ -232,8 +242,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.lastTime = -1
 
 	player.objectContainer = containers.NewHitObjectContainer(beatMap)
-
-	log.Println("Audio track:", beatMap.Audio)
 
 	player.Scl = 1
 	player.fadeOut = 1.0
