@@ -14,7 +14,7 @@ import (
 )
 
 type SubSample struct {
-	bassSample C.HSAMPLE
+	source     C.HSAMPLE
 	sampleChan C.HSTREAM
 	streamChan C.HSTREAM
 }
@@ -59,8 +59,7 @@ func NewSampleData(data []byte) *Sample {
 }
 
 func (sample *Sample) Play() *SubSample {
-	sub := new(SubSample)
-	sub.bassSample = sample.bassSample
+	sub := &SubSample{source: sample.bassSample}
 
 	if sample.bassSample == 0 {
 		return sub
@@ -94,8 +93,7 @@ func (sample *Sample) PlayLoop() *SubSample {
 }
 
 func (sample *Sample) PlayV(volume float64) *SubSample {
-	sub := new(SubSample)
-	sub.bassSample = sample.bassSample
+	sub := &SubSample{source: sample.bassSample}
 
 	if sample.bassSample == 0 {
 		return sub
@@ -129,8 +127,7 @@ func (sample *Sample) PlayVLoop(volume float64) *SubSample {
 }
 
 func (sample *Sample) PlayRV(volume float64) *SubSample {
-	sub := new(SubSample)
-	sub.bassSample = sample.bassSample
+	sub := &SubSample{source: sample.bassSample}
 
 	if sample.bassSample == 0 {
 		return sub
@@ -164,8 +161,7 @@ func (sample *Sample) PlayRVLoop(volume float64) *SubSample {
 }
 
 func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
-	sub := new(SubSample)
-	sub.bassSample = sample.bassSample
+	sub := &SubSample{source: sample.bassSample}
 
 	if sample.bassSample == 0 {
 		return sub
@@ -220,7 +216,7 @@ func (sample *Sample) createPlayEvent(sSample *SubSample, delegate func()) {
 func setLoop(sSample *SubSample) {
 	loopingStreams[sSample] = 1
 
-	if sSample.bassSample == 0 {
+	if sSample.source == 0 {
 		return
 	}
 
@@ -240,7 +236,7 @@ func setLoop(sSample *SubSample) {
 }
 
 func SetRate(channel *SubSample, rate float64) {
-	if channel.bassSample == 0 {
+	if channel.source == 0 {
 		return
 	}
 
@@ -262,7 +258,7 @@ func SetRate(channel *SubSample, rate float64) {
 func StopSample(channel *SubSample) {
 	delete(loopingStreams, channel)
 
-	if channel.bassSample == 0 {
+	if channel.source == 0 {
 		return
 	}
 
@@ -286,7 +282,7 @@ func StopSample(channel *SubSample) {
 }
 
 func PauseSample(channel *SubSample) {
-	if channel.bassSample == 0 {
+	if channel.source == 0 {
 		return
 	}
 
@@ -306,7 +302,7 @@ func PauseSample(channel *SubSample) {
 }
 
 func PlaySample(channel *SubSample) {
-	if channel.bassSample == 0 {
+	if channel.source == 0 {
 		return
 	}
 
