@@ -58,6 +58,7 @@ func Init(offscreen bool) {
 	deviceId := -1 //default audio device
 	sampleRate := 44100
 	mixerFlags := C.BASS_MIXER_NONSTOP
+
 	if offscreen {
 		sampleRate = 48000
 		deviceId = 0 //If we're rendering, we don't want BASS to be tied to specific device, especially in headless system

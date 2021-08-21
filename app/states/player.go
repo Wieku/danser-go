@@ -511,12 +511,6 @@ func (player *Player) Update(delta float64) bool {
 		player.progressMsF += delta
 	}
 
-	bass.GlobalTimeMs += delta
-
-	//if player.progressMsF > player.startPoint && settings.RECORD {
-	//	player.musicPlayer.SetPositionF(player.progressMsF / 1000)
-	//}
-
 	player.updateMain(delta)
 
 	if player.progressMsF >= player.MapEnd {
