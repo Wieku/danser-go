@@ -220,7 +220,7 @@ func run() {
 		settings.RECORD = recordMode || screenshotMode
 
 		if settings.RECORD {
-			bass.Offscreen = true
+			//bass.Offscreen = true
 		}
 
 		newSettings := settings.LoadSettings(*settingsVersion)
@@ -556,16 +556,28 @@ func mainLoopRecord() {
 	updateFPS := math.Max(fps, 1000)
 	updateDelta := 1000 / updateFPS
 	fpsDelta := 1000 / fps
+	audioDelta := 1.0
 
 	deltaSumF := fpsDelta
+
+	deltaSumA := 0.0
 
 	p, _ := player.(*states.Player)
 
 	//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
 
+	bass.StartEncoding(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
+
 	var lastProgress, progress int
 
 	for !p.Update(updateDelta) {
+		deltaSumA += updateDelta
+		if deltaSumA >= audioDelta {
+			bass.EncodePart(audioDelta)
+
+			deltaSumA -= audioDelta
+		}
+
 		deltaSumF += updateDelta
 		if deltaSumF >= fpsDelta {
 			mainthread.Call(func() {
@@ -604,7 +616,9 @@ func mainLoopRecord() {
 		ffmpeg.StopFFmpeg()
 	})
 
-	bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
+	bass.StopEncoding()
+
+	//bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
 
 	ffmpeg.Combine(output)
 }
