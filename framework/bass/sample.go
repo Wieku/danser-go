@@ -14,8 +14,8 @@ import (
 )
 
 type SubSample struct {
-	source     C.HSAMPLE
-	sampleChan C.HSTREAM
+	source  C.HSAMPLE
+	channel C.HSTREAM
 }
 
 type Sample struct {
@@ -60,16 +60,16 @@ func NewSampleData(data []byte) *Sample {
 func (sample *Sample) Play() *SubSample {
 	channel := &SubSample{source: sample.bassSample}
 
-	if sample.bassSample == 0 {
+	if channel.source == 0 {
 		return channel
 	}
 
-	channel.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
+	channel.channel = C.BASS_SampleGetChannel(channel.source, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-	if channel.sampleChan != 0 {
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
+	if channel.channel != 0 {
+		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
 
-		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
 	}
 
 	return channel
@@ -86,16 +86,16 @@ func (sample *Sample) PlayLoop() *SubSample {
 func (sample *Sample) PlayV(volume float64) *SubSample {
 	channel := &SubSample{source: sample.bassSample}
 
-	if sample.bassSample == 0 {
+	if channel.source == 0 {
 		return channel
 	}
 
-	channel.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
+	channel.channel = C.BASS_SampleGetChannel(channel.source, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-	if channel.sampleChan != 0 {
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_VOL, C.float(volume))
+	if channel.channel != 0 {
+		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_VOL, C.float(volume))
 
-		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
 	}
 
 	return channel
@@ -112,16 +112,16 @@ func (sample *Sample) PlayVLoop(volume float64) *SubSample {
 func (sample *Sample) PlayRV(volume float64) *SubSample {
 	channel := &SubSample{source: sample.bassSample}
 
-	if sample.bassSample == 0 {
+	if channel.source == 0 {
 		return channel
 	}
 
-	channel.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
+	channel.channel = C.BASS_SampleGetChannel(channel.source, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-	if channel.sampleChan != 0 {
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
+	if channel.channel != 0 {
+		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
 
-		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
 	}
 
 	return channel
@@ -138,17 +138,17 @@ func (sample *Sample) PlayRVLoop(volume float64) *SubSample {
 func (sample *Sample) PlayRVPos(volume float64, balance float64) *SubSample {
 	channel := &SubSample{source: sample.bassSample}
 
-	if sample.bassSample == 0 {
+	if channel.source == 0 {
 		return channel
 	}
 
-	channel.sampleChan = C.BASS_SampleGetChannel(sample.bassSample, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
+	channel.channel = C.BASS_SampleGetChannel(channel.source, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
 
-	if channel.sampleChan != 0 {
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_PAN, C.float(balance))
+	if channel.channel != 0 {
+		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
+		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_PAN, C.float(balance))
 
-		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.sampleChan, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
+		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
 	}
 
 	return channel
@@ -165,35 +165,35 @@ func (sample *Sample) PlayRVPosLoop(volume float64, balance float64) *SubSample 
 func setLoop(channel *SubSample) {
 	loopingStreams[channel] = 1
 
-	if channel.sampleChan != 0 {
-		C.BASS_ChannelFlags(channel.sampleChan, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
+	if channel.channel != 0 {
+		C.BASS_ChannelFlags(channel.channel, C.BASS_SAMPLE_LOOP, C.BASS_SAMPLE_LOOP)
 	}
 }
 
 func SetRate(channel *SubSample, rate float64) {
-	if channel.sampleChan != 0 {
-		C.BASS_ChannelSetAttribute(channel.sampleChan, C.BASS_ATTRIB_FREQ, C.float(rate))
+	if channel.channel != 0 {
+		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_FREQ, C.float(rate))
 	}
 }
 
 func StopSample(channel *SubSample) {
 	delete(loopingStreams, channel)
 
-	if channel.sampleChan != 0 {
-		C.BASS_Mixer_ChannelRemove(channel.sampleChan)
+	if channel.channel != 0 {
+		C.BASS_Mixer_ChannelRemove(channel.channel)
 
-		C.BASS_ChannelFree(channel.sampleChan)
+		C.BASS_ChannelFree(channel.channel)
 	}
 }
 
 func PauseSample(channel *SubSample) {
-	if channel.sampleChan != 0 {
-		C.BASS_Mixer_ChannelFlags(channel.sampleChan, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
+	if channel.channel != 0 {
+		C.BASS_Mixer_ChannelFlags(channel.channel, C.BASS_MIXER_CHAN_PAUSE, C.BASS_MIXER_CHAN_PAUSE)
 	}
 }
 
 func PlaySample(channel *SubSample) {
-	if channel.sampleChan != 0 {
-		C.BASS_Mixer_ChannelFlags(channel.sampleChan, 0, C.BASS_MIXER_CHAN_PAUSE)
+	if channel.channel != 0 {
+		C.BASS_Mixer_ChannelFlags(channel.channel, 0, C.BASS_MIXER_CHAN_PAUSE)
 	}
 }
