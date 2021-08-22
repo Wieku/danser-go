@@ -326,7 +326,7 @@ func PushAudio() {
 
 	audioSync.Unlock()
 
-	bass.EncodePartD(data)
+	bass.ProcessMixer(data)
 
 	audioQueue <- data
 }
