@@ -8,7 +8,6 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/util"
 	"log"
 	"os"
 	"os/exec"
@@ -17,13 +16,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unsafe"
 )
 
 const MaxVideoBuffers = 10
 const MaxAudioBuffers = 2000
-
-var filename string
 
 var cmd *exec.Cmd
 
@@ -72,7 +70,7 @@ func createPBO() *PBO {
 }
 
 // check used encoders exist
-func precheck() {
+func preCheck() {
 	out, err := exec.Command("ffmpeg", "-encoders").Output()
 	if err != nil {
 		panic(err)
@@ -81,7 +79,7 @@ func precheck() {
 	encoders := strings.Split(string(out[:]), "\n")
 	for i, v := range encoders {
 		if strings.TrimSpace(v) == "------" {
-			encoders = encoders[i+1:len(encoders)-1]
+			encoders = encoders[i+1 : len(encoders)-1]
 			break
 		}
 	}
@@ -115,8 +113,12 @@ func precheck() {
 	}
 }
 
-func StartFFmpeg(fps, _w, _h int) {
-	precheck()
+func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
+	if strings.TrimSpace(output) == "" {
+		output = "danser_" + time.Now().Format("2006-01-02_15-04-05")
+	}
+
+	preCheck()
 
 	log.Println("Starting encoding!")
 
@@ -126,8 +128,6 @@ func StartFFmpeg(fps, _w, _h int) {
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
-
-	filename = util.RandomHexString(32)
 
 	split := strings.Split(settings.Recording.EncoderOptions, " ")
 
@@ -152,6 +152,7 @@ func StartFFmpeg(fps, _w, _h int) {
 
 	options := []string{
 		"-y", //(optional) overwrite output file if it exists
+
 		"-f", "rawvideo",
 		"-vcodec", "rawvideo",
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
@@ -159,14 +160,12 @@ func StartFFmpeg(fps, _w, _h int) {
 		"-r", strconv.Itoa(fps), //frames per second
 		"-i", videoPipe.Name(), //The input comes from a videoPipe
 
-
 		"-f", "f32le",
 		"-acodec", "pcm_f32le",
 		"-ar", "48000",
 		"-ac", "2",
 		"-probesize", "32",
 		"-i", audioPipe.Name(),
-
 
 		"-vf", "vflip" + videoFilters,
 		"-profile:v", settings.Recording.Profile,
@@ -176,7 +175,6 @@ func StartFFmpeg(fps, _w, _h int) {
 		"-colorspace", "1",
 		"-color_trc", "1",
 		"-color_primaries", "1",
-		//"-movflags", "+write_colr",
 		"-pix_fmt", settings.Recording.PixelFormat,
 	}
 
@@ -201,7 +199,7 @@ func StartFFmpeg(fps, _w, _h int) {
 
 	options = append(options, "-movflags", movFlags)
 
-	options = append(options, filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -226,7 +224,7 @@ func StartFFmpeg(fps, _w, _h int) {
 		}
 	})
 
-	audioBufSize := 48000*4*2/1000
+	audioBufSize := bass.GetMixerRequiredBufferSize(1 / audioFPS)
 
 	for i := 0; i < MaxAudioBuffers; i++ {
 		audioPool = append(audioPool, make([]byte, audioBufSize))
@@ -410,8 +408,4 @@ func CheckData() {
 
 		return
 	}
-}
-
-func GetFileName() string {
-	return filename
 }

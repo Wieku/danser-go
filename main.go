@@ -538,6 +538,7 @@ func mainLoopRecord() {
 	count := 0
 
 	fps := float64(settings.Recording.FPS)
+	audioFPS := 1000.0
 
 	if settings.Recording.MotionBlur.Enabled {
 		fps *= float64(settings.Recording.MotionBlur.OversampleMultiplier)
@@ -551,29 +552,23 @@ func mainLoopRecord() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
-	ffmpeg.StartFFmpeg(int(fps), w, h)
+	ffmpeg.StartFFmpeg(int(fps), w, h, audioFPS, output)
 
 	updateFPS := math.Max(fps, 1000)
 	updateDelta := 1000 / updateFPS
 	fpsDelta := 1000 / fps
-	audioDelta := 1.0
+	audioDelta := 1000.0 / audioFPS
 
 	deltaSumF := fpsDelta
-
 	deltaSumA := 0.0
 
 	p, _ := player.(*states.Player)
-
-	//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
-
-	//bass.StartEncoding(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
 
 	var lastProgress, progress int
 
 	for !p.Update(updateDelta) {
 		deltaSumA += updateDelta
 		if deltaSumA >= audioDelta {
-			//bass.EncodePart(audioDelta / 1000)
 			ffmpeg.PushAudio()
 
 			deltaSumA -= audioDelta
@@ -596,7 +591,7 @@ func mainLoopRecord() {
 
 				count++
 
-				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime /*float64(count) / float64(maxFrames)*/ * 100))
+				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime * 100))
 
 				if progress%5 == 0 && lastProgress != progress {
 					fmt.Println()
@@ -616,12 +611,6 @@ func mainLoopRecord() {
 	mainthread.Call(func() {
 		ffmpeg.StopFFmpeg()
 	})
-
-	//bass.StopEncoding()
-
-	//bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
-
-	//ffmpeg.Combine(output)
 }
 
 func mainLoopSS() {
