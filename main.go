@@ -566,14 +566,15 @@ func mainLoopRecord() {
 
 	//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
 
-	bass.StartEncoding(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
+	//bass.StartEncoding(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
 
 	var lastProgress, progress int
 
 	for !p.Update(updateDelta) {
 		deltaSumA += updateDelta
 		if deltaSumA >= audioDelta {
-			bass.EncodePart(audioDelta / 1000)
+			//bass.EncodePart(audioDelta / 1000)
+			ffmpeg.PushAudio()
 
 			deltaSumA -= audioDelta
 		}
@@ -616,11 +617,11 @@ func mainLoopRecord() {
 		ffmpeg.StopFFmpeg()
 	})
 
-	bass.StopEncoding()
+	//bass.StopEncoding()
 
 	//bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
 
-	ffmpeg.Combine(output)
+	//ffmpeg.Combine(output)
 }
 
 func mainLoopSS() {

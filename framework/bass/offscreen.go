@@ -8,6 +8,7 @@ package bass
 */
 import "C"
 import (
+	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"unsafe"
 )
@@ -30,6 +31,30 @@ func EncodePart(chunkSize float64) {
 	}
 
 	C.BASS_ChannelGetData(masterMixer, unsafe.Pointer(&mixerBuffer[0]), C.DWORD(len(mixerBuffer)))
+}
+
+func EncodePartD(buffer []byte) {
+	C.BASS_ChannelGetData(masterMixer, unsafe.Pointer(&buffer[0]), C.DWORD(len(buffer)))
+}
+
+var cnt int
+
+func EncodePartPush(chunkSize float64, pipe *files.NamedPipe) {
+	if lastChunkSize != chunkSize {
+		lastChunkSize = chunkSize
+
+		bufferSize := int(C.BASS_ChannelSeconds2Bytes(masterMixer, C.double(chunkSize)))
+
+		log.Println("enbufsize", bufferSize)
+
+		mixerBuffer = make([]byte, bufferSize)
+	}
+
+	C.BASS_ChannelGetData(masterMixer, unsafe.Pointer(&mixerBuffer[0]), C.DWORD(len(mixerBuffer)))
+
+	pipe.Write(mixerBuffer)
+
+	cnt++
 }
 
 func StopEncoding() {
