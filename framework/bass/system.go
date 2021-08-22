@@ -2,11 +2,10 @@ package bass
 
 /*
 #cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -Wl,-rpath,$ORIGIN -L${SRCDIR} -L${SRCDIR}/../../ -L/usr/lib -lbass -lbass_fx -lbassmix -lbassenc
+#cgo LDFLAGS: -Wl,-rpath,$ORIGIN -L${SRCDIR} -L${SRCDIR}/../../ -L/usr/lib -lbass -lbass_fx -lbassmix
 #include "bass.h"
 #include "bass_fx.h"
 #include "bassmix.h"
-#include "bassenc.h"
 */
 import "C"
 
@@ -75,8 +74,6 @@ func Init(offscreen bool) {
 		if !offscreen {
 			log.Println("BASS Audio Device:  ", getDeviceName())
 			log.Println("BASS Audio Latency: ", fmt.Sprintf("%dms", getLatency()))
-		} else {
-			log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
 		}
 
 		masterMixer = C.BASS_Mixer_StreamCreate(C.DWORD(sampleRate), 2, C.DWORD(mixerFlags))
