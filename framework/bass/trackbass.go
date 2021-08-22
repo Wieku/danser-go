@@ -1,7 +1,6 @@
 package bass
 
 /*
-#include "bass_util.h"
 #include "bass.h"
 #include "bass_fx.h"
 #include "bassmix.h"
@@ -11,6 +10,8 @@ import "C"
 import (
 	"github.com/wieku/danser-go/app/settings"
 	"math"
+	"runtime"
+	"unicode/utf16"
 	"unsafe"
 )
 
@@ -35,7 +36,16 @@ func NewTrack(path string) *TrackBass {
 		pitch: 1,
 	}
 
-	player.channel = C.CreateBassStream(C.CString(path), C.BASS_STREAM_DECODE|C.BASS_STREAM_PRESCAN|C.BASS_ASYNCFILE)
+	flags := C.BASS_STREAM_DECODE | C.BASS_STREAM_PRESCAN | C.BASS_ASYNCFILE
+
+	if runtime.GOOS == "windows" {
+		wFile := utf16.Encode([]rune(path))
+		wFile = append(wFile, 0) // NULL terminated string
+
+		player.channel = C.BASS_StreamCreateFile(0, unsafe.Pointer(&wFile[0]), 0, 0, C.DWORD(flags|C.BASS_UNICODE))
+	} else {
+		player.channel = C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.DWORD(flags))
+	}
 
 	if player.channel == 0 {
 		return nil
