@@ -153,7 +153,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 			if len(spinner.players) == 1 {
 				if state.currentVelocity == 0 {
-					spinner.hitSpinner.StopSpinSample()
+					spinner.hitSpinner.PauseSpinSample()
 				} else {
 					spinner.hitSpinner.StartSpinSample()
 				}

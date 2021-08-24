@@ -7,7 +7,7 @@ package main
 __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; // http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
 __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; // https://community.amd.com/thread/169965
 #endif
- */
+*/
 import "C"
 
 import (
@@ -220,7 +220,7 @@ func run() {
 		settings.RECORD = recordMode || screenshotMode
 
 		if settings.RECORD {
-			bass.Offscreen = true
+			//bass.Offscreen = true
 		}
 
 		newSettings := settings.LoadSettings(*settingsVersion)
@@ -538,6 +538,7 @@ func mainLoopRecord() {
 	count := 0
 
 	fps := float64(settings.Recording.FPS)
+	audioFPS := 1000.0
 
 	if settings.Recording.MotionBlur.Enabled {
 		fps *= float64(settings.Recording.MotionBlur.OversampleMultiplier)
@@ -551,21 +552,28 @@ func mainLoopRecord() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
-	ffmpeg.StartFFmpeg(int(fps), w, h)
+	ffmpeg.StartFFmpeg(int(fps), w, h, audioFPS, output)
 
 	updateFPS := math.Max(fps, 1000)
 	updateDelta := 1000 / updateFPS
 	fpsDelta := 1000 / fps
+	audioDelta := 1000.0 / audioFPS
 
 	deltaSumF := fpsDelta
+	deltaSumA := 0.0
 
 	p, _ := player.(*states.Player)
-
-	//maxFrames := int(p.RunningTime / settings.SPEED / 1000 * fps)
 
 	var lastProgress, progress int
 
 	for !p.Update(updateDelta) {
+		deltaSumA += updateDelta
+		if deltaSumA >= audioDelta {
+			ffmpeg.PushAudio()
+
+			deltaSumA -= audioDelta
+		}
+
 		deltaSumF += updateDelta
 		if deltaSumF >= fpsDelta {
 			mainthread.Call(func() {
@@ -583,7 +591,7 @@ func mainLoopRecord() {
 
 				count++
 
-				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime /*float64(count) / float64(maxFrames)*/ * 100))
+				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime * 100))
 
 				if progress%5 == 0 && lastProgress != progress {
 					fmt.Println()
@@ -603,10 +611,6 @@ func mainLoopRecord() {
 	mainthread.Call(func() {
 		ffmpeg.StopFFmpeg()
 	})
-
-	bass.SaveToFile(filepath.Join(settings.Recording.OutputDir, ffmpeg.GetFileName()+".wav"))
-
-	ffmpeg.Combine(output)
 }
 
 func mainLoopSS() {

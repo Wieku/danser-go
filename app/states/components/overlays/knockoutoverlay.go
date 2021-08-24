@@ -120,7 +120,7 @@ type KnockoutOverlay struct {
 	ScaledHeight float64
 	ScaledWidth  float64
 
-	music *bass.Track
+	music bass.ITrack
 
 	breakMode bool
 	fade      *animation.Glider
@@ -349,7 +349,7 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 	}
 }
 
-func (overlay *KnockoutOverlay) SetMusic(music *bass.Track) {
+func (overlay *KnockoutOverlay) SetMusic(music bass.ITrack) {
 	overlay.music = music
 }
 

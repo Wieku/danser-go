@@ -38,7 +38,7 @@ type Spinner struct {
 	rpm      float64
 
 	spinnerbonus *bass.Sample
-	loopSample   *bass.SubSample
+	loopSample   *bass.SampleChannel
 	completion   float64
 
 	newStyle     bool
@@ -373,6 +373,16 @@ func (spinner *Spinner) StartSpinSample() {
 
 	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
 		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
+	}
+}
+
+func (spinner *Spinner) PauseSpinSample() {
+	if spinner.audioSubmissionDisabled {
+		return
+	}
+
+	if spinner.loopSample != nil {
+		bass.PauseSample(spinner.loopSample)
 	}
 }
 

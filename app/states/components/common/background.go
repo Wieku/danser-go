@@ -92,7 +92,7 @@ func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool)
 
 }
 
-func (bg *Background) SetTrack(track *bass.Track) {
+func (bg *Background) SetTrack(track bass.ITrack) {
 	bg.triangles.SetTrack(track)
 }
 

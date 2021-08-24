@@ -5,9 +5,9 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/util"
 	"log"
 	"os"
 	"os/exec"
@@ -16,18 +16,35 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unsafe"
 )
 
-const MaxBuffers = 10
-
-var filename string
+const MaxVideoBuffers = 10
+const MaxAudioBuffers = 2000
 
 var cmd *exec.Cmd
-var pipe *files.NamedPipe
 
-var queue chan func()
-var endSync *sync.WaitGroup
+var videoPipe *files.NamedPipe
+
+var videoQueue chan func()
+
+var pboSync *sync.Mutex
+var pboPool = make([]*PBO, 0)
+var syncPool = make([]*PBO, 0)
+
+var endSyncVideo *sync.WaitGroup
+
+var audioPipe *files.NamedPipe
+
+var audioQueue chan []byte
+
+var audioSync *sync.Mutex
+var audioPool = make([][]byte, 0)
+
+var endSyncAudio *sync.WaitGroup
+
+var blend *effects.Blend
 
 var w, h int
 
@@ -52,15 +69,8 @@ func createPBO() *PBO {
 	return pbo
 }
 
-var pboSync *sync.RWMutex
-var pboPool = make([]*PBO, 0)
-
-var syncPool = make([]*PBO, 0)
-
-var blend *effects.Blend
-
 // check used encoders exist
-func precheck() {
+func preCheck() {
 	out, err := exec.Command("ffmpeg", "-encoders").Output()
 	if err != nil {
 		panic(err)
@@ -69,7 +79,7 @@ func precheck() {
 	encoders := strings.Split(string(out[:]), "\n")
 	for i, v := range encoders {
 		if strings.TrimSpace(v) == "------" {
-			encoders = encoders[i+1:len(encoders)-1]
+			encoders = encoders[i+1 : len(encoders)-1]
 			break
 		}
 	}
@@ -103,8 +113,12 @@ func precheck() {
 	}
 }
 
-func StartFFmpeg(fps, _w, _h int) {
-	precheck()
+func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
+	if strings.TrimSpace(output) == "" {
+		output = "danser_" + time.Now().Format("2006-01-02_15-04-05")
+	}
+
+	preCheck()
 
 	log.Println("Starting encoding!")
 
@@ -115,47 +129,77 @@ func StartFFmpeg(fps, _w, _h int) {
 		panic(err)
 	}
 
-	filename = util.RandomHexString(32)
-
 	split := strings.Split(settings.Recording.EncoderOptions, " ")
 
-	filters := strings.TrimSpace(settings.Recording.Filters)
-	if len(filters) > 0 {
-		filters = "," + filters
+	videoFilters := strings.TrimSpace(settings.Recording.Filters)
+	if len(videoFilters) > 0 {
+		videoFilters = "," + videoFilters
 	}
 
 	if settings.Recording.MotionBlur.Enabled {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
 
-	pipe, err = files.NewNamedPipe("")
+	videoPipe, err = files.NewNamedPipe("")
+	if err != nil {
+		panic(err)
+	}
+
+	audioPipe, err = files.NewNamedPipe("")
 	if err != nil {
 		panic(err)
 	}
 
 	options := []string{
 		"-y", //(optional) overwrite output file if it exists
+
 		"-f", "rawvideo",
 		"-vcodec", "rawvideo",
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", "rgb24",
 		"-r", strconv.Itoa(fps), //frames per second
-		"-i", pipe.Name(), //The input comes from a pipe
-		"-vf", "vflip" + filters,
+		"-i", videoPipe.Name(), //The input comes from a videoPipe
+
+		"-f", "f32le",
+		"-acodec", "pcm_f32le",
+		"-ar", "48000",
+		"-ac", "2",
+		"-probesize", "32",
+		"-i", audioPipe.Name(),
+
+		"-vf", "vflip" + videoFilters,
 		"-profile:v", settings.Recording.Profile,
 		"-preset", settings.Recording.Preset,
-		"-an", //Tells FFMPEG not to expect any audio
 		"-vcodec", settings.Recording.Encoder,
 		"-color_range", "1",
 		"-colorspace", "1",
 		"-color_trc", "1",
 		"-color_primaries", "1",
-		"-movflags", "+write_colr",
 		"-pix_fmt", settings.Recording.PixelFormat,
 	}
 
 	options = append(options, split...)
-	options = append(options, filepath.Join(settings.Recording.OutputDir, filename+"."+settings.Recording.Container))
+
+	audioFilters := strings.TrimSpace(settings.Recording.AudioFilters)
+	if len(audioFilters) > 0 {
+		options = append(options, "-af", audioFilters)
+	}
+
+	options = append(options,
+		"-c:a", settings.Recording.AudioCodec,
+		"-ab", settings.Recording.AudioBitrate,
+	)
+
+	movFlags := "+write_colr"
+
+	if settings.Recording.Container == "mp4" {
+		//options = append(options, "-movflags", "+faststart")
+		movFlags += "+faststart"
+	}
+
+	options = append(options, "-movflags", movFlags)
+
+	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -170,7 +214,7 @@ func StartFFmpeg(fps, _w, _h int) {
 	}
 
 	mainthread.Call(func() {
-		for i := 0; i < MaxBuffers; i++ {
+		for i := 0; i < MaxVideoBuffers; i++ {
 			pboPool = append(pboPool, createPBO())
 		}
 
@@ -180,26 +224,66 @@ func StartFFmpeg(fps, _w, _h int) {
 		}
 	})
 
-	pboSync = &sync.RWMutex{}
+	audioBufSize := bass.GetMixerRequiredBufferSize(1 / audioFPS)
 
-	queue = make(chan func(), MaxBuffers)
+	for i := 0; i < MaxAudioBuffers; i++ {
+		audioPool = append(audioPool, make([]byte, audioBufSize))
+	}
 
-	endSync = &sync.WaitGroup{}
+	pboSync = &sync.Mutex{}
+	audioSync = &sync.Mutex{}
 
-	endSync.Add(1)
+	videoQueue = make(chan func(), MaxVideoBuffers)
+	audioQueue = make(chan []byte, MaxAudioBuffers)
+
+	startThreads()
+}
+
+func startThreads() {
+	endSyncVideo = &sync.WaitGroup{}
+	endSyncAudio = &sync.WaitGroup{}
+
+	endSyncVideo.Add(1)
+	endSyncAudio.Add(1)
 
 	go func() {
 		runtime.LockOSThread()
 
 		for {
-			f, keepOpen := <-queue
+			f, keepOpen := <-videoQueue
 
 			if f != nil {
 				f()
 			}
 
 			if !keepOpen {
-				endSync.Done()
+				endSyncVideo.Done()
+				break
+			}
+		}
+	}()
+
+	go func() {
+		runtime.LockOSThread()
+
+		for {
+			data, keepOpen := <-audioQueue
+
+			if data != nil {
+				_, err := audioPipe.Write(data)
+				if err != nil {
+					panic(err)
+				}
+
+				audioSync.Lock()
+
+				audioPool = append(audioPool, data)
+
+				audioSync.Unlock()
+			}
+
+			if !keepOpen {
+				endSyncAudio.Done()
 				break
 			}
 		}
@@ -213,18 +297,36 @@ func StopFFmpeg() {
 		CheckData()
 	}
 
-	close(queue)
-	endSync.Wait()
+	log.Println("Finished! Stopping video videoPipe...")
 
-	log.Println("Finished! Stopping ffmpeg...")
+	close(videoQueue)
+	endSyncVideo.Wait()
+	videoPipe.Close()
 
-	pipe.Close()
+	log.Println("Finished! Stopping audio videoPipe...")
 
-	log.Println("Pipe closed.")
+	close(audioQueue)
+	endSyncAudio.Wait()
+	audioPipe.Close()
+
+	log.Println("Pipes closed.")
 
 	cmd.Wait()
 
 	log.Println("Ffmpeg finished.")
+}
+
+func PushAudio() {
+	audioSync.Lock()
+
+	data := audioPool[0]
+	audioPool = audioPool[1:]
+
+	audioSync.Unlock()
+
+	bass.ProcessMixer(data)
+
+	audioQueue <- data
 }
 
 func PreFrame() {
@@ -253,12 +355,12 @@ func MakeFrame() {
 		CheckData()
 	}
 
-	pboSync.RLock()
+	pboSync.Lock()
 
 	pbo := pboPool[0]
 	pboPool = pboPool[1:]
 
-	pboSync.RUnlock()
+	pboSync.Unlock()
 
 	gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
 
@@ -290,8 +392,8 @@ func CheckData() {
 
 			syncPool = syncPool[1:]
 
-			queue <- func() {
-				_, err := pipe.Write(pbo.data)
+			videoQueue <- func() {
+				_, err := videoPipe.Write(pbo.data)
 				if err != nil {
 					panic(err)
 				}
@@ -306,8 +408,4 @@ func CheckData() {
 
 		return
 	}
-}
-
-func GetFileName() string {
-	return filename
 }

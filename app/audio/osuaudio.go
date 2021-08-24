@@ -116,8 +116,8 @@ func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum 
 	}
 }
 
-var whistleChannel *bass.SubSample = nil
-var slideChannel *bass.SubSample = nil
+var whistleChannel *bass.SampleChannel = nil
+var slideChannel *bass.SampleChannel = nil
 var lastSampleSet = 0
 var lastAdditionSet = 0
 var lastIndex = 0
@@ -168,7 +168,7 @@ func StopSliderLoops() {
 	slideChannel = nil
 }
 
-func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) *bass.SubSample {
+func playSampleLoop(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) *bass.SampleChannel {
 	balance := 0.0
 	if settings.DIVIDES == 1 {
 		balance = (xPos - 256) / 512 * settings.Audio.HitsoundPositionMultiplier
