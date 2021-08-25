@@ -390,10 +390,12 @@ func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
 	}
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, number int64, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
+func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitObject, x, y float32, result HitResult, raw bool, comboResult ComboResult) {
 	if result == Ignore {
 		return
 	}
+
+	number := src.GetNumber()
 
 	subSet := set.cursors[cursor]
 
