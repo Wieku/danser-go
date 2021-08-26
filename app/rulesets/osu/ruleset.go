@@ -111,7 +111,6 @@ type subSet struct {
 	katuCount      int64
 	recoveries     int
 	scoreProcessor scoreProcessor
-	scoreVersion   int
 }
 
 type MapTo struct {
@@ -171,7 +170,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	for i, cursor := range cursors {
 		diff := difficulty.NewDifficulty(beatMap.Diff.GetHPDrain(), beatMap.Diff.GetCS(), beatMap.Diff.GetOD(), beatMap.Diff.GetAR())
-		diff.SetMods(mods[i])
+		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.ScoreV2)) // if beatmap has ScoreV2 mod, force it for all players
 		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
 
 		player := &difficultyPlayer{cursor: cursor, diff: diff}
@@ -202,14 +201,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		}
 
 		var sc scoreProcessor
-		var scoreVersion int
 
-		if beatMap.Diff.CheckModActive(difficulty.ScoreV2) {
+		if diff.CheckModActive(difficulty.ScoreV2) {
 			sc = newScoreV2Processor()
-			scoreVersion = 2
 		} else {
 			sc = newScoreV1Processor()
-			scoreVersion = 1
 		}
 
 		sc.Init(beatMap, player)
@@ -223,7 +219,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			hp:             hp,
 			recoveries:     recoveries,
 			scoreProcessor: sc,
-			scoreVersion:   scoreVersion,
 		}
 	}
 
@@ -464,7 +459,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, subSet.scoreVersion)
+	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
 
 	switch result {
 	case Hit100:

@@ -38,8 +38,7 @@ type PPv2 struct {
 
 func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	maxCombo, nsliders, ncircles, nobjects,
-	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty,
-	scoreVersion int) PPv2 {
+	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
 	maxCombo = bmath.MaxI(1, maxCombo)
 
 	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
@@ -77,13 +76,10 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		pp.accuracy = bmath.ClampF64(acc, 0, 1)
 	}
 
-	switch scoreVersion {
-	case 1:
-		pp.amountHitObjectsWithAccuracy = ncircles
-	case 2:
+	if diff.CheckModActive(difficulty.ScoreV2) {
 		pp.amountHitObjectsWithAccuracy = nobjects
-	default:
-		panic("unsupported score")
+	} else {
+		pp.amountHitObjectsWithAccuracy = ncircles
 	}
 
 	// total pp
