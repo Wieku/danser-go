@@ -165,11 +165,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		ruleset.mapStats = append(ruleset.mapStats, mapTo)
 	}
 
-	pauses := int64(0)
-	for _, p := range beatMap.Pauses {
-		pauses += int64(p.GetEndTime() - p.GetStartTime())
-	}
-
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
 	var diffPlayers []*difficultyPlayer
