@@ -167,7 +167,15 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
-	var diffPlayers []*difficultyPlayer
+	scoreV2Count := 0
+
+	for _, m := range mods {
+		if m.Active(difficulty.ScoreV2) {
+			scoreV2Count++
+		}
+	}
+
+	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
 	for i, cursor := range cursors {
 		diff := difficulty.NewDifficulty(beatMap.Diff.GetHPDrain(), beatMap.Diff.GetCS(), beatMap.Diff.GetOD(), beatMap.Diff.GetAR())
@@ -201,7 +209,14 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			recoveries = 2
 		}
 
-		sc := newScoreV1Processor()
+		var sc scoreProcessor
+
+		if scoreV2Count > len(cursors)/2 {
+			sc = newScoreV2Processor()
+		} else {
+			sc = newScoreV1Processor()
+		}
+
 		sc.Init(beatMap, player)
 
 		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, mods[i].GetScoreMultiplier(), 0, NONE, &performance.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries, sc}
