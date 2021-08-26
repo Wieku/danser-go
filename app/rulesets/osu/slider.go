@@ -22,7 +22,7 @@ type sliderstate struct {
 	missed      int
 	slideStart  int64
 	sliding     bool
-	startScored bool
+	startResult HitResult
 }
 
 type tickpoint struct {
@@ -126,9 +126,18 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 			relative := int64(math.Abs(float64(time) - slider.hitSlider.GetStartTime()))
 
-			if relative < player.diff.Hit50 {
+			if relative < player.diff.Hit300 {
+				state.startResult = Hit300
+			} else if relative < player.diff.Hit100 {
+				state.startResult = Hit100
+			} else if relative < player.diff.Hit50 {
+				state.startResult = Hit50
+			} else {
+				state.startResult = Miss
+			}
+
+			if state.startResult != Miss {
 				hit = SliderStart
-				state.startScored = true
 				combo = ComboResults.Increase
 			}
 
@@ -294,10 +303,11 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 		}
 
 		state.isStartHit = true
+		state.startResult = Miss
 	}
 
 	if time >= int64(slider.hitSlider.GetEndTime()) && !state.isHit {
-		if state.startScored {
+		if state.startResult != Miss {
 			state.scored++
 		}
 
@@ -352,6 +362,10 @@ func (slider *Slider) IsHit(pl *difficultyPlayer) bool {
 
 func (slider *Slider) IsStartHit(pl *difficultyPlayer) bool {
 	return slider.state[pl].isStartHit
+}
+
+func (slider *Slider) GetStartResult(pl *difficultyPlayer) HitResult {
+	return slider.state[pl].startResult
 }
 
 func (slider *Slider) GetFadeTime() int64 {
