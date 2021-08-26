@@ -100,7 +100,6 @@ type subSet struct {
 	rawScore       int64
 	accuracy       float64
 	maxCombo       int64
-	modMultiplier  float64
 	numObjects     int64
 	grade          Grade
 	ppv2           *performance.PPv2
@@ -112,6 +111,7 @@ type subSet struct {
 	katuCount      int64
 	recoveries     int
 	scoreProcessor scoreProcessor
+	scoreVersion   int
 }
 
 type MapTo struct {
@@ -167,14 +167,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
-	scoreV2Count := 0
-
-	for _, m := range mods {
-		if m.Active(difficulty.ScoreV2) {
-			scoreV2Count++
-		}
-	}
-
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
 	for i, cursor := range cursors {
@@ -210,16 +202,29 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		}
 
 		var sc scoreProcessor
+		var scoreVersion int
 
-		if scoreV2Count > len(cursors)/2 {
+		if beatMap.Diff.CheckModActive(difficulty.ScoreV2) {
 			sc = newScoreV2Processor()
+			scoreVersion = 2
 		} else {
 			sc = newScoreV1Processor()
+			scoreVersion = 1
 		}
 
 		sc.Init(beatMap, player)
 
-		ruleset.cursors[cursor] = &subSet{player, 0, 100, 0, mods[i].GetScoreMultiplier(), 0, NONE, &performance.PPv2{}, make(map[HitResult]int64), 0, 0, hp, 0, 0, recoveries, sc}
+		ruleset.cursors[cursor] = &subSet{
+			player:         player,
+			accuracy:       100,
+			grade:          NONE,
+			ppv2:           &performance.PPv2{},
+			hits:           make(map[HitResult]int64),
+			hp:             hp,
+			recoveries:     recoveries,
+			scoreProcessor: sc,
+			scoreVersion:   scoreVersion,
+		}
 	}
 
 	for _, obj := range beatMap.HitObjects {
@@ -459,7 +464,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, 1)
+	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, subSet.scoreVersion)
 
 	switch result {
 	case Hit100:
