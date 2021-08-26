@@ -3,7 +3,6 @@ package osu
 import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"log"
 	"math"
 )
 
@@ -86,8 +85,6 @@ func (s *scoreV2Processor) AddResult(result HitResult, comboResult ComboResult) 
 		if s.hits > 0 {
 			acc = (float64(s.hitMap[Hit50]) + float64(s.hitMap[Hit100])*2 + float64(s.hitMap[Hit300])*6) / (float64(s.hits) * 6)
 		}
-
-		log.Println(s.comboPart, s.comboPartMax, acc, math.Pow(acc, 10), float64(s.hits)/float64(s.maxHits), s.bonus)
 
 		s.score = int64((s.comboPart/s.comboPartMax*700000 + math.Pow(acc, 10)*float64(s.hits)/float64(s.maxHits)*300000 + s.bonus) * s.modMultiplier)
 	}
