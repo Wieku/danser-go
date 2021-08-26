@@ -2,13 +2,11 @@ package osu
 
 import (
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/bmath"
 	"math"
 )
 
 type scoreV1Processor struct {
-	//mods  difficulty.Modifier
 	score           int64
 	combo           int64
 	modMultiplier   float64
@@ -19,8 +17,8 @@ func newScoreV1Processor() *scoreV1Processor {
 	return &scoreV1Processor{}
 }
 
-func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, mods difficulty.Modifier) {
-	s.modMultiplier = mods.GetScoreMultiplier()
+func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlayer) {
+	s.modMultiplier = player.diff.Mods.GetScoreMultiplier()
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
@@ -53,7 +51,7 @@ func (s *scoreV1Processor) AddResult(result HitResult, comboResult ComboResult) 
 	}
 }
 
-func (s *scoreV1Processor) ModifyResult(result HitResult) HitResult {
+func (s *scoreV1Processor) ModifyResult(result HitResult, _ HitObject) HitResult {
 	return result
 }
 
