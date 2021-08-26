@@ -249,7 +249,7 @@ func (slider *Slider) SetTiming(timings *Timings) {
 
 	for i := int64(0); i < slider.repeat; i++ {
 		distanceToEnd := float64(slider.multiCurve.GetLength())
-		skipTick := false
+		skipTick := math.IsNaN(slider.TPoint.beatLength) // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
 
 		reverse := (i % 2) == 1
 
