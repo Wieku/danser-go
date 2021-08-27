@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/graphics/effects"
+	"github.com/wieku/danser-go/framework/util/pixconv"
 	"log"
 	"os"
 	"os/exec"
@@ -53,18 +54,32 @@ type PBO struct {
 	memPointer unsafe.Pointer
 	data       []byte
 
+	convFormat pixconv.PixFmt
+	convData   []byte
+
 	sync uintptr
 }
 
-func createPBO() *PBO {
+func createPBO(format pixconv.PixFmt) *PBO {
 	pbo := new(PBO)
+	pbo.convFormat = format
+
+	channels := 3
+	if pbo.convFormat != pixconv.ARGB {
+		channels = 4
+
+		convSize := pixconv.GetRequiredBufferSize(pbo.convFormat, w, h)
+		pbo.convData = make([]byte, convSize)
+	}
+
+	glSize := w * h * channels
 
 	gl.CreateBuffers(1, &pbo.handle)
-	gl.NamedBufferStorage(pbo.handle, w*h*3, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
+	gl.NamedBufferStorage(pbo.handle, glSize, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
 
-	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, w*h*3, gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
+	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
 
-	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[: w*h*3 : w*h*3]
+	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[:glSize:glSize]
 
 	return pbo
 }
@@ -140,6 +155,26 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
 
+	parsedFormat := pixconv.ARGB
+
+	switch strings.ToLower(settings.Recording.PixelFormat) {
+	case "yuv420p":
+		parsedFormat = pixconv.I420
+	case "yuv422p":
+		parsedFormat = pixconv.I422
+	case "yuv444p":
+		parsedFormat = pixconv.I444
+	case "nv12":
+		parsedFormat = pixconv.NV12
+	case "nv21":
+		parsedFormat = pixconv.NV21
+	}
+
+	inputPixFmt := "rgb24"
+	if parsedFormat != pixconv.ARGB {
+		inputPixFmt = strings.ToLower(settings.Recording.PixelFormat)
+	}
+
 	videoPipe, err = files.NewNamedPipe("")
 	if err != nil {
 		panic(err)
@@ -156,7 +191,7 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
 		"-f", "rawvideo",
 		"-vcodec", "rawvideo",
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
-		"-pix_fmt", "rgb24",
+		"-pix_fmt", inputPixFmt,
 		"-r", strconv.Itoa(fps), //frames per second
 		"-i", videoPipe.Name(), //The input comes from a videoPipe
 
@@ -175,7 +210,10 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
 		"-colorspace", "1",
 		"-color_trc", "1",
 		"-color_primaries", "1",
-		"-pix_fmt", settings.Recording.PixelFormat,
+	}
+
+	if parsedFormat == pixconv.ARGB {
+		options = append(options, "-pix_fmt", strings.ToLower(settings.Recording.PixelFormat))
 	}
 
 	options = append(options, split...)
@@ -215,7 +253,7 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
 
 	mainthread.Call(func() {
 		for i := 0; i < MaxVideoBuffers; i++ {
-			pboPool = append(pboPool, createPBO())
+			pboPool = append(pboPool, createPBO(parsedFormat))
 		}
 
 		if settings.Recording.MotionBlur.Enabled {
@@ -367,7 +405,13 @@ func MakeFrame() {
 	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, pbo.handle)
 
 	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
-	gl.ReadPixels(0, 0, int32(w), int32(h), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(nil))
+
+	glFmt := gl.RGB
+	if pbo.convFormat != pixconv.ARGB {
+		glFmt = gl.BGRA
+	}
+
+	gl.ReadPixels(0, 0, int32(w), int32(h), uint32(glFmt), gl.UNSIGNED_BYTE, gl.Ptr(nil))
 
 	pbo.sync = gl.FenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
 
@@ -393,7 +437,15 @@ func CheckData() {
 			syncPool = syncPool[1:]
 
 			videoQueue <- func() {
-				_, err := videoPipe.Write(pbo.data)
+				var err error
+
+				if pbo.convFormat != pixconv.ARGB {
+					pixconv.Convert(pbo.data, pixconv.ARGB, pbo.convData, pbo.convFormat, w, h)
+					_, err = videoPipe.Write(pbo.convData)
+				} else {
+					_, err = videoPipe.Write(pbo.data)
+				}
+
 				if err != nil {
 					panic(err)
 				}
