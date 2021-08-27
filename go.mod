@@ -1,11 +1,12 @@
 module github.com/wieku/danser-go
 
-go 1.16
+go 1.17
 
 require (
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/Microsoft/go-winio v0.5.0
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
+	github.com/ananagame/rich-go v0.0.0-20200319172754-527649f3d36d // indirect
 	github.com/bnch/uleb128 v0.0.0-20160221084957-fac1fe18ad59 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3
@@ -17,6 +18,7 @@ require (
 	github.com/itchio/lzma v0.0.0-20190703113020-d3e24e3e3d49 // indirect
 	github.com/karrick/godirwalk v1.16.1
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
+	github.com/mattn/go-runewidth v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/nattawitc/rich-go v0.0.0-20200402133947-4fcadd738f5b
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
@@ -26,6 +28,7 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
+	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/wieku/rplpa v0.0.0-20210416181635-bb7239e81d90
 	golang.org/x/image v0.0.0-20210504121937-7319ad40d33e
 	golang.org/x/sys v0.0.0-20210316164454-77fc1eacc6aa
