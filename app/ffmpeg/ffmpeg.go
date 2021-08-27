@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"log"
@@ -48,6 +49,8 @@ var endSyncAudio *sync.WaitGroup
 var blend *effects.Blend
 
 var w, h int
+
+var limiter *frame.Limiter
 
 type PBO struct {
 	handle     uint32
@@ -274,6 +277,8 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, output string) {
 	videoQueue = make(chan func(), MaxVideoBuffers)
 	audioQueue = make(chan []byte, MaxAudioBuffers)
 
+	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
+
 	startThreads()
 }
 
@@ -418,6 +423,8 @@ func MakeFrame() {
 	gl.Flush()
 
 	syncPool = append(syncPool, pbo)
+
+	limiter.Sync()
 }
 
 func CheckData() {

@@ -7,6 +7,7 @@ func initRecording() *recording {
 		FrameWidth:     1920,
 		FrameHeight:    1080,
 		FPS:            60,
+		EncodingFPSCap: 0,
 		Encoder:        "libx264",
 		EncoderOptions: "-crf 14",
 		Profile:        "high",
@@ -36,6 +37,7 @@ type recording struct {
 	FrameWidth     int
 	FrameHeight    int
 	FPS            int
+	EncodingFPSCap int
 	Encoder        string
 	EncoderOptions string
 	Profile        string
