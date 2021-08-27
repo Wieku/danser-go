@@ -1,3 +1,5 @@
+framework/util/pixconv/libyuv.h linguist-detectable=false
+framework/util/pixconv/libyuv/* linguist-detectable=false
 framework/bass/bass.h linguist-detectable=false
 framework/bass/bass_fx.h linguist-detectable=false
 framework/bass/bassmix.h linguist-detectable=false
