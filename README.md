@@ -62,7 +62,7 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-record` - Records danser's output to a video file. Needs a globally accessible [ffmpeg](https://ffmpeg.org/download.html) installation.
 * `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings. When the `-ss` flag is used, this sets the output filename as well.
 * `-replay="path_to_replay.osr"` or `-r="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\` with `\\` or `/`. Overrides all map selection arguments
-* `-mods=HDHR` - displays the map with given mods. Overrides `-speed` and `-pitch` arguments if DT/NC/HT/DC mods are given
+* `-mods=HDHR` - displays the map with given mods. This argument is ignored when `-replay` is used
 * `-skin` - overrides `Skin.CurrentSkin` in settings
 * `-cs`, `-ar`, `-od`, `-hp` - overrides maps' difficulty settings (values outside of osu!'s normal limits accepted)
 * `-nodbcheck` - skips updating the database with new, changed or deleted maps
