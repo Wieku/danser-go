@@ -568,7 +568,7 @@ func mainLoopRecord() {
 
 	for !p.Update(updateDelta) {
 		deltaSumA += updateDelta
-		if deltaSumA >= audioDelta {
+		for deltaSumA >= audioDelta {
 			ffmpeg.PushAudio()
 
 			deltaSumA -= audioDelta
