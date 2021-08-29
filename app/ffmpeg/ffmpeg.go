@@ -9,7 +9,6 @@ import (
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"log"
 	"os"
@@ -53,6 +52,8 @@ var blend *effects.Blend
 var w, h int
 
 var limiter *frame.Limiter
+
+var output string
 
 type PBO struct {
 	handle     uint32
@@ -133,35 +134,33 @@ func preCheck() {
 	}
 }
 
-var tempName string
-var output string
-
 func StartFFmpeg(fps, _w, _h int, audioFPS float64, _output string) {
 	if strings.TrimSpace(output) == "" {
 		_output = "danser_" + time.Now().Format("2006-01-02_15-04-05")
 	}
 
+	output = _output
+
+	w, h = _w, _h
+
 	preCheck()
 
 	log.Println("Starting encoding!")
 
-	w, h = _w, _h
+	_ = os.RemoveAll(filepath.Join(settings.Recording.OutputDir, output+"_temp"))
 
-	err := os.MkdirAll(settings.Recording.OutputDir, 0755)
+	err := os.MkdirAll(filepath.Join(settings.Recording.OutputDir, output+"_temp"), 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 
-	tempName = util.RandomHexString(32)
-	output = _output
-
-	startVideo(tempName, fps)
-	startAudio(tempName, audioFPS)
+	startVideo(fps)
+	startAudio(audioFPS)
 
 	startThreads()
 }
 
-func startVideo(tempName string, fps int) {
+func startVideo(fps int) {
 	split := strings.Split(settings.Recording.EncoderOptions, " ")
 
 	videoFilters := strings.TrimSpace(settings.Recording.Filters)
@@ -228,7 +227,7 @@ func startVideo(tempName string, fps int) {
 	}
 
 	options = append(options, split...)
-	options = append(options, filepath.Join(settings.Recording.OutputDir, tempName+"_video."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "video."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -260,7 +259,7 @@ func startVideo(tempName string, fps int) {
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
 }
 
-func startAudio(tempName string, audioFPS float64) {
+func startAudio(audioFPS float64) {
 	var err error
 
 	audioPipe, err = files.NewNamedPipe("")
@@ -290,7 +289,7 @@ func startAudio(tempName string, audioFPS float64) {
 		"-ab", settings.Recording.AudioBitrate,
 	)
 
-	options = append(options, filepath.Join(settings.Recording.OutputDir, tempName+"_audio."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -377,18 +376,18 @@ func StopFFmpeg() {
 
 	close(videoQueue)
 	endSyncVideo.Wait()
-	videoPipe.Close()
+	_ = videoPipe.Close()
 
 	log.Println("Finished! Stopping audio videoPipe...")
 
 	close(audioQueue)
 	endSyncAudio.Wait()
-	audioPipe.Close()
+	_ = audioPipe.Close()
 
 	log.Println("Pipes closed.")
 
-	cmdVideo.Wait()
-	cmdAudio.Wait()
+	_ = cmdVideo.Wait()
+	_ = cmdAudio.Wait()
 
 	log.Println("Ffmpeg finished.")
 
@@ -398,8 +397,8 @@ func StopFFmpeg() {
 func combine() {
 	options := []string{
 		"-y",
-		"-i", filepath.Join(settings.Recording.OutputDir, tempName+"_video."+settings.Recording.Container),
-		"-i", filepath.Join(settings.Recording.OutputDir, tempName+"_audio."+settings.Recording.Container),
+		"-i", filepath.Join(settings.Recording.OutputDir, output+"_temp", "video."+settings.Recording.Container),
+		"-i", filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container),
 		"-c:v", "copy",
 		"-c:a", "copy",
 	}
@@ -432,8 +431,7 @@ func combine() {
 func cleanup() {
 	log.Println("Cleaning up intermediate files...")
 
-	_ = os.Remove(filepath.Join(settings.Recording.OutputDir, tempName+"_video."+settings.Recording.Container))
-	_ = os.Remove(filepath.Join(settings.Recording.OutputDir, tempName+"_audio."+settings.Recording.Container))
+	_ = os.RemoveAll(filepath.Join(settings.Recording.OutputDir, output+"_temp"))
 
 	log.Println("Finished.")
 }
@@ -518,6 +516,7 @@ func CheckData() {
 		pbo := syncPool[0]
 
 		var status int32
+
 		gl.GetSynciv(pbo.sync, gl.SYNC_STATUS, 1, nil, &status)
 
 		if status == gl.SIGNALED {
