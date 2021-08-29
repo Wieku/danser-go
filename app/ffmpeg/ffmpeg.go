@@ -276,6 +276,7 @@ func startAudio(audioFPS float64) {
 		"-ac", "2",
 		"-i", audioPipe.Name(),
 
+		"-nostats", //hide audio encoding statistics because video ones are more important
 		"-vn",
 	}
 
