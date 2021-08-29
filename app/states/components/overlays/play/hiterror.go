@@ -3,7 +3,6 @@ package play
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -57,7 +56,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	scale := settings.Gameplay.HitErrorMeter.Scale
 
 	pixel := graphics.Pixel.GetRegion()
-	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), bmath.Origin.Centre)
+	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), vector.Centre)
 	bg.SetScaleV(vector.NewVec2d(sum*2, errorBase*4).Scl(scale))
 	bg.SetColor(color2.NewL(0))
 	bg.SetAlpha(0.6)
@@ -74,25 +73,25 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 			width -= vals[i-1]
 		}
 
-		left := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2-pos*scale, meter.Height-errorBase*2*scale), bmath.Origin.CentreRight)
+		left := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2-pos*scale, meter.Height-errorBase*2*scale), vector.CentreRight)
 		left.SetScaleV(vector.NewVec2d(width, errorBase).Scl(scale))
 		left.SetColor(colors[i])
 
 		meter.errorDisplay.Add(left)
 
-		right := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2+pos*scale, meter.Height-errorBase*2*scale), bmath.Origin.CentreLeft)
+		right := sprite.NewSpriteSingle(&pixel, 1.0, vector.NewVec2d(meter.Width/2+pos*scale, meter.Height-errorBase*2*scale), vector.CentreLeft)
 		right.SetScaleV(vector.NewVec2d(width, errorBase).Scl(scale))
 		right.SetColor(colors[i])
 
 		meter.errorDisplay.Add(right)
 	}
 
-	middle := sprite.NewSpriteSingle(&pixel, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), bmath.Origin.Centre)
+	middle := sprite.NewSpriteSingle(&pixel, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), vector.Centre)
 	middle.SetScaleV(vector.NewVec2d(2, errorBase*4).Scl(scale))
 
 	meter.errorDisplay.Add(middle)
 
-	meter.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2.5*scale), bmath.Origin.BottomCentre)
+	meter.triangle = sprite.NewSpriteSingle(graphics.TriangleSmall, 2.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2.5*scale), vector.BottomCentre)
 	meter.triangle.SetScaleV(vector.NewVec2d(scale/6, scale/6))
 	meter.triangle.SetAlpha(1)
 
@@ -108,7 +107,7 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 
 	pixel := graphics.Pixel.GetRegion()
 
-	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+error*0.8*scale, meter.Height-errorBase*2*scale), bmath.Origin.Centre)
+	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+error*0.8*scale, meter.Height-errorBase*2*scale), vector.Centre)
 	middle.SetScaleV(vector.NewVec2d(3, errorBase*4).Scl(scale))
 	middle.SetAdditive(true)
 
@@ -194,8 +193,8 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 			pY := meter.Height - (errorBase*4+3.75)*settings.Gameplay.HitErrorMeter.Scale
 			scale := settings.Gameplay.HitErrorMeter.UnstableRateScale
 
-			fnt := font.GetFont("Exo 2 Bold")
-			fnt.DrawOrigin(batch, meter.Width/2, pY, bmath.Origin.BottomCentre, 15*scale, true, meter.urText)
+			fnt := font.GetFont("Quicksand Bold")
+			fnt.DrawOrigin(batch, meter.Width/2, pY, vector.BottomCentre, 15*scale, true, meter.urText)
 		}
 	}
 

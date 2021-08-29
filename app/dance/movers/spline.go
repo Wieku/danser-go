@@ -1,7 +1,6 @@
 package movers
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
@@ -18,24 +17,21 @@ const (
 )
 
 type SplineMover struct {
-	curve              *curves.BSpline
-	startTime, endTime float64
-	mods               difficulty.Modifier
+	*basicMover
+
+	curve *curves.Spline
 }
 
 func NewSplineMover() MultiPointMover {
-	return &SplineMover{}
-}
-
-func (mover *SplineMover) Reset(mods difficulty.Modifier) {
-	mover.mods = mods
+	return &SplineMover{basicMover: &basicMover{}}
 }
 
 func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
-	points := make([]vector.Vector2f, 0)
-	timing := make([]int64, 0)
+	config := settings.CursorDance.MoverSettings.Spline[mover.id%len(settings.CursorDance.MoverSettings.Spline)]
 
-	var endTime, startTime float64
+	points := make([]vector.Vector2f, 0)
+	timing := make([]float64, 0)
+
 	var angle float32
 	var stream bool
 
@@ -45,49 +41,49 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 		o := objs[i]
 
 		if i == 0 {
-			cEnd := o.GetStackedEndPositionMod(mover.mods)
-			nStart := objs[i+1].GetStackedStartPositionMod(mover.mods)
+			cEnd := o.GetStackedEndPositionMod(mover.diff.Mods)
+			nStart := objs[i+1].GetStackedStartPositionMod(mover.diff.Mods)
 
 			var wPoint vector.Vector2f
 
 			switch s := o.(type) {
 			case objects.ILongObject:
-				wPoint = cEnd.Add(vector.NewVec2fRad(s.GetEndAngleMod(mover.mods), cEnd.Dst(nStart)*0.7))
+				wPoint = cEnd.Add(vector.NewVec2fRad(s.GetEndAngleMod(mover.diff.Mods), cEnd.Dst(nStart)*0.7))
 			default:
 				wPoint = cEnd.Lerp(nStart, 0.333)
 			}
 
 			points = append(points, cEnd, wPoint)
-			timing = append(timing, int64(math.Max(o.GetStartTime(), o.GetEndTime())))
+			timing = append(timing, math.Max(o.GetStartTime(), o.GetEndTime()))
 
-			endTime = math.Max(o.GetStartTime(), o.GetEndTime())
+			mover.startTime = math.Max(o.GetStartTime(), o.GetEndTime())
 
 			continue
 		}
 
 		if _, ok := o.(objects.ILongObject); ok || i == len(objs)-1 {
-			pEnd := objs[i-1].GetStackedEndPositionMod(mover.mods)
-			cStart := o.GetStackedStartPositionMod(mover.mods)
+			pEnd := objs[i-1].GetStackedEndPositionMod(mover.diff.Mods)
+			cStart := o.GetStackedStartPositionMod(mover.diff.Mods)
 
 			var wPoint vector.Vector2f
 
 			switch s := o.(type) {
 			case objects.ILongObject:
-				wPoint = cStart.Add(vector.NewVec2fRad(s.GetStartAngleMod(mover.mods), cStart.Dst(pEnd)*0.7))
+				wPoint = cStart.Add(vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), cStart.Dst(pEnd)*0.7))
 			default:
 				wPoint = cStart.Lerp(pEnd, 0.333)
 			}
 
 			points = append(points, wPoint, cStart)
-			timing = append(timing, int64(o.GetStartTime()))
+			timing = append(timing, o.GetStartTime())
 
-			startTime = o.GetStartTime()
+			mover.endTime = o.GetStartTime()
 
 			break
 		} else if i > 1 && i < len(objs)-1 {
-			pos1 := objs[i-1].GetStackedStartPositionMod(mover.mods)
-			pos2 := o.GetStackedStartPositionMod(mover.mods)
-			pos3 := objs[i+1].GetStackedStartPositionMod(mover.mods)
+			pos1 := objs[i-1].GetStackedStartPositionMod(mover.diff.Mods)
+			pos2 := o.GetStackedStartPositionMod(mover.diff.Mods)
+			pos3 := objs[i+1].GetStackedStartPositionMod(mover.diff.Mods)
 
 			min := float32(streamEntryMin)
 			max := float32(streamEntryMax)
@@ -98,7 +94,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			sq1 := pos1.DstSq(pos2)
 			sq2 := pos2.DstSq(pos3)
 
-			if sq1 > max && sq2 > max && settings.Dance.Spline.RotationalForce {
+			if sq1 > max && sq2 > max && config.RotationalForce {
 				if stream {
 					angle = 0
 					stream = false
@@ -111,7 +107,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 						angle = float32(ang) * 90 / 180 * math32.Pi
 					}
 				}
-			} else if sq1 >= min && sq1 <= max && sq2 >= min && sq2 <= max && (settings.Dance.Spline.StreamWobble || settings.Dance.Spline.StreamHalfCircle) {
+			} else if sq1 >= min && sq1 <= max && sq2 >= min && sq2 <= max && (config.StreamWobble || config.StreamHalfCircle) {
 				if stream {
 					angle *= -1
 
@@ -140,11 +136,11 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 				mid := pos1.Mid(pos2)
 
 				scale := float32(1.0)
-				if stream && !settings.Dance.Spline.StreamHalfCircle {
-					scale = float32(settings.Dance.Spline.WobbleScale)
+				if stream && !config.StreamHalfCircle {
+					scale = float32(config.WobbleScale)
 				}
 
-				if stream && settings.Dance.Spline.StreamHalfCircle {
+				if stream && config.StreamHalfCircle {
 					sign := -1
 					if angle < 0 {
 						sign = 1
@@ -154,33 +150,47 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 						p4 := mid.Sub(pos1).Scl(scale).Rotate(angle + float32(sign*t)*math32.Pi/6).Add(mid)
 
 						points = append(points, p4)
-						timing = append(timing, int64((o.GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime()))
+						timing = append(timing, (o.GetStartTime()-objs[i-1].GetStartTime())*(3+float64(t))/6+objs[i-1].GetStartTime())
 					}
 				} else {
 					p4 := mid.Sub(pos1).Scl(scale).Rotate(angle).Add(mid)
 
 					points = append(points, p4)
-					timing = append(timing, int64((o.GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime()))
+					timing = append(timing, (o.GetStartTime()-objs[i-1].GetStartTime())/2+objs[i-1].GetStartTime())
 				}
 			}
 		}
 
-		points = append(points, o.GetStackedEndPositionMod(mover.mods))
-		timing = append(timing, int64(o.GetStartTime()))
+		points = append(points, o.GetStackedEndPositionMod(mover.diff.Mods))
+		timing = append(timing, o.GetStartTime())
 	}
 
-	mover.startTime = startTime
-	mover.endTime = endTime
-	mover.curve = curves.NewBSpline(points, timing)
+	timeDiff := make([]float32, len(timing)-1)
+
+	for j:=0; j < len(timeDiff); j++ {
+		timeDiff[j] = float32(timing[j+1] - timing[j])
+	}
+
+	beziers := curves.SolveBSpline(points)
+	beziersC := make([]curves.Curve, len(beziers))
+
+	for j, b := range beziers {
+		if timeDiff[j] > 600 {
+			scl := timeDiff[j] / 2
+
+			b.Points[1] = b.Points[0].Add(b.Points[1].Sub(b.Points[0]).Nor().Scl(scl))
+			b.Points[2] = b.Points[3].Add(b.Points[2].Sub(b.Points[3]).Nor().Scl(scl))
+		}
+
+		beziersC[j] = b
+	}
+
+	mover.curve = curves.NewSplineW(beziersC, timeDiff)
 
 	return i + 1
 }
 
 func (mover *SplineMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF32(float32(time-mover.endTime)/float32(mover.startTime-mover.endTime), 0, 1)
-	return mover.curve.PointAt(t)
-}
-
-func (mover *SplineMover) GetEndTime() float64 {
-	return mover.startTime
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	return mover.curve.PointAt(float32(t))
 }

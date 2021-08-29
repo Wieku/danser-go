@@ -3,18 +3,19 @@ package settings
 import "math"
 
 type fileformat struct {
-	General   *general   `icon:"\uF0AD"`
-	Graphics  *graphics  `icon:"\uF108"`
-	Audio     *audio     `icon:"\uF028"`
-	Input     *input     `icon:"\uF11C"`
-	Gameplay  *gameplay  `icon:"\uF140"`
-	Skin      *skin      `icon:"\uF53F"`
-	Cursor    *cursor    `icon:"\uF245"`
-	Objects   *objects   `icon:"\uF1CD"`
-	Playfield *playfield `icon:"\uF853"`
-	Dance     *dance     `icon:"\uF5B7"`
-	Knockout  *knockout  `icon:"\uF0CB"`
-	Recording *recording `icon:"\uF03D"`
+	General     *general     `icon:"\uF0AD"`
+	Graphics    *graphics    `icon:"\uF108"`
+	Audio       *audio       `icon:"\uF028"`
+	Input       *input       `icon:"\uF11C"`
+	Gameplay    *gameplay    `icon:"\uF140"`
+	Skin        *skin        `icon:"\uF53F"`
+	Cursor      *cursor      `icon:"\uF245"`
+	Objects     *objects     `icon:"\uF1CD"`
+	Playfield   *playfield   `icon:"\uF853"`
+	Dance       *danceOld    `json:",omitempty" icon:"\uF5B7"`
+	CursorDance *cursorDance `icon:"\uF5B7"`
+	Knockout    *knockout    `icon:"\uF0CB"`
+	Recording   *recording   `icon:"\uF03D"`
 }
 
 var DEBUG = false

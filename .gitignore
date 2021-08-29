@@ -1,10 +1,12 @@
 .idea/
-screenshots/
-replays/
-videos/
+/screenshots/
+/replays/
+/videos/
+/settings/
 settings.json
 settings-*
 danser.db
+danser
 danser*.exe
 danser*.zip
 danser.log

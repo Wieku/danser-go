@@ -4,58 +4,71 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/karrick/godirwalk"
+	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 var fileStorage *fileformat
-var fileName string
+var filePath string
 var watcher *fsnotify.Watcher
 
 func initStorage() {
 	fileStorage = &fileformat{
-		General:   General,
-		Graphics:  Graphics,
-		Audio:     Audio,
-		Input:     Input,
-		Gameplay:  Gameplay,
-		Skin:      Skin,
-		Cursor:    Cursor,
-		Objects:   Objects,
-		Playfield: Playfield,
-		Dance:     Dance,
-		Knockout:  Knockout,
-		Recording: Recording,
+		General:     General,
+		Graphics:    Graphics,
+		Audio:       Audio,
+		Input:       Input,
+		Gameplay:    Gameplay,
+		Skin:        Skin,
+		Cursor:      Cursor,
+		Objects:     Objects,
+		Playfield:   Playfield,
+		CursorDance: CursorDance,
+		Knockout:    Knockout,
+		Recording:   Recording,
 	}
 }
 
 func LoadSettings(version string) bool {
+	err := os.Mkdir("settings", 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+
+	migrateSettings()
+
 	initStorage()
 
-	fileName = "settings"
+	fileName := "default"
 	if version != "" {
-		fileName += "-" + version
+		fileName = version
 	}
+
 	fileName += ".json"
 
-	file, err := os.Open(fileName)
+	filePath = filepath.Join("settings", fileName)
+
+	file, err := os.Open(filePath)
 
 	defer file.Close()
 
 	if os.IsNotExist(err) {
-		saveSettings(fileName, fileStorage)
+		saveSettings(filePath, fileStorage)
 		return true
 	} else if err != nil {
 		panic(err)
 	} else {
 		load(file, fileStorage)
-		saveSettings(fileName, fileStorage) //this is done to save additions from the current format
+		saveSettings(filePath, fileStorage) //this is done to save additions from the current format
 	}
 
 	if !RECORD {
-		setupWatcher(fileName)
+		setupWatcher(filePath)
 	}
 
 	return false
@@ -82,7 +95,7 @@ func setupWatcher(file string) {
 
 					time.Sleep(time.Millisecond * 200)
 
-					sFile, _ := os.Open(fileName)
+					sFile, _ := os.Open(event.Name)
 
 					load(sFile, fileStorage)
 
@@ -118,17 +131,24 @@ func CloseWatcher() {
 }
 
 func load(file *os.File, target interface{}) {
-	decoder := json.NewDecoder(file)
+	decoder := json.NewDecoder(files.NewUnicodeReader(file))
 	if err := decoder.Decode(target); err != nil {
 		panic(fmt.Sprintf("Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err))
 	}
+
+	migrateCursorDance(target)
 }
 
 func Save() {
-	saveSettings(fileName, fileStorage)
+	saveSettings(filePath, fileStorage)
 }
 
 func saveSettings(path string, source interface{}) {
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
+	}
+
 	file, err := os.Create(path)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
@@ -148,4 +168,93 @@ func saveSettings(path string, source interface{}) {
 
 func GetFormat() *fileformat {
 	return fileStorage
+}
+
+func migrateSettings() {
+	_ = godirwalk.Walk("", &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if osPathname != "." && de.IsDir() {
+				return godirwalk.SkipThis
+			}
+
+			if !strings.HasSuffix(osPathname, ".json") || !strings.HasPrefix(osPathname, "settings") {
+				return nil
+			}
+
+			var destName string
+
+			if osPathname == "settings.json" {
+				destName = "default.json"
+			} else {
+				destName = strings.TrimPrefix(osPathname, "settings-")
+			}
+
+			err := os.Rename(osPathname, filepath.Join("settings", destName))
+			if err != nil {
+				panic(err)
+			}
+
+			return nil
+		},
+		Unsorted: true,
+	})
+}
+
+func migrateCursorDance(target interface{}) {
+	tG := target.(*fileformat)
+
+	if tG.Dance == nil {
+		return
+	}
+
+	movers := make([]*mover, 0, len(tG.Dance.Movers))
+	spinners := make([]*spinner, 0, len(tG.Dance.Spinners))
+
+	for _, m := range tG.Dance.Movers {
+		movers = append(movers, &mover{
+			Mover:             m,
+			SliderDance:       tG.Dance.SliderDance,
+			RandomSliderDance: tG.Dance.RandomSliderDance,
+		})
+	}
+
+	for _, m := range tG.Dance.Spinners {
+		spinners = append(spinners, &spinner{
+			Mover:  m,
+			Radius: tG.Dance.SpinnerRadius,
+		})
+	}
+
+	tG.CursorDance.Movers = movers
+	tG.CursorDance.Spinners = spinners
+
+	tG.CursorDance.Battle = tG.Dance.Battle
+	tG.CursorDance.DoSpinnersTogether = tG.Dance.DoSpinnersTogether
+	tG.CursorDance.TAGSliderDance = tG.Dance.TAGSliderDance
+
+	tG.CursorDance.MoverSettings.Bezier = []*bezier{
+		tG.Dance.Bezier,
+	}
+
+	tG.CursorDance.MoverSettings.Flower = []*flower{
+		tG.Dance.Flower,
+	}
+
+	tG.CursorDance.MoverSettings.HalfCircle = []*circular{
+		tG.Dance.HalfCircle,
+	}
+
+	tG.CursorDance.MoverSettings.Spline = []*spline{
+		tG.Dance.Spline,
+	}
+
+	tG.CursorDance.MoverSettings.Momentum = []*momentum{
+		tG.Dance.Momentum,
+	}
+
+	tG.CursorDance.MoverSettings.ExGon = []*exgon{
+		tG.Dance.ExGon,
+	}
+
+	tG.Dance = nil
 }

@@ -2,11 +2,10 @@ package bass
 
 /*
 #cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -Wl,-rpath,$ORIGIN -L${SRCDIR} -L${SRCDIR}/../../ -L/usr/lib -lbass -lbass_fx -lbassmix -lbassenc
+#cgo LDFLAGS: -Wl,-rpath,$ORIGIN -L${SRCDIR} -L${SRCDIR}/../../ -L/usr/lib -lbass -lbass_fx -lbassmix
 #include "bass.h"
 #include "bass_fx.h"
 #include "bassmix.h"
-#include "bassenc.h"
 */
 import "C"
 
@@ -17,17 +16,21 @@ import (
 	"runtime"
 )
 
+var masterMixer C.HSTREAM
+
 func Init(offscreen bool) {
 	log.Println("Initializing BASS...")
 
-	playbackBufferLength := 500
+	playbackBufferLength := 100
 	deviceBufferLength := 10
 	updatePeriod := 5
+	devUpdatePeriod := 10
 
 	if runtime.GOOS != "windows" {
 		playbackBufferLength = int(settings.Audio.NonWindows.BassPlaybackBufferLength)
 		deviceBufferLength = int(settings.Audio.NonWindows.BassDeviceBufferLength)
 		updatePeriod = int(settings.Audio.NonWindows.BassUpdatePeriod)
+		devUpdatePeriod = int(settings.Audio.NonWindows.BassDeviceUpdatePeriod)
 	}
 
 	// Output data regardless if audio is playing
@@ -36,36 +39,49 @@ func Init(offscreen bool) {
 	// Worse time resolution but lower latency with DirectSound
 	C.BASS_SetConfig(C.BASS_CONFIG_VISTA_TRUEPOS, C.DWORD(0))
 
-	// Smaller buffer length, reduces latency
+	// Smaller stream buffer length, reduces latency
+	C.BASS_SetConfig(C.BASS_CONFIG_BUFFER, C.DWORD(playbackBufferLength))
+
+	// Update BASS stream buffer more frequently
+	C.BASS_SetConfig(C.BASS_CONFIG_UPDATEPERIOD, C.DWORD(updatePeriod))
+
+	// Smaller device buffer length, reduces latency
 	C.BASS_SetConfig(C.BASS_CONFIG_DEV_BUFFER, C.DWORD(deviceBufferLength))
 
-	if runtime.GOOS != "windows" {
-		C.BASS_SetConfig(C.BASS_CONFIG_BUFFER, C.DWORD(playbackBufferLength))
-	}
-
-	// Update BASS more frequently
-	C.BASS_SetConfig(C.BASS_CONFIG_DEV_PERIOD, C.DWORD(updatePeriod))
+	// Update BASS device buffer more frequently
+	C.BASS_SetConfig(C.BASS_CONFIG_DEV_PERIOD, C.DWORD(devUpdatePeriod))
 
 	// BASS_CONFIG_MP3_OLDGAPS
 	C.BASS_SetConfig(C.DWORD(68), C.DWORD(1))
 
 	deviceId := -1 //default audio device
+	sampleRate := 44100
+	mixerFlags := C.BASS_MIXER_NONSTOP
+
 	if offscreen {
+		sampleRate = 48000
 		deviceId = 0 //If we're rendering, we don't want BASS to be tied to specific device, especially in headless system
+		mixerFlags |= C.BASS_SAMPLE_FLOAT | C.BASS_STREAM_DECODE
 	}
 
-	if C.BASS_Init(C.int(deviceId), C.DWORD(44100), C.DWORD(0), nil, nil) != 0 {
+	if C.BASS_Init(C.int(deviceId), C.DWORD(sampleRate), C.DWORD(0), nil, nil) != 0 {
 		log.Println("BASS Initialized!")
 		log.Println("BASS Version:       ", parseVersion(int(C.BASS_GetVersion())))
 		log.Println("BASS FX Version:    ", parseVersion(int(C.BASS_FX_GetVersion())))
+		log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
 
-		// We're not interested in BASSMix or BASSEnc in onscreen mode, show audio device instead
+		// We're not interested in BASSEnc in onscreen mode, show audio device instead
 		if !offscreen {
 			log.Println("BASS Audio Device:  ", getDeviceName())
 			log.Println("BASS Audio Latency: ", fmt.Sprintf("%dms", getLatency()))
-		} else {
-			log.Println("BASS Mix Version:   ", parseVersion(int(C.BASS_Mixer_GetVersion())))
-			log.Println("BASS Encode Version:", parseVersion(int(C.BASS_Encode_GetVersion())))
+		}
+
+		masterMixer = C.BASS_Mixer_StreamCreate(C.DWORD(sampleRate), 2, C.DWORD(mixerFlags))
+		C.BASS_ChannelSetAttribute(masterMixer, C.BASS_ATTRIB_BUFFER, 0)
+		C.BASS_ChannelSetDevice(masterMixer, C.BASS_GetDevice())
+
+		if !offscreen {
+			C.BASS_ChannelPlay(masterMixer, 0)
 		}
 	} else {
 		err := GetError()

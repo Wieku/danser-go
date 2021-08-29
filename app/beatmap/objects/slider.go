@@ -222,6 +222,7 @@ func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd b
 	circle.StackOffset = slider.StackOffset
 	circle.StackOffsetHR = slider.StackOffsetHR
 	circle.StackOffsetEZ = slider.StackOffsetEZ
+	circle.ComboSet = slider.ComboSet
 
 	return circle
 }
@@ -241,11 +242,14 @@ func (slider *Slider) SetTiming(timings *Timings) {
 	scoringLengthTotal := 0.0
 	scoringDistance := 0.0
 
-	tickDistance := math.Min(slider.Timings.GetTickDistance(slider.TPoint), slider.pixelLength)
+	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
+		tickDistance = slider.pixelLength
+	}
 
 	for i := int64(0); i < slider.repeat; i++ {
 		distanceToEnd := float64(slider.multiCurve.GetLength())
-		skipTick := false
+		skipTick := math.IsNaN(slider.TPoint.beatLength) // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
 
 		reverse := (i % 2) == 1
 
@@ -368,6 +372,8 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	if diff.CheckModActive(difficulty.Hidden) {
 		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+difficulty.HitFadeIn, slider.EndTime, 0, easing.OutQuad)
+	} else if settings.Objects.Sliders.Snaking.Out && settings.Objects.Sliders.Snaking.OutFadeInstant {
+		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime, 0)
 	} else {
 		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 	}
@@ -389,7 +395,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	sixty := 1000.0 / 60
 	frameDelay := math.Max(150/slider.Timings.GetVelocity(slider.TPoint)*sixty, sixty)
 
-	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 
 	if settings.Objects.Sliders.Snaking.Out {
 		slider.ball.SetAlpha(0)
@@ -402,7 +408,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	followerFrames := skin.GetFrames("sliderfollowcircle", true)
 
-	slider.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	slider.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 	slider.follower.SetAlpha(0.0)
 
 	for i := int64(1); i <= slider.repeat; i++ {

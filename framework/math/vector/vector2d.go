@@ -14,10 +14,6 @@ func NewVec2d(x, y float64) Vector2d {
 	return Vector2d{x, y}
 }
 
-func NewVec2dP(x, y float64) *Vector2d {
-	return &Vector2d{x, y}
-}
-
 func NewVec2dRad(rad, length float64) Vector2d {
 	return Vector2d{math.Cos(rad) * length, math.Sin(rad) * length}
 }
@@ -38,18 +34,8 @@ func (v Vector2d) AsVec4() mgl32.Vec4 {
 	return mgl32.Vec4{float32(v.X), float32(v.Y), 0, 1}
 }
 
-func (v *Vector2d) Set(x, y float64) {
-	v.X = x
-	v.Y = y
-}
-
-func (v *Vector2d) SetRad(rad, length float64) {
-	v.X = math.Cos(rad) * length
-	v.Y = math.Sin(rad) * length
-}
-
-func (v Vector2d) printOut() {
-	fmt.Println("[", v.X, ":", v.Y, "]")
+func (v Vector2d) String() string {
+	return fmt.Sprintf("%fx%f", v.X, v.Y)
 }
 
 func (v Vector2d) Add(v1 Vector2d) Vector2d {
@@ -81,11 +67,17 @@ func (v Vector2d) Dot(v1 Vector2d) float64 {
 }
 
 func (v Vector2d) Dst(v1 Vector2d) float64 {
-	return math.Sqrt(math.Pow(v1.X-v.X, 2) + math.Pow(v1.Y-v.Y, 2))
+	x := v1.X - v.X
+	y := v1.Y - v.Y
+
+	return math.Sqrt(x*x + y*y)
 }
 
 func (v Vector2d) DstSq(v1 Vector2d) float64 {
-	return math.Pow(v1.X-v.X, 2) + math.Pow(v1.Y-v.Y, 2)
+	x := v1.X - v.X
+	y := v1.Y - v.Y
+
+	return x*x + y*y
 }
 
 func (v Vector2d) Angle() float64 {
@@ -97,11 +89,13 @@ func (v Vector2d) AngleR() float64 {
 }
 
 func (v Vector2d) Nor() Vector2d {
-	length := v.Len()
+	length := v.LenSq()
 
-	if length == 0 {
-		return Vector2d{v.X, v.Y}
+	if length < epsilon {
+		return v
 	}
+
+	length = math.Sqrt(length)
 
 	return Vector2d{v.X / length, v.Y / length}
 }
@@ -111,13 +105,20 @@ func (v Vector2d) AngleRV(v1 Vector2d) float64 {
 }
 
 func (v Vector2d) Lerp(v1 Vector2d, t float64) Vector2d {
-	return v1.Sub(v).Scl(t).Add(v)
+	return Vector2d{
+		(v1.X-v.X)*t + v.X,
+		(v1.Y-v.Y)*t + v.Y,
+	}
 }
 
 func (v Vector2d) Rotate(rad float64) Vector2d {
 	cos := math.Cos(rad)
 	sin := math.Sin(rad)
-	return Vector2d{v.X*cos - v.Y*sin, v.X*sin + v.Y*cos}
+
+	return Vector2d{
+		v.X*cos - v.Y*sin,
+		v.X*sin + v.Y*cos,
+	}
 }
 
 func (v Vector2d) Len() float64 {
@@ -132,16 +133,8 @@ func (v Vector2d) Scl(mag float64) Vector2d {
 	return Vector2d{v.X * mag, v.Y * mag}
 }
 
-func (v Vector2d) SclOrDenorm(mag float64) Vector2d {
-	v1 := v
-	if mag > 1.0 || mag < -1.0 {
-		v1 = v1.Nor()
-	}
-	return Vector2d{v1.X * mag, v1.Y * mag}
-}
-
 func (v Vector2d) Abs() Vector2d {
-	return NewVec2d(math.Abs(v.X), math.Abs(v.Y))
+	return Vector2d{math.Abs(v.X), math.Abs(v.Y)}
 }
 
 func (v Vector2d) Copy() Vector2d {
@@ -153,5 +146,5 @@ func (v Vector2d) Copy32() Vector2f {
 }
 
 func IsStraightLine64(a, b, c Vector2d) bool {
-	return (b.X - a.X) * (c.Y - a.Y) - (c.X - a.X) * (b.Y - a.Y) == 0
+	return math.Abs((b.Y-a.Y)*(c.X-a.X)-(b.X-a.X)*(c.Y-a.Y)) < 0.001
 }

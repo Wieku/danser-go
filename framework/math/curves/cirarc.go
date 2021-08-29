@@ -1,7 +1,6 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -17,7 +16,7 @@ type CirArc struct {
 func NewCirArc(a, b, c vector.Vector2f) *CirArc {
 	arc := &CirArc{pt1: a, pt2: b, pt3: c, dir: 1}
 
-	if math32.Abs((b.Y-a.Y)*(c.X-a.X)-(b.X-a.X)*(c.Y-a.Y)) < 0.001 {
+	if vector.IsStraightLine32(a, b, c) {
 		arc.Unstable = true
 	}
 
@@ -31,9 +30,9 @@ func NewCirArc(a, b, c vector.Vector2f) *CirArc {
 		aSq*(c.X-b.X)+bSq*(a.X-c.X)+cSq*(b.X-a.X)).Scl(1 / d) //nolint:misspell
 
 	arc.r = a.Dst(arc.centre)
-	arc.startAngle = math.Atan2(float64(a.Y)-float64(arc.centre.Y), float64(a.X)-float64(arc.centre.X))
+	arc.startAngle = a.Copy64().AngleRV(arc.centre.Copy64())
 
-	endAngle := math.Atan2(float64(c.Y)-float64(arc.centre.Y), float64(c.X)-float64(arc.centre.X))
+	endAngle := c.Copy64().AngleRV(arc.centre.Copy64())
 
 	for endAngle < arc.startAngle {
 		endAngle += 2 * math.Pi

@@ -2,7 +2,7 @@ package blend
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/mathgl/mgl32"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 type data struct {
@@ -13,7 +13,7 @@ type data struct {
 	destinationAlpha Factor
 	equation         Equation
 	equationAlpha    Equation
-	color            mgl32.Vec4
+	color            color2.Color
 }
 
 var stack []data
@@ -72,14 +72,14 @@ func SetEquationSeparate(equation Equation, equationAlpha Equation) {
 	gl.BlendEquationSeparate(uint32(equation), uint32(equationAlpha))
 }
 
-func SetColor(color mgl32.Vec4) {
+func SetColor(color color2.Color) {
 	if current.color == color {
 		return
 	}
 
 	current.color = color
 
-	gl.BlendColor(color[0], color[1], color[2], color[3])
+	gl.BlendColor(color.R, color.G, color.B, color.A)
 }
 
 func Push() {

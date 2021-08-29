@@ -3,8 +3,8 @@ package skin
 import (
 	"fmt"
 	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"os"
 	"sort"
@@ -179,7 +179,7 @@ func LoadInfo(path string) (*SkinInfo, error) {
 
 	defer file.Close()
 
-	scanner := util.NewScanner(file)
+	scanner := files.NewScanner(file)
 
 	info := newDefaultInfo()
 

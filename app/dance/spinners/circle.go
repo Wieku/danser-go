@@ -8,16 +8,19 @@ import (
 
 type CircleMover struct {
 	start float64
+	id    int
 }
 
 func NewCircleMover() *CircleMover {
 	return &CircleMover{}
 }
 
-func (c *CircleMover) Init(start, end float64) {
+func (c *CircleMover) Init(start, _ float64, id int) {
 	c.start = start
+	c.id = id
 }
 
 func (c *CircleMover) GetPositionAt(time float64) vector.Vector2f {
-	return vector.NewVec2fRad(rpms*float32(time-c.start)*2*math32.Pi, float32(settings.Dance.SpinnerRadius)).Add(center)
+	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
+	return vector.NewVec2fRad(rpms*float32(time-c.start)*2*math32.Pi, float32(radius)).Add(center)
 }

@@ -30,11 +30,11 @@ func LoadFont(reader io.Reader) *Font {
 
 	fnt := new(Font)
 	fnt.flip = true
-	fnt.initialSize = 64.0
+	fnt.initialSize = 128.0
 	fnt.glyphs = make(map[rune]*glyphData)
 	fnt.kernTable = make(map[rune]map[rune]float64)
 
-	fnt.atlas = texture.NewTextureAtlas(1024, 4)
+	fnt.atlas = texture.NewTextureAtlas(1024, 5)
 	fnt.atlas.SetManualMipmapping(true)
 
 	fc, err := opentype.NewFace(ttf, &opentype.FaceOptions{Size: fnt.initialSize, DPI: 72, Hinting: font.HintingFull})

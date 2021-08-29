@@ -10,7 +10,7 @@ const rpms = 0.00795
 var center = vector.NewVec2f(256, 192)
 
 type SpinnerMover interface {
-	Init(start, end float64)
+	Init(start, end float64, id int)
 	GetPositionAt(time float64) vector.Vector2f
 }
 

@@ -3,10 +3,9 @@ package storyboard
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/app/utils"
+	files2 "github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -14,7 +13,6 @@ import (
 	video2 "github.com/wieku/danser-go/framework/graphics/video"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/util"
 	"log"
 	"math"
 	"os"
@@ -38,7 +36,7 @@ type Storyboard struct {
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
-	pathCache   *utils.FileMap
+	pathCache   *files2.FileMap
 }
 
 func getSection(line string) string {
@@ -70,7 +68,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
-	storyboard.pathCache = utils.NewFileMap(path)
+	storyboard.pathCache = files2.NewFileMap(path)
 
 	var currentSection string
 	var currentSprite string
@@ -90,7 +88,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 			continue
 		}
 
-		scanner := util.NewScannerBuf(file, 10*1024*1024)
+		scanner := files2.NewScannerBuf(file, 10*1024*1024)
 
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -128,7 +126,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 					log.Println(filepath.Join(path, fix(spl[2])))
 
-					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), bmath.Origin.Centre)
+					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
 
 					if video == nil {
 						continue
@@ -199,7 +197,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []string) {
 	spl := strings.Split(currentSprite, ",")
 
-	origin := Origin[spl[2]]
+	origin := parseOrigin(spl[2])
 
 	x, _ := strconv.ParseFloat(spl[4], 64)
 	y, _ := strconv.ParseFloat(spl[5], 64)

@@ -22,25 +22,29 @@ var cubeIndices = []int{0, 1, 2, 3, 0, 4, 5, 1, 5, 6, 2, 6, 7, 3, 7, 4}
 
 type CubeMover struct {
 	start float64
+	id    int
 }
 
 func NewCubeMover() *CubeMover {
 	return &CubeMover{}
 }
 
-func (c *CubeMover) Init(start, end float64) {
+func (c *CubeMover) Init(start, _ float64, id int) {
 	c.start = start
+	c.id = id
 }
 
 func (c *CubeMover) GetPositionAt(time float64) vector.Vector2f {
+	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
+
 	radY := math32.Sin(float32(time-c.start)/9000*2*math32.Pi) * 3.0 / 18 * math32.Pi
 	radX := math32.Sin(float32(time-c.start)/5000*2*math32.Pi) * 3.0 / 18 * math32.Pi
 
-	scale := (1.0 + math32.Sin(float32(time-c.start)/4500*2*math32.Pi)*0.3) * float32(settings.Dance.SpinnerRadius)
+	scale := (1.0 + math32.Sin(float32(time-c.start)/4500*2*math32.Pi)*0.3) * float32(radius)
 
 	mat := mgl32.HomogRotate3DY(radY).Mul4(mgl32.HomogRotate3DX(radX)).Mul4(mgl32.Scale3D(scale, scale, scale))
 
-	startIndex := (int64(time - c.start) / 4) % int64(len(cubeIndices))
+	startIndex := (int64(time-c.start) / 4) % int64(len(cubeIndices))
 
 	i1 := cubeIndices[startIndex]
 

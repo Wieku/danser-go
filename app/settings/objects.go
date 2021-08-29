@@ -25,7 +25,9 @@ func initObjects() *objects {
 			Snaking: &snaking{
 				In:                 true,
 				Out:                true,
+				OutFadeInstant:     true,
 				DurationMultiplier: 0,
+				FadeMultiplier:     0,
 			},
 		},
 		Colors: &objectcolors{
@@ -129,6 +131,7 @@ type quality struct {
 type snaking struct {
 	In                 bool
 	Out                bool
+	OutFadeInstant     bool
 	DurationMultiplier float64
 	FadeMultiplier     float64
 }

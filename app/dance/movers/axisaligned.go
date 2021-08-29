@@ -1,56 +1,47 @@
 package movers
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type AxisMover struct {
-	bz                 *curves.MultiCurve
-	beginTime, endTime float64
-	mods               difficulty.Modifier
+	*basicMover
+
+	curve *curves.MultiCurve
 }
 
 func NewAxisMover() MultiPointMover {
-	return &AxisMover{}
+	return &AxisMover{basicMover: &basicMover{}}
 }
 
-func (bm *AxisMover) Reset(mods difficulty.Modifier) {
-	bm.mods = mods
-}
+func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
+	start, end := objs[0], objs[1]
 
-func (bm *AxisMover) SetObjects(objs []objects.IHitObject) int {
-	end, start := objs[0], objs[1]
-	endPos := end.GetStackedEndPositionMod(bm.mods)
-	endTime := end.GetEndTime()
-	startPos := start.GetStackedStartPositionMod(bm.mods)
-	startTime := start.GetStartTime()
+	mover.startTime = start.GetEndTime()
+	mover.endTime = end.GetStartTime()
+
+	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
+	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
 
 	var midP vector.Vector2f
 
-	if math32.Abs(startPos.Sub(endPos).X) < math32.Abs(startPos.Sub(startPos).X) {
-		midP = vector.NewVec2f(endPos.X, startPos.Y)
-	} else {
+	if math32.Abs(endPos.Sub(startPos).X) < math32.Abs(endPos.Sub(endPos).X) {
 		midP = vector.NewVec2f(startPos.X, endPos.Y)
+	} else {
+		midP = vector.NewVec2f(endPos.X, startPos.Y)
 	}
 
-	bm.bz = curves.NewMultiCurve("L", []vector.Vector2f{endPos, midP, startPos})
-	bm.endTime = endTime
-	bm.beginTime = startTime
+	mover.curve = curves.NewMultiCurve("L", []vector.Vector2f{startPos, midP, endPos})
 
 	return 2
 }
 
-func (bm AxisMover) Update(time float64) vector.Vector2f {
-	t := float32(time-bm.endTime) / float32(bm.beginTime-bm.endTime)
-	tr := bmath.ClampF32(math32.Sin(t*math32.Pi/2), 0, 1)
-	return bm.bz.PointAt(tr)
-}
-
-func (bm *AxisMover) GetEndTime() float64 {
-	return bm.beginTime
+func (mover AxisMover) Update(time float64) vector.Vector2f {
+	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	return mover.curve.PointAt(float32(easing.OutSine(t)))
 }

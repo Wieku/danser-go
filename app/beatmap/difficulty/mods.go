@@ -36,7 +36,7 @@ const (
 	ScoreV2
 	LastMod
 	Daycore
-	DifficultyAdjustMask = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | TouchDevice
+	DifficultyAdjustMask = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore
 )
 
 var modsString = [...]string{
@@ -112,7 +112,7 @@ var modsStringFull = [...]string{
 func (mods Modifier) GetScoreMultiplier() float64 {
 	multiplier := 1.0
 
-	if mods&NoFail > 0 {
+	if mods&NoFail > 0 && mods&ScoreV2 == 0 {
 		multiplier *= 0.5
 	}
 
@@ -129,11 +129,19 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	}
 
 	if mods&HardRock > 0 {
-		multiplier *= 1.06
+		if mods&ScoreV2 > 0 {
+			multiplier *= 1.10
+		} else {
+			multiplier *= 1.06
+		}
 	}
 
 	if mods&DoubleTime > 0 {
-		multiplier *= 1.12
+		if mods&ScoreV2 > 0 {
+			multiplier *= 1.20
+		} else {
+			multiplier *= 1.12
+		}
 	}
 
 	if mods&Flashlight > 0 {

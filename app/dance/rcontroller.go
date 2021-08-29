@@ -1,8 +1,8 @@
 package dance
 
 import (
+	"fmt"
 	"github.com/karrick/godirwalk"
-	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
@@ -57,6 +57,7 @@ type subControl struct {
 	oldSpinners     bool
 	relaxController *input.RelaxInputProcessor
 	mouseController schedulers.Scheduler
+	mods            difficulty.Modifier
 }
 
 func NewSubControl() *subControl {
@@ -74,17 +75,86 @@ type ReplayController struct {
 }
 
 func NewReplayController() Controller {
-	return new(ReplayController)
+	return &ReplayController{lastTime: -200}
 }
 
 func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
-	replayDir := filepath.Join(replaysMaster, beatMap.MD5)
+	controller.bMap = beatMap
 
-	err := os.MkdirAll(replayDir, 0755)
-	if err != nil {
-		panic(err)
+	organizeReplays()
+
+	candidates := make([]*rplpa.Replay, 0)
+
+	localReplay := false
+	if settings.REPLAY != "" {
+		log.Println("Loading: ", settings.REPLAY)
+
+		data, err := ioutil.ReadFile(settings.REPLAY)
+		if err != nil {
+			panic(err)
+		}
+
+		replayD, _ := rplpa.ParseReplay(data)
+
+		if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+			log.Println("Excluding for missing input data:", replayD.Username)
+		} else {
+			candidates = append(candidates, replayD)
+
+			localReplay = true
+		}
+	} else {
+		candidates = controller.getCandidates()
 	}
 
+	if !localReplay {
+		sort.Slice(candidates, func(i, j int) bool {
+			return candidates[i].Score > candidates[j].Score
+		})
+
+		candidates = candidates[:bmath.MinI(len(candidates), settings.Knockout.MaxPlayers)]
+	}
+
+	displayedMods := ^difficulty.ParseMods(settings.Knockout.HideMods)
+
+	for i, replay := range candidates {
+		log.Println(fmt.Sprintf("Loading replay for \"%s\":", replay.Username))
+
+		control := NewSubControl()
+		control.mods = difficulty.Modifier(replay.Mods)
+
+		log.Println("\tMods:", control.mods.String())
+
+		loadFrames(control, replay.ReplayData)
+
+		mxCombo := replay.MaxCombo
+
+		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
+		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
+
+		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
+		controller.controllers = append(controller.controllers, control)
+
+		log.Println("\tExpected score:", replay.Score)
+		log.Println("\tExpected pp:", math.NaN())
+		log.Println("\tReplay loaded!")
+	}
+
+	if !localReplay && (settings.Knockout.AddDanser || len(candidates) == 0) {
+		control := NewSubControl()
+		control.mods = difficulty.Autoplay | beatMap.Diff.Mods
+
+		control.danceController = NewGenericController()
+		control.danceController.SetBeatMap(beatMap)
+
+		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
+		controller.controllers = append([]*subControl{control}, controller.controllers...)
+	}
+
+	settings.PLAYERS = len(controller.replays)
+}
+
+func organizeReplays() {
 	_ = godirwalk.Walk(replaysMaster, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 			if de.IsDir() && osPathname != replaysMaster {
@@ -108,7 +178,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 					return nil
 				}
 
-				err = os.MkdirAll(filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5)), 0655)
+				err = os.MkdirAll(filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5)), 0755)
 				if err != nil {
 					log.Println("Error creating directory: ", err)
 					log.Println("Skipping... ")
@@ -126,115 +196,56 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		},
 		Unsorted: true,
 	})
+}
 
-	counter := settings.Knockout.MaxPlayers
+func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
+	replayDir := filepath.Join(replaysMaster, controller.bMap.MD5)
 
-	excludedMods := osuapi.ParseMods(settings.Knockout.ExcludeMods)
-	displayedMods := uint32(^osuapi.ParseMods(settings.Knockout.HideMods))
+	err := os.MkdirAll(replayDir, 0755)
+	if err != nil {
+		panic(err)
+	}
 
-	candidates := make([]*rplpa.Replay, 0)
+	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
-	localReplay := false
-	if settings.REPLAY != "" {
-		log.Println("Loading: ", settings.REPLAY)
+	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
+		if strings.HasSuffix(f.Name(), ".osr") {
+			log.Println("Loading: ", f.Name())
 
-		data, err := ioutil.ReadFile(settings.REPLAY)
-		if err != nil {
-			panic(err)
-		}
-
-		replayD, _ := rplpa.ParseReplay(data)
-
-		if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-			log.Println("Excluding for missing input data:", replayD.Username)
-		} else {
-			candidates = append(candidates, replayD)
-
-			localReplay = true
-		}
-	} else {
-		filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
-			if strings.HasSuffix(f.Name(), ".osr") {
-				log.Println("Loading: ", f.Name())
-
-				data, err := ioutil.ReadFile(path)
-				if err != nil {
-					panic(err)
-				}
-
-				replayD, _ := rplpa.ParseReplay(data)
-
-				if !strings.EqualFold(replayD.BeatmapMD5, beatMap.MD5) {
-					log.Println("Incompatible maps, skipping", replayD.Username)
-					return nil
-				}
-
-				if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
-					log.Println("Excluding for incompatible mods:", replayD.Username)
-					return nil
-				}
-
-				if (replayD.Mods & uint32(excludedMods)) > 0 {
-					log.Println("Excluding for mods:", replayD.Username)
-					return nil
-				}
-
-				if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-					log.Println("Excluding for missing input data:", replayD.Username)
-					return nil
-				}
-
-				candidates = append(candidates, replayD)
+			data, err := ioutil.ReadFile(path)
+			if err != nil {
+				panic(err)
 			}
 
-			return nil
-		})
-	}
+			replayD, _ := rplpa.ParseReplay(data)
 
-	if !localReplay {
-		sort.Slice(candidates, func(i, j int) bool {
-			return candidates[i].Score > candidates[j].Score
-		})
+			if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
+				log.Println("Incompatible maps, skipping", replayD.Username)
+				return nil
+			}
 
-		candidates = candidates[:bmath.MinI(len(candidates), settings.Knockout.MaxPlayers)]
-	}
+			if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+				log.Println("Excluding for incompatible mods:", replayD.Username)
+				return nil
+			}
 
-	for i, replay := range candidates {
-		log.Println("Loading replay for:", replay.Username)
+			if (replayD.Mods & uint32(excludedMods)) > 0 {
+				log.Println("Excluding for mods:", replayD.Username)
+				return nil
+			}
 
-		control := NewSubControl()
+			if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+				log.Println("Excluding for missing input data:", replayD.Username)
+				return nil
+			}
 
-		loadFrames(control, replay.ReplayData)
+			candidates = append(candidates, replayD)
+		}
 
-		mxCombo := replay.MaxCombo
+		return nil
+	})
 
-		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
-		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
-
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), difficulty.Modifier(replay.Mods & displayedMods).String(), difficulty.Modifier(replay.Mods), 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
-		controller.controllers = append(controller.controllers, control)
-
-		log.Println("Expected score:", replay.Score)
-		log.Println("Expected pp:", math.NaN())
-		log.Println("Replay loaded!")
-
-		counter--
-	}
-
-	if !localReplay && (settings.Knockout.AddDanser || counter == settings.Knockout.MaxPlayers) {
-		control := NewSubControl()
-
-		control.danceController = NewGenericController()
-		control.danceController.SetBeatMap(beatMap)
-
-		controller.replays = append([]RpData{{settings.Knockout.DanserName, (difficulty.Autoplay | beatMap.Diff.Mods).String(), difficulty.Autoplay | beatMap.Diff.Mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
-		controller.controllers = append([]*subControl{control}, controller.controllers...)
-	}
-
-	settings.PLAYERS = len(controller.replays)
-
-	controller.bMap = beatMap
-	controller.lastTime = -200
+	return
 }
 
 func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
@@ -249,6 +260,35 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 	// Remove incorrect first frame if its delta is 0
 	if frames[0].Time == 0 {
 		frames = frames[1:]
+	}
+
+	times := make([]float64, 0, len(frames))
+
+	for _, frame := range frames {
+		if frame.Time >= 0 {
+			times = append(times, float64(frame.Time))
+		}
+	}
+
+	sort.Float64s(times)
+
+	l := len(times)
+
+	meanFrameTime := times[l/2]
+
+	if l%2 == 0 {
+		meanFrameTime = (times[l/2] + times[l/2-1]) / 2
+	}
+
+	diff := difficulty.NewDifficulty(5, 5, 5, 5)
+	diff.SetMods(subController.mods)
+
+	meanFrameTime = diff.GetModifiedTime(meanFrameTime)
+
+	log.Println(fmt.Sprintf("\tMean cv frametime: %.2fms", meanFrameTime))
+
+	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay | difficulty.Relax | difficulty.Relax2) {
+		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
 
 	subController.frames = frames
@@ -268,6 +308,7 @@ func (controller *ReplayController) InitCursors() {
 
 			for _, cursor := range cursors {
 				cursor.Name = controller.replays[i].Name
+				cursor.ScoreTime = time.Now()
 				cursor.ScoreID = -1
 			}
 
@@ -303,8 +344,13 @@ func (controller *ReplayController) InitCursors() {
 		}
 
 		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
-			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMover)
-			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), controller.replays[i].ModsV, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
+			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMoverSimple, 0, 0)
+
+			diff := difficulty.NewDifficulty(controller.bMap.Diff.GetHPDrain(), controller.bMap.Diff.GetCS(), controller.bMap.Diff.GetOD(), controller.bMap.Diff.GetAR())
+			diff.SetMods(controller.replays[i].ModsV)
+			diff.SetCustomSpeed(controller.bMap.Diff.CustomSpeed)
+
+			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), diff, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
 		}
 	}
 }

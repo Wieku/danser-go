@@ -36,46 +36,53 @@ func (controller *GenericController) InitCursors() {
 	controller.cursors = make([]*graphics.Cursor, settings.TAG)
 	controller.schedulers = make([]schedulers.Scheduler, settings.TAG)
 
+	counter := make(map[string]int)
+
 	// Mover initialization
 	for i := range controller.cursors {
 		controller.cursors[i] = graphics.NewCursor()
 
 		mover := "flower"
-		if len(settings.Dance.Movers) > 0 {
-			mover = strings.ToLower(settings.Dance.Movers[i%len(settings.Dance.Movers)])
+		if len(settings.CursorDance.Movers) > 0 {
+			mover = strings.ToLower(settings.CursorDance.Movers[i%len(settings.CursorDance.Movers)].Mover)
 		}
 
-		var scheduler schedulers.Scheduler
+		var moverCtor func() movers.MultiPointMover
 
 		switch mover {
 		case "spline":
-			scheduler = schedulers.NewGenericScheduler(movers.NewSplineMover)
+			moverCtor = movers.NewSplineMover
 		case "bezier":
-			scheduler = schedulers.NewGenericScheduler(movers.NewBezierMover)
+			moverCtor = movers.NewBezierMover
 		case "circular":
-			scheduler = schedulers.NewGenericScheduler(movers.NewHalfCircleMover)
+			moverCtor = movers.NewHalfCircleMover
 		case "linear":
-			scheduler = schedulers.NewGenericScheduler(movers.NewLinearMover)
+			moverCtor = movers.NewLinearMover
 		case "axis":
-			scheduler = schedulers.NewGenericScheduler(movers.NewAxisMover)
+			moverCtor = movers.NewAxisMover
 		case "exgon":
-			scheduler = schedulers.NewGenericScheduler(movers.NewExGonMover)
+			moverCtor = movers.NewExGonMover
 		case "aggressive":
-			scheduler = schedulers.NewGenericScheduler(movers.NewAggressiveMover)
+			moverCtor = movers.NewAggressiveMover
 		case "momentum":
-			scheduler = schedulers.NewGenericScheduler(movers.NewMomentumMover)
+			moverCtor = movers.NewMomentumMover
+		case "pippi":
+			moverCtor = movers.NewPippiMover
 		default:
-			scheduler = schedulers.NewGenericScheduler(movers.NewAngleOffsetMover)
+			moverCtor = movers.NewAngleOffsetMover
+			mover = "flower"
 		}
 
-		controller.schedulers[i] = scheduler
+		controller.schedulers[i] = schedulers.NewGenericScheduler(moverCtor, i, counter[mover])
+
+		counter[mover]++
 	}
 
 	type Queue struct {
-		objs []objects.IHitObject
+		hitObjects []objects.IHitObject
 	}
 
-	objs := make([]Queue, settings.TAG)
+	queues := make([]Queue, settings.TAG)
 
 	queue := controller.bMap.GetObjectsCopy()
 
@@ -87,7 +94,7 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	// Convert sliders to pseudo-circles for tag cursors
-	if !settings.Dance.Battle && settings.Dance.TAGSliderDance && settings.TAG > 1 {
+	if !settings.CursorDance.ComboTag && !settings.CursorDance.Battle && settings.CursorDance.TAGSliderDance && settings.TAG > 1 {
 		for i := 0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}
@@ -108,24 +115,29 @@ func (controller *GenericController) InitCursors() {
 
 	// If DoSpinnersTogether is true with tag mode, allow all tag cursors to spin the same spinner with different movers
 	for j, o := range queue {
-		if _, ok := o.(*objects.Spinner); (ok && settings.Dance.DoSpinnersTogether) || settings.Dance.Battle {
-			for i := range objs {
-				objs[i].objs = append(objs[i].objs, o)
+		_, isSpinner := o.(*objects.Spinner)
+
+		if (isSpinner && settings.CursorDance.DoSpinnersTogether) || settings.CursorDance.Battle {
+			for i := range queues {
+				queues[i].hitObjects = append(queues[i].hitObjects, o)
 			}
+		} else if settings.CursorDance.ComboTag {
+			i := int(o.GetComboSet()) % settings.TAG
+			queues[i].hitObjects = append(queues[i].hitObjects, o)
 		} else {
 			i := j % settings.TAG
-			objs[i].objs = append(objs[i].objs, o)
+			queues[i].hitObjects = append(queues[i].hitObjects, o)
 		}
 	}
 
 	//Initialize spinner movers
 	for i := range controller.cursors {
 		spinMover := "circle"
-		if len(settings.Dance.Spinners) > 0 {
-			spinMover = settings.Dance.Spinners[i%len(settings.Dance.Spinners)]
+		if len(settings.CursorDance.Spinners) > 0 {
+			spinMover = settings.CursorDance.Spinners[i%len(settings.CursorDance.Spinners)].Mover
 		}
 
-		controller.schedulers[i].Init(objs[i].objs, controller.bMap.Diff.Mods, controller.cursors[i], spinners.GetMoverCtorByName(spinMover), true)
+		controller.schedulers[i].Init(queues[i].hitObjects, controller.bMap.Diff, controller.cursors[i], spinners.GetMoverCtorByName(spinMover), true)
 	}
 }
 

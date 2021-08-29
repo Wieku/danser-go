@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/bmath"
-	"log"
 	"math"
 )
 
@@ -172,10 +171,6 @@ func (hp *HealthProcessor) CalculateRate() {
 			hp.HpMultiplierNormal *= 1.01
 		}
 	}
-
-	log.Println("Passive drain rate:", hp.PassiveDrain/2*1000)
-	log.Println("Normal multiplier:", hp.HpMultiplierNormal)
-	log.Println("Combo end multiplier:", hp.HpMultiplierComboEnd)
 
 	breakNumber := 0
 	lastDrainStart := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)

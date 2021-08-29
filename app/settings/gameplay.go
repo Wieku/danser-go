@@ -39,11 +39,38 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
+			Color: &hsv{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
 			XPosition:     5,
 			YPosition:     150,
 			Decimals:      0,
 			Align:         "CentreLeft",
 			ShowInResults: true,
+		},
+		HitCounter: &hitCounter{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			Color: []*hsv{
+				{
+					Hue:        0,
+					Saturation: 0,
+					Value:      1,
+				},
+			},
+			XPosition:  5,
+			YPosition:  190,
+			Spacing:    48,
+			FontScale:  1,
+			Align:      "Left",
+			ValueAlign: "Left",
+			Vertical:   false,
+			Show300:    false,
 		},
 		KeyOverlay: &hudElement{
 			Show:    true,
@@ -86,29 +113,32 @@ func initGameplay() *gameplay {
 			},
 			BackgroundOpacity: 0.5,
 		},
-		ShowResultsScreen: true,
-		ResultsScreenTime: 5,
-		ShowWarningArrows: true,
-		FlashlightDim:     1,
-		PlayUsername:      "Guest",
+		ShowResultsScreen:       true,
+		ResultsScreenTime:       5,
+		ResultsUseLocalTimeZone: false,
+		ShowWarningArrows:       true,
+		FlashlightDim:           1,
+		PlayUsername:            "Guest",
 	}
 }
 
 type gameplay struct {
-	HitErrorMeter     *hitError
-	Score             *score
-	HpBar             *hudElement
-	ComboCounter      *hudElement
-	PPCounter         *ppCounter
-	KeyOverlay        *hudElement
-	ScoreBoard        *scoreBoard
-	Mods              *mods
-	Boundaries        *boundaries
-	ShowResultsScreen bool
-	ResultsScreenTime float64
-	ShowWarningArrows bool
-	FlashlightDim     float64
-	PlayUsername      string
+	HitErrorMeter           *hitError
+	Score                   *score
+	HpBar                   *hudElement
+	ComboCounter            *hudElement
+	PPCounter               *ppCounter
+	HitCounter              *hitCounter
+	KeyOverlay              *hudElement
+	ScoreBoard              *scoreBoard
+	Mods                    *mods
+	Boundaries              *boundaries
+	ShowResultsScreen       bool
+	ResultsScreenTime       float64
+	ResultsUseLocalTimeZone bool
+	ShowWarningArrows       bool
+	FlashlightDim           float64
+	PlayUsername            string
 }
 
 type boundaries struct {
@@ -145,11 +175,25 @@ type score struct {
 
 type ppCounter struct {
 	*hudElement
+	Color         *hsv
 	XPosition     float64
 	YPosition     float64
 	Decimals      int
 	Align         string
 	ShowInResults bool
+}
+
+type hitCounter struct {
+	*hudElement
+	Color      []*hsv
+	XPosition  float64
+	YPosition  float64
+	Spacing    float64
+	FontScale  float64
+	Align      string
+	ValueAlign string
+	Vertical   bool
+	Show300    bool
 }
 
 type scoreBoard struct {

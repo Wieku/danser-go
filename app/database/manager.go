@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"log"
 	"os"
@@ -277,7 +278,7 @@ func importMaps() {
 	if len(mapsToImport) > 0 {
 		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps...")
 
-		loaded := utils.Balance(4, mapsToImport, func(a interface{}) interface{} {
+		loaded := util.Balance(4, mapsToImport, func(a interface{}) interface{} {
 			candidate := a.(mapLocation)
 
 			partialPath := filepath.Join(candidate.dir, candidate.file)

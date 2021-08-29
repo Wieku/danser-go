@@ -70,31 +70,31 @@ func NewBeatMap() *BeatMap {
 	return beatMap
 }
 
-func (b *BeatMap) Reset() {
-	b.Queue = make([]objects.IHitObject, len(b.HitObjects))
-	copy(b.Queue, b.HitObjects)
-	b.Timings.Reset()
-	for _, o := range b.HitObjects {
-		o.SetDifficulty(b.Diff)
+func (beatMap *BeatMap) Reset() {
+	beatMap.Queue = beatMap.GetObjectsCopy()
+	beatMap.Timings.Reset()
+
+	for _, o := range beatMap.HitObjects {
+		o.SetDifficulty(beatMap.Diff)
 	}
 }
 
-func (b *BeatMap) Update(time float64) {
-	b.Timings.Update(time)
+func (beatMap *BeatMap) Update(time float64) {
+	beatMap.Timings.Update(time)
 
-	for i := 0; i < len(b.Queue); i++ {
-		g := b.Queue[i]
-		if g.GetStartTime()-b.Diff.Preempt > time {
+	for i := 0; i < len(beatMap.Queue); i++ {
+		g := beatMap.Queue[i]
+		if g.GetStartTime()-beatMap.Diff.Preempt > time {
 			break
 		}
 
 		g.Update(time)
 
-		if time >= g.GetEndTime()+difficulty.HitFadeOut+float64(b.Diff.Hit50) {
-			if i < len(b.Queue)-1 {
-				b.Queue = append(b.Queue[:i], b.Queue[i+1:]...)
-			} else if i < len(b.Queue) {
-				b.Queue = b.Queue[:i]
+		if time >= g.GetEndTime()+difficulty.HitFadeOut+float64(beatMap.Diff.Hit50) {
+			if i < len(beatMap.Queue)-1 {
+				beatMap.Queue = append(beatMap.Queue[:i], beatMap.Queue[i+1:]...)
+			} else if i < len(beatMap.Queue) {
+				beatMap.Queue = beatMap.Queue[:i]
 			}
 			i--
 		}
@@ -102,9 +102,10 @@ func (b *BeatMap) Update(time float64) {
 }
 
 func (beatMap *BeatMap) GetObjectsCopy() []objects.IHitObject {
-	queue := make([]objects.IHitObject, len(beatMap.HitObjects))
-	copy(queue, beatMap.HitObjects)
-	return queue
+	objs := make([]objects.IHitObject, len(beatMap.HitObjects))
+	copy(objs, beatMap.HitObjects)
+
+	return objs
 }
 
 func (beatMap *BeatMap) ParsePoint(point string) {
@@ -119,32 +120,37 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 	}
 
 	if len(line) > 3 {
-		sampleset, _ := strconv.ParseInt(line[3], 10, 64)
-		sampleindex, _ := strconv.ParseInt(line[4], 10, 64)
+		sampleSet, _ := strconv.Atoi(line[3])
+		sampleIndex, _ := strconv.Atoi(line[4])
 
-		samplevolume := int64(100)
+		sampleVolume := 1.0
+		inherited := false
+		kiai := false
 
 		if len(line) > 5 {
-			samplevolume, _ = strconv.ParseInt(line[5], 10, 64)
+			sV, _ := strconv.Atoi(line[5])
+			sampleVolume = float64(sV) / 100
 		}
 
-		inherited := false
 		if len(line) > 6 {
-			inh, _ := strconv.ParseInt(line[6], 10, 64)
+			inh, _ := strconv.Atoi(line[6])
 			inherited = inh == 0
 		}
 
-		kiai := false
 		if len(line) > 7 {
-			ki, _ := strconv.ParseInt(line[7], 10, 64)
+			ki, _ := strconv.Atoi(line[7])
 			kiai = ki == 1
 		}
 
-		beatMap.Timings.LastSet = int(sampleset)
-		beatMap.Timings.AddPoint(float64(pointTime), bpm, int(sampleset), int(sampleindex), float64(samplevolume)/100, inherited, kiai)
+		beatMap.Timings.LastSet = sampleSet
+		beatMap.Timings.AddPoint(float64(pointTime), bpm, sampleSet, sampleIndex, sampleVolume, inherited, kiai)
 	} else {
 		beatMap.Timings.AddPoint(float64(pointTime), bpm, beatMap.Timings.LastSet, 1, 1, false, false)
 	}
+}
+
+func (beatMap *BeatMap) FinalizePoints() {
+	beatMap.Timings.FinalizePoints()
 }
 
 func (beatMap *BeatMap) LoadCustomSamples() {

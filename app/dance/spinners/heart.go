@@ -8,19 +8,23 @@ import (
 
 type HeartMover struct {
 	start float64
+	id    int
 }
 
 func NewHeartMover() *HeartMover {
 	return &HeartMover{}
 }
 
-func (c *HeartMover) Init(start, end float64) {
+func (c *HeartMover) Init(start, _ float64, id int) {
 	c.start = start
+	c.id = id
 }
 
 func (c *HeartMover) GetPositionAt(time float64) vector.Vector2f {
+	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
+
 	rad := rpms * float32(time-c.start) * 2 * math32.Pi
 	x := math32.Pow(math32.Sin(rad), 3)
 	y := (13*math32.Cos(rad) - 5*math32.Cos(2*rad) - 2*math32.Cos(3*rad) - math32.Cos(4*rad)) / 16
-	return vector.NewVec2f(x, y).Mult(vector.NewVec2f(float32(settings.Dance.SpinnerRadius), -float32(settings.Dance.SpinnerRadius))).Add(center)
+	return vector.NewVec2f(x, y).Mult(vector.NewVec2f(float32(radius), -float32(radius))).Add(center)
 }

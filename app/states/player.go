@@ -44,10 +44,11 @@ type Player struct {
 	bMap        *beatmap.BeatMap
 	bloomEffect *effects.BloomEffect
 
-	lastTime     int64
-	lastMusicPos float64
-	progressMsF  float64
-	progressMs   int64
+	lastTime        int64
+	lastMusicPos    float64
+	lastProgressMsF float64
+	progressMsF     float64
+	progressMs      int64
 
 	batch       *batch2.QuadBatch
 	controller  dance.Controller
@@ -58,7 +59,7 @@ type Player struct {
 	fadeOut     float64
 	fadeIn      float64
 	start       bool
-	musicPlayer *bass.Track
+	musicPlayer bass.ITrack
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
 
@@ -126,7 +127,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	player.musicPlayer = bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	track := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+
+	if track == nil {
+		log.Println("Failed to create music stream, creating a dummy stream...")
+
+		player.musicPlayer = bass.NewTrackVirtual(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()/1000+1)
+	} else {
+		log.Println("Audio track:", beatMap.Audio)
+
+		player.musicPlayer = track
+	}
 
 	var err error
 	player.Epi, err = utils.LoadTextureToAtlas(graphics.Atlas, "assets/textures/warning.png")
@@ -134,6 +145,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	if err != nil {
 		log.Println(err)
 	}
+
+	settings.START = math.Min(settings.START, (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime()-1)/1000) // cap start to start time of the last HitObject - 1ms
 
 	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && (settings.PLAY || !settings.KNOCKOUT) {
 		scrub := math.Max(0, settings.START*1000)
@@ -174,7 +187,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	player.background = common.NewBackground()
-	player.background.SetBeatmap(beatMap, settings.Playfield.Background.LoadStoryboards)
+	player.background.SetBeatmap(beatMap, settings.Playfield.Background.LoadStoryboards || settings.Playfield.Background.LoadVideos)
 
 	player.mainCamera = camera2.NewCamera()
 	player.mainCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
@@ -230,8 +243,6 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.objectContainer = containers.NewHitObjectContainer(beatMap)
 
-	log.Println("Audio track:", beatMap.Audio)
-
 	player.Scl = 1
 	player.fadeOut = 1.0
 	player.fadeIn = 0.0
@@ -277,7 +288,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset := 0.0
 
-	if settings.SKIP || settings.START > 0.01 {
+	if math.Max(0, skipTime) > 0.01 {
 		startOffset = skipTime
 		player.startPoint = math.Max(0, startOffset)
 
@@ -292,25 +303,23 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.volumeGlider.SetValue(0.0)
 		player.volumeGlider.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
 
-		if settings.START > 0.01 {
-			player.objectsAlpha.SetValue(0.0)
-			player.objectsAlpha.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
+		player.objectsAlpha.SetValue(0.0)
+		player.objectsAlpha.AddEvent(skipTime, skipTime+difficulty.HitFadeIn, 1.0)
+
+		if player.overlay != nil {
+			player.overlay.DisableAudioSubmission(true)
+		}
+
+		for i := -1000.0; i < startOffset; i += 1.0 {
+			player.controller.Update(i, 1)
 
 			if player.overlay != nil {
-				player.overlay.DisableAudioSubmission(true)
+				player.overlay.Update(i)
 			}
+		}
 
-			for i := -1000.0; i < startOffset; i += 1.0 {
-				player.controller.Update(i, 1)
-
-				if player.overlay != nil {
-					player.overlay.Update(i)
-				}
-			}
-
-			if player.overlay != nil {
-				player.overlay.DisableAudioSubmission(false)
-			}
+		if player.overlay != nil {
+			player.overlay.DisableAudioSubmission(false)
 		}
 
 		player.lateStart = true
@@ -383,6 +392,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	}
 
 	player.MapEnd += 100
+
+	// See https://github.com/Wieku/danser-go/issues/121
+	player.musicPlayer.AddSilence(math.Max(0, player.MapEnd/1000-player.musicPlayer.GetLength()))
 
 	if settings.Playfield.SeizureWarning.Enabled {
 		am := math.Max(1000, settings.Playfield.SeizureWarning.Duration*1000)
@@ -507,12 +519,6 @@ func (player *Player) Update(delta float64) bool {
 		player.progressMsF += delta
 	}
 
-	bass.GlobalTimeMs += delta
-
-	if player.progressMsF > player.startPoint && settings.RECORD {
-		player.musicPlayer.SetPositionF(player.progressMsF / 1000)
-	}
-
 	player.updateMain(delta)
 
 	if player.progressMsF >= player.MapEnd {
@@ -537,8 +543,8 @@ func (player *Player) updateMain(delta float64) {
 	if player.progressMsF >= player.startPoint && !player.start {
 		player.musicPlayer.Play()
 
-		if ov, ok := player.overlay.(*overlays.ScoreOverlay); ok {
-			ov.SetMusic(player.musicPlayer)
+		if player.overlay != nil {
+			player.overlay.SetMusic(player.musicPlayer)
 		}
 
 		player.musicPlayer.SetPosition(player.startPoint / 1000)
@@ -664,8 +670,10 @@ func (player *Player) Draw(float64) {
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
 
-	if player.start {
-		settings.Cursor.Colors.Update(timMs)
+	if player.progressMsF > 0 {
+		timeDiff := player.progressMsF - player.lastProgressMsF
+		settings.Cursor.Colors.Update(timeDiff)
+		player.lastProgressMsF = player.progressMsF
 	}
 
 	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(player.controller.GetCursors()), player.Scl, player.cursorGlider.GetValue())
@@ -703,7 +711,9 @@ func (player *Player) Draw(float64) {
 		scale2 = 1
 	}
 
-	if settings.Playfield.Bloom.Enabled {
+	bloomEnabled := settings.Playfield.Bloom.Enabled
+
+	if bloomEnabled {
 		player.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		player.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
 		player.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.Bloom.BloomBeatAddition*(player.Scl-1.0)/(settings.Audio.BeatScale*0.4))
@@ -769,7 +779,7 @@ func (player *Player) Draw(float64) {
 		player.drawHUD(cursorColors)
 	}
 
-	if settings.Playfield.Bloom.Enabled {
+	if bloomEnabled {
 		player.bloomEffect.EndAndRender()
 	}
 
@@ -831,11 +841,11 @@ func (player *Player) drawDebug() {
 
 		drawShadowed := func(right bool, pos float64, text string) {
 			pX := 0.0
-			origin := bmath.Origin.BottomLeft
+			origin := vector.BottomLeft
 
 			if right {
 				pX = player.ScaledWidth
-				origin = bmath.Origin.BottomRight
+				origin = vector.BottomRight
 			}
 
 			pY := player.ScaledHeight - (size+padDown)*pos - padDown
@@ -854,10 +864,10 @@ func (player *Player) drawDebug() {
 
 		if settings.DEBUG {
 			player.batch.SetColor(0, 0, 0, 1)
-			player.font.DrawOrigin(player.batch, size*1.5*0.1, padDown+size*1.5*0.1, bmath.Origin.TopLeft, size*1.5, false, player.mapFullName)
+			player.font.DrawOrigin(player.batch, size*1.5*0.1, padDown+size*1.5*0.1, vector.TopLeft, size*1.5, false, player.mapFullName)
 
 			player.batch.SetColor(1, 1, 1, 1)
-			player.font.DrawOrigin(player.batch, 0, padDown, bmath.Origin.TopLeft, size*1.5, false, player.mapFullName)
+			player.font.DrawOrigin(player.batch, 0, padDown, vector.TopLeft, size*1.5, false, player.mapFullName)
 
 			type tx struct {
 				pos  float64
@@ -868,7 +878,7 @@ func (player *Player) drawDebug() {
 
 			drawWithBackground := func(pos float64, text string) {
 				width := player.font.GetWidthMonospaced(size, text)
-				player.batch.DrawStObject(vector.NewVec2d(0, (size+padDown)*pos), bmath.Origin.CentreLeft, vector.NewVec2d(width, size+padDown), false, false, 0, color2.NewLA(0, 0.8), false, graphics.Pixel.GetRegion())
+				player.batch.DrawStObject(vector.NewVec2d(0, (size+padDown)*pos), vector.CentreLeft, vector.NewVec2d(width, size+padDown), false, false, 0, color2.NewLA(0, 0.8), false, graphics.Pixel.GetRegion())
 
 				queue = append(queue, tx{pos, text})
 			}
@@ -900,7 +910,7 @@ func (player *Player) drawDebug() {
 			player.batch.ResetTransform()
 
 			for _, t := range queue {
-				player.font.DrawOrigin(player.batch, 0, (size+padDown)*t.pos, bmath.Origin.CentreLeft, size, true, t.text)
+				player.font.DrawOrigin(player.batch, 0, (size+padDown)*t.pos, vector.CentreLeft, size, true, t.text)
 			}
 
 			currentTime := int(player.musicPlayer.GetPosition())

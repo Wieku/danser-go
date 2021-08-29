@@ -2,7 +2,6 @@ package play
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -76,7 +75,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 				fadeOut := 500 + 700*rand.Float64()
 				direction := vector.NewVec2dRad(rand.Float64()*2*math.Pi, rand.Float64()*35)
 
-				sp := sprite.NewSpriteSingle(particleTex, float64(time), position, bmath.Origin.Centre)
+				sp := sprite.NewSpriteSingle(particleTex, float64(time), position, vector.Centre)
 				sp.SetAdditive(true)
 				sp.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(time), float64(time)+fadeOut, 1.0, 0.0))
 				sp.AddTransform(animation.NewVectorTransformV(animation.Move, easing.OutQuad, float64(time), float64(time)+fadeOut, position, position.Add(direction)))
@@ -89,7 +88,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 		}
 	}
 
-	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, float64(time)+1, position, bmath.Origin.Centre)
+	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, float64(time)+1, position, vector.Centre)
 
 	fadeIn := float64(time + difficulty.ResultFadeIn)
 	if particles {

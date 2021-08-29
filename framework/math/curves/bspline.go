@@ -4,30 +4,44 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
-type BSpline struct {
-	points       []vector.Vector2f
-	timing       []float32
-	subPoints    []vector.Vector2f
-	path         []*Bezier
-	ApproxLength float32
+// NewBSpline creates a spline that goes through all given control points.
+// points[1] and points[len(points)-2] are terminal tangents.
+func NewBSpline(points []vector.Vector2f) *Spline {
+	beziers := SolveBSpline(points)
+	beziersC := make([]Curve, len(beziers))
+
+	for i, b := range beziers {
+		b.CalculateLength()
+		beziersC[i] = b
+	}
+
+	return NewSpline(beziersC)
 }
 
-func NewBSpline(points1 []vector.Vector2f, timing []int64) *BSpline {
+// NewBSplineW creates a spline that goes through all given control points with forced weights(lengths), useful when control points have to be passed at certain times.
+// points[1] and points[len(points)-2] are terminal tangents.
+func NewBSplineW(points []vector.Vector2f, weights []float32) *Spline {
+	beziers := SolveBSpline(points)
+	beziersC := make([]Curve, len(beziers))
 
+	for i, b := range beziers {
+		beziersC[i] = b
+	}
+
+	return NewSplineW(beziersC, weights)
+}
+
+// SolveBSpline calculates the spline that goes through all given control points.
+// points[1] and points[len(points)-2] are terminal tangents
+// Returns an array of bezier curves in NA (non-approximated) version for performance considerations.
+func SolveBSpline(points1 []vector.Vector2f) []*Bezier {
 	pointsLen := len(points1)
 
-	points := make([]vector.Vector2f, 0)
+	points := make([]vector.Vector2f, 0, pointsLen)
 
 	points = append(points, points1[0])
 	points = append(points, points1[2:pointsLen-2]...)
 	points = append(points, points1[pointsLen-1], points1[1], points1[pointsLen-2])
-
-	newTiming := make([]float32, len(timing))
-	for i := range newTiming {
-		newTiming[i] = float32(timing[i] - timing[0])
-	}
-
-	spline := &BSpline{points: points, timing: newTiming}
 
 	n := len(points) - 2
 
@@ -47,73 +61,20 @@ func NewBSpline(points1 []vector.Vector2f, timing []int64) *BSpline {
 
 	for i := n - 2; i > 0; i-- {
 		d[i] = A[i].Add(d[i+1].Scl(Bi[i]))
-
 	}
 
-	converted := make([]float32, len(timing))
-
-	for i, time := range timing {
-		if i > 0 {
-			converted[i-1] = float32(time - timing[i-1])
-		}
-	}
-
-	firstMul := float32(1.0)
-	if converted[0] > 600 {
-		firstMul = converted[0] / 2
-	}
-
-	secondMul := float32(1.0)
-
-	spline.subPoints = append(spline.subPoints, points[0], points[0].Add(d[0].SclOrDenorm(firstMul)))
+	bezierPoints := []vector.Vector2f{points[0], points[0].Add(d[0])}
 
 	for i := 1; i < n-1; i++ {
-		if converted[i] > 600 {
-			secondMul = converted[i] / 2
-		} else {
-			secondMul = 1.0
-		}
-
-		spline.subPoints = append(spline.subPoints, points[i].Sub(d[i].SclOrDenorm(firstMul)), points[i], points[i].Add(d[i].SclOrDenorm(secondMul)))
-		firstMul = secondMul
+		bezierPoints = append(bezierPoints, points[i].Sub(d[i]), points[i], points[i].Add(d[i]))
 	}
 
-	spline.subPoints = append(spline.subPoints, points[len(points)-3].Sub(d[n-1].SclOrDenorm(firstMul)), points[len(points)-3])
+	bezierPoints = append(bezierPoints, points[n-1].Sub(d[n-1]), points[n-1])
 
-	spline.ApproxLength = spline.timing[len(spline.timing)-1]
-
-	for i := 0; i < len(spline.subPoints)-3; i += 3 {
-		c := NewBezierNA(spline.subPoints[i : i+4])
-		spline.path = append(spline.path, c)
+	var beziers []*Bezier
+	for i := 0; i < len(bezierPoints)-3; i += 3 {
+		beziers = append(beziers, NewBezierNA(bezierPoints[i:i+4]))
 	}
 
-	return spline
-}
-
-func (spline *BSpline) PointAt(t float32) vector.Vector2f {
-	desiredWidth := spline.ApproxLength * t
-
-	lineI := len(spline.timing) - 2
-
-	for i, k := range spline.timing[:len(spline.timing)-1] {
-		if k <= desiredWidth {
-			lineI = i
-		}
-	}
-
-	line := spline.path[lineI]
-
-	return line.PointAt((desiredWidth - spline.timing[lineI]) / (spline.timing[lineI+1] - spline.timing[lineI]))
-}
-
-func (spline *BSpline) GetLength() float32 {
-	return spline.ApproxLength
-}
-
-func (spline *BSpline) GetStartAngle() float32 {
-	return spline.points[0].AngleRV(spline.PointAt(1.0 / spline.ApproxLength))
-}
-
-func (spline *BSpline) GetEndAngle() float32 {
-	return spline.points[len(spline.points)-1].AngleRV(spline.PointAt((spline.ApproxLength - 1) / spline.ApproxLength))
+	return beziers
 }

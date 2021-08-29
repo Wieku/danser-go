@@ -19,15 +19,17 @@ type GenericScheduler struct {
 	mover    movers.MultiPointMover
 	lastTime float64
 	input    *input.NaturalInputProcessor
-	mods     difficulty.Modifier
+	diff     *difficulty.Difficulty
+	index    int
+	id       int
 }
 
-func NewGenericScheduler(mover func() movers.MultiPointMover) Scheduler {
-	return &GenericScheduler{mover: mover()}
+func NewGenericScheduler(mover func() movers.MultiPointMover, index, id int) Scheduler {
+	return &GenericScheduler{mover: mover(), index: index, id: id}
 }
 
-func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficulty.Modifier, cursor *graphics.Cursor, spinnerMoverCtor func() spinners.SpinnerMover, initKeys bool) {
-	scheduler.mods = mods
+func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficulty.Difficulty, cursor *graphics.Cursor, spinnerMoverCtor func() spinners.SpinnerMover, initKeys bool) {
+	scheduler.diff = diff
 	scheduler.cursor = cursor
 	scheduler.queue = objs
 
@@ -35,17 +37,19 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 		scheduler.input = input.NewNaturalInputProcessor(objs, cursor)
 	}
 
-	scheduler.mover.Reset(mods)
+	scheduler.mover.Reset(diff, scheduler.id)
+
+	config := settings.CursorDance.Movers[scheduler.index%len(settings.CursorDance.Movers)]
 
 	// Slider dance / random slider dance resolving
 	for i := 0; i < len(scheduler.queue); i++ {
-		scheduler.queue = PreprocessQueue(i, scheduler.queue, (settings.Dance.SliderDance && !settings.Dance.RandomSliderDance) || (settings.Dance.RandomSliderDance && rand.Intn(2) == 0))
+		scheduler.queue = PreprocessQueue(i, scheduler.queue, (config.SliderDance && !config.RandomSliderDance) || (config.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
 	// Convert spinners to pseudo spinners that have beginning and ending angles, simplifies mover codes as well
 	for i := 0; i < len(scheduler.queue); i++ {
 		if s, ok := scheduler.queue[i].(*objects.Spinner); ok {
-			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor)
+			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor, scheduler.index)
 		}
 	}
 
@@ -61,7 +65,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 			p := scheduler.queue[i-1]
 			c := scheduler.queue[i]
 
-			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
+			if p.GetStackedEndPositionMod(diff.Mods).Dst(c.GetStackedStartPositionMod(diff.Mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
 				remove = true
 			}
 		}
@@ -70,7 +74,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, mods difficul
 			p := scheduler.queue[i]
 			c := scheduler.queue[i+1]
 
-			if p.GetStackedEndPositionMod(mods).Dst(c.GetStackedStartPositionMod(mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
+			if p.GetStackedEndPositionMod(diff.Mods).Dst(c.GetStackedStartPositionMod(diff.Mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
 				remove = true
 			}
 		}
@@ -103,13 +107,15 @@ func (scheduler *GenericScheduler) Update(time float64) {
 
 			lastEndTime = math.Max(lastEndTime, g.GetEndTime())
 
-			if time <= g.GetEndTime() {
+			if scheduler.lastTime <= g.GetStartTime() || time <= g.GetEndTime() {
 				if scheduler.lastTime <= g.GetStartTime() { // brief movement lock for ExGon mover
 					useMover = false
 				}
 
-				scheduler.cursor.SetPos(g.GetStackedPositionAtMod(time, scheduler.mods))
-			} else {
+				scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
+			}
+
+			if time > g.GetEndTime() {
 				upperLimit := len(scheduler.queue)
 
 				for j := i; j < len(scheduler.queue); j++ {

@@ -69,6 +69,7 @@ type osuRenderer struct {
 	manager     *sprite.SpriteManager
 	currentTime float64
 	sixtyDelta  float64
+	firstTime   bool
 }
 
 func newOsuRenderer() *osuRenderer {
@@ -109,16 +110,16 @@ func newOsuRenderer() *osuRenderer {
 
 	vao.Attach(osuShader)
 
-	cursor := &osuRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3)}
+	cursor := &osuRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3), firstTime: true}
 	cursor.vecSize = 3
 
 	cursor.trail = skin.GetTexture("cursortrail")
 
 	cursorTexture := skin.GetTexture("cursor")
 
-	origin := bmath.Origin.Centre
+	origin := vector.Centre
 	if !skin.GetInfo().CursorCentre {
-		origin = bmath.Origin.TopLeft
+		origin = vector.TopLeft
 	}
 
 	cursor.cursor = sprite.NewSpriteSingle(cursorTexture, 0, vector.NewVec2d(0, 0), origin)
@@ -129,7 +130,18 @@ func newOsuRenderer() *osuRenderer {
 	return cursor
 }
 
-func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
+func (cursor *osuRenderer) SetPosition(position vector.Vector2f) {
+	cursor.Position = position
+
+	if cursor.firstTime {
+		cursor.LastPos = position
+		cursor.VaoPos = position
+
+		cursor.firstTime = false
+	}
+}
+
+func (cursor *osuRenderer) Update(delta float64) {
 	dirtyLocal := false
 
 	cursor.clock += delta / 100
@@ -147,15 +159,13 @@ func (cursor *osuRenderer) Update(delta float64, position vector.Vector2f) {
 	cursor.currentTime = cursor.clock * 100
 	cursor.manager.Update(cursor.currentTime)
 
-	cursor.Position = position
-
 	if cursor.middle.Textures[0] == nil && !settings.Skin.Cursor.ForceLongTrail {
 		cursor.VaoPos = cursor.Position
 		cursor.RendPos = cursor.Position
 
 		cursor.sixtyDelta += delta
 		if cursor.sixtyDelta >= 16.6667 {
-			spr := sprite.NewSpriteSingle(cursor.trail, cursor.currentTime, cursor.Position.Copy64(), bmath.Origin.Centre)
+			spr := sprite.NewSpriteSingle(cursor.trail, cursor.currentTime, cursor.Position.Copy64(), vector.Centre)
 			spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.currentTime, cursor.currentTime+150, 1.0, 0.0))
 			spr.ResetValuesToTransforms()
 			spr.AdjustTimesToTransformations()

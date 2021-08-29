@@ -21,17 +21,25 @@ type Camera struct {
 	invProjectionView mgl32.Mat4
 
 	viewDirty bool
-	origin    vector.Vector2d
+
+	origin  vector.Vector2d
+	originV vector.Vector2d
+
 	position  vector.Vector2d
+	positionV vector.Vector2d
+
 	rotation  float64
-	scale     vector.Vector2d
+	rotationV float64
+
+	scale  vector.Vector2d
+	scaleV vector.Vector2d
 
 	rebuildCache bool
 	cache        []mgl32.Mat4
 }
 
 func NewCamera() *Camera {
-	return &Camera{scale: vector.NewVec2d(1, 1)}
+	return &Camera{scale: vector.NewVec2d(1, 1), scaleV: vector.NewVec2d(1, 1)}
 }
 
 func (camera *Camera) SetViewport(width, height int, yDown bool) {
@@ -52,6 +60,8 @@ func (camera *Camera) SetViewport(width, height int, yDown bool) {
 		camera.projection = mgl32.Ortho(camera.screenRect.MinX, camera.screenRect.MaxX, camera.screenRect.MinY, camera.screenRect.MaxY, -1, 1)
 	}
 
+	camera.resetValues()
+
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }
@@ -70,13 +80,20 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bo
 	}
 
 	camera.SetViewport(width, height, true)
-	camera.SetOrigin(vector.NewVec2d(OsuWidth/2, OsuHeight/2))
-	camera.SetPosition(vector.NewVec2d(settings.Playfield.ShiftX, shift).Scl(scl))
-	camera.SetScale(vector.NewVec2d(scl, scl))
+	camera.originV = vector.NewVec2d(OsuWidth/2, OsuHeight/2).Scl(-1)
+	camera.positionV = vector.NewVec2d(settings.Playfield.ShiftX, shift).Scl(scl)
+	camera.scaleV = vector.NewVec2d(scl, scl)
 	camera.Update()
 
 	camera.rebuildCache = true
 	camera.viewDirty = true
+}
+
+func (camera *Camera) resetValues() {
+	camera.originV = vector.NewVec2d(0, 0)
+	camera.positionV = vector.NewVec2d(0, 0)
+	camera.scaleV = vector.NewVec2d(1, 1)
+	camera.rotationV = 0
 }
 
 func (camera *Camera) SetViewportF(x, y, width, height int) {
@@ -86,26 +103,22 @@ func (camera *Camera) SetViewportF(x, y, width, height int) {
 	camera.screenRect.MaxY = float32(height)
 
 	camera.projection = mgl32.Ortho(camera.screenRect.MinX, camera.screenRect.MaxX, camera.screenRect.MinY, camera.screenRect.MaxY, 1, -1)
+
+	camera.resetValues()
+
 	camera.rebuildCache = true
 	camera.viewDirty = true
 }
 
 func (camera *Camera) calculateView() {
-	camera.view = mgl32.Translate3D(camera.position.X32(), camera.position.Y32(), 0).Mul4(mgl32.HomogRotate3DZ(float32(camera.rotation))).Mul4(mgl32.Scale3D(camera.scale.X32(), camera.scale.Y32(), 1)).Mul4(mgl32.Translate3D(camera.origin.X32(), camera.origin.Y32(), 0))
-}
-
-func (camera *Camera) SetPosition(pos vector.Vector2d) {
-	camera.position = pos
-	camera.viewDirty = true
+	camera.view = mgl32.Translate3D(camera.position.X32()+camera.positionV.X32(), camera.position.Y32()+camera.positionV.Y32(), 0).
+		Mul4(mgl32.HomogRotate3DZ(float32(camera.rotation + camera.rotationV))).
+		Mul4(mgl32.Scale3D(camera.scale.X32()*camera.scaleV.X32(), camera.scale.Y32()*camera.scaleV.Y32(), 1)).
+		Mul4(mgl32.Translate3D(camera.origin.X32()+camera.originV.X32(), camera.origin.Y32()+camera.originV.Y32(), 0))
 }
 
 func (camera *Camera) SetOrigin(pos vector.Vector2d) {
 	camera.origin = pos.Scl(-1)
-	camera.viewDirty = true
-}
-
-func (camera *Camera) SetScale(scale vector.Vector2d) {
-	camera.scale = scale
 	camera.viewDirty = true
 }
 
@@ -121,6 +134,16 @@ func (camera *Camera) Rotate(rad float64) {
 
 func (camera *Camera) Translate(pos vector.Vector2d) {
 	camera.position = camera.position.Add(pos)
+	camera.viewDirty = true
+}
+
+func (camera *Camera) SetPosition(pos vector.Vector2d) {
+	camera.position = pos
+	camera.viewDirty = true
+}
+
+func (camera *Camera) SetScale(scale vector.Vector2d) {
+	camera.scale = scale
 	camera.viewDirty = true
 }
 
@@ -146,12 +169,13 @@ func (camera *Camera) GenRotated(rotations int, rotOffset float64) []mgl32.Mat4 
 			camera.cache = make([]mgl32.Mat4, rotations)
 		}
 
-		pos := mgl32.Translate3D(camera.position.X32(), camera.position.Y32(), 0)
-		view := mgl32.HomogRotate3DZ(float32(camera.rotation)).Mul4(mgl32.Scale3D(camera.scale.X32(), camera.scale.Y32(), 1)).Mul4(mgl32.Translate3D(camera.origin.X32(), camera.origin.Y32(), 0))
+		pos := mgl32.Translate3D(camera.position.X32()+camera.positionV.X32(), camera.position.Y32()+camera.positionV.Y32(), 0)
+		view := mgl32.HomogRotate3DZ(float32(camera.rotation + camera.rotationV)).Mul4(mgl32.Scale3D(camera.scale.X32()*camera.scaleV.X32(), camera.scale.Y32()*camera.scaleV.Y32(), 1)).Mul4(mgl32.Translate3D(camera.origin.X32()+camera.originV.X32(), camera.origin.Y32()+camera.originV.Y32(), 0))
 
 		for i := 0; i < rotations; i++ {
 			camera.cache[i] = camera.projection.Mul4(pos).Mul4(mgl32.HomogRotate3DZ(float32(i) * float32(rotOffset))).Mul4(view)
 		}
+
 		camera.rebuildCache = false
 	}
 

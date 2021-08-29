@@ -17,6 +17,7 @@ func initAudio() *audio {
 			BassPlaybackBufferLength: 100,
 			BassDeviceBufferLength:   10,
 			BassUpdatePeriod:         5,
+			BassDeviceUpdatePeriod:   10,
 		},
 	}
 }
@@ -38,4 +39,5 @@ type nonWindows struct {
 	BassPlaybackBufferLength int64
 	BassDeviceBufferLength   int64
 	BassUpdatePeriod         int64
+	BassDeviceUpdatePeriod   int64
 }

@@ -3,7 +3,6 @@ package play
 import (
 	"fmt"
 	"github.com/faiface/mainthread"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
@@ -71,7 +70,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		ruleset:     ruleset,
 	}
 
-	bg := sprite.NewSpriteSingle(nil, -1, vector.NewVec2d(panel.ScaledWidth, 768).Scl(0.5), bmath.Origin.Centre)
+	bg := sprite.NewSpriteSingle(nil, -1, vector.NewVec2d(panel.ScaledWidth, 768).Scl(0.5), vector.Centre)
 	bg.SetColor(color.NewL(0.75))
 
 	go func() {
@@ -123,22 +122,22 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		rRPos = vector.NewVec2d(panel.ScaledWidth-192, 272)
 	}
 
-	rPanel := sprite.NewSpriteSingle(skin.GetTexture("ranking-panel"), 1, rPPos, bmath.Origin.TopLeft)
-	rGraph := sprite.NewSpriteSingle(skin.GetTexture("ranking-graph"), 2, rGPos, bmath.Origin.TopLeft)
-	rAcc := sprite.NewSpriteSingle(skin.GetTexture("ranking-accuracy"), 3, rAPos, bmath.Origin.TopLeft)
-	rCombo := sprite.NewSpriteSingle(skin.GetTexture("ranking-maxcombo"), 4, rCPos, bmath.Origin.TopLeft)
+	rPanel := sprite.NewSpriteSingle(skin.GetTexture("ranking-panel"), 1, rPPos, vector.TopLeft)
+	rGraph := sprite.NewSpriteSingle(skin.GetTexture("ranking-graph"), 2, rGPos, vector.TopLeft)
+	rAcc := sprite.NewSpriteSingle(skin.GetTexture("ranking-accuracy"), 3, rAPos, vector.TopLeft)
+	rCombo := sprite.NewSpriteSingle(skin.GetTexture("ranking-maxcombo"), 4, rCPos, vector.TopLeft)
 
 	accuracy, maxCombo, score, grade := panel.ruleset.GetResults(panel.cursor)
 
-	panel.gradeS = sprite.NewSpriteSingle(getTexture(grade), 5, rRPos, bmath.Origin.Centre)
+	panel.gradeS = sprite.NewSpriteSingle(getTexture(grade), 5, rRPos, vector.Centre)
 
 	p := graphics.Pixel.GetRegion()
-	rTop := sprite.NewSpriteSingle(&p, 999, vector.NewVec2d(0, 0), bmath.Origin.TopLeft)
+	rTop := sprite.NewSpriteSingle(&p, 999, vector.NewVec2d(0, 0), vector.TopLeft)
 	rTop.SetScaleV(vector.NewVec2d(panel.ScaledWidth, 96))
 	rTop.SetColor(color.NewL(0))
 	rTop.SetAlpha(0.8)
 
-	rTitle := sprite.NewSpriteSingle(skin.GetTexture("ranking-title"), 1000, vector.NewVec2d(panel.ScaledWidth-32, 0), bmath.Origin.TopRight)
+	rTitle := sprite.NewSpriteSingle(skin.GetTexture("ranking-title"), 1000, vector.NewVec2d(panel.ScaledWidth-32, 0), vector.TopRight)
 
 	panel.manager.Add(bg)
 	panel.manager.Add(rPanel)
@@ -169,7 +168,13 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 
 	panel.beatmapName = fmt.Sprintf("%s - %s [%s]", bMap.Artist, bMap.Name, bMap.Difficulty)
 	panel.beatmapCreator = fmt.Sprintf("Beatmap by %s", bMap.Creator)
-	panel.playedBy = fmt.Sprintf("Played by %s on %s", panel.cursor.Name, panel.cursor.ScoreTime.Format("2006-01-02 15:04:05"))
+
+	scoreTime := panel.cursor.ScoreTime
+	if settings.Gameplay.ResultsUseLocalTimeZone {
+		scoreTime = scoreTime.Local()
+	}
+
+	panel.playedBy = fmt.Sprintf("Played by %s on %s", panel.cursor.Name, scoreTime.Format("2006-01-02 15:04:05 MST"))
 
 	panel.score = fmt.Sprintf("%08d", score)
 	panel.maxCombo = fmt.Sprintf("%dx", maxCombo)
@@ -191,7 +196,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 			pPos = vector.NewVec2d(416, 688)
 		}
 
-		panel.perfect = sprite.NewSpriteSingle(skin.GetTexture("ranking-perfect"), 0, pPos, bmath.Origin.Centre)
+		panel.perfect = sprite.NewSpriteSingle(skin.GetTexture("ranking-perfect"), 0, pPos, vector.Centre)
 	}
 
 	stats := "Accuracy:\n"
@@ -220,7 +225,7 @@ func (panel *RankingPanel) loadMods() {
 	for i, s := range mods {
 		modSpriteName := "selection-mod-" + strings.ToLower(s)
 
-		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), bmath.Origin.Centre)
+		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
 
 		panel.manager.Add(mod)
 
@@ -251,12 +256,12 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	prevOverlap := fnt.Overlap
 	fnt.Overlap = -2
-	fnt.DrawOrigin(batch, 220/0.625, 94/0.625, bmath.Origin.Centre, fnt.GetSize()*1.3, true, panel.score)
+	fnt.DrawOrigin(batch, 220/0.625, 94/0.625, vector.Centre, fnt.GetSize()*1.3, true, panel.score)
 
 	fnt.Overlap = prevOverlap
 
-	fnt.DrawOrigin(batch, text1-65/0.625, row4+10/0.625, bmath.Origin.TopLeft, fnt.GetSize()*1.12, false, panel.maxCombo)
-	fnt.DrawOrigin(batch, text2-86/0.625, row4+10/0.625, bmath.Origin.TopLeft, fnt.GetSize()*1.12, false, panel.accuracy)
+	fnt.DrawOrigin(batch, text1-65/0.625, row4+10/0.625, vector.TopLeft, fnt.GetSize()*1.12, false, panel.maxCombo)
+	fnt.DrawOrigin(batch, text2-86/0.625, row4+10/0.625, vector.TopLeft, fnt.GetSize()*1.12, false, panel.accuracy)
 
 	fnt2 := font.GetFont("Ubuntu Regular")
 
@@ -277,9 +282,9 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 		ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", pp)
 
 		batch.SetColor(0, 0, 0, alpha*0.5)
-		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, bmath.Origin.Centre, 61, false, ppText)
+		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, vector.Centre, 61, false, ppText)
 		batch.SetColor(1, 1, 1, alpha)
-		fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, bmath.Origin.Centre, 61, false, ppText)
+		fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, vector.Centre, 61, false, ppText)
 	}
 
 	if panel.shapeRenderer == nil {
@@ -351,7 +356,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	panel.shapeRenderer.End()
 
 	for i, s := range panel.stats {
-		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+6, bmath.Origin.TopLeft, 12, false, s)
+		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+6, vector.TopLeft, 12, false, s)
 	}
 }
 

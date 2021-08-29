@@ -10,50 +10,61 @@ import (
 )
 
 type ExGonMover struct {
+	*basicMover
+
 	wasFirst bool
 	rand     *rand.Rand
+
+	endPos vector.Vector2f
 
 	lastPos  vector.Vector2f
 	nextTime float64
 
-	endTime float64
-	mods    difficulty.Modifier
+	delay   float64
 }
 
 func NewExGonMover() MultiPointMover {
-	return &ExGonMover{}
+	return &ExGonMover{basicMover: &basicMover{}}
 }
 
-func (bm *ExGonMover) Reset(mods difficulty.Modifier) {
-	bm.mods = mods
-	bm.wasFirst = false
+func (mover *ExGonMover) Reset(diff *difficulty.Difficulty, id int) {
+	mover.basicMover.Reset(diff, id)
+	mover.wasFirst = false
 }
 
-func (bm *ExGonMover) SetObjects(objs []objects.IHitObject) int {
-	if !bm.wasFirst {
-		bm.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + int64(objs[1].GetStartTime())))
+func (mover *ExGonMover) SetObjects(objs []objects.IHitObject) int {
+	config := settings.CursorDance.MoverSettings.ExGon[mover.id%len(settings.CursorDance.MoverSettings.ExGon)]
+	mover.delay = float64(config.Delay)
 
-		bm.wasFirst = true
+	if !mover.wasFirst {
+		mover.rand = rand.New(rand.NewSource((int64(objs[1].GetStartPosition().X)+1000*int64(objs[1].GetStartPosition().Y))*100 + int64(objs[1].GetStartTime())))
+
+		mover.wasFirst = true
 	}
 
-	prev, next := objs[0], objs[1]
+	start, end := objs[0], objs[1]
 
-	bm.nextTime = prev.GetEndTime() + float64(settings.Dance.ExGon.Delay)
-	bm.endTime = next.GetStartTime()
+	mover.nextTime = start.GetEndTime() + mover.delay
+
+	mover.startTime = start.GetStartTime()
+	mover.endTime = end.GetStartTime()
+
+	mover.lastPos = start.GetStackedEndPositionMod(mover.diff.Mods)
+	mover.endPos = end.GetStackedStartPositionMod(mover.diff.Mods)
 
 	return 2
 }
 
-func (bm *ExGonMover) Update(time float64) vector.Vector2f {
-	if time >= bm.nextTime {
-		bm.nextTime += float64(settings.Dance.ExGon.Delay)
-
-		bm.lastPos = vector.NewVec2f(568, 426).Mult(vector.NewVec2f(float32(easing.InOutCubic(bm.rand.Float64())), float32(easing.InOutCubic(bm.rand.Float64())))).SubS(28, 21)
+func (mover *ExGonMover) Update(time float64) vector.Vector2f {
+	if mover.endTime - time < mover.delay {
+		return mover.endPos
 	}
 
-	return bm.lastPos
-}
+	if time >= mover.nextTime {
+		mover.nextTime += mover.delay
 
-func (bm *ExGonMover) GetEndTime() float64 {
-	return bm.endTime
+		mover.lastPos = vector.NewVec2f(568, 426).Mult(vector.NewVec2f(float32(easing.InOutCubic(mover.rand.Float64())), float32(easing.InOutCubic(mover.rand.Float64())))).SubS(28, 21)
+	}
+
+	return mover.lastPos
 }

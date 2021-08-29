@@ -29,6 +29,7 @@ const (
 	BaseHits  = Hit50 | Hit100 | Hit300
 	BaseHitsM = BaseHits | Miss
 	HitValues = Hit50 | Hit100 | Hit300 | GekiAddition | KatuAddition
+	RawHits = SliderStart | SliderPoint | SliderRepeat | SliderEnd | SpinnerSpin | SpinnerPoints | SpinnerBonus
 )
 
 func (r HitResult) ScoreValue() int64 {

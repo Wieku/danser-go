@@ -6,7 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/framework/util"
+	"github.com/wieku/danser-go/framework/files"
 	"math"
 	"os"
 	"path/filepath"
@@ -149,7 +149,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
@@ -214,6 +214,8 @@ func ParseBeatMap(beatMap *BeatMap) error {
 		}
 	}
 
+	beatMap.FinalizePoints()
+
 	file.Seek(0, 0)
 
 	if beatMap.Name+beatMap.Artist+beatMap.Creator == "" || counter == 0 {
@@ -250,7 +252,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 
@@ -274,6 +276,8 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 			}
 		}
 	}
+
+	beatMap.FinalizePoints()
 }
 
 func ParseObjects(beatMap *BeatMap) {
@@ -284,7 +288,7 @@ func ParseObjects(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := util.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScannerBuf(file, bufferSize)
 
 	var currentSection string
 

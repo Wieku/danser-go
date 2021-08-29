@@ -1,7 +1,6 @@
 package play
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -38,7 +37,7 @@ type HpBar struct {
 func NewHpBar() *HpBar {
 	hpBar := new(HpBar)
 
-	hpBar.healthBackground = sprite.NewSpriteSingle(skin.GetTexture("scorebar-bg"), 0, vector.NewVec2d(0, 0), bmath.Origin.TopLeft)
+	hpBar.healthBackground = sprite.NewSpriteSingle(skin.GetTexture("scorebar-bg"), 0, vector.NewVec2d(0, 0), vector.TopLeft)
 	barTextures := skin.GetFrames("scorebar-colour", true) //nolint:misspell
 
 	pos := vector.NewVec2d(4.8, 16)
@@ -64,10 +63,10 @@ func NewHpBar() *HpBar {
 
 	hpBar.hpBasePosition = pos
 
-	hpBar.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, bmath.Origin.TopLeft)
-	hpBar.healthBar.SetCutOrigin(bmath.Origin.CentreLeft)
+	hpBar.healthBar = sprite.NewAnimation(barTextures, skin.GetInfo().GetFrameTime(len(barTextures)), true, 0.0, pos, vector.TopLeft)
+	hpBar.healthBar.SetCutOrigin(vector.CentreLeft)
 
-	hpBar.kiIcon = sprite.NewSpriteSingle(nil, 0.0, vector.NewVec2d(0, 0), bmath.Origin.Centre)
+	hpBar.kiIcon = sprite.NewSpriteSingle(nil, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 
 	hpBar.hpSlide = animation.NewGlider(0)
 	hpBar.hpFade = animation.NewGlider(1)
@@ -168,7 +167,7 @@ func (hpBar *HpBar) SetHp(hp float64) {
 		hpBar.kiIcon.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, hpBar.lastTime, hpBar.lastTime+150, 1.2, 0.8))
 
 		if hpBar.currentHp > 0.9 {
-			eIcon := sprite.NewSpriteSingle(hpBar.kiNormal, 0.0, hpBar.kiIcon.GetPosition(), bmath.Origin.Centre)
+			eIcon := sprite.NewSpriteSingle(hpBar.kiNormal, 0.0, hpBar.kiIcon.GetPosition(), vector.Centre)
 			eIcon.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, hpBar.lastTime, hpBar.lastTime+120, 1, 2))
 			eIcon.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, hpBar.lastTime, hpBar.lastTime+120, 0.5, 0))
 			eIcon.SetAdditive(true)

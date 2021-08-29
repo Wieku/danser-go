@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
@@ -13,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"sort"
@@ -84,7 +84,7 @@ func (container *HitObjectContainer) createFollowPoints() {
 
 			pos := prevPos.Add(vec.Scl(t))
 
-			followPoint := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, bmath.Origin.Centre)
+			followPoint := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, vector.Centre)
 			followPoint.SetRotation(rotation)
 			followPoint.SetAlpha(0)
 			followPoint.ShowForever(false)
