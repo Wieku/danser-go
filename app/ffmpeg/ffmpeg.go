@@ -135,7 +135,7 @@ func preCheck() {
 }
 
 func StartFFmpeg(fps, _w, _h int, audioFPS float64, _output string) {
-	if strings.TrimSpace(output) == "" {
+	if strings.TrimSpace(_output) == "" {
 		_output = "danser_" + time.Now().Format("2006-01-02_15-04-05")
 	}
 
