@@ -260,6 +260,7 @@ func startVideo(fps int) {
 }
 
 func startAudio(audioFPS float64) {
+	split := strings.Split(settings.Recording.AudioOptions, " ")
 	var err error
 
 	audioPipe, err = files.NewNamedPipe("")
@@ -289,6 +290,7 @@ func startAudio(audioFPS float64) {
 		"-c:a", settings.Recording.AudioCodec,
 		"-ab", settings.Recording.AudioBitrate,
 	)
+	if settings.Recording.AudioOptions != "" {options = append(options, split...)}
 
 	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container))
 
