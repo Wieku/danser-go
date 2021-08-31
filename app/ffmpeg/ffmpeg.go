@@ -286,11 +286,10 @@ func startAudio(audioFPS float64) {
 		options = append(options, "-af", audioFilters)
 	}
 
-	options = append(options,
-		"-c:a", settings.Recording.AudioCodec,
-		"-ab", settings.Recording.AudioBitrate,
-	)
-	if settings.Recording.AudioOptions != "" {options = append(options, split...)}
+	options = append(options, "-c:a", settings.Recording.AudioCodec)
+	if settings.Recording.AudioOptions != "" {
+		options = append(options, split...)
+	}
 
 	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container))
 

@@ -15,8 +15,7 @@ func initRecording() *recording {
 		PixelFormat:    "yuv420p",
 		Filters:        "",
 		AudioCodec:     "aac",
-		AudioOptions:   "",
-		AudioBitrate:   "320k",
+		AudioOptions:   "-b:a 320k",
 		AudioFilters:   "",
 		OutputDir:      "videos",
 		Container:      "mp4",
@@ -47,7 +46,6 @@ type recording struct {
 	Filters        string
 	AudioCodec     string
 	AudioOptions   string
-	AudioBitrate   string
 	AudioFilters   string
 	OutputDir      string
 	Container      string
