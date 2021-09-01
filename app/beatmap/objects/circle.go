@@ -226,6 +226,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		}
 	}
 
+	//preload the font
 	skin.GetFont("default")
 }
 
@@ -249,6 +250,7 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 		circle.hitCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
 		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
 		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
+
 		if skin.GetInfo().Version < 2 {
 			circle.textScale.AddEventSEase(startTime, endTime, 1.0, endScale, easing.OutQuad)
 		}
@@ -314,8 +316,9 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 
 		if !circle.SliderPoint || circle.SliderPointStart {
 			if settings.DIVIDES < 2 && settings.Objects.DrawComboNumbers {
-				fnt := skin.GetFont("default")
 				batch.SetColor(1, 1, 1, alpha*circle.textFade.GetValue())
+
+				fnt := skin.GetFont("default")
 				fnt.DrawOriginV(batch, circle.hitCircle.GetPosition(), vector.Centre, 0.8*fnt.GetSize()*circle.textScale.GetValue(), false, strconv.Itoa(int(circle.ComboNumber)))
 			}
 		} else if !circle.SliderPointEnd {
@@ -329,6 +332,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 		batch.SetSubScale(1, 1)
 		batch.SetTranslation(position.Copy64())
 		batch.SetColor(1, 1, 1, alpha)
+
 		if skin.GetInfo().HitCircleOverlayAboveNumber {
 			circle.hitCircleOverlay.Draw(time, batch)
 		}
@@ -340,6 +344,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	if time >= circle.StartTime && circle.hitCircle.GetAlpha() <= 0.001 {
 		return true
 	}
+
 	return false
 }
 
