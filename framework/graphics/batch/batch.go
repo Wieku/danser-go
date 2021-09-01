@@ -337,7 +337,7 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 	posX := float32(position.X + batch.position.X)
 	posY := float32(position.Y + batch.position.Y)
 
-	rot := float32(math.Mod(rotation, math.Pi*2))
+	rot := float32(math.Mod(rotation + batch.rotation, math.Pi*2))
 
 	u1 := texture.U1
 	u2 := texture.U2
