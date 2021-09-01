@@ -235,9 +235,9 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
 		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, 1.4))
 
-		circle.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
-		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
-		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, startTime, endTime, 1.0, 0.0))
+		circle.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
+		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
+		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
 		circle.textFade.AddEventS(startTime, startTime+60, 1.0, 0.0)
 	} else {
 		endTime := startTime + 60
