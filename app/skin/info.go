@@ -71,7 +71,7 @@ func newDefaultInfo() *SkinInfo {
 	return &SkinInfo{
 		Name:                     "",
 		Author:                   "",
-		Version:                  2.7,
+		Version:                  latestVersion,
 		AnimationFramerate:       -1,
 		SpinnerFadePlayfield:     true,
 		SpinnerNoBlink:           false,
@@ -183,6 +183,8 @@ func LoadInfo(path string) (*SkinInfo, error) {
 
 	info := newDefaultInfo()
 
+	versionPresent := false
+
 	colorsI := make([]colorI, 0)
 
 	for scanner.Scan() {
@@ -205,6 +207,8 @@ func LoadInfo(path string) (*SkinInfo, error) {
 			} else {
 				info.Version = ParseFloat(tokenized[1], tokenized[0])
 			}
+
+			versionPresent = true
 		case "AnimationFramerate":
 			info.AnimationFramerate = ParseFloat(tokenized[1], tokenized[0])
 		case "SpinnerFadePlayfield":
@@ -260,6 +264,10 @@ func LoadInfo(path string) (*SkinInfo, error) {
 		case "ComboOverlap":
 			info.ComboOverlap = ParseFloat(tokenized[1], tokenized[0])
 		}
+	}
+
+	if !versionPresent {
+		info.Version = 1.0
 	}
 
 	if len(colorsI) > 0 {
