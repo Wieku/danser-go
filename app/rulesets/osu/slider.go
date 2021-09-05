@@ -72,6 +72,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	for _, player := range slider.players {
 		slider.fadeStartRelative = math.Min(slider.fadeStartRelative, player.diff.Preempt)
 		slider.state[player] = new(sliderstate)
+		slider.state[player].startResult = Miss
 
 		edgeNumber := 1
 
