@@ -68,7 +68,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
-	storyboard.pathCache = files2.NewFileMap(path)
+	storyboard.pathCache, _ = files2.NewFileMap(path)
 
 	var currentSection string
 	var currentSprite string
