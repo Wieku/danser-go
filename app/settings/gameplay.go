@@ -14,6 +14,17 @@ func initGameplay() *gameplay {
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
 		},
+		SpaceErrorMeter: &spaceError{
+			hudElement: &hudElement{
+				Show:    false,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XPosition: 1350,
+			YPosition: 650,
+			DotScale:  1,
+			Align:     "Right",
+		},
 		Score: &score{
 			hudElement: &hudElement{
 				Show:    true,
@@ -124,6 +135,7 @@ func initGameplay() *gameplay {
 
 type gameplay struct {
 	HitErrorMeter           *hitError
+	SpaceErrorMeter         *spaceError
 	Score                   *score
 	HpBar                   *hudElement
 	ComboCounter            *hudElement
@@ -165,6 +177,14 @@ type hitError struct {
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64
+}
+
+type spaceError struct {
+	*hudElement
+	XPosition float64
+	YPosition float64
+	DotScale  float64
+	Align     string
 }
 
 type score struct {
