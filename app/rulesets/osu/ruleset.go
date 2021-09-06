@@ -180,7 +180,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
-			log.Println("\tAim Stars:", star.Aim)
+			log.Println("\tAim Stars:  ", star.Aim)
 			log.Println("\tSpeed Stars:", star.Speed)
 			log.Println("\tTotal Stars:", star.Total)
 		}
@@ -405,13 +405,16 @@ func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
 }
 
 func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitObject, x, y float32, result HitResult, comboResult ComboResult) {
-	if result == Ignore {
+	number := src.GetNumber()
+	subSet := set.cursors[cursor]
+
+	if result == Ignore || result == PositionalMiss {
+		if result == PositionalMiss && set.hitListener != nil {
+			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.scoreProcessor.GetScore())
+		}
+
 		return
 	}
-
-	number := src.GetNumber()
-
-	subSet := set.cursors[cursor]
 
 	result = subSet.scoreProcessor.ModifyResult(result, src)
 	subSet.scoreProcessor.AddResult(result, comboResult)

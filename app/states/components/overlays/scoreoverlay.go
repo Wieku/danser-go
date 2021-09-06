@@ -287,14 +287,21 @@ func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number 
 	}
 
 	_, hC := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
-	allowCircle := hC && (result&osu.BaseHits > 0)
+	allowCircle := hC && (result&(osu.BaseHits|osu.PositionalMiss) > 0)
 	_, sl := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
-	allowSlider := sl && result == osu.SliderStart
+	allowSlider := sl && (result&(osu.SliderStart|osu.PositionalMiss)) > 0
 
 	if allowCircle || allowSlider {
-		timeDiff := float64(time) - overlay.ruleset.GetBeatMap().HitObjects[number].GetStartTime()
+		object := overlay.ruleset.GetBeatMap().HitObjects[number]
+		timeDiff := float64(time) - object.GetStartTime()
+
+		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
 
 		overlay.hitErrorMeter.Add(float64(time), timeDiff)
+	}
+
+	if result == osu.PositionalMiss {
+		return
 	}
 
 	if comboResult == osu.ComboResults.Increase {
