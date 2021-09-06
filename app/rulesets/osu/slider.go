@@ -160,7 +160,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	return state.isStartHit
 }
 
-func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
+func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool {
 	state := slider.state[player]
 
 	var sliderPosition vector.Vector2f
@@ -234,8 +234,8 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 		pointsPassed := 0
 
-		for _, point := range state.points {
-			if point.time > time {
+		for i, point := range state.points {
+			if point.time > time && !(i == len(state.points)-1 && processSliderEndsAhead && point.time-time == 1) {
 				break
 			}
 

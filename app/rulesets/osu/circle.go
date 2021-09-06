@@ -36,7 +36,7 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	}
 }
 
-func (circle *Circle) UpdateFor(_ *difficultyPlayer, _ int64) bool {
+func (circle *Circle) UpdateFor(_ *difficultyPlayer, _ int64, _ bool) bool {
 	return true
 }
 

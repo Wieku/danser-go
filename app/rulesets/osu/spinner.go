@@ -64,7 +64,7 @@ func (spinner *Spinner) UpdateClickFor(*difficultyPlayer, int64) bool {
 	return true
 }
 
-func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64) bool {
+func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) bool {
 	numFinishedTotal := 0
 
 	spinnerPosition := spinner.hitSpinner.GetStackedStartPosition()

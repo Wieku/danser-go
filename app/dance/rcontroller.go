@@ -395,7 +395,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 			if int64(nTime) != c.lastTime {
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
-				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
 				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
 			}
 
@@ -414,6 +414,11 @@ func (controller *ReplayController) updateMain(nTime float64) {
 				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= int64(nTime) {
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
+
+					processAhead := true
+					if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
+						processAhead = false
+					}
 
 					if !isAutopilot {
 						controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
@@ -439,7 +444,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					controller.cursors[i].SmokeKey = frame.KeyPressed.Smoke
 
 					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
-					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime)
+					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime, processAhead)
 
 					// New replays (after 20190506) scores object ends only on replay frame
 					if c.newHandling || c.replayIndex == len(c.frames)-1 {
@@ -484,7 +489,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 				controller.cursors[i].RightButton = false
 
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
-				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
 				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
 			}
 		}

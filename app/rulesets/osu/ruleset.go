@@ -62,7 +62,7 @@ func (state buttonState) BothReleased() bool {
 
 type HitObject interface {
 	Init(ruleset *OsuRuleSet, object objects.IHitObject, players []*difficultyPlayer)
-	UpdateFor(player *difficultyPlayer, time int64) bool
+	UpdateFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
 	UpdatePostFor(player *difficultyPlayer, time int64) bool
 	UpdatePost(time int64) bool
@@ -366,7 +366,7 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 	}
 }
 
-func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64) {
+func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64, processSliderEndsAhead bool) {
 	player := set.cursors[cursor].player
 
 	wasSliderAlready := false
@@ -387,7 +387,7 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64) {
 				}
 			}
 
-			g.UpdateFor(player, time)
+			g.UpdateFor(player, time, processSliderEndsAhead)
 		}
 	}
 }
