@@ -233,8 +233,10 @@ func startVideo(fps int) {
 
 	cmdVideo = exec.Command("ffmpeg", options...)
 
-	cmdVideo.Stdout = os.Stdout
-	cmdVideo.Stderr = os.Stderr
+	if settings.Recording.ShowFFmpegLogs {
+		cmdVideo.Stdout = os.Stdout
+		cmdVideo.Stderr = os.Stderr
+	}
 
 	err = cmdVideo.Start()
 	if err != nil {
@@ -296,8 +298,10 @@ func startAudio(audioFPS float64) {
 
 	cmdAudio = exec.Command("ffmpeg", options...)
 
-	cmdAudio.Stdout = os.Stdout
-	cmdAudio.Stderr = os.Stderr
+	if settings.Recording.ShowFFmpegLogs {
+		cmdAudio.Stdout = os.Stdout
+		cmdAudio.Stderr = os.Stderr
+	}
 
 	err = cmdAudio.Start()
 	if err != nil {
@@ -413,8 +417,11 @@ func combine() {
 	log.Println("Starting composing audio and video into one file...")
 	log.Println("Running ffmpeg with options:", options)
 	cmd2 := exec.Command("ffmpeg", options...)
-	cmd2.Stdout = os.Stdout
-	cmd2.Stderr = os.Stderr
+
+	if settings.Recording.ShowFFmpegLogs {
+		cmd2.Stdout = os.Stdout
+		cmd2.Stderr = os.Stderr
+	}
 
 	if err := cmd2.Start(); err != nil {
 		log.Println("Failed to start ffmpeg:", err)

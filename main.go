@@ -594,7 +594,10 @@ func mainLoopRecord() {
 				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime * 100))
 
 				if progress%5 == 0 && lastProgress != progress {
-					fmt.Println()
+					if settings.Recording.ShowFFmpegLogs {
+						fmt.Println()
+					}
+
 					log.Println(fmt.Sprintf("Progress: %d%%", progress))
 					lastProgress = progress
 				}
