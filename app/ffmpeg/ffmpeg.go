@@ -94,6 +94,10 @@ func createPBO(format pixconv.PixFmt) *PBO {
 func preCheck() {
 	out, err := exec.Command("ffmpeg", "-encoders").Output()
 	if err != nil {
+		if strings.Contains(err.Error(), "executable file not found") {
+			panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://ffmpeg.org/")
+		}
+
 		panic(err)
 	}
 
