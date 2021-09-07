@@ -41,7 +41,7 @@ func NewSpaceErrorMeter(diff *difficulty.Difficulty) *SpaceErrorMeter {
 
 	meter.errorDot = sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(0, 0), vector.Centre)
 
-	dotSize := settings.Gameplay.SpaceErrorMeter.DotScale / 8
+	dotSize := settings.Gameplay.SpaceErrorMeter.DotScale / 12
 	meter.errorDot.SetScaleV(vector.NewVec2d(dotSize, dotSize))
 
 	meter.errorDot.SetAlpha(1)
