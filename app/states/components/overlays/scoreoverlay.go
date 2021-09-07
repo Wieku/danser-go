@@ -93,6 +93,8 @@ type ScoreOverlay struct {
 
 	hitErrorMeter *play.HitErrorMeter
 
+	aimErrorMeter *play.AimErrorMeter
+
 	skip *sprite.Sprite
 
 	shapeRenderer *shape.Renderer
@@ -237,6 +239,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hitErrorMeter = play.NewHitErrorMeter(overlay.ScaledWidth, overlay.ScaledHeight, ruleset.GetBeatMap().Diff)
 
+	overlay.aimErrorMeter = play.NewAimErrorMeter(ruleset.GetBeatMap().Diff)
+
 	showAfterSkip := 2000.0
 
 	beatLen := overlay.ruleset.GetBeatMap().Timings.GetPoint(0).GetBaseBeatLength()
@@ -281,20 +285,29 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	return overlay
 }
 
-func (overlay *ScoreOverlay) hitReceived(_ *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, _ int64) {
+func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, _ int64) {
 	if result&(osu.BaseHitsM) > 0 {
 		overlay.results.AddResult(time, result, position)
 	}
 
 	_, hC := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
-	allowCircle := hC && (result&osu.BaseHits > 0)
+	allowCircle := hC && (result&(osu.BaseHits|osu.PositionalMiss) > 0)
 	_, sl := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
-	allowSlider := sl && result == osu.SliderStart
+	allowSlider := sl && (result&(osu.SliderStart|osu.PositionalMiss)) > 0
 
 	if allowCircle || allowSlider {
-		timeDiff := float64(time) - overlay.ruleset.GetBeatMap().HitObjects[number].GetStartTime()
+		object := overlay.ruleset.GetBeatMap().HitObjects[number]
+		timeDiff := float64(time) - object.GetStartTime()
 
-		overlay.hitErrorMeter.Add(float64(time), timeDiff)
+		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
+
+		pos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+
+		overlay.aimErrorMeter.Add(float64(time), c.Position.Sub(pos))
+	}
+
+	if result == osu.PositionalMiss {
+		return
 	}
 
 	if comboResult == osu.ComboResults.Increase {
@@ -382,6 +395,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	overlay.results.Update(time)
 	overlay.hitErrorMeter.Update(time)
+	overlay.aimErrorMeter.Update(time)
 
 	if overlay.skip != nil {
 		overlay.skip.Update(time)
@@ -570,6 +584,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color
 	batch.SetCamera(overlay.camera.GetProjectionView())
 
 	overlay.hitErrorMeter.Draw(batch, alpha)
+	overlay.aimErrorMeter.Draw(batch, alpha)
 
 	batch.SetScale(1, 1)
 	batch.SetColor(1, 1, 1, alpha)

@@ -242,6 +242,10 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 }
 
 func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
+	if result == osu.PositionalMiss {
+		return
+	}
+
 	player := overlay.players[overlay.names[cursor]]
 
 	if overlay.controller.GetRuleset().GetBeatMap().Diff.Mods.Active(difficulty.HardRock) != overlay.controller.GetReplays()[player.oldIndex].ModsV.Active(difficulty.HardRock) {
@@ -425,7 +429,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 
 	minSize := settings.Knockout.MinCursorSize
 	maxSize := settings.Knockout.MaxCursorSize
-	settings.Cursor.CursorSize = minSize + (maxSize-minSize)*math.Pow(1-math.Sin(float64(alive)/51*math.Pi/2), 3)
+	settings.Cursor.CursorSize = minSize + (maxSize-minSize)*math.Pow(1-math.Sin(float64(alive)/math.Max(51, float64(settings.PLAYERS))*math.Pi/2), 3)
 
 	batch.SetScale(1, 1)
 }

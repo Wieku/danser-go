@@ -65,7 +65,7 @@ func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, l
 	return proc
 }
 
-func (hp *HealthProcessor) CalculateRate() {
+func (hp *HealthProcessor) CalculateRate() { //suppress:gocyclo
 	lowestHpEver := difficulty.DifficultyRate(hp.diff.HPMod, 195, 160, 60)
 	lowestHpComboEnd := difficulty.DifficultyRate(hp.diff.HPMod, 198, 170, 80)
 	lowestHpEnd := difficulty.DifficultyRate(hp.diff.HPMod, 198, 180, 80)
@@ -280,7 +280,7 @@ func (hp *HealthProcessor) Update(time int64) {
 		}
 	}
 
-	if drainTime {
+	if drainTime && time > hp.lastTime {
 		hp.ReducePassive(time - hp.lastTime)
 	}
 

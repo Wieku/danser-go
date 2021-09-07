@@ -77,19 +77,20 @@ func checkInit() {
 	if CurrentSkin == defaultName {
 		fallback()
 	} else {
-		pathCache = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
-
-		path, err := pathCache.GetFile("skin.ini")
-		if err == nil {
-			if info, err = LoadInfo(path); err != nil {
-				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
-			}
-		} else {
-			log.Println("skin.ini does not exist! Falling back to default...")
-		}
+		var err error
+		pathCache, err = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
 
 		if err != nil {
+			log.Println("SkinManager:", CurrentSkin, "does not exist, falling back to default...")
 			fallback()
+		} else {
+			path, err := pathCache.GetFile("skin.ini")
+			if err != nil {
+				info = newDefaultInfo()
+			} else if info, err = LoadInfo(path); err != nil {
+				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
+				fallback()
+			}
 		}
 	}
 
@@ -405,7 +406,7 @@ func tryLoad(basePath string, local bool) *bass.Sample {
 }
 
 var beatmapColorsI []colorI
-var beatmapColors  []color.Color
+var beatmapColors []color.Color
 
 func AddBeatmapColor(data []string) {
 	index, _ := strconv.ParseInt(strings.TrimPrefix(data[0], "Combo"), 10, 64)

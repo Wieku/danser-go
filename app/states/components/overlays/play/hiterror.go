@@ -18,7 +18,7 @@ import (
 
 const errorBase = 4.8
 
-var colors = []color2.Color{color2.NewRGBA(0.2, 0.8, 1, 1), color2.NewRGBA(0.44, 0.98, 0.18, 1), color2.NewRGBA(0.85, 0.68, 0.27, 1)}
+var colors = []color2.Color{color2.NewRGBA(0.2, 0.8, 1, 1), color2.NewRGBA(0.44, 0.98, 0.18, 1), color2.NewRGBA(0.85, 0.68, 0.27, 1), color2.NewRGBA(0.98, 0.11, 0.011, 1)}
 
 type HitErrorMeter struct {
 	diff             *difficulty.Difficulty
@@ -100,7 +100,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	return meter
 }
 
-func (meter *HitErrorMeter) Add(time, error float64) {
+func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 	errorA := int64(math.Abs(error))
 
 	scale := settings.Gameplay.HitErrorMeter.Scale
@@ -111,22 +111,34 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 	middle.SetScaleV(vector.NewVec2d(3, errorBase*4).Scl(scale))
 	middle.SetAdditive(true)
 
-	var col color2.Color
-	switch {
-	case errorA < meter.diff.Hit300:
-		col = colors[0]
-	case errorA < meter.diff.Hit100:
-		col = colors[1]
-	case errorA < meter.diff.Hit50:
-		col = colors[2]
+	baseFade := 0.4
+
+	if positionalMiss {
+		baseFade = 0.8
+
+		middle.SetColor(colors[3])
+
+		middle.SetScaleV(vector.NewVec2d(3, errorBase*6).Scl(scale))
+		middle.SetAdditive(false)
+	} else {
+		switch {
+		case errorA < meter.diff.Hit300:
+			middle.SetColor(colors[0])
+		case errorA < meter.diff.Hit100:
+			middle.SetColor(colors[1])
+		case errorA < meter.diff.Hit50:
+			middle.SetColor(colors[2])
+		}
 	}
 
-	middle.SetColor(col)
-
-	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+10000, 0.4, 0.0))
+	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+10000, baseFade, 0.0))
 	middle.AdjustTimesToTransformations()
 
 	meter.errorDisplay.Add(middle)
+
+	if positionalMiss {
+		return
+	}
 
 	meter.errorCurrent = meter.errorCurrent*0.8 + error*0.8*0.2
 
@@ -154,7 +166,7 @@ func (meter *HitErrorMeter) Add(time, error float64) {
 		}
 	}
 
-	average := (averageN+averageP) / float64(countN+countP)
+	average := (averageN + averageP) / float64(countN+countP)
 
 	urBase := 0.0
 	for _, e := range meter.errors {
@@ -178,7 +190,7 @@ func (meter *HitErrorMeter) Update(time float64) {
 
 	meter.urGlider.SetDecimals(settings.Gameplay.HitErrorMeter.UnstableRateDecimals)
 	meter.urGlider.Update(time)
-	meter.urText = fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.HitErrorMeter.UnstableRateDecimals) + "fUR", meter.urGlider.GetValue())
+	meter.urText = fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.HitErrorMeter.UnstableRateDecimals)+"fUR", meter.urGlider.GetValue())
 }
 
 func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {

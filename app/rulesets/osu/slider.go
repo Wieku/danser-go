@@ -72,6 +72,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	for _, player := range slider.players {
 		slider.fadeStartRelative = math.Min(slider.fadeStartRelative, player.diff.Preempt)
 		slider.state[player] = new(sliderstate)
+		slider.state[player].startResult = Miss
 
 		edgeNumber := 1
 
@@ -105,61 +106,67 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 	inRadius := player.cursor.RawPosition.Dst(position) <= radius
 
-	if clicked && inRadius && !state.isStartHit && !state.isHit {
-		if slider.ruleSet.CanBeHit(time, slider, player) == Click {
-			if player.leftCondE {
-				player.leftCondE = false
-			} else if player.rightCondE {
-				player.rightCondE = false
-			}
+	if clicked && !state.isStartHit && !state.isHit {
+		action := slider.ruleSet.CanBeHit(time, slider, player)
 
-			if player.leftCond {
-				state.downButton = Left
-			} else if player.rightCond {
-				state.downButton = Right
-			} else {
-				state.downButton = player.mouseDownButton
-			}
-
-			hit := SliderMiss
-			combo := ComboResults.Reset
-
-			relative := int64(math.Abs(float64(time) - slider.hitSlider.GetStartTime()))
-
-			if relative < player.diff.Hit300 {
-				state.startResult = Hit300
-			} else if relative < player.diff.Hit100 {
-				state.startResult = Hit100
-			} else if relative < player.diff.Hit50 {
-				state.startResult = Hit50
-			} else {
-				state.startResult = Miss
-			}
-
-			if state.startResult != Miss {
-				hit = SliderStart
-				combo = ComboResults.Increase
-			}
-
-			if hit != Ignore {
-				if len(slider.players) == 1 {
-					slider.hitSlider.HitEdge(0, float64(time), hit != SliderMiss)
+		if inRadius {
+			if action == Click {
+				if player.leftCondE {
+					player.leftCondE = false
+				} else if player.rightCondE {
+					player.rightCondE = false
 				}
 
-				slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, hit, combo)
+				if player.leftCond {
+					state.downButton = Left
+				} else if player.rightCond {
+					state.downButton = Right
+				} else {
+					state.downButton = player.mouseDownButton
+				}
 
-				state.isStartHit = true
+				hit := SliderMiss
+				combo := ComboResults.Reset
+
+				relative := int64(math.Abs(float64(time) - slider.hitSlider.GetStartTime()))
+
+				if relative < player.diff.Hit300 {
+					state.startResult = Hit300
+				} else if relative < player.diff.Hit100 {
+					state.startResult = Hit100
+				} else if relative < player.diff.Hit50 {
+					state.startResult = Hit50
+				} else {
+					state.startResult = Miss
+				}
+
+				if state.startResult != Miss {
+					hit = SliderStart
+					combo = ComboResults.Increase
+				}
+
+				if hit != Ignore {
+					if len(slider.players) == 1 {
+						slider.hitSlider.HitEdge(0, float64(time), hit != SliderMiss)
+					}
+
+					slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, hit, combo)
+
+					state.isStartHit = true
+				}
+			} else {
+				player.leftCondE = false
+				player.rightCondE = false
 			}
-		} else {
-			player.leftCondE = false
-			player.rightCondE = false
+		} else if action == Click {
+			slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, PositionalMiss, ComboResults.Hold)
 		}
 	}
 
 	return state.isStartHit
 }
 
-func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
+func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool {
 	state := slider.state[player]
 
 	var sliderPosition vector.Vector2f
@@ -233,8 +240,8 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64) bool {
 
 		pointsPassed := 0
 
-		for _, point := range state.points {
-			if point.time > time {
+		for i, point := range state.points {
+			if point.time > time && !(i == len(state.points)-1 && processSliderEndsAhead && point.time-time == 1) {
 				break
 			}
 

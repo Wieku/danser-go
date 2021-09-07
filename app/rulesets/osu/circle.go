@@ -36,7 +36,7 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	}
 }
 
-func (circle *Circle) UpdateFor(_ *difficultyPlayer, _ int64) bool {
+func (circle *Circle) UpdateFor(_ *difficultyPlayer, _ int64, _ bool) bool {
 	return true
 }
 
@@ -55,52 +55,56 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 		inRange := player.cursor.RawPosition.Dst(position) <= radius
 
-		if clicked && inRange {
+		if clicked {
 			action := circle.ruleSet.CanBeHit(time, circle, player)
 
-			if action == Click {
-				if player.leftCondE {
-					player.leftCondE = false
-				} else if player.rightCondE {
-					player.rightCondE = false
-				}
+			if inRange {
+				if action == Click {
+					if player.leftCondE {
+						player.leftCondE = false
+					} else if player.rightCondE {
+						player.rightCondE = false
+					}
 
-				hit := Miss
+					hit := Miss
 
-				relative := int64(math.Abs(float64(time) - circle.hitCircle.GetEndTime()))
-				if relative < player.diff.Hit300 {
-					hit = Hit300
-				} else if relative < player.diff.Hit100 {
-					hit = Hit100
-				} else if relative < player.diff.Hit50 {
-					hit = Hit50
-				}
+					relative := int64(math.Abs(float64(time) - circle.hitCircle.GetEndTime()))
+					if relative < player.diff.Hit300 {
+						hit = Hit300
+					} else if relative < player.diff.Hit100 {
+						hit = Hit100
+					} else if relative < player.diff.Hit50 {
+						hit = Hit50
+					}
 
-				if hit != Ignore {
-					combo := ComboResults.Increase
-					if hit == Miss {
-						combo = ComboResults.Reset
-					} else {
-						if len(circle.players) == 1 {
-							circle.hitCircle.PlaySound()
+					if hit != Ignore {
+						combo := ComboResults.Increase
+						if hit == Miss {
+							combo = ComboResults.Reset
+						} else {
+							if len(circle.players) == 1 {
+								circle.hitCircle.PlaySound()
+							}
 						}
+
+						if len(circle.players) == 1 {
+							circle.hitCircle.Arm(hit != Miss, float64(time))
+						}
+
+						circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, hit, combo)
+
+						state.isHit = true
 					}
+				} else {
+					player.leftCondE = false
+					player.rightCondE = false
 
-					if len(circle.players) == 1 {
-						circle.hitCircle.Arm(hit != Miss, float64(time))
+					if action == Shake && len(circle.players) == 1 {
+						circle.hitCircle.Shake(float64(time))
 					}
-
-					circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, hit, combo)
-
-					state.isHit = true
 				}
-			} else {
-				player.leftCondE = false
-				player.rightCondE = false
-
-				if action == Shake && len(circle.players) == 1 {
-					circle.hitCircle.Shake(float64(time))
-				}
+			} else if action == Click {
+				circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, PositionalMiss, ComboResults.Hold)
 			}
 		}
 	}

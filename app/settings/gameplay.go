@@ -14,6 +14,20 @@ func initGameplay() *gameplay {
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
 		},
+		AimErrorMeter: &aimError{
+			hudElement: &hudElement{
+				Show:    false,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XPosition:            1350,
+			YPosition:            650,
+			DotScale:             1,
+			Align:                "Right",
+			ShowUnstableRate:     false,
+			UnstableRateScale:    1,
+			UnstableRateDecimals: 0,
+		},
 		Score: &score{
 			hudElement: &hudElement{
 				Show:    true,
@@ -123,8 +137,9 @@ func initGameplay() *gameplay {
 }
 
 type gameplay struct {
-	HitErrorMeter           *hitError
-	Score                   *score
+	HitErrorMeter *hitError
+	AimErrorMeter *aimError
+	Score         *score
 	HpBar                   *hudElement
 	ComboCounter            *hudElement
 	PPCounter               *ppCounter
@@ -165,6 +180,17 @@ type hitError struct {
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64
+}
+
+type aimError struct {
+	*hudElement
+	XPosition            float64
+	YPosition            float64
+	DotScale             float64
+	Align                string
+	ShowUnstableRate     bool
+	UnstableRateScale    float64
+	UnstableRateDecimals int
 }
 
 type score struct {

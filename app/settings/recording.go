@@ -19,6 +19,7 @@ func initRecording() *recording {
 		AudioFilters:   "",
 		OutputDir:      "videos",
 		Container:      "mp4",
+		ShowFFmpegLogs: true,
 		MotionBlur: &motionblur{
 			Enabled:              false,
 			OversampleMultiplier: 3,
@@ -49,6 +50,7 @@ type recording struct {
 	AudioFilters   string
 	OutputDir      string
 	Container      string
+	ShowFFmpegLogs bool
 	MotionBlur     *motionblur
 }
 

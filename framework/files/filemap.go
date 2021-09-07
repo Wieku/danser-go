@@ -12,7 +12,11 @@ type FileMap struct {
 	pathCache map[string]string
 }
 
-func NewFileMap(path string) *FileMap {
+func NewFileMap(path string) (*FileMap, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, err
+	}
+
 	fPath := strings.ReplaceAll(path, "\\", "/")
 	if !strings.HasSuffix(fPath, "/") {
 		fPath += "/"
@@ -34,7 +38,7 @@ func NewFileMap(path string) *FileMap {
 		Unsorted: true,
 	})
 
-	return fileMap
+	return fileMap, nil
 }
 
 func (f *FileMap) GetFile(path string) (string, error) {
