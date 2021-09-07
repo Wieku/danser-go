@@ -44,6 +44,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/rplpa"
 	"image"
@@ -535,7 +536,7 @@ func run() {
 }
 
 func mainLoopRecord() {
-	count := 0
+	count := int64(0)
 
 	fps := float64(settings.Recording.FPS)
 	audioFPS := 1000.0
@@ -564,6 +565,9 @@ func mainLoopRecord() {
 
 	p, _ := player.(*states.Player)
 
+	lastCount := int64(0)
+	lastRealTime := qpc.GetMilliTimeF()
+
 	var lastProgress, progress int
 
 	for !p.Update(updateDelta) {
@@ -591,15 +595,21 @@ func mainLoopRecord() {
 
 				count++
 
-				progress = int(math.Round(p.GetTimeOffset() / p.RunningTime * 100))
+				timeOffset := p.GetTimeOffset()
+				progress = int(math.Round(timeOffset / p.RunningTime * 100))
 
 				if progress%5 == 0 && lastProgress != progress {
 					if settings.Recording.ShowFFmpegLogs {
 						fmt.Println()
 					}
 
-					log.Println(fmt.Sprintf("Progress: %d%%", progress))
+					speed := float64(count-lastCount) * (1000 / fps) / (qpc.GetMilliTimeF() - lastRealTime)
+
+					log.Println(fmt.Sprintf("Progress: %d%%, Speed: %.2fx", progress, speed))
 					lastProgress = progress
+
+					lastCount = count
+					lastRealTime = qpc.GetMilliTimeF()
 				}
 			})
 
