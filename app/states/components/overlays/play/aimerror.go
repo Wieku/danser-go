@@ -12,7 +12,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
-	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
@@ -80,23 +79,20 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 
 	errorA := errorS.Len()
 
-	var col color2.Color
 	switch {
 	case errorA < 0.33:
-		col = colors[0]
+		middle.SetColor(colors[0])
 	case errorA < 0.66:
-		col = colors[1]
+		middle.SetColor(colors[1])
 	case errorA <= 1:
-		col = colors[2]
+		middle.SetColor(colors[2])
 	case errorA > 1:
-		col = colors[3]
+		middle.SetColor(colors[3])
 	}
 
 	dotSize := settings.Gameplay.AimErrorMeter.DotScale / 16
 
 	middle.SetScaleV(vector.NewVec2d(dotSize, dotSize))
-
-	middle.SetColor(col)
 
 	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+10000, 0.7, 0.0))
 	middle.AdjustTimesToTransformations()
