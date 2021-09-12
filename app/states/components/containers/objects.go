@@ -45,6 +45,8 @@ func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
 
 	container.createFollowPoints()
 
+	log.Println("Container created.")
+
 	return container
 }
 
