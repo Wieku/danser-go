@@ -48,15 +48,12 @@ func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
 	meter.urText = "0UR"
 	meter.urGlider = animation.NewTargetGlider(0, 0)
 
-	pixel := graphics.Pixel.GetRegion()
+	meter.errorDot = sprite.NewSpriteSingle(graphics.Cross, 3.0, vector.NewVec2d(0, 0), vector.Centre)
 
-	meter.errorDot = sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(0, 0), vector.Centre)
-
-	dotSize := settings.Gameplay.AimErrorMeter.DotScale / 12
+	dotSize := settings.Gameplay.AimErrorMeter.DotScale / float64(graphics.Cross.Height) / 4
 	meter.errorDot.SetScaleV(vector.NewVec2d(dotSize, dotSize))
 
 	meter.errorDot.SetAlpha(1)
-	meter.errorDot.SetRotation(math.Pi / 4)
 
 	meter.errorDisplay.Add(meter.errorDot)
 
@@ -71,9 +68,7 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 
 	errorS := err.Scl(float32(1 / meter.diff.CircleRadius))
 
-	pixel := graphics.Pixel.GetRegion()
-
-	middle := sprite.NewSpriteSingle(&pixel, 2.0, errorS.Copy64().Scl(scl), vector.Centre)
+	middle := sprite.NewSpriteSingle(graphics.Cross, 2.0, errorS.Copy64().Scl(scl), vector.Centre)
 
 	middle.SetAdditive(true)
 
@@ -90,9 +85,10 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 		middle.SetColor(colors[3])
 	}
 
-	dotSize := settings.Gameplay.AimErrorMeter.DotScale / 16
+	dotSize := settings.Gameplay.AimErrorMeter.DotScale / (float64(graphics.Cross.Height)/math.Sqrt(2)) / 8
 
 	middle.SetScaleV(vector.NewVec2d(dotSize, dotSize))
+	middle.SetRotation(math.Pi/4)
 
 	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+10000, 0.7, 0.0))
 	middle.AdjustTimesToTransformations()
@@ -176,7 +172,7 @@ func (meter *AimErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 			scale := settings.Gameplay.AimErrorMeter.UnstableRateScale
 
 			fnt := font.GetFont("Quicksand Bold")
-			fnt.DrawOrigin(batch, 0, scl, vector.TopCentre, 15*scale, true, meter.urText)
+			fnt.DrawOrigin(batch, 0, scl+4, vector.TopCentre, 15*scale, true, meter.urText)
 		}
 	}
 

@@ -5,6 +5,8 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 )
 
+//TODO: Refactor this
+
 var Atlas *texture.TextureAtlas
 
 var CursorTex *texture.TextureRegion
@@ -15,25 +17,26 @@ var Pixel *texture.TextureSingle
 var Triangle *texture.TextureRegion
 var TriangleShadowed *texture.TextureRegion
 var TriangleSmall *texture.TextureRegion
+var Cross *texture.TextureRegion
 
-var Hit0 *texture.TextureRegion
 var Hit50 *texture.TextureRegion
 var Hit100 *texture.TextureRegion
 
 func LoadTextures() {
-	Atlas = texture.NewTextureAtlas(4096, 4)
+	Atlas = texture.NewTextureAtlas(2048, 4)
 	Atlas.Bind(16)
 
 	CursorTex, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor.png")
 	CursorTop, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cursor-top.png")
 
-	Hit0, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit0-0.png")
 	Hit50, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit50.png")
 	Hit100, _ = utils.LoadTextureToAtlas(Atlas, "assets/default-skin/hit100.png")
 
 	Triangle, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle.png")
 	TriangleShadowed, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle-shadow.png")
 	TriangleSmall, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/triangle-small.png")
+
+	Cross, _ = utils.LoadTextureToAtlas(Atlas, "assets/textures/cross.png")
 
 	CursorTrail, _ = utils.LoadTexture("assets/textures/cursortrail.png")
 	Pixel = texture.NewTextureSingle(1, 1, 0)
