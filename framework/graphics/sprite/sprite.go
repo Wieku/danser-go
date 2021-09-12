@@ -72,7 +72,7 @@ func (sprite *Sprite) Update(time float64) {
 	}
 }
 
-func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) {
+func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) { //nolint:gocyclo
 	switch transform.GetType() {
 	case animation.Fade, animation.Scale, animation.Rotate, animation.MoveX, animation.MoveY:
 		value := transform.GetSingle(time)

@@ -14,7 +14,6 @@ type SpriteManager struct {
 	drawArray       []ISprite
 	visibleObjects  int
 	interObjects    int
-	allSprites      int
 
 	mutex *sync.Mutex
 	dirty bool
