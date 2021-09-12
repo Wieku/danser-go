@@ -95,6 +95,10 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 
 	meter.errorDisplay.Add(middle)
 
+	if errorA > 1 {
+		return
+	}
+
 	meter.errorCurrent = meter.errorCurrent.Scl(0.8).Add(errorS.Copy64().Scl(0.2))
 
 	meter.errorDot.ClearTransformations()
@@ -103,10 +107,6 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 	meter.errorDisplayFade.Reset()
 	meter.errorDisplayFade.SetValue(1.0)
 	meter.errorDisplayFade.AddEventSEase(time+4000, time+5000, 1.0, 0.0, easing.InQuad)
-
-	if errorA > 1 {
-		return
-	}
 
 	meter.errors = append(meter.errors, err.Copy64())
 
