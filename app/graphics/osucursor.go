@@ -159,7 +159,7 @@ func (cursor *osuRenderer) Update(delta float64) {
 	cursor.currentTime = cursor.clock * 100
 	cursor.manager.Update(cursor.currentTime)
 
-	if cursor.middle.Textures[0] == nil && !settings.Skin.Cursor.ForceLongTrail {
+	if cursor.middle.Texture == nil && !settings.Skin.Cursor.ForceLongTrail {
 		cursor.VaoPos = cursor.Position
 		cursor.RendPos = cursor.Position
 
@@ -267,7 +267,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 		scale *= expand
 	}
 
-	if (settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Textures[0] != nil && cursor.middle.Textures[0].Texture != nil)) && cursor.trail.Texture != nil {
+	if (settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Texture != nil && cursor.middle.Texture.Texture != nil)) && cursor.trail.Texture != nil {
 		osuShader.Bind()
 
 		osuShader.SetUniform("tex", int32(cursor.trail.Texture.GetLocation()))

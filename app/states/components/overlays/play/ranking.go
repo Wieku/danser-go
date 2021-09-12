@@ -85,7 +85,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		if image != nil {
 			mainthread.CallNonBlock(func() {
 				region := texture.LoadTextureSingle(image.RGBA(), 0).GetRegion()
-				bg.Textures[0] = &region
+				bg.Texture = &region
 
 				result := scaling.Fill.Apply(region.Width, region.Height, float32(panel.ScaledWidth), 768)
 

@@ -95,7 +95,7 @@ type ScoreOverlay struct {
 
 	aimErrorMeter *play.AimErrorMeter
 
-	skip *sprite.Sprite
+	skip *sprite.Animation
 
 	shapeRenderer *shape.Renderer
 
@@ -349,8 +349,8 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 			text := skin.GetTexture("ranking-" + gText + "-small")
 
-			overlay.rankBack.Textures[0] = text
-			overlay.rankFront.Textures[0] = text
+			overlay.rankBack.Texture = text
+			overlay.rankFront.Texture = text
 
 			overlay.oldGrade = grade
 		}()
@@ -723,8 +723,8 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	if !settings.Gameplay.Score.ShowGradeAlways {
 		overlay.rankBack.Draw(overlay.audioTime, batch)
 		overlay.rankFront.Draw(overlay.audioTime, batch)
-	} else if overlay.rankBack.Textures[0] != nil {
-		batch.DrawTexture(*overlay.rankBack.Textures[0])
+	} else if overlay.rankBack.Texture != nil {
+		batch.DrawTexture(*overlay.rankBack.Texture)
 	}
 }
 

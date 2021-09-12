@@ -76,8 +76,8 @@ type Slider struct {
 	body     *sliderrenderer.Body
 	lastTime float64
 
-	ball     *sprite.Sprite
-	follower *sprite.Sprite
+	ball     *sprite.Animation
+	follower *sprite.Animation
 
 	edges          []*Circle
 	endCircles     []*Circle

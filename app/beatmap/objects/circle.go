@@ -298,9 +298,9 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 
 	if settings.DIVIDES >= settings.Objects.Colors.MandalaTexturesTrigger {
 		alpha *= settings.Objects.Colors.MandalaTexturesAlpha
-		circle.hitCircle.Textures[0] = circle.fullTexture
+		circle.hitCircle.Texture = circle.fullTexture
 	} else {
-		circle.hitCircle.Textures[0] = circle.hitCircleTexture
+		circle.hitCircle.Texture = circle.hitCircleTexture
 	}
 
 	batch.SetColor(1, 1, 1, alpha)

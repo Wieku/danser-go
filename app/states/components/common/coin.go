@@ -61,7 +61,7 @@ func (coin *DanserCoin) Update(time float64) {
 	innerCircleScale := 1.05 - easing.OutQuad(coin.Progress)*0.05
 	outerCircleScale := 1.05 + easing.OutQuad(coin.Progress)*0.03
 
-	scl := (1.0 / float64(coin.coinBottom.Textures[0].Width)) * 1.05
+	scl := (1.0 / float64(coin.coinBottom.Texture.Width)) * 1.05
 
 	nScl := coin.GetScale().Scl(scl*2)
 

@@ -132,7 +132,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 						continue
 					}
 
-					video.SetScaleV(vector.NewVec2d(1, 1).Scl(480.0 / float64(video.Textures[0].Height)))
+					video.SetScaleV(vector.NewVec2d(1, 1).Scl(480.0 / float64(video.Texture.Height)))
 
 					offset, _ := strconv.ParseFloat(spl[1], 64)
 					video.SetStartTime(offset)
