@@ -29,7 +29,7 @@ type HitObjectContainer struct {
 	beatMap       *beatmap.BeatMap
 	objectQueue   []objects.IHitObject
 	renderables   []*renderableProxy
-	spriteManager *sprite.SpriteManager
+	spriteManager *sprite.Manager
 	lastTime      float64
 }
 
@@ -39,7 +39,7 @@ func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
 	container := &HitObjectContainer{
 		beatMap:       beatMap,
 		objectQueue:   beatMap.GetObjectsCopy(),
-		spriteManager: sprite.NewSpriteManager(),
+		spriteManager: sprite.NewManager(),
 		renderables:   make([]*renderableProxy, 0),
 	}
 

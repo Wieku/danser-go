@@ -21,7 +21,7 @@ const bars = 10
 const maxTriangles = 40
 
 type Triangles struct {
-	manager *sprite.SpriteManager
+	manager *sprite.Manager
 
 	lastTime    float64
 	velocity    float64
@@ -39,7 +39,7 @@ func NewTriangles(colors []color2.Color) *Triangles {
 	visualiser := &Triangles{velocity: 0}
 	visualiser.colorPalette = colors
 	visualiser.firstUpdate = true
-	visualiser.manager = sprite.NewSpriteManager()
+	visualiser.manager = sprite.NewManager()
 	visualiser.scale = 1.0
 	visualiser.density = 1.0
 

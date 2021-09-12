@@ -22,7 +22,7 @@ const baseSpaceSize = 64.0
 
 type AimErrorMeter struct {
 	diff             *difficulty.Difficulty
-	errorDisplay     *sprite.SpriteManager
+	errorDisplay     *sprite.Manager
 	errorCurrent     vector.Vector2d
 	errorDot         *sprite.Sprite
 	errorDisplayFade *animation.Glider
@@ -44,7 +44,7 @@ func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
 	meter := new(AimErrorMeter)
 
 	meter.diff = diff
-	meter.errorDisplay = sprite.NewSpriteManager()
+	meter.errorDisplay = sprite.NewManager()
 	meter.errorDisplayFade = animation.NewGlider(0)
 	meter.urText = "0UR"
 	meter.urGlider = animation.NewTargetGlider(0, 0)

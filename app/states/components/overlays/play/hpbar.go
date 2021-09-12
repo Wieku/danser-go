@@ -30,7 +30,7 @@ type HpBar struct {
 	hpFade         *animation.Glider
 	hpBasePosition vector.Vector2d
 	newStyle       bool
-	explodes       *sprite.SpriteManager
+	explodes       *sprite.Manager
 	kiPosY         float64
 }
 
@@ -71,7 +71,7 @@ func NewHpBar() *HpBar {
 	hpBar.hpSlide = animation.NewGlider(0)
 	hpBar.hpFade = animation.NewGlider(1)
 
-	hpBar.explodes = sprite.NewSpriteManager()
+	hpBar.explodes = sprite.NewManager()
 
 	return hpBar
 }

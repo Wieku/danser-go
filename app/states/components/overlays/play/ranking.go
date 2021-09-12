@@ -35,7 +35,7 @@ const (
 )
 
 type RankingPanel struct {
-	manager *sprite.SpriteManager
+	manager *sprite.Manager
 	time    float64
 
 	ScaledWidth float64
@@ -64,7 +64,7 @@ type RankingPanel struct {
 
 func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError *HitErrorMeter, hpGraph []vector.Vector2d) *RankingPanel {
 	panel := &RankingPanel{
-		manager:     sprite.NewSpriteManager(),
+		manager:     sprite.NewManager(),
 		ScaledWidth: settings.Graphics.GetAspectRatio() * 768,
 		cursor:      cursor,
 		ruleset:     ruleset,

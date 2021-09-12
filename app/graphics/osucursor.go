@@ -66,7 +66,7 @@ type osuRenderer struct {
 	middle *sprite.Sprite
 
 	clock       float64
-	manager     *sprite.SpriteManager
+	manager     *sprite.Manager
 	currentTime float64
 	sixtyDelta  float64
 	firstTime   bool
@@ -125,7 +125,7 @@ func newOsuRenderer() *osuRenderer {
 	cursor.cursor = sprite.NewSpriteSingle(cursorTexture, 0, vector.NewVec2d(0, 0), origin)
 	cursor.middle = sprite.NewSpriteSingle(skin.GetTextureSource("cursormiddle", skin.GetSourceFromTexture(cursorTexture)), 0, vector.NewVec2d(0, 0), origin)
 
-	cursor.manager = sprite.NewSpriteManager()
+	cursor.manager = sprite.NewManager()
 
 	return cursor
 }

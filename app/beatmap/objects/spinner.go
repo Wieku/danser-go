@@ -42,8 +42,8 @@ type Spinner struct {
 	completion   float64
 
 	newStyle     bool
-	sprites      *sprite.SpriteManager
-	frontSprites *sprite.SpriteManager
+	sprites      *sprite.Manager
+	frontSprites *sprite.Manager
 
 	glow     *sprite.Sprite
 	bottom   *sprite.Sprite
@@ -99,8 +99,8 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.fade.AddEvent(spinner.StartTime-difficulty.HitFadeIn, spinner.StartTime, 1)
 	spinner.fade.AddEvent(spinner.EndTime, spinner.EndTime+difficulty.HitFadeOut, 0)
 
-	spinner.sprites = sprite.NewSpriteManager()
-	spinner.frontSprites = sprite.NewSpriteManager()
+	spinner.sprites = sprite.NewManager()
+	spinner.frontSprites = sprite.NewManager()
 
 	spinner.newStyle = skin.GetTexture("spinner-background") == nil
 

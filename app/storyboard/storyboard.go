@@ -24,10 +24,10 @@ import (
 type Storyboard struct {
 	textures    map[string]*texture.TextureRegion
 	atlas       *texture.TextureAtlas
-	background  *sprite.SpriteManager
-	pass        *sprite.SpriteManager
-	foreground  *sprite.SpriteManager
-	overlay     *sprite.SpriteManager
+	background  *sprite.Manager
+	pass        *sprite.Manager
+	foreground  *sprite.Manager
+	overlay     *sprite.Manager
 	zIndex      int64
 	bgFileUsed  bool
 	widescreen  bool
@@ -66,7 +66,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", fix(beatMap.Artist), fix(beatMap.Name), fix(beatMap.Creator)))}
 
-	storyboard := &Storyboard{zIndex: -1, background: sprite.NewSpriteManager(), pass: sprite.NewSpriteManager(), foreground: sprite.NewSpriteManager(), overlay: sprite.NewSpriteManager(), atlas: nil}
+	storyboard := &Storyboard{zIndex: -1, background: sprite.NewManager(), pass: sprite.NewManager(), foreground: sprite.NewManager(), overlay: sprite.NewManager(), atlas: nil}
 	storyboard.textures = make(map[string]*texture.TextureRegion)
 	storyboard.pathCache, _ = files2.NewFileMap(path)
 

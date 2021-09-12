@@ -76,7 +76,7 @@ type ScoreOverlay struct {
 	keyStates   [4]bool
 	keyCounters [4]int
 	lastPresses [4]float64
-	keyOverlay  *sprite.SpriteManager
+	keyOverlay  *sprite.Manager
 	keys        []*sprite.Sprite
 
 	ScaledWidth  float64
@@ -101,7 +101,7 @@ type ScoreOverlay struct {
 
 	boundaries *common.Boundaries
 
-	mods       *sprite.SpriteManager
+	mods       *sprite.Manager
 	notFirst   bool
 	flashlight *common.Flashlight
 	delta      float64
@@ -113,7 +113,7 @@ type ScoreOverlay struct {
 	currentBreak  *beatmap.Pause
 	sPass         *sprite.Sprite
 	sFail         *sprite.Sprite
-	passContainer *sprite.SpriteManager
+	passContainer *sprite.Manager
 
 	rankBack  *sprite.Sprite
 	rankFront *sprite.Sprite
@@ -122,7 +122,7 @@ type ScoreOverlay struct {
 
 	hpBar *play.HpBar
 
-	arrows *sprite.SpriteManager
+	arrows *sprite.Manager
 
 	resultsFade *animation.Glider
 	hpSections  []vector.Vector2d
@@ -199,7 +199,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.rankFront = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), vector.Centre)
 	overlay.rankFront.SetAlpha(0)
 
-	overlay.passContainer = sprite.NewSpriteManager()
+	overlay.passContainer = sprite.NewManager()
 	overlay.passContainer.Add(overlay.sPass)
 	overlay.passContainer.Add(overlay.sFail)
 
@@ -218,7 +218,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.camera.SetViewportF(0, int(overlay.ScaledHeight), int(overlay.ScaledWidth), 0)
 	overlay.camera.Update()
 
-	overlay.keyOverlay = sprite.NewSpriteManager()
+	overlay.keyOverlay = sprite.NewManager()
 
 	keyBg := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-background"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight/2-64), vector.TopLeft)
 	keyBg.SetScaleV(vector.NewVec2d(1.05, 1))
@@ -271,7 +271,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.boundaries = common.NewBoundaries()
 
-	overlay.mods = sprite.NewSpriteManager()
+	overlay.mods = sprite.NewManager()
 
 	if overlay.ruleset.GetBeatMap().Diff.Mods.Active(difficulty.Flashlight) {
 		overlay.flashlight = common.NewFlashlight(overlay.ruleset.GetBeatMap())
@@ -930,7 +930,7 @@ func (overlay *ScoreOverlay) initMods() {
 }
 
 func (overlay *ScoreOverlay) initArrows() {
-	overlay.arrows = sprite.NewSpriteManager()
+	overlay.arrows = sprite.NewManager()
 
 	createArrow := func(tex *texture.TextureRegion, color color2.Color, position vector.Vector2d, flip bool) *sprite.Sprite {
 		arrow := sprite.NewSpriteSingle(tex, 9999, position, vector.Centre)

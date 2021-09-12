@@ -31,14 +31,14 @@ type ScoreBoard struct {
 	lastPlayerIndex int
 	playerEntry     *ScoreboardEntry
 
-	explosionManager *sprite.SpriteManager
+	explosionManager *sprite.Manager
 	first            bool
 }
 
 func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
 		first:            true,
-		explosionManager: sprite.NewSpriteManager(),
+		explosionManager: sprite.NewManager(),
 	}
 
 	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
