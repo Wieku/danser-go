@@ -10,6 +10,7 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
+			ShowPositionalMisses: true,
 			ShowUnstableRate:     true,
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
@@ -177,6 +178,7 @@ type hudElement struct {
 
 type hitError struct {
 	*hudElement
+	ShowPositionalMisses bool
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64

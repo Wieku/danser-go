@@ -101,6 +101,10 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 }
 
 func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
+	if positionalMiss && !settings.Gameplay.HitErrorMeter.ShowPositionalMisses {
+		return
+	}
+
 	errorA := int64(math.Abs(error))
 
 	scale := settings.Gameplay.HitErrorMeter.Scale
