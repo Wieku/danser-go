@@ -68,11 +68,15 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 
 	errorS := err.Scl(float32(1 / meter.diff.CircleRadius))
 
+	errorA := errorS.Len()
+
+	if errorA > 1.2 && settings.Gameplay.AimErrorMeter.CapPositionalMisses {
+		errorS = errorS.Nor().Scl(1.2)
+	}
+
 	middle := sprite.NewSpriteSingle(graphics.Cross, 2.0, errorS.Copy64().Scl(scl), vector.Centre)
 
 	middle.SetAdditive(true)
-
-	errorA := errorS.Len()
 
 	switch {
 	case errorA < 0.33:

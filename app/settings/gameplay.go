@@ -21,6 +21,7 @@ func initGameplay() *gameplay {
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
+			CapPositionalMisses:  true,
 			XPosition:            1350,
 			YPosition:            650,
 			DotScale:             1,
@@ -186,6 +187,7 @@ type hitError struct {
 
 type aimError struct {
 	*hudElement
+	CapPositionalMisses  bool
 	XPosition            float64
 	YPosition            float64
 	DotScale             float64
