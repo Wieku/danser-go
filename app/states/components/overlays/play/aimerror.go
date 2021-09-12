@@ -112,6 +112,10 @@ func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
 	meter.errorDisplayFade.SetValue(1.0)
 	meter.errorDisplayFade.AddEventSEase(time+4000, time+5000, 1.0, 0.0, easing.InQuad)
 
+	if errorA > 1 {
+		return
+	}
+
 	meter.errors = append(meter.errors, err.Copy64())
 
 	var toAverage vector.Vector2d
