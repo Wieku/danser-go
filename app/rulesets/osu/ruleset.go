@@ -409,7 +409,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	subSet := set.cursors[cursor]
 
 	if result == Ignore || result == PositionalMiss {
-		if result == PositionalMiss && set.hitListener != nil {
+		if result == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
 			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.scoreProcessor.GetScore())
 		}
 
