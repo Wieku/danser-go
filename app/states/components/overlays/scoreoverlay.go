@@ -301,9 +301,15 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
 
-		pos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+		var startPos *vector.Vector2f
+		if number > 0 {
+			pos := overlay.ruleset.GetBeatMap().HitObjects[number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+			startPos = &pos
+		}
 
-		overlay.aimErrorMeter.Add(float64(time), c.Position.Sub(pos))
+		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+
+		overlay.aimErrorMeter.Add(float64(time), c.Position, startPos, &endPos)
 	}
 
 	if result == osu.PositionalMiss {

@@ -63,7 +63,9 @@ func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
 	return meter
 }
 
-func (meter *AimErrorMeter) Add(time float64, err vector.Vector2f) {
+func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, startPos, endPos *vector.Vector2f) {
+	err := hitPosition.Sub(*endPos)
+
 	scl := baseSpaceSize * settings.Gameplay.AimErrorMeter.Scale
 
 	errorS := err.Scl(float32(1 / meter.diff.CircleRadius))
