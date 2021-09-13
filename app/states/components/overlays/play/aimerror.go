@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
+	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -33,10 +34,12 @@ type AimErrorMeter struct {
 
 	errors []vector.Vector2d
 
-	urText   string
-	urGlider *animation.TargetGlider
-
 	unstableRate float64
+	urText       string
+	urGlider     *animation.TargetGlider
+
+	normalized    bool
+	shapeRenderer *shape.Renderer
 }
 
 func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
@@ -60,11 +63,30 @@ func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
 	meter.hitCircle = skin.GetTexture("hitcircle")
 	meter.hitCircleOverlay = skin.GetTexture("hitcircleoverlay")
 
+	meter.normalized = settings.Gameplay.AimErrorMeter.AngleNormalized
+
+	if meter.normalized {
+		meter.shapeRenderer = shape.NewRenderer()
+	}
+
 	return meter
 }
 
 func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, startPos, endPos *vector.Vector2f) {
 	err := hitPosition.Sub(*endPos)
+
+	if meter.normalized {
+		if startPos == nil {
+			return
+		}
+
+		var angle float32
+		if startPos.Dst(*endPos) > 0.01 {
+			angle = startPos.AngleRV(*endPos)
+		}
+
+		err = err.Rotate(-angle - math.Pi/4).Scl(-1)
+	}
 
 	scl := baseSpaceSize * settings.Gameplay.AimErrorMeter.Scale
 
@@ -91,10 +113,10 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 		middle.SetColor(colors[3])
 	}
 
-	dotSize := settings.Gameplay.AimErrorMeter.DotScale / (float64(graphics.Cross.Height)/math.Sqrt(2)) / 8
+	dotSize := settings.Gameplay.AimErrorMeter.DotScale / (float64(graphics.Cross.Height) / math.Sqrt(2)) / 8
 
 	middle.SetScaleV(vector.NewVec2d(dotSize, dotSize))
-	middle.SetRotation(math.Pi/4)
+	middle.SetRotation(math.Pi / 4)
 
 	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+10000, 0.7, 0.0))
 	middle.AdjustTimesToTransformations()
@@ -158,6 +180,35 @@ func (meter *AimErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 		scl := baseSpaceSize * settings.Gameplay.AimErrorMeter.Scale
 
 		pos := basePos.Sub(origin.Scl(scl))
+
+		if meter.normalized {
+			batch.Flush()
+
+			meter.shapeRenderer.Begin()
+			meter.shapeRenderer.SetCamera(batch.Projection)
+			meter.shapeRenderer.SetColor(1, 1, 1, meterAlpha)
+
+			p32 := pos.Copy32()
+
+			direction := vector.NewVec2fRad(-math.Pi/4, float32(scl*1.4))
+
+			lWidth := float32(scl / 32)
+			lLength := float32(scl) / 6
+
+			ePos := p32.Add(direction)
+
+			meter.shapeRenderer.DrawLineV(p32.Sub(direction), ePos, float32(scl/32))
+			meter.shapeRenderer.DrawLineV(ePos.SubS(lLength, 0), ePos.SubS(lWidth/2, 0), lWidth)
+			meter.shapeRenderer.DrawLineV(ePos.SubS(0, lWidth/2), ePos.AddS(0, lLength), lWidth)
+
+			direction.X *= -1
+
+			meter.shapeRenderer.SetColor(0.8, 0.8, 0.8, meterAlpha*0.7)
+
+			meter.shapeRenderer.DrawLineV(p32.Sub(direction), p32.Add(direction), float32(scl/32))
+
+			meter.shapeRenderer.End()
+		}
 
 		batch.SetTranslation(pos)
 		batch.SetScale(scl, scl)
