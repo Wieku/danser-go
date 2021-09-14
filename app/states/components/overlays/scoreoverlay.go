@@ -65,7 +65,6 @@ type ScoreOverlay struct {
 
 	scoreGlider    *animation.TargetGlider
 	accuracyGlider *animation.TargetGlider
-	ppGlider       *animation.TargetGlider
 
 	ruleset    *osu.OsuRuleSet
 	cursor     *graphics.Cursor
@@ -84,7 +83,6 @@ type ScoreOverlay struct {
 	ScaledHeight float64
 	camera       *camera2.Camera
 
-	ppFont     *font.Font
 	keyFont    *font.Font
 	scoreFont  *font.Font
 	comboFont  *font.Font
@@ -137,6 +135,8 @@ type ScoreOverlay struct {
 	circularMetre *texture.TextureRegion
 
 	hitCounts *play.HitDisplay
+
+	ppDisplay *play.PPDisplay
 }
 
 func loadFonts() {
@@ -177,7 +177,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.scoreGlider = animation.NewTargetGlider(0, 0)
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
-	overlay.ppGlider = animation.NewTargetGlider(0, 0)
+
+	overlay.ppDisplay = play.NewPPDisplay()
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -206,7 +207,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	discord.UpdatePlay(cursor)
 
-	overlay.ppFont = font.GetFont("Quicksand Bold")
 	overlay.keyFont = font.GetFont("Quicksand Bold")
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
@@ -266,7 +266,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hpBar = play.NewHpBar()
 
-	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor, overlay.ppFont)
+	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor, overlay.keyFont)
 
 	overlay.shapeRenderer = shape.NewRenderer()
 
@@ -346,7 +346,8 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 	overlay.scoreGlider.SetTarget(float64(score))
 	overlay.accuracyGlider.SetTarget(accuracy)
-	overlay.ppGlider.SetTarget(ppResults.Total)
+
+	overlay.ppDisplay.Add(ppResults)
 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
@@ -488,10 +489,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	overlay.scoreGlider.Update(time)
 	overlay.accuracyGlider.Update(time)
-
-	overlay.ppGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
-	overlay.ppGlider.Update(time)
-
+	overlay.ppDisplay.Update(time)
 	overlay.hitCounts.Update(time)
 
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
@@ -629,7 +627,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		overlay.arrows.Draw(overlay.audioTime, batch)
 	}
 
-	overlay.drawPP(batch, alpha)
+	overlay.ppDisplay.Draw(batch, alpha)
 	overlay.hitCounts.Draw(batch, alpha)
 
 	if overlay.panel != nil {
@@ -759,30 +757,6 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	batch.SetColor(1, 1, 1, comboAlpha)
 	overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, vector.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
-}
-
-func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
-	batch.ResetTransform()
-
-	ppAlpha := settings.Gameplay.PPCounter.Opacity * alpha
-
-	if ppAlpha < 0.001 || !settings.Gameplay.PPCounter.Show {
-		return
-	}
-
-	ppScale := settings.Gameplay.PPCounter.Scale
-
-	ppText := fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", overlay.ppGlider.GetValue())
-
-	position := vector.NewVec2d(settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition)
-	origin := vector.ParseOrigin(settings.Gameplay.PPCounter.Align)
-
-	batch.SetColor(0, 0, 0, ppAlpha*0.8)
-	overlay.ppFont.DrawOriginV(batch, position.AddS(ppScale, ppScale), origin, 40*ppScale, true, ppText)
-
-	cS := settings.Gameplay.PPCounter.Color
-	batch.SetColorM(color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), float32(ppAlpha)))
-	overlay.ppFont.DrawOriginV(batch, position, origin, 40*ppScale, true, ppText)
 }
 
 func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
