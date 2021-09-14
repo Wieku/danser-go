@@ -120,6 +120,10 @@ type MapTo struct {
 	maxCombo int
 }
 
+type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
+
+type endListener func(time int64, number int64)
+
 type OsuRuleSet struct {
 	beatMap *beatmap.BeatMap
 	cursors map[*graphics.Cursor]*subSet
@@ -131,8 +135,8 @@ type OsuRuleSet struct {
 
 	queue       []HitObject
 	processed   []HitObject
-	hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
-	endListener func(time int64, number int64)
+	hitListener hitListener
+	endListener endListener
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -309,7 +313,7 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
 			data = append(data, utils.Humanize(set.cursors[c].maxCombo))
 			data = append(data, set.cursors[c].player.diff.Mods.String())
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Total))
+			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
 			table.Append(data)
 		}
 
@@ -410,7 +414,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	if result == Ignore || result == PositionalMiss {
 		if result == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
-			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.scoreProcessor.GetScore())
+			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
 		}
 
 		return
@@ -516,7 +520,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	}
 
 	if set.hitListener != nil {
-		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.scoreProcessor.GetScore())
+		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
 	}
 
 	if len(set.cursors) == 1 && !settings.RECORD {
@@ -535,7 +539,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 			time,
 			x,
 			y,
-			subSet.ppv2.Total,
+			subSet.ppv2.Results.Total,
 		))
 	}
 }
@@ -579,11 +583,11 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 	return Click
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
+func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
 }
 
-func (set *OsuRuleSet) SetEndListener(endlistener func(time int64, number int64)) {
+func (set *OsuRuleSet) SetEndListener(endlistener endListener) {
 	set.endListener = endlistener
 }
 
@@ -602,9 +606,9 @@ func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	return subSet.hp.Health / MaxHp
 }
 
-func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) float64 {
+func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) performance.PPv2Results {
 	subSet := set.cursors[cursor]
-	return subSet.ppv2.Total
+	return subSet.ppv2.Results
 }
 
 func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {

@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -241,7 +242,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	return overlay
 }
 
-func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
+func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, score int64) {
 	if result == osu.PositionalMiss {
 		return
 	}
@@ -255,14 +256,14 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	player.score = score
 	player.scores[number] = score
 
-	player.pp = pp
-	player.pps[number] = pp
+	player.pp = ppResults.Total
+	player.pps[number] = ppResults.Total
 
 	player.scoreDisp.Reset()
 	player.scoreDisp.AddEvent(overlay.normalTime, overlay.normalTime+500, float64(score))
 
 	player.ppDisp.Reset()
-	player.ppDisp.AddEvent(overlay.normalTime, overlay.normalTime+500, pp)
+	player.ppDisp.AddEvent(overlay.normalTime, overlay.normalTime+500, player.pp)
 
 	if comboResult == osu.ComboResults.Increase {
 		player.sCombo++

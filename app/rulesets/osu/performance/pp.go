@@ -15,9 +15,13 @@ func ppBase(stars float64) float64 {
 		100000.0
 }
 
+type PPv2Results struct {
+	Aim, Speed, Acc, Total float64
+}
+
 // PPv2 : structure to store ppv2 values
 type PPv2 struct {
-	Total, Aim, Speed, Acc float64
+	Results PPv2Results
 
 	aimStrain, speedStrain float64
 
@@ -96,13 +100,13 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
 	}
 
-	aim := pp.computeAimValue()
-	speed := pp.computeSpeedValue()
-	accuracy := pp.computeAccuracyValue()
+	pp.Results.Aim = pp.computeAimValue()
+	pp.Results.Speed = pp.computeSpeedValue()
+	pp.Results.Acc = pp.computeAccuracyValue()
 
-	pp.Total = math.Pow(
-		math.Pow(aim, 1.1)+math.Pow(speed, 1.1)+
-			math.Pow(accuracy, 1.1),
+	pp.Results.Total = math.Pow(
+		math.Pow(pp.Results.Aim, 1.1)+math.Pow(pp.Results.Speed, 1.1)+
+			math.Pow(pp.Results.Acc, 1.1),
 		1.0/1.1) * finalMultiplier
 
 	return *pp

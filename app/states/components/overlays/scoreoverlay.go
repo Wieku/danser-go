@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -285,7 +286,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	return overlay
 }
 
-func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, _ int64) {
+func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, _ int64) {
 	if result&(osu.BaseHitsM) > 0 {
 		overlay.results.AddResult(time, result, position)
 	}
@@ -345,7 +346,7 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 	overlay.scoreGlider.SetTarget(float64(score))
 	overlay.accuracyGlider.SetTarget(accuracy)
-	overlay.ppGlider.SetTarget(pp)
+	overlay.ppGlider.SetTarget(ppResults.Total)
 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 

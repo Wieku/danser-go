@@ -278,7 +278,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	fnt2.Draw(batch, 5, 30+22+22, 22, panel.playedBy)
 
 	if settings.Gameplay.PPCounter.ShowInResults {
-		pp := panel.ruleset.GetPP(panel.cursor)
+		pp := panel.ruleset.GetPP(panel.cursor).Total
 		ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", pp)
 
 		batch.SetColor(0, 0, 0, alpha*0.5)
