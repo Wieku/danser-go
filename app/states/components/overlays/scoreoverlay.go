@@ -647,6 +647,9 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 		return
 	}
 
+	xOff := settings.Gameplay.Score.XOffset
+	yOff := settings.Gameplay.Score.YOffset
+
 	scoreScale := settings.Gameplay.Score.Scale
 	rightOffset := -9.6 * scoreScale
 
@@ -673,12 +676,12 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 		}
 
 		overlay.shapeRenderer.Begin()
-		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(accYPos+accSize/2)), 16*float32(settings.Gameplay.Score.Scale), 40, float32(progress))
+		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset+xOff), float32(accYPos+accSize/2+yOff)), 16*float32(settings.Gameplay.Score.Scale), 40, float32(progress))
 		overlay.shapeRenderer.End()
 
 		batch.SetColor(1, 1, 1, scoreAlpha)
 		batch.SetScale(scoreScale, scoreScale)
-		batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+		batch.SetTranslation(vector.NewVec2d(accOffset+xOff, accYPos+accSize/2+yOff))
 		batch.DrawTexture(*overlay.circularMetre)
 
 		accOffset -= 44.8 * scoreScale
@@ -698,8 +701,8 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 			positionY = overlay.ScaledHeight - thickness
 			bWidth = overlay.ScaledWidth
 		default:
-			positionX = overlay.ScaledWidth - (12+barWidth)*scoreScale
-			positionY = scoreSize - 2*scoreScale
+			positionX = overlay.ScaledWidth - (12+barWidth)*scoreScale + xOff
+			positionY = scoreSize - 2*scoreScale + yOff
 			bWidth = barWidth * scoreScale
 		}
 
@@ -718,13 +721,13 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	batch.SetColor(1, 1, 1, scoreAlpha)
 
 	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
-	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap, 0, vector.TopRight, scoreSize, true, scoreText)
+	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap+xOff, yOff, vector.TopRight, scoreSize, true, scoreText)
 
 	accText := fmt.Sprintf("%5.2f%%", overlay.accuracyGlider.GetValue())
-	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap, accYPos, vector.TopRight, accSize, true, accText)
+	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap+xOff, accYPos+yOff, vector.TopRight, accSize, true, accText)
 
 	batch.ResetTransform()
-	batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+	batch.SetTranslation(vector.NewVec2d(accOffset+xOff, accYPos+accSize/2+yOff))
 	batch.SetScale(scoreScale*0.8, scoreScale*0.8)
 
 	if !settings.Gameplay.Score.ShowGradeAlways {

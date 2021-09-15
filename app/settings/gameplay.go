@@ -32,10 +32,14 @@ func initGameplay() *gameplay {
 			AngleNormalized:      false,
 		},
 		Score: &score{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
 			ProgressBar:     "Pie",
 			ShowGradeAlways: false,
@@ -215,7 +219,7 @@ type aimError struct {
 }
 
 type score struct {
-	*hudElement
+	*hudElementOffset
 	ProgressBar     string
 	ShowGradeAlways bool
 }
