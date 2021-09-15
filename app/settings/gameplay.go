@@ -90,10 +90,14 @@ func initGameplay() *gameplay {
 			Vertical:   false,
 			Show300:    false,
 		},
-		KeyOverlay: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		KeyOverlay: &hudElementOffset{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XOffset: 0,
+			YOffset: 0,
 		},
 		ScoreBoard: &scoreBoard{
 			hudElement: &hudElement{
@@ -148,7 +152,7 @@ type gameplay struct {
 	ComboCounter            *hudElement
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
-	KeyOverlay              *hudElement
+	KeyOverlay              *hudElementOffset
 	ScoreBoard              *scoreBoard
 	Mods                    *mods
 	Boundaries              *boundaries
@@ -177,6 +181,12 @@ type hudElement struct {
 	Show    bool
 	Scale   float64
 	Opacity float64
+}
+
+type hudElementOffset struct {
+	*hudElement
+	XOffset float64
+	YOffset float64
 }
 
 type hitError struct {

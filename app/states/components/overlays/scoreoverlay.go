@@ -768,6 +768,8 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 
 	batch.ResetTransform()
 
+	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.KeyOverlay.XOffset, settings.Gameplay.KeyOverlay.YOffset))
+
 	keyScale := settings.Gameplay.KeyOverlay.Scale
 
 	batch.SetColor(1, 1, 1, keyAlpha)
@@ -802,6 +804,8 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 			overlay.scoreEFont.DrawOrigin(batch, posX, posY, vector.Centre, scale*overlay.scoreEFont.GetSize(), false, text)
 		}
 	}
+
+	batch.ResetTransform()
 }
 
 func (overlay *ScoreOverlay) getProgress() float64 {
