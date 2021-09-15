@@ -620,7 +620,9 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	batch.SetColor(1, 1, 1, alpha)
 
 	if settings.Gameplay.Mods.Show {
+		batch.SetTranslation(vector.NewVec2d(settings.Gameplay.Mods.XOffset, settings.Gameplay.Mods.YOffset))
 		overlay.mods.Draw(overlay.lastTime, batch)
+		batch.ResetTransform()
 	}
 
 	if settings.Gameplay.ShowWarningArrows {

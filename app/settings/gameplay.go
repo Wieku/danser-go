@@ -110,10 +110,14 @@ func initGameplay() *gameplay {
 			YOffset:     0,
 		},
 		Mods: &mods{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
 			HideInReplays: false,
 			FoldInReplays: false,
@@ -248,7 +252,7 @@ type scoreBoard struct {
 }
 
 type mods struct {
-	*hudElement
+	*hudElementOffset
 	HideInReplays bool
 	FoldInReplays bool
 }
