@@ -138,7 +138,7 @@ func (hpBar *HpBar) Draw(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
 
 	batch.SetScale(hpScale, hpScale)
-	batch.SetTranslation(vector.NewVec2d(0, hpBar.hpSlide.GetValue()))
+	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.HpBar.XOffset, settings.Gameplay.HpBar.YOffset+hpBar.hpSlide.GetValue()))
 	batch.SetColor(1, 1, 1, hpAlpha)
 
 	hpBar.healthBackground.Draw(hpBar.lastTime, batch)

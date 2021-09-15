@@ -44,10 +44,14 @@ func initGameplay() *gameplay {
 			ProgressBar:     "Pie",
 			ShowGradeAlways: false,
 		},
-		HpBar: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		HpBar: &hudElementOffset{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XOffset: 0,
+			YOffset: 0,
 		},
 		ComboCounter: &hudElement{
 			Show:    true,
@@ -156,7 +160,7 @@ type gameplay struct {
 	HitErrorMeter           *hitError
 	AimErrorMeter           *aimError
 	Score                   *score
-	HpBar                   *hudElement
+	HpBar                   *hudElementOffset
 	ComboCounter            *hudElement
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
