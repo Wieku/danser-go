@@ -193,7 +193,7 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			display = true
 		}
 
-		target := vector.NewVec2d(0, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
+		target := vector.NewVec2d(settings.Gameplay.ScoreBoard.XOffset, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
 
 		if board.first {
 			entry.SetPosition(target)

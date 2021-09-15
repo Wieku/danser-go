@@ -112,14 +112,17 @@ func initGameplay() *gameplay {
 			YOffset: 0,
 		},
 		ScoreBoard: &scoreBoard{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
 			HideOthers:  false,
 			ShowAvatars: false,
-			YOffset:     0,
 		},
 		Mods: &mods{
 			hudElementOffset: &hudElementOffset{
@@ -257,10 +260,9 @@ type hitCounter struct {
 }
 
 type scoreBoard struct {
-	*hudElement
+	*hudElementOffset
 	HideOthers  bool
 	ShowAvatars bool
-	YOffset     float64
 }
 
 type mods struct {
