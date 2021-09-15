@@ -53,10 +53,14 @@ func initGameplay() *gameplay {
 			XOffset: 0,
 			YOffset: 0,
 		},
-		ComboCounter: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		ComboCounter: &hudElementOffset{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XOffset: 0,
+			YOffset: 0,
 		},
 		PPCounter: &ppCounter{
 			hudElement: &hudElement{
@@ -161,7 +165,7 @@ type gameplay struct {
 	AimErrorMeter           *aimError
 	Score                   *score
 	HpBar                   *hudElementOffset
-	ComboCounter            *hudElement
+	ComboCounter            *hudElementOffset
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
 	KeyOverlay              *hudElementOffset

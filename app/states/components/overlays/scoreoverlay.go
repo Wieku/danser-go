@@ -752,6 +752,7 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 	origY := overlay.comboFont.GetSize()*0.375 - 9
 
 	batch.ResetTransform()
+	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.ComboCounter.XOffset, settings.Gameplay.ComboCounter.YOffset))
 
 	batch.SetAdditive(true)
 
@@ -762,6 +763,8 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	batch.SetColor(1, 1, 1, comboAlpha)
 	overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, vector.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
+
+	batch.ResetTransform()
 }
 
 func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
