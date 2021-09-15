@@ -211,13 +211,16 @@ func (meter *AimErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 		}
 
 		batch.SetTranslation(pos)
-		batch.SetScale(scl, scl)
+
+		batch.SetScale(scl/64, scl/64)
 
 		batch.SetColor(0.2, 0.2, 0.2, meterAlpha*0.8)
-		batch.DrawUnit(*meter.hitCircle)
+		batch.DrawTexture(*meter.hitCircle)
 
 		batch.SetColor(1, 1, 1, meterAlpha*0.8)
-		batch.DrawUnit(*meter.hitCircleOverlay)
+		batch.DrawTexture(*meter.hitCircleOverlay)
+
+		batch.SetScale(scl, scl)
 
 		batch.SetColor(1, 1, 1, meterAlpha)
 
