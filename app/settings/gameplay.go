@@ -61,11 +61,12 @@ func initGameplay() *gameplay {
 				Saturation: 0,
 				Value:      1,
 			},
-			XPosition:     5,
-			YPosition:     150,
-			Decimals:      0,
-			Align:         "CentreLeft",
-			ShowInResults: true,
+			XPosition:        5,
+			YPosition:        150,
+			Decimals:         0,
+			Align:            "CentreLeft",
+			ShowInResults:    true,
+			ShowPPComponents: false,
 		},
 		HitCounter: &hitCounter{
 			hudElement: &hudElement{
@@ -140,9 +141,9 @@ func initGameplay() *gameplay {
 }
 
 type gameplay struct {
-	HitErrorMeter *hitError
-	AimErrorMeter *aimError
-	Score         *score
+	HitErrorMeter           *hitError
+	AimErrorMeter           *aimError
+	Score                   *score
 	HpBar                   *hudElement
 	ComboCounter            *hudElement
 	PPCounter               *ppCounter
@@ -207,12 +208,13 @@ type score struct {
 
 type ppCounter struct {
 	*hudElement
-	Color         *hsv
-	XPosition     float64
-	YPosition     float64
-	Decimals      int
-	Align         string
-	ShowInResults bool
+	Color            *hsv
+	XPosition        float64
+	YPosition        float64
+	Decimals         int
+	Align            string
+	ShowInResults    bool
+	ShowPPComponents bool
 }
 
 type hitCounter struct {
