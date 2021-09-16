@@ -154,7 +154,6 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			board.playerIndex = i
 			if board.playerIndex < board.lastPlayerIndex {
 				playerPos := board.playerEntry.GetPosition()
-				playerPos.X = 0
 
 				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, vector.CentreLeft)
 				sprite2.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+400, 1, 0))
