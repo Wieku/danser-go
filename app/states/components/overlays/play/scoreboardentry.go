@@ -37,7 +37,7 @@ type ScoreboardEntry struct {
 func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlayer bool) *ScoreboardEntry {
 	bg := skin.GetTexture("menu-button-background")
 	entry := &ScoreboardEntry{
-		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.NewVec2d(float64(1-2*(bg.Width-470)/bg.Width), 0)),
+		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.CentreRight),
 		name:   name,
 		score:  score,
 		combo:  combo,
@@ -45,6 +45,7 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 	}
 
 	entry.Sprite.SetScale(0.625)
+	entry.Sprite.SetCutOrigin(vector.CentreRight)
 	entry.SetAlpha(0)
 
 	if isPlayer {
@@ -90,16 +91,21 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 		return
 	}
 
+	offset := 0.0
 	if entry.showAvatar {
-		batch.SetTranslation(vector.NewVec2d(52*scale, 0))
+		offset = 52
 	}
+
+	batch.SetTranslation(vector.NewVec2d((float64(entry.Sprite.Texture.Width-470)*0.625+offset)*scale, 0))
+	entry.Sprite.SetCutX(1.0 - (float64(entry.Sprite.Texture.Width-470)+offset)/float64(entry.Sprite.Texture.Width))
 
 	batch.SetColor(1, 1, 1, 0.6*alpha)
 	batch.SetScale(scale, scale)
 
 	entry.Sprite.Draw(time, batch)
 
-	batch.SetScale(1, 1)
+	batch.ResetTransform()
+	batch.SetTranslation(vector.NewVec2d(offset*scale, 0))
 
 	batch.SetColor(1, 1, 1, a)
 
