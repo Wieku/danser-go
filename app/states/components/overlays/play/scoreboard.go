@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
+	"math"
 	"sort"
 )
 
@@ -33,6 +34,7 @@ type ScoreBoard struct {
 
 	explosionManager *sprite.Manager
 	first            bool
+	avatarsVisible   bool
 }
 
 func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
@@ -133,6 +135,8 @@ func (board *ScoreBoard) AddPlayer(name string) {
 			e.ShowAvatar(true)
 		}
 	}
+
+	board.avatarsVisible = hasAvatar
 }
 
 func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
@@ -155,19 +159,36 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			if board.playerIndex < board.lastPlayerIndex {
 				playerPos := board.playerEntry.GetPosition()
 
-				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, vector.CentreLeft)
+				align := vector.CentreLeft
+
+				if settings.Gameplay.ScoreBoard.ExplodeToTheLeft {
+					offset := 0.0
+					if board.avatarsVisible {
+						offset = 52
+					}
+
+					playerPos.X += (padding - 5 + offset) * settings.Gameplay.ScoreBoard.Scale
+					align = vector.CentreRight
+				}
+
+				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, align)
 				sprite2.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+400, 1, 0))
-				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, 16, 1.2))
+				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, math.Max(1, 16*settings.Gameplay.ScoreBoard.ExplosionScale), 1.2))
 				sprite2.ResetValuesToTransforms()
 				sprite2.AdjustTimesToTransformations()
 				sprite2.ShowForever(false)
 
-				sprite1 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-1"), 1, playerPos, vector.CentreLeft)
+				sprite1 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-1"), 1, playerPos, align)
 				sprite1.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+700, 1, 0))
 				sprite1.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+700, 1, 1, 1, 1.3))
 				sprite1.ResetValuesToTransforms()
 				sprite1.AdjustTimesToTransformations()
 				sprite1.ShowForever(false)
+
+				if settings.Gameplay.ScoreBoard.ExplodeToTheLeft {
+					sprite2.SetHFlip(true)
+					sprite1.SetHFlip(true)
+				}
 
 				board.explosionManager.Add(sprite2)
 				board.explosionManager.Add(sprite1)
