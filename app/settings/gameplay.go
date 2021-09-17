@@ -5,10 +5,14 @@ var Gameplay = initGameplay()
 func initGameplay() *gameplay {
 	return &gameplay{
 		HitErrorMeter: &hitError{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
 			ShowPositionalMisses: true,
 			ShowUnstableRate:     true,
@@ -211,7 +215,7 @@ type hudElementOffset struct {
 }
 
 type hitError struct {
-	*hudElement
+	*hudElementOffset
 	ShowPositionalMisses bool
 	ShowUnstableRate     bool
 	UnstableRateDecimals int

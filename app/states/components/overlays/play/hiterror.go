@@ -203,6 +203,8 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 	meterAlpha := settings.Gameplay.HitErrorMeter.Opacity * meter.errorDisplayFade.GetValue() * alpha
 	if meterAlpha > 0.001 && settings.Gameplay.HitErrorMeter.Show {
 		batch.SetColor(1, 1, 1, meterAlpha)
+		batch.SetTranslation(vector.NewVec2d(settings.Gameplay.HitErrorMeter.XOffset, settings.Gameplay.HitErrorMeter.YOffset))
+
 		meter.errorDisplay.Draw(meter.lastTime, batch)
 
 		if settings.Gameplay.HitErrorMeter.ShowUnstableRate {
