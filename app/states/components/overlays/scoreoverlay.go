@@ -747,7 +747,14 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
 
-	posX := overlay.comboSlide.GetValue()*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
+	slideAmount := overlay.comboSlide.GetValue()
+
+	if settings.Gameplay.ComboCounter.XOffset > 0.01 {
+		slideAmount = 0
+		comboAlpha *= 1+overlay.comboSlide.GetValue()
+	}
+
+	posX := slideAmount*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
 	posY := overlay.ScaledHeight - 12.8
 	origY := overlay.comboFont.GetSize()*0.375 - 9
 
