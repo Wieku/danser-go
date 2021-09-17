@@ -152,7 +152,10 @@ func (hpBar *HpBar) Draw(batch *batch.QuadBatch, alpha float64) {
 }
 
 func (hpBar *HpBar) SlideOut() {
-	hpBar.hpSlide.AddEvent(hpBar.lastTime, hpBar.lastTime+500, -20)
+	if settings.Gameplay.HpBar.YOffset > 0.01 {
+		hpBar.hpSlide.AddEvent(hpBar.lastTime, hpBar.lastTime+500, -20)
+	}
+
 	hpBar.hpFade.AddEvent(hpBar.lastTime, hpBar.lastTime+500, 0)
 }
 
