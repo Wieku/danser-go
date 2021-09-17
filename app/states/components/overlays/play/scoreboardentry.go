@@ -57,15 +57,14 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 	fnt := font.GetFont("Ubuntu Regular")
 	fnt.Overlap = 2.5
 
-	addDots := false
-	for fnt.GetWidth(20, entry.name) > 130 {
-		addDots = true
+	testName := entry.name
+
+	for fnt.GetWidth(20, testName) > 135 {
 		entry.name = entry.name[:len(entry.name)-1]
+		testName = entry.name + "..."
 	}
 
-	if addDots {
-		entry.name += "..."
-	}
+	entry.name = testName
 
 	fnt.Overlap = 0
 
