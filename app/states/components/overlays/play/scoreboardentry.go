@@ -96,8 +96,25 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 		offset = 52
 	}
 
-	batch.SetTranslation(vector.NewVec2d((float64(entry.Sprite.Texture.Width-470)*0.625+offset)*scale, 0))
-	entry.Sprite.SetCutX(1.0 - (float64(entry.Sprite.Texture.Width-470)+offset)/float64(entry.Sprite.Texture.Width))
+	topLeft := vector.TopLeft
+	topRight := vector.TopRight
+	posScale := 1.0
+
+	if settings.Gameplay.ScoreBoard.AlignRight {
+		topLeft = vector.TopRight
+		topRight = vector.TopLeft
+		posScale = -1.0
+
+		entry.Sprite.SetCutOrigin(vector.CentreLeft)
+		entry.Sprite.SetOrigin(vector.CentreLeft)
+		batch.SetTranslation(vector.NewVec2d(-(230*0.625+offset)*scale, 0))
+		entry.Sprite.SetCutX(1.0 - (230+offset/0.625)/float64(entry.Sprite.Texture.Width))
+	} else {
+		entry.Sprite.SetCutOrigin(vector.CentreRight)
+		entry.Sprite.SetOrigin(vector.CentreRight)
+		batch.SetTranslation(vector.NewVec2d((float64(entry.Sprite.Texture.Width-470)*0.625+offset)*scale, 0))
+		entry.Sprite.SetCutX(1.0 - (float64(entry.Sprite.Texture.Width-470)+offset/0.625)/float64(entry.Sprite.Texture.Width))
+	}
 
 	batch.SetColor(1, 1, 1, 0.6*alpha)
 	batch.SetScale(scale, scale)
@@ -105,7 +122,7 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	entry.Sprite.Draw(time, batch)
 
 	batch.ResetTransform()
-	batch.SetTranslation(vector.NewVec2d(offset*scale, 0))
+	batch.SetTranslation(vector.NewVec2d(posScale*offset*scale, 0))
 
 	batch.SetColor(1, 1, 1, a)
 
@@ -113,7 +130,7 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 
 	if entry.showAvatar && entry.avatar != nil {
 		batch.SetSubScale(scale, scale)
-		entry.avatar.SetPosition(entryPos.SubS(26*scale, 0))
+		entry.avatar.SetPosition(entryPos.SubS(26*scale*posScale, 0))
 		entry.avatar.Draw(time, batch)
 		batch.SetSubScale(1, 1)
 	}
@@ -121,28 +138,28 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+3.2*scale, entryPos.Y+8.8*scale, vector.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+posScale*(3.2*scale), entryPos.Y+8.8*scale, topLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y-22*scale, vector.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
+		fnt.DrawOrigin(batch, entryPos.X+posScale*(padding-10)*scale, entryPos.Y-22*scale, topRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y+8.8*scale, vector.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+posScale*(padding-10)*scale, entryPos.Y+8.8*scale, topRight, fnt.GetSize()*scale, true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-18.5*scale, vector.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+posScale*(3.5*scale), entryPos.Y-18.5*scale, topLeft, 20*scale, false, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-19*scale, vector.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+posScale*(3*scale), entryPos.Y-19*scale, topLeft, 20*scale, false, entry.name)
 
 	ubu.Overlap = 0
 

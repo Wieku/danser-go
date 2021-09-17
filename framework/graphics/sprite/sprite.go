@@ -254,6 +254,14 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs(), sprite.flipX, sprite.flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
 }
 
+func (sprite *Sprite) GetOrigin() vector.Vector2d {
+	return sprite.origin
+}
+
+func (sprite *Sprite) SetOrigin(origin vector.Vector2d) {
+	sprite.origin = origin
+}
+
 func (sprite *Sprite) GetPosition() vector.Vector2d {
 	return sprite.position
 }

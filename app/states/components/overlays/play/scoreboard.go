@@ -35,12 +35,15 @@ type ScoreBoard struct {
 	explosionManager *sprite.Manager
 	first            bool
 	avatarsVisible   bool
+
+	width float64
 }
 
 func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
 		first:            true,
 		explosionManager: sprite.NewManager(),
+		width: 768*settings.Graphics.GetAspectRatio(),
 	}
 
 	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
@@ -161,13 +164,7 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 
 				align := vector.CentreLeft
 
-				if settings.Gameplay.ScoreBoard.ExplodeToTheLeft {
-					offset := 0.0
-					if board.avatarsVisible {
-						offset = 52
-					}
-
-					playerPos.X += (padding - 5 + offset) * settings.Gameplay.ScoreBoard.Scale
+				if settings.Gameplay.ScoreBoard.AlignRight {
 					align = vector.CentreRight
 				}
 
@@ -185,7 +182,7 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 				sprite1.AdjustTimesToTransformations()
 				sprite1.ShowForever(false)
 
-				if settings.Gameplay.ScoreBoard.ExplodeToTheLeft {
+				if settings.Gameplay.ScoreBoard.AlignRight {
 					sprite2.SetHFlip(true)
 					sprite1.SetHFlip(true)
 				}
@@ -213,7 +210,12 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			display = true
 		}
 
-		target := vector.NewVec2d(settings.Gameplay.ScoreBoard.XOffset, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
+		pX := settings.Gameplay.ScoreBoard.XOffset
+		if settings.Gameplay.ScoreBoard.AlignRight {
+			pX += board.width
+		}
+
+		target := vector.NewVec2d(pX, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
 
 		if board.first {
 			entry.SetPosition(target)
