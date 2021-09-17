@@ -73,7 +73,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	bg := sprite.NewSpriteSingle(nil, -1, vector.NewVec2d(panel.ScaledWidth, 768).Scl(0.5), vector.Centre)
 	bg.SetColor(color.NewL(0.75))
 
-	go func() {
+	bgLoadFunc := func() {
 		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, ruleset.GetBeatMap().Dir, ruleset.GetBeatMap().Bg))
 		if err != nil {
 			image, err = assets.GetPixmap("assets/textures/background-1.png")
@@ -94,7 +94,13 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 				image.Dispose()
 			})
 		}
-	}()
+	}
+
+	if settings.RECORD {
+		bgLoadFunc()
+	} else {
+		go bgLoadFunc()
+	}
 
 	panel.loadMods()
 

@@ -61,7 +61,7 @@ func NewBackground() *Background {
 }
 
 func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool) {
-	go func() {
+	bgLoadFunc := func() {
 		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
 		if err != nil {
 			image, err = assets.GetPixmap("assets/textures/background-1.png")
@@ -80,7 +80,13 @@ func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool)
 				bg.forceRedraw = true
 			})
 		}
-	}()
+	}
+
+	if settings.RECORD {
+		bgLoadFunc()
+	} else {
+		go bgLoadFunc()
+	}
 
 	if loadStoryboards {
 		bg.storyboard = storyboard.NewStoryboard(beatMap)
