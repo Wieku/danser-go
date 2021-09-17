@@ -110,7 +110,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	return board
 }
 
-func (board *ScoreBoard) AddPlayer(name string) {
+func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
 	board.playerEntry = NewScoreboardEntry(name, 0, 0, len(board.scores)+1, true)
 	board.playerIndex = len(board.scores)
 	board.lastPlayerIndex = board.playerIndex
@@ -119,7 +119,11 @@ func (board *ScoreBoard) AddPlayer(name string) {
 	board.displayScores = append(board.displayScores, board.playerEntry)
 
 	if settings.Gameplay.ScoreBoard.ShowAvatars {
-		board.playerEntry.LoadAvatarUser(name)
+		if autoPlay {
+			board.playerEntry.LoadDefaultAvatar()
+		} else {
+			board.playerEntry.LoadAvatarUser(name)
+		}
 	}
 
 	board.UpdatePlayer(0, 0)

@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -166,6 +167,14 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	batch.SetColor(1, 1, 1, 1)
 }
 
+func (entry *ScoreboardEntry) loadAvatar(pixmap *texture.Pixmap) {
+	tex := texture.LoadTextureSingle(pixmap.RGBA(), 4)
+	region := tex.GetRegion()
+
+	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), vector.Centre)
+	entry.avatar.SetScale(float64(52 / region.Height))
+}
+
 func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 	url := "https://a.ppy.sh/" + strconv.Itoa(id)
 
@@ -204,13 +213,21 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 		return
 	}
 
-	tex := texture.LoadTextureSingle(pixmap.RGBA(), 4)
-	region := tex.GetRegion()
+	entry.loadAvatar(pixmap)
 
 	pixmap.Dispose()
+}
 
-	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), vector.Centre)
-	entry.avatar.SetScale(float64(52 / region.Height))
+func (entry *ScoreboardEntry) LoadDefaultAvatar() {
+	pixmap, err := assets.GetPixmap("assets/textures/dansercoin256.png")
+	if err != nil {
+		log.Println("Can't load avatar! Error:", err)
+		return
+	}
+
+	entry.loadAvatar(pixmap)
+
+	pixmap.Dispose()
 }
 
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {

@@ -279,7 +279,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	}
 
 	overlay.entry = play.NewScoreboard(overlay.ruleset.GetBeatMap(), overlay.cursor.ScoreID)
-	overlay.entry.AddPlayer(overlay.cursor.Name)
+	overlay.entry.AddPlayer(overlay.cursor.Name, overlay.cursor.IsAutoplay)
 
 	overlay.initArrows()
 
