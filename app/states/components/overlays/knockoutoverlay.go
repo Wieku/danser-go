@@ -3,7 +3,6 @@ package overlays
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
@@ -21,6 +20,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -456,10 +456,10 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	for _, r := range replays {
 		cumulativeHeight += overlay.players[r.Name].height.GetValue()
 
-		highestCombo = bmath.MaxI64(highestCombo, overlay.players[r.Name].sCombo)
+		highestCombo = mutils.MaxI64(highestCombo, overlay.players[r.Name].sCombo)
 		highestPP = math.Max(highestPP, overlay.players[r.Name].pp)
 		highestACC = math.Max(highestACC, r.Accuracy)
-		highestScore = bmath.MaxI64(highestScore, overlay.players[r.Name].score)
+		highestScore = mutils.MaxI64(highestScore, overlay.players[r.Name].score)
 
 		pWidth := overlay.font.GetWidth(scl, r.Name)
 

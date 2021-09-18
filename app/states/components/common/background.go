@@ -5,7 +5,6 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/storyboard"
@@ -17,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
@@ -126,8 +126,8 @@ func (bg *Background) Update(time float64, x, y float64) {
 	pY := 0.0
 
 	if math.Abs(settings.Playfield.Background.Parallax.Amount) > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) && settings.DIVIDES == 1 {
-		pX = bmath.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
-		pY = bmath.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		pX = mutils.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		pY = mutils.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
 	}
 
 	delta := math.Abs(time - bg.lastTime)

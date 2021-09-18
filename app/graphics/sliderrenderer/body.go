@@ -3,7 +3,6 @@ package sliderrenderer
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -13,6 +12,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -138,8 +138,8 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 		return
 	}
 
-	startInstance := int(math.Ceil(bmath.ClampF64(head, 0.0, 1.0) * float64(body.maxInstances-1)))
-	endInstance := int(math.Floor(bmath.ClampF64(tail, 0.0, 1.0) * float64(body.maxInstances-1)))
+	startInstance := int(math.Ceil(mutils.ClampF64(head, 0.0, 1.0) * float64(body.maxInstances-1)))
+	endInstance := int(math.Floor(mutils.ClampF64(tail, 0.0, 1.0) * float64(body.maxInstances-1)))
 
 	if startInstance > endInstance {
 		startInstance, endInstance = endInstance, startInstance

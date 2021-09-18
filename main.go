@@ -24,7 +24,6 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
@@ -42,6 +41,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -667,7 +667,7 @@ func mainLoopNormal() {
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
-					settings.DIVIDES = bmath.MaxI(1, settings.DIVIDES-1)
+					settings.DIVIDES = mutils.MaxI(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
 				}

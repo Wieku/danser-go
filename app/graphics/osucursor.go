@@ -2,7 +2,6 @@ package graphics
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/assets"
@@ -16,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sync"
@@ -214,7 +214,7 @@ func (cursor *osuRenderer) Update(delta float64) {
 
 			dirtyLocal = true
 		} else if times > 0 {
-			times = bmath.MinI(times, len(cursor.Points))
+			times = mutils.MinI(times, len(cursor.Points))
 
 			cursor.Points = cursor.Points[times:]
 			cursor.PointsC = cursor.PointsC[times:]

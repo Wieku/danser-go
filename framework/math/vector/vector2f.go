@@ -150,3 +150,11 @@ func (v Vector2f) Copy64() Vector2d {
 func IsStraightLine32(a, b, c Vector2f) bool {
 	return math32.Abs((b.Y-a.Y)*(c.X-a.X)-(b.X-a.X)*(c.Y-a.Y)) < 0.001
 }
+
+func AngleBetween32(centre, p1, p2 Vector2f) float32 { //nolint:misspell
+	a := centre.Dst(p1)
+	b := centre.Dst(p2)
+	c := p1.Dst(p2)
+
+	return math32.Acos((a*a + b*b - c*c) / (2 * a * b))
+}

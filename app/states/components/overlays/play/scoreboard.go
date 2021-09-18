@@ -3,13 +3,13 @@ package play
 import (
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
@@ -88,7 +88,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 						return scores[i].Score.Score > scores[j].Score.Score
 					})
 
-					for i := 0; i < bmath.MinI(len(scores), 50); i++ {
+					for i := 0; i < mutils.MinI(len(scores), 50); i++ {
 						s := scores[i]
 
 						entry := NewScoreboardEntry(s.Username, s.Score.Score, int64(s.MaxCombo), i+1, false)

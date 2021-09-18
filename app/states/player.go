@@ -5,7 +5,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
@@ -25,6 +24,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -625,7 +625,7 @@ func (player *Player) updateMain(delta float64) {
 func (player *Player) updateMusic(delta float64) {
 	player.musicPlayer.Update()
 
-	target := bmath.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
+	target := mutils.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
 
 	if settings.Audio.BeatUseTimingPoints {
 		player.Scl = 1 + player.coin.Progress*(settings.Audio.BeatScale-1.0)
@@ -646,10 +646,10 @@ func (player *Player) Draw(float64) {
 
 	fps := player.profiler.GetFPS()
 
-	player.updateLimiter.FPS = bmath.ClampI(int(fps*1.2), player.baseLimit, 10000)
+	player.updateLimiter.FPS = mutils.ClampI(int(fps*1.2), player.baseLimit, 10000)
 
 	if player.background.GetStoryboard() != nil {
-		player.background.GetStoryboard().SetFPS(bmath.ClampI(int(fps*1.2), player.baseLimit, 10000))
+		player.background.GetStoryboard().SetFPS(mutils.ClampI(int(fps*1.2), player.baseLimit, 10000))
 	}
 
 	if fps > 58 && timMs > 18 && !settings.RECORD {
@@ -665,7 +665,7 @@ func (player *Player) Draw(float64) {
 
 	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha = bmath.ClampF64(bgAlpha*player.Scl, 0, 1)
+		bgAlpha = mutils.ClampF64(bgAlpha*player.Scl, 0, 1)
 	}
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
@@ -945,7 +945,7 @@ func (player *Player) drawDebug() {
 				sbFPS = fmt.Sprintf("%0.0ffps (%0.2fms)", fpsS, 1000/fpsS)
 			}
 
-			shift := strconv.Itoa(bmath.MaxI(len(drawFPS), bmath.MaxI(len(updateFPS), len(sbFPS))))
+			shift := strconv.Itoa(mutils.MaxI(len(drawFPS), mutils.MaxI(len(updateFPS), len(sbFPS))))
 
 			drawShadowed(true, 1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
 			drawShadowed(true, 0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))

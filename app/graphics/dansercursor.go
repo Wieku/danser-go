@@ -1,7 +1,6 @@
 package graphics
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -9,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sync"
@@ -159,7 +159,7 @@ func (cursor *danserRenderer) Update(delta float64) {
 			cursor.removeCounter = 0
 			dirtyLocal = true
 		} else if times > 0 {
-			times = bmath.MinI(times, len(cursor.Points))
+			times = mutils.MinI(times, len(cursor.Points))
 
 			cursor.Points = cursor.Points[times:]
 			cursor.PointsC = cursor.PointsC[times:]

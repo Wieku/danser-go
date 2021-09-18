@@ -5,7 +5,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
@@ -15,6 +14,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"math/rand"
@@ -164,7 +164,7 @@ func (spinner *Spinner) Update(time float64) bool {
 
 	if time >= spinner.StartTime && time <= spinner.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-			rRPMS := rpms * bmath.ClampF32(float32(time-spinner.StartTime)/500, 0.0, 1.0)
+			rRPMS := rpms * mutils.ClampF32(float32(time-spinner.StartTime)/500, 0.0, 1.0)
 
 			spinner.rad = rRPMS * float32(time-spinner.StartTime) * 2 * math32.Pi
 

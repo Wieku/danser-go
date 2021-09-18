@@ -2,10 +2,10 @@ package movers
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/curves"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -48,7 +48,7 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *PippiMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(float32(easing.OutQuad(t)))
 }
 
@@ -63,7 +63,7 @@ func (mover *PippiMover) modifyPos(time float64, spinner bool, pos vector.Vector
 
 	radius := config.SpinnerRadius
 	if !spinner {
-		radius = mover.diff.CircleRadius * bmath.ClampF64(config.RadiusMultiplier, 0, 1)
+		radius = mover.diff.CircleRadius * mutils.ClampF64(config.RadiusMultiplier, 0, 1)
 	}
 
 	mVec := vector.NewVec2fRad(float32(rad), float32(radius))

@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
@@ -15,6 +14,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -184,9 +184,9 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 		return float64(slider.scorePath[i].Time2) >= time
 	})
 
-	pLine := slider.scorePath[bmath.ClampI(index, 0, len(slider.scorePath)-1)]
+	pLine := slider.scorePath[mutils.ClampI(index, 0, len(slider.scorePath)-1)]
 
-	clamped := bmath.ClampF64(time, float64(pLine.Time1), float64(pLine.Time2))
+	clamped := mutils.ClampF64(time, float64(pLine.Time1), float64(pLine.Time2))
 
 	var pos vector.Vector2f
 	if pLine.Time2 == pLine.Time1 {
@@ -352,8 +352,8 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeTail = animation.NewGlider(0)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
-	fadeMultiplier := 1.0 - bmath.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
-	durationMultiplier := bmath.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+	fadeMultiplier := 1.0 - mutils.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+	durationMultiplier := mutils.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
 
 	slSnInS := slider.StartTime - diff.Preempt
 	slSnInE := slider.StartTime - diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
@@ -788,8 +788,8 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
-	bodyOpacityInner := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
-	bodyOpacityOuter := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
+	bodyOpacityInner := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
+	bodyOpacityOuter := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
 
 	borderInner := color2.NewRGBA(innerBorder.R, innerBorder.G, innerBorder.B, float32(colorAlpha))
 	borderOuter := color2.NewRGBA(outerBorder.R, outerBorder.G, outerBorder.B, float32(colorAlpha))

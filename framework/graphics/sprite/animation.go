@@ -1,9 +1,9 @@
 package sprite
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -36,7 +36,7 @@ func (animation *Animation) Update(time float64) {
 	if animation.textures != nil && len(animation.textures) > 1 && time >= animation.startTime {
 		frame := int(math.Floor((time - animation.startTime) / animation.frameDelay))
 		if !animation.loopForever {
-			frame = bmath.MinI(frame, len(animation.textures)-1)
+			frame = mutils.MinI(frame, len(animation.textures)-1)
 		} else {
 			frame = frame % len(animation.textures)
 		}

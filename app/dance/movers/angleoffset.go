@@ -3,10 +3,10 @@ package movers
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -109,7 +109,7 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 		points = []vector.Vector2f{startPos, pt1, pt2, endPos}
 	} else {
-		if bmath.AngleBetween32(startPos, mover.lastPoint, endPos) >= float32(config.AngleOffset)*math32.Pi/180.0 {
+		if vector.AngleBetween32(startPos, mover.lastPoint, endPos) >= float32(config.AngleOffset)*math32.Pi/180.0 {
 			mover.invert = -1 * mover.invert
 			newAngle = float32(config.StreamAngleOffset) * math32.Pi / 180.0
 		}
@@ -131,6 +131,6 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *AngleOffsetMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(float32(t))
 }

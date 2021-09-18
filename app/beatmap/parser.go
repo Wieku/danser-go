@@ -3,10 +3,10 @@ package beatmap
 import (
 	"errors"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"os"
 	"path/filepath"
@@ -209,7 +209,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 				}
 				timeI, _ := strconv.Atoi(time)
 
-				beatMap.Length = bmath.MaxI(beatMap.Length, timeI)
+				beatMap.Length = mutils.MaxI(beatMap.Length, timeI)
 			}
 		}
 	}

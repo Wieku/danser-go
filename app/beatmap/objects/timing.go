@@ -1,7 +1,7 @@
 package objects
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"sort"
 )
@@ -25,7 +25,7 @@ func (t TimingPoint) GetRatio() float64 {
 		return 1.0
 	}
 
-	return float64(float32(bmath.ClampF64(-t.beatLength, 10, 1000)) / 100)
+	return float64(float32(mutils.ClampF64(-t.beatLength, 10, 1000)) / 100)
 }
 
 func (t TimingPoint) GetBaseBeatLength() float64 {
@@ -95,7 +95,7 @@ func (tim *Timings) Update(time float64) {
 func (tim *Timings) GetPoint(time float64) TimingPoint {
 	for i, pt := range tim.Points {
 		if time < pt.Time {
-			return tim.Points[bmath.ClampI(i-1, 0, len(tim.Points)-1)]
+			return tim.Points[mutils.ClampI(i-1, 0, len(tim.Points)-1)]
 		}
 	}
 

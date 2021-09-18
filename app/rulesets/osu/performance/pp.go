@@ -2,7 +2,7 @@ package performance
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
@@ -43,7 +43,7 @@ type PPv2 struct {
 func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 	maxCombo, nsliders, ncircles, nobjects,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
-	maxCombo = bmath.MaxI(1, maxCombo)
+	maxCombo = mutils.MaxI(1, maxCombo)
 
 	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
 
@@ -77,7 +77,7 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 			float64(n300)*300) /
 			(float64(totalhits) * 300)
 
-		pp.accuracy = bmath.ClampF64(acc, 0, 1)
+		pp.accuracy = mutils.ClampF64(acc, 0, 1)
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {

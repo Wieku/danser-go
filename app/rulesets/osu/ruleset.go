@@ -6,11 +6,11 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -429,7 +429,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.numObjects++
 	}
 
-	subSet.maxCombo = bmath.MaxI64(subSet.scoreProcessor.GetCombo(), subSet.maxCombo)
+	subSet.maxCombo = mutils.MaxI64(subSet.scoreProcessor.GetCombo(), subSet.maxCombo)
 
 	if subSet.numObjects == 0 {
 		subSet.accuracy = 100
@@ -461,7 +461,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.grade = D
 	}
 
-	index := bmath.MaxI64(0, subSet.numObjects-1)
+	index := mutils.MaxI64(0, subSet.numObjects-1)
 
 	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]

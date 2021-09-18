@@ -7,7 +7,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
@@ -28,6 +27,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
@@ -830,9 +830,9 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 
 	musicPos := overlay.audioTime
 
-	progress := bmath.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	progress := mutils.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
 	if musicPos < startTime {
-		progress = bmath.ClampF64(-1.0+musicPos/startTime, -1.0, 0.0)
+		progress = mutils.ClampF64(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
 	return progress
@@ -976,12 +976,12 @@ func (overlay *ScoreOverlay) initArrows() {
 	bMap := overlay.ruleset.GetBeatMap()
 
 	if bMap.HitObjects[0].GetStartTime() > 6000 {
-		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime)))
+		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+mutils.MinI(2, int(bMap.Diff.Preempt/blinkTime)))
 	}
 
 	for _, pause := range bMap.Pauses {
-		blinks := bmath.MinI(minBlinks, int(pause.Length()/blinkTime))
-		extra := bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime))
+		blinks := mutils.MinI(minBlinks, int(pause.Length()/blinkTime))
+		extra := mutils.MinI(2, int(bMap.Diff.Preempt/blinkTime))
 		addTransforms(pause.EndTime-float64(blinks)*blinkTime, blinks+extra)
 	}
 }
