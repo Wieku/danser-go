@@ -152,7 +152,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 
 	batch.Begin()
 
-	needsRedraw := bg.forceRedraw || bg.storyboard != nil || !settings.Playfield.Background.Blur.Enabled || (settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur)
+	needsRedraw := bg.forceRedraw || (bg.storyboard != nil && bg.storyboard.HasVisuals()) || !settings.Playfield.Background.Blur.Enabled || (settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur)
 
 	bg.forceRedraw = false
 

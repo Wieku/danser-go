@@ -2,9 +2,11 @@ package storyboard
 
 import (
 	"fmt"
+	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/bass"
 	files2 "github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -22,8 +24,11 @@ import (
 )
 
 type Storyboard struct {
-	textures    map[string]*texture.TextureRegion
-	atlas       *texture.TextureAtlas
+	textures map[string]*texture.TextureRegion
+	atlas    *texture.TextureAtlas
+
+	samples map[string]*bass.Sample
+
 	background  *sprite.Manager
 	pass        *sprite.Manager
 	foreground  *sprite.Manager
@@ -37,6 +42,7 @@ type Storyboard struct {
 	counter     *frame.Counter
 	numSprites  int
 	pathCache   *files2.FileMap
+	hasVisuals  bool
 }
 
 func getSection(line string) string {
@@ -66,8 +72,17 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", fix(beatMap.Artist), fix(beatMap.Name), fix(beatMap.Creator)))}
 
-	storyboard := &Storyboard{zIndex: -1, background: sprite.NewManager(), pass: sprite.NewManager(), foreground: sprite.NewManager(), overlay: sprite.NewManager(), atlas: nil}
-	storyboard.textures = make(map[string]*texture.TextureRegion)
+	storyboard := &Storyboard{
+		textures: make(map[string]*texture.TextureRegion),
+		samples: make(map[string]*bass.Sample),
+		zIndex: -1,
+		background: sprite.NewManager(),
+		pass: sprite.NewManager(),
+		foreground: sprite.NewManager(),
+		overlay: sprite.NewManager(),
+		atlas: nil,
+	}
+
 	storyboard.pathCache, _ = files2.NewFileMap(path)
 
 	var currentSection string
@@ -77,6 +92,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	variables := make(map[string]string)
 	counter := 0
 	hasVideo := false
+	hasAudio := false
 
 	for _, fS := range files {
 		file, err := os.Open(fS)
@@ -115,16 +131,12 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 			case "32", "Events":
 				if strings.ContainsRune(line, '$') {
 					for k, v := range variables {
-						if strings.Contains(line, k) {
-							line = strings.Replace(line, k, v, -1)
-						}
+						line = strings.Replace(line, k, v, -1)
 					}
 				}
 
 				if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
 					spl := strings.Split(line, ",")
-
-					log.Println(filepath.Join(path, fix(spl[2])))
 
 					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
 
@@ -143,10 +155,21 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 					hasVideo = true
 				} else if settings.Playfield.Background.LoadStoryboards {
-					if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+					if strings.HasPrefix(line, "Sample") || strings.HasPrefix(line, "5") {
+						spl := strings.Split(line, ",")
+
+						startTime, _ := strconv.ParseFloat(spl[1], 64)
+						volume, _ := strconv.ParseFloat(spl[4], 64)
+
+						sbSprite := audio.NewAudioSprite(storyboard.getSample(fix(spl[3])), startTime, volume/100)
+
+						storyboard.addSpriteToLayer(spl[2], sbSprite)
+
+						hasAudio = true
+					} else if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
 						if currentSprite != "" {
 							counter++
-							storyboard.loadSprite(path, currentSprite, commands)
+							storyboard.loadSprite(currentSprite, commands)
 						}
 
 						currentSprite = line
@@ -161,18 +184,20 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		if currentSprite != "" {
 			counter++
 
-			storyboard.loadSprite(path, currentSprite, commands)
+			storyboard.loadSprite(currentSprite, commands)
 		}
 
 		file.Close()
 	}
+
+	storyboard.hasVisuals = counter > 0 || hasVideo
 
 	if counter == 0 {
 		if storyboard.atlas != nil {
 			storyboard.atlas.Dispose()
 		}
 
-		if !hasVideo {
+		if !hasVideo && !hasAudio {
 			return nil
 		} else if !storyboard.widescreen {
 			storyboard.widescreen = true
@@ -194,7 +219,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	return storyboard
 }
 
-func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []string) {
+func (storyboard *Storyboard) loadSprite(currentSprite string, commands []string) {
 	spl := strings.Split(currentSprite, ",")
 
 	origin := parseOrigin(spl[2])
@@ -226,7 +251,7 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		baseFile := strings.TrimSuffix(image, extension)
 
 		for i := 0; i < int(frames); i++ {
-			if tex := storyboard.getTexture(baseFile+strconv.Itoa(i)+extension); tex != nil {
+			if tex := storyboard.getTexture(baseFile + strconv.Itoa(i) + extension); tex != nil {
 				textures = append(textures, tex)
 			}
 		}
@@ -248,18 +273,22 @@ func (storyboard *Storyboard) loadSprite(path, currentSprite string, commands []
 		sbSprite.AdjustTimesToTransformations()
 		sbSprite.ResetValuesToTransforms()
 
-		switch spl[1] {
-		case "0", "Background":
-			storyboard.background.Add(sbSprite)
-		case "2", "Pass":
-			storyboard.pass.Add(sbSprite)
-		case "3", "Foreground":
-			storyboard.foreground.Add(sbSprite)
-		case "4", "Overlay":
-			storyboard.overlay.Add(sbSprite)
-		}
+		storyboard.addSpriteToLayer(spl[1], sbSprite)
 
 		storyboard.numSprites++
+	}
+}
+
+func (storyboard *Storyboard) addSpriteToLayer(layer string, sbSprite sprite.ISprite) {
+	switch layer {
+	case "0", "Background":
+		storyboard.background.Add(sbSprite)
+	case "2", "Pass":
+		storyboard.pass.Add(sbSprite)
+	case "3", "Foreground":
+		storyboard.foreground.Add(sbSprite)
+	case "4", "Overlay":
+		storyboard.overlay.Add(sbSprite)
 	}
 }
 
@@ -305,6 +334,20 @@ func (storyboard *Storyboard) getTexture(image string) *texture.TextureRegion {
 	}
 
 	return texture1
+}
+
+func (storyboard *Storyboard) getSample(sample string) (bassSample *bass.Sample) {
+	if bassSample = storyboard.samples[sample]; bassSample == nil {
+		path, err := storyboard.pathCache.GetFile(sample)
+		if err != nil {
+			log.Println("File:", sample, "does not exist!")
+			return
+		}
+
+		bassSample = bass.NewSample(path)
+	}
+
+	return
 }
 
 func (storyboard *Storyboard) StartThread() {
@@ -392,6 +435,10 @@ func (storyboard *Storyboard) GetLoad() float64 {
 
 func (storyboard *Storyboard) BGFileUsed() bool {
 	return storyboard.bgFileUsed
+}
+
+func (storyboard *Storyboard) HasVisuals() bool {
+	return storyboard.hasVisuals
 }
 
 func (storyboard *Storyboard) IsWideScreen() bool {

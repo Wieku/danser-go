@@ -14,13 +14,15 @@ type AudioSprite struct {
 
 	played bool
 	playAt float64
+	volume float64
 }
 
-func NewAudioSprite(sample *bass.Sample, playAt float64) *AudioSprite {
+func NewAudioSprite(sample *bass.Sample, playAt, volume float64) *AudioSprite {
 	aSprite := &AudioSprite{
 		Sprite: sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0,0), vector.NewVec2d(0,0)),
 		playAt: playAt,
 		sample: sample,
+		volume: volume,
 	}
 	aSprite.Sprite.ShowForever(true)
 
@@ -30,7 +32,7 @@ func NewAudioSprite(sample *bass.Sample, playAt float64) *AudioSprite {
 func (sprite *AudioSprite) Update(time float64) {
 	if time >= sprite.playAt && !sprite.played {
 		if sprite.sample != nil {
-			sprite.sample.Play()
+			sprite.sample.PlayRV(sprite.volume)
 		}
 
 		sprite.played = true
