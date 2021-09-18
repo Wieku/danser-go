@@ -1,14 +1,13 @@
-package audio
+package sprite
 
 import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
-	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type AudioSprite struct {
-	*sprite.Sprite
+	*Sprite
 
 	sample *bass.Sample
 
@@ -19,11 +18,12 @@ type AudioSprite struct {
 
 func NewAudioSprite(sample *bass.Sample, playAt, volume float64) *AudioSprite {
 	aSprite := &AudioSprite{
-		Sprite: sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0,0), vector.NewVec2d(0,0)),
+		Sprite: NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0)),
 		playAt: playAt,
 		sample: sample,
 		volume: volume,
 	}
+
 	aSprite.Sprite.ShowForever(true)
 
 	return aSprite
@@ -40,7 +40,4 @@ func (sprite *AudioSprite) Update(time float64) {
 	}
 }
 
-
-func (sprite *AudioSprite) Draw(_ float64, _ *batch.QuadBatch) {
-
-}
+func (sprite *AudioSprite) Draw(_ float64, _ *batch.QuadBatch) {}

@@ -2,7 +2,6 @@ package storyboard
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
@@ -150,7 +149,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 						startTime, _ := strconv.ParseFloat(spl[1], 64)
 						volume, _ := strconv.ParseFloat(spl[4], 64)
 
-						sbSprite := audio.NewAudioSprite(storyboard.getSample(files2.FixName(spl[3])), startTime, volume/100)
+						sbSprite := sprite.NewAudioSprite(storyboard.getSample(files2.FixName(spl[3])), startTime, volume/100)
 
 						storyboard.addSpriteToLayer(spl[2], sbSprite)
 
