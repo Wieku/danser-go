@@ -50,37 +50,27 @@ func getSection(line string) string {
 	if strings.HasPrefix(line, "[") {
 		return strings.TrimRight(strings.TrimLeft(line, "["), "]")
 	}
+
 	return ""
 }
 
 func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	path := filepath.Join(settings.General.OsuSongsDir, beatMap.Dir)
 
-	replacer := strings.NewReplacer("\\", "",
-		"/", "",
-		"<", "",
-		">", "",
-		"|", "",
-		"?", "",
-		"*", "",
-		":", "",
-		"\"", "")
-
-	fix := func(el string) string {
-		return replacer.Replace(el)
+	files := []string{
+		filepath.Join(path, beatMap.File),
+		filepath.Join(path, files2.FixName(fmt.Sprintf("%s - %s (%s).osb", beatMap.Artist, beatMap.Name, beatMap.Creator))),
 	}
 
-	files := []string{filepath.Join(path, beatMap.File), filepath.Join(path, fmt.Sprintf("%s - %s (%s).osb", fix(beatMap.Artist), fix(beatMap.Name), fix(beatMap.Creator)))}
-
 	storyboard := &Storyboard{
-		textures: make(map[string]*texture.TextureRegion),
-		samples: make(map[string]*bass.Sample),
-		zIndex: -1,
+		textures:   make(map[string]*texture.TextureRegion),
+		samples:    make(map[string]*bass.Sample),
+		zIndex:     -1,
 		background: sprite.NewManager(),
-		pass: sprite.NewManager(),
+		pass:       sprite.NewManager(),
 		foreground: sprite.NewManager(),
-		overlay: sprite.NewManager(),
-		atlas: nil,
+		overlay:    sprite.NewManager(),
+		atlas:      nil,
 	}
 
 	storyboard.pathCache, _ = files2.NewFileMap(path)
@@ -90,7 +80,6 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	var commands []string
 
 	variables := make(map[string]string)
-	counter := 0
 	hasVideo := false
 	hasAudio := false
 
@@ -138,7 +127,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 				if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
 					spl := strings.Split(line, ",")
 
-					video := video2.NewVideo(filepath.Join(path, fix(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
+					video := video2.NewVideo(filepath.Join(path, files2.FixName(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
 
 					if video == nil {
 						continue
@@ -161,14 +150,13 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 						startTime, _ := strconv.ParseFloat(spl[1], 64)
 						volume, _ := strconv.ParseFloat(spl[4], 64)
 
-						sbSprite := audio.NewAudioSprite(storyboard.getSample(fix(spl[3])), startTime, volume/100)
+						sbSprite := audio.NewAudioSprite(storyboard.getSample(files2.FixName(spl[3])), startTime, volume/100)
 
 						storyboard.addSpriteToLayer(spl[2], sbSprite)
 
 						hasAudio = true
 					} else if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
 						if currentSprite != "" {
-							counter++
 							storyboard.loadSprite(currentSprite, commands)
 						}
 
@@ -182,17 +170,15 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		}
 
 		if currentSprite != "" {
-			counter++
-
 			storyboard.loadSprite(currentSprite, commands)
 		}
 
 		file.Close()
 	}
 
-	storyboard.hasVisuals = counter > 0 || hasVideo
+	storyboard.hasVisuals = storyboard.numSprites > 0 || hasVideo
 
-	if counter == 0 {
+	if storyboard.numSprites == 0 {
 		if storyboard.atlas != nil {
 			storyboard.atlas.Dispose()
 		}
@@ -213,7 +199,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	log.Println("Storyboard loaded")
 
 	storyboard.currentTime = -1000000
-	storyboard.limiter = frame.NewLimiter(10000)
+	storyboard.limiter = frame.NewLimiter(2000)
 	storyboard.counter = frame.NewCounter()
 
 	return storyboard
