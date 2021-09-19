@@ -37,14 +37,12 @@ type Font struct {
 	flip        bool
 }
 
-func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, size, rotation float64, text string, monospaced bool) {
+func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, size, rotation float64, text string, monospaced bool, color color2.Color) {
 	scale := size / font.initialSize
 
 	scBase := scale * renderer.GetScale().Y * renderer.GetSubScale().Y
 
 	scl := vector.NewVec2d(scale, scale)
-
-	col := color2.NewL(1)
 
 	advance := 0.0
 
@@ -78,7 +76,7 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, size, rotation f
 
 		pos := vector.NewVec2d(pX*cos-pY*sin+x, pX*sin+pY*cos+y)
 
-		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, rotation, col, false, *char.region)
+		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, rotation, color, false, *char.region)
 
 		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
 			advance += font.biggest
@@ -146,10 +144,14 @@ func (font *Font) DrawOrigin(renderer *batch.QuadBatch, x, y float64, origin vec
 }
 
 func (font *Font) DrawOriginRotation(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size, rotation float64, monospaced bool, text string) {
+	font.DrawOriginRotationColor(renderer, x, y, origin, size, rotation, monospaced, color2.NewL(1), text)
+}
+
+func (font *Font) DrawOriginRotationColor(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size, rotation float64, monospaced bool, color color2.Color, text string) {
 	width := font.getWidthInternal(size, text, monospaced)
 	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize*font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale()).Rotate(rotation)
 
-	font.drawInternal(renderer, x+align.X, y+align.Y, size, rotation, text, monospaced)
+	font.drawInternal(renderer, x+align.X, y+align.Y, size, rotation, text, monospaced, color)
 }
 
 func (font *Font) DrawOriginV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size float64, monospaced bool, text string) {
@@ -158,4 +160,8 @@ func (font *Font) DrawOriginV(renderer *batch.QuadBatch, position vector.Vector2
 
 func (font *Font) DrawOriginRotationV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size, rotation float64, monospaced bool, text string) {
 	font.DrawOriginRotation(renderer, position.X, position.Y, origin, size, rotation, monospaced, text)
+}
+
+func (font *Font) DrawOriginRotationColorV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size, rotation float64, monospaced bool, color color2.Color, text string) {
+	font.DrawOriginRotationColor(renderer, position.X, position.Y, origin, size, rotation, monospaced, color, text)
 }

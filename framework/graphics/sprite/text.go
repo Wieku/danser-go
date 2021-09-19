@@ -76,7 +76,7 @@ func (sprite *TextSprite) Draw(_ float64, batch *batch.QuadBatch) {
 
 	sprite.fnt.Overlap = sprite.overlap
 
-	sprite.fnt.DrawOriginRotationV(batch, sprite.position, sprite.origin, sprite.size*sprite.scale.Y, sprite.rotation, sprite.monospaced, sprite.text)
+	sprite.fnt.DrawOriginRotationColorV(batch, sprite.position, sprite.origin, sprite.size*sprite.scale.Y, sprite.rotation, sprite.monospaced, sprite.color, sprite.text)
 
 	sprite.fnt.Overlap = prevOverlap
 }
