@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 	"unicode"
 )
 
@@ -36,7 +37,7 @@ type Font struct {
 	flip        bool
 }
 
-func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size float64, text string, monospaced bool) {
+func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, size, rotation float64, text string, monospaced bool) {
 	scale := size / font.initialSize
 
 	scBase := scale * renderer.GetScale().Y * renderer.GetSubScale().Y
@@ -46,6 +47,11 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 	col := color2.NewL(1)
 
 	advance := 0.0
+
+	rotation += renderer.GetRotation()
+
+	cos := math.Cos(rotation)
+	sin := math.Sin(rotation)
 
 	for i, c := range text {
 		char := font.glyphs[c]
@@ -67,9 +73,12 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 			bearX = (font.biggest - float64(char.region.Width)) / 2
 		}
 
-		pos := vector.NewVec2d((advance+bearX)*scBase+x, char.offsetY*scBase+y)
+		pX := (advance + bearX) * scBase
+		pY := char.offsetY * scBase
 
-		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, 0, col, false, *char.region)
+		pos := vector.NewVec2d(pX*cos-pY*sin+x, pX*sin+pY*cos+y)
+
+		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, rotation, col, false, *char.region)
 
 		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
 			advance += font.biggest
@@ -79,11 +88,11 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y float64, size flo
 	}
 }
 
-func (font *Font) Draw(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
+func (font *Font) Draw(renderer *batch.QuadBatch, x, y, size float64, text string) {
 	font.DrawOrigin(renderer, x, y, vector.BottomLeft, size, false, text)
 }
 
-func (font *Font) DrawMonospaced(renderer *batch.QuadBatch, x, y float64, size float64, text string) {
+func (font *Font) DrawMonospaced(renderer *batch.QuadBatch, x, y, size float64, text string) {
 	font.DrawOrigin(renderer, x, y, vector.BottomLeft, size, true, text)
 }
 
@@ -133,12 +142,20 @@ func (font *Font) GetAscent() float64 {
 }
 
 func (font *Font) DrawOrigin(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, monospaced bool, text string) {
-	width := font.getWidthInternal(size, text, monospaced)
-	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize * font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale())
+	font.DrawOriginRotation(renderer, x, y, origin, size, 0, monospaced, text)
+}
 
-	font.drawInternal(renderer, x+align.X, y+align.Y, size, text, monospaced)
+func (font *Font) DrawOriginRotation(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size, rotation float64, monospaced bool, text string) {
+	width := font.getWidthInternal(size, text, monospaced)
+	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize*font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale()).Rotate(rotation)
+
+	font.drawInternal(renderer, x+align.X, y+align.Y, size, rotation, text, monospaced)
 }
 
 func (font *Font) DrawOriginV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size float64, monospaced bool, text string) {
 	font.DrawOrigin(renderer, position.X, position.Y, origin, size, monospaced, text)
+}
+
+func (font *Font) DrawOriginRotationV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size, rotation float64, monospaced bool, text string) {
+	font.DrawOriginRotation(renderer, position.X, position.Y, origin, size, rotation, monospaced, text)
 }
