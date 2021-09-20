@@ -30,7 +30,8 @@ type BeatSynced struct {
 	Beat     float64
 	lastBeat float64
 
-	Kiai bool
+	IsSynced bool
+	Kiai     bool
 }
 
 func NewBeatSynced() *BeatSynced {
@@ -57,9 +58,18 @@ func (bs *BeatSynced) Update(time float64) {
 
 	bs.Sprite.Update(time)
 
-	mTime := bs.music.GetPosition() * 1000
+	var mTime float64
 
-	bs.timingPoint = bs.bMap.Timings.GetPoint(mTime)
+	if bs.music.GetState() == bass.MUSIC_PLAYING {
+		mTime = bs.music.GetPosition() * 1000
+		bs.timingPoint = bs.bMap.Timings.GetPoint(mTime)
+		bs.IsSynced = true
+	} else {
+		mTime = time
+		bs.timingPoint = bs.bMap.Timings.GetDefault()
+		bs.IsSynced = false
+	}
+
 	beatLength := bs.timingPoint.GetBaseBeatLength() / bs.Divisor
 
 	bs.Kiai = bs.timingPoint.Kiai
@@ -80,7 +90,7 @@ func (bs *BeatSynced) Update(time float64) {
 		bs.beatIndex--
 	}
 
-	delta := math.Max(0, time - bs.lastTime)
+	delta := math.Max(0, time-bs.lastTime)
 
 	ratio60 := delta / 16.6666666666667
 
