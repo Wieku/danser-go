@@ -44,6 +44,8 @@ type Timings struct {
 	SliderMult float64
 	TickRate   float64
 
+	defaultTimingPoint TimingPoint
+
 	Points  []TimingPoint
 	queue   []TimingPoint
 	Current TimingPoint
@@ -53,7 +55,22 @@ type Timings struct {
 }
 
 func NewTimings() *Timings {
-	return &Timings{BaseSet: 1, LastSet: 1}
+	return &Timings{
+		defaultTimingPoint: TimingPoint{
+			Time:             0,
+			beatLengthBase:   60000 / 60,
+			beatLength:       60000 / 60,
+			SampleSet:        0,
+			SampleIndex:      1,
+			SampleVolume:     1,
+			Signature:        4,
+			Inherited:        false,
+			Kiai:             false,
+			OmitFirstBarLine: false,
+		},
+		BaseSet: 1,
+		LastSet: 1,
+	}
 }
 
 func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex int, sampleVolume float64, signature int, inherited, kiai, omitFirstBarLine bool) {
@@ -96,6 +113,10 @@ func (tim *Timings) Update(time float64) {
 			tim.Current = p
 		}
 	}
+}
+
+func (tim *Timings) GetDefault() TimingPoint {
+	return tim.defaultTimingPoint
 }
 
 func (tim *Timings) GetPoint(time float64) TimingPoint {
