@@ -132,8 +132,6 @@ func (track *TrackBass) GetPosition() float64 {
 
 	if track.addedToMixer {
 		bassPos = float64(C.BASS_ChannelBytes2Seconds(track.channel, C.BASS_Mixer_ChannelGetPosition(track.channel, C.BASS_POS_BYTE)))
-	} else {
-		bassPos = float64(C.BASS_ChannelBytes2Seconds(track.channel, C.BASS_ChannelGetPosition(track.channel, C.BASS_POS_BYTE)))
 	}
 
 	return bassPos
