@@ -106,6 +106,8 @@ type Player struct {
 
 	ScaledWidth  float64
 	ScaledHeight float64
+
+	nightcore *common.NightcoreProcessor
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -132,7 +134,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	if track == nil {
 		log.Println("Failed to create music stream, creating a dummy stream...")
 
-		player.musicPlayer = bass.NewTrackVirtual(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()/1000+1)
+		player.musicPlayer = bass.NewTrackVirtual(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()/1000 + 1)
 	} else {
 		log.Println("Audio track:", beatMap.Audio)
 
@@ -452,6 +454,11 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.updateLimiter = frame.NewLimiter(player.baseLimit)
 
+	if player.bMap.Diff.CheckModActive(difficulty.Nightcore) {
+		player.nightcore = common.NewNightcoreProcessor()
+		player.nightcore.SetMap(player.bMap, player.musicPlayer)
+	}
+
 	if settings.RECORD {
 		return player
 	}
@@ -575,6 +582,10 @@ func (player *Player) updateMain(delta float64) {
 	if player.progressMsF >= player.startPointE || settings.PLAY {
 		if player.progressMsF < player.mapEndL {
 			player.controller.Update(player.progressMsF, delta)
+
+			if player.nightcore != nil {
+				player.nightcore.Update(player.progressMsF)
+			}
 		} else {
 			if player.overlay != nil {
 				player.overlay.DisableAudioSubmission(true)
