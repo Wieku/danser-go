@@ -16,8 +16,12 @@ type TimingPoint struct {
 	SampleIndex  int
 	SampleVolume float64
 
+	Signature int
+
 	Inherited bool
-	Kiai      bool
+
+	Kiai             bool
+	OmitFirstBarLine bool
 }
 
 func (t TimingPoint) GetRatio() float64 {
@@ -52,16 +56,18 @@ func NewTimings() *Timings {
 	return &Timings{BaseSet: 1, LastSet: 1}
 }
 
-func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex int, sampleVolume float64, inherited, kiai bool) {
+func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex int, sampleVolume float64, signature int, inherited, kiai, omitFirstBarLine bool) {
 	point := TimingPoint{
-		Time:           time,
-		beatLengthBase: beatLength,
-		beatLength:     beatLength,
-		SampleSet:      sampleSet,
-		SampleIndex:    sampleIndex,
-		SampleVolume:   sampleVolume,
-		Inherited:      inherited,
-		Kiai:           kiai,
+		Time:             time,
+		beatLengthBase:   beatLength,
+		beatLength:       beatLength,
+		SampleSet:        sampleSet,
+		SampleIndex:      sampleIndex,
+		SampleVolume:     sampleVolume,
+		Signature:        signature,
+		Inherited:        inherited,
+		Kiai:             kiai,
+		OmitFirstBarLine: omitFirstBarLine,
 	}
 
 	tim.Points = append(tim.Points, point)
