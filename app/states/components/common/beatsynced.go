@@ -65,14 +65,24 @@ func (bs *BeatSynced) Update(time float64) {
 	bs.Kiai = bs.timingPoint.Kiai
 
 	bs.rawProgress = (mTime - bs.timingPoint.Time) / beatLength
+
 	bs.beatProgress = math.Mod(bs.rawProgress, 1)
+	if mTime < bs.timingPoint.Time {
+		bs.beatProgress += 1
+	}
 
 	bs.beatIndex = int(bs.rawProgress)
 	if bs.timingPoint.OmitFirstBarLine {
-		bs.beatIndex -= 1
+		bs.beatIndex--
 	}
 
-	ratio60 := (time - bs.lastTime) / 16.6666666666667
+	if mTime < bs.timingPoint.Time {
+		bs.beatIndex--
+	}
+
+	delta := math.Max(0, time - bs.lastTime)
+
+	ratio60 := delta / 16.6666666666667
 
 	volume := 0.5
 	if bs.music != nil && bs.music.GetState() == bass.MUSIC_PLAYING {
