@@ -2,29 +2,43 @@ package common
 
 import (
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
 type BeatSynced struct {
 	*sprite.Sprite
 
-	bMap           *beatmap.BeatMap
-	music          bass.ITrack
-	lastBeatStart  float64
-	lastBeatLength float64
-	lastBeatProg   float64
-	beatProgress   float64
-	lastTime       float64
-	volAverage     float64
-	Progress       float64
-	lastProgress   float64
-	Kiai           bool
+	bMap  *beatmap.BeatMap
+	music bass.ITrack
+
+	timingPoint objects.TimingPoint
+
+	Divisor float64
+
+	rawProgress  float64
+	beatProgress float64
+	beatIndex    int
+
+	lastTime float64
+
+	averageVolume float64
+
+	Beat     float64
+	lastBeat float64
+
+	Kiai bool
 }
 
 func NewBeatSynced() *BeatSynced {
-	return &BeatSynced{Sprite: &sprite.Sprite{}}
+	return &BeatSynced{
+		Sprite:   &sprite.Sprite{},
+		lastTime: math.NaN(),
+		Divisor:  1,
+	}
 }
 
 func (bs *BeatSynced) SetMap(bMap *beatmap.BeatMap, track bass.ITrack) {
@@ -37,7 +51,7 @@ func (bs *BeatSynced) Update(time float64) {
 		return
 	}
 
-	if bs.lastTime == 0 {
+	if math.IsNaN(bs.lastTime) {
 		bs.lastTime = time
 	}
 
@@ -45,42 +59,38 @@ func (bs *BeatSynced) Update(time float64) {
 
 	mTime := bs.music.GetPosition() * 1000
 
-	point := bs.bMap.Timings.GetPoint(mTime)
-	bTime := point.GetBaseBeatLength()
+	bs.timingPoint = bs.bMap.Timings.GetPoint(mTime)
+	beatLength := bs.timingPoint.GetBaseBeatLength() / bs.Divisor
 
-	bs.Kiai = point.Kiai
+	bs.Kiai = bs.timingPoint.Kiai
 
-	if bTime != bs.lastBeatLength {
-		bs.lastBeatLength = bTime
-		bs.lastBeatStart = (point.Time - mTime) + time
-		bs.lastBeatProg = math.Floor((time-bs.lastBeatStart)/bs.lastBeatLength) - 1
+	bs.rawProgress = (mTime - bs.timingPoint.Time) / beatLength
+	bs.beatProgress = math.Mod(bs.rawProgress, 1)
+
+	bs.beatIndex = int(bs.rawProgress)
+	if bs.timingPoint.OmitFirstBarLine {
+		bs.beatIndex -= 1
 	}
 
-	if math.Floor((time-bs.lastBeatStart)/bs.lastBeatLength) > bs.lastBeatProg {
-		bs.lastBeatProg++
-	}
-
-	bs.beatProgress = (time-bs.lastBeatStart)/bs.lastBeatLength - bs.lastBeatProg
-
-	ratio1 := (time - bs.lastTime) / 16.6666666666667
-
-	bs.lastTime = time
+	ratio60 := (time - bs.lastTime) / 16.6666666666667
 
 	volume := 0.5
-
 	if bs.music != nil && bs.music.GetState() == bass.MUSIC_PLAYING {
 		volume = bs.music.GetLevelCombined()
 	}
 
-	ratioVol := math.Pow(0.9, ratio1)
+	volumeRatio := math.Pow(0.9, ratio60)
 
-	bs.volAverage = bs.volAverage*ratioVol + volume*(1.0-ratioVol)
+	bs.averageVolume = bs.averageVolume*volumeRatio + volume*(1.0-volumeRatio)
 
-	vprog := 1 - ((volume - bs.volAverage) / 0.5)
-	pV := math.Min(1.0, math.Max(0.0, 1.0-(vprog*0.5+bs.beatProgress*0.5)))
+	volumeProgress := 1 - (volume-bs.averageVolume)*2
 
-	ratio := math.Pow(0.5, ratio1)
+	beatRatio := math.Pow(0.5, ratio60)
 
-	bs.Progress = bs.lastProgress*ratio + (pV)*(1-ratio)
-	bs.lastProgress = bs.Progress
+	beat := mutils.ClampF64(1.0-(volumeProgress*0.5+bs.beatProgress*0.5), 0.0, 1.0)
+
+	bs.Beat = bs.lastBeat*beatRatio + beat*(1-beatRatio)
+	bs.lastBeat = bs.Beat
+
+	bs.lastTime = time
 }

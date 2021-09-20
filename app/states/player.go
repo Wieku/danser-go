@@ -628,7 +628,7 @@ func (player *Player) updateMusic(delta float64) {
 	target := mutils.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
 
 	if settings.Audio.BeatUseTimingPoints {
-		player.Scl = 1 + player.coin.Progress*(settings.Audio.BeatScale-1.0)
+		player.Scl = 1 + player.coin.Beat*(settings.Audio.BeatScale-1.0)
 	} else if player.Scl < target {
 		player.Scl += (target - player.Scl) * 0.3 * delta / 16.66667
 	} else if player.Scl > target {

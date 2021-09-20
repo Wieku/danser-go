@@ -58,8 +58,8 @@ func (coin *DanserCoin) SetMap(bMap *beatmap.BeatMap, track bass.ITrack) {
 func (coin *DanserCoin) Update(time float64) {
 	coin.BeatSynced.Update(time)
 
-	innerCircleScale := 1.05 - easing.OutQuad(coin.Progress)*0.05
-	outerCircleScale := 1.05 + easing.OutQuad(coin.Progress)*0.03
+	innerCircleScale := 1.05 - easing.OutQuad(coin.Beat)*0.05
+	outerCircleScale := 1.05 + easing.OutQuad(coin.Beat)*0.03
 
 	scl := (1.0 / float64(coin.coinBottom.Texture.Width)) * 1.05
 
@@ -79,7 +79,7 @@ func (coin *DanserCoin) Update(time float64) {
 
 	coin.vis.SetKiai(coin.Kiai)
 
-	coin.coinTop.SetAlpha(float32(alpha * (1 - easing.OutQuad(coin.Progress))*coin.GetAlpha()))
+	coin.coinTop.SetAlpha(float32(alpha * (1 - easing.OutQuad(coin.Beat))*coin.GetAlpha()))
 	coin.coinBottom.SetAlpha(coin.GetAlpha32())
 
 	coin.vis.Position = coin.GetPosition()
