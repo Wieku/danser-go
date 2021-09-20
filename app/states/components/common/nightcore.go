@@ -12,7 +12,7 @@ type NightcoreProcessor struct {
 	*BeatSynced
 
 	hasFirstValue bool
-	firstValue int
+	firstValue    int
 
 	pProgress int
 
@@ -24,10 +24,10 @@ type NightcoreProcessor struct {
 
 func NewNightcoreProcessor() *NightcoreProcessor {
 	proc := &NightcoreProcessor{
-		BeatSynced: NewBeatSynced(),
-		hatSample: skin.GetSample("nightcore-hat"),
-		clapSample: skin.GetSample("nightcore-clap"),
-		kickSample: skin.GetSample("nightcore-kick"),
+		BeatSynced:   NewBeatSynced(),
+		hatSample:    skin.GetSample("nightcore-hat"),
+		clapSample:   skin.GetSample("nightcore-clap"),
+		kickSample:   skin.GetSample("nightcore-kick"),
 		finishSample: skin.GetSample("nightcore-finish"),
 	}
 
@@ -53,7 +53,7 @@ func (bs *NightcoreProcessor) Update(time float64) {
 		if bs.beatIndex < 0 {
 			bs.firstValue = 0
 		} else {
-			bs.firstValue = (bs.beatIndex / segLength + 1) * segLength
+			bs.firstValue = (bs.beatIndex/segLength + 1) * segLength
 		}
 	}
 
