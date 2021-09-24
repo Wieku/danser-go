@@ -31,12 +31,28 @@ type Stars struct {
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim, speed *skills.Skill) Stars {
+func getStars(aim, speed *skills.Skill, experimental bool) Stars {
 	aimVal := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
 	speedVal := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
 
-	// total stars
-	total := aimVal + speedVal + math.Abs(speedVal-aimVal)*ExtremeScalingFactor
+	var total float64
+
+	if experimental { // https://github.com/ppy/osu/pull/13986
+		baseAimPerformance := ppBase(aimVal)
+		baseSpeedPerformance := ppBase(speedVal)
+
+		basePerformance := math.Pow(
+			math.Pow(baseAimPerformance, 1.1)+
+				math.Pow(baseSpeedPerformance, 1.1),
+			1.0/1.1,
+		)
+
+		if basePerformance > 0.00001 {
+			total = math.Cbrt(1.12) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
+		}
+	} else { // Live as of 2021-07-27
+		total = aimVal + speedVal + math.Abs(speedVal-aimVal)*ExtremeScalingFactor
+	}
 
 	return Stars{
 		Total: total,
@@ -46,7 +62,7 @@ func getStars(aim, speed *skills.Skill) Stars {
 }
 
 // Calculate final star rating of a map
-func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Stars {
+func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := skills.NewAimSkill(diff)
@@ -57,11 +73,11 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) 
 		speedSkill.Process(o)
 	}
 
-	return getStars(aimSkill, speedSkill)
+	return getStars(aimSkill, speedSkill, experimental)
 }
 
 // Calculate successive star ratings for every part of a beatmap
-func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Stars {
+func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) []Stars {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
@@ -82,7 +98,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 		aimSkill.Process(o)
 		speedSkill.Process(o)
 
-		stars = append(stars, getStars(aimSkill, speedSkill))
+		stars = append(stars, getStars(aimSkill, speedSkill, experimental))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)

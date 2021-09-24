@@ -133,10 +133,12 @@ type OsuRuleSet struct {
 	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]performance.Stars
 
-	queue       []HitObject
-	processed   []HitObject
-	hitListener hitListener
-	endListener endListener
+	queue          []HitObject
+	processed      []HitObject
+	hitListener    hitListener
+	endListener    endListener
+
+	experimentalPP bool
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -168,6 +170,18 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		ruleset.mapStats = append(ruleset.mapStats, mapTo)
 	}
 
+	if settings.Gameplay.UseLazerPP {
+		log.Println("Using pp calc version 2021-09-24 with following changes:")
+		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
+		//log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
+		//log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
+		//log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
+
+		ruleset.experimentalPP = true
+	} else {
+		log.Println("Using pp calc version 2021-07-27: https://osu.ppy.sh/home/news/2021-07-27-performance-points-star-rating-updates")
+	}
+
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
@@ -181,7 +195,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff, ruleset.experimentalPP)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 			log.Println("\tAim Stars:  ", star.Aim)
