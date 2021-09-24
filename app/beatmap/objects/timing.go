@@ -46,9 +46,10 @@ type Timings struct {
 
 	defaultTimingPoint TimingPoint
 
-	Points  []TimingPoint
-	queue   []TimingPoint
-	Current TimingPoint
+	uninheritedPoints []TimingPoint
+	Points            []TimingPoint
+	queue             []TimingPoint
+	Current           TimingPoint
 
 	BaseSet int
 	LastSet int
@@ -101,6 +102,8 @@ func (tim *Timings) FinalizePoints() {
 			point.beatLengthBase = lastPoint.beatLengthBase
 
 			tim.Points[i] = point
+		} else {
+			tim.uninheritedPoints = append(tim.uninheritedPoints, point)
 		}
 	}
 }
@@ -127,6 +130,16 @@ func (tim *Timings) GetPoint(time float64) TimingPoint {
 	}
 
 	return tim.Points[len(tim.Points)-1]
+}
+
+func (tim *Timings) GetUninheritedPoint(time float64) TimingPoint {
+	for i, pt := range tim.uninheritedPoints {
+		if time < pt.Time {
+			return tim.uninheritedPoints[mutils.ClampI(i-1, 0, len(tim.uninheritedPoints)-1)]
+		}
+	}
+
+	return tim.uninheritedPoints[len(tim.uninheritedPoints)-1]
 }
 
 func (tim *Timings) GetScoringDistance() float64 {
