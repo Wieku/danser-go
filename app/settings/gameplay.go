@@ -166,6 +166,7 @@ func initGameplay() *gameplay {
 		ShowWarningArrows:       true,
 		FlashlightDim:           1,
 		PlayUsername:            "Guest",
+		UseLazerPP:              false,
 	}
 }
 
@@ -187,6 +188,7 @@ type gameplay struct {
 	ShowWarningArrows       bool
 	FlashlightDim           float64
 	PlayUsername            string
+	UseLazerPP              bool
 }
 
 type boundaries struct {
