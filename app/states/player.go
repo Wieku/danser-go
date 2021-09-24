@@ -121,7 +121,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.batch = batch2.NewQuadBatch()
 	}
 
-	player.font = font.GetFont("Exo 2 Bold")
+	player.font = font.GetFont("Quicksand Bold")
 
 	discord.SetMap(beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 

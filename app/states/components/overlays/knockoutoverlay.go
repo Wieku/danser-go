@@ -131,11 +131,13 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	overlay := new(KnockoutOverlay)
 	overlay.controller = replayController
 
-	fontFile, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+	if font.GetFont("Quicksand Bold") == nil {
+		file, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+		font.LoadFont(file)
+		file.Close()
+	}
 
-	overlay.font = font.LoadFont(fontFile)
-
-	fontFile.Close()
+	overlay.font = font.GetFont("Quicksand Bold")
 
 	overlay.players = make(map[string]*knockoutPlayer)
 	overlay.playersArray = make([]*knockoutPlayer, 0)

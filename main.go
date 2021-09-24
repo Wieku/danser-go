@@ -459,7 +459,7 @@ func run() {
 		gl.ClearColor(0, 0, 0, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		file, _ := assets.Open("assets/fonts/Exo2-Bold.ttf")
+		file, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
 		font.LoadFont(file)
 		file.Close()
 
@@ -472,7 +472,7 @@ func run() {
 		camera.Update()
 		batch.SetCamera(camera.GetProjectionView())
 
-		font.GetFont("Exo 2 Bold").Draw(batch, 0, settings.Graphics.GetHeightF()-10, 32, "Loading...")
+		font.GetFont("Quicksand Bold").Draw(batch, 0, settings.Graphics.GetHeightF()-10, 32, "Loading...")
 
 		batch.End()
 		win.SwapBuffers()
