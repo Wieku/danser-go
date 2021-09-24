@@ -23,9 +23,10 @@ type Source int
 const (
 	UNKNOWN = Source(0)
 	LOCAL   = Source(1 << iota)
+	FALLBACK
 	SKIN
 	BEATMAP
-	ALL = LOCAL | SKIN | BEATMAP
+	ALL = LOCAL | FALLBACK | SKIN | BEATMAP
 )
 
 const defaultName = "default"
@@ -39,6 +40,7 @@ var atlas *texture.TextureAtlas
 var animationCache = make(map[string][]*texture.TextureRegion)
 
 var skinCache = make(map[string]*texture.TextureRegion)
+var fallbackCache = make(map[string]*texture.TextureRegion)
 var defaultCache = make(map[string]*texture.TextureRegion)
 
 var sourceCache = make(map[*texture.TextureRegion]Source)
@@ -47,14 +49,17 @@ var fontCache = make(map[string]*font.Font)
 
 var sampleCache = make(map[string]*bass.Sample)
 
-var pathCache *files.FileMap
+var skinPathCache *files.FileMap
+var fallbackPathCache *files.FileMap
 
 var CurrentSkin = defaultName
+var FallbackSkin = defaultName
 
 var info *SkinInfo
 
-func fallback() {
+func loadDefault() {
 	CurrentSkin = defaultName
+	FallbackSkin = defaultName
 
 	var err error
 	info, err = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"))
@@ -70,31 +75,51 @@ func checkInit() {
 		return
 	}
 
-	CurrentSkin = settings.Skin.CurrentSkin
-
-	log.Println("SkinManager: Loading skin:", CurrentSkin)
-
-	if CurrentSkin == defaultName {
-		fallback()
-	} else {
-		var err error
-		pathCache, err = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, CurrentSkin))
-
-		if err != nil {
-			log.Println("SkinManager:", CurrentSkin, "does not exist, falling back to default...")
-			fallback()
-		} else {
-			path, err := pathCache.GetFile("skin.ini")
-			if err != nil {
-				info = newDefaultInfo()
-			} else if info, err = LoadInfo(path); err != nil {
-				log.Println("SkinManager:", CurrentSkin, "is corrupted, falling back to default...")
-				fallback()
-			}
-		}
-	}
+	tryLoadSkin(settings.Skin.CurrentSkin, settings.Skin.FallbackSkin)
 
 	log.Println(fmt.Sprintf("SkinManager: Skin \"%s\" loaded.", CurrentSkin))
+
+	if FallbackSkin != CurrentSkin && FallbackSkin != defaultName {
+		log.Println("SkinManager: Loading fallback skin:", FallbackSkin)
+
+		var err error
+		fallbackPathCache, err = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, FallbackSkin))
+
+		if err != nil {
+			log.Println("SkinManager:", FallbackSkin, "does not exist, falling back to default...")
+			FallbackSkin = defaultName
+		} else {
+			log.Println(fmt.Sprintf("SkinManager: Fallback skin \"%s\" loaded.", FallbackSkin))
+		}
+	}
+}
+
+func tryLoadSkin(name, fallbackName string) {
+	CurrentSkin = name
+	FallbackSkin = fallbackName
+
+	if name == defaultName {
+		loadDefault()
+		return
+	}
+
+	log.Println("SkinManager: Loading skin:", name)
+
+	var err error
+	skinPathCache, err = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, name))
+
+	if err != nil {
+		log.Println(fmt.Sprintf("SkinManager: %s does not exist, falling back to %s...", name, fallbackName))
+		tryLoadSkin(fallbackName, defaultName)
+	} else {
+		path, err := skinPathCache.GetFile("skin.ini")
+		if err != nil {
+			info = newDefaultInfo()
+		} else if info, err = LoadInfo(path); err != nil {
+			log.Println(fmt.Sprintf("SkinManager: %s is corrupted, falling back to %s...", name, fallbackName))
+			tryLoadSkin(fallbackName, defaultName)
+		}
+	}
 }
 
 func GetInfo() *SkinInfo {
@@ -163,7 +188,11 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 	source = source & (^BEATMAP)
 
 	if CurrentSkin == defaultName {
-		source = source & (^SKIN)
+		source = source & (^(SKIN | FALLBACK))
+	}
+
+	if CurrentSkin == FallbackSkin || FallbackSkin == defaultName {
+		source = source & (^FALLBACK)
 	}
 
 	if source&SKIN > 0 {
@@ -172,11 +201,27 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 				return rg
 			}
 		} else {
-			rg := loadTexture(name+".png", false)
+			rg := loadTexture(name+".png", SKIN)
 			skinCache[name] = rg
 
 			if rg != nil {
 				sourceCache[rg] = SKIN
+				return rg
+			}
+		}
+	}
+
+	if source&FALLBACK > 0 {
+		if rg, exists := fallbackCache[name]; exists {
+			if rg != nil {
+				return rg
+			}
+		} else {
+			rg := loadTexture(name+".png", FALLBACK)
+			fallbackCache[name] = rg
+
+			if rg != nil {
+				sourceCache[rg] = FALLBACK
 				return rg
 			}
 		}
@@ -187,7 +232,7 @@ func GetTextureSource(name string, source Source) *texture.TextureRegion {
 			return rg
 		}
 
-		rg := loadTexture(name+".png", true)
+		rg := loadTexture(name+".png", LOCAL)
 		defaultCache[name] = rg
 
 		if rg != nil {
@@ -245,7 +290,8 @@ func GetMostSpecific(rg1, rg2 *texture.TextureRegion) *texture.TextureRegion {
 
 	if rg1S == BEATMAP ||
 		rg1S == SKIN && rg2S != BEATMAP ||
-		rg1S == LOCAL && rg2S != BEATMAP && rg2S != SKIN {
+		rg1S == FALLBACK && rg2S != SKIN && rg2S != BEATMAP ||
+		rg1S == LOCAL && rg2S != FALLBACK && rg2S != SKIN && rg2S != BEATMAP {
 		return rg1
 	}
 
@@ -276,12 +322,20 @@ func checkAtlas() {
 	}
 }
 
-func getPixmap(name string, local bool) (*texture.Pixmap, error) {
-	if local {
+func getPixmap(name string, source Source) (*texture.Pixmap, error) {
+	if source == LOCAL {
 		return assets.GetPixmap(filepath.Join("assets", "default-skin", name))
 	}
 
-	path, err := pathCache.GetFile(name)
+	var path string
+	var err error
+
+	if source == SKIN {
+		path, err = skinPathCache.GetFile(name)
+	} else if source == FALLBACK {
+		path, err = fallbackPathCache.GetFile(name)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -289,16 +343,16 @@ func getPixmap(name string, local bool) (*texture.Pixmap, error) {
 	return texture.NewPixmapFileString(path)
 }
 
-func loadTexture(name string, local bool) *texture.TextureRegion {
+func loadTexture(name string, source Source) *texture.TextureRegion {
 	ext := filepath.Ext(name)
 
 	x2Name := strings.TrimSuffix(name, ext) + "@2x" + ext
 
 	var region *texture.TextureRegion
 
-	image, err := getPixmap(x2Name, local)
+	image, err := getPixmap(x2Name, source)
 	if err != nil {
-		image, err = getPixmap(name, local)
+		image, err = getPixmap(name, source)
 		if err == nil {
 			region = &texture.TextureRegion{}
 			region.Width = float32(image.Width)
@@ -359,11 +413,15 @@ func GetSample(name string) *bass.Sample {
 	var sample *bass.Sample
 
 	if CurrentSkin != defaultName {
-		sample = tryLoad(name, false)
+		sample = tryLoad(name, SKIN)
+
+		if sample == nil && FallbackSkin != CurrentSkin && FallbackSkin != defaultName {
+			sample = tryLoad(name, FALLBACK)
+		}
 	}
 
 	if sample == nil {
-		sample = tryLoad(name, true)
+		sample = tryLoad(name, LOCAL)
 	}
 
 	sampleCache[name] = sample
@@ -371,8 +429,8 @@ func GetSample(name string) *bass.Sample {
 	return sample
 }
 
-func getSample(name string, local bool) *bass.Sample {
-	if local {
+func getSample(name string, source Source) *bass.Sample {
+	if source == LOCAL {
 		data, err := assets.GetBytes(filepath.Join("assets", "default-skin", name))
 		if err != nil {
 			return nil
@@ -381,7 +439,15 @@ func getSample(name string, local bool) *bass.Sample {
 		return bass.NewSampleData(data)
 	}
 
-	path, err := pathCache.GetFile(name)
+	var path string
+	var err error
+
+	if source == SKIN {
+		path, err = skinPathCache.GetFile(name)
+	} else if source == FALLBACK {
+		path, err = fallbackPathCache.GetFile(name)
+	}
+
 	if err != nil {
 		return nil
 	}
@@ -389,16 +455,16 @@ func getSample(name string, local bool) *bass.Sample {
 	return bass.NewSample(path)
 }
 
-func tryLoad(basePath string, local bool) *bass.Sample {
-	if sam := getSample(basePath+".wav", local); sam != nil {
+func tryLoad(basePath string, source Source) *bass.Sample {
+	if sam := getSample(basePath+".wav", source); sam != nil {
 		return sam
 	}
 
-	if sam := getSample(basePath+".ogg", local); sam != nil {
+	if sam := getSample(basePath+".ogg", source); sam != nil {
 		return sam
 	}
 
-	if sam := getSample(basePath+".mp3", local); sam != nil {
+	if sam := getSample(basePath+".mp3", source); sam != nil {
 		return sam
 	}
 
