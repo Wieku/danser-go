@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-const bufferSize = 10*1024*1024
+const bufferSize = 10 * 1024 * 1024
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
 	switch line[0] {
@@ -241,7 +241,7 @@ func ParseBeatMapFile(file *os.File) *BeatMap {
 }
 
 func ParseTimingPointsAndPauses(beatMap *BeatMap) {
-	if len(beatMap.Timings.Points) > 0 {
+	if beatMap.Timings.HasPoints() {
 		return
 	}
 

@@ -46,10 +46,10 @@ type Timings struct {
 
 	defaultTimingPoint TimingPoint
 
-	uninheritedPoints []TimingPoint
-	Points            []TimingPoint
-	queue             []TimingPoint
-	Current           TimingPoint
+	points         []TimingPoint
+	originalPoints []TimingPoint
+
+	Current TimingPoint
 
 	BaseSet int
 	LastSet int
@@ -88,34 +88,28 @@ func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex in
 		OmitFirstBarLine: omitFirstBarLine,
 	}
 
-	tim.Points = append(tim.Points, point)
+	tim.points = append(tim.points, point)
 }
 
 func (tim *Timings) FinalizePoints() {
-	sort.SliceStable(tim.Points, func(i, j int) bool {
-		return tim.Points[i].Time < tim.Points[j].Time
+	sort.SliceStable(tim.points, func(i, j int) bool {
+		return tim.points[i].Time < tim.points[j].Time
 	})
 
-	for i, point := range tim.Points {
+	for i, point := range tim.points {
 		if point.Inherited && i > 0 {
-			lastPoint := tim.Points[i-1]
+			lastPoint := tim.points[i-1]
 			point.beatLengthBase = lastPoint.beatLengthBase
 
-			tim.Points[i] = point
+			tim.points[i] = point
 		} else {
-			tim.uninheritedPoints = append(tim.uninheritedPoints, point)
+			tim.originalPoints = append(tim.originalPoints, point)
 		}
 	}
 }
 
 func (tim *Timings) Update(time float64) {
-	if len(tim.queue) > 0 {
-		p := tim.queue[0]
-		if p.Time <= time {
-			tim.queue = tim.queue[1:]
-			tim.Current = p
-		}
-	}
+	tim.Current = tim.GetPoint(time)
 }
 
 func (tim *Timings) GetDefault() TimingPoint {
@@ -123,23 +117,27 @@ func (tim *Timings) GetDefault() TimingPoint {
 }
 
 func (tim *Timings) GetPoint(time float64) TimingPoint {
-	for i, pt := range tim.Points {
-		if time < pt.Time {
-			return tim.Points[mutils.ClampI(i-1, 0, len(tim.Points)-1)]
-		}
-	}
+	tLen := len(tim.points)
 
-	return tim.Points[len(tim.Points)-1]
+	// We have to search in reverse because sort.Search searches for lowest index at which condition is true, we want the opposite
+	index := sort.Search(tLen, func(i int) bool {
+		return time >= tim.points[tLen-i-1].Time
+	})
+
+	// We have to revert the index to get correct timing point
+	return tim.points[mutils.MaxI(0, tLen-index-1)]
 }
 
-func (tim *Timings) GetUninheritedPoint(time float64) TimingPoint {
-	for i, pt := range tim.uninheritedPoints {
-		if time < pt.Time {
-			return tim.uninheritedPoints[mutils.ClampI(i-1, 0, len(tim.uninheritedPoints)-1)]
-		}
-	}
+func (tim *Timings) GetOriginalPoint(time float64) TimingPoint {
+	tLen := len(tim.originalPoints)
 
-	return tim.uninheritedPoints[len(tim.uninheritedPoints)-1]
+	// We have to search in reverse because sort.Search searches for lowest index at which condition is true, we want the opposite
+	index := sort.Search(tLen, func(i int) bool {
+		return time >= tim.originalPoints[tLen-i-1].Time
+	})
+
+	// We have to revert the index to get correct timing point
+	return tim.originalPoints[mutils.MaxI(0, tLen-index-1)]
 }
 
 func (tim *Timings) GetScoringDistance() float64 {
@@ -166,9 +164,10 @@ func (tim *Timings) GetTickDistance(point TimingPoint) float64 {
 	return tim.GetScoringDistance() / point.GetRatio()
 }
 
-func (tim *Timings) Reset() {
-	tim.queue = make([]TimingPoint, len(tim.Points))
-	copy(tim.queue, tim.Points)
+func (tim *Timings) HasPoints() bool {
+	return len(tim.points) > 0
+}
 
-	tim.Current = tim.queue[0]
+func (tim *Timings) Reset() {
+	tim.Current = tim.points[0]
 }

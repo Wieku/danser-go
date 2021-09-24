@@ -62,7 +62,7 @@ func (bs *BeatSynced) Update(time float64) {
 
 	if bs.music.GetState() == bass.MUSIC_PLAYING {
 		mTime = bs.music.GetPosition() * 1000
-		bs.timingPoint = bs.bMap.Timings.GetUninheritedPoint(mTime)
+		bs.timingPoint = bs.bMap.Timings.GetOriginalPoint(mTime)
 		bs.IsSynced = true
 	} else {
 		mTime = time
