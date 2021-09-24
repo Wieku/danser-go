@@ -129,6 +129,9 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 
 	if len(line) > 2 {
 		signature, _ = strconv.Atoi(line[2])
+		if signature == 0 {
+			signature = 4
+		}
 	}
 
 	if len(line) > 3 {
