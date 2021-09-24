@@ -119,25 +119,21 @@ func (tim *Timings) GetDefault() TimingPoint {
 func (tim *Timings) GetPointAt(time float64) TimingPoint {
 	tLen := len(tim.points)
 
-	// We have to search in reverse because sort.Search searches for lowest index at which condition is true, we want the opposite
 	index := sort.Search(tLen, func(i int) bool {
-		return time >= tim.points[tLen-i-1].Time
+		return time < tim.points[i].Time
 	})
 
-	// We have to revert the index to get correct timing point
-	return tim.points[mutils.MaxI(0, tLen-index-1)]
+	return tim.points[mutils.MaxI(0, index-1)]
 }
 
 func (tim *Timings) GetOriginalPointAt(time float64) TimingPoint {
 	tLen := len(tim.originalPoints)
 
-	// We have to search in reverse because sort.Search searches for lowest index at which condition is true, we want the opposite
 	index := sort.Search(tLen, func(i int) bool {
-		return time >= tim.originalPoints[tLen-i-1].Time
+		return time < tim.originalPoints[i].Time
 	})
 
-	// We have to revert the index to get correct timing point
-	return tim.originalPoints[mutils.MaxI(0, tLen-index-1)]
+	return tim.originalPoints[mutils.MaxI(0, index-1)]
 }
 
 func (tim *Timings) GetScoringDistance() float64 {
