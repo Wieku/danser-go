@@ -11,6 +11,7 @@ func initAudio() *audio {
 		HitsoundPositionMultiplier: 1.0,
 		IgnoreBeatmapSamples:       false,
 		IgnoreBeatmapSampleVolume:  false,
+		PlayNightcoreSamples:       true,
 		BeatScale:                  1.2,
 		BeatUseTimingPoints:        false,
 		NonWindows: &nonWindows{
@@ -30,6 +31,7 @@ type audio struct {
 	HitsoundPositionMultiplier float64
 	IgnoreBeatmapSamples       bool //= false
 	IgnoreBeatmapSampleVolume  bool //= false
+	PlayNightcoreSamples       bool
 	BeatScale                  float64
 	BeatUseTimingPoints        bool
 	NonWindows                 *nonWindows `json:"Linux/Unix"`

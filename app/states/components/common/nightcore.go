@@ -1,6 +1,7 @@
 package common
 
 import (
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
 )
@@ -65,6 +66,10 @@ func (bs *NightcoreProcessor) Update(time float64) {
 }
 
 func (bs *NightcoreProcessor) playBeat(beatIndex int, signature int) { //nolint:gocyclo
+	if !settings.Audio.PlayNightcoreSamples {
+		return
+	}
+
 	if beatIndex == 0 && bs.finishSample != nil {
 		bs.finishSample.Play()
 	}
