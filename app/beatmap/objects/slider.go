@@ -229,7 +229,7 @@ func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd b
 
 func (slider *Slider) SetTiming(timings *Timings) {
 	slider.Timings = timings
-	slider.TPoint = timings.GetPoint(slider.StartTime)
+	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
 	lines := slider.multiCurve.GetLines()
 
@@ -738,7 +738,7 @@ func (slider *Slider) PlayEdgeSample(index int) {
 		return
 	}
 
-	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPoint(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
+	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
 }
 
 func (slider *Slider) HitEdge(index int, time float64, isHit bool) {

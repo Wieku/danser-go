@@ -294,7 +294,7 @@ func (spinner *Spinner) Hit(_ float64, isHit bool) {
 		return
 	}
 
-	point := spinner.Timings.GetPoint(spinner.EndTime)
+	point := spinner.Timings.GetPointAt(spinner.EndTime)
 
 	index := spinner.BasicHitSound.CustomIndex
 	if index == 0 {

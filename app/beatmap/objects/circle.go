@@ -114,7 +114,7 @@ func (circle *Circle) PlaySound() {
 		return
 	}
 
-	point := circle.Timings.GetPoint(circle.StartTime)
+	point := circle.Timings.GetPointAt(circle.StartTime)
 
 	index := circle.BasicHitSound.CustomIndex
 	sampleSet := circle.BasicHitSound.SampleSet

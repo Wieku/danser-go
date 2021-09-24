@@ -109,14 +109,14 @@ func (tim *Timings) FinalizePoints() {
 }
 
 func (tim *Timings) Update(time float64) {
-	tim.Current = tim.GetPoint(time)
+	tim.Current = tim.GetPointAt(time)
 }
 
 func (tim *Timings) GetDefault() TimingPoint {
 	return tim.defaultTimingPoint
 }
 
-func (tim *Timings) GetPoint(time float64) TimingPoint {
+func (tim *Timings) GetPointAt(time float64) TimingPoint {
 	tLen := len(tim.points)
 
 	// We have to search in reverse because sort.Search searches for lowest index at which condition is true, we want the opposite
@@ -128,7 +128,7 @@ func (tim *Timings) GetPoint(time float64) TimingPoint {
 	return tim.points[mutils.MaxI(0, tLen-index-1)]
 }
 
-func (tim *Timings) GetOriginalPoint(time float64) TimingPoint {
+func (tim *Timings) GetOriginalPointAt(time float64) TimingPoint {
 	tLen := len(tim.originalPoints)
 
 	// We have to search in reverse because sort.Search searches for lowest index at which condition is true, we want the opposite

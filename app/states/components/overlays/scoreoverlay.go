@@ -244,7 +244,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	showAfterSkip := 2000.0
 
-	beatLen := overlay.ruleset.GetBeatMap().Timings.GetPoint(0).GetBaseBeatLength()
+	beatLen := overlay.ruleset.GetBeatMap().Timings.GetPointAt(0).GetBaseBeatLength()
 	if beatLen > 0 {
 		showAfterSkip = beatLen
 		if beatLen < 500 {
