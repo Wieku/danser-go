@@ -63,10 +63,10 @@ func getStars(aim, speed *skills.Skill, experimental bool) Stars {
 
 // Calculate final star rating of a map
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
 	aimSkill := skills.NewAimSkill(diff)
-	speedSkill := skills.NewSpeedSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff, experimental)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
@@ -85,10 +85,10 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 
 	log.Println("Calculating step SR for mods:", modString)
 
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
 	aimSkill := skills.NewAimSkill(diff)
-	speedSkill := skills.NewSpeedSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff, experimental)
 
 	stars := make([]Stars, 1, len(objects))
 

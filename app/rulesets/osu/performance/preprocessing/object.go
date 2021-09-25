@@ -38,7 +38,7 @@ type DifficultyObject struct {
 	lastLastObject objects.IHitObject
 }
 
-func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty) *DifficultyObject {
+func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty, experimental bool) *DifficultyObject {
 	obj := &DifficultyObject{
 		diff:           d,
 		BaseObject:     hitObject,
@@ -51,7 +51,11 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 
 	obj.setDistances()
 
-	obj.StrainTime = math.Max(50, obj.DeltaTime)
+	if experimental {
+		obj.StrainTime = math.Max(25, obj.DeltaTime)
+	} else {
+		obj.StrainTime = math.Max(50, obj.DeltaTime)
+	}
 
 	return obj
 }

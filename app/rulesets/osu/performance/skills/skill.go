@@ -9,6 +9,9 @@ import (
 )
 
 type Skill struct {
+	// Whether new pp changes should be considered
+	Experimental bool
+
 	// Strain values are multiplied by this number for the given skill. Used to balance the value of different skills between each other.
 	SkillMultiplier float64
 
@@ -51,8 +54,9 @@ type Skill struct {
 	diff *difficulty.Difficulty
 }
 
-func NewSkill(d *difficulty.Difficulty) *Skill {
+func NewSkill(d *difficulty.Difficulty, experimental bool) *Skill {
 	return &Skill{
+		Experimental:          experimental,
 		DecayWeight:           0.9,
 		SectionLength:         400,
 		HistoryLength:         1,

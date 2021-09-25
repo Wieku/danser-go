@@ -14,7 +14,7 @@ const (
 )
 
 func NewAimSkill(d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(d)
+	skill := NewSkill(d, false)
 	skill.SkillMultiplier = 26.25
 	skill.StrainDecayBase = 0.15
 	skill.StrainValueOf = aimStrainValue
