@@ -149,6 +149,10 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
+
+		if len(candidates) == 0 {
+			controller.bMap.Diff.SetMods(controller.bMap.Diff.Mods | difficulty.Autoplay)
+		}
 	}
 
 	settings.PLAYERS = len(controller.replays)
