@@ -41,6 +41,8 @@ type SkinInfo struct {
 
 	ComboColors []color.Color
 
+	DefaultSkinFollowpointBehavior bool
+
 	//slider style unnecessary
 
 	SliderBallTint      bool
@@ -231,6 +233,8 @@ func LoadInfo(path string) (*SkinInfo, error) {
 				index: int(index),
 				color: ParseColor(tokenized[1], tokenized[0]),
 			})
+		case "DefaultSkinFollowpointBehavior":
+			info.DefaultSkinFollowpointBehavior = tokenized[1] == "1"
 		case "AllowSliderBallTint":
 			info.SliderBallTint = tokenized[1] == "1"
 		case "SliderBallFlip":
