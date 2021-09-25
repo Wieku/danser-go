@@ -29,6 +29,10 @@ func NewLoopProcessor(data []string) *LoopProcessor {
 		panic(err)
 	}
 
+	if loop.repeats < 1 {
+		loop.repeats = 1
+	}
+
 	return loop
 }
 
