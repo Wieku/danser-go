@@ -556,7 +556,7 @@ func (player *Player) updateMain(delta float64) {
 
 		player.musicPlayer.SetPosition(player.startPoint / 1000)
 
-		discord.SetDuration(int64((player.musicPlayer.GetLength() - player.musicPlayer.GetPosition()) * 1000 / settings.SPEED))
+		discord.SetDuration(int64((player.mapEndL - player.musicPlayer.GetPosition()* 1000)  / settings.SPEED + (player.MapEnd-player.mapEndL)))
 
 		if player.overlay == nil {
 			discord.UpdateDance(settings.TAG, settings.DIVIDES)
