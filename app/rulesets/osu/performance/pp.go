@@ -40,7 +40,7 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(aimStars, speedStars float64,
+func (pp *PPv2) PPv2x(stars Stars,
 	maxCombo, nsliders, ncircles, nobjects,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
 	maxCombo = mutils.MaxI(1, maxCombo)
@@ -57,8 +57,8 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 
 	totalhits := n300 + n100 + n50 + nmiss
 
-	pp.aimStrain = aimStars
-	pp.speedStrain = speedStars
+	pp.aimStrain = stars.Aim
+	pp.speedStrain = stars.Speed
 	pp.diff = diff
 	pp.totalHits = totalhits
 	pp.scoreMaxCombo = combo
