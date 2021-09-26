@@ -28,22 +28,32 @@ type Stars struct {
 
 	// Speed stars, needed for Performance Points (aka PP) calculations
 	Speed float64
+
+	// Flashlight stars, needed for Performance Points (aka PP) calculations
+	Flashlight float64
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim, speed *skills.Skill, experimental bool) Stars {
+func getStars(aim, speed, flashlight *skills.Skill, diff *difficulty.Difficulty, experimental bool) Stars {
 	aimVal := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
 	speedVal := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
+	flashlightVal := math.Sqrt(flashlight.DifficultyValue()) * StarScalingFactor
 
 	var total float64
 
 	if experimental { // https://github.com/ppy/osu/pull/13986
 		baseAimPerformance := ppBase(aimVal)
 		baseSpeedPerformance := ppBase(speedVal)
+		baseFlashlightPerformance := 0.0
+
+		if diff.CheckModActive(difficulty.Flashlight) {
+			baseFlashlightPerformance = math.Pow(flashlightVal, 2.0) * 25.0
+		}
 
 		basePerformance := math.Pow(
 			math.Pow(baseAimPerformance, 1.1)+
-				math.Pow(baseSpeedPerformance, 1.1),
+				math.Pow(baseSpeedPerformance, 1.1)+
+				math.Pow(baseFlashlightPerformance, 1.1),
 			1.0/1.1,
 		)
 
@@ -58,6 +68,7 @@ func getStars(aim, speed *skills.Skill, experimental bool) Stars {
 		Total: total,
 		Aim:   aimVal,
 		Speed: speedVal,
+		Flashlight: flashlightVal,
 	}
 }
 
@@ -67,13 +78,15 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, 
 
 	aimSkill := skills.NewAimSkill(diff)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
+	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
 		speedSkill.Process(o)
+		flashlightSkill.Process(o)
 	}
 
-	return getStars(aimSkill, speedSkill, experimental)
+	return getStars(aimSkill, speedSkill, flashlightSkill, diff, experimental)
 }
 
 // Calculate successive star ratings for every part of a beatmap
@@ -89,6 +102,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 
 	aimSkill := skills.NewAimSkill(diff)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
+	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	stars := make([]Stars, 1, len(objects))
 
@@ -97,8 +111,9 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 	for i, o := range diffObjects {
 		aimSkill.Process(o)
 		speedSkill.Process(o)
+		flashlightSkill.Process(o)
 
-		stars = append(stars, getStars(aimSkill, speedSkill, experimental))
+		stars = append(stars, getStars(aimSkill, speedSkill, flashlightSkill, diff, experimental))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)
