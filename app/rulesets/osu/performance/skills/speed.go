@@ -40,7 +40,7 @@ func speedStrainValue(s *Skill, current *preprocessing.DifficultyObject) float64
 	strainTime := current.StrainTime
 
 	if s.Experimental {
-		previous := s.GetPrevious()
+		previous := s.GetPrevious(0)
 		greatWindowFull := float64(s.diff.Hit300) / s.diff.Speed * 2
 		speedWindowRatio := strainTime / greatWindowFull
 

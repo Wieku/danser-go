@@ -29,7 +29,7 @@ func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float
 
 	result := 0.0
 
-	if previous := skill.GetPrevious(); previous != nil {
+	if previous := skill.GetPrevious(0); previous != nil {
 		if !math.IsNaN(current.Angle) && current.Angle > AimAngleBonusBegin {
 			angleBonus := math.Sqrt(
 				math.Max(previous.JumpDistance-AngleBonusScale, 0.0) *

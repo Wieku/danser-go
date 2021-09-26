@@ -99,12 +99,12 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 	skill.Previous = append(skill.Previous, current)
 }
 
-func (skill *Skill) GetPrevious() *preprocessing.DifficultyObject {
-	if len(skill.Previous) == 0 {
+func (skill *Skill) GetPrevious(i int) *preprocessing.DifficultyObject {
+	if len(skill.Previous)-1-i < 0 {
 		return nil
 	}
 
-	return skill.Previous[len(skill.Previous)-1]
+	return skill.Previous[len(skill.Previous)-1-i]
 }
 
 func (skill *Skill) GetCurrentStrainPeaks() []float64 {
@@ -148,7 +148,7 @@ func (skill *Skill) saveCurrentPeak() {
 }
 
 func (skill *Skill) startNewSectionFrom(end float64) {
-	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-skill.GetPrevious().StartTime)
+	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-skill.GetPrevious(0).StartTime)
 }
 
 func reverseSortFloat64s(arr []float64) {
