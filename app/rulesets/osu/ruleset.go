@@ -133,10 +133,10 @@ type OsuRuleSet struct {
 	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]performance.Stars
 
-	queue          []HitObject
-	processed      []HitObject
-	hitListener    hitListener
-	endListener    endListener
+	queue       []HitObject
+	processed   []HitObject
+	hitListener hitListener
+	endListener endListener
 
 	experimentalPP bool
 }
@@ -173,8 +173,8 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	if settings.Gameplay.UseLazerPP {
 		log.Println("Using pp calc version 2021-09-24 with following changes:")
 		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
-		//log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
-		//log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
+		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
+		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
 		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
 
 		ruleset.experimentalPP = true
@@ -480,7 +480,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
+	subSet.ppv2.PPv2x(diff, set.experimentalPP, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
 
 	switch result {
 	case Hit100:

@@ -16,7 +16,7 @@ func ppBase(stars float64) float64 {
 }
 
 type PPv2Results struct {
-	Aim, Speed, Acc, Total float64
+	Aim, Speed, Acc, Flashlight, Total float64
 }
 
 // PPv2 : structure to store ppv2 values
@@ -24,6 +24,8 @@ type PPv2 struct {
 	Results PPv2Results
 
 	stars Stars
+
+	experimental bool
 
 	maxCombo, nsliders, ncircles, nobjects int
 
@@ -40,7 +42,7 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(stars Stars,
+func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	maxCombo, nsliders, ncircles, nobjects,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
 	maxCombo = mutils.MaxI(1, maxCombo)
@@ -58,6 +60,7 @@ func (pp *PPv2) PPv2x(stars Stars,
 	totalhits := n300 + n100 + n50 + nmiss
 
 	pp.stars = stars
+	pp.experimental = experimental
 	pp.diff = diff
 	pp.totalHits = totalhits
 	pp.scoreMaxCombo = combo
@@ -102,10 +105,13 @@ func (pp *PPv2) PPv2x(stars Stars,
 	pp.Results.Aim = pp.computeAimValue()
 	pp.Results.Speed = pp.computeSpeedValue()
 	pp.Results.Acc = pp.computeAccuracyValue()
+	pp.Results.Flashlight = pp.computeFlashlightValue()
 
 	pp.Results.Total = math.Pow(
-		math.Pow(pp.Results.Aim, 1.1)+math.Pow(pp.Results.Speed, 1.1)+
-			math.Pow(pp.Results.Acc, 1.1),
+		math.Pow(pp.Results.Aim, 1.1)+
+			math.Pow(pp.Results.Speed, 1.1)+
+			math.Pow(pp.Results.Acc, 1.1)+
+			math.Pow(pp.Results.Flashlight, 1.1),
 		1.0/1.1) * finalMultiplier
 
 	return *pp
@@ -147,28 +153,32 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
 
-	approachRateBonus := 1.0 + (0.03 + 0.37 * approachRateTotalHitsFactor) * approachRateFactor
+	approachRateBonus := 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
-	flashlightBonus := 1.0
+	if pp.experimental {
+		aimValue *= approachRateBonus
+	} else {
+		flashlightBonus := 1.0
 
-	if pp.diff.Mods.Active(difficulty.Flashlight) {
-		flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+		if pp.diff.Mods.Active(difficulty.Flashlight) {
+			flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
 
-		if pp.totalHits > 200 {
-			flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
+			if pp.totalHits > 200 {
+				flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
+			}
+
+			if pp.totalHits > 500 {
+				flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
+			}
 		}
 
-		if pp.totalHits > 500 {
-			flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
-		}
+		aimValue *= math.Max(flashlightBonus, approachRateBonus)
 	}
-
-	aimValue *= math.Max(flashlightBonus, approachRateBonus)
 
 	// Scale the aim value with accuracy _slightly_
 	aimValue *= 0.5 + pp.accuracy/2.0
@@ -206,7 +216,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
 
-	speedValue *= 1.0 + (0.03 + 0.37 * approachRateTotalHitsFactor) * approachRateFactor
+	speedValue *= 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
@@ -255,4 +265,48 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 	}
 
 	return accuracyValue
+}
+
+func (pp *PPv2) computeFlashlightValue() float64 {
+	if !pp.experimental || !pp.diff.CheckModActive(difficulty.Flashlight) {
+		return 0
+	}
+
+	rawFlashlight := pp.stars.Flashlight
+
+	if pp.diff.CheckModActive(difficulty.TouchDevice) {
+		rawFlashlight = math.Pow(rawFlashlight, 0.8)
+	}
+
+	flashlightValue := math.Pow(rawFlashlight, 2.0) * 25.0
+
+	// Add an additional bonus for HDFL.
+	if pp.diff.CheckModActive(difficulty.Hidden) {
+		flashlightValue *= 1.3
+	}
+
+	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
+	if pp.countMiss > 0 {
+		flashlightValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.countMiss), 0.875))
+	}
+
+	// Combo scaling.
+	if pp.maxCombo > 0 {
+		flashlightValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	}
+
+	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
+	scale := 0.7 + 0.1*math.Min(1.0, float64(pp.totalHits)/200.0)
+	if pp.totalHits > 200 {
+		scale += 0.2 * math.Min(1.0, float64(pp.totalHits-200)/200.0)
+	}
+
+	flashlightValue *= scale
+
+	// Scale the flashlight value with accuracy _slightly_.
+	flashlightValue *= 0.5 + pp.accuracy/2.0
+	// It is important to also consider accuracy difficulty when doing that.
+	flashlightValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
+
+	return flashlightValue
 }
