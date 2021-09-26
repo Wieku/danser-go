@@ -200,6 +200,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 			log.Println("\tAim Stars:  ", star.Aim)
 			log.Println("\tSpeed Stars:", star.Speed)
+
+			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+				log.Println("\tFL Stars:   ", star.Flashlight)
+			}
+
 			log.Println("\tTotal Stars:", star.Total)
 		}
 
