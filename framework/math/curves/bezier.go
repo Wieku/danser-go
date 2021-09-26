@@ -1,8 +1,8 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -86,7 +86,7 @@ func BinomialCoefficient(n, k int64) int64 {
 		return 1
 	}
 
-	k = bmath.MinI64(k, n-k)
+	k = mutils.MinI64(k, n-k)
 
 	c := int64(1)
 	for i := int64(1); i <= k; i++ {

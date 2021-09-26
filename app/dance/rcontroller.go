@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
 	"github.com/wieku/danser-go/app/dance/spinners"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/rplpa"
 	"sort"
 	"time"
@@ -14,7 +15,6 @@ import (
 	//"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
@@ -112,7 +112,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			return candidates[i].Score > candidates[j].Score
 		})
 
-		candidates = candidates[:bmath.MinI(len(candidates), settings.Knockout.MaxPlayers)]
+		candidates = candidates[:mutils.MinI(len(candidates), settings.Knockout.MaxPlayers)]
 	}
 
 	displayedMods := ^difficulty.ParseMods(settings.Knockout.HideMods)
@@ -149,6 +149,10 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
+
+		if len(candidates) == 0 {
+			controller.bMap.Diff.SetMods(controller.bMap.Diff.Mods | difficulty.Autoplay)
+		}
 	}
 
 	settings.PLAYERS = len(controller.replays)
@@ -450,7 +454,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					if c.newHandling || c.replayIndex == len(c.frames)-1 {
 						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
 					} else {
-						localIndex := bmath.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
+						localIndex := mutils.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
 						localFrame := c.frames[localIndex]
 
 						// HACK for older replays: update object ends till the next frame
@@ -466,11 +470,11 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 				if !wasUpdated {
 					if !isAutopilot {
-						localIndex := bmath.ClampI(c.replayIndex, 0, len(c.frames)-1)
+						localIndex := mutils.ClampI(c.replayIndex, 0, len(c.frames)-1)
 
 						progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
 
-						prevIndex := bmath.MaxI(0, localIndex-1)
+						prevIndex := mutils.MaxI(0, localIndex-1)
 
 						mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
 						mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY

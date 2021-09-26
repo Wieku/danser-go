@@ -119,34 +119,47 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 		beatMap.MaxBPM = math.Max(beatMap.MaxBPM, rBPM)
 	}
 
-	if len(line) > 3 {
-		sampleSet, _ := strconv.Atoi(line[3])
-		sampleIndex, _ := strconv.Atoi(line[4])
+	signature := 4
+	sampleSet := beatMap.Timings.LastSet
+	sampleIndex := 1
+	sampleVolume := 1.0
+	inherited := false
+	kiai := false
+	omitFirstBarLine := false
 
-		sampleVolume := 1.0
-		inherited := false
-		kiai := false
-
-		if len(line) > 5 {
-			sV, _ := strconv.Atoi(line[5])
-			sampleVolume = float64(sV) / 100
+	if len(line) > 2 {
+		signature, _ = strconv.Atoi(line[2])
+		if signature == 0 {
+			signature = 4
 		}
-
-		if len(line) > 6 {
-			inh, _ := strconv.Atoi(line[6])
-			inherited = inh == 0
-		}
-
-		if len(line) > 7 {
-			ki, _ := strconv.Atoi(line[7])
-			kiai = ki == 1
-		}
-
-		beatMap.Timings.LastSet = sampleSet
-		beatMap.Timings.AddPoint(float64(pointTime), bpm, sampleSet, sampleIndex, sampleVolume, inherited, kiai)
-	} else {
-		beatMap.Timings.AddPoint(float64(pointTime), bpm, beatMap.Timings.LastSet, 1, 1, false, false)
 	}
+
+	if len(line) > 3 {
+		sampleSet, _ = strconv.Atoi(line[3])
+	}
+
+	if len(line) > 4 {
+		sampleIndex, _ = strconv.Atoi(line[4])
+	}
+
+	if len(line) > 5 {
+		sV, _ := strconv.Atoi(line[5])
+		sampleVolume = float64(sV) / 100
+	}
+
+	if len(line) > 6 {
+		inh, _ := strconv.Atoi(line[6])
+		inherited = inh == 0
+	}
+
+	if len(line) > 7 {
+		ki, _ := strconv.Atoi(line[7])
+		kiai = (ki & 1) > 0
+		omitFirstBarLine = (ki & 8) > 0
+	}
+
+	beatMap.Timings.AddPoint(float64(pointTime), bpm, sampleSet, sampleIndex, sampleVolume, signature, inherited, kiai, omitFirstBarLine)
+	beatMap.Timings.LastSet = sampleSet
 }
 
 func (beatMap *BeatMap) FinalizePoints() {

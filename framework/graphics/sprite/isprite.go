@@ -37,6 +37,10 @@ type ISprite interface {
 
 	Draw(time float64, batch *batch.QuadBatch)
 
+	GetOrigin() vector.Vector2d
+
+	SetOrigin(origin vector.Vector2d)
+
 	GetPosition() vector.Vector2d
 
 	SetPosition(vec vector.Vector2d)

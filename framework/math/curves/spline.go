@@ -1,7 +1,7 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"sort"
 )
@@ -44,14 +44,14 @@ func NewSplineW(curves []Curve, weights []float32) *Spline {
 }
 
 func (spline *Spline) PointAt(t float32) vector.Vector2f {
-	desiredWidth := spline.length * bmath.ClampF32(t, 0.0, 1.0)
+	desiredWidth := spline.length * mutils.ClampF32(t, 0.0, 1.0)
 
 	withoutFirst := spline.sections[1:]
 	index := sort.Search(len(withoutFirst), func(i int) bool {
 		return withoutFirst[i] >= desiredWidth
 	})
 
-	index = bmath.MinI(index, len(spline.path)-1)
+	index = mutils.MinI(index, len(spline.path)-1)
 
 	if spline.sections[index+1]-spline.sections[index] == 0 {
 		return spline.path[index].PointAt(0)
@@ -77,7 +77,7 @@ func (spline *Spline) getCurveAt(t float32) Curve {
 		return Linear{}
 	}
 
-	desiredWidth := spline.length * bmath.ClampF32(t, 0.0, 1.0)
+	desiredWidth := spline.length * mutils.ClampF32(t, 0.0, 1.0)
 
 	withoutFirst := spline.sections[1:]
 	index := sort.Search(len(withoutFirst), func(i int) bool {

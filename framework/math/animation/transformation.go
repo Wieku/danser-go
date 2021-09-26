@@ -1,8 +1,8 @@
 package animation
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -39,7 +39,7 @@ func timeClamp(start, end, time float64) float64 {
 		return 1.0
 	}
 
-	return bmath.ClampF64((time-start)/(end-start), 0, 1)
+	return mutils.ClampF64((time-start)/(end-start), 0, 1)
 }
 
 type Transformation struct {

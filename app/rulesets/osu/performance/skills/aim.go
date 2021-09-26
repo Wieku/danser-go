@@ -14,7 +14,7 @@ const (
 )
 
 func NewAimSkill(d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(d)
+	skill := NewSkill(d, false)
 	skill.SkillMultiplier = 26.25
 	skill.StrainDecayBase = 0.15
 	skill.StrainValueOf = aimStrainValue
@@ -29,7 +29,7 @@ func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float
 
 	result := 0.0
 
-	if previous := skill.GetPrevious(); previous != nil {
+	if previous := skill.GetPrevious(0); previous != nil {
 		if !math.IsNaN(current.Angle) && current.Angle > AimAngleBonusBegin {
 			angleBonus := math.Sqrt(
 				math.Max(previous.JumpDistance-AngleBonusScale, 0.0) *

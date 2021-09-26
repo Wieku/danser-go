@@ -2,7 +2,7 @@ package performance
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
@@ -15,11 +15,17 @@ func ppBase(stars float64) float64 {
 		100000.0
 }
 
+type PPv2Results struct {
+	Aim, Speed, Acc, Flashlight, Total float64
+}
+
 // PPv2 : structure to store ppv2 values
 type PPv2 struct {
-	Total, Aim, Speed, Acc float64
+	Results PPv2Results
 
-	aimStrain, speedStrain float64
+	stars Stars
+
+	experimental bool
 
 	maxCombo, nsliders, ncircles, nobjects int
 
@@ -36,10 +42,10 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(aimStars, speedStars float64,
+func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	maxCombo, nsliders, ncircles, nobjects,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
-	maxCombo = bmath.MaxI(1, maxCombo)
+	maxCombo = mutils.MaxI(1, maxCombo)
 
 	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
 
@@ -53,8 +59,8 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 
 	totalhits := n300 + n100 + n50 + nmiss
 
-	pp.aimStrain = aimStars
-	pp.speedStrain = speedStars
+	pp.stars = stars
+	pp.experimental = experimental
 	pp.diff = diff
 	pp.totalHits = totalhits
 	pp.scoreMaxCombo = combo
@@ -73,7 +79,7 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 			float64(n300)*300) /
 			(float64(totalhits) * 300)
 
-		pp.accuracy = bmath.ClampF64(acc, 0, 1)
+		pp.accuracy = mutils.ClampF64(acc, 0, 1)
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {
@@ -96,20 +102,23 @@ func (pp *PPv2) PPv2x(aimStars, speedStars float64,
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
 	}
 
-	aim := pp.computeAimValue()
-	speed := pp.computeSpeedValue()
-	accuracy := pp.computeAccuracyValue()
+	pp.Results.Aim = pp.computeAimValue()
+	pp.Results.Speed = pp.computeSpeedValue()
+	pp.Results.Acc = pp.computeAccuracyValue()
+	pp.Results.Flashlight = pp.computeFlashlightValue()
 
-	pp.Total = math.Pow(
-		math.Pow(aim, 1.1)+math.Pow(speed, 1.1)+
-			math.Pow(accuracy, 1.1),
+	pp.Results.Total = math.Pow(
+		math.Pow(pp.Results.Aim, 1.1)+
+			math.Pow(pp.Results.Speed, 1.1)+
+			math.Pow(pp.Results.Acc, 1.1)+
+			math.Pow(pp.Results.Flashlight, 1.1),
 		1.0/1.1) * finalMultiplier
 
 	return *pp
 }
 
 func (pp *PPv2) computeAimValue() float64 {
-	rawAim := pp.aimStrain
+	rawAim := pp.stars.Aim
 
 	if pp.diff.Mods.Active(difficulty.TouchDevice) {
 		rawAim = math.Pow(rawAim, 0.8)
@@ -144,28 +153,32 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
 
-	approachRateBonus := 1.0 + (0.03 + 0.37 * approachRateTotalHitsFactor) * approachRateFactor
+	approachRateBonus := 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
-	flashlightBonus := 1.0
+	if pp.experimental {
+		aimValue *= approachRateBonus
+	} else {
+		flashlightBonus := 1.0
 
-	if pp.diff.Mods.Active(difficulty.Flashlight) {
-		flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
+		if pp.diff.Mods.Active(difficulty.Flashlight) {
+			flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
 
-		if pp.totalHits > 200 {
-			flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
+			if pp.totalHits > 200 {
+				flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
+			}
+
+			if pp.totalHits > 500 {
+				flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
+			}
 		}
 
-		if pp.totalHits > 500 {
-			flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
-		}
+		aimValue *= math.Max(flashlightBonus, approachRateBonus)
 	}
-
-	aimValue *= math.Max(flashlightBonus, approachRateBonus)
 
 	// Scale the aim value with accuracy _slightly_
 	aimValue *= 0.5 + pp.accuracy/2.0
@@ -176,7 +189,7 @@ func (pp *PPv2) computeAimValue() float64 {
 }
 
 func (pp *PPv2) computeSpeedValue() float64 {
-	speedValue := ppBase(pp.speedStrain)
+	speedValue := ppBase(pp.stars.Speed)
 
 	// Longer maps are worth more
 	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
@@ -203,7 +216,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
 
-	speedValue *= 1.0 + (0.03 + 0.37 * approachRateTotalHitsFactor) * approachRateFactor
+	speedValue *= 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
@@ -252,4 +265,48 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 	}
 
 	return accuracyValue
+}
+
+func (pp *PPv2) computeFlashlightValue() float64 {
+	if !pp.experimental || !pp.diff.CheckModActive(difficulty.Flashlight) {
+		return 0
+	}
+
+	rawFlashlight := pp.stars.Flashlight
+
+	if pp.diff.CheckModActive(difficulty.TouchDevice) {
+		rawFlashlight = math.Pow(rawFlashlight, 0.8)
+	}
+
+	flashlightValue := math.Pow(rawFlashlight, 2.0) * 25.0
+
+	// Add an additional bonus for HDFL.
+	if pp.diff.CheckModActive(difficulty.Hidden) {
+		flashlightValue *= 1.3
+	}
+
+	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
+	if pp.countMiss > 0 {
+		flashlightValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.countMiss), 0.875))
+	}
+
+	// Combo scaling.
+	if pp.maxCombo > 0 {
+		flashlightValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	}
+
+	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
+	scale := 0.7 + 0.1*math.Min(1.0, float64(pp.totalHits)/200.0)
+	if pp.totalHits > 200 {
+		scale += 0.2 * math.Min(1.0, float64(pp.totalHits-200)/200.0)
+	}
+
+	flashlightValue *= scale
+
+	// Scale the flashlight value with accuracy _slightly_.
+	flashlightValue *= 0.5 + pp.accuracy/2.0
+	// It is important to also consider accuracy difficulty when doing that.
+	flashlightValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
+
+	return flashlightValue
 }

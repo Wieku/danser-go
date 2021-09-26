@@ -1,10 +1,10 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"log"
 	"strconv"
 	"strings"
@@ -95,7 +95,7 @@ func parseCommand(data []string) []*animation.Transformation {
 		checkError(err)
 	}
 
-	endTime = bmath.MaxI64(endTime, startTime)
+	endTime = mutils.MaxI64(endTime, startTime)
 
 	arguments := 0
 
@@ -152,7 +152,7 @@ func parseCommand(data []string) []*animation.Transformation {
 		sections = append(sections, sections[0])
 	}
 
-	for i := 0; i < bmath.MaxI(1, numSections-1); i++ {
+	for i := 0; i < mutils.MaxI(1, numSections-1); i++ {
 		start := float64(startTime + int64(i)*sectionTime)
 		end := float64(startTime + int64(i+1)*sectionTime)
 

@@ -64,8 +64,8 @@ github.com/tklauser/go-sysconf v0.3.8/go.mod h1:z4zYWRS+X53WUKtBcmDg1comV3fPhdQn
 github.com/tklauser/numcpus v0.2.3/go.mod h1:vpEPS/JC+oZGGQ/My/vJnNsvMDQL6PwOqt8dsCw5j+E=
 github.com/tklauser/numcpus v0.3.0 h1:ILuRUQBtssgnxw0XXIjKUC56fgnOrFoQQ/4+DeU2biQ=
 github.com/tklauser/numcpus v0.3.0/go.mod h1:yFGUr7TUHQRAhyqBcEg0Ge34zDBAsIvJJcyE6boqnA8=
-github.com/wieku/rplpa v0.0.0-20210416181635-bb7239e81d90 h1:lo0LywUs38iFDFWieaQZHYQK2OsD4hOKLAyq3c6Wr78=
-github.com/wieku/rplpa v0.0.0-20210416181635-bb7239e81d90/go.mod h1:Lk/V/AJfEHrusnmshAeqt7FQiOnFK9T3BtEGWkNmWY0=
+github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1 h1:IBfA+cAja6jBYBoUXmgrPsOTG6bcV4mhKVpZz8/uf3Q=
+github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1/go.mod h1:Lk/V/AJfEHrusnmshAeqt7FQiOnFK9T3BtEGWkNmWY0=
 golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d h1:RNPAfi2nHY7C2srAV8A49jpsYr0ADedCk1wq6fTMTvs=
 golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d/go.mod h1:023OzeP/+EPmXeapQh35lcL3II3LrY8Ic+EFFKVhULM=

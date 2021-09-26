@@ -3,16 +3,17 @@ package play
 import (
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
+	"math"
 	"sort"
 )
 
@@ -31,14 +32,18 @@ type ScoreBoard struct {
 	lastPlayerIndex int
 	playerEntry     *ScoreboardEntry
 
-	explosionManager *sprite.SpriteManager
+	explosionManager *sprite.Manager
 	first            bool
+	avatarsVisible   bool
+
+	width float64
 }
 
 func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
 		first:            true,
-		explosionManager: sprite.NewSpriteManager(),
+		explosionManager: sprite.NewManager(),
+		width: 768*settings.Graphics.GetAspectRatio(),
 	}
 
 	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
@@ -83,7 +88,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 						return scores[i].Score.Score > scores[j].Score.Score
 					})
 
-					for i := 0; i < bmath.MinI(len(scores), 50); i++ {
+					for i := 0; i < mutils.MinI(len(scores), 50); i++ {
 						s := scores[i]
 
 						entry := NewScoreboardEntry(s.Username, s.Score.Score, int64(s.MaxCombo), i+1, false)
@@ -105,7 +110,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	return board
 }
 
-func (board *ScoreBoard) AddPlayer(name string) {
+func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
 	board.playerEntry = NewScoreboardEntry(name, 0, 0, len(board.scores)+1, true)
 	board.playerIndex = len(board.scores)
 	board.lastPlayerIndex = board.playerIndex
@@ -114,7 +119,11 @@ func (board *ScoreBoard) AddPlayer(name string) {
 	board.displayScores = append(board.displayScores, board.playerEntry)
 
 	if settings.Gameplay.ScoreBoard.ShowAvatars {
-		board.playerEntry.LoadAvatarUser(name)
+		if autoPlay {
+			board.playerEntry.LoadDefaultAvatar()
+		} else {
+			board.playerEntry.LoadAvatarUser(name)
+		}
 	}
 
 	board.UpdatePlayer(0, 0)
@@ -133,6 +142,8 @@ func (board *ScoreBoard) AddPlayer(name string) {
 			e.ShowAvatar(true)
 		}
 	}
+
+	board.avatarsVisible = hasAvatar
 }
 
 func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
@@ -154,21 +165,31 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			board.playerIndex = i
 			if board.playerIndex < board.lastPlayerIndex {
 				playerPos := board.playerEntry.GetPosition()
-				playerPos.X = 0
 
-				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, vector.CentreLeft)
+				align := vector.CentreLeft
+
+				if settings.Gameplay.ScoreBoard.AlignRight {
+					align = vector.CentreRight
+				}
+
+				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, align)
 				sprite2.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+400, 1, 0))
-				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, 16, 1.2))
+				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, math.Max(1, 16*settings.Gameplay.ScoreBoard.ExplosionScale), 1.2))
 				sprite2.ResetValuesToTransforms()
 				sprite2.AdjustTimesToTransformations()
 				sprite2.ShowForever(false)
 
-				sprite1 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-1"), 1, playerPos, vector.CentreLeft)
+				sprite1 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-1"), 1, playerPos, align)
 				sprite1.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+700, 1, 0))
 				sprite1.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+700, 1, 1, 1, 1.3))
 				sprite1.ResetValuesToTransforms()
 				sprite1.AdjustTimesToTransformations()
 				sprite1.ShowForever(false)
+
+				if settings.Gameplay.ScoreBoard.AlignRight {
+					sprite2.SetHFlip(true)
+					sprite1.SetHFlip(true)
+				}
 
 				board.explosionManager.Add(sprite2)
 				board.explosionManager.Add(sprite1)
@@ -193,7 +214,12 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 			display = true
 		}
 
-		target := vector.NewVec2d(0, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
+		pX := settings.Gameplay.ScoreBoard.XOffset
+		if settings.Gameplay.ScoreBoard.AlignRight {
+			pX += board.width
+		}
+
+		target := vector.NewVec2d(pX, start+settings.Gameplay.ScoreBoard.YOffset+float64(shiftI)*spacing*settings.Gameplay.ScoreBoard.Scale)
 
 		if board.first {
 			entry.SetPosition(target)

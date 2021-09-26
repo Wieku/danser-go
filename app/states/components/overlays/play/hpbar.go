@@ -15,7 +15,7 @@ import (
 
 type HpBar struct {
 	healthBackground *sprite.Sprite
-	healthBar        *sprite.Sprite
+	healthBar        *sprite.Animation
 
 	kiIcon *sprite.Sprite
 
@@ -30,7 +30,7 @@ type HpBar struct {
 	hpFade         *animation.Glider
 	hpBasePosition vector.Vector2d
 	newStyle       bool
-	explodes       *sprite.SpriteManager
+	explodes       *sprite.Manager
 	kiPosY         float64
 }
 
@@ -71,7 +71,7 @@ func NewHpBar() *HpBar {
 	hpBar.hpSlide = animation.NewGlider(0)
 	hpBar.hpFade = animation.NewGlider(1)
 
-	hpBar.explodes = sprite.NewSpriteManager()
+	hpBar.explodes = sprite.NewManager()
 
 	return hpBar
 }
@@ -96,11 +96,11 @@ func (hpBar *HpBar) Update(time float64) {
 	}
 
 	if hpBar.displayHp < 0.2 {
-		hpBar.kiIcon.Textures[0] = hpBar.kiDanger2
+		hpBar.kiIcon.Texture = hpBar.kiDanger2
 	} else if hpBar.displayHp < 0.5 {
-		hpBar.kiIcon.Textures[0] = hpBar.kiDanger
+		hpBar.kiIcon.Texture = hpBar.kiDanger
 	} else {
-		hpBar.kiIcon.Textures[0] = hpBar.kiNormal
+		hpBar.kiIcon.Texture = hpBar.kiNormal
 	}
 
 	delta60 := (time - hpBar.lastTime) / 16.667
@@ -111,7 +111,7 @@ func (hpBar *HpBar) Update(time float64) {
 		hpBar.displayHp = math.Max(0.0, hpBar.displayHp-math.Abs(hpBar.displayHp-hpBar.currentHp)/6*delta60)
 	}
 
-	hpBar.kiIcon.SetPosition(vector.NewVec2d(hpBar.hpBasePosition.X, hpBar.kiPosY).AddS(float64(hpBar.healthBar.Textures[0].Width)*hpBar.displayHp, hpBar.hpSlide.GetValue()).Scl(settings.Gameplay.HpBar.Scale))
+	hpBar.kiIcon.SetPosition(vector.NewVec2d(hpBar.hpBasePosition.X, hpBar.kiPosY).AddS(float64(hpBar.healthBar.Texture.Width)*hpBar.displayHp, hpBar.hpSlide.GetValue()).Scl(settings.Gameplay.HpBar.Scale))
 
 	hpBar.healthBar.SetCutX(1.0 - hpBar.displayHp)
 
@@ -138,7 +138,7 @@ func (hpBar *HpBar) Draw(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
 
 	batch.SetScale(hpScale, hpScale)
-	batch.SetTranslation(vector.NewVec2d(0, hpBar.hpSlide.GetValue()))
+	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.HpBar.XOffset, settings.Gameplay.HpBar.YOffset+hpBar.hpSlide.GetValue()))
 	batch.SetColor(1, 1, 1, hpAlpha)
 
 	hpBar.healthBackground.Draw(hpBar.lastTime, batch)
@@ -152,7 +152,10 @@ func (hpBar *HpBar) Draw(batch *batch.QuadBatch, alpha float64) {
 }
 
 func (hpBar *HpBar) SlideOut() {
-	hpBar.hpSlide.AddEvent(hpBar.lastTime, hpBar.lastTime+500, -20)
+	if settings.Gameplay.HpBar.YOffset > 0.01 {
+		hpBar.hpSlide.AddEvent(hpBar.lastTime, hpBar.lastTime+500, -20)
+	}
+
 	hpBar.hpFade.AddEvent(hpBar.lastTime, hpBar.lastTime+500, 0)
 }
 

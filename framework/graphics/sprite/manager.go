@@ -7,45 +7,44 @@ import (
 	"sync"
 )
 
-type SpriteManager struct {
+type Manager struct {
 	spriteQueue     []ISprite
 	spriteProcessed []ISprite
 	interArray      []ISprite
 	drawArray       []ISprite
 	visibleObjects  int
 	interObjects    int
-	allSprites      int
 
 	mutex *sync.Mutex
 	dirty bool
 }
 
-func NewSpriteManager() *SpriteManager {
-	return &SpriteManager{mutex: &sync.Mutex{}}
+func NewManager() *Manager {
+	return &Manager{mutex: &sync.Mutex{}}
 }
 
-func (layer *SpriteManager) Add(sprite ISprite) {
+func (manager *Manager) Add(sprite ISprite) {
 	startTime := sprite.GetStartTime()
 	if sprite.IsAlwaysVisible() {
 		startTime = -math.MaxFloat64
 	}
 
-	n := sort.Search(len(layer.spriteQueue), func(j int) bool {
-		return startTime < layer.spriteQueue[j].GetStartTime()
+	n := sort.Search(len(manager.spriteQueue), func(j int) bool {
+		return startTime < manager.spriteQueue[j].GetStartTime()
 	})
 
-	layer.spriteQueue = append(layer.spriteQueue, nil) //allocate bigger array in case when len=cap
-	copy(layer.spriteQueue[n+1:], layer.spriteQueue[n:])
+	manager.spriteQueue = append(manager.spriteQueue, nil) //allocate bigger array in case when len=cap
+	copy(manager.spriteQueue[n+1:], manager.spriteQueue[n:])
 
-	layer.spriteQueue[n] = sprite
+	manager.spriteQueue[n] = sprite
 }
 
-func (layer *SpriteManager) Update(time float64) {
+func (manager *Manager) Update(time float64) {
 	dirtyLocal := false
 	toRemove := 0
 
-	for i := 0; i < len(layer.spriteQueue); i++ {
-		c := layer.spriteQueue[i]
+	for i := 0; i < len(manager.spriteQueue); i++ {
+		c := manager.spriteQueue[i]
 		if time < c.GetStartTime() && !c.IsAlwaysVisible() {
 			break
 		}
@@ -55,29 +54,29 @@ func (layer *SpriteManager) Update(time float64) {
 
 	if toRemove > 0 {
 		for i := 0; i < toRemove; i++ {
-			s := layer.spriteQueue[i]
+			s := manager.spriteQueue[i]
 
-			n := sort.Search(len(layer.spriteProcessed), func(j int) bool {
-				return s.GetDepth() < layer.spriteProcessed[j].GetDepth()
+			n := sort.Search(len(manager.spriteProcessed), func(j int) bool {
+				return s.GetDepth() < manager.spriteProcessed[j].GetDepth()
 			})
 
-			layer.spriteProcessed = append(layer.spriteProcessed, nil) //allocate bigger array in case when len=cap
-			copy(layer.spriteProcessed[n+1:], layer.spriteProcessed[n:])
+			manager.spriteProcessed = append(manager.spriteProcessed, nil) //allocate bigger array in case when len=cap
+			copy(manager.spriteProcessed[n+1:], manager.spriteProcessed[n:])
 
-			layer.spriteProcessed[n] = s
+			manager.spriteProcessed[n] = s
 		}
 
 		dirtyLocal = true
-		layer.spriteQueue = layer.spriteQueue[toRemove:]
+		manager.spriteQueue = manager.spriteQueue[toRemove:]
 	}
 
-	for i := 0; i < len(layer.spriteProcessed); i++ {
-		c := layer.spriteProcessed[i]
+	for i := 0; i < len(manager.spriteProcessed); i++ {
+		c := manager.spriteProcessed[i]
 		c.Update(time)
 
 		if time >= c.GetEndTime() && !c.IsAlwaysVisible() {
-			copy(layer.spriteProcessed[i:], layer.spriteProcessed[i+1:])
-			layer.spriteProcessed = layer.spriteProcessed[:len(layer.spriteProcessed)-1]
+			copy(manager.spriteProcessed[i:], manager.spriteProcessed[i+1:])
+			manager.spriteProcessed = manager.spriteProcessed[:len(manager.spriteProcessed)-1]
 
 			dirtyLocal = true
 			i--
@@ -85,24 +84,24 @@ func (layer *SpriteManager) Update(time float64) {
 	}
 
 	if dirtyLocal {
-		layer.mutex.Lock()
+		manager.mutex.Lock()
 
-		if len(layer.interArray) < len(layer.spriteProcessed) || len(layer.interArray) > len(layer.spriteProcessed)*3 {
-			layer.interArray = make([]ISprite, len(layer.spriteProcessed)*2)
+		if len(manager.interArray) < len(manager.spriteProcessed) || len(manager.interArray) > len(manager.spriteProcessed)*3 {
+			manager.interArray = make([]ISprite, len(manager.spriteProcessed)*2)
 		}
 
-		layer.interObjects = len(layer.spriteProcessed)
-		copy(layer.interArray, layer.spriteProcessed)
+		manager.interObjects = len(manager.spriteProcessed)
+		copy(manager.interArray, manager.spriteProcessed)
 
-		layer.dirty = true
+		manager.dirty = true
 
-		layer.mutex.Unlock()
+		manager.mutex.Unlock()
 	}
 }
 
-func (layer *SpriteManager) GetNumRendered() (sum int) {
-	for i := 0; i < layer.visibleObjects; i++ {
-		if layer.drawArray[i] != nil && layer.drawArray[i].GetAlpha() >= 0.01 {
+func (manager *Manager) GetNumRendered() (sum int) {
+	for i := 0; i < manager.visibleObjects; i++ {
+		if manager.drawArray[i] != nil && manager.drawArray[i].GetAlpha() >= 0.01 {
 			sum++
 		}
 	}
@@ -110,47 +109,49 @@ func (layer *SpriteManager) GetNumRendered() (sum int) {
 	return
 }
 
-func (layer *SpriteManager) GetNumInQueue() int {
-	return len(layer.spriteQueue)
+func (manager *Manager) GetNumInQueue() int {
+	return len(manager.spriteQueue)
 }
 
-func (layer *SpriteManager) GetNumProcessed() int {
-	return len(layer.spriteProcessed)
+func (manager *Manager) GetNumProcessed() int {
+	return len(manager.spriteProcessed)
 }
 
-func (layer *SpriteManager) GetProcessedSprites() []ISprite {
-	return layer.spriteProcessed
+func (manager *Manager) GetProcessedSprites() []ISprite {
+	return manager.spriteProcessed
 }
 
-func (layer *SpriteManager) GetLoad() (sum float64) {
-	for i := 0; i < layer.visibleObjects; i++ {
-		if layer.drawArray[i] != nil && layer.drawArray[i].GetAlpha() >= 0.01 {
-			sum += layer.drawArray[i].GetLoad()
+func (manager *Manager) GetLoad() (sum float64) {
+	for i := 0; i < manager.visibleObjects; i++ {
+		if manager.drawArray[i] != nil && manager.drawArray[i].GetAlpha() >= 0.01 {
+			sum += manager.drawArray[i].GetLoad()
 		}
 	}
 
 	return
 }
 
-func (layer *SpriteManager) Draw(time float64, batch *batch.QuadBatch) {
-	layer.mutex.Lock()
-	if layer.dirty {
-		layer.visibleObjects = 0
+func (manager *Manager) Draw(time float64, batch *batch.QuadBatch) {
+	manager.mutex.Lock()
 
-		if len(layer.interArray) != len(layer.drawArray) {
-			layer.drawArray = make([]ISprite, len(layer.interArray))
+	if manager.dirty {
+		manager.visibleObjects = 0
+
+		if len(manager.interArray) != len(manager.drawArray) {
+			manager.drawArray = make([]ISprite, len(manager.interArray))
 		}
 
-		copy(layer.drawArray, layer.interArray[:layer.interObjects])
-		layer.visibleObjects = layer.interObjects
+		copy(manager.drawArray, manager.interArray[:manager.interObjects])
+		manager.visibleObjects = manager.interObjects
 
-		layer.dirty = false
+		manager.dirty = false
 	}
-	layer.mutex.Unlock()
 
-	for i := 0; i < layer.visibleObjects; i++ {
-		if layer.drawArray[i] != nil {
-			layer.drawArray[i].Draw(time, batch)
+	manager.mutex.Unlock()
+
+	for i := 0; i < manager.visibleObjects; i++ {
+		if manager.drawArray[i] != nil {
+			manager.drawArray[i].Draw(time, batch)
 		}
 	}
 }

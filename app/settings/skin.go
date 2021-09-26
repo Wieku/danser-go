@@ -5,6 +5,7 @@ var Skin = initSkin()
 func initSkin() *skin {
 	return &skin{
 		CurrentSkin:       "default",
+		FallbackSkin:      "default",
 		UseColorsFromSkin: false,
 		UseBeatmapColors:  false,
 		Cursor: &skinCursor{
@@ -19,6 +20,7 @@ func initSkin() *skin {
 
 type skin struct {
 	CurrentSkin       string
+	FallbackSkin      string
 	UseColorsFromSkin bool
 	UseBeatmapColors  bool
 

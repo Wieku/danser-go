@@ -7,12 +7,12 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -27,6 +27,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"strconv"
@@ -64,7 +65,6 @@ type ScoreOverlay struct {
 
 	scoreGlider    *animation.TargetGlider
 	accuracyGlider *animation.TargetGlider
-	ppGlider       *animation.TargetGlider
 
 	ruleset    *osu.OsuRuleSet
 	cursor     *graphics.Cursor
@@ -76,14 +76,13 @@ type ScoreOverlay struct {
 	keyStates   [4]bool
 	keyCounters [4]int
 	lastPresses [4]float64
-	keyOverlay  *sprite.SpriteManager
+	keyOverlay  *sprite.Manager
 	keys        []*sprite.Sprite
 
 	ScaledWidth  float64
 	ScaledHeight float64
 	camera       *camera2.Camera
 
-	ppFont     *font.Font
 	keyFont    *font.Font
 	scoreFont  *font.Font
 	comboFont  *font.Font
@@ -95,13 +94,13 @@ type ScoreOverlay struct {
 
 	aimErrorMeter *play.AimErrorMeter
 
-	skip *sprite.Sprite
+	skip *sprite.Animation
 
 	shapeRenderer *shape.Renderer
 
 	boundaries *common.Boundaries
 
-	mods       *sprite.SpriteManager
+	mods       *sprite.Manager
 	notFirst   bool
 	flashlight *common.Flashlight
 	delta      float64
@@ -113,7 +112,7 @@ type ScoreOverlay struct {
 	currentBreak  *beatmap.Pause
 	sPass         *sprite.Sprite
 	sFail         *sprite.Sprite
-	passContainer *sprite.SpriteManager
+	passContainer *sprite.Manager
 
 	rankBack  *sprite.Sprite
 	rankFront *sprite.Sprite
@@ -122,7 +121,7 @@ type ScoreOverlay struct {
 
 	hpBar *play.HpBar
 
-	arrows *sprite.SpriteManager
+	arrows *sprite.Manager
 
 	resultsFade *animation.Glider
 	hpSections  []vector.Vector2d
@@ -136,6 +135,8 @@ type ScoreOverlay struct {
 	circularMetre *texture.TextureRegion
 
 	hitCounts *play.HitDisplay
+
+	ppDisplay *play.PPDisplay
 }
 
 func loadFonts() {
@@ -176,7 +177,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.scoreGlider = animation.NewTargetGlider(0, 0)
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
-	overlay.ppGlider = animation.NewTargetGlider(0, 0)
+
+	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -199,13 +201,12 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.rankFront = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), vector.Centre)
 	overlay.rankFront.SetAlpha(0)
 
-	overlay.passContainer = sprite.NewSpriteManager()
+	overlay.passContainer = sprite.NewManager()
 	overlay.passContainer.Add(overlay.sPass)
 	overlay.passContainer.Add(overlay.sFail)
 
 	discord.UpdatePlay(cursor)
 
-	overlay.ppFont = font.GetFont("Quicksand Bold")
 	overlay.keyFont = font.GetFont("Quicksand Bold")
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
@@ -218,7 +219,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.camera.SetViewportF(0, int(overlay.ScaledHeight), int(overlay.ScaledWidth), 0)
 	overlay.camera.Update()
 
-	overlay.keyOverlay = sprite.NewSpriteManager()
+	overlay.keyOverlay = sprite.NewManager()
 
 	keyBg := sprite.NewSpriteSingle(skin.GetTexture("inputoverlay-background"), 0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight/2-64), vector.TopLeft)
 	keyBg.SetScaleV(vector.NewVec2d(1.05, 1))
@@ -243,7 +244,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	showAfterSkip := 2000.0
 
-	beatLen := overlay.ruleset.GetBeatMap().Timings.GetPoint(0).GetBaseBeatLength()
+	beatLen := overlay.ruleset.GetBeatMap().Timings.GetPointAt(0).GetBaseBeatLength()
 	if beatLen > 0 {
 		showAfterSkip = beatLen
 		if beatLen < 500 {
@@ -265,27 +266,27 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hpBar = play.NewHpBar()
 
-	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor, overlay.ppFont)
+	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor, overlay.keyFont)
 
 	overlay.shapeRenderer = shape.NewRenderer()
 
 	overlay.boundaries = common.NewBoundaries()
 
-	overlay.mods = sprite.NewSpriteManager()
+	overlay.mods = sprite.NewManager()
 
 	if overlay.ruleset.GetBeatMap().Diff.Mods.Active(difficulty.Flashlight) {
 		overlay.flashlight = common.NewFlashlight(overlay.ruleset.GetBeatMap())
 	}
 
 	overlay.entry = play.NewScoreboard(overlay.ruleset.GetBeatMap(), overlay.cursor.ScoreID)
-	overlay.entry.AddPlayer(overlay.cursor.Name)
+	overlay.entry.AddPlayer(overlay.cursor.Name, overlay.cursor.IsAutoplay)
 
 	overlay.initArrows()
 
 	return overlay
 }
 
-func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, _ int64) {
+func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, _ int64) {
 	if result&(osu.BaseHitsM) > 0 {
 		overlay.results.AddResult(time, result, position)
 	}
@@ -301,9 +302,15 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
 
-		pos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+		var startPos *vector.Vector2f
+		if number > 0 {
+			pos := overlay.ruleset.GetBeatMap().HitObjects[number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+			startPos = &pos
+		}
 
-		overlay.aimErrorMeter.Add(float64(time), c.Position.Sub(pos))
+		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+
+		overlay.aimErrorMeter.Add(float64(time), c.Position, startPos, &endPos)
 	}
 
 	if result == osu.PositionalMiss {
@@ -339,7 +346,8 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 	overlay.scoreGlider.SetTarget(float64(score))
 	overlay.accuracyGlider.SetTarget(accuracy)
-	overlay.ppGlider.SetTarget(pp)
+
+	overlay.ppDisplay.Add(ppResults)
 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
@@ -349,8 +357,8 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 			text := skin.GetTexture("ranking-" + gText + "-small")
 
-			overlay.rankBack.Textures[0] = text
-			overlay.rankFront.Textures[0] = text
+			overlay.rankBack.Texture = text
+			overlay.rankFront.Texture = text
 
 			overlay.oldGrade = grade
 		}()
@@ -481,10 +489,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	overlay.scoreGlider.Update(time)
 	overlay.accuracyGlider.Update(time)
-
-	overlay.ppGlider.SetDecimals(settings.Gameplay.PPCounter.Decimals)
-	overlay.ppGlider.Update(time)
-
+	overlay.ppDisplay.Update(time)
 	overlay.hitCounts.Update(time)
 
 	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
@@ -615,14 +620,16 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	batch.SetColor(1, 1, 1, alpha)
 
 	if settings.Gameplay.Mods.Show {
+		batch.SetTranslation(vector.NewVec2d(settings.Gameplay.Mods.XOffset, settings.Gameplay.Mods.YOffset))
 		overlay.mods.Draw(overlay.lastTime, batch)
+		batch.ResetTransform()
 	}
 
 	if settings.Gameplay.ShowWarningArrows {
 		overlay.arrows.Draw(overlay.audioTime, batch)
 	}
 
-	overlay.drawPP(batch, alpha)
+	overlay.ppDisplay.Draw(batch, alpha)
 	overlay.hitCounts.Draw(batch, alpha)
 
 	if overlay.panel != nil {
@@ -639,6 +646,9 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	if scoreAlpha < 0.001 || !settings.Gameplay.Score.Show {
 		return
 	}
+
+	xOff := settings.Gameplay.Score.XOffset
+	yOff := settings.Gameplay.Score.YOffset
 
 	scoreScale := settings.Gameplay.Score.Scale
 	rightOffset := -9.6 * scoreScale
@@ -666,12 +676,12 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 		}
 
 		overlay.shapeRenderer.Begin()
-		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset), float32(accYPos+accSize/2)), 16*float32(settings.Gameplay.Score.Scale), 40, float32(progress))
+		overlay.shapeRenderer.DrawCircleProgressS(vector.NewVec2f(float32(accOffset+xOff), float32(accYPos+accSize/2+yOff)), 16*float32(settings.Gameplay.Score.Scale), 40, float32(progress))
 		overlay.shapeRenderer.End()
 
 		batch.SetColor(1, 1, 1, scoreAlpha)
 		batch.SetScale(scoreScale, scoreScale)
-		batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+		batch.SetTranslation(vector.NewVec2d(accOffset+xOff, accYPos+accSize/2+yOff))
 		batch.DrawTexture(*overlay.circularMetre)
 
 		accOffset -= 44.8 * scoreScale
@@ -691,8 +701,8 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 			positionY = overlay.ScaledHeight - thickness
 			bWidth = overlay.ScaledWidth
 		default:
-			positionX = overlay.ScaledWidth - (12+barWidth)*scoreScale
-			positionY = scoreSize - 2*scoreScale
+			positionX = overlay.ScaledWidth - (12+barWidth)*scoreScale + xOff
+			positionY = scoreSize - 2*scoreScale + yOff
 			bWidth = barWidth * scoreScale
 		}
 
@@ -711,20 +721,20 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	batch.SetColor(1, 1, 1, scoreAlpha)
 
 	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
-	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap, 0, vector.TopRight, scoreSize, true, scoreText)
+	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap+xOff, yOff, vector.TopRight, scoreSize, true, scoreText)
 
 	accText := fmt.Sprintf("%5.2f%%", overlay.accuracyGlider.GetValue())
-	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap, accYPos, vector.TopRight, accSize, true, accText)
+	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+accOverlap+xOff, accYPos+yOff, vector.TopRight, accSize, true, accText)
 
 	batch.ResetTransform()
-	batch.SetTranslation(vector.NewVec2d(accOffset, accYPos+accSize/2))
+	batch.SetTranslation(vector.NewVec2d(accOffset+xOff, accYPos+accSize/2+yOff))
 	batch.SetScale(scoreScale*0.8, scoreScale*0.8)
 
 	if !settings.Gameplay.Score.ShowGradeAlways {
 		overlay.rankBack.Draw(overlay.audioTime, batch)
 		overlay.rankFront.Draw(overlay.audioTime, batch)
-	} else if overlay.rankBack.Textures[0] != nil {
-		batch.DrawTexture(*overlay.rankBack.Textures[0])
+	} else if overlay.rankBack.Texture != nil {
+		batch.DrawTexture(*overlay.rankBack.Texture)
 	}
 }
 
@@ -737,11 +747,19 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
 
-	posX := overlay.comboSlide.GetValue()*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
+	slideAmount := overlay.comboSlide.GetValue()
+
+	if settings.Gameplay.ComboCounter.XOffset > 0.01 {
+		slideAmount = 0
+		comboAlpha *= 1+overlay.comboSlide.GetValue()
+	}
+
+	posX := slideAmount*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
 	posY := overlay.ScaledHeight - 12.8
 	origY := overlay.comboFont.GetSize()*0.375 - 9
 
 	batch.ResetTransform()
+	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.ComboCounter.XOffset, settings.Gameplay.ComboCounter.YOffset))
 
 	batch.SetAdditive(true)
 
@@ -752,30 +770,8 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	batch.SetColor(1, 1, 1, comboAlpha)
 	overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, vector.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
-}
 
-func (overlay *ScoreOverlay) drawPP(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
-
-	ppAlpha := settings.Gameplay.PPCounter.Opacity * alpha
-
-	if ppAlpha < 0.001 || !settings.Gameplay.PPCounter.Show {
-		return
-	}
-
-	ppScale := settings.Gameplay.PPCounter.Scale
-
-	ppText := fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", overlay.ppGlider.GetValue())
-
-	position := vector.NewVec2d(settings.Gameplay.PPCounter.XPosition, settings.Gameplay.PPCounter.YPosition)
-	origin := vector.ParseOrigin(settings.Gameplay.PPCounter.Align)
-
-	batch.SetColor(0, 0, 0, ppAlpha*0.8)
-	overlay.ppFont.DrawOriginV(batch, position.AddS(ppScale, ppScale), origin, 40*ppScale, true, ppText)
-
-	cS := settings.Gameplay.PPCounter.Color
-	batch.SetColorM(color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), float32(ppAlpha)))
-	overlay.ppFont.DrawOriginV(batch, position, origin, 40*ppScale, true, ppText)
 }
 
 func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
@@ -786,6 +782,8 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 	}
 
 	batch.ResetTransform()
+
+	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.KeyOverlay.XOffset, settings.Gameplay.KeyOverlay.YOffset))
 
 	keyScale := settings.Gameplay.KeyOverlay.Scale
 
@@ -821,6 +819,8 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 			overlay.scoreEFont.DrawOrigin(batch, posX, posY, vector.Centre, scale*overlay.scoreEFont.GetSize(), false, text)
 		}
 	}
+
+	batch.ResetTransform()
 }
 
 func (overlay *ScoreOverlay) getProgress() float64 {
@@ -830,9 +830,9 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 
 	musicPos := overlay.audioTime
 
-	progress := bmath.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	progress := mutils.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
 	if musicPos < startTime {
-		progress = bmath.ClampF64(-1.0+musicPos/startTime, -1.0, 0.0)
+		progress = mutils.ClampF64(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
 	return progress
@@ -861,7 +861,7 @@ func (overlay *ScoreOverlay) showPassInfo() {
 
 	if pass {
 		if !overlay.audioDisabled {
-			overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionpass"), time+20))
+			overlay.passContainer.Add(sprite.NewAudioSprite(audio.LoadSample("sectionpass"), time+20, 1))
 		}
 
 		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+20, time+20, 0, 1))
@@ -872,7 +872,7 @@ func (overlay *ScoreOverlay) showPassInfo() {
 		overlay.sPass.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+1280, time+1480, 1, 0))
 	} else {
 		if !overlay.audioDisabled {
-			overlay.passContainer.Add(audio.NewAudioSprite(audio.LoadSample("sectionfail"), time+130))
+			overlay.passContainer.Add(sprite.NewAudioSprite(audio.LoadSample("sectionfail"), time+130, 1))
 		}
 
 		overlay.sFail.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+130, time+130, 0, 1))
@@ -930,7 +930,7 @@ func (overlay *ScoreOverlay) initMods() {
 }
 
 func (overlay *ScoreOverlay) initArrows() {
-	overlay.arrows = sprite.NewSpriteManager()
+	overlay.arrows = sprite.NewManager()
 
 	createArrow := func(tex *texture.TextureRegion, color color2.Color, position vector.Vector2d, flip bool) *sprite.Sprite {
 		arrow := sprite.NewSpriteSingle(tex, 9999, position, vector.Centre)
@@ -976,12 +976,12 @@ func (overlay *ScoreOverlay) initArrows() {
 	bMap := overlay.ruleset.GetBeatMap()
 
 	if bMap.HitObjects[0].GetStartTime() > 6000 {
-		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime)))
+		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+mutils.MinI(2, int(bMap.Diff.Preempt/blinkTime)))
 	}
 
 	for _, pause := range bMap.Pauses {
-		blinks := bmath.MinI(minBlinks, int(pause.Length()/blinkTime))
-		extra := bmath.MinI(2, int(bMap.Diff.Preempt/blinkTime))
+		blinks := mutils.MinI(minBlinks, int(pause.Length()/blinkTime))
+		extra := mutils.MinI(2, int(bMap.Diff.Preempt/blinkTime))
 		addTransforms(pause.EndTime-float64(blinks)*blinkTime, blinks+extra)
 	}
 }

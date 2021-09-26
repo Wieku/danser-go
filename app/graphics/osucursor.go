@@ -2,7 +2,6 @@ package graphics
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/assets"
@@ -16,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"sync"
@@ -66,7 +66,7 @@ type osuRenderer struct {
 	middle *sprite.Sprite
 
 	clock       float64
-	manager     *sprite.SpriteManager
+	manager     *sprite.Manager
 	currentTime float64
 	sixtyDelta  float64
 	firstTime   bool
@@ -125,7 +125,7 @@ func newOsuRenderer() *osuRenderer {
 	cursor.cursor = sprite.NewSpriteSingle(cursorTexture, 0, vector.NewVec2d(0, 0), origin)
 	cursor.middle = sprite.NewSpriteSingle(skin.GetTextureSource("cursormiddle", skin.GetSourceFromTexture(cursorTexture)), 0, vector.NewVec2d(0, 0), origin)
 
-	cursor.manager = sprite.NewSpriteManager()
+	cursor.manager = sprite.NewManager()
 
 	return cursor
 }
@@ -159,7 +159,7 @@ func (cursor *osuRenderer) Update(delta float64) {
 	cursor.currentTime = cursor.clock * 100
 	cursor.manager.Update(cursor.currentTime)
 
-	if cursor.middle.Textures[0] == nil && !settings.Skin.Cursor.ForceLongTrail {
+	if cursor.middle.Texture == nil && !settings.Skin.Cursor.ForceLongTrail {
 		cursor.VaoPos = cursor.Position
 		cursor.RendPos = cursor.Position
 
@@ -214,7 +214,7 @@ func (cursor *osuRenderer) Update(delta float64) {
 
 			dirtyLocal = true
 		} else if times > 0 {
-			times = bmath.MinI(times, len(cursor.Points))
+			times = mutils.MinI(times, len(cursor.Points))
 
 			cursor.Points = cursor.Points[times:]
 			cursor.PointsC = cursor.PointsC[times:]
@@ -267,7 +267,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 		scale *= expand
 	}
 
-	if (settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Textures[0] != nil && cursor.middle.Textures[0].Texture != nil)) && cursor.trail.Texture != nil {
+	if (settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Texture != nil && cursor.middle.Texture.Texture != nil)) && cursor.trail.Texture != nil {
 		osuShader.Bind()
 
 		osuShader.SetUniform("tex", int32(cursor.trail.Texture.GetLocation()))

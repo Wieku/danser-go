@@ -5,11 +5,16 @@ var Gameplay = initGameplay()
 func initGameplay() *gameplay {
 	return &gameplay{
 		HitErrorMeter: &hitError{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
+			ShowPositionalMisses: true,
 			ShowUnstableRate:     true,
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
@@ -27,25 +32,39 @@ func initGameplay() *gameplay {
 			ShowUnstableRate:     false,
 			UnstableRateScale:    1,
 			UnstableRateDecimals: 0,
+			CapPositionalMisses:  true,
+			AngleNormalized:      false,
 		},
 		Score: &score{
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
+			},
+			ProgressBar:     "Pie",
+			ShowGradeAlways: false,
+		},
+		HpBar: &hudElementOffset{
 			hudElement: &hudElement{
 				Show:    true,
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			ProgressBar:     "Pie",
-			ShowGradeAlways: false,
+			XOffset: 0,
+			YOffset: 0,
 		},
-		HpBar: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
-		},
-		ComboCounter: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
+		ComboCounter: &hudElementOffset{
+			hudElement: &hudElement{
+				Show:    true,
+				Scale:   1.0,
+				Opacity: 1.0,
+			},
+			XOffset: 0,
+			YOffset: 0,
 		},
 		PPCounter: &ppCounter{
 			hudElement: &hudElement{
@@ -58,11 +77,12 @@ func initGameplay() *gameplay {
 				Saturation: 0,
 				Value:      1,
 			},
-			XPosition:     5,
-			YPosition:     150,
-			Decimals:      0,
-			Align:         "CentreLeft",
-			ShowInResults: true,
+			XPosition:        5,
+			YPosition:        150,
+			Decimals:         0,
+			Align:            "CentreLeft",
+			ShowInResults:    true,
+			ShowPPComponents: false,
 		},
 		HitCounter: &hitCounter{
 			hudElement: &hudElement{
@@ -86,26 +106,39 @@ func initGameplay() *gameplay {
 			Vertical:   false,
 			Show300:    false,
 		},
-		KeyOverlay: &hudElement{
-			Show:    true,
-			Scale:   1.0,
-			Opacity: 1.0,
-		},
-		ScoreBoard: &scoreBoard{
+		KeyOverlay: &hudElementOffset{
 			hudElement: &hudElement{
 				Show:    true,
 				Scale:   1.0,
 				Opacity: 1.0,
 			},
-			HideOthers:  false,
-			ShowAvatars: false,
-			YOffset:     0,
+			XOffset: 0,
+			YOffset: 0,
+		},
+		ScoreBoard: &scoreBoard{
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
+			},
+			AlignRight:     true,
+			HideOthers:     false,
+			ShowAvatars:    false,
+			ExplosionScale: 1.0,
 		},
 		Mods: &mods{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
 			HideInReplays: false,
 			FoldInReplays: false,
@@ -133,18 +166,19 @@ func initGameplay() *gameplay {
 		ShowWarningArrows:       true,
 		FlashlightDim:           1,
 		PlayUsername:            "Guest",
+		UseLazerPP:              false,
 	}
 }
 
 type gameplay struct {
-	HitErrorMeter *hitError
-	AimErrorMeter *aimError
-	Score         *score
-	HpBar                   *hudElement
-	ComboCounter            *hudElement
+	HitErrorMeter           *hitError
+	AimErrorMeter           *aimError
+	Score                   *score
+	HpBar                   *hudElementOffset
+	ComboCounter            *hudElementOffset
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
-	KeyOverlay              *hudElement
+	KeyOverlay              *hudElementOffset
 	ScoreBoard              *scoreBoard
 	Mods                    *mods
 	Boundaries              *boundaries
@@ -154,6 +188,7 @@ type gameplay struct {
 	ShowWarningArrows       bool
 	FlashlightDim           float64
 	PlayUsername            string
+	UseLazerPP              bool
 }
 
 type boundaries struct {
@@ -175,8 +210,15 @@ type hudElement struct {
 	Opacity float64
 }
 
-type hitError struct {
+type hudElementOffset struct {
 	*hudElement
+	XOffset float64
+	YOffset float64
+}
+
+type hitError struct {
+	*hudElementOffset
+	ShowPositionalMisses bool
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64
@@ -191,22 +233,25 @@ type aimError struct {
 	ShowUnstableRate     bool
 	UnstableRateScale    float64
 	UnstableRateDecimals int
+	CapPositionalMisses  bool
+	AngleNormalized      bool
 }
 
 type score struct {
-	*hudElement
+	*hudElementOffset
 	ProgressBar     string
 	ShowGradeAlways bool
 }
 
 type ppCounter struct {
 	*hudElement
-	Color         *hsv
-	XPosition     float64
-	YPosition     float64
-	Decimals      int
-	Align         string
-	ShowInResults bool
+	Color            *hsv
+	XPosition        float64
+	YPosition        float64
+	Decimals         int
+	Align            string
+	ShowInResults    bool
+	ShowPPComponents bool
 }
 
 type hitCounter struct {
@@ -223,14 +268,15 @@ type hitCounter struct {
 }
 
 type scoreBoard struct {
-	*hudElement
-	HideOthers  bool
-	ShowAvatars bool
-	YOffset     float64
+	*hudElementOffset
+	AlignRight     bool
+	HideOthers     bool
+	ShowAvatars    bool
+	ExplosionScale float64
 }
 
 type mods struct {
-	*hudElement
+	*hudElementOffset
 	HideInReplays bool
 	FoldInReplays bool
 }

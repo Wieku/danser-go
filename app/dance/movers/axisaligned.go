@@ -2,10 +2,10 @@ package movers
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -42,6 +42,6 @@ func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover AxisMover) Update(time float64) vector.Vector2f {
-	t := bmath.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(float32(easing.OutSine(t)))
 }

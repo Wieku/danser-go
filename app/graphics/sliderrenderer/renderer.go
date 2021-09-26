@@ -3,7 +3,6 @@ package sliderrenderer
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -14,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
@@ -147,7 +147,7 @@ func drawSlider(sprite *sprite.Sprite, stackOffset vector.Vector2f, scale float3
 	colorShader.SetUniform("position", mgl32.Vec2{sprite.GetPosition().X32() + stackOffset.X, sprite.GetPosition().Y32() + stackOffset.Y})
 	colorShader.SetUniform("size", mgl32.Vec2{sprite.GetScale().X32() * float32(text.GetWidth()), sprite.GetScale().Y32() * float32(text.GetHeight())})
 	colorShader.SetUniform("cutoff", scale/float32(settings.Audio.BeatScale))
-	colorShader.SetUniform("borderWidth", bmath.ClampF32(float32(settings.Objects.Sliders.BorderWidth), 0.0, 10.0))
+	colorShader.SetUniform("borderWidth", mutils.ClampF32(float32(settings.Objects.Sliders.BorderWidth), 0.0, 10.0))
 
 	colorVAO.Draw()
 }

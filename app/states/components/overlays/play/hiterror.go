@@ -22,7 +22,7 @@ var colors = []color2.Color{color2.NewRGBA(0.2, 0.8, 1, 1), color2.NewRGBA(0.44,
 
 type HitErrorMeter struct {
 	diff             *difficulty.Difficulty
-	errorDisplay     *sprite.SpriteManager
+	errorDisplay     *sprite.Manager
 	errorCurrent     float64
 	triangle         *sprite.Sprite
 	errorDisplayFade *animation.Glider
@@ -46,7 +46,7 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	meter.Height = height
 
 	meter.diff = diff
-	meter.errorDisplay = sprite.NewSpriteManager()
+	meter.errorDisplay = sprite.NewManager()
 	meter.errorDisplayFade = animation.NewGlider(0.0)
 	meter.urText = "0UR"
 	meter.urGlider = animation.NewTargetGlider(0, 0)
@@ -101,6 +101,10 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 }
 
 func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
+	if positionalMiss && !settings.Gameplay.HitErrorMeter.ShowPositionalMisses {
+		return
+	}
+
 	errorA := int64(math.Abs(error))
 
 	scale := settings.Gameplay.HitErrorMeter.Scale
@@ -199,6 +203,8 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 	meterAlpha := settings.Gameplay.HitErrorMeter.Opacity * meter.errorDisplayFade.GetValue() * alpha
 	if meterAlpha > 0.001 && settings.Gameplay.HitErrorMeter.Show {
 		batch.SetColor(1, 1, 1, meterAlpha)
+		batch.SetTranslation(vector.NewVec2d(settings.Gameplay.HitErrorMeter.XOffset, settings.Gameplay.HitErrorMeter.YOffset))
+
 		meter.errorDisplay.Draw(meter.lastTime, batch)
 
 		if settings.Gameplay.HitErrorMeter.ShowUnstableRate {

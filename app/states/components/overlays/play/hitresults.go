@@ -14,7 +14,7 @@ import (
 )
 
 type HitResults struct {
-	manager  *sprite.SpriteManager
+	manager  *sprite.Manager
 	lastTime float64
 	diff     *difficulty.Difficulty
 }
@@ -29,7 +29,7 @@ func NewHitResults(diff *difficulty.Difficulty) *HitResults {
 	skin.GetFrames("hit300k", true)
 	skin.GetFrames("hit300g", true)
 
-	return &HitResults{manager: sprite.NewSpriteManager(), diff: diff}
+	return &HitResults{manager: sprite.NewManager(), diff: diff}
 }
 
 func (results *HitResults) AddResult(time int64, result osu.HitResult, position vector.Vector2d) {

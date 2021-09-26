@@ -3,10 +3,10 @@ package beatmap
 import (
 	"errors"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-const bufferSize = 10*1024*1024
+const bufferSize = 10 * 1024 * 1024
 
 func parseGeneral(line []string, beatMap *BeatMap) bool {
 	switch line[0] {
@@ -209,7 +209,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 				}
 				timeI, _ := strconv.Atoi(time)
 
-				beatMap.Length = bmath.MaxI(beatMap.Length, timeI)
+				beatMap.Length = mutils.MaxI(beatMap.Length, timeI)
 			}
 		}
 	}
@@ -241,7 +241,7 @@ func ParseBeatMapFile(file *os.File) *BeatMap {
 }
 
 func ParseTimingPointsAndPauses(beatMap *BeatMap) {
-	if len(beatMap.Timings.Points) > 0 {
+	if beatMap.Timings.HasPoints() {
 		return
 	}
 

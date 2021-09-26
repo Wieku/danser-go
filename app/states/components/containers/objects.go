@@ -29,7 +29,7 @@ type HitObjectContainer struct {
 	beatMap       *beatmap.BeatMap
 	objectQueue   []objects.IHitObject
 	renderables   []*renderableProxy
-	spriteManager *sprite.SpriteManager
+	spriteManager *sprite.Manager
 	lastTime      float64
 }
 
@@ -39,11 +39,13 @@ func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
 	container := &HitObjectContainer{
 		beatMap:       beatMap,
 		objectQueue:   beatMap.GetObjectsCopy(),
-		spriteManager: sprite.NewSpriteManager(),
+		spriteManager: sprite.NewManager(),
 		renderables:   make([]*renderableProxy, 0),
 	}
 
 	container.createFollowPoints()
+
+	log.Println("Container created.")
 
 	return container
 }
@@ -51,7 +53,6 @@ func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
 func (container *HitObjectContainer) createFollowPoints() {
 	const (
 		preEmpt  = 800.0
-		fadeOut  = 240.0
 		lineDist = 32.0
 	)
 
@@ -60,7 +61,7 @@ func (container *HitObjectContainer) createFollowPoints() {
 	for i := 1; i < len(container.objectQueue); i++ {
 		_, ok1 := container.objectQueue[i-1].(*objects.Spinner)
 		_, ok2 := container.objectQueue[i].(*objects.Spinner)
-		if ok1 || ok2 || container.objectQueue[i].IsNewCombo() { //suppress:wsl
+		if ok1 || ok2 || container.objectQueue[i].IsNewCombo() { //nolint:wsl
 			continue
 		}
 
@@ -82,6 +83,7 @@ func (container *HitObjectContainer) createFollowPoints() {
 			tStart := prevTime + t*duration - preEmpt
 			tEnd := prevTime + t*duration
 
+			pStart := prevPos.Add(vec.Scl(t - 0.1))
 			pos := prevPos.Add(vec.Scl(t))
 
 			followPoint := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, vector.Centre)
@@ -89,8 +91,13 @@ func (container *HitObjectContainer) createFollowPoints() {
 			followPoint.SetAlpha(0)
 			followPoint.ShowForever(false)
 
-			followPoint.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tStart, tStart+fadeOut, 0, 1))
-			followPoint.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tEnd, tEnd+fadeOut, 1, 0))
+			if skin.GetInfo().DefaultSkinFollowpointBehavior {
+				followPoint.AddTransform(animation.NewVectorTransformV(animation.Move, easing.OutQuad, tStart, tStart+difficulty.HitFadeIn, pStart, pos))
+				followPoint.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, tStart, tStart+difficulty.HitFadeIn, 1.5, 1))
+			}
+
+			followPoint.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tStart, tStart+difficulty.HitFadeIn, 0, 1))
+			followPoint.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, tEnd, tEnd+difficulty.HitFadeIn, 1, 0))
 			followPoint.AdjustTimesToTransformations()
 
 			container.spriteManager.Add(followPoint)
@@ -123,9 +130,7 @@ func (container *HitObjectContainer) Update(time float64) {
 	}
 }
 
-func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
-	divides := len(cameras)
-
+func (container *HitObjectContainer) preProcessQueue(time float64) {
 	if len(container.objectQueue) > 0 {
 		for i := 0; i < len(container.objectQueue); i++ {
 			if p := container.objectQueue[i]; p.GetStartTime()-math.Max(15000, container.beatMap.Diff.Preempt) <= time {
@@ -163,6 +168,12 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 			}
 		}
 	}
+}
+
+func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
+	divides := len(cameras)
+
+	container.preProcessQueue(time)
 
 	if settings.Playfield.DrawObjects {
 		objectColors := settings.Objects.Colors.Color.GetColors(divides, float64(scale), float64(alpha))

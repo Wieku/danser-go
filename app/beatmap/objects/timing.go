@@ -1,7 +1,7 @@
 package objects
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"sort"
 )
@@ -16,8 +16,12 @@ type TimingPoint struct {
 	SampleIndex  int
 	SampleVolume float64
 
+	Signature int
+
 	Inherited bool
-	Kiai      bool
+
+	Kiai             bool
+	OmitFirstBarLine bool
 }
 
 func (t TimingPoint) GetRatio() float64 {
@@ -25,7 +29,7 @@ func (t TimingPoint) GetRatio() float64 {
 		return 1.0
 	}
 
-	return float64(float32(bmath.ClampF64(-t.beatLength, 10, 1000)) / 100)
+	return float64(float32(mutils.ClampF64(-t.beatLength, 10, 1000)) / 100)
 }
 
 func (t TimingPoint) GetBaseBeatLength() float64 {
@@ -40,8 +44,11 @@ type Timings struct {
 	SliderMult float64
 	TickRate   float64
 
-	Points  []TimingPoint
-	queue   []TimingPoint
+	defaultTimingPoint TimingPoint
+
+	points         []TimingPoint
+	originalPoints []TimingPoint
+
 	Current TimingPoint
 
 	BaseSet int
@@ -49,57 +56,84 @@ type Timings struct {
 }
 
 func NewTimings() *Timings {
-	return &Timings{BaseSet: 1, LastSet: 1}
+	return &Timings{
+		defaultTimingPoint: TimingPoint{
+			Time:             0,
+			beatLengthBase:   60000 / 60,
+			beatLength:       60000 / 60,
+			SampleSet:        0,
+			SampleIndex:      1,
+			SampleVolume:     1,
+			Signature:        4,
+			Inherited:        false,
+			Kiai:             false,
+			OmitFirstBarLine: false,
+		},
+		BaseSet: 1,
+		LastSet: 1,
+	}
 }
 
-func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex int, sampleVolume float64, inherited, kiai bool) {
+func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex int, sampleVolume float64, signature int, inherited, kiai, omitFirstBarLine bool) {
 	point := TimingPoint{
-		Time:           time,
-		beatLengthBase: beatLength,
-		beatLength:     beatLength,
-		SampleSet:      sampleSet,
-		SampleIndex:    sampleIndex,
-		SampleVolume:   sampleVolume,
-		Inherited:      inherited,
-		Kiai:           kiai,
+		Time:             time,
+		beatLengthBase:   beatLength,
+		beatLength:       beatLength,
+		SampleSet:        sampleSet,
+		SampleIndex:      sampleIndex,
+		SampleVolume:     sampleVolume,
+		Signature:        signature,
+		Inherited:        inherited,
+		Kiai:             kiai,
+		OmitFirstBarLine: omitFirstBarLine,
 	}
 
-	tim.Points = append(tim.Points, point)
+	tim.points = append(tim.points, point)
 }
 
 func (tim *Timings) FinalizePoints() {
-	sort.SliceStable(tim.Points, func(i, j int) bool {
-		return tim.Points[i].Time < tim.Points[j].Time
+	sort.SliceStable(tim.points, func(i, j int) bool {
+		return tim.points[i].Time < tim.points[j].Time
 	})
 
-	for i, point := range tim.Points {
+	for i, point := range tim.points {
 		if point.Inherited && i > 0 {
-			lastPoint := tim.Points[i-1]
+			lastPoint := tim.points[i-1]
 			point.beatLengthBase = lastPoint.beatLengthBase
 
-			tim.Points[i] = point
+			tim.points[i] = point
+		} else {
+			tim.originalPoints = append(tim.originalPoints, point)
 		}
 	}
 }
 
 func (tim *Timings) Update(time float64) {
-	if len(tim.queue) > 0 {
-		p := tim.queue[0]
-		if p.Time <= time {
-			tim.queue = tim.queue[1:]
-			tim.Current = p
-		}
-	}
+	tim.Current = tim.GetPointAt(time)
 }
 
-func (tim *Timings) GetPoint(time float64) TimingPoint {
-	for i, pt := range tim.Points {
-		if time < pt.Time {
-			return tim.Points[bmath.ClampI(i-1, 0, len(tim.Points)-1)]
-		}
-	}
+func (tim *Timings) GetDefault() TimingPoint {
+	return tim.defaultTimingPoint
+}
 
-	return tim.Points[len(tim.Points)-1]
+func (tim *Timings) GetPointAt(time float64) TimingPoint {
+	tLen := len(tim.points)
+
+	index := sort.Search(tLen, func(i int) bool {
+		return time < tim.points[i].Time
+	})
+
+	return tim.points[mutils.MaxI(0, index-1)]
+}
+
+func (tim *Timings) GetOriginalPointAt(time float64) TimingPoint {
+	tLen := len(tim.originalPoints)
+
+	index := sort.Search(tLen, func(i int) bool {
+		return time < tim.originalPoints[i].Time
+	})
+
+	return tim.originalPoints[mutils.MaxI(0, index-1)]
 }
 
 func (tim *Timings) GetScoringDistance() float64 {
@@ -126,9 +160,10 @@ func (tim *Timings) GetTickDistance(point TimingPoint) float64 {
 	return tim.GetScoringDistance() / point.GetRatio()
 }
 
-func (tim *Timings) Reset() {
-	tim.queue = make([]TimingPoint, len(tim.Points))
-	copy(tim.queue, tim.Points)
+func (tim *Timings) HasPoints() bool {
+	return len(tim.points) > 0
+}
 
-	tim.Current = tim.queue[0]
+func (tim *Timings) Reset() {
+	tim.Current = tim.points[0]
 }

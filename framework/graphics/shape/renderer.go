@@ -55,14 +55,15 @@ type Renderer struct {
 	color      color.Color
 	Projection mgl32.Mat4
 
-	vertexSize int
-	vertices   []float32
-	vao *buffer.VertexArrayObject
+	vertexSize    int
+	vertices      []float32
+	vao           *buffer.VertexArrayObject
 	currentSize   int
 	currentFloats int
 	drawing       bool
 	maxSprites    int
 	chunkOffset   int
+	colorPacked   float32
 }
 
 func NewRenderer() *Renderer {
@@ -96,7 +97,7 @@ func NewRendererSize(maxTriangles int) *Renderer {
 		vertices:    chunk.Data,
 		chunkOffset: chunk.Offset,
 		vao:         vao,
-		maxSprites: maxTriangles,
+		maxSprites:  maxTriangles,
 	}
 }
 
@@ -154,11 +155,12 @@ func (renderer *Renderer) End() {
 }
 
 func (renderer *Renderer) SetColor(r, g, b, a float64) {
-	renderer.color = color.NewRGBA(float32(r), float32(g), float32(b), float32(a))
+	renderer.SetColorM(color.NewRGBA(float32(r), float32(g), float32(b), float32(a)))
 }
 
 func (renderer *Renderer) SetColorM(color color.Color) {
 	renderer.color = color
+	renderer.colorPacked = color.PackFloat()
 }
 
 func (renderer *Renderer) SetAdditive(additive bool) {
@@ -210,47 +212,43 @@ func (renderer *Renderer) DrawQuad(x1, y1, x2, y2, x3, y3, x4, y4 float32) {
 		return
 	}
 
+	renderer.DrawTriangle(x1, y1, x2, y2, x3, y3)
+	renderer.DrawTriangle(x3, y3, x4, y4, x1, y1)
+}
+
+func (renderer *Renderer) DrawTriangleV(p1, p2, p3 vector.Vector2f) {
+	renderer.DrawTriangle(p1.X, p1.Y, p2.X, p2.Y, p3.X, p3.Y)
+}
+
+func (renderer *Renderer) DrawTriangle(x1, y1, x2, y2, x3, y3 float32) {
+	if renderer.color.A < 0.001 {
+		return
+	}
+
 	add := float32(1)
 	if renderer.additive {
 		add = 0
 	}
 
-	colorPacked := renderer.color.PackFloat()
-
 	floats := renderer.currentFloats
 
 	renderer.vertices[floats] = x1
 	renderer.vertices[floats+1] = y1
-	renderer.vertices[floats+2] = colorPacked
+	renderer.vertices[floats+2] = renderer.colorPacked
 	renderer.vertices[floats+3] = add
 
 	renderer.vertices[floats+4] = x2
 	renderer.vertices[floats+5] = y2
-	renderer.vertices[floats+6] = colorPacked
+	renderer.vertices[floats+6] = renderer.colorPacked
 	renderer.vertices[floats+7] = add
 
 	renderer.vertices[floats+8] = x3
 	renderer.vertices[floats+9] = y3
-	renderer.vertices[floats+10] = colorPacked
+	renderer.vertices[floats+10] = renderer.colorPacked
 	renderer.vertices[floats+11] = add
 
-	renderer.vertices[floats+12] = x3
-	renderer.vertices[floats+13] = y3
-	renderer.vertices[floats+14] = colorPacked
-	renderer.vertices[floats+15] = add
-
-	renderer.vertices[floats+16] = x4
-	renderer.vertices[floats+17] = y4
-	renderer.vertices[floats+18] = colorPacked
-	renderer.vertices[floats+19] = add
-
-	renderer.vertices[floats+20] = x1
-	renderer.vertices[floats+21] = y1
-	renderer.vertices[floats+22] = colorPacked
-	renderer.vertices[floats+23] = add
-
-	renderer.currentFloats += 24
-	renderer.currentSize += 6
+	renderer.currentFloats += 12
+	renderer.currentSize += 3
 
 	if renderer.currentSize >= renderer.maxSprites*3 {
 		renderer.Flush()
@@ -281,50 +279,25 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 
 	progress = math32.Abs(progress)
 
-	add := float32(1)
-	if renderer.additive {
-		add = 0
-	}
-
-	colorPacked := renderer.color.PackFloat()
-
 	partRadians := 2 * math32.Pi / float32(sections)
 	targetRadians := 2 * math32.Pi * progress
-
-	floats := renderer.currentFloats
-
-	cx := math32.Cos(-math32.Pi/2) * radius
-	cy := math32.Sin(-math32.Pi/2) * radius
 
 	x := position.X
 	y := position.Y
 
+	cx := math32.Cos(-math32.Pi/2) * radius + x
+	cy := math32.Sin(-math32.Pi/2) * radius + y
+
 	for r := float32(0.0); r < targetRadians; r += partRadians {
-		renderer.vertices[floats] = x
-		renderer.vertices[floats+1] = y
-		renderer.vertices[floats+2] = colorPacked
-		renderer.vertices[floats+3] = add
-
-		renderer.vertices[floats+4] = cx + x
-		renderer.vertices[floats+5] = cy + y
-		renderer.vertices[floats+6] = colorPacked
-		renderer.vertices[floats+7] = add
-
 		rads := math32.Min(targetRadians, r+partRadians)*direction - math32.Pi/2
 
-		cx = math32.Cos(rads) * radius
-		cy = math32.Sin(rads) * radius
+		cx1 := math32.Cos(rads) * radius + x
+		cy1 := math32.Sin(rads) * radius + y
 
-		renderer.vertices[floats+8] = cx + x
-		renderer.vertices[floats+9] = cy + y
-		renderer.vertices[floats+10] = colorPacked
-		renderer.vertices[floats+11] = add
+		renderer.DrawTriangle(x, y, cx, cy, cx1, cy1)
 
-		renderer.currentSize += 3
-		floats += 12
+		cx, cy = cx1, cy1
 	}
-
-	renderer.currentFloats = floats
 
 	if renderer.currentSize >= renderer.maxSprites*3 {
 		renderer.Flush()

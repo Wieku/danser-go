@@ -6,11 +6,11 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -120,6 +120,10 @@ type MapTo struct {
 	maxCombo int
 }
 
+type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
+
+type endListener func(time int64, number int64)
+
 type OsuRuleSet struct {
 	beatMap *beatmap.BeatMap
 	cursors map[*graphics.Cursor]*subSet
@@ -131,8 +135,10 @@ type OsuRuleSet struct {
 
 	queue       []HitObject
 	processed   []HitObject
-	hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)
-	endListener func(time int64, number int64)
+	hitListener hitListener
+	endListener endListener
+
+	experimentalPP bool
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
@@ -164,6 +170,18 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		ruleset.mapStats = append(ruleset.mapStats, mapTo)
 	}
 
+	if settings.Gameplay.UseLazerPP {
+		log.Println("Using pp calc version 2021-09-24 with following changes:")
+		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
+		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
+		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
+		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
+
+		ruleset.experimentalPP = true
+	} else {
+		log.Println("Using pp calc version 2021-07-27: https://osu.ppy.sh/home/news/2021-07-27-performance-points-star-rating-updates")
+	}
+
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
@@ -177,7 +195,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff, ruleset.experimentalPP)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 			log.Println("\tAim Stars:  ", star.Aim)
@@ -309,7 +327,7 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
 			data = append(data, utils.Humanize(set.cursors[c].maxCombo))
 			data = append(data, set.cursors[c].player.diff.Mods.String())
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Total))
+			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
 			table.Append(data)
 		}
 
@@ -409,8 +427,8 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	subSet := set.cursors[cursor]
 
 	if result == Ignore || result == PositionalMiss {
-		if result == PositionalMiss && set.hitListener != nil {
-			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.scoreProcessor.GetScore())
+		if result == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
+			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
 		}
 
 		return
@@ -425,7 +443,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.numObjects++
 	}
 
-	subSet.maxCombo = bmath.MaxI64(subSet.scoreProcessor.GetCombo(), subSet.maxCombo)
+	subSet.maxCombo = mutils.MaxI64(subSet.scoreProcessor.GetCombo(), subSet.maxCombo)
 
 	if subSet.numObjects == 0 {
 		subSet.accuracy = 100
@@ -457,12 +475,12 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.grade = D
 	}
 
-	index := bmath.MaxI64(0, subSet.numObjects-1)
+	index := mutils.MaxI64(0, subSet.numObjects-1)
 
 	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff.Aim, diff.Speed, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
+	subSet.ppv2.PPv2x(diff, set.experimentalPP, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
 
 	switch result {
 	case Hit100:
@@ -516,7 +534,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	}
 
 	if set.hitListener != nil {
-		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Total, subSet.scoreProcessor.GetScore())
+		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
 	}
 
 	if len(set.cursors) == 1 && !settings.RECORD {
@@ -535,7 +553,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 			time,
 			x,
 			y,
-			subSet.ppv2.Total,
+			subSet.ppv2.Results.Total,
 		))
 	}
 }
@@ -579,11 +597,11 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 	return Click
 }
 
-func (set *OsuRuleSet) SetListener(listener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, pp float64, score int64)) {
+func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
 }
 
-func (set *OsuRuleSet) SetEndListener(endlistener func(time int64, number int64)) {
+func (set *OsuRuleSet) SetEndListener(endlistener endListener) {
 	set.endListener = endlistener
 }
 
@@ -602,9 +620,9 @@ func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	return subSet.hp.Health / MaxHp
 }
 
-func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) float64 {
+func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) performance.PPv2Results {
 	subSet := set.cursors[cursor]
-	return subSet.ppv2.Total
+	return subSet.ppv2.Results
 }
 
 func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {

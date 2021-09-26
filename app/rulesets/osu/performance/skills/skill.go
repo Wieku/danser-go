@@ -2,13 +2,16 @@ package skills
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/preprocessing"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"sort"
 )
 
 type Skill struct {
+	// Whether new pp changes should be considered
+	Experimental bool
+
 	// Strain values are multiplied by this number for the given skill. Used to balance the value of different skills between each other.
 	SkillMultiplier float64
 
@@ -51,8 +54,9 @@ type Skill struct {
 	diff *difficulty.Difficulty
 }
 
-func NewSkill(d *difficulty.Difficulty) *Skill {
+func NewSkill(d *difficulty.Difficulty, experimental bool) *Skill {
 	return &Skill{
+		Experimental:          experimental,
 		DecayWeight:           0.9,
 		SectionLength:         400,
 		HistoryLength:         1,
@@ -95,12 +99,12 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 	skill.Previous = append(skill.Previous, current)
 }
 
-func (skill *Skill) GetPrevious() *preprocessing.DifficultyObject {
-	if len(skill.Previous) == 0 {
+func (skill *Skill) GetPrevious(i int) *preprocessing.DifficultyObject {
+	if len(skill.Previous)-1-i < 0 {
 		return nil
 	}
 
-	return skill.Previous[len(skill.Previous)-1]
+	return skill.Previous[len(skill.Previous)-1-i]
 }
 
 func (skill *Skill) GetCurrentStrainPeaks() []float64 {
@@ -118,11 +122,11 @@ func (skill *Skill) DifficultyValue() float64 {
 	strains := skill.GetCurrentStrainPeaks()
 	reverseSortFloat64s(strains)
 
-	numReduced := bmath.MinI(len(strains), skill.ReducedSectionCount)
+	numReduced := mutils.MinI(len(strains), skill.ReducedSectionCount)
 
 	for i := 0; i < numReduced; i++ {
-		scale := math.Log10(bmath.LerpF64(1, 10, bmath.ClampF64(float64(i) / float64(skill.ReducedSectionCount), 0, 1)))
-		strains[i] *= bmath.LerpF64(skill.ReducedStrainBaseline, 1.0, scale)
+		scale := math.Log10(mutils.LerpF64(1, 10, mutils.ClampF64(float64(i) / float64(skill.ReducedSectionCount), 0, 1)))
+		strains[i] *= mutils.LerpF64(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 
 	reverseSortFloat64s(strains)
@@ -144,7 +148,7 @@ func (skill *Skill) saveCurrentPeak() {
 }
 
 func (skill *Skill) startNewSectionFrom(end float64) {
-	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-skill.GetPrevious().StartTime)
+	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-skill.GetPrevious(0).StartTime)
 }
 
 func reverseSortFloat64s(arr []float64) {

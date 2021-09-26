@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/graphics/sliderrenderer"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
@@ -15,6 +14,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -76,8 +76,8 @@ type Slider struct {
 	body     *sliderrenderer.Body
 	lastTime float64
 
-	ball     *sprite.Sprite
-	follower *sprite.Sprite
+	ball     *sprite.Animation
+	follower *sprite.Animation
 
 	edges          []*Circle
 	endCircles     []*Circle
@@ -184,9 +184,9 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 		return float64(slider.scorePath[i].Time2) >= time
 	})
 
-	pLine := slider.scorePath[bmath.ClampI(index, 0, len(slider.scorePath)-1)]
+	pLine := slider.scorePath[mutils.ClampI(index, 0, len(slider.scorePath)-1)]
 
-	clamped := bmath.ClampF64(time, float64(pLine.Time1), float64(pLine.Time2))
+	clamped := mutils.ClampF64(time, float64(pLine.Time1), float64(pLine.Time2))
 
 	var pos vector.Vector2f
 	if pLine.Time2 == pLine.Time1 {
@@ -229,7 +229,7 @@ func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd b
 
 func (slider *Slider) SetTiming(timings *Timings) {
 	slider.Timings = timings
-	slider.TPoint = timings.GetPoint(slider.StartTime)
+	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
 	lines := slider.multiCurve.GetLines()
 
@@ -352,8 +352,8 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeTail = animation.NewGlider(0)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
-	fadeMultiplier := 1.0 - bmath.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
-	durationMultiplier := bmath.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+	fadeMultiplier := 1.0 - mutils.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+	durationMultiplier := mutils.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
 
 	slSnInS := slider.StartTime - diff.Preempt
 	slSnInE := slider.StartTime - diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
@@ -738,7 +738,7 @@ func (slider *Slider) PlayEdgeSample(index int) {
 		return
 	}
 
-	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPoint(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
+	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
 }
 
 func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
@@ -788,8 +788,8 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
-	bodyOpacityInner := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
-	bodyOpacityOuter := bmath.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
+	bodyOpacityInner := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
+	bodyOpacityOuter := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
 
 	borderInner := color2.NewRGBA(innerBorder.R, innerBorder.G, innerBorder.B, float32(colorAlpha))
 	borderOuter := color2.NewRGBA(outerBorder.R, outerBorder.G, outerBorder.B, float32(colorAlpha))
@@ -927,9 +927,9 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {
 	batch.SetTranslation(slider.ball.GetPosition())
 
-	isB := skin.GetSource("sliderb") != skin.SKIN && useBallTexture
+	source := skin.GetSourceFromTexture(slider.ball.Texture)
 
-	if isB && skin.GetTexture("sliderb-nd") != nil {
+	if useBallTexture && skin.GetTextureSource("sliderb-nd", source) != nil {
 		batch.SetColor(0.1, 0.1, 0.1, alpha*slider.ball.GetAlpha())
 		batch.DrawTexture(*skin.GetTexture("sliderb-nd"))
 	}
@@ -959,7 +959,7 @@ func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color
 		batch.DrawTexture(*skin.GetTexture("hitcircle-full"))
 	}
 
-	if isB && skin.GetTexture("sliderb-spec") != nil {
+	if useBallTexture && skin.GetTextureSource("sliderb-spec", source) != nil {
 		batch.SetColor(1, 1, 1, alpha*slider.ball.GetAlpha())
 		batch.SetAdditive(true)
 		batch.DrawTexture(*skin.GetTexture("sliderb-spec"))

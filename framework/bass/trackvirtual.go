@@ -7,7 +7,7 @@ package bass
 import "C"
 
 import (
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 type TrackVirtual struct {
@@ -94,7 +94,7 @@ func (track *TrackVirtual) GetPosition() float64 {
 
 	pos := track.previousPosition + (currentPos-track.startTime)*track.speed
 
-	return bmath.ClampF64(pos, 0, track.length+track.tail)
+	return mutils.ClampF64(pos, 0, track.length+track.tail)
 }
 
 func (track *TrackVirtual) SetTempo(tempo float64) {

@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -37,7 +38,7 @@ type ScoreboardEntry struct {
 func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlayer bool) *ScoreboardEntry {
 	bg := skin.GetTexture("menu-button-background")
 	entry := &ScoreboardEntry{
-		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.NewVec2d(float64(1-2*(bg.Width-470)/bg.Width), 0)),
+		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.CentreRight),
 		name:   name,
 		score:  score,
 		combo:  combo,
@@ -45,6 +46,7 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 	}
 
 	entry.Sprite.SetScale(0.625)
+	entry.Sprite.SetCutOrigin(vector.CentreRight)
 	entry.SetAlpha(0)
 
 	if isPlayer {
@@ -56,15 +58,14 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 	fnt := font.GetFont("Ubuntu Regular")
 	fnt.Overlap = 2.5
 
-	addDots := false
-	for fnt.GetWidth(20, entry.name) > 130 {
-		addDots = true
+	testName := entry.name
+
+	for fnt.GetWidth(20, testName) > 135 {
 		entry.name = entry.name[:len(entry.name)-1]
+		testName = entry.name + "..."
 	}
 
-	if addDots {
-		entry.name += "..."
-	}
+	entry.name = testName
 
 	fnt.Overlap = 0
 
@@ -90,8 +91,29 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 		return
 	}
 
+	offset := 0.0
 	if entry.showAvatar {
-		batch.SetTranslation(vector.NewVec2d(52*scale, 0))
+		offset = 52
+	}
+
+	topLeft := vector.TopLeft
+	topRight := vector.TopRight
+	posScale := 1.0
+
+	if settings.Gameplay.ScoreBoard.AlignRight {
+		topLeft = vector.TopRight
+		topRight = vector.TopLeft
+		posScale = -1.0
+
+		entry.Sprite.SetCutOrigin(vector.CentreLeft)
+		entry.Sprite.SetOrigin(vector.CentreLeft)
+		batch.SetTranslation(vector.NewVec2d(-(230*0.625+offset)*scale, 0))
+		entry.Sprite.SetCutX(1.0 - (230+offset/0.625)/float64(entry.Sprite.Texture.Width))
+	} else {
+		entry.Sprite.SetCutOrigin(vector.CentreRight)
+		entry.Sprite.SetOrigin(vector.CentreRight)
+		batch.SetTranslation(vector.NewVec2d((float64(entry.Sprite.Texture.Width-470)*0.625+offset)*scale, 0))
+		entry.Sprite.SetCutX(1.0 - (float64(entry.Sprite.Texture.Width-470)+offset/0.625)/float64(entry.Sprite.Texture.Width))
 	}
 
 	batch.SetColor(1, 1, 1, 0.6*alpha)
@@ -99,7 +121,8 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 
 	entry.Sprite.Draw(time, batch)
 
-	batch.SetScale(1, 1)
+	batch.ResetTransform()
+	batch.SetTranslation(vector.NewVec2d(posScale*offset*scale, 0))
 
 	batch.SetColor(1, 1, 1, a)
 
@@ -107,7 +130,7 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 
 	if entry.showAvatar && entry.avatar != nil {
 		batch.SetSubScale(scale, scale)
-		entry.avatar.SetPosition(entryPos.SubS(26*scale, 0))
+		entry.avatar.SetPosition(entryPos.SubS(26*scale*posScale, 0))
 		entry.avatar.Draw(time, batch)
 		batch.SetSubScale(1, 1)
 	}
@@ -115,33 +138,41 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	fnt := skin.GetFont("scoreentry")
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+3.2*scale, entryPos.Y+8.8*scale, vector.TopLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+posScale*(3.2*scale), entryPos.Y+8.8*scale, topLeft, fnt.GetSize()*scale, true, entry.scoreHumanized)
 
 	if entry.rank <= 50 {
 		batch.SetColor(1, 1, 1, a*0.32)
 
 		fnt.Overlap = 3
-		fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y-22*scale, vector.TopRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
+		fnt.DrawOrigin(batch, entryPos.X+posScale*(padding-10)*scale, entryPos.Y-22*scale, topRight, fnt.GetSize()*2.2*scale, true, entry.rankHumanized)
 	}
 
 	batch.SetColor(0.6, 0.98, 1, a)
 
 	fnt.Overlap = 2.5
-	fnt.DrawOrigin(batch, entryPos.X+(padding-10)*scale, entryPos.Y+8.8*scale, vector.TopRight, fnt.GetSize()*scale, true, entry.comboHumanized)
+	fnt.DrawOrigin(batch, entryPos.X+posScale*(padding-10)*scale, entryPos.Y+8.8*scale, topRight, fnt.GetSize()*scale, true, entry.comboHumanized)
 
 	ubu := font.GetFont("Ubuntu Regular")
 	ubu.Overlap = 2.5
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.DrawOrigin(batch, entryPos.X+3.5*scale, entryPos.Y-18.5*scale, vector.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+posScale*(3.5*scale), entryPos.Y-18.5*scale, topLeft, 20*scale, false, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.DrawOrigin(batch, entryPos.X+3*scale, entryPos.Y-19*scale, vector.TopLeft, 20*scale, false, entry.name)
+	ubu.DrawOrigin(batch, entryPos.X+posScale*(3*scale), entryPos.Y-19*scale, topLeft, 20*scale, false, entry.name)
 
 	ubu.Overlap = 0
 
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, 1)
+}
+
+func (entry *ScoreboardEntry) loadAvatar(pixmap *texture.Pixmap) {
+	tex := texture.LoadTextureSingle(pixmap.RGBA(), 4)
+	region := tex.GetRegion()
+
+	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), vector.Centre)
+	entry.avatar.SetScale(float64(52 / region.Height))
 }
 
 func (entry *ScoreboardEntry) LoadAvatarID(id int) {
@@ -182,13 +213,21 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 		return
 	}
 
-	tex := texture.LoadTextureSingle(pixmap.RGBA(), 4)
-	region := tex.GetRegion()
+	entry.loadAvatar(pixmap)
 
 	pixmap.Dispose()
+}
 
-	entry.avatar = sprite.NewSpriteSingle(&region, 0, vector.NewVec2d(26, 0), vector.Centre)
-	entry.avatar.SetScale(float64(52 / region.Height))
+func (entry *ScoreboardEntry) LoadDefaultAvatar() {
+	pixmap, err := assets.GetPixmap("assets/textures/dansercoin256.png")
+	if err != nil {
+		log.Println("Can't load avatar! Error:", err)
+		return
+	}
+
+	entry.loadAvatar(pixmap)
+
+	pixmap.Dispose()
 }
 
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {

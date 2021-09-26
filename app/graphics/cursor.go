@@ -95,9 +95,9 @@ type Cursor struct {
 	firstSmokePosition vector.Vector2f
 	lastSmokePosition  vector.Vector2f
 	smokeTexture       *texture.TextureRegion
-	smokeContainer     *sprite.SpriteManager
+	smokeContainer     *sprite.Manager
 
-	rippleContainer *sprite.SpriteManager
+	rippleContainer *sprite.Manager
 	time            float64
 }
 
@@ -120,9 +120,9 @@ func NewCursor() *Cursor {
 	skin.GetTexture("cursor-ripple")
 
 	cursor.smokeTexture = skin.GetTexture("cursor-smoke")
-	cursor.smokeContainer = sprite.NewSpriteManager()
+	cursor.smokeContainer = sprite.NewManager()
 
-	cursor.rippleContainer = sprite.NewSpriteManager()
+	cursor.rippleContainer = sprite.NewManager()
 
 	return cursor
 }

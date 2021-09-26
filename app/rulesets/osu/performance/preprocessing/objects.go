@@ -6,7 +6,7 @@ import (
 )
 
 // Creates difficulty objects needed for star rating calculations
-func CreateDifficultyObjects(objsB []objects.IHitObject, d *difficulty.Difficulty) []*DifficultyObject {
+func CreateDifficultyObjects(objsB []objects.IHitObject, d *difficulty.Difficulty, experimental bool) []*DifficultyObject {
 	objs := make([]objects.IHitObject, 0, len(objsB))
 
 	for _, o := range objsB {
@@ -29,7 +29,7 @@ func CreateDifficultyObjects(objsB []objects.IHitObject, d *difficulty.Difficult
 		last = objs[i-1]
 		current = objs[i]
 
-		diffObjects = append(diffObjects, NewDifficultyObject(current, lastLast, last, d))
+		diffObjects = append(diffObjects, NewDifficultyObject(current, lastLast, last, d, experimental))
 	}
 
 	return diffObjects

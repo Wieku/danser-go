@@ -35,7 +35,7 @@ const (
 )
 
 type RankingPanel struct {
-	manager *sprite.SpriteManager
+	manager *sprite.Manager
 	time    float64
 
 	ScaledWidth float64
@@ -64,7 +64,7 @@ type RankingPanel struct {
 
 func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError *HitErrorMeter, hpGraph []vector.Vector2d) *RankingPanel {
 	panel := &RankingPanel{
-		manager:     sprite.NewSpriteManager(),
+		manager:     sprite.NewManager(),
 		ScaledWidth: settings.Graphics.GetAspectRatio() * 768,
 		cursor:      cursor,
 		ruleset:     ruleset,
@@ -73,7 +73,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	bg := sprite.NewSpriteSingle(nil, -1, vector.NewVec2d(panel.ScaledWidth, 768).Scl(0.5), vector.Centre)
 	bg.SetColor(color.NewL(0.75))
 
-	go func() {
+	bgLoadFunc := func() {
 		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, ruleset.GetBeatMap().Dir, ruleset.GetBeatMap().Bg))
 		if err != nil {
 			image, err = assets.GetPixmap("assets/textures/background-1.png")
@@ -85,7 +85,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		if image != nil {
 			mainthread.CallNonBlock(func() {
 				region := texture.LoadTextureSingle(image.RGBA(), 0).GetRegion()
-				bg.Textures[0] = &region
+				bg.Texture = &region
 
 				result := scaling.Fill.Apply(region.Width, region.Height, float32(panel.ScaledWidth), 768)
 
@@ -94,7 +94,13 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 				image.Dispose()
 			})
 		}
-	}()
+	}
+
+	if settings.RECORD {
+		bgLoadFunc()
+	} else {
+		go bgLoadFunc()
+	}
 
 	panel.loadMods()
 
@@ -278,7 +284,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	fnt2.Draw(batch, 5, 30+22+22, 22, panel.playedBy)
 
 	if settings.Gameplay.PPCounter.ShowInResults {
-		pp := panel.ruleset.GetPP(panel.cursor)
+		pp := panel.ruleset.GetPP(panel.cursor).Total
 		ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", pp)
 
 		batch.SetColor(0, 0, 0, alpha*0.5)

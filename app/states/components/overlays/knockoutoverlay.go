@@ -3,11 +3,11 @@ package overlays
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/bmath"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -20,6 +20,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -130,11 +131,13 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	overlay := new(KnockoutOverlay)
 	overlay.controller = replayController
 
-	fontFile, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+	if font.GetFont("Quicksand Bold") == nil {
+		file, _ := assets.Open("assets/fonts/Quicksand-Bold.ttf")
+		font.LoadFont(file)
+		file.Close()
+	}
 
-	overlay.font = font.LoadFont(fontFile)
-
-	fontFile.Close()
+	overlay.font = font.GetFont("Quicksand Bold")
 
 	overlay.players = make(map[string]*knockoutPlayer)
 	overlay.playersArray = make([]*knockoutPlayer, 0)
@@ -241,7 +244,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	return overlay
 }
 
-func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, pp float64, score int64) {
+func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, score int64) {
 	if result == osu.PositionalMiss {
 		return
 	}
@@ -255,14 +258,14 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	player.score = score
 	player.scores[number] = score
 
-	player.pp = pp
-	player.pps[number] = pp
+	player.pp = ppResults.Total
+	player.pps[number] = ppResults.Total
 
 	player.scoreDisp.Reset()
 	player.scoreDisp.AddEvent(overlay.normalTime, overlay.normalTime+500, float64(score))
 
 	player.ppDisp.Reset()
-	player.ppDisp.AddEvent(overlay.normalTime, overlay.normalTime+500, pp)
+	player.ppDisp.AddEvent(overlay.normalTime, overlay.normalTime+500, player.pp)
 
 	if comboResult == osu.ComboResults.Increase {
 		player.sCombo++
@@ -455,10 +458,10 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	for _, r := range replays {
 		cumulativeHeight += overlay.players[r.Name].height.GetValue()
 
-		highestCombo = bmath.MaxI64(highestCombo, overlay.players[r.Name].sCombo)
+		highestCombo = mutils.MaxI64(highestCombo, overlay.players[r.Name].sCombo)
 		highestPP = math.Max(highestPP, overlay.players[r.Name].pp)
 		highestACC = math.Max(highestACC, r.Accuracy)
-		highestScore = bmath.MaxI64(highestScore, overlay.players[r.Name].score)
+		highestScore = mutils.MaxI64(highestScore, overlay.players[r.Name].score)
 
 		pWidth := overlay.font.GetWidth(scl, r.Name)
 

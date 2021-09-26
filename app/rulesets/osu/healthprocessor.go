@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/bmath"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
@@ -65,7 +65,7 @@ func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, l
 	return proc
 }
 
-func (hp *HealthProcessor) CalculateRate() { //suppress:gocyclo
+func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 	lowestHpEver := difficulty.DifficultyRate(hp.diff.HPMod, 195, 160, 60)
 	lowestHpComboEnd := difficulty.DifficultyRate(hp.diff.HPMod, 198, 170, 80)
 	lowestHpEnd := difficulty.DifficultyRate(hp.diff.HPMod, 198, 180, 80)
@@ -246,7 +246,7 @@ func (hp *HealthProcessor) AddResult(result HitResult) {
 
 func (hp *HealthProcessor) Increase(amount float64) {
 	hp.HealthUncapped = math.Max(0.0, hp.HealthUncapped+amount)
-	hp.Health = bmath.ClampF64(hp.Health+amount, 0.0, MaxHp)
+	hp.Health = mutils.ClampF64(hp.Health+amount, 0.0, MaxHp)
 }
 
 func (hp *HealthProcessor) ReducePassive(amount int64) {

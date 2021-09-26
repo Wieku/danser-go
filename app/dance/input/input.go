@@ -3,26 +3,29 @@ package input
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
+
+const singleTapThreshold = 140
 
 type NaturalInputProcessor struct {
 	queue  []objects.IHitObject
 	cursor *graphics.Cursor
 
-	lastLeft       bool
-	moving         bool
-	lastEnd        float64
-	lastTime       float64
-	lastLeftClick  float64
-	lastRightClick float64
-	leftToRelease  bool
-	rightToRelease bool
+	lastTime float64
+
+	wasLeftBefore  bool
+	previousEnd    float64
+	releaseLeftAt  float64
+	releaseRightAt float64
 }
 
 func NewNaturalInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *NaturalInputProcessor {
 	processor := new(NaturalInputProcessor)
 	processor.cursor = cursor
 	processor.queue = make([]objects.IHitObject, len(objs))
+	processor.releaseLeftAt = -10000000
+	processor.releaseRightAt = -10000000
 
 	copy(processor.queue, objs)
 
@@ -37,33 +40,29 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 				break
 			}
 
-			if (processor.lastTime <= g.GetStartTime() && time >= g.GetStartTime()) || (time >= g.GetStartTime() && time <= g.GetEndTime()) {
-				if !processor.moving {
-					//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointStart {
-						if !processor.lastLeft && g.GetStartTime()-processor.lastEnd < 140 {
-							processor.cursor.LeftKey = true
-							processor.lastLeft = true
-							processor.leftToRelease = false
-							processor.lastLeftClick = time
-						} else {
-							processor.cursor.RightKey = true
-							processor.lastLeft = false
-							processor.rightToRelease = false
-							processor.lastRightClick = time
-						}
-					//}
+			if processor.lastTime < g.GetStartTime() && time >= g.GetStartTime() {
+				startTime := g.GetStartTime()
+				endTime := g.GetEndTime()
+
+				releaseAt := endTime + 50.0
+
+				if i+1 < len(processor.queue) {
+					nTime := processor.queue[mutils.MinI(i+2, len(processor.queue)-1)].GetStartTime()
+
+					releaseAt = mutils.ClampF64(nTime-2, endTime+1, releaseAt)
 				}
 
-				processor.moving = true
-			} else if time > g.GetStartTime() && time > g.GetEndTime() {
+				shouldBeLeft := !processor.wasLeftBefore && startTime-processor.previousEnd < singleTapThreshold
 
-				processor.moving = false
-				//if !g.GetBasicData().SliderPoint || g.GetBasicData().SliderPointEnd {
-					processor.leftToRelease = true
-					processor.rightToRelease = true
-				//}
+				if shouldBeLeft {
+					processor.releaseLeftAt = releaseAt
+				} else {
+					processor.releaseRightAt = releaseAt
+				}
 
-				processor.lastEnd = g.GetEndTime()
+				processor.wasLeftBefore = shouldBeLeft
+
+				processor.previousEnd = endTime
 
 				processor.queue = append(processor.queue[:i], processor.queue[i+1:]...)
 
@@ -72,15 +71,8 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 		}
 	}
 
-	if processor.leftToRelease && time-processor.lastLeftClick > 50 {
-		processor.leftToRelease = false
-		processor.cursor.LeftKey = false
-	}
-
-	if processor.rightToRelease && time-processor.lastRightClick > 50 {
-		processor.rightToRelease = false
-		processor.cursor.RightKey = false
-	}
+	processor.cursor.LeftKey = time < processor.releaseLeftAt
+	processor.cursor.RightKey = time < processor.releaseRightAt
 
 	processor.lastTime = time
 }
