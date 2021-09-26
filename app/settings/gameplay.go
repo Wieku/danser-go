@@ -125,7 +125,7 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
-			AlignRight:     true,
+			AlignRight:     false,
 			HideOthers:     false,
 			ShowAvatars:    false,
 			ExplosionScale: 1.0,
