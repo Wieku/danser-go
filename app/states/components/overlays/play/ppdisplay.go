@@ -2,6 +2,7 @@ package play
 
 import (
 	"fmt"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -24,21 +25,28 @@ type PPDisplay struct {
 	accGlider *animation.TargetGlider
 	accText   string
 
+	flashlightGlider *animation.TargetGlider
+	flashlightText   string
+
 	ppGlider *animation.TargetGlider
 	ppText   string
 
 	mText string
 
-	decimals int
-	format   string
+	decimals       int
+	format         string
+
+	mods           difficulty.Modifier
+	experimentalPP bool
 }
 
-func NewPPDisplay() *PPDisplay {
+func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
 	return &PPDisplay{
 		ppFont:    font.GetFont("Quicksand Bold"),
 		aimGlider: animation.NewTargetGlider(0, 0),
 		tapGlider: animation.NewTargetGlider(0, 0),
 		accGlider: animation.NewTargetGlider(0, 0),
+		flashlightGlider: animation.NewTargetGlider(0, 0),
 		ppGlider:  animation.NewTargetGlider(0, 0),
 		aimText:   "0pp",
 		tapText:   "0pp",
@@ -47,6 +55,8 @@ func NewPPDisplay() *PPDisplay {
 		mText:     "0pp",
 		decimals:  0,
 		format:    "%.0fpp",
+		mods: mods,
+		experimentalPP: experimentalPP,
 	}
 }
 
@@ -54,6 +64,7 @@ func (ppDisplay *PPDisplay) Add(results performance.PPv2Results) {
 	ppDisplay.aimGlider.SetTarget(results.Aim)
 	ppDisplay.tapGlider.SetTarget(results.Speed)
 	ppDisplay.accGlider.SetTarget(results.Acc)
+	ppDisplay.flashlightGlider.SetTarget(results.Flashlight)
 	ppDisplay.ppGlider.SetTarget(results.Total)
 }
 
@@ -71,6 +82,7 @@ func (ppDisplay *PPDisplay) Update(time float64) {
 		ppDisplay.updatePP(ppDisplay.aimGlider, &ppDisplay.aimText, time, &mText)
 		ppDisplay.updatePP(ppDisplay.tapGlider, &ppDisplay.tapText, time, &mText)
 		ppDisplay.updatePP(ppDisplay.accGlider, &ppDisplay.accText, time, &mText)
+		ppDisplay.updatePP(ppDisplay.flashlightGlider, &ppDisplay.flashlightText, time, &mText)
 	}
 
 	ppDisplay.mText = mText
@@ -113,7 +125,14 @@ func (ppDisplay *PPDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 		ppDisplay.drawPP(batch, "Aim:", ppDisplay.aimText, position, length, ppScale, color, vector.TopLeft)
 		ppDisplay.drawPP(batch, "Tap:", ppDisplay.tapText, position.AddS(0, 40*ppScale), length, ppScale, color, vector.TopLeft)
 		ppDisplay.drawPP(batch, "Acc:", ppDisplay.accText, position.AddS(0, 80*ppScale), length, ppScale, color, vector.TopLeft)
-		ppDisplay.drawPP(batch, "Total:", ppDisplay.ppText, position.AddS(0, 120*ppScale), length, ppScale, color, vector.TopLeft)
+
+		offset := 0.0
+		if ppDisplay.experimentalPP && ppDisplay.mods.Active(difficulty.Flashlight) {
+			ppDisplay.drawPP(batch, "FL:", ppDisplay.flashlightText, position.AddS(0, 120*ppScale), length, ppScale, color, vector.TopLeft)
+			offset = 40
+		}
+
+		ppDisplay.drawPP(batch, "Total:", ppDisplay.ppText, position.AddS(0, (120+offset)*ppScale), length, ppScale, color, vector.TopLeft)
 	} else {
 		ppDisplay.drawPP(batch, "", ppDisplay.ppText, position, 0, ppScale, color, origin)
 	}

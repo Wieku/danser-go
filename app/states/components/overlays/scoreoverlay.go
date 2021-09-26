@@ -178,7 +178,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.scoreGlider = animation.NewTargetGlider(0, 0)
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
 
-	overlay.ppDisplay = play.NewPPDisplay()
+	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
