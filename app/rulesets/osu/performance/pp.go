@@ -23,7 +23,7 @@ type PPv2Results struct {
 type PPv2 struct {
 	Results PPv2Results
 
-	aimStrain, speedStrain float64
+	stars Stars
 
 	maxCombo, nsliders, ncircles, nobjects int
 
@@ -57,8 +57,7 @@ func (pp *PPv2) PPv2x(stars Stars,
 
 	totalhits := n300 + n100 + n50 + nmiss
 
-	pp.aimStrain = stars.Aim
-	pp.speedStrain = stars.Speed
+	pp.stars = stars
 	pp.diff = diff
 	pp.totalHits = totalhits
 	pp.scoreMaxCombo = combo
@@ -113,7 +112,7 @@ func (pp *PPv2) PPv2x(stars Stars,
 }
 
 func (pp *PPv2) computeAimValue() float64 {
-	rawAim := pp.aimStrain
+	rawAim := pp.stars.Aim
 
 	if pp.diff.Mods.Active(difficulty.TouchDevice) {
 		rawAim = math.Pow(rawAim, 0.8)
@@ -180,7 +179,7 @@ func (pp *PPv2) computeAimValue() float64 {
 }
 
 func (pp *PPv2) computeSpeedValue() float64 {
-	speedValue := ppBase(pp.speedStrain)
+	speedValue := ppBase(pp.stars.Speed)
 
 	// Longer maps are worth more
 	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
