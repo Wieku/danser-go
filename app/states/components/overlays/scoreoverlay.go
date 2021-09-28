@@ -287,17 +287,18 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 }
 
 func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, _ int64) {
+	object := overlay.ruleset.GetBeatMap().HitObjects[number]
+
 	if result&(osu.BaseHitsM) > 0 {
-		overlay.results.AddResult(time, result, position)
+		overlay.results.AddResult(time, result, position, object)
 	}
 
-	_, hC := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
+	_, hC := object.(*objects.Circle)
 	allowCircle := hC && (result&(osu.BaseHits|osu.PositionalMiss) > 0)
-	_, sl := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
+	_, sl := object.(*objects.Slider)
 	allowSlider := sl && (result&(osu.SliderStart|osu.PositionalMiss)) > 0
 
 	if allowCircle || allowSlider {
-		object := overlay.ruleset.GetBeatMap().HitObjects[number]
 		timeDiff := float64(time) - object.GetStartTime()
 
 		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
@@ -568,8 +569,9 @@ func (overlay *ScoreOverlay) SetMusic(music bass.ITrack) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius), float32(alpha*overlay.bgDim.GetValue()))
+	overlay.results.DrawBottom(batch, c, 1.0)
 }
 
 func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
@@ -577,7 +579,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color
 	batch.SetScale(scale, scale)
 	batch.SetColor(1, 1, 1, alpha)
 
-	overlay.results.Draw(batch, 1.0)
+	overlay.results.DrawTop(batch, 1.0)
 
 	batch.Flush()
 

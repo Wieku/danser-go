@@ -2,21 +2,25 @@ package play
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"math/rand"
 )
 
 type HitResults struct {
-	manager  *sprite.Manager
+	bottom   *sprite.Manager
+	top      *sprite.Manager
 	lastTime float64
 	diff     *difficulty.Difficulty
+	color    color2.Color
 }
 
 func NewHitResults(diff *difficulty.Difficulty) *HitResults {
@@ -29,10 +33,14 @@ func NewHitResults(diff *difficulty.Difficulty) *HitResults {
 	skin.GetFrames("hit300k", true)
 	skin.GetFrames("hit300g", true)
 
-	return &HitResults{manager: sprite.NewManager(), diff: diff}
+	return &HitResults{
+		bottom: sprite.NewManager(),
+		top:    sprite.NewManager(),
+		diff:   diff,
+	}
 }
 
-func (results *HitResults) AddResult(time int64, result osu.HitResult, position vector.Vector2d) {
+func (results *HitResults) AddResult(time int64, result osu.HitResult, position vector.Vector2d, object objects.IHitObject) {
 	var tex string
 	var particle string
 
@@ -83,7 +91,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 				sp.AdjustTimesToTransformations()
 				sp.ShowForever(false)
 
-				results.manager.Add(sp)
+				results.top.Add(sp)
 			}
 		}
 	}
@@ -124,21 +132,44 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 	hit.AdjustTimesToTransformations()
 	hit.ResetValuesToTransforms()
 
-	results.manager.Add(hit)
+	results.top.Add(hit)
+
+	lighting := sprite.NewSpriteSingle(skin.GetTexture("lighting"), float64(time)+1, position, vector.Centre)
+	lighting.SetColor(skin.GetColor(int(object.GetComboSet()), int(object.GetComboSetHax()), results.color))
+	lighting.SetAdditive(true)
+	lighting.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(time), float64(time+600), 0.8, 1.2))
+	lighting.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(time), float64(time+200), 0, 1))
+	lighting.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(time+400), float64(time+1400), 1, 0))
+
+	results.bottom.Add(lighting)
 }
 
 func (results *HitResults) Update(time float64) {
-	results.manager.Update(time)
+	results.bottom.Update(time)
+	results.top.Update(time)
 	results.lastTime = time
 }
 
-func (results *HitResults) Draw(batch *batch.QuadBatch, _ float64) {
+func (results *HitResults) DrawBottom(batch *batch.QuadBatch, c []color2.Color, _ float64) {
+	results.color = c[0]
+
 	batch.ResetTransform()
 
 	scale := results.diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
 
-	results.manager.Draw(results.lastTime, batch)
+	results.bottom.Draw(results.lastTime, batch)
+
+	batch.ResetTransform()
+}
+
+func (results *HitResults) DrawTop(batch *batch.QuadBatch, _ float64) {
+	batch.ResetTransform()
+
+	scale := results.diff.CircleRadius / 64
+	batch.SetScale(scale, scale)
+
+	results.top.Draw(results.lastTime, batch)
 
 	batch.ResetTransform()
 }
