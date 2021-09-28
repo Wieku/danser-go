@@ -88,7 +88,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 		}
 	}
 
-	sprite := sprite.NewAnimation(frames, skin.GetInfo().GetFrameTime(len(frames)), false, float64(time)+1, position, vector.Centre)
+	hit := sprite.NewAnimation(frames, 1000.0/60, false, float64(time)+1, position, vector.Centre)
 
 	fadeIn := float64(time + difficulty.ResultFadeIn)
 	if particles {
@@ -98,33 +98,33 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 	postEmpt := float64(time + difficulty.PostEmpt)
 	fadeOut := postEmpt + float64(difficulty.ResultFadeOut)
 
-	sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(time), fadeIn, 0.0, 1.0))
-	sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, postEmpt, fadeOut, 1.0, 0.0))
+	hit.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, float64(time), fadeIn, 0.0, 1.0))
+	hit.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, postEmpt, fadeOut, 1.0, 0.0))
 
 	if len(frames) == 1 {
 		if particles {
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), fadeOut, 0.9, 1.05))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), fadeOut, 0.9, 1.05))
 		} else {
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), float64(time+difficulty.ResultFadeIn*0.8), 0.6, 1.1))
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, fadeIn, float64(time+difficulty.ResultFadeIn*1.2), 1.1, 0.9))
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time+difficulty.ResultFadeIn*1.2), float64(time+difficulty.ResultFadeIn*1.4), 0.9, 1.0))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time), float64(time+difficulty.ResultFadeIn*0.8), 0.6, 1.1))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, fadeIn, float64(time+difficulty.ResultFadeIn*1.2), 1.1, 0.9))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, float64(time+difficulty.ResultFadeIn*1.2), float64(time+difficulty.ResultFadeIn*1.4), 0.9, 1.0))
 		}
 
 		if result == osu.Miss {
 			rotation := rand.Float64()*0.3 - 0.15
 
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Rotate, easing.Linear, float64(time), fadeIn, 0.0, rotation))
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.Rotate, easing.Linear, fadeIn, fadeOut, rotation, rotation*2))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.Rotate, easing.Linear, float64(time), fadeIn, 0.0, rotation))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.Rotate, easing.Linear, fadeIn, fadeOut, rotation, rotation*2))
 
-			sprite.AddTransformUnordered(animation.NewSingleTransform(animation.MoveY, easing.Linear, float64(time), fadeOut, position.Y-5, position.Y+40))
+			hit.AddTransformUnordered(animation.NewSingleTransform(animation.MoveY, easing.Linear, float64(time), fadeOut, position.Y-5, position.Y+40))
 		}
 	}
 
-	sprite.SortTransformations()
-	sprite.AdjustTimesToTransformations()
-	sprite.ResetValuesToTransforms()
+	hit.SortTransformations()
+	hit.AdjustTimesToTransformations()
+	hit.ResetValuesToTransforms()
 
-	results.manager.Add(sprite)
+	results.manager.Add(hit)
 }
 
 func (results *HitResults) Update(time float64) {
