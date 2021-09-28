@@ -83,7 +83,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 				fadeOut := 500 + 700*rand.Float64()
 				direction := vector.NewVec2dRad(rand.Float64()*2*math.Pi, rand.Float64()*35)
 
-				sp := sprite.NewSpriteSingle(particleTex, float64(time), position, vector.Centre)
+				sp := sprite.NewSpriteSingle(particleTex, float64(time)+0.5, position, vector.Centre)
 				sp.SetAdditive(true)
 				sp.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, float64(time), float64(time)+fadeOut, 1.0, 0.0))
 				sp.AddTransform(animation.NewVectorTransformV(animation.Move, easing.OutQuad, float64(time), float64(time)+fadeOut, position, position.Add(direction)))
@@ -91,7 +91,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 				sp.AdjustTimesToTransformations()
 				sp.ShowForever(false)
 
-				results.top.Add(sp)
+				results.bottom.Add(sp)
 			}
 		}
 	}
@@ -134,7 +134,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 
 	results.top.Add(hit)
 
-	lighting := sprite.NewSpriteSingle(skin.GetTexture("lighting"), float64(time)+1, position, vector.Centre)
+	lighting := sprite.NewSpriteSingle(skin.GetTexture("lighting"), float64(time), position, vector.Centre)
 	lighting.SetColor(skin.GetColor(int(object.GetComboSet()), int(object.GetComboSetHax()), results.color))
 	lighting.SetAdditive(true)
 	lighting.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.OutQuad, float64(time), float64(time+600), 0.8, 1.2))
