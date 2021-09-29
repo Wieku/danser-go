@@ -45,6 +45,7 @@ const (
 type Overlay interface {
 	Update(float64)
 	SetMusic(bass.ITrack)
+	DrawBackground(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
@@ -569,8 +570,11 @@ func (overlay *ScoreOverlay) SetMusic(music bass.ITrack) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawBackground(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius), float32(alpha*overlay.bgDim.GetValue()))
+}
+
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
 	overlay.results.DrawBottom(batch, c, 1.0)
 }
 
@@ -753,7 +757,7 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	if settings.Gameplay.ComboCounter.XOffset > 0.01 {
 		slideAmount = 0
-		comboAlpha *= 1+overlay.comboSlide.GetValue()
+		comboAlpha *= 1 + overlay.comboSlide.GetValue()
 	}
 
 	posX := slideAmount*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
