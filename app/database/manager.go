@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"log"
@@ -574,10 +575,10 @@ func loadBeatmapsFromDatabase() []*beatmap.BeatMap {
 			&beatMap.ID,
 		)
 
-		beatMap.Diff.SetCS(cs)
-		beatMap.Diff.SetAR(ar)
-		beatMap.Diff.SetHPDrain(hp)
-		beatMap.Diff.SetOD(od)
+		beatMap.Diff.SetCS(mutils.ClampF64(cs, 0, 10))
+		beatMap.Diff.SetAR(mutils.ClampF64(ar, 0, 10))
+		beatMap.Diff.SetHPDrain(mutils.ClampF64(hp, 0, 10))
+		beatMap.Diff.SetOD(mutils.ClampF64(od, 0, 10))
 
 		beatmaps = append(beatmaps, beatMap)
 	}
