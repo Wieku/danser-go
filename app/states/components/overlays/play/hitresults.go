@@ -135,7 +135,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 
 	results.top.Add(hit)
 
-	if !settings.Gameplay.ShowHitLighting {
+	if !settings.Gameplay.ShowHitLighting || result & osu.BaseHitsM < osu.Hit50 {
 		return
 	}
 
