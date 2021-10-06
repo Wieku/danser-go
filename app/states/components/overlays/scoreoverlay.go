@@ -922,7 +922,7 @@ func (overlay *ScoreOverlay) initMods() {
 
 		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.HideInReplays {
 			startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0*alpha, 0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0*alpha, 0))
 		}
 
 		if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
