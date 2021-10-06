@@ -26,6 +26,8 @@ const (
 	MaxHp = 200.0
 )
 
+type FailListener func()
+
 type drain struct {
 	start, end int64
 }
@@ -47,12 +49,16 @@ type HealthProcessor struct {
 
 	spinners      []*objects.Spinner
 	spinnerActive bool
+
+	playing bool
+
+	failListeners []FailListener
 }
 
 func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, lowerSpinnerDrain bool) *HealthProcessor {
 	proc := &HealthProcessor{
-		beatMap: beatMap,
-		diff:    diff,
+		beatMap:           beatMap,
+		diff:              diff,
 		lowerSpinnerDrain: lowerSpinnerDrain,
 	}
 
@@ -108,7 +114,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 				}
 			}
 
-			hp.Increase(-hp.PassiveDrain * (o.GetStartTime()-float64(lastTime+breakTime)))
+			hp.Increase(-hp.PassiveDrain*(o.GetStartTime()-float64(lastTime+breakTime)), false)
 
 			lastTime = int64(o.GetEndTime())
 
@@ -121,7 +127,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 				break
 			}
 
-			hp.Increase(-hp.PassiveDrain * (o.GetEndTime()-o.GetStartTime()))
+			hp.Increase(-hp.PassiveDrain*(o.GetEndTime()-o.GetStartTime()), false)
 
 			if s, ok := o.(*objects.Slider); ok {
 				for j := 0; j < len(s.TickReverse)+1; j++ {
@@ -132,7 +138,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 					hp.AddResult(SliderPoint)
 				}
 			} else if s, ok := o.(*objects.Spinner); ok {
-				requirement := int((s.GetEndTime()-s.GetStartTime()) / 1000 * hp.diff.SpinnerRatio)
+				requirement := int((s.GetEndTime() - s.GetStartTime()) / 1000 * hp.diff.SpinnerRatio)
 				for j := 0; j < requirement; j++ {
 					hp.AddResult(SpinnerSpin)
 				}
@@ -198,6 +204,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 	hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
 
 	hp.ResetHp()
+	hp.playing = true
 }
 
 func (hp *HealthProcessor) ResetHp() {
@@ -241,12 +248,18 @@ func (hp *HealthProcessor) AddResult(result HitResult) {
 		hpAdd += hp.HpMultiplierComboEnd * HpGeki
 	}
 
-	hp.Increase(hpAdd)
+	hp.Increase(hpAdd, true)
 }
 
-func (hp *HealthProcessor) Increase(amount float64) {
+func (hp *HealthProcessor) Increase(amount float64, fromHitObject bool) {
 	hp.HealthUncapped = math.Max(0.0, hp.HealthUncapped+amount)
 	hp.Health = mutils.ClampF64(hp.Health+amount, 0.0, MaxHp)
+
+	if hp.playing && hp.Health <= 0 && fromHitObject {
+		for _, f := range hp.failListeners {
+			f()
+		}
+	}
 }
 
 func (hp *HealthProcessor) ReducePassive(amount int64) {
@@ -255,7 +268,7 @@ func (hp *HealthProcessor) ReducePassive(amount int64) {
 		scale = 0.25
 	}
 
-	hp.Increase(-hp.PassiveDrain * float64(amount) * scale)
+	hp.Increase(-hp.PassiveDrain*float64(amount)*scale, false)
 }
 
 func (hp *HealthProcessor) Update(time int64) {
@@ -274,7 +287,7 @@ func (hp *HealthProcessor) Update(time int64) {
 			break
 		}
 
-		if d.GetStartTime() <= float64(time) && float64(time) <= d.GetEndTime()  {
+		if d.GetStartTime() <= float64(time) && float64(time) <= d.GetEndTime() {
 			hp.spinnerActive = true
 			break
 		}
@@ -285,4 +298,8 @@ func (hp *HealthProcessor) Update(time int64) {
 	}
 
 	hp.lastTime = time
+}
+
+func (hp *HealthProcessor) AddFailListener(listener FailListener) {
+	hp.failListeners = append(hp.failListeners, listener)
 }
