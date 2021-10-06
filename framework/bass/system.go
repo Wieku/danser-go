@@ -18,6 +18,8 @@ import (
 
 var masterMixer C.HSTREAM
 
+var sampleRate = 44100
+
 func Init(offscreen bool) {
 	log.Println("Initializing BASS...")
 
@@ -55,7 +57,6 @@ func Init(offscreen bool) {
 	C.BASS_SetConfig(C.DWORD(68), C.DWORD(1))
 
 	deviceId := -1 //default audio device
-	sampleRate := 44100
 	mixerFlags := C.BASS_MIXER_NONSTOP
 
 	if offscreen {

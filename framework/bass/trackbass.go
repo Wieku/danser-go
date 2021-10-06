@@ -16,24 +16,27 @@ import (
 )
 
 type TrackBass struct {
-	channel      C.HSTREAM
-	fft          []float32
-	boost        float64
-	peak         float64
-	leftChannel  float64
-	rightChannel float64
-	lowMax       float64
-	speed        float64
-	pitch        float64
-	playing      bool
-	addedToMixer bool
+	channel           C.HSTREAM
+	fft               []float32
+	boost             float64
+	peak              float64
+	leftChannel       float64
+	rightChannel      float64
+	lowMax            float64
+	speed             float64
+	pitch             float64
+	playing           bool
+	addedToMixer      bool
+	baseFrequency     float64
+	relativeFrequency float64
 }
 
 func NewTrack(path string) *TrackBass {
 	player := &TrackBass{
-		fft:   make([]float32, 512),
-		speed: 1,
-		pitch: 1,
+		fft:               make([]float32, 512),
+		speed:             1,
+		pitch:             1,
+		relativeFrequency: 1,
 	}
 
 	flags := C.BASS_STREAM_DECODE | C.BASS_STREAM_PRESCAN | C.BASS_ASYNCFILE
@@ -54,6 +57,16 @@ func NewTrack(path string) *TrackBass {
 	player.channel = C.BASS_FX_TempoCreate(player.channel, C.BASS_FX_FREESOURCE|C.BASS_STREAM_DECODE)
 
 	setupFXChannel(player.channel)
+
+	var freq C.float
+
+	C.BASS_ChannelGetAttribute(player.channel, C.BASS_ATTRIB_FREQ, &freq)
+
+	player.baseFrequency = float64(freq)
+
+	if player.baseFrequency <= 0 {
+		player.baseFrequency = float64(sampleRate)
+	}
 
 	return player
 }
@@ -151,18 +164,32 @@ func (track *TrackBass) GetTempo() float64 {
 	return track.speed
 }
 
-func (track *TrackBass) SetPitch(tempo float64) {
-	if track.pitch == tempo {
+func (track *TrackBass) SetPitch(pitch float64) {
+	if track.pitch == pitch {
 		return
 	}
 
-	track.pitch = tempo
+	track.pitch = pitch
 
-	C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_TEMPO_PITCH, C.float((tempo-1.0)*14.4))
+	C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_TEMPO_PITCH, C.float((pitch-1.0)*14.4))
 }
 
 func (track *TrackBass) GetPitch() float64 {
 	return track.pitch
+}
+
+func (track *TrackBass) SetRelativeFrequency(rFreq float64) {
+	if track.relativeFrequency == rFreq {
+		return
+	}
+
+	track.relativeFrequency = rFreq
+
+	C.BASS_ChannelSetAttribute(track.channel, C.BASS_ATTRIB_FREQ, C.float(rFreq*track.baseFrequency))
+}
+
+func (track *TrackBass) GetRelativeFrequency() float64 {
+	return track.relativeFrequency
 }
 
 func (track *TrackBass) GetState() int {
