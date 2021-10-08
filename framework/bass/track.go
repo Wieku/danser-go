@@ -1,10 +1,10 @@
 package bass
 
 const (
-	MUSIC_STOPPED = 0
-	MUSIC_PLAYING = 1
-	MUSIC_STALLED = 2
-	MUSIC_PAUSED  = 3
+	MusicStopped  = 0
+	MusicPlaying = 1
+	MusicStalled = 2
+	MusicPaused  = 3
 )
 
 type ITrack interface {

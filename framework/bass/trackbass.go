@@ -194,13 +194,13 @@ func (track *TrackBass) GetRelativeFrequency() float64 {
 
 func (track *TrackBass) GetState() int {
 	if !track.addedToMixer {
-		return MUSIC_STOPPED
+		return MusicStopped
 	}
 
 	state := int(C.BASS_ChannelIsActive(track.channel))
 
-	if state == MUSIC_PLAYING && track.addedToMixer && C.BASS_Mixer_ChannelFlags(track.channel, 0, 0)&C.BASS_MIXER_CHAN_PAUSE > 0 {
-		return MUSIC_PAUSED
+	if state == MusicPlaying && track.addedToMixer && C.BASS_Mixer_ChannelFlags(track.channel, 0, 0)&C.BASS_MIXER_CHAN_PAUSE > 0 {
+		return MusicPaused
 	}
 
 	return state

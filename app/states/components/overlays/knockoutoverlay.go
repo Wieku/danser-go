@@ -324,7 +324,7 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 
 	delta := time - overlay.audioTime
 
-	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+	if overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 		delta /= overlay.music.GetTempo()
 	}
 

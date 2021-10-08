@@ -139,19 +139,19 @@ func (track *TrackVirtual) GetRelativeFrequency() float64 {
 func (track *TrackVirtual) GetState() int {
 	if !track.playing {
 		if track.paused {
-			return MUSIC_PAUSED
+			return MusicPaused
 		}
 
-		return MUSIC_STOPPED
+		return MusicStopped
 	}
 
 	pos := track.GetPosition()
 
 	if pos == 0 || pos >= track.length+track.tail {
-		return MUSIC_STOPPED
+		return MusicStopped
 	}
 
-	return MUSIC_PLAYING
+	return MusicPlaying
 }
 
 func (track *TrackVirtual) Update() {}

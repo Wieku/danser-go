@@ -381,7 +381,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	delta := time - overlay.audioTime
 
-	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+	if overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 		delta /= overlay.music.GetTempo()
 	}
 
@@ -396,7 +396,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	}
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
-		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 			if overlay.audioTime < overlay.skipTo {
 				overlay.music.SetPosition(overlay.skipTo / 1000)
 			}

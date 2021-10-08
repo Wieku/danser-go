@@ -489,7 +489,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			musicState := player.musicPlayer.GetState()
 
-			if musicState == bass.MUSIC_STOPPED {
+			if musicState == bass.MusicStopped {
 				player.progressMsF += delta
 			} else {
 				platformOffset := 0.0
@@ -499,7 +499,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 				musicPos := player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
 
-				if musicPos != player.lastMusicPos || musicState == bass.MUSIC_PAUSED {
+				if musicPos != player.lastMusicPos || musicState == bass.MusicPaused {
 					player.progressMsF = musicPos
 					player.lastMusicPos = musicPos
 				} else {
@@ -522,7 +522,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 }
 
 func (player *Player) Update(delta float64) bool {
-	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+	if player.musicPlayer.GetState() == bass.MusicPlaying {
 		player.progressMsF += delta * player.musicPlayer.GetTempo()
 	} else {
 		player.progressMsF += delta
@@ -630,7 +630,7 @@ func (player *Player) updateMain(delta float64) {
 	player.volumeGlider.Update(player.progressMsF)
 	player.objectsAlpha.Update(player.progressMsF)
 
-	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+	if player.musicPlayer.GetState() == bass.MusicPlaying {
 		player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
 	}
 }
