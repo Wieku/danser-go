@@ -111,6 +111,7 @@ type subSet struct {
 	katuCount      int64
 	recoveries     int
 	scoreProcessor scoreProcessor
+	failed         bool
 }
 
 type MapTo struct {
@@ -123,6 +124,8 @@ type MapTo struct {
 type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
 
 type endListener func(time int64, number int64)
+
+type failListener func(cursor *graphics.Cursor)
 
 type OsuRuleSet struct {
 	beatMap *beatmap.BeatMap
@@ -137,6 +140,7 @@ type OsuRuleSet struct {
 	processed   []HitObject
 	hitListener hitListener
 	endListener endListener
+	failListener failListener
 
 	experimentalPP bool
 }
@@ -617,14 +621,23 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	}
 
 	// actual fail
+	if set.failListener != nil && !subSet.failed{
+		set.failListener(player.cursor)
+	}
+
+	subSet.failed = true
 }
 
 func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
 }
 
-func (set *OsuRuleSet) SetEndListener(endlistener endListener) {
-	set.endListener = endlistener
+func (set *OsuRuleSet) SetEndListener(listener endListener) {
+	set.endListener = listener
+}
+
+func (set *OsuRuleSet) SetFailListener(listener failListener) {
+	set.failListener = listener
 }
 
 func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {
