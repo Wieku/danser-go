@@ -487,7 +487,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.profilerU.PutSample(delta)
 
-			if player.musicPlayer.GetState() == bass.MUSIC_STOPPED {
+			musicState := player.musicPlayer.GetState()
+
+			if musicState == bass.MUSIC_STOPPED {
 				player.progressMsF += delta
 			} else {
 				platformOffset := 0.0
@@ -497,7 +499,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 				musicPos := player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
 
-				if musicPos != player.lastMusicPos {
+				if musicPos != player.lastMusicPos || musicState == bass.MUSIC_PAUSED {
 					player.progressMsF = musicPos
 					player.lastMusicPos = musicPos
 				} else {
