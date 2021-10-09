@@ -72,7 +72,6 @@ type Player struct {
 	fxGlider        *animation.Glider
 	cursorGlider    *animation.Glider
 	counter         float64
-	storyboardLoad  float64
 	storyboardDrawn int
 	mapFullName     string
 	Epi             *texture.TextureRegion
@@ -702,7 +701,6 @@ func (player *Player) Draw(float64) {
 	if player.counter >= 1000.0/60 {
 		player.counter -= 1000.0 / 60
 		if player.background.GetStoryboard() != nil {
-			player.storyboardLoad = player.background.GetStoryboard().GetLoad()
 			player.storyboardDrawn = player.background.GetStoryboard().GetRenderedSprites()
 		}
 	}
@@ -907,7 +905,6 @@ func (player *Player) drawDebug() {
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
 				drawWithBackground(14, fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
-				drawWithBackground(15, fmt.Sprintf("SB load: %.2f", player.storyboardLoad))
 			}
 
 			player.batch.ResetTransform()

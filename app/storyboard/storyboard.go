@@ -414,10 +414,6 @@ func (storyboard *Storyboard) GetTotalSprites() int {
 	return storyboard.numSprites
 }
 
-func (storyboard *Storyboard) GetLoad() float64 {
-	return storyboard.background.GetLoad() + storyboard.pass.GetLoad() + storyboard.foreground.GetLoad() + storyboard.overlay.GetLoad()
-}
-
 func (storyboard *Storyboard) BGFileUsed() bool {
 	return storyboard.bgFileUsed
 }
