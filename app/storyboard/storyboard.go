@@ -216,7 +216,7 @@ func (storyboard *Storyboard) loadSprite(currentSprite string, commands []string
 
 	image := strings.Replace(spl[3], `"`, "", -1)
 
-	if !strings.HasSuffix(image, ".png") && !strings.HasSuffix(image, ".jpg") {
+	if filepath.Ext(image) == "" {
 		image += ".png"
 	}
 
