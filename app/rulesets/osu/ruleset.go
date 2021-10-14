@@ -180,6 +180,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
 		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
 		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
+		log.Println("\t- Added relax mod PP calculation: https://github.com/ppy/osu/pull/14942")
 
 		ruleset.experimentalPP = true
 	} else {

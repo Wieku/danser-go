@@ -102,6 +102,11 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
 	}
 
+	if pp.experimental && diff.Mods.Active(difficulty.Relax) {
+		pp.countMiss += pp.countOk + pp.countMeh
+		finalMultiplier *= 0.6
+	}
+
 	pp.Results.Aim = pp.computeAimValue()
 	pp.Results.Speed = pp.computeSpeedValue()
 	pp.Results.Acc = pp.computeAccuracyValue()
@@ -237,6 +242,10 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
+	if pp.experimental && pp.diff.Mods.Active(difficulty.Relax) {
+		return 0.0
+	}
+
 	// This percentage only considers HitCircles of any value - in this part of the calculation we focus on hitting the timing hit window
 	betterAccuracyPercentage := 0.0
 
