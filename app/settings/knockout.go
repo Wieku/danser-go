@@ -75,4 +75,7 @@ const (
 
 	//Other result than 300 will knock the player out
 	SSOrQuit
+
+	// Players get knocked out if they fail
+	Fail
 )

@@ -47,6 +47,7 @@ type knockoutPlayer struct {
 	scores    []int64
 	pps       []float64
 	displayHp float64
+	failed    bool
 
 	lastHit  osu.HitResult
 	fadeHit  *animation.Glider
@@ -152,7 +153,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, false, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 	}
@@ -174,6 +175,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	}
 
 	replayController.GetRuleset().SetListener(overlay.hitReceived)
+	replayController.GetRuleset().SetFailListener(overlay.failReceived)
 
 	sortFunc := func(number int64, instantSort bool) {
 		alive := 0
@@ -286,7 +288,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	}
 
 	comboBreak := comboResult == osu.ComboResults.Reset
-	if (settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
+	if (settings.Knockout.Mode == settings.Fail && player.failed || settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
 
 		if !player.hasBroken {
 			if settings.Knockout.Mode == settings.XReplays {
@@ -294,7 +296,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, overlay.normalTime, overlay.names[cursor], player.sCombo, resultClean, comboResult))
 					log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
 				}
-			} else if settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
+			} else if settings.Knockout.Mode == settings.Fail && player.failed || settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
 				//Fade out player name
 				player.hasBroken = true
 				player.breakTime = time
@@ -314,6 +316,11 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	if comboBreak {
 		player.sCombo = 0
 	}
+}
+
+func (overlay *KnockoutOverlay) failReceived(cursor *graphics.Cursor) {
+	player := overlay.players[overlay.names[cursor]]
+	player.failed = true
 }
 
 func (overlay *KnockoutOverlay) Update(time float64) {
