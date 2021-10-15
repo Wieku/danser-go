@@ -34,7 +34,7 @@ type Stars struct {
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim, speed, flashlight *skills.Skill, diff *difficulty.Difficulty, experimental bool) Stars {
+func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
 	aimRating := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
 	speedRating := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
 	flashlightVal := math.Sqrt(flashlight.DifficultyValue()) * StarScalingFactor

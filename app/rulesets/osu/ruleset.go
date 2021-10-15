@@ -136,10 +136,10 @@ type OsuRuleSet struct {
 	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]performance.Stars
 
-	queue       []HitObject
-	processed   []HitObject
-	hitListener hitListener
-	endListener endListener
+	queue        []HitObject
+	processed    []HitObject
+	hitListener  hitListener
+	endListener  endListener
 	failListener failListener
 
 	experimentalPP bool
@@ -181,6 +181,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
 		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
 		log.Println("\t- Added relax mod PP calculation: https://github.com/ppy/osu/pull/14942")
+		log.Println("\t- Rhythm complexity SR rework: https://github.com/ppy/osu/pull/14395")
 
 		ruleset.experimentalPP = true
 	} else {
@@ -622,7 +623,7 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	}
 
 	// actual fail
-	if set.failListener != nil && !subSet.failed{
+	if set.failListener != nil && !subSet.failed {
 		set.failListener(player.cursor)
 	}
 

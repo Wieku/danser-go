@@ -7,18 +7,22 @@ import (
 	"math"
 )
 
-func NewFlashlightSkill(d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(d, true)
+type Flashlight struct {
+	*Skill
+}
+
+func NewFlashlightSkill(d *difficulty.Difficulty) *Flashlight {
+	skill := &Flashlight{NewSkill(d, true)}
 	skill.SkillMultiplier = 0.15
 	skill.StrainDecayBase = 0.15
 	skill.DecayWeight = 1
 	skill.HistoryLength = 10
-	skill.StrainValueOf = flashlightStrainValue
+	skill.StrainValueOf = skill.flashlightStrainValue
 
 	return skill
 }
 
-func flashlightStrainValue(s *Skill, current *preprocessing.DifficultyObject) float64 {
+func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObject) float64 {
 	if _, ok := current.BaseObject.(*objects.Spinner); ok {
 		return 0
 	}
