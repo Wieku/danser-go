@@ -45,6 +45,7 @@ type RpData struct {
 	Grade     osu.Grade
 	scoreID   int64
 	ScoreTime time.Time
+	EndsEarly bool
 }
 
 type subControl struct {
@@ -127,12 +128,28 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		loadFrames(control, replay.ReplayData)
 
+		// Check if the replay ends earlier than expected with 100ms of leniency
+		totalTime := int64(0)
+		for _, f := range replay.ReplayData {
+			// Ignore mania seed frame
+			if f.Time != -12345 {
+				totalTime += f.Time
+			}
+		}
+		replayEndDiff := totalTime - int64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()+3000)
+		endsEarly := replayEndDiff < 100
+		extraText := ""
+		if endsEarly {
+			extraText = fmt.Sprintf(" (by %.3fs)", -float64(replayEndDiff)/1000.0)
+		}
+		log.Println(fmt.Sprintf("\tEnds early: %t%s", endsEarly, extraText))
+
 		mxCombo := replay.MaxCombo
 
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
+		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp, endsEarly})
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("\tExpected score:", replay.Score)
@@ -147,7 +164,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
+		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now(), false}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
 
 		if len(candidates) == 0 {
