@@ -19,7 +19,9 @@ type DifficultyObject struct {
 
 	BaseObject objects.IHitObject
 
-	LastObject objects.IHitObject
+	lastObject objects.IHitObject
+
+	lastLastObject objects.IHitObject
 
 	DeltaTime float64
 
@@ -35,21 +37,20 @@ type DifficultyObject struct {
 
 	StrainTime float64
 
-	lastLastObject objects.IHitObject
 }
 
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty, experimental bool) *DifficultyObject {
 	obj := &DifficultyObject{
 		diff:           d,
 		BaseObject:     hitObject,
-		LastObject:     lastObject,
+		lastObject:     lastObject,
 		lastLastObject: lastLastObject,
 		DeltaTime:      (hitObject.GetStartTime() - lastObject.GetStartTime()) / d.Speed,
 		StartTime:      hitObject.GetStartTime() / d.Speed,
 		EndTime:        hitObject.GetEndTime() / d.Speed,
 	}
 
-	obj.setDistances()
+	obj.setDistances(experimental)
 
 	if experimental {
 		obj.StrainTime = math.Max(25, obj.DeltaTime)
@@ -60,7 +61,16 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 	return obj
 }
 
-func (o *DifficultyObject) setDistances() {
+func (o *DifficultyObject) setDistances(experimental bool) {
+	if experimental {
+		_, ok1 := o.BaseObject.(*objects.Spinner)
+		_, ok2 := o.lastObject.(*objects.Spinner)
+
+		if ok1 || ok2 {
+			return
+		}
+	}
+
 	radius := o.diff.CircleRadius / OsuStableAllowance // we need to undo that weird allowance mentioned in difficulty.Difficulty.calculate()
 	scalingFactor := NormalizedRadius / float32(radius)
 
@@ -69,20 +79,24 @@ func (o *DifficultyObject) setDistances() {
 			math32.Min(CircleSizeBuffThreshold-float32(radius), 5.0)/50.0
 	}
 
-	if s, ok := o.LastObject.(*LazySlider); ok {
+	if s, ok := o.lastObject.(*LazySlider); ok {
 		o.TravelDistance = float64(s.LazyTravelDistance * scalingFactor)
 	}
 
-	lastCursorPosition := getEndCursorPosition(o.LastObject, o.diff)
+	lastCursorPosition := getEndCursorPosition(o.lastObject, o.diff)
 
-	if _, ok := o.BaseObject.(*objects.Spinner); !ok {
+	if _, ok := o.BaseObject.(*objects.Spinner); !ok || experimental {
 		o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
 	}
 
 	if o.lastLastObject != nil {
+		if _, ok := o.lastLastObject.(*objects.Spinner); ok && experimental {
+			return
+		}
+
 		lastLastCursorPosition := getEndCursorPosition(o.lastLastObject, o.diff)
 
-		v1 := lastLastCursorPosition.Sub(o.LastObject.GetStackedStartPositionMod(o.diff.Mods))
+		v1 := lastLastCursorPosition.Sub(o.lastObject.GetStackedStartPositionMod(o.diff.Mods))
 		v2 := o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Sub(lastCursorPosition)
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X

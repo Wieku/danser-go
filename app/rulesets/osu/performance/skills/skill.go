@@ -44,7 +44,12 @@ type Skill struct {
 	CurrentStrain float64
 
 	// Delegate to calculate strain value of skill
-	StrainValueOf func(skill *Skill, obj *preprocessing.DifficultyObject) float64
+	StrainValueOf func(obj *preprocessing.DifficultyObject) float64
+
+	// Delegate to calculate strain bonus of skill
+	StrainBonusOf func(obj *preprocessing.DifficultyObject) float64
+
+	CalculateInitialStrain func(time float64) float64
 
 	currentSectionPeak float64
 	currentSectionEnd  float64
@@ -55,7 +60,7 @@ type Skill struct {
 }
 
 func NewSkill(d *difficulty.Difficulty, experimental bool) *Skill {
-	return &Skill{
+	skill := &Skill{
 		Experimental:          experimental,
 		DecayWeight:           0.9,
 		SectionLength:         400,
@@ -65,6 +70,12 @@ func NewSkill(d *difficulty.Difficulty, experimental bool) *Skill {
 		DifficultyMultiplier:  1.06,
 		diff:                  d,
 	}
+
+	skill.CalculateInitialStrain = func(time float64) float64 {
+		return skill.CurrentStrain * skill.strainDecay(time-skill.GetPrevious(0).StartTime)
+	}
+
+	return skill
 }
 
 func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
@@ -83,9 +94,15 @@ func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
 	}
 
 	skill.CurrentStrain *= skill.strainDecay(current.DeltaTime)
-	skill.CurrentStrain += skill.StrainValueOf(skill, current) * skill.SkillMultiplier
+	skill.CurrentStrain += skill.StrainValueOf(current) * skill.SkillMultiplier
 
-	skill.currentSectionPeak = math.Max(skill.CurrentStrain, skill.currentSectionPeak)
+	tempStrain := skill.CurrentStrain
+
+	if skill.StrainBonusOf != nil {
+		tempStrain *= skill.StrainBonusOf(current)
+	}
+
+	skill.currentSectionPeak = math.Max(tempStrain, skill.currentSectionPeak)
 }
 
 // Processes given DifficultyObject
@@ -125,7 +142,7 @@ func (skill *Skill) DifficultyValue() float64 {
 	numReduced := mutils.MinI(len(strains), skill.ReducedSectionCount)
 
 	for i := 0; i < numReduced; i++ {
-		scale := math.Log10(mutils.LerpF64(1, 10, mutils.ClampF64(float64(i) / float64(skill.ReducedSectionCount), 0, 1)))
+		scale := math.Log10(mutils.LerpF64(1, 10, mutils.ClampF64(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
 		strains[i] *= mutils.LerpF64(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 
@@ -148,7 +165,7 @@ func (skill *Skill) saveCurrentPeak() {
 }
 
 func (skill *Skill) startNewSectionFrom(end float64) {
-	skill.currentSectionPeak = skill.CurrentStrain * skill.strainDecay(end-skill.GetPrevious(0).StartTime)
+	skill.currentSectionPeak = skill.CalculateInitialStrain(end)
 }
 
 func reverseSortFloat64s(arr []float64) {

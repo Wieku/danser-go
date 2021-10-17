@@ -177,12 +177,14 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	}
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-09-24 with following changes:")
+		log.Println("Using pp calc version 2021-10-15 with following changes:")
 		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
 		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
 		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
 		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
 		log.Println("\t- Added relax mod PP calculation: https://github.com/ppy/osu/pull/14942")
+		log.Println("\t- Rhythm complexity SR rework: https://github.com/ppy/osu/pull/14395")
+		log.Println("\t- Fixed instant spinners giving insane amounts of strain: https://github.com/ppy/osu/pull/15009")
 
 		ruleset.experimentalPP = true
 	} else {
