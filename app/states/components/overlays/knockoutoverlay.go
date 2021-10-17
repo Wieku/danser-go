@@ -176,6 +176,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	replayController.GetRuleset().SetListener(overlay.hitReceived)
 	replayController.GetRuleset().SetFailListener(overlay.failReceived)
+	replayController.GetRuleset().SetRecoveryListener(overlay.recoveryReceived)
 
 	sortFunc := func(number int64, instantSort bool) {
 		alive := 0
@@ -320,7 +321,12 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 
 func (overlay *KnockoutOverlay) failReceived(cursor *graphics.Cursor) {
 	player := overlay.players[overlay.names[cursor]]
+	log.Println(overlay.names[cursor], "failed!")
 	player.failed = true
+}
+
+func (overlay *KnockoutOverlay) recoveryReceived(cursor *graphics.Cursor) {
+	log.Println(overlay.names[cursor], "recovered!")
 }
 
 func (overlay *KnockoutOverlay) Update(time float64) {

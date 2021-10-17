@@ -109,7 +109,6 @@ type subSet struct {
 	hp             *HealthProcessor
 	gekiCount      int64
 	katuCount      int64
-	recoveries     int
 	scoreProcessor scoreProcessor
 	failed         bool
 }
@@ -127,6 +126,8 @@ type endListener func(time int64, number int64)
 
 type failListener func(cursor *graphics.Cursor)
 
+type recoveryListener func(cursor *graphics.Cursor)
+
 type OsuRuleSet struct {
 	beatMap *beatmap.BeatMap
 	cursors map[*graphics.Cursor]*subSet
@@ -136,11 +137,12 @@ type OsuRuleSet struct {
 	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]performance.Stars
 
-	queue       []HitObject
-	processed   []HitObject
-	hitListener hitListener
-	endListener endListener
-	failListener failListener
+	queue            []HitObject
+	processed        []HitObject
+	hitListener      hitListener
+	endListener      endListener
+	failListener     failListener
+	recoveryListener recoveryListener
 
 	experimentalPP bool
 }
@@ -215,7 +217,12 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
 
-		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
+		recoveries := 0
+		if diff.CheckModActive(difficulty.Easy) {
+			recoveries = 2
+		}
+
+		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring, recoveries)
 		hp.CalculateRate()
 		hp.ResetHp()
 
@@ -223,13 +230,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		log.Println("\tNormal multiplier:", hp.HpMultiplierNormal)
 		log.Println("\tCombo end multiplier:", hp.HpMultiplierComboEnd)
 
-		recoveries := 0
-		if diff.CheckModActive(difficulty.Easy) {
-			recoveries = 2
-		}
-
 		hp.AddFailListener(func() {
 			ruleset.failInternal(player)
+		})
+		hp.AddRecoveryListener(func() {
+			ruleset.recoverInternal(player)
 		})
 
 		var sc scoreProcessor
@@ -249,7 +254,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ppv2:           &performance.PPv2{},
 			hits:           make(map[HitResult]int64),
 			hp:             hp,
-			recoveries:     recoveries,
 			scoreProcessor: sc,
 		}
 	}
@@ -614,19 +618,31 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	}
 
 	// EZ mod gives 2 additional lives
-	if subSet.recoveries > 0 {
+	if subSet.hp.Recoveries > 0 {
 		subSet.hp.Increase(160, false)
-		subSet.recoveries--
+		subSet.hp.Recoveries--
 
 		return
 	}
 
 	// actual fail
-	if set.failListener != nil && !subSet.failed{
+	if set.failListener != nil && !subSet.failed {
 		set.failListener(player.cursor)
 	}
 
 	subSet.failed = true
+}
+
+func (set *OsuRuleSet) recoverInternal(player *difficultyPlayer) {
+	subSet := set.cursors[player.cursor]
+	
+	if subSet.failed {
+		subSet.failed = false
+
+		if set.recoveryListener != nil {
+			set.recoveryListener(player.cursor)
+		}
+	}
 }
 
 func (set *OsuRuleSet) SetListener(listener hitListener) {
@@ -639,6 +655,10 @@ func (set *OsuRuleSet) SetEndListener(listener endListener) {
 
 func (set *OsuRuleSet) SetFailListener(listener failListener) {
 	set.failListener = listener
+}
+
+func (set *OsuRuleSet) SetRecoveryListener(listener recoveryListener) {
+	set.recoveryListener = listener
 }
 
 func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {

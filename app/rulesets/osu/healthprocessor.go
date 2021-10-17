@@ -27,6 +27,7 @@ const (
 )
 
 type FailListener func()
+type RecoveryListener func()
 
 type drain struct {
 	start, end int64
@@ -51,15 +52,20 @@ type HealthProcessor struct {
 	spinnerActive bool
 
 	playing bool
+	failed  bool
 
-	failListeners []FailListener
+	failListeners     []FailListener
+	recoveryListeners []RecoveryListener
+
+	Recoveries int
 }
 
-func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, lowerSpinnerDrain bool) *HealthProcessor {
+func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, lowerSpinnerDrain bool, recoveries int) *HealthProcessor {
 	proc := &HealthProcessor{
 		beatMap:           beatMap,
 		diff:              diff,
 		lowerSpinnerDrain: lowerSpinnerDrain,
+		Recoveries:        recoveries,
 	}
 
 	for _, o := range beatMap.HitObjects {
@@ -255,7 +261,17 @@ func (hp *HealthProcessor) Increase(amount float64, fromHitObject bool) {
 	hp.HealthUncapped = math.Max(0.0, hp.HealthUncapped+amount)
 	hp.Health = mutils.ClampF64(hp.Health+amount, 0.0, MaxHp)
 
-	if hp.playing && hp.Health <= 0 && fromHitObject {
+	if hp.playing && hp.Health >= 190 && hp.failed {
+		hp.failed = false
+		for _, f := range hp.recoveryListeners {
+			f()
+		}
+	}
+
+	if hp.playing && hp.Health <= 0 && fromHitObject && !hp.failed {
+		if hp.Recoveries <= 0 {
+			hp.failed = true
+		}
 		for _, f := range hp.failListeners {
 			f()
 		}
@@ -302,4 +318,8 @@ func (hp *HealthProcessor) Update(time int64) {
 
 func (hp *HealthProcessor) AddFailListener(listener FailListener) {
 	hp.failListeners = append(hp.failListeners, listener)
+}
+
+func (hp *HealthProcessor) AddRecoveryListener(listener RecoveryListener) {
+	hp.recoveryListeners = append(hp.recoveryListeners, listener)
 }
