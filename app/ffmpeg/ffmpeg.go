@@ -165,13 +165,6 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, _output string) {
 }
 
 func startVideo(fps int) {
-	split := strings.Split(settings.Recording.EncoderOptions, " ")
-
-	videoFilters := strings.TrimSpace(settings.Recording.Filters)
-	if len(videoFilters) > 0 {
-		videoFilters = "," + videoFilters
-	}
-
 	if settings.Recording.MotionBlur.Enabled {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
@@ -194,6 +187,11 @@ func startVideo(fps int) {
 	inputPixFmt := "rgb24"
 	if parsedFormat != pixconv.ARGB {
 		inputPixFmt = strings.ToLower(settings.Recording.PixelFormat)
+	}
+
+	videoFilters := strings.TrimSpace(settings.Recording.Filters)
+	if len(videoFilters) > 0 {
+		videoFilters = "," + videoFilters
 	}
 
 	var err error
@@ -230,7 +228,12 @@ func startVideo(fps int) {
 		options = append(options, "-pix_fmt", strings.ToLower(settings.Recording.PixelFormat))
 	}
 
-	options = append(options, split...)
+	encOptions := strings.TrimSpace(settings.Recording.EncoderOptions)
+	if encOptions != "" {
+		split := strings.Split(encOptions, " ")
+		options = append(options, split...)
+	}
+
 	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "video."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
@@ -291,10 +294,13 @@ func startAudio(audioFPS float64) {
 		options = append(options, "-af", audioFilters)
 	}
 
-	options = append(options,
-		"-c:a", settings.Recording.AudioCodec,
-		"-ab", settings.Recording.AudioBitrate,
-	)
+	options = append(options, "-c:a", settings.Recording.AudioCodec)
+
+	encOptions := strings.TrimSpace(settings.Recording.AudioOptions)
+	if encOptions != "" {
+		split := strings.Split(encOptions, " ")
+		options = append(options, split...)
+	}
 
 	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container))
 
