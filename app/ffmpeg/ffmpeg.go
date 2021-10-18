@@ -6,10 +6,10 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
-	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -28,7 +28,7 @@ const MaxAudioBuffers = 2000
 var cmdVideo *exec.Cmd
 var cmdAudio *exec.Cmd
 
-var videoPipe *files.NamedPipe
+var videoPipe io.WriteCloser
 
 var videoQueue chan func()
 
@@ -38,7 +38,7 @@ var syncPool = make([]*PBO, 0)
 
 var endSyncVideo *sync.WaitGroup
 
-var audioPipe *files.NamedPipe
+var audioPipe io.WriteCloser
 
 var audioQueue chan []byte
 
@@ -194,13 +194,6 @@ func startVideo(fps int) {
 		videoFilters = "," + videoFilters
 	}
 
-	var err error
-
-	videoPipe, err = files.NewNamedPipe("")
-	if err != nil {
-		panic(err)
-	}
-
 	options := []string{
 		"-y", //(optional) overwrite output file if it exists
 
@@ -209,7 +202,7 @@ func startVideo(fps int) {
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", inputPixFmt,
 		"-r", strconv.Itoa(fps), //frames per second
-		"-i", videoPipe.Name(), //The input comes from a videoPipe
+		"-i", "-", //The input comes from a videoPipe
 
 		"-an",
 
@@ -240,6 +233,13 @@ func startVideo(fps int) {
 
 	cmdVideo = exec.Command("ffmpeg", options...)
 
+	var err error
+
+	videoPipe, err = cmdVideo.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+
 	if settings.Recording.ShowFFmpegLogs {
 		cmdVideo.Stdout = os.Stdout
 		cmdVideo.Stderr = os.Stderr
@@ -269,13 +269,6 @@ func startVideo(fps int) {
 }
 
 func startAudio(audioFPS float64) {
-	var err error
-
-	audioPipe, err = files.NewNamedPipe("")
-	if err != nil {
-		panic(err)
-	}
-
 	options := []string{
 		"-y",
 
@@ -283,7 +276,7 @@ func startAudio(audioFPS float64) {
 		"-acodec", "pcm_f32le",
 		"-ar", "48000",
 		"-ac", "2",
-		"-i", audioPipe.Name(),
+		"-i", "-",//audioPipe.Name(),
 
 		"-nostats", //hide audio encoding statistics because video ones are more important
 		"-vn",
@@ -307,6 +300,13 @@ func startAudio(audioFPS float64) {
 	log.Println("Running ffmpeg with options:", options)
 
 	cmdAudio = exec.Command("ffmpeg", options...)
+
+	var err error
+
+	audioPipe, err = cmdAudio.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
 
 	if settings.Recording.ShowFFmpegLogs {
 		cmdAudio.Stdout = os.Stdout
