@@ -49,7 +49,7 @@ type knockoutPlayer struct {
 	displayHp float64
 	failed    bool
 	recovered bool
-	endsEarly bool
+	hardFail  bool
 
 	lastHit  osu.HitResult
 	fadeHit  *animation.Glider
@@ -157,7 +157,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, false, false, r.EndsEarly, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, false, false, false, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 	}
@@ -184,8 +184,9 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	replayController.GetRuleset().SetEndListener(func(time int64, number int64) {
 		if number == int64(len(replayController.GetBeatMap().HitObjects)-1) && settings.Knockout.RevivePlayersAtEnd {
-			for _, player := range overlay.players {
-				if !player.endsEarly {
+			for _, cursor := range overlay.controller.GetCursors() {
+				player := overlay.players[overlay.names[cursor]]
+				if !player.hardFail {
 					overlay.revivePlayer(player)
 				}
 			}
@@ -331,14 +332,22 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	}
 }
 
-func (overlay *KnockoutOverlay) failReceived(cursor *graphics.Cursor) {
+func (overlay *KnockoutOverlay) failReceived(cursor *graphics.Cursor, failResult osu.FailResult) {
 	player := overlay.players[overlay.names[cursor]]
-	log.Println(overlay.names[cursor], "failed!")
 	player.failed = true
+	if failResult == osu.SoftFail {
+		log.Println(overlay.names[cursor], "soft failed!")
+	} else {
+		player.hardFail = true
+		log.Println(overlay.names[cursor], "hard failed!")
+	}
 }
 
 func (overlay *KnockoutOverlay) recoveryReceived(cursor *graphics.Cursor) {
 	player := overlay.players[overlay.names[cursor]]
+	if player.hardFail {
+		return
+	}
 	log.Println(overlay.names[cursor], "recovered!")
 	player.failed = false
 	player.recovered = true

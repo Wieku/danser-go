@@ -36,6 +36,14 @@ const (
 
 var GradesText = []string{"D", "C", "B", "A", "S", "SH", "SS", "SSH", "None"}
 
+type FailResult int64
+
+const (
+	IgnoreFail = FailResult(iota)
+	SoftFail
+	HardFail
+)
+
 type ClickAction int64
 
 const (
@@ -109,8 +117,11 @@ type subSet struct {
 	hp             *HealthProcessor
 	gekiCount      int64
 	katuCount      int64
+	recoveries     int
 	scoreProcessor scoreProcessor
-	failed         bool
+	canHardFail    bool
+	softFailed     bool
+	hardFailed     bool
 }
 
 type MapTo struct {
@@ -124,7 +135,7 @@ type hitListener func(cursor *graphics.Cursor, time int64, number int64, positio
 
 type endListener func(time int64, number int64)
 
-type failListener func(cursor *graphics.Cursor)
+type failListener func(cursor *graphics.Cursor, failResult FailResult)
 
 type recoveryListener func(cursor *graphics.Cursor)
 
@@ -219,12 +230,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
 
-		recoveries := 0
-		if diff.CheckModActive(difficulty.Easy) {
-			recoveries = 2
-		}
-
-		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring, recoveries)
+		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
 		hp.CalculateRate()
 		hp.ResetHp()
 
@@ -232,11 +238,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		log.Println("\tNormal multiplier:", hp.HpMultiplierNormal)
 		log.Println("\tCombo end multiplier:", hp.HpMultiplierComboEnd)
 
-		hp.AddFailListener(func() {
-			ruleset.failInternal(player)
-		})
-		hp.AddRecoveryListener(func() {
-			ruleset.recoverInternal(player)
+		recoveries := 0
+		if diff.CheckModActive(difficulty.Easy) {
+			recoveries = 2
+		}
+
+		hp.AddFailListener(func() FailResult {
+			return ruleset.failInternal(player)
 		})
 
 		var sc scoreProcessor
@@ -256,6 +264,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ppv2:           &performance.PPv2{},
 			hits:           make(map[HitResult]int64),
 			hp:             hp,
+			recoveries:     recoveries,
 			scoreProcessor: sc,
 		}
 	}
@@ -315,8 +324,14 @@ func (set *OsuRuleSet) Update(time int64) {
 		}
 	}
 
-	for _, subSet := range set.cursors {
+	for cursor, subSet := range set.cursors {
 		subSet.hp.Update(time)
+		if subSet.softFailed && !subSet.hardFailed && subSet.hp.Health >= 190 {
+			subSet.softFailed = false
+			if set.recoveryListener != nil {
+				set.recoveryListener(cursor)
+			}
+		}
 	}
 
 	if len(set.queue) == 0 && len(set.processed) == 0 && !set.ended {
@@ -612,39 +627,37 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 	return Click
 }
 
-func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
+func (set *OsuRuleSet) failInternal(player *difficultyPlayer) FailResult {
 	subSet := set.cursors[player.cursor]
 
 	if player.diff.CheckModActive(difficulty.NoFail | difficulty.Relax | difficulty.Relax2) {
-		return
+		return IgnoreFail
 	}
 
 	// EZ mod gives 2 additional lives
-	if subSet.hp.Recoveries > 0 {
+	if subSet.recoveries > 0 {
 		subSet.hp.Increase(160, false)
-		subSet.hp.Recoveries--
+		subSet.recoveries--
 
-		return
+		return IgnoreFail
+	}
+
+	failResult := SoftFail
+	if subSet.canHardFail {
+		failResult = HardFail
 	}
 
 	// actual fail
-	if set.failListener != nil && !subSet.failed {
-		set.failListener(player.cursor)
+	if set.failListener != nil && (!subSet.softFailed && !subSet.hardFailed) {
+		set.failListener(player.cursor, failResult)
 	}
 
-	subSet.failed = true
-}
-
-func (set *OsuRuleSet) recoverInternal(player *difficultyPlayer) {
-	subSet := set.cursors[player.cursor]
-	
-	if subSet.failed {
-		subSet.failed = false
-
-		if set.recoveryListener != nil {
-			set.recoveryListener(player.cursor)
-		}
+	if subSet.canHardFail {
+		subSet.hardFailed = true
+	} else {
+		subSet.softFailed = true
 	}
+	return failResult
 }
 
 func (set *OsuRuleSet) SetListener(listener hitListener) {
@@ -686,6 +699,16 @@ func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) performance.PPv2Results {
 func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {
 	subSet := set.cursors[cursor]
 	return subSet.maxCombo == int64(set.mapStats[subSet.numObjects-1].maxCombo)
+}
+
+func (set *OsuRuleSet) GetFailState(cursor *graphics.Cursor) (bool, bool, bool) {
+	subSet := set.cursors[cursor]
+	return subSet.canHardFail, subSet.softFailed, subSet.hardFailed
+}
+
+func (set* OsuRuleSet) SetCanHardFail(cursor *graphics.Cursor, canHardFail bool) {
+	subSet := set.cursors[cursor]
+	subSet.canHardFail = canHardFail
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
