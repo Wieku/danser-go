@@ -14,7 +14,7 @@ type Frame []byte
 type VideoDecoder struct {
 	filePath string
 
-	Metadata *VideoMetadata
+	Metadata *Metadata
 
 	emptyQueue chan Frame
 
