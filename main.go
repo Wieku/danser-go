@@ -186,7 +186,7 @@ func run() {
 				panic("Modes other than osu!standard are not supported")
 			}
 
-			if rp.ReplayData == nil || len(rp.ReplayData) == 0 {
+			if rp.ReplayData == nil || len(rp.ReplayData) < 2 {
 				panic("Replay is missing input data")
 			}
 
