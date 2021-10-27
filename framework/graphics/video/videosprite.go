@@ -63,7 +63,7 @@ func (video *Video) Update(time float64) {
 
 	delta := 1000.0 / video.decoder.Metadata.FPS
 
-	if time < video.lastTime || video.lastTime+delta*10 < time {
+	if time < video.lastTime || video.lastTime+1000 < time {
 		video.decoder.StartFFmpeg(int64(time))
 		video.lastTime = time - delta
 	}
