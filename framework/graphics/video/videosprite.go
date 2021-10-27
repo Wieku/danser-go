@@ -1,7 +1,6 @@
 package video
 
 import (
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -25,7 +24,12 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 		return nil
 	}
 
-	tex := texture.NewTextureSingleFormat(decoder.Metadata.Width, decoder.Metadata.Height, texture.RGB, 0)
+	texFormat := texture.RGBA
+	if decoder.Channels == 3 {
+		texFormat = texture.RGB
+	}
+
+	tex := texture.NewTextureSingleFormat(decoder.Metadata.Width, decoder.Metadata.Height, texFormat, 0)
 	region := tex.GetRegion()
 
 	sp := sprite.NewSpriteSingle(&region, depth, position, origin)
