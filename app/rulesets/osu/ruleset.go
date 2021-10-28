@@ -183,6 +183,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		log.Println("\t- Added relax mod PP calculation: https://github.com/ppy/osu/pull/14942")
 		log.Println("\t- Rhythm complexity SR rework: https://github.com/ppy/osu/pull/14395")
 		log.Println("\t- Fixed instant spinners giving insane amounts of strain: https://github.com/ppy/osu/pull/15009")
+		log.Println("\t- Approximation of number of misses + sliderbreaks: https://github.com/ppy/osu/pull/15086")
 
 		ruleset.experimentalPP = true
 	} else {
