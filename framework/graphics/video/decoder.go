@@ -28,8 +28,6 @@ type VideoDecoder struct {
 	wg       *sync.WaitGroup
 	finished bool
 	format   pixconv.PixFmt
-
-	Channels int
 }
 
 func NewVideoDecoder(filePath string) *VideoDecoder {
@@ -42,8 +40,7 @@ func NewVideoDecoder(filePath string) *VideoDecoder {
 		filePath: filePath,
 		Metadata: metadata,
 		wg:       &sync.WaitGroup{},
-		format:   pixconv.ARGB,
-		Channels: 3,
+		format:   pixconv.RGB,
 	}
 
 	switch strings.ToLower(metadata.PixFmt) {
@@ -57,10 +54,6 @@ func NewVideoDecoder(filePath string) *VideoDecoder {
 		decoder.format = pixconv.NV12
 	case "nv21":
 		decoder.format = pixconv.NV21
-	}
-
-	if decoder.format != pixconv.ARGB {
-		decoder.Channels = 4
 	}
 
 	return decoder
@@ -125,7 +118,7 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 	dec.readyQueue = make(chan Frame, BufferSize)
 
 	for i := 0; i < BufferSize; i++ {
-		dec.decodingQueue <- make([]byte, dec.Metadata.Width*dec.Metadata.Height*dec.Channels)
+		dec.decodingQueue <- make([]byte, dec.Metadata.Width*dec.Metadata.Height*3)
 	}
 
 	go func() {
@@ -139,12 +132,12 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 
 			var err1 error
 
-			if dec.format == pixconv.ARGB {
+			if dec.format == pixconv.RGB {
 				_, err1 = io.ReadFull(dec.pipe, frame)
 			} else {
 				_, err1 = io.ReadFull(dec.pipe, readBuffer)
 
-				pixconv.Convert(readBuffer, dec.format, frame, pixconv.ARGB, dec.Metadata.Width, dec.Metadata.Height)
+				pixconv.Convert(readBuffer, dec.format, frame, pixconv.RGB, dec.Metadata.Width, dec.Metadata.Height)
 			}
 
 			if err1 != nil {

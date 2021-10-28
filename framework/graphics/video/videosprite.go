@@ -29,12 +29,7 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 		return nil
 	}
 
-	texFormat := texture.RGBA
-	if decoder.Channels == 3 {
-		texFormat = texture.RGB
-	}
-
-	tex := texture.NewTextureSingleFormat(decoder.Metadata.Width, decoder.Metadata.Height, texFormat, 0)
+	tex := texture.NewTextureSingleFormat(decoder.Metadata.Width, decoder.Metadata.Height, texture.RGB, 0)
 	region := tex.GetRegion()
 
 	sp := sprite.NewSpriteSingle(&region, depth, position, origin)
@@ -46,7 +41,7 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 		texture: tex,
 		decoder: decoder,
 		mutex:   &sync.Mutex{},
-		data:    make([]byte, decoder.Metadata.Width*decoder.Metadata.Height*decoder.Channels),
+		data:    make([]byte, decoder.Metadata.Width*decoder.Metadata.Height*3),
 	}
 }
 

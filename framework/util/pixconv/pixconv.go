@@ -12,6 +12,7 @@ type PixFmt int
 
 const (
 	ARGB PixFmt = iota
+	RGB
 	I420
 	I422
 	I444
@@ -23,6 +24,8 @@ func (t PixFmt) String() string {
 	switch t {
 	case ARGB:
 		return "ARGB"
+	case RGB:
+		return "RGB"
 	case I420:
 		return "I420"
 	case NV12:
@@ -42,6 +45,8 @@ func GetRequiredBufferSize(format PixFmt, w, h int) int {
 	switch format {
 	case ARGB:
 		return w * h * 4
+	case RGB:
+		return w * h * 3
 	case I420, NV12, NV21:
 		return w * h * 3 / 2
 	case I422:
@@ -71,21 +76,21 @@ func Convert(input []byte, inputFormat PixFmt, output []byte, outputFormat PixFm
 			panic(fmt.Sprintf("Invalid output format: %s (%d)", outputFormat.String(), outputFormat))
 		}
 	case I420, I422, I444, NV12, NV21:
-		if outputFormat != ARGB {
+		if outputFormat != RGB {
 			panic(fmt.Sprintf("Invalid output format: %s (%d)", outputFormat.String(), outputFormat))
 		}
 
 		switch inputFormat {
 		case I420:
-			ConvertI420ToARGB(input, output, w, h)
+			ConvertI420ToRGB(input, output, w, h)
 		case I422:
-			ConvertI422ToARGB(input, output, w, h)
+			ConvertI422ToRGB(input, output, w, h)
 		case I444:
-			ConvertI444ToARGB(input, output, w, h)
+			ConvertI444ToRGB(input, output, w, h)
 		case NV12:
-			ConvertNV12ToARGB(input, output, w, h)
+			ConvertNV12ToRGB(input, output, w, h)
 		case NV21:
-			ConvertNV21ToARGB(input, output, w, h)
+			ConvertNV21ToRGB(input, output, w, h)
 		}
 	default:
 		panic(fmt.Sprintf("Invalid input format: %s (%d)", outputFormat.String(), outputFormat))
@@ -122,34 +127,46 @@ func ConvertARGBToNV21(input []byte, output []byte, w, h int) {
 	C.ARGBToNV21((*C.uint8_t)(&input[0]), C.int(w*4), (*C.uint8_t)(&output[0]), C.int(w), (*C.uint8_t)(&output[w*h]), C.int(w), C.int(w), C.int(h))
 }
 
-func ConvertI420ToARGB(input []byte, output []byte, w, h int) {
-	checkDimensions(input, output, w*h*3/2, w*h*4)
+func ConvertI420ToRGB(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3/2, w*h*3)
 
-	C.I420ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*5/4]), C.int(w/2), (*C.uint8_t)(&output[0]), C.int(w*4), C.int(w), C.int(h))
+	C.I420ToRAW((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*5/4]), C.int(w/2), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
 }
 
-func ConvertI422ToARGB(input []byte, output []byte, w, h int) {
-	checkDimensions(input, output, w*h*2, w*h*4)
+func ConvertI422ToRGB(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*2, w*h*3)
 
-	C.I422ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*3/2]), C.int(w/2), (*C.uint8_t)(&output[0]), C.int(w*4), C.int(w), C.int(h))
+	temp := C.malloc(C.size_t(w*h*4))
+
+	C.I422ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*3/2]), C.int(w/2), (*C.uint8_t)(temp), C.int(w*4), C.int(w), C.int(h))
+
+	C.ARGBToRAW((*C.uint8_t)(temp), C.int(w*4), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
+
+	C.free(temp)
 }
 
-func ConvertI444ToARGB(input []byte, output []byte, w, h int) {
-	checkDimensions(input, output, w*h*3, w*h*4)
+func ConvertI444ToRGB(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3, w*h*3)
 
-	C.I444ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&input[w*h*2]), C.int(w), (*C.uint8_t)(&output[0]), C.int(w*4), C.int(w), C.int(h))
+	temp := C.malloc(C.size_t(w*h*4))
+
+	C.I444ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&input[w*h*2]), C.int(w), (*C.uint8_t)(temp), C.int(w*4), C.int(w), C.int(h))
+
+	C.ARGBToRAW((*C.uint8_t)(temp), C.int(w*4), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
+
+	C.free(temp)
 }
 
-func ConvertNV12ToARGB(input []byte, output []byte, w, h int) {
-	checkDimensions(input, output, w*h*3/2, w*h*4)
+func ConvertNV12ToRGB(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3/2, w*h*3)
 
-	C.NV12ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&output[0]), C.int(w*4), C.int(w), C.int(h))
+	C.NV12ToRAW((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
 }
 
-func ConvertNV21ToARGB(input []byte, output []byte, w, h int) {
-	checkDimensions(input, output, w*h*3/2, w*h*4)
+func ConvertNV21ToRGB(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3/2, w*h*3)
 
-	C.NV21ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&output[0]), C.int(w*4), C.int(w), C.int(h))
+	C.NV21ToRAW((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
 }
 
 func checkDimensions(input []byte, output []byte, expectedInput int, expectedOutput int) {
