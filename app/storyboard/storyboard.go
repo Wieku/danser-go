@@ -43,6 +43,9 @@ type Storyboard struct {
 	numSprites  int
 	pathCache   *files2.FileMap
 	hasVisuals  bool
+
+	videos     []sprite.ISprite
+	videoAlpha float64
 }
 
 func getSection(line string) string {
@@ -71,6 +74,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		foreground: sprite.NewManager(),
 		overlay:    sprite.NewManager(),
 		atlas:      nil,
+		videos:     make([]sprite.ISprite, 0),
 	}
 
 	storyboard.pathCache, _ = files2.NewFileMap(path)
@@ -145,6 +149,8 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					video.ResetValuesToTransforms()
 
 					storyboard.background.Add(video)
+
+					storyboard.videos = append(storyboard.videos, video)
 
 					hasVideo = true
 				} else if settings.Playfield.Background.LoadStoryboards {
@@ -387,6 +393,16 @@ func (storyboard *Storyboard) Update(time float64) {
 	storyboard.pass.Update(time)
 	storyboard.foreground.Update(time)
 	storyboard.overlay.Update(time)
+
+	alpha := 0.0
+
+	for _, v := range storyboard.videos {
+		if time >= v.GetStartTime() && time <= v.GetEndTime() {
+			alpha = v.GetAlpha()
+		}
+	}
+
+	storyboard.videoAlpha = alpha
 }
 
 func (storyboard *Storyboard) Draw(time float64, batch *batch.QuadBatch) {
@@ -429,4 +445,8 @@ func (storyboard *Storyboard) HasVisuals() bool {
 
 func (storyboard *Storyboard) IsWideScreen() bool {
 	return storyboard.widescreen
+}
+
+func (storyboard *Storyboard) GetVideoAlpha() float64 {
+	return storyboard.videoAlpha
 }
