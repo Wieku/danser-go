@@ -12,10 +12,11 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	video2 "github.com/wieku/danser-go/framework/graphics/video"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -136,8 +137,12 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 					offset, _ := strconv.ParseFloat(spl[1], 64)
 					video.SetStartTime(offset)
-					video.SetEndTime(math.MaxFloat64)
 					video.ShowForever(false)
+
+					video.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, video.GetStartTime(), video.GetStartTime()+1000, 0, 1))
+					video.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, video.GetEndTime()-1000, video.GetEndTime(), 1, 0))
+
+					video.ResetValuesToTransforms()
 
 					storyboard.background.Add(video)
 
