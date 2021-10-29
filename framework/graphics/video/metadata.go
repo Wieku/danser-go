@@ -19,15 +19,20 @@ type Metadata struct {
 
 type probeOutput struct {
 	Streams []stream `json:"streams"`
+	Format  format   `json:"format"`
 }
 
 type stream struct {
-	Width        int     `json:"width"`
-	Height       int     `json:"height"`
-	PixFmt       string  `json:"pix_fmt"`
-	AvgFramerate string  `json:"avg_frame_rate"`
-	Framerate    string  `json:"r_frame_rate"`
-	Duration     float64 `json:"duration"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	PixFmt       string `json:"pix_fmt"`
+	AvgFramerate string `json:"avg_frame_rate"`
+	Framerate    string `json:"r_frame_rate"`
+	Duration     string `json:"duration"`
+}
+
+type format struct {
+	Duration string `json:"duration"`
 }
 
 func LoadMetadata(path string) *Metadata {
@@ -41,6 +46,7 @@ func LoadMetadata(path string) *Metadata {
 		"-i", path,
 		"-select_streams", "v:0",
 		"-show_entries", "stream",
+		"-show_entries", "format",
 		"-of", "json",
 		"-loglevel", "quiet",
 	).Output()
@@ -65,11 +71,15 @@ func LoadMetadata(path string) *Metadata {
 		mData.Streams[0].AvgFramerate = mData.Streams[0].Framerate
 	}
 
+	if mData.Streams[0].Duration == "" {
+		mData.Streams[0].Duration = mData.Format.Duration
+	}
+
 	return &Metadata{
 		Width:    mData.Streams[0].Width,
 		Height:   mData.Streams[0].Height,
 		FPS:      parseRate(mData.Streams[0].AvgFramerate),
-		Duration: mData.Streams[0].Duration,
+		Duration: parseRate(mData.Streams[0].Duration),
 		PixFmt:   mData.Streams[0].PixFmt,
 	}
 }
