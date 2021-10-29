@@ -36,18 +36,28 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 
 	decoder.StartFFmpeg(0)
 
-	return &Video{
+	video := &Video{
 		Sprite:  sp,
 		texture: tex,
 		decoder: decoder,
 		mutex:   &sync.Mutex{},
 		data:    make([]byte, decoder.Metadata.Width*decoder.Metadata.Height*3),
 	}
+
+	video.SetStartTime(0)
+
+	return video
+}
+
+func (video *Video) SetStartTime(startTime float64) {
+	video.Sprite.SetStartTime(startTime)
+	video.Sprite.SetEndTime(startTime+video.decoder.Metadata.Duration*1000)
 }
 
 func (video *Video) Update(time float64) {
+	video.Sprite.Update(time)
+
 	if video.decoder == nil || video.decoder.HasFinished() {
-		video.SetEndTime(time)
 		return
 	}
 
