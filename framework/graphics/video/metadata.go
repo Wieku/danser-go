@@ -10,10 +10,11 @@ import (
 )
 
 type Metadata struct {
-	Width  int
-	Height int
-	FPS    float64
-	PixFmt string
+	Width    int
+	Height   int
+	FPS      float64
+	Duration float64
+	PixFmt   string
 }
 
 type probeOutput struct {
@@ -21,11 +22,12 @@ type probeOutput struct {
 }
 
 type stream struct {
-	Width        int    `json:"width"`
-	Height       int    `json:"height"`
-	PixFmt       string `json:"pix_fmt"`
-	AvgFramerate string `json:"avg_frame_rate"`
-	Framerate    string `json:"r_frame_rate"`
+	Width        int     `json:"width"`
+	Height       int     `json:"height"`
+	PixFmt       string  `json:"pix_fmt"`
+	AvgFramerate string  `json:"avg_frame_rate"`
+	Framerate    string  `json:"r_frame_rate"`
+	Duration     float64 `json:"duration"`
 }
 
 func LoadMetadata(path string) *Metadata {
@@ -64,10 +66,11 @@ func LoadMetadata(path string) *Metadata {
 	}
 
 	return &Metadata{
-		Width:  mData.Streams[0].Width,
-		Height: mData.Streams[0].Height,
-		FPS:    parseRate(mData.Streams[0].AvgFramerate),
-		PixFmt: mData.Streams[0].PixFmt,
+		Width:    mData.Streams[0].Width,
+		Height:   mData.Streams[0].Height,
+		FPS:      parseRate(mData.Streams[0].AvgFramerate),
+		Duration: mData.Streams[0].Duration,
+		PixFmt:   mData.Streams[0].PixFmt,
 	}
 }
 
