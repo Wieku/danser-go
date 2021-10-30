@@ -94,7 +94,7 @@ func newDefaultInfo() *SkinInfo {
 		SliderTrackOverride:         nil,
 		SongSelectInactiveText:      color.NewL(1),
 		SongSelectActiveText:        color.NewL(0),
-		InputOverlayText:            color.NewL(1),
+		InputOverlayText:            color.NewL(0),
 		HitCirclePrefix:             "default",
 		HitCircleOverlap:            -2,
 		HitCircleOverlayAboveNumber: false,
