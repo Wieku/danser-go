@@ -45,6 +45,7 @@ const (
 type Overlay interface {
 	Update(float64)
 	SetMusic(bass.ITrack)
+	DrawBackground(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
 	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
@@ -287,17 +288,18 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 }
 
 func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, _ int64) {
+	object := overlay.ruleset.GetBeatMap().HitObjects[number]
+
 	if result&(osu.BaseHitsM) > 0 {
-		overlay.results.AddResult(time, result, position)
+		overlay.results.AddResult(time, result, position, object)
 	}
 
-	_, hC := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Circle)
+	_, hC := object.(*objects.Circle)
 	allowCircle := hC && (result&(osu.BaseHits|osu.PositionalMiss) > 0)
-	_, sl := overlay.ruleset.GetBeatMap().HitObjects[number].(*objects.Slider)
+	_, sl := object.(*objects.Slider)
 	allowSlider := sl && (result&(osu.SliderStart|osu.PositionalMiss)) > 0
 
 	if allowCircle || allowSlider {
-		object := overlay.ruleset.GetBeatMap().HitObjects[number]
 		timeDiff := float64(time) - object.GetStartTime()
 
 		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
@@ -379,7 +381,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	delta := time - overlay.audioTime
 
-	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+	if overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 		delta /= overlay.music.GetTempo()
 	}
 
@@ -394,7 +396,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	}
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
-		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 			if overlay.audioTime < overlay.skipTo {
 				overlay.music.SetPosition(overlay.skipTo / 1000)
 			}
@@ -568,8 +570,12 @@ func (overlay *ScoreOverlay) SetMusic(music bass.ITrack) {
 	overlay.music = music
 }
 
-func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
+func (overlay *ScoreOverlay) DrawBackground(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.ruleset.GetBeatMap().Diff.CircleRadius), float32(alpha*overlay.bgDim.GetValue()))
+}
+
+func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
+	overlay.results.DrawBottom(batch, c, 1.0)
 }
 
 func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
@@ -577,7 +583,7 @@ func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color
 	batch.SetScale(scale, scale)
 	batch.SetColor(1, 1, 1, alpha)
 
-	overlay.results.Draw(batch, 1.0)
+	overlay.results.DrawTop(batch, 1.0)
 
 	batch.Flush()
 
@@ -751,7 +757,7 @@ func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
 
 	if settings.Gameplay.ComboCounter.XOffset > 0.01 {
 		slideAmount = 0
-		comboAlpha *= 1+overlay.comboSlide.GetValue()
+		comboAlpha *= 1 + overlay.comboSlide.GetValue()
 	}
 
 	posX := slideAmount*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
@@ -914,9 +920,9 @@ func (overlay *ScoreOverlay) initMods() {
 		mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0*alpha))
 		mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2*scale, 1.0*scale))
 
-		if overlay.cursor.Name == "" || settings.Gameplay.Mods.HideInReplays {
+		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.HideInReplays {
 			startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, timeStart+5000, 1.0*alpha, 0))
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0*alpha, 0))
 		}
 
 		if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {

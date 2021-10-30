@@ -111,6 +111,7 @@ type subSet struct {
 	katuCount      int64
 	recoveries     int
 	scoreProcessor scoreProcessor
+	failed         bool
 }
 
 type MapTo struct {
@@ -124,6 +125,8 @@ type hitListener func(cursor *graphics.Cursor, time int64, number int64, positio
 
 type endListener func(time int64, number int64)
 
+type failListener func(cursor *graphics.Cursor)
+
 type OsuRuleSet struct {
 	beatMap *beatmap.BeatMap
 	cursors map[*graphics.Cursor]*subSet
@@ -133,10 +136,11 @@ type OsuRuleSet struct {
 	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]performance.Stars
 
-	queue       []HitObject
-	processed   []HitObject
-	hitListener hitListener
-	endListener endListener
+	queue        []HitObject
+	processed    []HitObject
+	hitListener  hitListener
+	endListener  endListener
+	failListener failListener
 
 	experimentalPP bool
 }
@@ -171,11 +175,15 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	}
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-09-24 with following changes:")
+		log.Println("Using pp calc version 2021-10-15 with following changes:")
 		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
 		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
 		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
 		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
+		log.Println("\t- Added relax mod PP calculation: https://github.com/ppy/osu/pull/14942")
+		log.Println("\t- Rhythm complexity SR rework: https://github.com/ppy/osu/pull/14395")
+		log.Println("\t- Fixed instant spinners giving insane amounts of strain: https://github.com/ppy/osu/pull/15009")
+		log.Println("\t- Approximation of number of misses + sliderbreaks: https://github.com/ppy/osu/pull/15086")
 
 		ruleset.experimentalPP = true
 	} else {
@@ -222,6 +230,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		if diff.CheckModActive(difficulty.Easy) {
 			recoveries = 2
 		}
+
+		hp.AddFailListener(func() {
+			ruleset.failInternal(player)
+		})
 
 		var sc scoreProcessor
 
@@ -533,11 +545,6 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	subSet.hp.AddResult(result)
 
-	if subSet.hp.Health == 0.0 && subSet.recoveries > 0 {
-		subSet.hp.Increase(160)
-		subSet.recoveries--
-	}
-
 	if set.hitListener != nil {
 		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
 	}
@@ -602,12 +609,39 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 	return Click
 }
 
+func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
+	subSet := set.cursors[player.cursor]
+
+	if player.diff.CheckModActive(difficulty.NoFail | difficulty.Relax | difficulty.Relax2) {
+		return
+	}
+
+	// EZ mod gives 2 additional lives
+	if subSet.recoveries > 0 {
+		subSet.hp.Increase(160, false)
+		subSet.recoveries--
+
+		return
+	}
+
+	// actual fail
+	if set.failListener != nil && !subSet.failed {
+		set.failListener(player.cursor)
+	}
+
+	subSet.failed = true
+}
+
 func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
 }
 
-func (set *OsuRuleSet) SetEndListener(endlistener endListener) {
-	set.endListener = endlistener
+func (set *OsuRuleSet) SetEndListener(listener endListener) {
+	set.endListener = listener
+}
+
+func (set *OsuRuleSet) SetFailListener(listener failListener) {
+	set.failListener = listener
 }
 
 func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {

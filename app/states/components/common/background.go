@@ -181,14 +181,19 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 		batch.ResetTransform()
 		batch.SetAdditive(false)
 
-		if settings.Playfield.Background.Blur.Enabled {
-			batch.SetColor(1, 1, 1, 1)
+		opacity := 1.0
+		if bg.storyboard != nil {
+			opacity *= 1.0 - bg.storyboard.GetVideoAlpha()
+		}
 
+		if settings.Playfield.Background.Blur.Enabled {
 			bg.blur.SetBlur(blurVal, blurVal)
 			bg.blur.Begin()
 		} else {
-			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
+			opacity *= bgAlpha
 		}
+
+		batch.SetColor(opacity, opacity, opacity, 1)
 
 		if !widescreen && !settings.Playfield.Background.Blur.Enabled {
 			viewport.PushScissorPos(clipX, clipY, clipW, clipH)
@@ -205,6 +210,12 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 
 			batch.SetScale(size.X64(), size.Y64())
 			batch.DrawUnit(bg.background.GetRegion())
+		}
+
+		if settings.Playfield.Background.Blur.Enabled {
+			batch.SetColor(1, 1, 1, 1)
+		} else {
+			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
 		}
 
 		if bg.storyboard != nil {

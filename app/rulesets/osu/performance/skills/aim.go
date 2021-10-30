@@ -13,16 +13,21 @@ const (
 	AimAngleBonusBegin float64 = math.Pi / 3
 )
 
-func NewAimSkill(d *difficulty.Difficulty) *Skill {
-	skill := NewSkill(d, false)
+type AimSkill struct {
+	*Skill
+}
+
+func NewAimSkill(d *difficulty.Difficulty) *AimSkill {
+	skill := &AimSkill{NewSkill(d, false)}
+
 	skill.SkillMultiplier = 26.25
 	skill.StrainDecayBase = 0.15
-	skill.StrainValueOf = aimStrainValue
+	skill.StrainValueOf = skill.aimStrainValue
 
 	return skill
 }
 
-func aimStrainValue(skill *Skill, current *preprocessing.DifficultyObject) float64 {
+func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) float64 {
 	if _, ok := current.BaseObject.(*objects.Spinner); ok {
 		return 0
 	}

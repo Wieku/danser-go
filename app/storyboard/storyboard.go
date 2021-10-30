@@ -12,10 +12,11 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	video2 "github.com/wieku/danser-go/framework/graphics/video"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -42,6 +43,9 @@ type Storyboard struct {
 	numSprites  int
 	pathCache   *files2.FileMap
 	hasVisuals  bool
+
+	videos     []sprite.ISprite
+	videoAlpha float64
 }
 
 func getSection(line string) string {
@@ -70,6 +74,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		foreground: sprite.NewManager(),
 		overlay:    sprite.NewManager(),
 		atlas:      nil,
+		videos:     make([]sprite.ISprite, 0),
 	}
 
 	storyboard.pathCache, _ = files2.NewFileMap(path)
@@ -136,10 +141,16 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 					offset, _ := strconv.ParseFloat(spl[1], 64)
 					video.SetStartTime(offset)
-					video.SetEndTime(math.MaxFloat64)
 					video.ShowForever(false)
 
+					video.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, video.GetStartTime(), video.GetStartTime()+1000, 0, 1))
+					video.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, video.GetEndTime()-1000, video.GetEndTime(), 1, 0))
+
+					video.ResetValuesToTransforms()
+
 					storyboard.background.Add(video)
+
+					storyboard.videos = append(storyboard.videos, video)
 
 					hasVideo = true
 				} else if settings.Playfield.Background.LoadStoryboards {
@@ -216,7 +227,7 @@ func (storyboard *Storyboard) loadSprite(currentSprite string, commands []string
 
 	image := strings.Replace(spl[3], `"`, "", -1)
 
-	if !strings.HasSuffix(image, ".png") && !strings.HasSuffix(image, ".jpg") {
+	if filepath.Ext(image) == "" {
 		image += ".png"
 	}
 
@@ -382,6 +393,16 @@ func (storyboard *Storyboard) Update(time float64) {
 	storyboard.pass.Update(time)
 	storyboard.foreground.Update(time)
 	storyboard.overlay.Update(time)
+
+	alpha := 0.0
+
+	for _, v := range storyboard.videos {
+		if time >= v.GetStartTime() && time <= v.GetEndTime() {
+			alpha = v.GetAlpha()
+		}
+	}
+
+	storyboard.videoAlpha = alpha
 }
 
 func (storyboard *Storyboard) Draw(time float64, batch *batch.QuadBatch) {
@@ -414,10 +435,6 @@ func (storyboard *Storyboard) GetTotalSprites() int {
 	return storyboard.numSprites
 }
 
-func (storyboard *Storyboard) GetLoad() float64 {
-	return storyboard.background.GetLoad() + storyboard.pass.GetLoad() + storyboard.foreground.GetLoad() + storyboard.overlay.GetLoad()
-}
-
 func (storyboard *Storyboard) BGFileUsed() bool {
 	return storyboard.bgFileUsed
 }
@@ -428,4 +445,8 @@ func (storyboard *Storyboard) HasVisuals() bool {
 
 func (storyboard *Storyboard) IsWideScreen() bool {
 	return storyboard.widescreen
+}
+
+func (storyboard *Storyboard) GetVideoAlpha() float64 {
+	return storyboard.videoAlpha
 }

@@ -36,7 +36,7 @@ const (
 	ScoreV2
 	LastMod
 	Daycore
-	DifficultyAdjustMask = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight
+	DifficultyAdjustMask = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
 )
 
 var modsString = [...]string{

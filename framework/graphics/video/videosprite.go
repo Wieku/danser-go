@@ -1,11 +1,12 @@
 package video
 
 import (
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"sync"
 )
 
 type Video struct {
@@ -15,7 +16,10 @@ type Video struct {
 	decoder *VideoDecoder
 
 	lastTime float64
-	//Offset   float64
+
+	mutex *sync.Mutex
+	data  []byte
+	dirty bool
 }
 
 func NewVideo(path string, depth float64, position vector.Vector2d, origin vector.Vector2d) *Video {
@@ -32,16 +36,28 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 
 	decoder.StartFFmpeg(0)
 
-	return &Video{
+	video := &Video{
 		Sprite:  sp,
 		texture: tex,
 		decoder: decoder,
+		mutex:   &sync.Mutex{},
+		data:    make([]byte, decoder.Metadata.Width*decoder.Metadata.Height*3),
 	}
+
+	video.SetStartTime(0)
+
+	return video
+}
+
+func (video *Video) SetStartTime(startTime float64) {
+	video.Sprite.SetStartTime(startTime)
+	video.Sprite.SetEndTime(startTime+video.decoder.Metadata.Duration*1000)
 }
 
 func (video *Video) Update(time float64) {
+	video.Sprite.Update(time)
+
 	if video.decoder == nil || video.decoder.HasFinished() {
-		video.SetEndTime(time)
 		return
 	}
 
@@ -52,23 +68,35 @@ func (video *Video) Update(time float64) {
 
 	delta := 1000.0 / video.decoder.Metadata.FPS
 
-	if time < video.lastTime || video.lastTime+delta*10 < time {
+	if time < video.lastTime || video.lastTime+1000 < time {
 		video.decoder.StartFFmpeg(int64(time))
 		video.lastTime = time - delta
 	}
 
-	for video.lastTime+delta < time {
+	if video.lastTime+delta < time {
 		video.lastTime += delta
 
 		frame := video.decoder.GetFrame()
 
-		data := make([]byte, len(frame))
-		copy(data, frame)
-		video.decoder.Free(frame)
+		video.mutex.Lock()
+		copy(video.data, frame)
+		video.dirty = true
+		video.mutex.Unlock()
 
-		mainthread.CallNonBlock(func() {
-			gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-			video.texture.SetData(0, 0, video.decoder.Metadata.Width, video.decoder.Metadata.Height, data)
-		})
+		video.decoder.Free(frame)
 	}
+}
+
+func (video *Video) Draw(time float64, batch *batch.QuadBatch) {
+	video.mutex.Lock()
+	if video.dirty {
+		gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+
+		video.texture.SetData(0, 0, video.decoder.Metadata.Width, video.decoder.Metadata.Height, video.data)
+
+		video.dirty = false
+	}
+	video.mutex.Unlock()
+
+	video.Sprite.Draw(time, batch)
 }

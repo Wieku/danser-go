@@ -29,11 +29,12 @@ type PPv2 struct {
 
 	maxCombo, nsliders, ncircles, nobjects int
 
-	scoreMaxCombo int
-	countGreat    int
-	countOk       int
-	countMeh      int
-	countMiss     int
+	scoreMaxCombo      int
+	countGreat         int
+	countOk            int
+	countMeh           int
+	countMiss          int
+	effectiveMissCount int
 
 	diff *difficulty.Difficulty
 
@@ -68,6 +69,7 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	pp.countOk = n100
 	pp.countMeh = n50
 	pp.countMiss = nmiss
+	pp.effectiveMissCount = pp.calculateEffectiveMissCount()
 
 	// accuracy
 
@@ -93,13 +95,18 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	finalMultiplier := 1.12
 
 	if diff.Mods.Active(difficulty.NoFail) {
-		finalMultiplier *= math.Max(0.90, 1.0-0.02*float64(nmiss))
+		finalMultiplier *= math.Max(0.90, 1.0-0.02*float64(pp.effectiveMissCount))
 	}
 
 	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
 		nspinners := nobjects - nsliders - ncircles
 
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
+	}
+
+	if pp.experimental && diff.Mods.Active(difficulty.Relax) {
+		pp.effectiveMissCount += pp.countOk + pp.countMeh
+		finalMultiplier *= 0.6
 	}
 
 	pp.Results.Aim = pp.computeAimValue()
@@ -135,8 +142,8 @@ func (pp *PPv2) computeAimValue() float64 {
 	aimValue *= lengthBonus
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
-	if pp.countMiss > 0 {
-		aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), float64(pp.countMiss))
+	if pp.effectiveMissCount > 0 {
+		aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), float64(pp.effectiveMissCount))
 	}
 
 	// Combo scaling
@@ -200,8 +207,8 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	speedValue *= lengthBonus
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
-	if pp.countMiss > 0 {
-		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.countMiss), 0.875))
+	if pp.effectiveMissCount > 0 {
+		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
 	}
 
 	// Combo scaling
@@ -237,6 +244,10 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
+	if pp.experimental && pp.diff.Mods.Active(difficulty.Relax) {
+		return 0.0
+	}
+
 	// This percentage only considers HitCircles of any value - in this part of the calculation we focus on hitting the timing hit window
 	betterAccuracyPercentage := 0.0
 
@@ -286,8 +297,8 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	}
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
-	if pp.countMiss > 0 {
-		flashlightValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.countMiss)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.countMiss), 0.875))
+	if pp.effectiveMissCount > 0 {
+		flashlightValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
 	}
 
 	// Combo scaling.
@@ -309,4 +320,25 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	flashlightValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
 
 	return flashlightValue
+}
+
+func (pp *PPv2) calculateEffectiveMissCount() int {
+	if !pp.experimental {
+		return pp.countMiss
+	}
+
+	// guess the number of misses + slider breaks from combo
+	comboBasedMissCount := 0.0
+
+	if pp.nsliders > 0 {
+		fullComboThreshold := float64(pp.maxCombo) - 0.1*float64(pp.nsliders)
+		if float64(pp.scoreMaxCombo) < fullComboThreshold {
+			comboBasedMissCount = fullComboThreshold / math.Max(1.0, float64(pp.scoreMaxCombo))
+		}
+	}
+
+	// we're clamping misscount because since its derived from combo it can be higher than total hits and that breaks some calculations
+	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.totalHits))
+
+	return mutils.MaxI(pp.countMiss, int(math.Floor(comboBasedMissCount)))
 }

@@ -12,11 +12,6 @@ import (
 	"sort"
 )
 
-const (
-	storyboardArea = 640.0 * 480.0
-	maxLoad        = 1.3328125 //480*480*(16/9)/(640*480)
-)
-
 type Sprite struct {
 	Texture *texture.TextureRegion
 
@@ -353,12 +348,4 @@ func (sprite *Sprite) SetEndTime(endTime float64) {
 
 func (sprite *Sprite) GetDepth() float64 {
 	return sprite.depth
-}
-
-func (sprite *Sprite) GetLoad() float64 {
-	if sprite.color.A >= 0.01 && sprite.Texture != nil {
-		return math.Min((float64(sprite.Texture.Width)*sprite.scale.X*float64(sprite.Texture.Height)*sprite.scale.Y)/storyboardArea, maxLoad)
-	}
-
-	return 0
 }

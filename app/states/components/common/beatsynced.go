@@ -60,7 +60,7 @@ func (bs *BeatSynced) Update(time float64) {
 
 	var mTime float64
 
-	if bs.music.GetState() == bass.MUSIC_PLAYING {
+	if bs.music.GetState() == bass.MusicPlaying {
 		mTime = bs.music.GetPosition() * 1000
 		bs.timingPoint = bs.bMap.Timings.GetOriginalPointAt(mTime)
 		bs.IsSynced = true
@@ -95,7 +95,7 @@ func (bs *BeatSynced) Update(time float64) {
 	ratio60 := delta / 16.6666666666667
 
 	volume := 0.5
-	if bs.music != nil && bs.music.GetState() == bass.MUSIC_PLAYING {
+	if bs.music != nil && bs.music.GetState() == bass.MusicPlaying {
 		volume = bs.music.GetLevelCombined()
 	}
 

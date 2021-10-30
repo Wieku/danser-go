@@ -164,6 +164,7 @@ func initGameplay() *gameplay {
 		ResultsScreenTime:       5,
 		ResultsUseLocalTimeZone: false,
 		ShowWarningArrows:       true,
+		ShowHitLighting:         false,
 		FlashlightDim:           1,
 		PlayUsername:            "Guest",
 		UseLazerPP:              false,
@@ -186,6 +187,7 @@ type gameplay struct {
 	ResultsScreenTime       float64
 	ResultsUseLocalTimeZone bool
 	ShowWarningArrows       bool
+	ShowHitLighting         bool
 	FlashlightDim           float64
 	PlayUsername            string
 	UseLazerPP              bool

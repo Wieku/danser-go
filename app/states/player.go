@@ -72,7 +72,6 @@ type Player struct {
 	fxGlider        *animation.Glider
 	cursorGlider    *animation.Glider
 	counter         float64
-	storyboardLoad  float64
 	storyboardDrawn int
 	mapFullName     string
 	Epi             *texture.TextureRegion
@@ -487,7 +486,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			player.profilerU.PutSample(delta)
 
-			if player.musicPlayer.GetState() == bass.MUSIC_STOPPED {
+			musicState := player.musicPlayer.GetState()
+
+			if musicState == bass.MusicStopped {
 				player.progressMsF += delta
 			} else {
 				platformOffset := 0.0
@@ -497,7 +498,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 				musicPos := player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
 
-				if musicPos != player.lastMusicPos {
+				if musicPos != player.lastMusicPos || musicState == bass.MusicPaused {
 					player.progressMsF = musicPos
 					player.lastMusicPos = musicPos
 				} else {
@@ -520,7 +521,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 }
 
 func (player *Player) Update(delta float64) bool {
-	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+	if player.musicPlayer.GetState() == bass.MusicPlaying {
 		player.progressMsF += delta * player.musicPlayer.GetTempo()
 	} else {
 		player.progressMsF += delta
@@ -556,7 +557,7 @@ func (player *Player) updateMain(delta float64) {
 
 		player.musicPlayer.SetPosition(player.startPoint / 1000)
 
-		discord.SetDuration(int64((player.mapEndL - player.musicPlayer.GetPosition()* 1000)  / settings.SPEED + (player.MapEnd-player.mapEndL)))
+		discord.SetDuration(int64((player.mapEndL-player.musicPlayer.GetPosition()*1000)/settings.SPEED + (player.MapEnd - player.mapEndL)))
 
 		if player.overlay == nil {
 			discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -628,7 +629,7 @@ func (player *Player) updateMain(delta float64) {
 	player.volumeGlider.Update(player.progressMsF)
 	player.objectsAlpha.Update(player.progressMsF)
 
-	if player.musicPlayer.GetState() == bass.MUSIC_PLAYING {
+	if player.musicPlayer.GetState() == bass.MusicPlaying {
 		player.musicPlayer.SetVolumeRelative(player.volumeGlider.GetValue())
 	}
 }
@@ -690,17 +691,7 @@ func (player *Player) Draw(float64) {
 	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(player.controller.GetCursors()), player.Scl, player.cursorGlider.GetValue())
 
 	if player.overlay != nil {
-		player.batch.Begin()
-		player.batch.ResetTransform()
-		player.batch.SetScale(1, 1)
-
-		player.batch.SetCamera(cameras[0])
-
-		player.overlay.DrawBeforeObjects(player.batch, cursorColors, player.hudGlider.GetValue())
-
-		player.batch.End()
-		player.batch.ResetTransform()
-		player.batch.SetColor(1, 1, 1, 1)
+		player.drawOverlayPart(player.overlay.DrawBackground, cursorColors, cameras[0])
 	}
 
 	player.drawEpilepsyWarning()
@@ -710,7 +701,6 @@ func (player *Player) Draw(float64) {
 	if player.counter >= 1000.0/60 {
 		player.counter -= 1000.0 / 60
 		if player.background.GetStoryboard() != nil {
-			player.storyboardLoad = player.background.GetStoryboard().GetLoad()
 			player.storyboardDrawn = player.background.GetStoryboard().GetRenderedSprites()
 		}
 	}
@@ -731,23 +721,20 @@ func (player *Player) Draw(float64) {
 		player.bloomEffect.Begin()
 	}
 
+	if player.overlay != nil {
+		player.drawOverlayPart(player.overlay.DrawBeforeObjects, cursorColors, cameras[0])
+	}
+
 	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), float32(player.objectsAlpha.GetValue()))
 
 	if player.overlay != nil {
-		player.batch.Begin()
-		player.batch.SetScale(1, 1)
-
-		player.batch.SetCamera(cameras[0])
-
-		player.overlay.DrawNormal(player.batch, cursorColors, player.hudGlider.GetValue())
-
-		player.batch.End()
+		player.drawOverlayPart(player.overlay.DrawNormal, cursorColors, cameras[0])
 	}
 
 	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, player.bgCamera.GetProjectionView())
 
 	if player.overlay != nil && player.overlay.ShouldDrawHUDBeforeCursor() {
-		player.drawHUD(cursorColors)
+		player.drawOverlayPart(player.overlay.DrawHUD, cursorColors, player.uiCamera.GetProjectionView())
 	}
 
 	if settings.Playfield.DrawCursors {
@@ -787,7 +774,7 @@ func (player *Player) Draw(float64) {
 	player.batch.SetAdditive(false)
 
 	if player.overlay != nil && !player.overlay.ShouldDrawHUDBeforeCursor() {
-		player.drawHUD(cursorColors)
+		player.drawOverlayPart(player.overlay.DrawHUD, cursorColors, player.uiCamera.GetProjectionView())
 	}
 
 	if bloomEnabled {
@@ -834,15 +821,18 @@ func (player *Player) drawCoin() {
 	player.batch.End()
 }
 
-func (player *Player) drawHUD(cursorColors []color2.Color) {
+func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.Color, float64), cursorColors []color2.Color, camera mgl32.Mat4) {
 	player.batch.Begin()
-	player.batch.SetScale(1, 1)
+	player.batch.ResetTransform()
+	player.batch.SetColor(1, 1, 1, 1)
 
-	player.batch.SetCamera(player.uiCamera.GetProjectionView())
+	player.batch.SetCamera(camera)
 
-	player.overlay.DrawHUD(player.batch, cursorColors, player.hudGlider.GetValue())
+	drawFunc(player.batch, cursorColors, player.hudGlider.GetValue())
 
 	player.batch.End()
+	player.batch.ResetTransform()
+	player.batch.SetColor(1, 1, 1, 1)
 }
 
 func (player *Player) drawDebug() {
@@ -915,7 +905,6 @@ func (player *Player) drawDebug() {
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
 				drawWithBackground(14, fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
-				drawWithBackground(15, fmt.Sprintf("SB load: %.2f", player.storyboardLoad))
 			}
 
 			player.batch.ResetTransform()

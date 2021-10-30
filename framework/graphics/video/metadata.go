@@ -1,78 +1,98 @@
 package video
 
 import (
-	"bufio"
+	"encoding/json"
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 )
 
-type VideoMetadata struct {
-	Width  int
-	Height int
-	FPS    float64
+type Metadata struct {
+	Width    int
+	Height   int
+	FPS      float64
+	Duration float64
+	PixFmt   string
 }
 
-func LoadMetadata(path string) *VideoMetadata {
+type probeOutput struct {
+	Streams []stream `json:"streams"`
+	Format  format   `json:"format"`
+}
+
+type stream struct {
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	PixFmt       string `json:"pix_fmt"`
+	AvgFramerate string `json:"avg_frame_rate"`
+	Framerate    string `json:"r_frame_rate"`
+	Duration     string `json:"duration"`
+}
+
+type format struct {
+	Duration string `json:"duration"`
+}
+
+func LoadMetadata(path string) *Metadata {
 	_, err := os.Open(path)
 	if err != nil {
 		return nil
 	}
 
-	cmd2 := exec.Command(
-		"ffmpeg",
+	output, err := exec.Command(
+		"ffprobe",
 		"-i", path,
-		"-f", "null",
-	)
-
-	pipe, err := cmd2.StderrPipe()
+		"-select_streams", "v:0",
+		"-show_entries", "stream",
+		"-show_entries", "format",
+		"-of", "json",
+		"-loglevel", "quiet",
+	).Output()
 
 	if err != nil {
-		log.Println("Failed to open pipe:", err)
-		return nil
-	}
-
-	scanner := bufio.NewScanner(pipe)
-
-	err = cmd2.Start()
-	if err != nil {
-		log.Println("Failed to start ffmpeg process:", err)
-		return nil
-	}
-
-	metadata := new(VideoMetadata)
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		// Look for:
-		// "	Stream #0:0: Video: vp6f, yuv420p, 320x240, 314 kb/s, 30 tbr, 1k tbn, 1k tbc"
-		// ----------------------------------------------------------^
-		if strings.HasPrefix(line, "Stream #") && strings.Contains(line, "Video:") {
-			regex1 := regexp.MustCompile("\\s(\\d+(\\.\\d+)?)(k?)\\stbr,")
-			regex2 := regexp.MustCompile("\\s(\\d+)x(\\d+)[\\s,]")
-
-			fpsRaw := strings.Split(regex1.FindString(line), " ")[1]
-
-			multiplier := 1.0
-
-			if strings.HasSuffix(fpsRaw, "k") {
-				multiplier = 1000
-				fpsRaw = fpsRaw[:len(fpsRaw)-1]
-			}
-
-			metadata.FPS, _ = strconv.ParseFloat(fpsRaw, 64)
-			metadata.FPS *= multiplier
-
-			resRaw := strings.Split(strings.TrimSpace(strings.ReplaceAll(regex2.FindString(line), ",", "")), "x")
-
-			metadata.Width, _ = strconv.Atoi(resRaw[0])
-			metadata.Height, _ = strconv.Atoi(resRaw[1])
+		if strings.Contains(err.Error(), "executable file not found") {
+			log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
 		}
+
+		return nil
 	}
 
-	return metadata
+	mData := new(probeOutput)
+
+	err = json.Unmarshal(output, mData)
+	if err != nil {
+		log.Println("Failed to parse video metadata:", err)
+		return nil
+	}
+
+	if mData.Streams[0].AvgFramerate == "" {
+		mData.Streams[0].AvgFramerate = mData.Streams[0].Framerate
+	}
+
+	if mData.Streams[0].Duration == "" {
+		mData.Streams[0].Duration = mData.Format.Duration
+	}
+
+	return &Metadata{
+		Width:    mData.Streams[0].Width,
+		Height:   mData.Streams[0].Height,
+		FPS:      parseRate(mData.Streams[0].AvgFramerate),
+		Duration: parseRate(mData.Streams[0].Duration),
+		PixFmt:   mData.Streams[0].PixFmt,
+	}
+}
+
+func parseRate(rate string) float64 {
+	split := strings.Split(rate, "/")
+
+	fps, _ := strconv.ParseFloat(split[0], 64)
+
+	if len(split) > 1 {
+		div, _ := strconv.ParseFloat(split[1], 64)
+		fps /= div
+	}
+
+	return fps
 }

@@ -121,16 +121,6 @@ func (manager *Manager) GetProcessedSprites() []ISprite {
 	return manager.spriteProcessed
 }
 
-func (manager *Manager) GetLoad() (sum float64) {
-	for i := 0; i < manager.visibleObjects; i++ {
-		if manager.drawArray[i] != nil && manager.drawArray[i].GetAlpha() >= 0.01 {
-			sum += manager.drawArray[i].GetLoad()
-		}
-	}
-
-	return
-}
-
 func (manager *Manager) Draw(time float64, batch *batch.QuadBatch) {
 	manager.mutex.Lock()
 

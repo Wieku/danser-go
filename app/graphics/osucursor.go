@@ -262,9 +262,11 @@ func (cursor *osuRenderer) UpdateRenderer() {
 }
 
 func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, color color2.Color, colorGlow color2.Color) {
-	scale *= settings.Skin.Cursor.Scale
+	scale *= settings.Skin.Cursor.Scale * scaling
+
+	scaleExpanded := scale
 	if skin.GetInfo().CursorExpand {
-		scale *= expand
+		scaleExpanded *= expand
 	}
 
 	if (settings.Skin.Cursor.ForceLongTrail || (cursor.middle.Texture != nil && cursor.middle.Texture.Texture != nil)) && cursor.trail.Texture != nil {
@@ -280,7 +282,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 
 		cursor.vao.Bind()
 
-		osuShader.SetUniform("scale", float32(scale)*float32(cursor.trail.Width)/2*scaling)
+		osuShader.SetUniform("scale", float32(scaleExpanded)*cursor.trail.Width/2)
 
 		blend.Push()
 		blend.Enable()
@@ -304,7 +306,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, float64(color.A))
-	batch.SetScale(scale*scaling, scale*scaling)
+	batch.SetScale(scaleExpanded, scaleExpanded)
 	batch.SetSubScale(1, 1)
 
 	cursor.manager.Draw(cursor.currentTime, batch)
@@ -318,6 +320,9 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 	}
 
 	cursor.cursor.Draw(cursor.currentTime, batch)
+
+	batch.SetScale(scale, scale)
+
 	cursor.middle.Draw(cursor.currentTime, batch)
 
 	batch.End()

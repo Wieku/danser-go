@@ -324,7 +324,7 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 
 	delta := time - overlay.audioTime
 
-	if overlay.music != nil && overlay.music.GetState() == bass.MUSIC_PLAYING {
+	if overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 		delta /= overlay.music.GetTempo()
 	}
 
@@ -360,10 +360,12 @@ func (overlay *KnockoutOverlay) SetMusic(music bass.ITrack) {
 	overlay.music = music
 }
 
-func (overlay *KnockoutOverlay) DrawBeforeObjects(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
+func (overlay *KnockoutOverlay) DrawBackground(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
 	alpha *= overlay.fade.GetValue()
 	overlay.boundaries.Draw(batch.Projection, float32(overlay.controller.GetBeatMap().Diff.CircleRadius), float32(alpha))
 }
+
+func (overlay *KnockoutOverlay) DrawBeforeObjects(_ *batch.QuadBatch, _ []color2.Color, _ float64) {}
 
 func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64) {
 	alpha *= overlay.fade.GetValue()

@@ -6,10 +6,10 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
-	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -28,7 +28,7 @@ const MaxAudioBuffers = 2000
 var cmdVideo *exec.Cmd
 var cmdAudio *exec.Cmd
 
-var videoPipe *files.NamedPipe
+var videoPipe io.WriteCloser
 
 var videoQueue chan func()
 
@@ -38,7 +38,7 @@ var syncPool = make([]*PBO, 0)
 
 var endSyncVideo *sync.WaitGroup
 
-var audioPipe *files.NamedPipe
+var audioPipe io.WriteCloser
 
 var audioQueue chan []byte
 
@@ -95,7 +95,7 @@ func preCheck() {
 	out, err := exec.Command("ffmpeg", "-encoders").Output()
 	if err != nil {
 		if strings.Contains(err.Error(), "executable file not found") {
-			panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://ffmpeg.org/")
+			panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
 		}
 
 		panic(err)
@@ -165,13 +165,6 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, _output string) {
 }
 
 func startVideo(fps int) {
-	split := strings.Split(settings.Recording.EncoderOptions, " ")
-
-	videoFilters := strings.TrimSpace(settings.Recording.Filters)
-	if len(videoFilters) > 0 {
-		videoFilters = "," + videoFilters
-	}
-
 	if settings.Recording.MotionBlur.Enabled {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
@@ -196,11 +189,9 @@ func startVideo(fps int) {
 		inputPixFmt = strings.ToLower(settings.Recording.PixelFormat)
 	}
 
-	var err error
-
-	videoPipe, err = files.NewNamedPipe("")
-	if err != nil {
-		panic(err)
+	videoFilters := strings.TrimSpace(settings.Recording.Filters)
+	if len(videoFilters) > 0 {
+		videoFilters = "," + videoFilters
 	}
 
 	options := []string{
@@ -211,7 +202,7 @@ func startVideo(fps int) {
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", inputPixFmt,
 		"-r", strconv.Itoa(fps), //frames per second
-		"-i", videoPipe.Name(), //The input comes from a videoPipe
+		"-i", "-", //The input comes from a videoPipe
 
 		"-an",
 
@@ -230,12 +221,24 @@ func startVideo(fps int) {
 		options = append(options, "-pix_fmt", strings.ToLower(settings.Recording.PixelFormat))
 	}
 
-	options = append(options, split...)
+	encOptions := strings.TrimSpace(settings.Recording.EncoderOptions)
+	if encOptions != "" {
+		split := strings.Split(encOptions, " ")
+		options = append(options, split...)
+	}
+
 	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "video."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
 	cmdVideo = exec.Command("ffmpeg", options...)
+
+	var err error
+
+	videoPipe, err = cmdVideo.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
 
 	if settings.Recording.ShowFFmpegLogs {
 		cmdVideo.Stdout = os.Stdout
@@ -266,13 +269,6 @@ func startVideo(fps int) {
 }
 
 func startAudio(audioFPS float64) {
-	var err error
-
-	audioPipe, err = files.NewNamedPipe("")
-	if err != nil {
-		panic(err)
-	}
-
 	options := []string{
 		"-y",
 
@@ -280,7 +276,7 @@ func startAudio(audioFPS float64) {
 		"-acodec", "pcm_f32le",
 		"-ar", "48000",
 		"-ac", "2",
-		"-i", audioPipe.Name(),
+		"-i", "-",//audioPipe.Name(),
 
 		"-nostats", //hide audio encoding statistics because video ones are more important
 		"-vn",
@@ -291,16 +287,26 @@ func startAudio(audioFPS float64) {
 		options = append(options, "-af", audioFilters)
 	}
 
-	options = append(options,
-		"-c:a", settings.Recording.AudioCodec,
-		"-ab", settings.Recording.AudioBitrate,
-	)
+	options = append(options, "-c:a", settings.Recording.AudioCodec)
+
+	encOptions := strings.TrimSpace(settings.Recording.AudioOptions)
+	if encOptions != "" {
+		split := strings.Split(encOptions, " ")
+		options = append(options, split...)
+	}
 
 	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
 	cmdAudio = exec.Command("ffmpeg", options...)
+
+	var err error
+
+	audioPipe, err = cmdAudio.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
 
 	if settings.Recording.ShowFFmpegLogs {
 		cmdAudio.Stdout = os.Stdout

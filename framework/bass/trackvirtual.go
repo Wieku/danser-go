@@ -16,6 +16,7 @@ type TrackVirtual struct {
 	tail             float64
 	speed            float64
 	pitch            float64
+	rFreq            float64
 	previousPosition float64
 	startTime        float64
 	playing          bool
@@ -92,7 +93,7 @@ func (track *TrackVirtual) GetPosition() float64 {
 
 	currentPos := float64(C.BASS_ChannelBytes2Seconds(masterMixer, C.BASS_ChannelGetPosition(masterMixer, C.BASS_POS_BYTE)))
 
-	pos := track.previousPosition + (currentPos-track.startTime)*track.speed
+	pos := track.previousPosition + (currentPos-track.startTime)*track.speed*track.rFreq
 
 	return mutils.ClampF64(pos, 0, track.length+track.tail)
 }
@@ -112,30 +113,45 @@ func (track *TrackVirtual) GetTempo() float64 {
 	return track.speed
 }
 
-func (track *TrackVirtual) SetPitch(tempo float64) {
-	track.pitch = tempo
+func (track *TrackVirtual) SetPitch(pitch float64) {
+	track.pitch = pitch
 }
 
 func (track *TrackVirtual) GetPitch() float64 {
 	return track.pitch
 }
 
+func (track *TrackVirtual) SetRelativeFrequency(rFreq float64) {
+	if track.rFreq == rFreq {
+		return
+	}
+
+	track.previousPosition = track.GetPosition()
+	track.startTime = float64(C.BASS_ChannelBytes2Seconds(masterMixer, C.BASS_ChannelGetPosition(masterMixer, C.BASS_POS_BYTE)))
+
+	track.rFreq = rFreq
+}
+
+func (track *TrackVirtual) GetRelativeFrequency() float64 {
+	return track.rFreq
+}
+
 func (track *TrackVirtual) GetState() int {
 	if !track.playing {
 		if track.paused {
-			return MUSIC_PAUSED
+			return MusicPaused
 		}
 
-		return MUSIC_STOPPED
+		return MusicStopped
 	}
 
 	pos := track.GetPosition()
 
 	if pos == 0 || pos >= track.length+track.tail {
-		return MUSIC_STOPPED
+		return MusicStopped
 	}
 
-	return MUSIC_PLAYING
+	return MusicPlaying
 }
 
 func (track *TrackVirtual) Update() {}

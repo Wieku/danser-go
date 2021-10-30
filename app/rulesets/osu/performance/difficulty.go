@@ -34,16 +34,20 @@ type Stars struct {
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim, speed, flashlight *skills.Skill, diff *difficulty.Difficulty, experimental bool) Stars {
-	aimVal := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
-	speedVal := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
+func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
+	aimRating := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
+	speedRating := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
 	flashlightVal := math.Sqrt(flashlight.DifficultyValue()) * StarScalingFactor
 
 	var total float64
 
 	if experimental { // https://github.com/ppy/osu/pull/13986
-		baseAimPerformance := ppBase(aimVal)
-		baseSpeedPerformance := ppBase(speedVal)
+		if diff.CheckModActive(difficulty.Flashlight) {
+			speedRating = 0.0
+		}
+
+		baseAimPerformance := ppBase(aimRating)
+		baseSpeedPerformance := ppBase(speedRating)
 		baseFlashlightPerformance := 0.0
 
 		if diff.CheckModActive(difficulty.Flashlight) {
@@ -61,13 +65,13 @@ func getStars(aim, speed, flashlight *skills.Skill, diff *difficulty.Difficulty,
 			total = math.Cbrt(1.12) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
 		}
 	} else { // Live as of 2021-07-27
-		total = aimVal + speedVal + math.Abs(speedVal-aimVal)*ExtremeScalingFactor
+		total = aimRating + speedRating + math.Abs(speedRating-aimRating)*ExtremeScalingFactor
 	}
 
 	return Stars{
-		Total: total,
-		Aim:   aimVal,
-		Speed: speedVal,
+		Total:      total,
+		Aim:        aimRating,
+		Speed:      speedRating,
 		Flashlight: flashlightVal,
 	}
 }

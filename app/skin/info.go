@@ -74,7 +74,7 @@ func newDefaultInfo() *SkinInfo {
 		Name:                     "",
 		Author:                   "",
 		Version:                  latestVersion,
-		AnimationFramerate:       60,
+		AnimationFramerate:       -1,
 		SpinnerFadePlayfield:     true,
 		SpinnerNoBlink:           false,
 		SpinnerFrequencyModulate: true,

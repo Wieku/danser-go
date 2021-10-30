@@ -86,6 +86,4 @@ type ISprite interface {
 	SetEndTime(endTime float64)
 
 	GetDepth() float64
-
-	GetLoad() float64
 }
