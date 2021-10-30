@@ -138,6 +138,7 @@ func run() {
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
 		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
+		noUpdCheck := flag.Bool("noupdatecheck", false, "Don't check for updates. Speeds up startup if older version of danser is needed for various reasons.")
 
 		ar := flag.Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
 		od := flag.Float64("od", math.NaN(), "Modify map's OD, only in cursordance/play modes")
@@ -145,6 +146,10 @@ func run() {
 		hp := flag.Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
 
 		flag.Parse()
+
+		if !*noUpdCheck {
+			checkForUpdates()
+		}
 
 		if *out != "" {
 			output = *out
@@ -927,8 +932,6 @@ func main() {
 	log.SetOutput(io.MultiWriter(os.Stdout, file))
 
 	platform.DisableQuickEdit()
-
-	checkForUpdates()
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
