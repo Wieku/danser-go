@@ -175,7 +175,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	}
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-10-15 with following changes:")
+		log.Println("Using pp calc version 2021-10-29 with following changes:")
 		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
 		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
 		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
