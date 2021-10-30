@@ -166,6 +166,8 @@ func run() {
 			panic("Incompatible flags selected: -record, -play")
 		} else if *replay != "" && *play {
 			panic("Incompatible flags selected: -replay, -play")
+		} else if *knockout && *play {
+			panic("Incompatible flags selected: -knockout, -play")
 		} else if *replay != "" && *knockout {
 			panic("Incompatible flags selected: -replay, -knockout")
 		} else if screenshotMode && *play {
