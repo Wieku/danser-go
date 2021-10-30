@@ -53,7 +53,7 @@ func LoadMetadata(path string) *Metadata {
 
 	if err != nil {
 		if strings.Contains(err.Error(), "executable file not found") {
-			log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://ffmpeg.org/")
+			log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
 		}
 
 		return nil
