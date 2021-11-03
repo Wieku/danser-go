@@ -131,6 +131,7 @@ func run() {
 		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
+		noNightcore := flag.Bool("nonightcore", false, "Disable nightcore on replays (requires -replay flag)")
 
 		replay := flag.String("replay", "", replayDesc)
 		flag.StringVar(replay, "r", "", replayDesc+shorthand)
@@ -174,6 +175,8 @@ func run() {
 			panic("Incompatible flags selected: -ss, -play")
 		} else if screenshotMode && recordMode {
 			panic("Incompatible flags selected: -ss, -record")
+		} else if *noNightcore && *replay == "" {
+			panic("Missing flag for -nonightcore: -replay")
 		}
 
 		modsParsed := difficulty2.ParseMods(*mods)
@@ -202,6 +205,10 @@ func run() {
 			modsParsed = difficulty2.Modifier(rp.Mods)
 			*knockout = true
 			settings.REPLAY = *replay
+		}
+
+		if *noNightcore {
+			modsParsed = modsParsed ^ difficulty2.Nightcore
 		}
 
 		if !modsParsed.Compatible() {
