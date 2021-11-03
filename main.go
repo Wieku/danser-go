@@ -208,7 +208,7 @@ func run() {
 		}
 
 		if *noNightcore {
-			modsParsed = modsParsed ^ difficulty2.Nightcore
+			modsParsed ^= difficulty2.Nightcore
 		}
 
 		if !modsParsed.Compatible() {
