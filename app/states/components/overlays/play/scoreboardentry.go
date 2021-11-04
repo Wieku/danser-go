@@ -13,7 +13,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -231,11 +230,11 @@ func (entry *ScoreboardEntry) LoadDefaultAvatar() {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {
-	data, err := ioutil.ReadFile("api.txt")
+	key, err := utils.GetApiKey()
 	if err != nil {
 		log.Println("Please put your osu!api v1 key into 'api.txt' file")
 	} else {
-		client := osuapi.NewClient(string(data))
+		client := osuapi.NewClient(key)
 		err := client.Test()
 
 		if err != nil {
