@@ -24,7 +24,7 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 		name = util.RandomHexString(32)
 	}
 
-	name = "ro2d" + name
+	name = ".ro2d" + name
 
 	os.Remove(name)
 

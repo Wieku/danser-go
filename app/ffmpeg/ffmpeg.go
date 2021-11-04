@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
@@ -194,6 +195,18 @@ func startVideo(fps int) {
 		videoFilters = "," + videoFilters
 	}
 
+	inputName := "-"
+
+	if runtime.GOOS != "windows" {
+		pipe, err := files.NewNamedPipe("")
+		if err != nil {
+			panic(err)
+		}
+
+		inputName = pipe.Name()
+		videoPipe = pipe
+	}
+
 	options := []string{
 		"-y", //(optional) overwrite output file if it exists
 
@@ -202,7 +215,7 @@ func startVideo(fps int) {
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", inputPixFmt,
 		"-r", strconv.Itoa(fps), //frames per second
-		"-i", "-", //The input comes from a videoPipe
+		"-i", inputName, //The input comes from a videoPipe
 
 		"-an",
 
@@ -235,9 +248,11 @@ func startVideo(fps int) {
 
 	var err error
 
-	videoPipe, err = cmdVideo.StdinPipe()
-	if err != nil {
-		panic(err)
+	if runtime.GOOS == "windows" {
+		videoPipe, err = cmdVideo.StdinPipe()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if settings.Recording.ShowFFmpegLogs {
@@ -269,6 +284,18 @@ func startVideo(fps int) {
 }
 
 func startAudio(audioFPS float64) {
+	inputName := "-"
+
+	if runtime.GOOS != "windows" {
+		pipe, err := files.NewNamedPipe("")
+		if err != nil {
+			panic(err)
+		}
+
+		inputName = pipe.Name()
+		audioPipe = pipe
+	}
+
 	options := []string{
 		"-y",
 
@@ -276,7 +303,7 @@ func startAudio(audioFPS float64) {
 		"-acodec", "pcm_f32le",
 		"-ar", "48000",
 		"-ac", "2",
-		"-i", "-",//audioPipe.Name(),
+		"-i", inputName,//audioPipe.Name(),
 
 		"-nostats", //hide audio encoding statistics because video ones are more important
 		"-vn",
@@ -303,9 +330,11 @@ func startAudio(audioFPS float64) {
 
 	var err error
 
-	audioPipe, err = cmdAudio.StdinPipe()
-	if err != nil {
-		panic(err)
+	if runtime.GOOS == "windows" {
+		audioPipe, err = cmdAudio.StdinPipe()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if settings.Recording.ShowFFmpegLogs {
