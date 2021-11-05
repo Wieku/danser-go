@@ -12,8 +12,21 @@ import "C"
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
+	"image"
+	"io"
+	"io/ioutil"
+	"log"
+	"math"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+	"unsafe"
+
 	"github.com/dustin/go-humanize"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -21,6 +34,7 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/spf13/cobra"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -47,19 +61,6 @@ import (
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/rplpa"
-	"image"
-	"io"
-	"io/ioutil"
-	"log"
-	"math"
-	"net/http"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
-	"time"
-	"unsafe"
 )
 
 const (
@@ -90,62 +91,60 @@ var recordMode bool
 var screenshotMode bool
 var screenshotTime float64
 
+var (
+	rootCmd = &cobra.Command{
+		Use:   "danser",
+		Short: "danser",
+		Long:  "danser.",
+	}
+	cmds = []*cobra.Command{}
+
+	id         = rootCmd.PersistentFlags().Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
+	md5        = rootCmd.PersistentFlags().String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
+	artist     = rootCmd.PersistentFlags().StringP("artist", "a", "", artistDesc)
+	title      = rootCmd.PersistentFlags().StringP("title", "t", "", titleDesc)
+	difficulty = rootCmd.PersistentFlags().StringP("difficulty", "d", "", difficultyDesc)
+	creator    = rootCmd.PersistentFlags().StringP("creator", "c", "", creatorDesc)
+
+	settingsVersion = rootCmd.PersistentFlags().String("settings", "", "Specify settings version, -settings=a means that settings-a.json will be loaded")
+	cursors         = rootCmd.PersistentFlags().Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
+	tag             = rootCmd.PersistentFlags().Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
+	knockout        = rootCmd.PersistentFlags().Bool("knockout", false, "Use knockout feature")
+	speed           = rootCmd.PersistentFlags().Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
+	pitch           = rootCmd.PersistentFlags().Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
+	debug           = rootCmd.PersistentFlags().Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
+
+	gldebug = rootCmd.PersistentFlags().Bool("gldebug", false, "Turns on OpenGL debug logging, may reduce performance heavily")
+
+	play  = rootCmd.PersistentFlags().Bool("play", false, "Practice playing osu!standard maps")
+	start = rootCmd.PersistentFlags().Float64("start", 0, "Start at the given time in seconds")
+	end   = rootCmd.PersistentFlags().Float64("end", math.Inf(1), "End at the given time in seconds")
+
+	skip = rootCmd.PersistentFlags().Bool("skip", false, "Skip straight to map's drain time")
+
+	quickstart = rootCmd.PersistentFlags().Bool("quickstart", false, "Sets -skip flag, sets LeadInTime and LeadInHold settings temporarily to 0")
+
+	record = rootCmd.PersistentFlags().BoolP("record", "R", false, "Records a video")
+	out    = rootCmd.PersistentFlags().StringP("out", "o", "", "If -ss flag is used, sets the name of screenshot, extension is PNG. If not, it overrides -record flag, specifies the name of recorded video file, extension is managed by settings")
+	ss     = rootCmd.PersistentFlags().Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
+
+	mods = rootCmd.PersistentFlags().String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
+
+	replay = rootCmd.PersistentFlags().StringP("replay", "r", "", replayDesc)
+
+	skin = rootCmd.PersistentFlags().String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
+
+	noDbCheck  = rootCmd.PersistentFlags().BoolP("nodbcheck", "D", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
+	noUpdCheck = rootCmd.PersistentFlags().BoolP("noupdatecheck", "U", false, "Don't check for updates. Speeds up startup if older version of danser is needed for various reasons.")
+
+	ar = rootCmd.PersistentFlags().Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
+	od = rootCmd.PersistentFlags().Float64("od", math.NaN(), "Modify map's OD, only in cursordance/play modes")
+	cs = rootCmd.PersistentFlags().Float64("cs", math.NaN(), "Modify map's CS, only in cursordance/play modes")
+	hp = rootCmd.PersistentFlags().Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
+)
+
 func run() {
 	mainthread.Call(func() {
-		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
-
-		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
-
-		artist := flag.String("artist", "", artistDesc)
-		flag.StringVar(artist, "a", "", artistDesc+shorthand)
-
-		title := flag.String("title", "", titleDesc)
-		flag.StringVar(title, "t", "", titleDesc+shorthand)
-
-		difficulty := flag.String("difficulty", "", difficultyDesc)
-		flag.StringVar(difficulty, "d", "", difficultyDesc+shorthand)
-
-		creator := flag.String("creator", "", creatorDesc)
-		flag.StringVar(creator, "c", "", creatorDesc+shorthand)
-
-		settingsVersion := flag.String("settings", "", "Specify settings version, -settings=a means that settings-a.json will be loaded")
-		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
-		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
-		knockout := flag.Bool("knockout", false, "Use knockout feature")
-		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
-		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
-		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
-
-		gldebug := flag.Bool("gldebug", false, "Turns on OpenGL debug logging, may reduce performance heavily")
-
-		play := flag.Bool("play", false, "Practice playing osu!standard maps")
-		start := flag.Float64("start", 0, "Start at the given time in seconds")
-		end := flag.Float64("end", math.Inf(1), "End at the given time in seconds")
-
-		skip := flag.Bool("skip", false, "Skip straight to map's drain time")
-
-		quickstart := flag.Bool("quickstart", false, "Sets -skip flag, sets LeadInTime and LeadInHold settings temporarily to 0")
-
-		record := flag.Bool("record", false, "Records a video")
-		out := flag.String("out", "", "If -ss flag is used, sets the name of screenshot, extension is PNG. If not, it overrides -record flag, specifies the name of recorded video file, extension is managed by settings")
-		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
-
-		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
-
-		replay := flag.String("replay", "", replayDesc)
-		flag.StringVar(replay, "r", "", replayDesc+shorthand)
-
-		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
-
-		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
-		noUpdCheck := flag.Bool("noupdatecheck", false, "Don't check for updates. Speeds up startup if older version of danser is needed for various reasons.")
-
-		ar := flag.Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
-		od := flag.Float64("od", math.NaN(), "Modify map's OD, only in cursordance/play modes")
-		cs := flag.Float64("cs", math.NaN(), "Modify map's CS, only in cursordance/play modes")
-		hp := flag.Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
-
-		flag.Parse()
 
 		if !*noUpdCheck {
 			checkForUpdates()
@@ -903,7 +902,7 @@ func printPlatformInfo() {
 	log.Println("-------------------------------------------------------------------")
 }
 
-func main() {
+func mainReal() {
 	defer func() {
 		settings.CloseWatcher()
 		discord.Disconnect()
@@ -933,9 +932,22 @@ func main() {
 
 	log.SetOutput(io.MultiWriter(os.Stdout, file))
 
-	platform.DisableQuickEdit()
+	platform.DisableQuickEdit() // disable selecting on cmd
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
+}
+
+func mainCmd(cmd *cobra.Command, args []string) {
+	mainReal()
+}
+
+func init() {
+	// note(ii64): initialization cycle hack
+	rootCmd.Run = mainCmd
+}
+
+func main() {
+	rootCmd.Execute()
 }
