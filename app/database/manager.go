@@ -5,13 +5,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"github.com/karrick/godirwalk"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"log"
 	"os"
@@ -19,7 +12,21 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/karrick/godirwalk"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/util"
 )
+
+var logger = log.New(os.Stdout, "", log.LstdFlags)
+
+func SetLogOutput(w io.Writer) {
+	logger.SetOutput(w)
+}
 
 var dbFile *sql.DB
 
@@ -38,7 +45,7 @@ var migrations []Migration
 var songsDir string
 
 func Init() error {
-	log.Println("DatabaseManager: Initializing database...")
+	logger.Println("DatabaseManager: Initializing database...")
 
 	var err error
 
@@ -107,11 +114,11 @@ func Init() error {
 		currentSchemaPreVersion = currentPreVersion
 	}
 
-	log.Println("DatabaseManager: Database schema version:", currentSchemaPreVersion)
-	log.Println("DatabaseManager: Database data version:", currentPreVersion)
+	logger.Println("DatabaseManager: Database schema version:", currentSchemaPreVersion)
+	logger.Println("DatabaseManager: Database data version:", currentPreVersion)
 
 	if currentSchemaPreVersion != databaseVersion {
-		log.Println("DatabaseManager: Database schema is too old! Updating...")
+		logger.Println("DatabaseManager: Database schema is too old! Updating...")
 
 		statement := ""
 
@@ -126,7 +133,7 @@ func Init() error {
 			panic(err)
 		}
 
-		log.Println("DatabaseManager: Schema has been updated!")
+		logger.Println("DatabaseManager: Schema has been updated!")
 	}
 
 	_, err = dbFile.Exec("REPLACE INTO info (key, value) VALUES ('schema_version', ?)", strconv.FormatInt(databaseVersion, 10))
@@ -155,11 +162,11 @@ func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 		importMaps()
 	}
 
-	log.Println("DatabaseManager: Loading beatmaps from database...")
+	logger.Println("DatabaseManager: Loading beatmaps from database...")
 
 	allMaps := loadBeatmapsFromDatabase()
 
-	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps) / 2)
+	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps)/2)
 
 	for _, b := range allMaps {
 		if b.Mode == 0 {
@@ -167,7 +174,7 @@ func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 		}
 	}
 
-	log.Println("DatabaseManager: Loaded", len(stdMaps), "total.")
+	logger.Println("DatabaseManager: Loaded", len(stdMaps), "total.")
 
 	return stdMaps
 }
@@ -182,7 +189,7 @@ func unpackMaps() {
 			if strings.HasSuffix(de.Name(), ".osz") {
 				destination := filepath.Join(filepath.Dir(osPathname), strings.TrimSuffix(de.Name(), ".osz"))
 
-				log.Println("DatabaseManager: Unpacking", osPathname, "->", destination)
+				logger.Println("DatabaseManager: Unpacking", osPathname, "->", destination)
 
 				utils.Unzip(osPathname, destination)
 				os.Remove(osPathname)
@@ -198,7 +205,7 @@ func importMaps() {
 	mapsInDB := getLastModified()
 	candidates := make([]mapLocation, 0)
 
-	log.Println(fmt.Sprintf("DatabaseManager: Scanning \"%s\" for .osu files...", songsDir))
+	logger.Println(fmt.Sprintf("DatabaseManager: Scanning \"%s\" for .osu files...", songsDir))
 
 	err := godirwalk.Walk(songsDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
@@ -222,8 +229,8 @@ func importMaps() {
 		panic(err)
 	}
 
-	log.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
-	log.Println("DatabaseManager: Comparing files with database...")
+	logger.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
+	logger.Println("DatabaseManager: Comparing files with database...")
 
 	mapsToImport := make([]interface{}, 0)
 
@@ -233,8 +240,8 @@ func importMaps() {
 
 		stat, err := os.Stat(mapPath)
 		if err != nil {
-			log.Println("DatabaseManager: Failed to read file stats, skipping:", partialPath)
-			log.Println("DatabaseManager: Error:", err)
+			logger.Println("DatabaseManager: Failed to read file stats, skipping:", partialPath)
+			logger.Println("DatabaseManager: Error:", err)
 
 			// If file does exist we assume it's a permission error, don't remove it from database in that case
 			if !os.IsNotExist(err) {
@@ -252,18 +259,18 @@ func importMaps() {
 				continue
 			}
 
-			log.Println("DatabaseManager: New beatmap version found:", candidate.file)
+			logger.Println("DatabaseManager: New beatmap version found:", candidate.file)
 		} else {
-			log.Println("DatabaseManager: New beatmap found:", candidate.file)
+			logger.Println("DatabaseManager: New beatmap found:", candidate.file)
 		}
 
 		mapsToImport = append(mapsToImport, candidate)
 	}
 
-	log.Println("DatabaseManager: Compare complete.")
+	logger.Println("DatabaseManager: Compare complete.")
 
 	if len(mapsInDB) > 0 {
-		log.Println("DatabaseManager: Removing leftover maps from database...")
+		logger.Println("DatabaseManager: Removing leftover maps from database...")
 
 		mapsToRemove := make([]mapLocation, 0, len(mapsInDB))
 
@@ -273,11 +280,11 @@ func importMaps() {
 
 		removeBeatmaps(mapsToRemove)
 
-		log.Println("DatabaseManager: Removal complete.")
+		logger.Println("DatabaseManager: Removal complete.")
 	}
 
 	if len(mapsToImport) > 0 {
-		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps...")
+		logger.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps...")
 
 		loaded := util.Balance(4, mapsToImport, func(a interface{}) interface{} {
 			candidate := a.(mapLocation)
@@ -287,13 +294,13 @@ func importMaps() {
 
 			file, err := os.Open(mapPath)
 			if err != nil {
-				log.Println(fmt.Sprintf("\"DatabaseManager: Failed to read \"%s\", skipping. Error: %s", partialPath, err))
+				logger.Println(fmt.Sprintf("\"DatabaseManager: Failed to read \"%s\", skipping. Error: %s", partialPath, err))
 				return nil
 			}
 
 			defer file.Close()
 
-			log.Println("DatabaseManager: Importing:", partialPath)
+			logger.Println("DatabaseManager: Importing:", partialPath)
 
 			if bMap := beatmap.ParseBeatMapFile(file); bMap != nil {
 				stat, _ := file.Stat()
@@ -305,10 +312,10 @@ func importMaps() {
 					bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
 				}
 
-				log.Println("DatabaseManager: Imported:", partialPath)
+				logger.Println("DatabaseManager: Imported:", partialPath)
 				return bMap
 			} else {
-				log.Println("DatabaseManager: Failed to import:", partialPath)
+				logger.Println("DatabaseManager: Failed to import:", partialPath)
 			}
 
 			return nil
@@ -319,18 +326,18 @@ func importMaps() {
 			newBeatmaps[i] = o.(*beatmap.BeatMap)
 		}
 
-		log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
+		logger.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
 
 		insertBeatmaps(newBeatmaps)
 
-		log.Println("DatabaseManager: Insert complete.")
+		logger.Println("DatabaseManager: Insert complete.")
 	}
 }
 
 func UpdatePlayStats(beatmap *beatmap.BeatMap) {
 	_, err := dbFile.Exec("UPDATE beatmaps SET playCount = ?, lastPlayed = ? WHERE dir = ? AND file = ?", beatmap.PlayCount, beatmap.LastPlayed, beatmap.Dir, beatmap.File)
 	if err != nil {
-		log.Println(err)
+		logger.Println(err)
 	}
 }
 
@@ -349,7 +356,7 @@ func removeBeatmaps(toRemove []mapLocation) {
 				_, err1 := st.Exec(bMap.dir, bMap.file)
 
 				if err1 != nil {
-					log.Println(err1)
+					logger.Println(err1)
 				}
 			}
 		} else {
@@ -361,7 +368,7 @@ func removeBeatmaps(toRemove []mapLocation) {
 	}
 
 	if err != nil {
-		log.Println(err)
+		logger.Println(err)
 	}
 }
 
@@ -380,17 +387,17 @@ func migrateBeatmaps() {
 		}
 
 		if updateBeatmaps {
-			log.Println("Updating cached beatmaps...")
+			logger.Println("Updating cached beatmaps...")
 
-			log.Println("Loading cached beatmaps from disk...")
+			logger.Println("Loading cached beatmaps from disk...")
 
 			toUpdate := make([]*beatmap.BeatMap, 0)
 
 			for location := range lastModified {
 				file, err := os.Open(filepath.Join(songsDir, location.dir, location.file))
 				if err != nil {
-					log.Println("Failed to open file, removing from database:", location.file)
-					log.Println("Error:", err)
+					logger.Println("Failed to open file, removing from database:", location.file)
+					logger.Println("Error:", err)
 
 					removeList = append(removeList, location)
 
@@ -399,7 +406,7 @@ func migrateBeatmaps() {
 
 				bMap := beatmap.ParseBeatMapFile(file)
 				if bMap == nil {
-					log.Println("Corrupted cached beatmap found. Removing from database:", location.file)
+					logger.Println("Corrupted cached beatmap found. Removing from database:", location.file)
 
 					removeList = append(removeList, location)
 
@@ -409,7 +416,7 @@ func migrateBeatmaps() {
 				toUpdate = append(toUpdate, bMap)
 			}
 
-			log.Println("Cached beatmaps loaded! Performing migrations...")
+			logger.Println("Cached beatmaps loaded! Performing migrations...")
 
 			tx, err := dbFile.Begin()
 			if err != nil {
@@ -418,7 +425,7 @@ func migrateBeatmaps() {
 
 			for _, m := range migrations {
 				if currentPreVersion < m.Date() {
-					log.Println("Performing", m.Date(), "migration...")
+					logger.Println("Performing", m.Date(), "migration...")
 
 					if m.FieldsToMigrate() == nil {
 						continue
@@ -450,7 +457,7 @@ func migrateBeatmaps() {
 				}
 			}
 
-			log.Println("Committing migrations to database...")
+			logger.Println("Committing migrations to database...")
 
 			err = tx.Commit()
 			if err != nil {
@@ -510,7 +517,7 @@ func insertBeatmaps(bMaps []*beatmap.BeatMap) {
 				)
 
 				if err1 != nil {
-					log.Println(err1)
+					logger.Println(err1)
 				}
 			}
 		} else {
@@ -522,7 +529,7 @@ func insertBeatmaps(bMaps []*beatmap.BeatMap) {
 	}
 
 	if err != nil {
-		log.Println(err)
+		logger.Println(err)
 	}
 }
 
@@ -610,7 +617,7 @@ func Close() {
 	if dbFile != nil {
 		err := dbFile.Close()
 		if err != nil {
-			log.Println("Failed to close database:", err)
+			logger.Println("Failed to close database:", err)
 		}
 	}
 }
