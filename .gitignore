@@ -13,3 +13,5 @@ danser.log
 assets.dpak
 api.txt
 *.osr
+*.exe
+*.cmd
