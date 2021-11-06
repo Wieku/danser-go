@@ -7,7 +7,7 @@ import (
 	"math"
 )
 
-// utility struct that has LazyEndPosition and LazyTravelDistance for difficulty calculations
+// LazySlider is a utility struct that has LazyEndPosition and LazyTravelDistance needed for difficulty calculations
 type LazySlider struct {
 	*objects.Slider
 

@@ -33,20 +33,14 @@ func NewSpeedSkill(d *difficulty.Difficulty, experimental bool) *SpeedSkill {
 		Skill: NewSkill(d, experimental),
 	}
 
-	skill.SkillMultiplier = 1400
+	skill.SkillMultiplier = 1375
 	skill.StrainDecayBase = 0.3
 	skill.ReducedSectionCount = 5
 	skill.DifficultyMultiplier = 1.04
+	skill.HistoryLength = 32
 	skill.StrainValueOf = skill.speedStrainValue
-
-	if experimental {
-		skill.SkillMultiplier = 1375
-		skill.HistoryLength = 32
-		skill.StrainBonusOf = skill.speedStrainBonus
-		skill.CalculateInitialStrain = func(time float64) float64 {
-			return (skill.CurrentStrain * skill.CurrentRhythm) * skill.strainDecay(time-skill.GetPrevious(0).StartTime)
-		}
-	}
+	skill.StrainBonusOf = skill.speedStrainBonus
+	skill.CalculateInitialStrain = skill.speedInitialStrain
 
 	return skill
 }
@@ -57,60 +51,30 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 	}
 
 	distance := math.Min(SingleSpacingThreshold, current.TravelDistance+current.JumpDistance)
-	deltaTime := math.Max(MaxSpeedBonus, current.DeltaTime)
 	strainTime := current.StrainTime
 
-	if s.Experimental {
-		previous := s.GetPrevious(0)
-		greatWindowFull := float64(s.diff.Hit300) / s.diff.Speed * 2
-		speedWindowRatio := strainTime / greatWindowFull
+	previous := s.GetPrevious(0)
+	greatWindowFull := float64(s.diff.Hit300) / s.diff.Speed * 2
+	speedWindowRatio := strainTime / greatWindowFull
 
-		// Aim to nerf cheesy rhythms (Very fast consecutive doubles with large deltatimes between)
-		if previous != nil && strainTime < greatWindowFull && previous.StrainTime > strainTime {
-			strainTime = mutils.LerpF64(previous.StrainTime, strainTime, speedWindowRatio)
-		}
-
-		// Cap deltatime to the OD 300 hitwindow.
-		// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
-		strainTime /= mutils.ClampF64((strainTime/greatWindowFull)/0.93, 0.92, 1)
-
-		//deltaTime = strainTime
-
-		speedBonus := 1.0
-
-		if strainTime < MinSpeedBonus {
-			speedBonus = 1 + 0.75*math.Pow((MinSpeedBonus-strainTime)/SpeedBalancingFactor, 2.0)
-		}
-
-		return (speedBonus + speedBonus*math.Pow(distance/SingleSpacingThreshold, 3.5)) / strainTime
+	// Aim to nerf cheesy rhythms (Very fast consecutive doubles with large deltatimes between)
+	if previous != nil && strainTime < greatWindowFull && previous.StrainTime > strainTime {
+		strainTime = mutils.LerpF64(previous.StrainTime, strainTime, speedWindowRatio)
 	}
+
+	// Cap deltatime to the OD 300 hitwindow.
+	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
+	strainTime /= mutils.ClampF64((strainTime/greatWindowFull)/0.93, 0.92, 1)
+
+	//deltaTime = strainTime
 
 	speedBonus := 1.0
 
-	if deltaTime < MinSpeedBonus {
-		speedBonus = 1 + math.Pow((MinSpeedBonus-deltaTime)/SpeedBalancingFactor, 2.0)
+	if strainTime < MinSpeedBonus {
+		speedBonus = 1 + 0.75*math.Pow((MinSpeedBonus-strainTime)/SpeedBalancingFactor, 2.0)
 	}
 
-	angleBonus := 1.0
-	if !math.IsNaN(current.Angle) && current.Angle < SpeedAngleBonusBegin {
-		angleBonus = 1 + math.Pow(math.Sin(1.5*(SpeedAngleBonusBegin-current.Angle)), 2)/3.57
-
-		if current.Angle < PiOver2 {
-			angleBonus = 1.28
-			if distance < AngleBonusScale && current.Angle < PiOver4 {
-				angleBonus += (1.0 - angleBonus) *
-					math.Min((AngleBonusScale-distance)/10.0, 1.0)
-			} else if distance < AngleBonusScale {
-				angleBonus += (1.0 - angleBonus) *
-					math.Min((AngleBonusScale-distance)/10.0, 1.0) *
-					math.Sin((PiOver2-current.Angle)/PiOver4)
-			}
-		}
-	}
-
-	return ((1.0 + (speedBonus-1.0)*0.75) * angleBonus *
-		(0.95 + speedBonus*math.Pow(distance/SingleSpacingThreshold, 3.5))) /
-		strainTime
+	return (speedBonus + speedBonus*math.Pow(distance/SingleSpacingThreshold, 3.5)) / strainTime
 }
 
 func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) float64 {
@@ -199,4 +163,8 @@ func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) f
 	s.CurrentRhythm = math.Sqrt(4+rhythmComplexitySum*rhythmMultiplier) / 2 //produces multiplier that can be applied to strain. range [1, infinity) (not really though)
 
 	return s.CurrentRhythm
+}
+
+func (s *SpeedSkill) speedInitialStrain(time float64) float64 {
+	return (s.CurrentStrain * s.CurrentRhythm) * s.strainDecay(time-s.GetPrevious(0).StartTime)
 }

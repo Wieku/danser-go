@@ -104,7 +104,7 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
 	}
 
-	if pp.experimental && diff.Mods.Active(difficulty.Relax) {
+	if diff.Mods.Active(difficulty.Relax) {
 		pp.effectiveMissCount += pp.countOk + pp.countMeh
 		finalMultiplier *= 0.6
 	}
@@ -167,25 +167,7 @@ func (pp *PPv2) computeAimValue() float64 {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
-	if pp.experimental {
-		aimValue *= approachRateBonus
-	} else {
-		flashlightBonus := 1.0
-
-		if pp.diff.Mods.Active(difficulty.Flashlight) {
-			flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
-
-			if pp.totalHits > 200 {
-				flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
-			}
-
-			if pp.totalHits > 500 {
-				flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
-			}
-		}
-
-		aimValue *= math.Max(flashlightBonus, approachRateBonus)
-	}
+	aimValue *= approachRateBonus
 
 	// Scale the aim value with accuracy _slightly_
 	aimValue *= 0.5 + pp.accuracy/2.0
@@ -244,7 +226,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
-	if pp.experimental && pp.diff.Mods.Active(difficulty.Relax) {
+	if pp.diff.Mods.Active(difficulty.Relax) {
 		return 0.0
 	}
 
@@ -279,7 +261,7 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 }
 
 func (pp *PPv2) computeFlashlightValue() float64 {
-	if !pp.experimental || !pp.diff.CheckModActive(difficulty.Flashlight) {
+	if !pp.diff.CheckModActive(difficulty.Flashlight) {
 		return 0
 	}
 
@@ -323,10 +305,6 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 }
 
 func (pp *PPv2) calculateEffectiveMissCount() int {
-	if !pp.experimental {
-		return pp.countMiss
-	}
-
 	// guess the number of misses + slider breaks from combo
 	comboBasedMissCount := 0.0
 

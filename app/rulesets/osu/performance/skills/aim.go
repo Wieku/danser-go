@@ -17,8 +17,8 @@ type AimSkill struct {
 	*Skill
 }
 
-func NewAimSkill(d *difficulty.Difficulty) *AimSkill {
-	skill := &AimSkill{NewSkill(d, false)}
+func NewAimSkill(d *difficulty.Difficulty, experimental bool) *AimSkill {
+	skill := &AimSkill{NewSkill(d, experimental)}
 
 	skill.SkillMultiplier = 26.25
 	skill.StrainDecayBase = 0.15

@@ -52,23 +52,17 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 
 	obj.setDistances(experimental)
 
-	if experimental {
-		obj.StrainTime = math.Max(25, obj.DeltaTime)
-	} else {
-		obj.StrainTime = math.Max(50, obj.DeltaTime)
-	}
+	obj.StrainTime = math.Max(25, obj.DeltaTime)
 
 	return obj
 }
 
 func (o *DifficultyObject) setDistances(experimental bool) {
-	if experimental {
-		_, ok1 := o.BaseObject.(*objects.Spinner)
-		_, ok2 := o.lastObject.(*objects.Spinner)
+	_, ok1 := o.BaseObject.(*objects.Spinner)
+	_, ok2 := o.lastObject.(*objects.Spinner)
 
-		if ok1 || ok2 {
-			return
-		}
+	if ok1 || ok2 {
+		return
 	}
 
 	radius := o.diff.CircleRadius / OsuStableAllowance // we need to undo that weird allowance mentioned in difficulty.Difficulty.calculate()
@@ -85,12 +79,10 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 
 	lastCursorPosition := getEndCursorPosition(o.lastObject, o.diff)
 
-	if _, ok := o.BaseObject.(*objects.Spinner); !ok || experimental {
-		o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
-	}
+	o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
 
 	if o.lastLastObject != nil {
-		if _, ok := o.lastLastObject.(*objects.Spinner); ok && experimental {
+		if _, ok := o.lastLastObject.(*objects.Spinner); ok {
 			return
 		}
 

@@ -127,8 +127,10 @@ func (ppDisplay *PPDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 		ppDisplay.drawPP(batch, "Acc:", ppDisplay.accText, position.AddS(0, 80*ppScale), length, ppScale, color, vector.TopLeft)
 
 		offset := 0.0
-		if ppDisplay.experimentalPP && ppDisplay.mods.Active(difficulty.Flashlight) {
+
+		if ppDisplay.mods.Active(difficulty.Flashlight) {
 			ppDisplay.drawPP(batch, "FL:", ppDisplay.flashlightText, position.AddS(0, 120*ppScale), length, ppScale, color, vector.TopLeft)
+
 			offset = 40
 		}
 

@@ -13,10 +13,6 @@ import (
 const (
 	// Global stars multiplier
 	StarScalingFactor float64 = 0.0675
-
-	// 50% of the difference between aim and speed is added to total
-	// star rating to compensate for aim/speed only maps
-	ExtremeScalingFactor float64 = 0.5
 )
 
 type Stars struct {
@@ -41,31 +37,27 @@ func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills
 
 	var total float64
 
-	if experimental { // https://github.com/ppy/osu/pull/13986
-		if diff.CheckModActive(difficulty.Flashlight) {
-			speedRating = 0.0
-		}
+	if diff.CheckModActive(difficulty.Flashlight) {
+		speedRating = 0.0
+	}
 
-		baseAimPerformance := ppBase(aimRating)
-		baseSpeedPerformance := ppBase(speedRating)
-		baseFlashlightPerformance := 0.0
+	baseAimPerformance := ppBase(aimRating)
+	baseSpeedPerformance := ppBase(speedRating)
+	baseFlashlightPerformance := 0.0
 
-		if diff.CheckModActive(difficulty.Flashlight) {
-			baseFlashlightPerformance = math.Pow(flashlightVal, 2.0) * 25.0
-		}
+	if diff.CheckModActive(difficulty.Flashlight) {
+		baseFlashlightPerformance = math.Pow(flashlightVal, 2.0) * 25.0
+	}
 
-		basePerformance := math.Pow(
-			math.Pow(baseAimPerformance, 1.1)+
-				math.Pow(baseSpeedPerformance, 1.1)+
-				math.Pow(baseFlashlightPerformance, 1.1),
-			1.0/1.1,
-		)
+	basePerformance := math.Pow(
+		math.Pow(baseAimPerformance, 1.1)+
+			math.Pow(baseSpeedPerformance, 1.1)+
+			math.Pow(baseFlashlightPerformance, 1.1),
+		1.0/1.1,
+	)
 
-		if basePerformance > 0.00001 {
-			total = math.Cbrt(1.12) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
-		}
-	} else { // Live as of 2021-07-27
-		total = aimRating + speedRating + math.Abs(speedRating-aimRating)*ExtremeScalingFactor
+	if basePerformance > 0.00001 {
+		total = math.Cbrt(1.12) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
 	}
 
 	return Stars{
@@ -76,7 +68,7 @@ func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills
 	}
 }
 
-// Calculate final star rating of a map
+// CalculateSingle calculates the final star rating of a map
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
@@ -93,7 +85,7 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, 
 	return getStars(aimSkill, speedSkill, flashlightSkill, diff, experimental)
 }
 
-// Calculate successive star ratings for every part of a beatmap
+// CalculateStep calculates successive star ratings for every part of a beatmap
 func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) []Stars {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
