@@ -57,7 +57,7 @@ var (
 )
 
 func init() {
-	debugLog = interactiveCmd.PersistentFlags().BoolP("debug", "D", false, "Enable debug mode")
+	debugLog = interactiveCmd.PersistentFlags().BoolP("debug", "L", false, "Enable debug mode")
 	rootCmd.AddCommand(interactiveCmd)
 }
 
