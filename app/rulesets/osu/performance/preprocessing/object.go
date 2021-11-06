@@ -36,7 +36,6 @@ type DifficultyObject struct {
 	Angle float64
 
 	StrainTime float64
-
 }
 
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty, experimental bool) *DifficultyObject {
