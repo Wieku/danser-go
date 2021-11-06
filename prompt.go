@@ -17,6 +17,7 @@ import (
 )
 
 var (
+	debugLog       *bool
 	interactiveCmd = &cobra.Command{
 		Use:   "interactive",
 		Short: "danser interactive tui",
@@ -30,7 +31,9 @@ var (
 				}
 			}()
 
-			database.SetLogOutput(io.Discard)
+			if debugLog != nil && !*debugLog {
+				log.Default().SetOutput(io.Discard)
+			}
 
 			if newSettings := settings.LoadSettings(*settingsVersion); newSettings {
 				monitor := glfw.GetPrimaryMonitor()
@@ -42,8 +45,7 @@ var (
 			if err = database.Init(); err != nil {
 				return
 			}
-
-			if err = tui.NewProgram(newTuiModel(&isExecute)).Start(); err != nil {
+			if err = tui.NewProgram(newTuiModel(&isExecute, database.LoadBeatmaps(*noDbCheck))).Start(); err != nil {
 				return
 			}
 
@@ -55,13 +57,13 @@ var (
 )
 
 func init() {
+	debugLog = interactiveCmd.PersistentFlags().BoolP("debug", "D", false, "Enable debug mode")
 	rootCmd.AddCommand(interactiveCmd)
 }
 
 //
 
 type tuiData struct {
-	bm      []*beatmap.BeatMap
 	vmin    int
 	vselect int // +vmin representation of hovered item
 	vmax    int
@@ -85,6 +87,7 @@ type bmTempIndex struct {
 
 type tuiModel struct {
 	isExecute *bool
+	bm        []*beatmap.BeatMap
 
 	head    string
 	headTmp string
@@ -98,8 +101,9 @@ type tuiModel struct {
 	mode map[modeType]struct{}
 }
 
-func newTuiModel(isExecute *bool) *tuiModel {
+func newTuiModel(isExecute *bool, bm []*beatmap.BeatMap) *tuiModel {
 	return &tuiModel{
+		bm:          bm,
 		isExecute:   isExecute,
 		head:        "",
 		p:           "",
@@ -108,11 +112,9 @@ func newTuiModel(isExecute *bool) *tuiModel {
 	}
 }
 func (m *tuiModel) Init() tui.Cmd {
-	m.headTmp = pterm.Info.Sprintf("Loading beatmap\n")
+	m.headTmp = ""
 	return func() tui.Msg {
-		bm := database.LoadBeatmaps(*noDbCheck)
 		return tuiData{
-			bm:      bm,
 			vmin:    0,
 			vselect: 0,
 			vmax:    0,
@@ -140,11 +142,11 @@ func (m *tuiModel) View() string {
 	}
 
 	dthead := pterm.TableData{
-		{"No", "Artist", "Creator", "title", "difficulty"},
+		{"No", "Artist", "Creator", "Title", "Difficulty"},
 	}
 	dt := pterm.TableData{}
 	m.searchBm = []bmTempIndex{}
-	for i, bm := range m.data.bm {
+	for i, bm := range m.bm {
 		var s = []string{
 			strconv.Itoa(i),
 			bm.Artist,
@@ -225,7 +227,7 @@ func (m *tuiModel) updateHeader() {
 	}
 
 	if m.hasMode(ModeHasBmData) {
-		m.head = m.head + pterm.Info.Sprintf(m.gradText(pterm.Sprintf("Beatmap loaded, %d entry. ctrl+f to find, enter to load. [%d/%d %d]", len(m.data.bm),
+		m.head = m.head + pterm.Info.Sprintf(m.gradText(pterm.Sprintf("Beatmap loaded, %d entry. ctrl+f to find, enter to load. [%d/%d %d]", len(m.bm),
 			m.data.vselect, len(m.searchBm),
 			m.data.vshow))) + "\n"
 	}
@@ -289,7 +291,7 @@ func (m *tuiModel) handleKeyboardInput(msg tui.KeyMsg) (tui.Model, tui.Cmd) {
 		}
 	case "down":
 		// m.headTmp = m.headTmp + pterm.Info.Sprintf("Down vmin:%d vmax:%d vselect:%d vshow:%d\n", m.data.vmin, m.data.vmax, m.data.vselect, m.data.vshow)
-		if m.data.vselect < len(m.data.bm) {
+		if m.data.vselect < len(m.bm) {
 			m.data.vselect = m.data.vselect + 1
 		}
 	default:
