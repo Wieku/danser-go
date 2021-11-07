@@ -37,7 +37,7 @@ func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills
 
 	var total float64
 
-	if diff.CheckModActive(difficulty.Flashlight) {
+	if diff.CheckModActive(difficulty.Relax) {
 		speedRating = 0.0
 	}
 
