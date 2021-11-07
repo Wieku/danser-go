@@ -9,14 +9,10 @@ import (
 )
 
 const (
-	AngleBonusScale    float64 = 90.0
-	AimTimingThreshold float64 = 107.0
-	AimAngleBonusBegin float64 = math.Pi / 3
-
-	WideAngleMultiplier      float64 = 1.5
-	AcuteAngleMultiplier     float64 = 2.0
-	SliderMultiplier         float64 = 1.5
-	VelocityChangeMultiplier float64 = 0.75
+	wideAngleMultiplier      float64 = 1.5
+	acuteAngleMultiplier     float64 = 2.0
+	sliderMultiplier         float64 = 1.5
+	velocityChangeMultiplier float64 = 0.75
 )
 
 type AimSkill struct {
@@ -132,10 +128,10 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	}
 
 	// Add in acute angle bonus or wide angle bonus + velocity change bonus, whichever is larger.
-	aimStrain += math.Max(acuteAngleBonus*AcuteAngleMultiplier, wideAngleBonus*WideAngleMultiplier+velocityChangeBonus*VelocityChangeMultiplier)
+	aimStrain += math.Max(acuteAngleBonus*acuteAngleMultiplier, wideAngleBonus*wideAngleMultiplier+velocityChangeBonus*velocityChangeMultiplier)
 
 	// Add in additional slider velocity bonus.
-	aimStrain += sliderBonus * SliderMultiplier
+	aimStrain += sliderBonus * sliderMultiplier
 
 	return aimStrain
 }

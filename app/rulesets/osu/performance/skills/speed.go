@@ -9,17 +9,11 @@ import (
 )
 
 const (
-	SingleSpacingThreshold float64 = 125.0
-	MinSpeedBonus          float64 = 75.0 // ~200BPM
-	MaxSpeedBonus          float64 = 45.0
-	SpeedBalancingFactor   float64 = 40
-	SpeedAngleBonusBegin   float64 = 5 * math.Pi / 6
-
-	PiOver2 float64 = math.Pi / 2
-	PiOver4 float64 = math.Pi / 4
-
-	rhythmMultiplier float64 = 0.75
-	historyTimeMax   float64 = 5000
+	singleSpacingThreshold float64 = 125.0
+	minSpeedBonus          float64 = 75.0 // ~200BPM
+	speedBalancingFactor   float64 = 40
+	rhythmMultiplier       float64 = 0.75
+	historyTimeMax         float64 = 5000
 )
 
 type SpeedSkill struct {
@@ -50,7 +44,7 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 		return 0
 	}
 
-	distance := math.Min(SingleSpacingThreshold, current.TravelDistance+current.JumpDistance)
+	distance := math.Min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
 	strainTime := current.StrainTime
 
 	previous := s.GetPrevious(0)
@@ -66,15 +60,13 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
 	strainTime /= mutils.ClampF64((strainTime/greatWindowFull)/0.93, 0.92, 1)
 
-	//deltaTime = strainTime
-
 	speedBonus := 1.0
 
-	if strainTime < MinSpeedBonus {
-		speedBonus = 1 + 0.75*math.Pow((MinSpeedBonus-strainTime)/SpeedBalancingFactor, 2.0)
+	if strainTime < minSpeedBonus {
+		speedBonus = 1 + 0.75*math.Pow((minSpeedBonus-strainTime)/speedBalancingFactor, 2.0)
 	}
 
-	return (speedBonus + speedBonus*math.Pow(distance/SingleSpacingThreshold, 3.5)) / strainTime
+	return (speedBonus + speedBonus*math.Pow(distance/singleSpacingThreshold, 3.5)) / strainTime
 }
 
 func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) float64 {
@@ -131,7 +123,7 @@ func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) f
 						effectiveRatio *= 0.25
 					}
 
-					if previousIslandSize%2 == islandSize%2 { // repeated island polartiy (2 -> 4, 3 -> 5)
+					if previousIslandSize%2 == islandSize%2 { // repeated island polarity (2 -> 4, 3 -> 5)
 						effectiveRatio *= 0.50
 					}
 
