@@ -3,6 +3,7 @@ package video
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -67,8 +68,15 @@ func LoadMetadata(path string) *Metadata {
 		return nil
 	}
 
-	if mData.Streams[0].AvgFramerate == "" {
-		mData.Streams[0].AvgFramerate = mData.Streams[0].Framerate
+	aFPS := 1000.0
+	rFPS := 1000.0
+
+	if mData.Streams[0].AvgFramerate != "" {
+		aFPS = parseRate(mData.Streams[0].AvgFramerate)
+	}
+
+	if mData.Streams[0].Framerate != "" {
+		rFPS = parseRate(mData.Streams[0].Framerate)
 	}
 
 	if mData.Streams[0].Duration == "" {
@@ -78,7 +86,7 @@ func LoadMetadata(path string) *Metadata {
 	return &Metadata{
 		Width:    mData.Streams[0].Width,
 		Height:   mData.Streams[0].Height,
-		FPS:      parseRate(mData.Streams[0].AvgFramerate),
+		FPS:      math.Min(aFPS, rFPS),
 		Duration: parseRate(mData.Streams[0].Duration),
 		PixFmt:   mData.Streams[0].PixFmt,
 	}
