@@ -54,7 +54,7 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 	strainTime := current.StrainTime
 
 	previous := s.GetPrevious(0)
-	greatWindowFull := float64(s.diff.Hit300) / s.diff.Speed * 2
+	greatWindowFull := s.diff.Hit300U / s.diff.Speed * 2
 	speedWindowRatio := strainTime / greatWindowFull
 
 	// Aim to nerf cheesy rhythms (Very fast consecutive doubles with large deltatimes between)
@@ -83,7 +83,7 @@ func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) f
 		return 0
 	}
 
-	greatWindow := float64(s.diff.Hit300) / s.diff.Speed
+	greatWindow := s.diff.Hit300U / s.diff.Speed
 
 	previousIslandSize := 0
 	rhythmComplexitySum := 0.0
