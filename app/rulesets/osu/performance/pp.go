@@ -105,7 +105,7 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	}
 
 	if diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount += pp.countOk + pp.countMeh
+		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount + pp.countOk + pp.countMeh, pp.totalHits)
 		finalMultiplier *= 0.6
 	}
 
