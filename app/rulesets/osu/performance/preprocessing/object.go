@@ -95,7 +95,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 		// In such cases, a leniency is applied by also considering the jump distance from the tail of the slider, and taking the minimum jump distance.
 		// Additional distance is removed based on position of jump relative to slider follow circle radius.
 		// JumpDistance is the leniency distance beyond the assumed_slider_radius. tailJumpDistance is maximum_slider_radius since the full distance of radial leniency is still possible.
-		o.MovementDistance = math.Max(0, math.Min(o.JumpDistance-(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
+		o.MovementDistance = math.Max(0, math.Min(o.JumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
 	} else {
 		o.MovementTime = o.StrainTime
 		o.MovementDistance = o.JumpDistance

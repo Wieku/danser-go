@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	maximumSliderRadius = NormalizedRadius * 2.4
-	assumedSliderRadius = NormalizedRadius * 1.65
+	maximumSliderRadius float32 = NormalizedRadius * 2.4
+	assumedSliderRadius float32 = NormalizedRadius * 1.65
 )
 
 // LazySlider is a utility struct that has LazyEndPosition and LazyTravelDistance needed for difficulty calculations
@@ -35,22 +35,30 @@ func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider
 }
 
 func (slider *LazySlider) calculateEndPosition() {
-	slider.LazyTravelTime = slider.ScorePoints[len(slider.ScorePoints)-1].Time - slider.GetStartTime()
+	lastPointTime := math.Floor(math.Max(slider.StartTime+(slider.EndTime-slider.StartTime)/2, slider.EndTime-36))
+
+	slider.LazyTravelTime = lastPointTime - slider.GetStartTime()
 
 	slider.LazyEndPosition = slider.GetStackedPositionAtMod(slider.LazyTravelTime+slider.GetStartTime(), slider.diff.Mods) // temporary lazy end position until a real result can be derived.
 	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff.Mods)
 	scalingFactor := NormalizedRadius / (slider.diff.CircleRadius / OsuStableAllowance) // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
-	for i := 1; i < len(slider.ScorePoints); i++ {
+	for i := 0; i < len(slider.ScorePoints); i++ {
 		var currMovementObj = slider.ScorePoints[i]
 
-		stackedPosition := slider.GetStackedPositionAtMod(currMovementObj.Time, slider.diff.Mods)
+		time := currMovementObj.Time
+
+		if i == len(slider.ScorePoints)-1 {
+			time = lastPointTime
+		}
+
+		stackedPosition := slider.GetStackedPositionAtMod(time, slider.diff.Mods)
 
 		currMovement := stackedPosition.Sub(currCursorPosition)
 		currMovementLength := scalingFactor * float64(currMovement.Len())
 
 		// Amount of movement required so that the cursor position needs to be updated.
-		requiredMovement := assumedSliderRadius
+		requiredMovement := float64(assumedSliderRadius)
 
 		if i == len(slider.ScorePoints)-1 {
 			// The end of a slider has special aim rules due to the relaxed time constraint on position.
@@ -81,5 +89,5 @@ func (slider *LazySlider) calculateEndPosition() {
 		}
 	}
 
-	slider.LazyTravelDistance *= float32(math.Pow(1+float64(slider.RepeatCount)/2.5, 1.0/2.5)) // Bonus for repeat sliders until a better per nested object strain system can be achieved.
+	slider.LazyTravelDistance *= float32(math.Pow(1+float64(slider.RepeatCount-1)/2.5, 1.0/2.5)) // Bonus for repeat sliders until a better per nested object strain system can be achieved.
 }
