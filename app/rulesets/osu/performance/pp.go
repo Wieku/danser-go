@@ -153,24 +153,19 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor = pp.diff.ARReal - 10.33
+		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor = 0.025 * (8.0 - pp.diff.ARReal)
+		approachRateFactor = 0.1 * (8.0 - pp.diff.ARReal)
 	}
 
-	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
-
-	approachRateBonus := 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
+	aimValue *= 1.0 + approachRateFactor * lengthBonus
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
-	aimValue *= approachRateBonus
-
-	// Scale the aim value with accuracy _slightly_
-	aimValue *= 0.5 + pp.accuracy/2.0
+	aimValue *= pp.accuracy
 	// It is important to also consider accuracy difficulty when doing that
 	aimValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
 
@@ -200,12 +195,10 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor = pp.diff.ARReal - 10.33
+		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	}
 
-	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
-
-	speedValue *= 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
+	speedValue *= 1.0 + approachRateFactor * lengthBonus
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
