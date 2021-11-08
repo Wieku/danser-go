@@ -219,10 +219,12 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 
 	region := *sprite.Texture
 	position := sprite.position
+	scale := sprite.scale.Abs()
+
 
 	if sprite.cutX > 0.0 {
 		if math.Abs(sprite.origin.X-sprite.cutOrigin.X) > 0 {
-			position.X -= sprite.origin.X * float64(region.Width) * sprite.cutX
+			position.X -= sprite.origin.X * float64(region.Width) * scale.X * sprite.cutX
 		}
 
 		ratio := float32(1 - sprite.cutX)
@@ -235,7 +237,7 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 
 	if sprite.cutY > 0.0 {
 		if math.Abs(sprite.origin.Y-sprite.cutOrigin.Y) > 0 {
-			position.Y -= sprite.origin.Y * float64(region.Height) * sprite.cutY
+			position.Y -= sprite.origin.Y * float64(region.Height) * scale.Y * sprite.cutY
 		}
 
 		ratio := float32(1 - sprite.cutY)
@@ -246,7 +248,7 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 		region.V2 = (region.V2-middle)*ratio + middle
 	}
 
-	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs(), sprite.flipX, sprite.flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
+	batch.DrawStObject(position, sprite.origin, scale, sprite.flipX, sprite.flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
 }
 
 func (sprite *Sprite) GetOrigin() vector.Vector2d {
