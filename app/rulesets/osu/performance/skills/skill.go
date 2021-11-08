@@ -68,7 +68,6 @@ func NewSkill(d *difficulty.Difficulty, experimental bool) *Skill {
 		ReducedSectionCount:   10,
 		ReducedStrainBaseline: 0.75,
 		DifficultyMultiplier:  1.06,
-		CurrentStrain:         1,
 		diff:                  d,
 	}
 
