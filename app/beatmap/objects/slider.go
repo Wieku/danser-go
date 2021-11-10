@@ -85,6 +85,10 @@ type Slider struct {
 	tailEndCircles []*Circle
 
 	isSliding bool
+
+	EndTimeLazer     float64
+	ScorePointsLazer []TickPoint
+	spanDuration     float64
 }
 
 func NewSlider(data []string) *Slider {
@@ -198,6 +202,37 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 	return pos
 }
 
+func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
+	if slider.IsRetarded() {
+		return slider.StartPosRaw
+	}
+
+	t1 := mutils.ClampF64(time, slider.StartTime, slider.EndTimeLazer)
+
+	progress := (t1 - slider.StartTime) / slider.spanDuration
+
+	progress = math.Mod(progress, 2)
+	if progress >= 1 {
+		progress = 2 - progress
+	}
+
+	return slider.multiCurve.PointAt(float32(progress))
+}
+
+func (slider *Slider) GetStackedPositionAtModLazer(time float64, modifier difficulty.Modifier) vector.Vector2f {
+	basePosition := slider.PositionAtLazer(time)
+
+	switch {
+	case modifier&difficulty.HardRock > 0:
+		basePosition.Y = 384 - basePosition.Y
+		return basePosition.Add(slider.StackOffsetHR)
+	case modifier&difficulty.Easy > 0:
+		return basePosition.Add(slider.StackOffsetEZ)
+	}
+
+	return basePosition.Add(slider.StackOffset)
+}
+
 func (slider *Slider) GetAsDummyCircles() []IHitObject {
 	circles := []IHitObject{slider.createDummyCircle(slider.GetStartTime(), true, false)}
 
@@ -231,25 +266,72 @@ func (slider *Slider) SetTiming(timings *Timings) {
 	slider.Timings = timings
 	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
+	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
+
 	lines := slider.multiCurve.GetLines()
 
 	startTime := slider.StartTime
 
 	velocity := slider.Timings.GetVelocity(slider.TPoint)
 
+	cLength := float64(slider.multiCurve.GetLength())
+
+	slider.spanDuration = cLength * 1000 / velocity
+
+	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
+
 	minDistanceFromEnd := velocity * 0.01
-
-	scoringLengthTotal := 0.0
-	scoringDistance := 0.0
-
 	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+
 	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
 		tickDistance = slider.pixelLength
 	}
 
+	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
+	for span := 0; span < int(slider.RepeatCount); span++ {
+		spanStartTime := slider.StartTime + float64(span)*slider.spanDuration
+		reversed := span%2 == 1
+
+		// skip ticks if timingPoint has NaN beatLength
+		for d := tickDistance; d <= cLength && !nanTimingPoint; d += tickDistance {
+			if d >= cLength-minDistanceFromEnd {
+				break
+			}
+
+			// Always generate ticks from the start of the path rather than the span to ensure that ticks in repeat spans are positioned identically to those in non-repeat spans
+			timeProgress := d / cLength
+			if reversed {
+				timeProgress = 1 - timeProgress
+			}
+
+			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+				Time: spanStartTime + timeProgress*slider.spanDuration,
+			})
+		}
+
+		if span < int(slider.RepeatCount)-1 {
+			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+				Time:      spanStartTime + slider.spanDuration,
+				IsReverse: true,
+			})
+		} else {
+			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+				Time: math.Max(slider.StartTime+(slider.EndTimeLazer-slider.StartTime)/2, slider.EndTimeLazer-36),
+			})
+		}
+	}
+
+	sort.Slice(slider.ScorePointsLazer, func(i, j int) bool {
+		return slider.ScorePointsLazer[i].Time < slider.ScorePointsLazer[j].Time
+	})
+
+	scoringLengthTotal := 0.0
+	scoringDistance := 0.0
+
+	// Stable-like score point processing, ugly AF.
 	for i := int64(0); i < slider.RepeatCount; i++ {
 		distanceToEnd := float64(slider.multiCurve.GetLength())
-		skipTick := math.IsNaN(slider.TPoint.beatLength) // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
+		skipTick := nanTimingPoint // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
 
 		reverse := (i % 2) == 1
 
