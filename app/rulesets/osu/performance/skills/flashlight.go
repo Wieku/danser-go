@@ -27,7 +27,7 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 		return 0
 	}
 
-	scalingFactor := 52.0 / (s.diff.CircleRadius / preprocessing.OsuStableAllowance)
+	scalingFactor := 52.0 / s.diff.CircleRadiusU
 	smallDistNerf := 1.0
 	cumulativeStrainTime := 0.0
 

@@ -35,24 +35,21 @@ func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider
 }
 
 func (slider *LazySlider) calculateEndPosition() {
-	lastPointTime := math.Floor(math.Max(slider.StartTime+(slider.EndTime-slider.StartTime)/2, slider.EndTime-36))
+	slider.LazyTravelTime = slider.ScorePointsLazer[len(slider.ScorePointsLazer)-1].Time - slider.GetStartTime()
 
-	slider.LazyTravelTime = lastPointTime - slider.GetStartTime()
-
-	slider.LazyEndPosition = slider.GetStackedPositionAtMod(slider.LazyTravelTime+slider.GetStartTime(), slider.diff.Mods) // temporary lazy end position until a real result can be derived.
+	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff.Mods) // temporary lazy end position until a real result can be derived.
 	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff.Mods)
-	scalingFactor := NormalizedRadius / (slider.diff.CircleRadius / OsuStableAllowance) // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
+	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusU // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
-	for i := 0; i < len(slider.ScorePoints); i++ {
-		var currMovementObj = slider.ScorePoints[i]
+	for i := 0; i < len(slider.ScorePointsLazer); i++ {
+		var currMovementObj = slider.ScorePointsLazer[i]
 
-		time := currMovementObj.Time
-
-		if i == len(slider.ScorePoints)-1 {
-			time = lastPointTime
+		var stackedPosition vector.Vector2f
+		if i == len(slider.ScorePointsLazer)-1 { // bug that made into deployment but well
+			stackedPosition = slider.GetStackedPositionAtModLazer(slider.EndTimeLazer, slider.diff.Mods)
+		} else {
+			stackedPosition = slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff.Mods)
 		}
-
-		stackedPosition := slider.GetStackedPositionAtMod(time, slider.diff.Mods)
 
 		currMovement := stackedPosition.Sub(currCursorPosition)
 		currMovementLength := scalingFactor * float64(currMovement.Len())
@@ -60,7 +57,7 @@ func (slider *LazySlider) calculateEndPosition() {
 		// Amount of movement required so that the cursor position needs to be updated.
 		requiredMovement := float64(assumedSliderRadius)
 
-		if i == len(slider.ScorePoints)-1 {
+		if i == len(slider.ScorePointsLazer)-1 {
 			// The end of a slider has special aim rules due to the relaxed time constraint on position.
 			// There is both a lazy end position as well as the actual end slider position. We assume the player takes the simpler movement.
 			// For sliders that are circular, the lazy end position may actually be farther away than the sliders true end.
@@ -84,7 +81,7 @@ func (slider *LazySlider) calculateEndPosition() {
 			slider.LazyTravelDistance += float32(currMovementLength)
 		}
 
-		if i == len(slider.ScorePoints)-1 {
+		if i == len(slider.ScorePointsLazer)-1 {
 			slider.LazyEndPosition = currCursorPosition
 		}
 	}

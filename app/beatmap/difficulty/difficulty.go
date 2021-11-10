@@ -14,6 +14,7 @@ const (
 type Difficulty struct {
 	hpDrain, cs, od, ar       float64
 	PreemptU, Preempt, FadeIn float64
+	CircleRadiusU             float64
 	CircleRadius              float64
 	Mods                      Modifier
 
@@ -63,9 +64,13 @@ func (diff *Difficulty) calculate() {
 	}
 
 	diff.HPMod = hpDrain
-	diff.CircleRadius = DifficultyRate(cs, 54.4, 32, 9.6) * 1.00041 //some weird allowance osu has
+
+	diff.CircleRadiusU = DifficultyRate(cs, 54.4, 32, 9.6)
+	diff.CircleRadius = diff.CircleRadiusU * 1.00041 //some weird allowance osu has
+
 	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
 	diff.Preempt = math.Floor(diff.PreemptU)
+
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
 
 	diff.Hit50U = DifficultyRate(od, 200, 150, 100)

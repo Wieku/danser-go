@@ -11,7 +11,6 @@ import (
 const (
 	NormalizedRadius        = 50.0
 	CircleSizeBuffThreshold = 30.0
-	OsuStableAllowance      = 1.00041
 	MinDeltaTime            = 25
 )
 
@@ -54,6 +53,7 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 		DeltaTime:      (hitObject.GetStartTime() - lastObject.GetStartTime()) / d.Speed,
 		StartTime:      hitObject.GetStartTime() / d.Speed,
 		EndTime:        hitObject.GetEndTime() / d.Speed,
+		Angle:          math.NaN(),
 	}
 
 	obj.StrainTime = math.Max(obj.DeltaTime, MinDeltaTime)
@@ -71,12 +71,11 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 		return
 	}
 
-	radius := o.diff.CircleRadius / OsuStableAllowance // we need to undo that weird allowance mentioned in difficulty.Difficulty.calculate()
-	scalingFactor := NormalizedRadius / float32(radius)
+	scalingFactor := NormalizedRadius / float32(o.diff.CircleRadiusU)
 
-	if radius < CircleSizeBuffThreshold {
+	if o.diff.CircleRadiusU < CircleSizeBuffThreshold {
 		scalingFactor *= 1.0 +
-			math32.Min(CircleSizeBuffThreshold-float32(radius), 5.0)/50.0
+			math32.Min(CircleSizeBuffThreshold-float32(o.diff.CircleRadiusU), 5.0)/50.0
 	}
 
 	lastCursorPosition := getEndCursorPosition(o.lastObject, o.diff)
@@ -88,7 +87,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 		o.MovementTime = math.Max(o.StrainTime-o.TravelTime, MinDeltaTime)
 
 		// Jump distance from the slider tail to the next object, as opposed to the lazy position of JumpDistance.
-		tailJumpDistance := lastSlider.GetStackedEndPositionMod(o.diff.Mods).Dst(o.BaseObject.GetStackedStartPositionMod(o.diff.Mods)) * scalingFactor
+		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.diff.Mods).Dst(o.BaseObject.GetStackedStartPositionMod(o.diff.Mods)) * scalingFactor
 
 		// For hitobjects which continue in the direction of the slider, the player will normally follow through the slider,
 		// such that they're not jumping from the lazy position but rather from very close to (or the end of) the slider.
