@@ -17,10 +17,11 @@ const (
 
 type AimSkill struct {
 	*Skill
+	withSliders bool
 }
 
-func NewAimSkill(d *difficulty.Difficulty, experimental bool) *AimSkill {
-	skill := &AimSkill{NewSkill(d, experimental)}
+func NewAimSkill(d *difficulty.Difficulty, withSliders, experimental bool) *AimSkill {
+	skill := &AimSkill{Skill: NewSkill(d, experimental), withSliders: withSliders}
 
 	skill.SkillMultiplier = 23.25
 	skill.StrainDecayBase = 0.15
@@ -46,7 +47,7 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	currVelocity := osuCurrObj.JumpDistance / osuCurrObj.StrainTime
 
 	// But if the last object is a slider, then we extend the travel velocity through the slider into the current object.
-	if _, ok := osuLastObj.BaseObject.(*preprocessing.LazySlider); ok {
+	if _, ok := osuLastObj.BaseObject.(*preprocessing.LazySlider); ok && skill.withSliders {
 		movementVelocity := osuCurrObj.MovementDistance / osuCurrObj.MovementTime // calculate the movement velocity from slider end to current object
 		travelVelocity := osuCurrObj.TravelDistance / osuCurrObj.TravelTime       // calculate the slider velocity from slider head to slider end.
 
@@ -56,7 +57,7 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	// As above, do the same for the previous hitobject.
 	prevVelocity := osuLastObj.JumpDistance / osuLastObj.StrainTime
 
-	if _, ok := osuLastLastObj.BaseObject.(*preprocessing.LazySlider); ok {
+	if _, ok := osuLastLastObj.BaseObject.(*preprocessing.LazySlider); ok && skill.withSliders {
 		movementVelocity := osuLastObj.MovementDistance / osuLastObj.MovementTime
 		travelVelocity := osuLastObj.TravelDistance / osuLastObj.TravelTime
 
@@ -130,8 +131,10 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	// Add in acute angle bonus or wide angle bonus + velocity change bonus, whichever is larger.
 	aimStrain += math.Max(acuteAngleBonus*acuteAngleMultiplier, wideAngleBonus*wideAngleMultiplier+velocityChangeBonus*velocityChangeMultiplier)
 
-	// Add in additional slider velocity bonus.
-	aimStrain += sliderBonus * sliderMultiplier
+	if skill.withSliders {
+		// Add in additional slider velocity bonus.
+		aimStrain += sliderBonus * sliderMultiplier
+	}
 
 	return aimStrain
 }

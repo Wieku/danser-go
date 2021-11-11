@@ -83,7 +83,7 @@ func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
-	aimSkill := skills.NewAimSkill(diff, experimental)
+	aimSkill := skills.NewAimSkill(diff, experimental, true)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
@@ -99,7 +99,7 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, 
 func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) StrainPeaks {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
-	aimSkill := skills.NewAimSkill(diff, experimental)
+	aimSkill := skills.NewAimSkill(diff, experimental, true)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
@@ -127,7 +127,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
-	aimSkill := skills.NewAimSkill(diff, experimental)
+	aimSkill := skills.NewAimSkill(diff, experimental, true)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
