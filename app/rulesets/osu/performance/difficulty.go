@@ -29,6 +29,17 @@ type Stars struct {
 	Flashlight float64
 }
 
+type StrainPeaks struct {
+	// Aim peaks
+	Aim []float64
+
+	// Speed peaks
+	Speed []float64
+
+	// Flashlight peaks
+	Flashlight []float64
+}
+
 // Retrieves skills values and converts to Stars
 func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
 	aimRating := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
@@ -83,6 +94,26 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, 
 	}
 
 	return getStars(aimSkill, speedSkill, flashlightSkill, diff, experimental)
+}
+
+func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) StrainPeaks {
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
+
+	aimSkill := skills.NewAimSkill(diff, experimental)
+	speedSkill := skills.NewSpeedSkill(diff, experimental)
+	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
+
+	for _, o := range diffObjects {
+		aimSkill.Process(o)
+		speedSkill.Process(o)
+		flashlightSkill.Process(o)
+	}
+
+	return StrainPeaks{
+		Aim:        aimSkill.GetCurrentStrainPeaks(),
+		Speed:      speedSkill.GetCurrentStrainPeaks(),
+		Flashlight: flashlightSkill.GetCurrentStrainPeaks(),
+	}
 }
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
