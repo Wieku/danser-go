@@ -6,6 +6,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"unicode"
@@ -63,9 +64,6 @@ func parseCommands(commands []string) []*animation.Transformation {
 
 	if currentLoop != nil {
 		transforms = append(transforms, currentLoop.Unwind()...)
-
-		currentLoop = nil
-		loopDepth = -1
 	}
 
 	return transforms
@@ -86,16 +84,16 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	easeFunc := easing.GetEasing(easingID)
 
-	startTime, err := strconv.ParseInt(data[2], 10, 64)
+	startTime, err := strconv.ParseFloat(data[2], 64)
 	checkError(err)
 
-	var endTime int64
+	var endTime float64
 	if data[3] != "" {
-		endTime, err = strconv.ParseInt(data[3], 10, 64)
+		endTime, err = strconv.ParseFloat(data[3], 64)
 		checkError(err)
 	}
 
-	endTime = mutils.MaxI64(endTime, startTime)
+	endTime = math.Max(endTime, startTime)
 
 	var arguments int
 
@@ -117,11 +115,11 @@ func parseCommand(data []string) []*animation.Transformation {
 	if arguments == 0 {
 		switch parameters[0] {
 		case "H":
-			return []*animation.Transformation{animation.NewBooleanTransform(animation.HorizontalFlip, float64(startTime), float64(endTime))}
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.HorizontalFlip, startTime, endTime)}
 		case "V":
-			return []*animation.Transformation{animation.NewBooleanTransform(animation.VerticalFlip, float64(startTime), float64(endTime))}
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.VerticalFlip, startTime, endTime)}
 		case "A":
-			return []*animation.Transformation{animation.NewBooleanTransform(animation.Additive, float64(startTime), float64(endTime))}
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.Additive, startTime, endTime)}
 		}
 
 		return nil
@@ -149,8 +147,8 @@ func parseCommand(data []string) []*animation.Transformation {
 	var transforms []*animation.Transformation
 
 	for i := 0; i < mutils.MaxI(1, numSections-1); i++ {
-		start := float64(startTime + int64(i)*sectionTime)
-		end := float64(startTime + int64(i+1)*sectionTime)
+		start := startTime + float64(i)*sectionTime
+		end := startTime + float64(i+1)*sectionTime
 
 		section := sections[i]
 		nextSection := sections[i+1]
