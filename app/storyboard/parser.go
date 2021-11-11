@@ -47,7 +47,9 @@ func parseCommands(commands []string) []*animation.Transformation {
 			}
 
 			if command[0] != "L" {
-				transforms = append(transforms, parseCommand(command)...)
+				if parsed := parseCommand(command); parsed != nil {
+					transforms = append(transforms, parsed...)
+				}
 			}
 		}
 
@@ -70,8 +72,6 @@ func parseCommands(commands []string) []*animation.Transformation {
 }
 
 func parseCommand(data []string) []*animation.Transformation {
-	transforms := make([]*animation.Transformation, 0)
-
 	checkError := func(err error) {
 		if err != nil {
 			log.Println("Failed to parse: ", data)
@@ -97,32 +97,34 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	endTime = mutils.MaxI64(endTime, startTime)
 
-	arguments := 0
+	var arguments int
 
 	switch command {
+	case "P":
+		arguments = 0
 	case "F", "R", "S", "MX", "MY":
 		arguments = 1
 	case "M", "V":
 		arguments = 2
 	case "C":
 		arguments = 3
+	default:
+		return nil
 	}
 
 	parameters := data[4:]
 
 	if arguments == 0 {
-		typ := animation.TransformationType(0)
-
 		switch parameters[0] {
 		case "H":
-			typ = animation.HorizontalFlip
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.HorizontalFlip, float64(startTime), float64(endTime))}
 		case "V":
-			typ = animation.VerticalFlip
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.VerticalFlip, float64(startTime), float64(endTime))}
 		case "A":
-			typ = animation.Additive
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.Additive, float64(startTime), float64(endTime))}
 		}
 
-		return []*animation.Transformation{animation.NewBooleanTransform(typ, float64(startTime), float64(endTime))}
+		return nil
 	}
 
 	numSections := len(parameters) / arguments
@@ -143,6 +145,8 @@ func parseCommand(data []string) []*animation.Transformation {
 	if numSections == 1 {
 		sections = append(sections, sections[0])
 	}
+
+	var transforms []*animation.Transformation
 
 	for i := 0; i < mutils.MaxI(1, numSections-1); i++ {
 		start := float64(startTime + int64(i)*sectionTime)
