@@ -137,10 +137,6 @@ func parseCommand(data []string) []*animation.Transformation {
 		for j := 0; j < arguments; j++ {
 			sections[i][j], err = strconv.ParseFloat(parameters[arguments*i+j], 64)
 			checkError(err)
-
-			if command == "C" {
-				sections[i][j] /= 255
-			}
 		}
 	}
 
@@ -171,17 +167,9 @@ func parseCommand(data []string) []*animation.Transformation {
 		case "MY":
 			transforms = append(transforms, animation.NewSingleTransform(animation.MoveY, easeFunc, start, end, section[0], nextSection[0]))
 		case "C":
-			color1 := color2.Color{
-				R: float32(section[0]),
-				G: float32(section[1]),
-				B: float32(section[2]),
-			}
-			color2 := color2.Color{
-				R: float32(nextSection[0]),
-				G: float32(nextSection[1]),
-				B: float32(nextSection[2]),
-			}
-			transforms = append(transforms, animation.NewColorTransform(animation.Color3, easeFunc, start, end, color1, color2))
+			col1 := color2.NewRGB(float32(section[0]/255), float32(section[1]/255), float32(section[2]/255))
+			col2 := color2.NewRGB(float32(nextSection[0]/255), float32(nextSection[1]/255), float32(nextSection[2]/255))
+			transforms = append(transforms, animation.NewColorTransform(animation.Color3, easeFunc, start, end, col1, col2))
 		}
 	}
 
