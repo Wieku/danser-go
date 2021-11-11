@@ -129,10 +129,6 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	sectionTime := endTime - startTime
 
-	if numSections > 2 {
-		endTime = startTime + sectionTime*int64(numSections-1)
-	}
-
 	sections := make([][]float64, numSections)
 
 	for i := 0; i < numSections; i++ {
