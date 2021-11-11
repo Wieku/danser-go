@@ -87,7 +87,8 @@ func parseCommand(data []string) []*animation.Transformation {
 	startTime, err := strconv.ParseFloat(data[2], 64)
 	checkError(err)
 
-	var endTime float64
+	endTime := -math.MaxFloat64
+
 	if data[3] != "" {
 		endTime, err = strconv.ParseFloat(data[3], 64)
 		checkError(err)
