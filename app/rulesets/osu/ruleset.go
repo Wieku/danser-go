@@ -175,10 +175,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	}
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-11-08: (insert link)")
-		//ruleset.experimentalPP = true
+		log.Println("Using pp calc version 2021-11-11:")
+		log.Println("\t- Nerf dropped sliders in osu! difficulty calculation: https://github.com/ppy/osu/pull/15564")
+		ruleset.experimentalPP = true
 	} else {
-		log.Println("Using pp calc version 2021-11-08: (insert link)")
+		log.Println("Using pp calc version 2021-11-09: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
 	}
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)

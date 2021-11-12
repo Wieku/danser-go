@@ -165,6 +165,15 @@ func (pp *PPv2) computeAimValue() float64 {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
+	// We assume 15% of sliders in a map are difficult since there's no way to tell from the performance calculator.
+	estimateDifficultSliders := float64(pp.nsliders) * 0.15
+
+	if pp.nsliders > 0 && pp.experimental {
+		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk + pp.countMeh + pp.countMiss, pp.maxCombo - pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		sliderNerfFactor := (1 - pp.stars.SliderFactor) * math.Pow(1 - estimateSliderEndsDropped / estimateDifficultSliders, 3) + pp.stars.SliderFactor
+		aimValue *= sliderNerfFactor
+	}
+
 	aimValue *= pp.accuracy
 	// It is important to also consider accuracy difficulty when doing that
 	aimValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500

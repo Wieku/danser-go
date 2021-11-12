@@ -22,6 +22,9 @@ type Stars struct {
 	// Aim stars, needed for Performance Points (aka PP) calculations
 	Aim float64
 
+	// SliderFactor is the ratio of Aim calculated without sliders to Aim
+	SliderFactor float64
+
 	// Speed stars, needed for Performance Points (aka PP) calculations
 	Speed float64
 
@@ -41,10 +44,16 @@ type StrainPeaks struct {
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
+func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
 	aimRating := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
+	aimRatingNoSliders := math.Sqrt(aimNoSliders.DifficultyValue()) * StarScalingFactor
 	speedRating := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
 	flashlightVal := math.Sqrt(flashlight.DifficultyValue()) * StarScalingFactor
+
+	sliderFactor := 1.0
+	if aimRating > 0.00001 {
+		sliderFactor = aimRatingNoSliders / aimRating
+	}
 
 	var total float64
 
@@ -72,10 +81,11 @@ func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills
 	}
 
 	return Stars{
-		Total:      total,
-		Aim:        aimRating,
-		Speed:      speedRating,
-		Flashlight: flashlightVal,
+		Total:        total,
+		Aim:          aimRating,
+		SliderFactor: sliderFactor,
+		Speed:        speedRating,
+		Flashlight:   flashlightVal,
 	}
 }
 
@@ -83,23 +93,25 @@ func getStars(aim *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
-	aimSkill := skills.NewAimSkill(diff, experimental, true)
+	aimSkill := skills.NewAimSkill(diff, true, experimental)
+	aimNoSlidersSkill := skills.NewAimSkill(diff, false, experimental)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
+		aimNoSlidersSkill.Process(o)
 		speedSkill.Process(o)
 		flashlightSkill.Process(o)
 	}
 
-	return getStars(aimSkill, speedSkill, flashlightSkill, diff, experimental)
+	return getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, experimental)
 }
 
 func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) StrainPeaks {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
-	aimSkill := skills.NewAimSkill(diff, experimental, true)
+	aimSkill := skills.NewAimSkill(diff, true, experimental)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
@@ -127,7 +139,8 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
-	aimSkill := skills.NewAimSkill(diff, experimental, true)
+	aimSkill := skills.NewAimSkill(diff, true, experimental)
+	aimNoSlidersSkill := skills.NewAimSkill(diff, false, experimental)
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
@@ -137,10 +150,11 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 
 	for i, o := range diffObjects {
 		aimSkill.Process(o)
+		aimNoSlidersSkill.Process(o)
 		speedSkill.Process(o)
 		flashlightSkill.Process(o)
 
-		stars = append(stars, getStars(aimSkill, speedSkill, flashlightSkill, diff, experimental))
+		stars = append(stars, getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, experimental))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)

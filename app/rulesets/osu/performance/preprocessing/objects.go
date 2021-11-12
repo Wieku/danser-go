@@ -11,7 +11,7 @@ func CreateDifficultyObjects(objsB []objects.IHitObject, d *difficulty.Difficult
 
 	for _, o := range objsB {
 		if s, ok := o.(*objects.Slider); ok {
-			o = NewLazySlider(s, d)
+			o = NewLazySlider(s, d, experimental)
 		}
 
 		objs = append(objs, o)
