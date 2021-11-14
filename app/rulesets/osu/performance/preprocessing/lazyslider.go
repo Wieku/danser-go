@@ -9,8 +9,7 @@ import (
 
 const (
 	maximumSliderRadius float32 = NormalizedRadius * 2.4
-	assumedSliderRadiusOld float32 = NormalizedRadius * 1.65
-	assumedSliderRadiusNew float32 = NormalizedRadius * 1.8
+	assumedSliderRadius float32 = NormalizedRadius * 1.8
 )
 
 // LazySlider is a utility struct that has LazyEndPosition and LazyTravelDistance needed for difficulty calculations
@@ -58,10 +57,7 @@ func (slider *LazySlider) calculateEndPosition() {
 		currMovementLength := scalingFactor * float64(currMovement.Len())
 
 		// Amount of movement required so that the cursor position needs to be updated.
-		requiredMovement := float64(assumedSliderRadiusOld)
-		if slider.experimental {
-			requiredMovement = float64(assumedSliderRadiusNew)
-		}
+		requiredMovement := float64(assumedSliderRadius)
 
 		if i == len(slider.ScorePointsLazer)-1 {
 			// The end of a slider has special aim rules due to the relaxed time constraint on position.
