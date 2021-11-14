@@ -12,16 +12,23 @@ const (
 )
 
 type Difficulty struct {
-	hpDrain, cs, od, ar float64
-	Preempt, FadeIn     float64
-	CircleRadius        float64
-	Mods                Modifier
-	Hit50               int64
-	Hit100              int64
-	Hit300              int64
-	HPMod               float64
-	SpinnerRatio        float64
-	Speed               float64
+	hpDrain, cs, od, ar       float64
+	PreemptU, Preempt, FadeIn float64
+	CircleRadiusU             float64
+	CircleRadius              float64
+	Mods                      Modifier
+
+	Hit50U  float64
+	Hit100U float64
+	Hit300U float64
+
+	Hit50  int64
+	Hit100 int64
+	Hit300 int64
+
+	HPMod        float64
+	SpinnerRatio float64
+	Speed        float64
 
 	ARReal      float64
 	ODReal      float64
@@ -57,17 +64,28 @@ func (diff *Difficulty) calculate() {
 	}
 
 	diff.HPMod = hpDrain
-	diff.CircleRadius = DifficultyRate(cs, 54.4, 32, 9.6) * 1.00041 //some weird allowance osu has
-	diff.Preempt = math.Floor(DifficultyRate(ar, 1800, 1200, 450))
+
+	diff.CircleRadiusU = DifficultyRate(cs, 54.4, 32, 9.6)
+	diff.CircleRadius = diff.CircleRadiusU * 1.00041 //some weird allowance osu has
+
+	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
+	diff.Preempt = math.Floor(diff.PreemptU)
+
 	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
-	diff.Hit50 = int64(DifficultyRate(od, 200, 150, 100))
-	diff.Hit100 = int64(DifficultyRate(od, 140, 100, 60))
-	diff.Hit300 = int64(DifficultyRate(od, 80, 50, 20))
+
+	diff.Hit50U = DifficultyRate(od, 200, 150, 100)
+	diff.Hit100U = DifficultyRate(od, 140, 100, 60)
+	diff.Hit300U = DifficultyRate(od, 80, 50, 20)
+
+	diff.Hit50 = int64(diff.Hit50U)
+	diff.Hit100 = int64(diff.Hit100U)
+	diff.Hit300 = int64(diff.Hit300U)
+
 	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
 	diff.Speed = 1.0 / diff.GetModifiedTime(1)
 
-	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.Preempt), 1800, 1200, 450)
-	diff.ODReal = DiffFromRate(diff.GetModifiedTime(float64(diff.Hit300)), 80, 50, 20)
+	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
+	diff.ODReal = DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
 }
 
 func (diff *Difficulty) SetMods(mods Modifier) {

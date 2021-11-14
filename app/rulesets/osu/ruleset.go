@@ -175,19 +175,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	}
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-10-29 with following changes:")
-		log.Println("\t- Total SR now better correlates with PP: https://github.com/ppy/osu/pull/13986")
-		log.Println("\t- Added difficulty skill for flashlight, so that FL weighting can be better analysed than the current heuristics: https://github.com/ppy/osu/pull/14217")
-		log.Println("\t- Added flashlight skill to total SR: https://github.com/ppy/osu/pull/14753")
-		log.Println("\t- Removed speed cap in difficulty calculation: https://github.com/ppy/osu/pull/14617")
-		log.Println("\t- Added relax mod PP calculation: https://github.com/ppy/osu/pull/14942")
-		log.Println("\t- Rhythm complexity SR rework: https://github.com/ppy/osu/pull/14395")
-		log.Println("\t- Fixed instant spinners giving insane amounts of strain: https://github.com/ppy/osu/pull/15009")
-		log.Println("\t- Approximation of number of misses + sliderbreaks: https://github.com/ppy/osu/pull/15086")
-
-		ruleset.experimentalPP = true
+		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
+		//ruleset.experimentalPP = true
 	} else {
-		log.Println("Using pp calc version 2021-07-27: https://osu.ppy.sh/home/news/2021-07-27-performance-points-star-rating-updates")
+		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
 	}
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)

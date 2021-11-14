@@ -11,8 +11,8 @@ type Flashlight struct {
 	*Skill
 }
 
-func NewFlashlightSkill(d *difficulty.Difficulty) *Flashlight {
-	skill := &Flashlight{NewSkill(d, true)}
+func NewFlashlightSkill(d *difficulty.Difficulty, experimental bool) *Flashlight {
+	skill := &Flashlight{NewSkill(d, experimental)}
 	skill.SkillMultiplier = 0.15
 	skill.StrainDecayBase = 0.15
 	skill.DecayWeight = 1
@@ -27,7 +27,7 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 		return 0
 	}
 
-	scalingFactor := 52.0 / (s.diff.CircleRadius / preprocessing.OsuStableAllowance)
+	scalingFactor := 52.0 / s.diff.CircleRadiusU
 	smallDistNerf := 1.0
 	cumulativeStrainTime := 0.0
 

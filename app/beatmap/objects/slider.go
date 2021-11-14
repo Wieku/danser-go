@@ -52,7 +52,7 @@ type Slider struct {
 	TPoint      TimingPoint
 	pixelLength float64
 	partLen     float64
-	repeat      int64
+	RepeatCount int64
 
 	sampleSets   []int
 	additionSets []int
@@ -85,6 +85,10 @@ type Slider struct {
 	tailEndCircles []*Circle
 
 	isSliding bool
+
+	EndTimeLazer     float64
+	ScorePointsLazer []TickPoint
+	spanDuration     float64
 }
 
 func NewSlider(data []string) *Slider {
@@ -95,7 +99,7 @@ func NewSlider(data []string) *Slider {
 	slider.PositionDelegate = slider.PositionAt
 
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
-	slider.repeat, _ = strconv.ParseInt(data[6], 10, 64)
+	slider.RepeatCount, _ = strconv.ParseInt(data[6], 10, 64)
 
 	list := strings.Split(data[5], "|")
 	points := []vector.Vector2f{slider.StartPosRaw}
@@ -113,9 +117,9 @@ func NewSlider(data []string) *Slider {
 	slider.EndPosRaw = slider.multiCurve.PointAt(1.0)
 	slider.Pos = slider.StartPosRaw
 
-	slider.samples = make([]int, slider.repeat+1)
-	slider.sampleSets = make([]int, slider.repeat+1)
-	slider.additionSets = make([]int, slider.repeat+1)
+	slider.samples = make([]int, slider.RepeatCount+1)
+	slider.sampleSets = make([]int, slider.RepeatCount+1)
+	slider.additionSets = make([]int, slider.RepeatCount+1)
 
 	f, _ := strconv.ParseInt(data[4], 10, 64)
 	slider.baseSample = int(f)
@@ -198,6 +202,37 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 	return pos
 }
 
+func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
+	if slider.IsRetarded() {
+		return slider.StartPosRaw
+	}
+
+	t1 := mutils.ClampF64(time, slider.StartTime, slider.EndTimeLazer)
+
+	progress := (t1 - slider.StartTime) / slider.spanDuration
+
+	progress = math.Mod(progress, 2)
+	if progress >= 1 {
+		progress = 2 - progress
+	}
+
+	return slider.multiCurve.PointAt(float32(progress))
+}
+
+func (slider *Slider) GetStackedPositionAtModLazer(time float64, modifier difficulty.Modifier) vector.Vector2f {
+	basePosition := slider.PositionAtLazer(time)
+
+	switch {
+	case modifier&difficulty.HardRock > 0:
+		basePosition.Y = 384 - basePosition.Y
+		return basePosition.Add(slider.StackOffsetHR)
+	case modifier&difficulty.Easy > 0:
+		return basePosition.Add(slider.StackOffsetEZ)
+	}
+
+	return basePosition.Add(slider.StackOffset)
+}
+
 func (slider *Slider) GetAsDummyCircles() []IHitObject {
 	circles := []IHitObject{slider.createDummyCircle(slider.GetStartTime(), true, false)}
 
@@ -231,25 +266,72 @@ func (slider *Slider) SetTiming(timings *Timings) {
 	slider.Timings = timings
 	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
+	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
+
 	lines := slider.multiCurve.GetLines()
 
 	startTime := slider.StartTime
 
 	velocity := slider.Timings.GetVelocity(slider.TPoint)
 
+	cLength := float64(slider.multiCurve.GetLength())
+
+	slider.spanDuration = cLength * 1000 / velocity
+
+	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
+
 	minDistanceFromEnd := velocity * 0.01
-
-	scoringLengthTotal := 0.0
-	scoringDistance := 0.0
-
 	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+
 	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
 		tickDistance = slider.pixelLength
 	}
 
-	for i := int64(0); i < slider.repeat; i++ {
+	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
+	for span := 0; span < int(slider.RepeatCount); span++ {
+		spanStartTime := slider.StartTime + float64(span)*slider.spanDuration
+		reversed := span%2 == 1
+
+		// skip ticks if timingPoint has NaN beatLength
+		for d := tickDistance; d <= cLength && !nanTimingPoint; d += tickDistance {
+			if d >= cLength-minDistanceFromEnd {
+				break
+			}
+
+			// Always generate ticks from the start of the path rather than the span to ensure that ticks in repeat spans are positioned identically to those in non-repeat spans
+			timeProgress := d / cLength
+			if reversed {
+				timeProgress = 1 - timeProgress
+			}
+
+			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+				Time: spanStartTime + timeProgress*slider.spanDuration,
+			})
+		}
+
+		if span < int(slider.RepeatCount)-1 {
+			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+				Time:      spanStartTime + slider.spanDuration,
+				IsReverse: true,
+			})
+		} else {
+			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+				Time: math.Max(slider.StartTime+(slider.EndTimeLazer-slider.StartTime)/2, slider.EndTimeLazer-36),
+			})
+		}
+	}
+
+	sort.Slice(slider.ScorePointsLazer, func(i, j int) bool {
+		return slider.ScorePointsLazer[i].Time < slider.ScorePointsLazer[j].Time
+	})
+
+	scoringLengthTotal := 0.0
+	scoringDistance := 0.0
+
+	// Stable-like score point processing, ugly AF.
+	for i := int64(0); i < slider.RepeatCount; i++ {
 		distanceToEnd := float64(slider.multiCurve.GetLength())
-		skipTick := math.IsNaN(slider.TPoint.beatLength) // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
+		skipTick := nanTimingPoint // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
 
 		reverse := (i % 2) == 1
 
@@ -317,7 +399,7 @@ func (slider *Slider) SetTiming(timings *Timings) {
 		}
 	}
 
-	slider.partLen = (slider.EndTime - slider.StartTime) / float64(slider.repeat)
+	slider.partLen = (slider.EndTime - slider.StartTime) / float64(slider.RepeatCount)
 
 	slider.EndPosRaw = slider.GetPositionAt(slider.EndTime)
 
@@ -411,7 +493,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 	slider.follower.SetAlpha(0.0)
 
-	for i := int64(1); i <= slider.repeat; i++ {
+	for i := int64(1); i <= slider.RepeatCount; i++ {
 		circleTime := slider.StartTime + math.Floor(slider.partLen*float64(i))
 
 		appearTime := slider.StartTime - math.Floor(slider.diff.Preempt)
@@ -419,7 +501,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 			appearTime = circleTime - math.Floor(slider.partLen*2)
 		}
 
-		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == slider.repeat)
+		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == slider.RepeatCount)
 		circle.ComboNumber = slider.ComboNumber
 		circle.ComboSet = slider.ComboSet
 		circle.ComboSetHax = slider.ComboSetHax
@@ -481,7 +563,7 @@ func (slider *Slider) IsRetarded() bool {
 
 func (slider *Slider) Update(time float64) bool {
 	if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-		for i := int64(0); i <= slider.repeat; i++ {
+		for i := int64(0); i <= slider.RepeatCount; i++ {
 			edgeTime := slider.StartTime + math.Floor(float64(i)*slider.partLen)
 
 			if slider.lastTime < edgeTime && time >= edgeTime {
@@ -499,7 +581,7 @@ func (slider *Slider) Update(time float64) bool {
 			}
 		}
 	} else if slider.isSliding {
-		for i := int64(1); i < slider.repeat; i++ {
+		for i := int64(1); i < slider.RepeatCount; i++ {
 			edgeTime := slider.StartTime + math.Floor(float64(i)*slider.partLen)
 
 			if slider.lastTime < edgeTime && time >= edgeTime {
@@ -561,7 +643,7 @@ func (slider *Slider) Update(time float64) bool {
 
 	pos := slider.GetStackedPositionAtMod(time, slider.diff.Mods)
 
-	if settings.Objects.Sliders.Snaking.Out && slider.repeat%2 == 1 && time >= math.Floor(slider.EndTime-slider.partLen) {
+	if settings.Objects.Sliders.Snaking.Out && slider.RepeatCount%2 == 1 && time >= math.Floor(slider.EndTime-slider.partLen) {
 		snakeTime := slider.EndTime - slider.partLen*(1-slider.sliderSnakeHead.GetValue())
 		p2 := slider.GetStackedPositionAtMod(snakeTime, slider.diff.Mods)
 		slider.ball.SetPosition(p2.Copy64())
@@ -610,7 +692,7 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 		slider.ball.ResetValuesToTransforms()
 
 		if time < math.Floor(slider.EndTime-slider.partLen) {
-			if slider.repeat%2 == 1 {
+			if slider.RepeatCount%2 == 1 {
 				slider.sliderSnakeHead.AddEvent(slider.EndTime-slider.partLen, slider.EndTime, 1)
 			} else {
 				slider.sliderSnakeTail.AddEvent(slider.EndTime-slider.partLen, slider.EndTime, 0)
@@ -633,7 +715,7 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 			dur := math.Min(first/2, remaining*0.66)
 			eTime := time + dur
 
-			if slider.repeat%2 == 1 {
+			if slider.RepeatCount%2 == 1 {
 				slider.sliderSnakeHead.AddEventEase(time, eTime, (first+dur)/slider.partLen, snakeEase)
 				slider.sliderSnakeHead.AddEvent(eTime, slider.EndTime, 1)
 			} else {

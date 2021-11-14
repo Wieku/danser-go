@@ -37,7 +37,9 @@ func NewLoopProcessor(data []string) *LoopProcessor {
 }
 
 func (loop *LoopProcessor) Add(command []string) {
-	loop.transforms = append(loop.transforms, parseCommand(command)...)
+	if parsed := parseCommand(command); parsed != nil {
+		loop.transforms = append(loop.transforms, parsed...)
+	}
 }
 
 func (loop *LoopProcessor) Unwind() []*animation.Transformation {

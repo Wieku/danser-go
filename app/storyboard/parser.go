@@ -6,6 +6,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"unicode"
@@ -47,7 +48,9 @@ func parseCommands(commands []string) []*animation.Transformation {
 			}
 
 			if command[0] != "L" {
-				transforms = append(transforms, parseCommand(command)...)
+				if parsed := parseCommand(command); parsed != nil {
+					transforms = append(transforms, parsed...)
+				}
 			}
 		}
 
@@ -61,17 +64,12 @@ func parseCommands(commands []string) []*animation.Transformation {
 
 	if currentLoop != nil {
 		transforms = append(transforms, currentLoop.Unwind()...)
-
-		currentLoop = nil
-		loopDepth = -1
 	}
 
 	return transforms
 }
 
 func parseCommand(data []string) []*animation.Transformation {
-	transforms := make([]*animation.Transformation, 0)
-
 	checkError := func(err error) {
 		if err != nil {
 			log.Println("Failed to parse: ", data)
@@ -86,52 +84,51 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	easeFunc := easing.GetEasing(easingID)
 
-	startTime, err := strconv.ParseInt(data[2], 10, 64)
+	startTime, err := strconv.ParseFloat(data[2], 64)
 	checkError(err)
 
-	var endTime int64
+	endTime := -math.MaxFloat64
+
 	if data[3] != "" {
-		endTime, err = strconv.ParseInt(data[3], 10, 64)
+		endTime, err = strconv.ParseFloat(data[3], 64)
 		checkError(err)
 	}
 
-	endTime = mutils.MaxI64(endTime, startTime)
+	endTime = math.Max(endTime, startTime)
 
-	arguments := 0
+	var arguments int
 
 	switch command {
+	case "P":
+		arguments = 0
 	case "F", "R", "S", "MX", "MY":
 		arguments = 1
 	case "M", "V":
 		arguments = 2
 	case "C":
 		arguments = 3
+	default:
+		return nil
 	}
 
 	parameters := data[4:]
 
 	if arguments == 0 {
-		typ := animation.TransformationType(0)
-
 		switch parameters[0] {
 		case "H":
-			typ = animation.HorizontalFlip
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.HorizontalFlip, startTime, endTime)}
 		case "V":
-			typ = animation.VerticalFlip
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.VerticalFlip, startTime, endTime)}
 		case "A":
-			typ = animation.Additive
+			return []*animation.Transformation{animation.NewBooleanTransform(animation.Additive, startTime, endTime)}
 		}
 
-		return []*animation.Transformation{animation.NewBooleanTransform(typ, float64(startTime), float64(endTime))}
+		return nil
 	}
 
 	numSections := len(parameters) / arguments
 
 	sectionTime := endTime - startTime
-
-	if numSections > 2 {
-		endTime = startTime + sectionTime*int64(numSections-1)
-	}
 
 	sections := make([][]float64, numSections)
 
@@ -141,10 +138,6 @@ func parseCommand(data []string) []*animation.Transformation {
 		for j := 0; j < arguments; j++ {
 			sections[i][j], err = strconv.ParseFloat(parameters[arguments*i+j], 64)
 			checkError(err)
-
-			if command == "C" {
-				sections[i][j] /= 255
-			}
 		}
 	}
 
@@ -152,9 +145,11 @@ func parseCommand(data []string) []*animation.Transformation {
 		sections = append(sections, sections[0])
 	}
 
+	var transforms []*animation.Transformation
+
 	for i := 0; i < mutils.MaxI(1, numSections-1); i++ {
-		start := float64(startTime + int64(i)*sectionTime)
-		end := float64(startTime + int64(i+1)*sectionTime)
+		start := startTime + float64(i)*sectionTime
+		end := startTime + float64(i+1)*sectionTime
 
 		section := sections[i]
 		nextSection := sections[i+1]
@@ -175,17 +170,9 @@ func parseCommand(data []string) []*animation.Transformation {
 		case "MY":
 			transforms = append(transforms, animation.NewSingleTransform(animation.MoveY, easeFunc, start, end, section[0], nextSection[0]))
 		case "C":
-			color1 := color2.Color{
-				R: float32(section[0]),
-				G: float32(section[1]),
-				B: float32(section[2]),
-			}
-			color2 := color2.Color{
-				R: float32(nextSection[0]),
-				G: float32(nextSection[1]),
-				B: float32(nextSection[2]),
-			}
-			transforms = append(transforms, animation.NewColorTransform(animation.Color3, easeFunc, start, end, color1, color2))
+			col1 := color2.NewRGB(float32(section[0]/255), float32(section[1]/255), float32(section[2]/255))
+			col2 := color2.NewRGB(float32(nextSection[0]/255), float32(nextSection[1]/255), float32(nextSection[2]/255))
+			transforms = append(transforms, animation.NewColorTransform(animation.Color3, easeFunc, start, end, col1, col2))
 		}
 	}
 

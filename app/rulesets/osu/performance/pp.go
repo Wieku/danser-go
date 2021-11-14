@@ -104,8 +104,8 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
 	}
 
-	if pp.experimental && diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount += pp.countOk + pp.countMeh
+	if diff.Mods.Active(difficulty.Relax) {
+		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount + pp.countOk + pp.countMeh, pp.totalHits)
 		finalMultiplier *= 0.6
 	}
 
@@ -153,42 +153,28 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor = pp.diff.ARReal - 10.33
+		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor = 0.025 * (8.0 - pp.diff.ARReal)
+		approachRateFactor = 0.1 * (8.0 - pp.diff.ARReal)
 	}
 
-	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
-
-	approachRateBonus := 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
+	aimValue *= 1.0 + approachRateFactor * lengthBonus
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
-	if pp.experimental {
-		aimValue *= approachRateBonus
-	} else {
-		flashlightBonus := 1.0
+	// We assume 15% of sliders in a map are difficult since there's no way to tell from the performance calculator.
+	estimateDifficultSliders := float64(pp.nsliders) * 0.15
 
-		if pp.diff.Mods.Active(difficulty.Flashlight) {
-			flashlightBonus = 1.0 + 0.35*math.Min(1.0, float64(pp.totalHits)/200.0)
-
-			if pp.totalHits > 200 {
-				flashlightBonus += 0.3 * math.Min(1, (float64(pp.totalHits)-200.0)/300.0)
-			}
-
-			if pp.totalHits > 500 {
-				flashlightBonus += (float64(pp.totalHits) - 500.0) / 1200.0
-			}
-		}
-
-		aimValue *= math.Max(flashlightBonus, approachRateBonus)
+	if pp.nsliders > 0 {
+		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk + pp.countMeh + pp.countMiss, pp.maxCombo - pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		sliderNerfFactor := (1 - pp.stars.SliderFactor) * math.Pow(1 - estimateSliderEndsDropped / estimateDifficultSliders, 3) + pp.stars.SliderFactor
+		aimValue *= sliderNerfFactor
 	}
 
-	// Scale the aim value with accuracy _slightly_
-	aimValue *= 0.5 + pp.accuracy/2.0
+	aimValue *= pp.accuracy
 	// It is important to also consider accuracy difficulty when doing that
 	aimValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
 
@@ -218,12 +204,10 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
-		approachRateFactor = pp.diff.ARReal - 10.33
+		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	}
 
-	approachRateTotalHitsFactor := 1.0 / (1.0 + math.Exp(-(0.007 * (float64(pp.totalHits) - 400))))
-
-	speedValue *= 1.0 + (0.03+0.37*approachRateTotalHitsFactor)*approachRateFactor
+	speedValue *= 1.0 + approachRateFactor * lengthBonus
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
@@ -244,7 +228,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 }
 
 func (pp *PPv2) computeAccuracyValue() float64 {
-	if pp.experimental && pp.diff.Mods.Active(difficulty.Relax) {
+	if pp.diff.Mods.Active(difficulty.Relax) {
 		return 0.0
 	}
 
@@ -279,7 +263,7 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 }
 
 func (pp *PPv2) computeFlashlightValue() float64 {
-	if !pp.experimental || !pp.diff.CheckModActive(difficulty.Flashlight) {
+	if !pp.diff.CheckModActive(difficulty.Flashlight) {
 		return 0
 	}
 
@@ -323,10 +307,6 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 }
 
 func (pp *PPv2) calculateEffectiveMissCount() int {
-	if !pp.experimental {
-		return pp.countMiss
-	}
-
 	// guess the number of misses + slider breaks from combo
 	comboBasedMissCount := 0.0
 

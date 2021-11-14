@@ -5,13 +5,13 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 )
 
-// Creates difficulty objects needed for star rating calculations
+// CreateDifficultyObjects creates difficulty objects needed for star rating calculations
 func CreateDifficultyObjects(objsB []objects.IHitObject, d *difficulty.Difficulty, experimental bool) []*DifficultyObject {
 	objs := make([]objects.IHitObject, 0, len(objsB))
 
 	for _, o := range objsB {
 		if s, ok := o.(*objects.Slider); ok {
-			o = NewLazySlider(s, d)
+			o = NewLazySlider(s, d, experimental)
 		}
 
 		objs = append(objs, o)
