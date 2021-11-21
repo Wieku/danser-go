@@ -41,21 +41,20 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(stars Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty, experimental bool) PPv2 {
-
-	stars.MaxCombo = mutils.MaxI(1, stars.MaxCombo)
+func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty, experimental bool) PPv2 {
+	attribs.MaxCombo = mutils.MaxI(1, attribs.MaxCombo)
 
 	if combo < 0 {
-		combo = stars.MaxCombo
+		combo = attribs.MaxCombo
 	}
 
 	if n300 < 0 {
-		n300 = stars.ObjectCount - n100 - n50 - nmiss
+		n300 = attribs.ObjectCount - n100 - n50 - nmiss
 	}
 
 	totalhits := n300 + n100 + n50 + nmiss
 
-	pp.attribs = stars
+	pp.attribs = attribs
 	pp.experimental = experimental
 	pp.diff = diff
 	pp.totalHits = totalhits
@@ -80,9 +79,9 @@ func (pp *PPv2) PPv2x(stars Attributes, combo, n300, n100, n50, nmiss int, diff 
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {
-		pp.amountHitObjectsWithAccuracy = stars.ObjectCount
+		pp.amountHitObjectsWithAccuracy = attribs.ObjectCount
 	} else {
-		pp.amountHitObjectsWithAccuracy = stars.Circles
+		pp.amountHitObjectsWithAccuracy = attribs.Circles
 	}
 
 	// total pp
@@ -94,11 +93,11 @@ func (pp *PPv2) PPv2x(stars Attributes, combo, n300, n100, n50, nmiss int, diff 
 	}
 
 	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
-		finalMultiplier *= 1.0 - math.Pow(float64(stars.Spinners)/float64(totalhits), 0.85)
+		finalMultiplier *= 1.0 - math.Pow(float64(attribs.Spinners)/float64(totalhits), 0.85)
 	}
 
 	if diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount + pp.countOk + pp.countMeh, pp.totalHits)
+		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount+pp.countOk+pp.countMeh, pp.totalHits)
 		finalMultiplier *= 0.6
 	}
 
@@ -151,7 +150,7 @@ func (pp *PPv2) computeAimValue() float64 {
 		approachRateFactor = 0.1 * (8.0 - pp.diff.ARReal)
 	}
 
-	aimValue *= 1.0 + approachRateFactor * lengthBonus
+	aimValue *= 1.0 + approachRateFactor*lengthBonus
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
@@ -162,8 +161,8 @@ func (pp *PPv2) computeAimValue() float64 {
 	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 {
-		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk + pp.countMeh + pp.countMiss, pp.attribs.MaxCombo - pp.scoreMaxCombo)), 0, estimateDifficultSliders)
-		sliderNerfFactor := (1 - pp.attribs.SliderFactor) * math.Pow(1 - estimateSliderEndsDropped / estimateDifficultSliders, 3) + pp.attribs.SliderFactor
+		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}
 
@@ -200,7 +199,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	}
 
-	speedValue *= 1.0 + approachRateFactor * lengthBonus
+	speedValue *= 1.0 + approachRateFactor*lengthBonus
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
