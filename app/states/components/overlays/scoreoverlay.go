@@ -135,9 +135,9 @@ type ScoreOverlay struct {
 
 	circularMetre *texture.TextureRegion
 
-	hitCounts *play.HitDisplay
-
-	ppDisplay *play.PPDisplay
+	hitCounts   *play.HitDisplay
+	ppDisplay   *play.PPDisplay
+	strainGraph *play.StrainGraph
 }
 
 func loadFonts() {
@@ -180,6 +180,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
 
 	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
+
+	overlay.strainGraph = play.NewStrainGraph(ruleset)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -415,6 +417,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.rankBack.Update(overlay.audioTime)
 	overlay.rankFront.Update(overlay.audioTime)
 	overlay.arrows.Update(overlay.audioTime)
+	overlay.strainGraph.Update(overlay.audioTime)
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
@@ -636,6 +639,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	}
 
 	overlay.ppDisplay.Draw(batch, alpha)
+	overlay.strainGraph.Draw(batch, alpha)
 	overlay.hitCounts.Draw(batch, alpha)
 
 	if overlay.panel != nil {

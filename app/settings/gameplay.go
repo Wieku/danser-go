@@ -113,6 +113,25 @@ func initGameplay() *gameplay {
 			Vertical:   false,
 			Show300:    false,
 		},
+		StrainGraph: &strainGraph{
+			Show:      true,
+			Opacity:   1,
+			XPosition: 5,
+			YPosition: 310,
+			Align:     "BottomLeft",
+			Width:     130,
+			Height:    70,
+			BgColor: &hsv{
+				Hue:        0,
+				Saturation: 0,
+				Value:      0.2,
+			},
+			FgColor: &hsv{
+				Hue:        297,
+				Saturation: 0.4,
+				Value:      0.92,
+			},
+		},
 		KeyOverlay: &hudElementOffset{
 			hudElement: &hudElement{
 				Show:    true,
@@ -186,6 +205,7 @@ type gameplay struct {
 	ComboCounter            *hudElementOffset
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
+	StrainGraph             *strainGraph
 	KeyOverlay              *hudElementOffset
 	ScoreBoard              *scoreBoard
 	Mods                    *mods
@@ -288,4 +308,16 @@ type mods struct {
 	*hudElementOffset
 	HideInReplays bool
 	FoldInReplays bool
+}
+
+type strainGraph struct {
+	Show      bool
+	Opacity   float64
+	XPosition float64
+	YPosition float64
+	Align     string
+	Width     float64
+	Height    float64
+	BgColor   *hsv
+	FgColor   *hsv
 }
