@@ -41,14 +41,17 @@ type StrainPeaks struct {
 
 	// Flashlight peaks
 	Flashlight []float64
+
+	// Total contains aim, speed and flashlight peaks passed through star rating formula
+	Total []float64
 }
 
 // Retrieves skills values and converts to Stars
-func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
-	aimRating := math.Sqrt(aim.DifficultyValue()) * StarScalingFactor
-	aimRatingNoSliders := math.Sqrt(aimNoSliders.DifficultyValue()) * StarScalingFactor
-	speedRating := math.Sqrt(speed.DifficultyValue()) * StarScalingFactor
-	flashlightVal := math.Sqrt(flashlight.DifficultyValue()) * StarScalingFactor
+func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, _ bool) Stars {
+	aimRating := math.Sqrt(rawAim) * StarScalingFactor
+	aimRatingNoSliders := math.Sqrt(rawAimNoSliders) * StarScalingFactor
+	speedRating := math.Sqrt(rawSpeed) * StarScalingFactor
+	flashlightVal := math.Sqrt(rawFlashlight) * StarScalingFactor
 
 	sliderFactor := 1.0
 	if aimRating > 0.00001 {
@@ -89,6 +92,18 @@ func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills
 	}
 }
 
+// Retrieves skills values and converts to Stars
+func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
+	return getStarsFromRawValues(
+		aim.DifficultyValue(),
+		aimNoSliders.DifficultyValue(),
+		speed.DifficultyValue(),
+		flashlight.DifficultyValue(),
+		diff,
+		experimental,
+	)
+}
+
 // CalculateSingle calculates the final star rating of a map
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
@@ -121,11 +136,20 @@ func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficu
 		flashlightSkill.Process(o)
 	}
 
-	return StrainPeaks{
+	peaks := StrainPeaks{
 		Aim:        aimSkill.GetCurrentStrainPeaks(),
 		Speed:      speedSkill.GetCurrentStrainPeaks(),
 		Flashlight: flashlightSkill.GetCurrentStrainPeaks(),
 	}
+
+	peaks.Total = make([]float64, len(peaks.Aim))
+
+	for i := 0; i < len(peaks.Aim); i++ {
+		stars := getStarsFromRawValues(peaks.Aim[i], peaks.Aim[i], peaks.Speed[i], peaks.Flashlight[i], diff, experimental)
+		peaks.Total[i] = stars.Total
+	}
+
+	return peaks
 }
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
