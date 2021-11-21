@@ -3,7 +3,6 @@ package curves
 import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
 	"sort"
 )
 
@@ -70,7 +69,6 @@ func NewMonotoneCubic(points []vector.Vector2f) *MonotoneCubic {
 }
 
 func (bz *MonotoneCubic) PointAt(t float32) vector.Vector2f {
-	log.Println(t)
 	x := bz.Points[0].X + bz.length*mutils.ClampF32(t, 0.0, 1.0)
 
 	i := sort.Search(len(bz.c3s), func(i int) bool {
