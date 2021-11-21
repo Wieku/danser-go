@@ -23,7 +23,7 @@ type PPv2Results struct {
 type PPv2 struct {
 	Results PPv2Results
 
-	stars Stars
+	stars Attributes
 
 	experimental bool
 
@@ -43,7 +43,7 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(stars Stars, experimental bool,
+func (pp *PPv2) PPv2x(stars Attributes, experimental bool,
 	maxCombo, nsliders, ncircles, nobjects,
 	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
 	maxCombo = mutils.MaxI(1, maxCombo)

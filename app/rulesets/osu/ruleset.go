@@ -134,7 +134,7 @@ type OsuRuleSet struct {
 	ended bool
 
 	mapStats []*MapTo
-	oppDiffs map[difficulty.Modifier][]performance.Stars
+	oppDiffs map[difficulty.Modifier][]performance.Attributes
 
 	queue        []HitObject
 	processed    []HitObject
@@ -150,7 +150,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Stars)
+	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Attributes)
 
 	ruleset.mapStats = make([]*MapTo, 0, len(ruleset.beatMap.HitObjects))
 

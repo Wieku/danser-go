@@ -15,7 +15,7 @@ const (
 	StarScalingFactor float64 = 0.0675
 )
 
-type Stars struct {
+type Attributes struct {
 	// Star rating, visible on osu!'s beatmap page
 	Total float64
 
@@ -46,8 +46,8 @@ type StrainPeaks struct {
 	Total []float64
 }
 
-// Retrieves skills values and converts to Stars
-func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, _ bool) Stars {
+// getStarsFromRawValues converts raw skill values to Attributes
+func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, _ bool) Attributes {
 	aimRating := math.Sqrt(rawAim) * StarScalingFactor
 	aimRatingNoSliders := math.Sqrt(rawAimNoSliders) * StarScalingFactor
 	speedRating := math.Sqrt(rawSpeed) * StarScalingFactor
@@ -83,7 +83,7 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 		total = math.Cbrt(1.12) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
 	}
 
-	return Stars{
+	return Attributes{
 		Total:        total,
 		Aim:          aimRating,
 		SliderFactor: sliderFactor,
@@ -92,8 +92,8 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 	}
 }
 
-// Retrieves skills values and converts to Stars
-func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Stars {
+// Retrieves skills values and converts to Attributes
+func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, experimental bool) Attributes {
 	return getStarsFromRawValues(
 		aim.DifficultyValue(),
 		aimNoSliders.DifficultyValue(),
@@ -105,7 +105,7 @@ func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills
 }
 
 // CalculateSingle calculates the final star rating of a map
-func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Stars {
+func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) Attributes {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
 
 	aimSkill := skills.NewAimSkill(diff, true, experimental)
@@ -153,7 +153,7 @@ func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficu
 }
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
-func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) []Stars {
+func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) []Attributes {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
@@ -168,7 +168,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, ex
 	speedSkill := skills.NewSpeedSkill(diff, experimental)
 	flashlightSkill := skills.NewFlashlightSkill(diff, experimental)
 
-	stars := make([]Stars, 1, len(objects))
+	stars := make([]Attributes, 1, len(objects))
 
 	lastProgress := -1
 
