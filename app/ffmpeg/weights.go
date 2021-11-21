@@ -58,7 +58,7 @@ func calculateWeights(bFrames int) []float32 {
 		}
 	} else {
 		id := settings.Recording.MotionBlur.BlendWeights.AutoWeightsID
-		if id < 0 || id > len(easings) {
+		if id < 0 || id >= len(easings) {
 			id = 0
 		}
 
