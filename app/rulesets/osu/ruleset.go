@@ -133,7 +133,6 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	mapStats []*MapTo
 	oppDiffs map[difficulty.Modifier][]performance.Attributes
 
 	queue        []HitObject
@@ -151,28 +150,6 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
 	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Attributes)
-
-	ruleset.mapStats = make([]*MapTo, 0, len(ruleset.beatMap.HitObjects))
-
-	for i, o := range ruleset.beatMap.HitObjects {
-		mapTo := &MapTo{}
-
-		if i > 0 {
-			*mapTo = *ruleset.mapStats[i-1]
-		}
-
-		if s, ok := o.(*objects.Slider); ok {
-			mapTo.nsliders++
-			mapTo.maxCombo += len(s.ScorePoints)
-		} else if _, ok := o.(*objects.Circle); ok {
-			mapTo.ncircles++
-		}
-
-		mapTo.maxCombo++
-		mapTo.nobjects++
-
-		ruleset.mapStats = append(ruleset.mapStats, mapTo)
-	}
 
 	if settings.Gameplay.UseLazerPP {
 		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
@@ -485,10 +462,9 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	index := mutils.MaxI64(0, subSet.numObjects-1)
 
-	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff, set.experimentalPP, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
+	subSet.ppv2.PPv2x(diff, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, set.experimentalPP)
 
 	switch result {
 	case Hit100:
@@ -657,7 +633,10 @@ func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) performance.PPv2Results {
 
 func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {
 	subSet := set.cursors[cursor]
-	return subSet.maxCombo == int64(set.mapStats[subSet.numObjects-1].maxCombo)
+
+	oppDiff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask]
+
+	return subSet.maxCombo == int64(oppDiff[len(oppDiff)-1].MaxCombo)
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
