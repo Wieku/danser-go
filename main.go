@@ -606,13 +606,28 @@ func mainLoopRecord() {
 				progress = int(math.Round(timeOffset / p.RunningTime * 100))
 
 				if progress%5 == 0 && lastProgress != progress {
+					speed := float64(count-lastCount) * (1000 / fps) / (qpc.GetMilliTimeF() - lastRealTime)
+
+					eta := int((p.RunningTime - timeOffset) / 1000 / speed)
+
+					etaText := ""
+
+					if hours := eta / 3600; hours > 0 {
+						etaText += strconv.Itoa(hours) + "h"
+					}
+
+					if minutes := eta / 60; minutes > 0 {
+						etaText += fmt.Sprintf("%02dm", minutes%60)
+					}
+
+					etaText += fmt.Sprintf("%02ds", eta%60)
+
 					if settings.Recording.ShowFFmpegLogs {
 						fmt.Println()
 					}
 
-					speed := float64(count-lastCount) * (1000 / fps) / (qpc.GetMilliTimeF() - lastRealTime)
+					log.Println(fmt.Sprintf("Progress: %d%%, Speed: %.2fx, ETA: %s", progress, speed, etaText))
 
-					log.Println(fmt.Sprintf("Progress: %d%%, Speed: %.2fx", progress, speed))
 					lastProgress = progress
 
 					lastCount = count
