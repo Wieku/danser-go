@@ -107,6 +107,18 @@ func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	}
 }
 
+func (diff *Difficulty) GetScoreMultiplier() float64 {
+	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore))).GetScoreMultiplier()
+
+	if diff.Speed > 1 {
+		baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
+	} else if diff.Speed < 1 {
+		baseMultiplier *= math.Max(0, 1-(2.8*(1-diff.Speed)))
+	}
+
+	return baseMultiplier
+}
+
 func (diff *Difficulty) GetHPDrain() float64 {
 	return diff.hpDrain
 }

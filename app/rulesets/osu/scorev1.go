@@ -18,7 +18,7 @@ func newScoreV1Processor() *scoreV1Processor {
 }
 
 func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlayer) {
-	s.modMultiplier = player.diff.Mods.GetScoreMultiplier()
+	s.modMultiplier = player.diff.GetScoreMultiplier()
 
 	pauses := int64(0)
 	for _, p := range beatMap.Pauses {
