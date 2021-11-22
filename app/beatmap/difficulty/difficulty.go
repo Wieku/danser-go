@@ -113,7 +113,11 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 	if diff.Speed > 1 {
 		baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
 	} else if diff.Speed < 1 {
-		baseMultiplier *= math.Max(0, 1-(2.8*(1-diff.Speed)))
+		if diff.Speed>= 0.75 {
+			baseMultiplier *= 0.3+0.7*(1-(1-diff.Speed)/0.25)
+		} else {
+			baseMultiplier *= math.Max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
+		}
 	}
 
 	return baseMultiplier
