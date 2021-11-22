@@ -227,10 +227,6 @@ func run() {
 		settings.END = *end
 		settings.RECORD = recordMode || screenshotMode
 
-		if settings.RECORD {
-			//bass.Offscreen = true
-		}
-
 		newSettings := settings.LoadSettings(*settingsVersion)
 
 		if !newSettings && len(os.Args) == 1 {
