@@ -160,7 +160,7 @@ func (graph *StrainGraph) Draw(batch *batch.QuadBatch, alpha float64) {
 		return
 	}
 
-	if graph.fbo == nil || graph.size.X != conf.Width || graph.size.X != conf.Height {
+	if graph.fbo == nil || graph.size.X != conf.Width || graph.size.Y != conf.Height {
 		graph.drawFBO(batch)
 	}
 
