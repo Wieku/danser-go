@@ -159,7 +159,7 @@ func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 
 	allMaps := loadBeatmapsFromDatabase()
 
-	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps) / 2)
+	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps)/2)
 
 	for _, b := range allMaps {
 		if b.Mode == 0 {
@@ -190,7 +190,8 @@ func unpackMaps() {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 }
 
@@ -215,7 +216,8 @@ func importMaps() {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 
 	if err != nil {

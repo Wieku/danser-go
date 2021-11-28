@@ -198,7 +198,8 @@ func organizeReplays() {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 }
 
@@ -212,41 +213,49 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 
 	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
-	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osr") {
-			log.Println("Loading: ", f.Name())
-
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				panic(err)
+	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() && osPathname != replayDir {
+				return godirwalk.SkipThis
 			}
 
-			replayD, _ := rplpa.ParseReplay(data)
+			if strings.HasSuffix(de.Name(), ".osr") {
+				log.Println("Loading: ", de.Name())
 
-			if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
-				log.Println("Incompatible maps, skipping", replayD.Username)
-				return nil
+				data, err := ioutil.ReadFile(osPathname)
+				if err != nil {
+					panic(err)
+				}
+
+				replayD, _ := rplpa.ParseReplay(data)
+
+				if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
+					log.Println("Incompatible maps, skipping", replayD.Username)
+					return nil
+				}
+
+				if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+					log.Println("Excluding for incompatible mods:", replayD.Username)
+					return nil
+				}
+
+				if (replayD.Mods & uint32(excludedMods)) > 0 {
+					log.Println("Excluding for mods:", replayD.Username)
+					return nil
+				}
+
+				if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+					log.Println("Excluding for missing input data:", replayD.Username)
+					return nil
+				}
+
+				candidates = append(candidates, replayD)
 			}
 
-			if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
-				log.Println("Excluding for incompatible mods:", replayD.Username)
-				return nil
-			}
-
-			if (replayD.Mods & uint32(excludedMods)) > 0 {
-				log.Println("Excluding for mods:", replayD.Username)
-				return nil
-			}
-
-			if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-				log.Println("Excluding for missing input data:", replayD.Username)
-				return nil
-			}
-
-			candidates = append(candidates, replayD)
-		}
-
-		return nil
+			return nil
+		},
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 
 	return
@@ -291,7 +300,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	log.Println(fmt.Sprintf("\tMean cv frametime: %.2fms", meanFrameTime))
 
-	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay | difficulty.Relax | difficulty.Relax2) {
+	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay|difficulty.Relax|difficulty.Relax2) {
 		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
 
@@ -419,6 +428,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
 
+					// If next frame is not in the next millisecond, assume it's -36ms slider end
 					processAhead := true
 					if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
 						processAhead = false

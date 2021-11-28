@@ -197,6 +197,7 @@ func migrateSettings() {
 			return nil
 		},
 		Unsorted: true,
+		FollowSymbolicLinks: true,
 	})
 }
 
