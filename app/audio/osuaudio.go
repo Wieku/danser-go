@@ -6,7 +6,6 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/math/mutils"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -217,7 +216,6 @@ func LoadBeatmapSamples(dir string) {
 
 	_ = godirwalk.Walk(fullPath, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			log.Println(osPathname, fullPath)
 			if de.IsDir() && osPathname != fullPath {
 				return godirwalk.SkipThis
 			}
