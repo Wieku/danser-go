@@ -48,6 +48,7 @@ type Player struct {
 	lastMusicPos    float64
 	lastProgressMsF float64
 	progressMsF     float64
+	rawPositionF    float64
 	progressMs      int64
 
 	batch       *batch2.QuadBatch
@@ -408,6 +409,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.startOffset = startOffset
 	player.progressMsF = startOffset
+	player.rawPositionF = startOffset
 
 	player.RunningTime = player.MapEnd - startOffset
 
@@ -488,23 +490,35 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			musicState := player.musicPlayer.GetState()
 
-			if musicState == bass.MusicStopped {
-				player.progressMsF += delta
-			} else {
-				platformOffset := 0.0
-				if runtime.GOOS == "windows" {
-					platformOffset = windowsOffset
-				}
+			speed := 1.0
 
-				musicPos := player.musicPlayer.GetPosition()*1000 + (platformOffset+float64(settings.Audio.Offset))*settings.SPEED
+			if musicState == bass.MusicStopped {
+				if player.rawPositionF < player.startPointE || player.start {
+					player.rawPositionF += delta
+				} else {
+					speed = settings.SPEED
+					player.rawPositionF += delta * speed
+				}
+			} else {
+				musicPos := player.musicPlayer.GetPosition() * 1000
+				speed = player.musicPlayer.GetTempo()
 
 				if musicPos != player.lastMusicPos || musicState == bass.MusicPaused {
-					player.progressMsF = musicPos
+					player.rawPositionF = musicPos
 					player.lastMusicPos = musicPos
-				} else {
-					player.progressMsF += delta * settings.SPEED
+				} else if musicPos > 1 {
+					// In DirectSound mode with VistaTruePos set to FALSE music is reported at 10ms intervals so we need to *interpolate* it
+					// Wait at least 1ms because before interpolating because there's a 60ish ms delay before music in playing state starts reporting time and we don't want to jump back in time
+					player.rawPositionF += delta * speed
 				}
 			}
+
+			platformOffset := 0.0
+			if runtime.GOOS == "windows" { // For some reason WASAPI reports time with 15ms delay, so we need to correct it
+				platformOffset = windowsOffset
+			}
+
+			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset))*speed
 
 			player.updateMain(delta)
 
@@ -524,8 +538,14 @@ func (player *Player) Update(delta float64) bool {
 	if player.musicPlayer.GetState() == bass.MusicPlaying {
 		player.progressMsF += delta * player.musicPlayer.GetTempo()
 	} else {
-		player.progressMsF += delta
+		if player.progressMsF < player.startPointE || player.start {
+			player.progressMsF += delta
+		} else {
+			player.progressMsF += delta * settings.SPEED
+		}
 	}
+
+	player.rawPositionF = player.progressMsF
 
 	player.updateMain(delta)
 
@@ -548,7 +568,7 @@ func (player *Player) GetTimeOffset() float64 {
 }
 
 func (player *Player) updateMain(delta float64) {
-	if player.progressMsF >= player.startPoint && !player.start {
+	if player.rawPositionF >= player.startPoint && !player.start {
 		player.musicPlayer.Play()
 
 		if player.overlay != nil {
