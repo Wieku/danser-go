@@ -447,13 +447,13 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	}
 
 	slider.fade = animation.NewGlider(0)
-	slider.fade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-difficulty.HitFadeIn), 1)
+	slider.fade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-diff.TimeFadeIn), 1)
 
 	slider.bodyFade = animation.NewGlider(0)
-	slider.bodyFade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-difficulty.HitFadeIn), 1)
+	slider.bodyFade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-diff.TimeFadeIn), 1)
 
 	if diff.CheckModActive(difficulty.Hidden) {
-		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+difficulty.HitFadeIn, slider.EndTime, 0, easing.OutQuad)
+		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+diff.TimeFadeIn, slider.EndTime, 0, easing.OutQuad)
 	} else if settings.Objects.Sliders.Snaking.Out && settings.Objects.Sliders.Snaking.OutFadeInstant {
 		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime, 0)
 	} else {

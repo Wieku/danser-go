@@ -25,10 +25,12 @@ type Difficulty struct {
 	baseCS float64
 	baseHP float64
 
-	PreemptU, Preempt, FadeIn float64
-	CircleRadiusU             float64
-	CircleRadius              float64
-	Mods                      Modifier
+	PreemptU      float64
+	Preempt       float64
+	TimeFadeIn    float64
+	CircleRadiusU float64
+	CircleRadius  float64
+	Mods          Modifier
 
 	Hit50U  float64
 	Hit100U float64
@@ -94,7 +96,7 @@ func (diff *Difficulty) calculate() {
 	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
 	diff.Preempt = math.Floor(diff.PreemptU)
 
-	diff.FadeIn = DifficultyRate(ar, 1200, 800, 300)
+	diff.TimeFadeIn = HitFadeIn * math.Min(1, diff.PreemptU/450)
 
 	diff.Hit50U = DifficultyRate(od, 200, 150, 100)
 	diff.Hit100U = DifficultyRate(od, 140, 100, 60)

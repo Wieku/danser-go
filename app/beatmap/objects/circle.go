@@ -179,7 +179,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 1.0, 0.0))
 			}
 		} else {
-			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+difficulty.HitFadeIn, 0.0, 1.0))
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.TimeFadeIn, 0.0, 1.0))
 			if !circle.SliderPoint || circle.SliderPointStart {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0))
 			} else {
@@ -192,7 +192,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
 
 	if !diff.CheckModActive(difficulty.Hidden) || circle.HitObjectID == 0 {
-		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+difficulty.HitFadeIn*2), 0.0, 0.9))
+		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+diff.TimeFadeIn*2), 0.0, 0.9))
 		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
 
 		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, endTime, 4.0, 1.0))
