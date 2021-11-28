@@ -103,7 +103,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			localReplay = true
 		}
-	} else {
+	} else if settings.Knockout.MaxPlayers > 0 {
 		candidates = controller.getCandidates()
 	}
 
