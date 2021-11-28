@@ -66,6 +66,7 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-skin` - overrides `Skin.CurrentSkin` in settings
 * `-cs`, `-ar`, `-od`, `-hp` - overrides maps' difficulty settings (values outside of osu!'s normal limits accepted)
 * `-nodbcheck` - skips updating the database with new, changed or deleted maps
+* `-noupdatecheck` - skips checking GitHub for a newer version of danser
 * `-ss=20.5` - creates a screenshot at the given time in .png format
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
 
