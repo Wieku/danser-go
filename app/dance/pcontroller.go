@@ -165,7 +165,7 @@ func (controller *PlayerController) Update(time float64, delta float64) {
 
 	controller.ruleset.UpdateClickFor(controller.cursors[0], int64(time))
 	controller.ruleset.UpdateNormalFor(controller.cursors[0], int64(time), false)
-	controller.ruleset.UpdatePostFor(controller.cursors[0], int64(time))
+	controller.ruleset.UpdatePostFor(controller.cursors[0], int64(time), false)
 	controller.ruleset.Update(int64(time))
 
 	controller.lastTime = time

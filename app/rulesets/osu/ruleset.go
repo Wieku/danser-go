@@ -64,7 +64,7 @@ type HitObject interface {
 	Init(ruleset *OsuRuleSet, object objects.IHitObject, players []*difficultyPlayer)
 	UpdateFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
-	UpdatePostFor(player *difficultyPlayer, time int64) bool
+	UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdatePost(time int64) bool
 	IsHit(player *difficultyPlayer) bool
 	GetFadeTime() int64
@@ -401,14 +401,14 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64, proc
 	}
 }
 
-func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
+func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64, processSliderEndsAhead bool) {
 	player := set.cursors[cursor].player
 
 	if len(set.processed) > 0 {
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
-			g.UpdatePostFor(player, time)
+			g.UpdatePostFor(player, time, processSliderEndsAhead)
 		}
 	}
 }
@@ -522,7 +522,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
 	}
 
-	if len(set.cursors) == 1 && !settings.RECORD {
+	if len(set.cursors) == 1 /*&& !settings.RECORD*/ {
 		log.Println(fmt.Sprintf(
 			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f",
 			result.ScoreValue(),

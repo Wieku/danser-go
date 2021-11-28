@@ -112,7 +112,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	return !state.isHit
 }
 
-func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64) bool {
+func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64, _ bool) bool {
 	state := circle.state[player]
 
 	if time > int64(circle.hitCircle.GetEndTime())+player.diff.Hit50 && !state.isHit {

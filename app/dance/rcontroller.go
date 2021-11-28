@@ -407,9 +407,9 @@ func (controller *ReplayController) updateMain(nTime float64) {
 			}
 
 			if int64(nTime) != c.lastTime {
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime), false)
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
-				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
 			}
 
 			c.lastTime = int64(nTime)
@@ -462,14 +462,14 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 					// New replays (after 20190506) scores object ends only on replay frame
 					if c.newHandling || c.replayIndex == len(c.frames)-1 {
-						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
+						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime, processAhead)
 					} else {
 						localIndex := mutils.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
 						localFrame := c.frames[localIndex]
 
 						// HACK for older replays: update object ends till the next frame
 						for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
-							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
+							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime, false)
 						}
 					}
 
@@ -504,7 +504,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
-				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime), false)
 			}
 		}
 	}

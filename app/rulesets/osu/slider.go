@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"log"
 	"math"
 )
 
@@ -108,6 +109,8 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 	if clicked && !state.isStartHit && !state.isHit {
 		action := slider.ruleSet.CanBeHit(time, slider, player)
+
+		log.Println("click", slider.hitSlider.GetID(), slider.hitSlider.GetStartTime(), time, clicked, inRadius, action, player.cursor.RawPosition.Dst(position), radius)
 
 		if inRadius {
 			if action == Click {
@@ -229,6 +232,8 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 
 		allowable := mouseDownAcceptable && player.cursor.RawPosition.Dst(sliderPosition) <= float32(radiusNeeded)
 
+		//log.Println(slider.hitSlider.GetID(), slider.hitSlider.GetStartTime(), time, state.downButton, player.gameDownState, player.cursor.RawPosition.Dst(sliderPosition) <= float32(radiusNeeded))
+
 		if allowable && !state.sliding {
 			state.sliding = true
 			state.slideStart = time
@@ -289,7 +294,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 	return true
 }
 
-func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
+func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool {
 	state := slider.state[player]
 
 	if time > int64(slider.hitSlider.GetStartTime())+player.diff.Hit50 && !state.isStartHit {
@@ -313,7 +318,9 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 		state.startResult = Miss
 	}
 
-	if time >= int64(slider.hitSlider.GetEndTime()) && !state.isHit {
+	log.Println("end", slider.hitSlider.GetID(), slider.hitSlider.GetEndTime(), time, state.isHit)
+
+	if (time >= int64(slider.hitSlider.GetEndTime()) || (processSliderEndsAhead && int64(slider.hitSlider.GetEndTime())-time == 1)) && !state.isHit {
 		if state.startResult != Miss {
 			state.scored++
 		}

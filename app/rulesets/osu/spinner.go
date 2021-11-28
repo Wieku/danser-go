@@ -199,7 +199,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 	return numFinishedTotal == 0
 }
 
-func (spinner *Spinner) UpdatePostFor(player *difficultyPlayer, time int64) bool {
+func (spinner *Spinner) UpdatePostFor(player *difficultyPlayer, time int64, _ bool) bool {
 	state := spinner.state[player]
 
 	if time >= int64(spinner.hitSpinner.GetEndTime()) && !state.finished {
