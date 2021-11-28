@@ -330,6 +330,16 @@ func run() {
 			os.Exit(0)
 		}
 
+		allowDA := false
+
+		// if map was launched not in knockout or play mode but AT mod is present, use replay mode for danser, allowing custom ar,od,cs,hp
+		if !settings.KNOCKOUT && modsParsed.Active(difficulty2.Autoplay) {
+			settings.PLAY = false
+			settings.KNOCKOUT = true
+			settings.Knockout.MaxPlayers = 0
+			allowDA = true
+		}
+
 		lastSamples = int(settings.Graphics.MSAA)
 
 		if strings.TrimSpace(*skin) != "" {
@@ -500,7 +510,7 @@ func run() {
 			settings.SPEED *= 0.75
 		}
 
-		if settings.PLAY || !settings.KNOCKOUT {
+		if settings.PLAY || !settings.KNOCKOUT || allowDA {
 			if !math.IsNaN(*ar) {
 				beatMap.Diff.SetARCustom(*ar)
 			}
