@@ -225,15 +225,25 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 }
 
 func (panel *RankingPanel) loadMods() {
-	mods := panel.ruleset.GetBeatMap().Diff.Mods.StringFull()
+	mods := panel.ruleset.GetBeatMap().Diff.GetModStringFull()
 
 	offset := -64.0
 	for i, s := range mods {
-		modSpriteName := "selection-mod-" + strings.ToLower(s)
+		if strings.HasPrefix(s, "DA:") {
+			bgTex := skin.GetTexture("selection-mod-base")
 
-		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+			modBg := sprite.NewSpriteSingle(bgTex, 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+			panel.manager.Add(modBg)
 
-		panel.manager.Add(mod)
+			mod := sprite.NewTextSpriteSize(strings.TrimPrefix(s, "DA:"), font.GetFont("Quicksand Bold"), float64(bgTex.Height)/4, 6+float64(i)+0.5, vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+			panel.manager.Add(mod)
+		} else {
+			modSpriteName := "selection-mod-" + strings.ToLower(s)
+
+			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+
+			panel.manager.Add(mod)
+		}
 
 		offset -= 32
 	}

@@ -1,6 +1,9 @@
 package difficulty
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 const (
 	HitFadeIn     = 400.0
@@ -12,7 +15,16 @@ const (
 )
 
 type Difficulty struct {
-	hpDrain, cs, od, ar       float64
+	ar float64
+	od float64
+	cs float64
+	hp float64
+
+	baseAR float64
+	baseOD float64
+	baseCS float64
+	baseHP float64
+
 	PreemptU, Preempt, FadeIn float64
 	CircleRadiusU             float64
 	CircleRadius              float64
@@ -35,19 +47,30 @@ type Difficulty struct {
 	CustomSpeed float64
 }
 
-func NewDifficulty(hpDrain, cs, od, ar float64) *Difficulty {
+func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
 	diff := new(Difficulty)
-	diff.hpDrain = hpDrain
+
+	diff.baseHP = hp
+	diff.hp = hp
+
+	diff.baseCS = cs
 	diff.cs = cs
+
+	diff.baseOD = od
 	diff.od = od
+
+	diff.baseAR = ar
 	diff.ar = ar
+
 	diff.CustomSpeed = 1
+
 	diff.calculate()
+
 	return diff
 }
 
 func (diff *Difficulty) calculate() {
-	hpDrain, cs, od, ar := diff.hpDrain, diff.cs, diff.od, diff.ar
+	hpDrain, cs, od, ar := diff.hp, diff.cs, diff.od, diff.ar
 
 	if diff.Mods&HardRock > 0 {
 		ar = math.Min(ar*1.4, 10)
@@ -113,8 +136,8 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 	if diff.Speed > 1 {
 		baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
 	} else if diff.Speed < 1 {
-		if diff.Speed>= 0.75 {
-			baseMultiplier *= 0.3+0.7*(1-(1-diff.Speed)/0.25)
+		if diff.Speed >= 0.75 {
+			baseMultiplier *= 0.3 + 0.7*(1-(1-diff.Speed)/0.25)
 		} else {
 			baseMultiplier *= math.Max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
 		}
@@ -123,13 +146,79 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 	return baseMultiplier
 }
 
-func (diff *Difficulty) GetHPDrain() float64 {
-	return diff.hpDrain
+func (diff *Difficulty) GetModStringFull() []string {
+	mods := diff.Mods.StringFull()
+
+	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
+		mods = append(mods, fmt.Sprintf("DA:AR%.2g", ar))
+	}
+
+	if od := diff.GetOD(); od != diff.GetBaseOD() {
+		mods = append(mods, fmt.Sprintf("DA:OD%.2g", od))
+	}
+
+	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
+		mods = append(mods, fmt.Sprintf("DA:CS%.2g", cs))
+	}
+
+	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
+		mods = append(mods, fmt.Sprintf("DA:HP%.2g", hp))
+	}
+
+	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
+		mods = append(mods, fmt.Sprintf("DA:%.2gx", cSpeed))
+	}
+
+	return mods
 }
 
-func (diff *Difficulty) SetHPDrain(hpDrain float64) {
-	diff.hpDrain = hpDrain
+func (diff *Difficulty) GetModString() string {
+	mods := diff.Mods.String()
+
+	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
+		mods += fmt.Sprintf("AR%.2g", ar)
+	}
+
+	if od := diff.GetOD(); od != diff.GetBaseOD() {
+		mods += fmt.Sprintf("OD%.2g", od)
+	}
+
+	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
+		mods += fmt.Sprintf("CS%.2g", cs)
+	}
+
+	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
+		mods += fmt.Sprintf("HP%.2g", hp)
+	}
+
+	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
+		mods += fmt.Sprintf("S%.2gx", cSpeed)
+	}
+
+	return mods
+}
+
+func (diff *Difficulty) GetBaseHP() float64 {
+	return diff.baseHP
+}
+
+func (diff *Difficulty) GetHP() float64 {
+	return diff.hp
+}
+
+func (diff *Difficulty) SetHP(hp float64) {
+	diff.baseHP = hp
+	diff.hp = hp
 	diff.calculate()
+}
+
+func (diff *Difficulty) SetHPCustom(hp float64) {
+	diff.hp = hp
+	diff.calculate()
+}
+
+func (diff *Difficulty) GetBaseCS() float64 {
+	return diff.baseCS
 }
 
 func (diff *Difficulty) GetCS() float64 {
@@ -137,8 +226,18 @@ func (diff *Difficulty) GetCS() float64 {
 }
 
 func (diff *Difficulty) SetCS(cs float64) {
+	diff.baseCS = cs
 	diff.cs = cs
 	diff.calculate()
+}
+
+func (diff *Difficulty) SetCSCustom(cs float64) {
+	diff.cs = cs
+	diff.calculate()
+}
+
+func (diff *Difficulty) GetBaseOD() float64 {
+	return diff.baseOD
 }
 
 func (diff *Difficulty) GetOD() float64 {
@@ -146,8 +245,18 @@ func (diff *Difficulty) GetOD() float64 {
 }
 
 func (diff *Difficulty) SetOD(od float64) {
+	diff.baseOD = od
 	diff.od = od
 	diff.calculate()
+}
+
+func (diff *Difficulty) SetODCustom(od float64) {
+	diff.od = od
+	diff.calculate()
+}
+
+func (diff *Difficulty) GetBaseAR() float64 {
+	return diff.baseAR
 }
 
 func (diff *Difficulty) GetAR() float64 {
@@ -155,6 +264,12 @@ func (diff *Difficulty) GetAR() float64 {
 }
 
 func (diff *Difficulty) SetAR(ar float64) {
+	diff.baseAR = ar
+	diff.ar = ar
+	diff.calculate()
+}
+
+func (diff *Difficulty) SetARCustom(ar float64) {
 	diff.ar = ar
 	diff.calculate()
 }
@@ -170,9 +285,11 @@ func DifficultyRate(diff, min, mid, max float64) float64 {
 	if diff > 5 {
 		return mid + (max-mid)*(diff-5)/5
 	}
+
 	if diff < 5 {
 		return mid - (mid-min)*(5-diff)/5
 	}
+
 	return mid
 }
 

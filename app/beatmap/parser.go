@@ -86,7 +86,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 		beatMap.Timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
 	case "HPDrainRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
-		beatMap.Diff.SetHPDrain(mutils.ClampF64(parsed, 0, 10))
+		beatMap.Diff.SetHP(mutils.ClampF64(parsed, 0, 10))
 	case "OverallDifficulty":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetOD(mutils.ClampF64(parsed, 0, 10))

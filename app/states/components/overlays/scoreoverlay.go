@@ -906,16 +906,12 @@ func (overlay *ScoreOverlay) showPassInfo() {
 }
 
 func (overlay *ScoreOverlay) initMods() {
-	mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
+	mods := overlay.ruleset.GetBeatMap().Diff.GetModStringFull()
 
 	scale := settings.Gameplay.Mods.Scale
 	alpha := settings.Gameplay.Mods.Opacity
 
-	offset := -48.0 * scale
-	for i, s := range mods {
-		modSpriteName := "selection-mod-" + strings.ToLower(s)
-
-		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+	initMod := func(mod sprite.ISprite, i int) {
 		mod.SetAlpha(0)
 		mod.ShowForever(true)
 
@@ -928,6 +924,28 @@ func (overlay *ScoreOverlay) initMods() {
 			startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
 			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0*alpha, 0))
 		}
+	}
+
+	offset := -48.0 * scale
+	for i, s := range mods {
+		var mod sprite.ISprite
+
+		if strings.HasPrefix(s, "DA:") {
+			bgTex := skin.GetTexture("selection-mod-base")
+
+			modBg := sprite.NewSpriteSingle(bgTex, float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+
+			initMod(modBg, i)
+
+			overlay.mods.Add(modBg)
+
+			mod = sprite.NewTextSpriteSize(strings.TrimPrefix(s, "DA:"), overlay.keyFont, float64(bgTex.Height)/4, float64(i)+0.5, vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+		} else {
+			modSpriteName := "selection-mod-" + strings.ToLower(s)
+			mod = sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+		}
+
+		initMod(mod, i)
 
 		if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
 			offset -= 16 * scale

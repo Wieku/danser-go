@@ -496,7 +496,7 @@ func insertBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.TimeAdded,
 					bMap.PlayCount,
 					bMap.LastPlayed,
-					bMap.Diff.GetHPDrain(),
+					bMap.Diff.GetHP(),
 					bMap.Diff.GetOD(),
 					bMap.Stars,
 					bMap.MinBPM,
@@ -577,7 +577,7 @@ func loadBeatmapsFromDatabase() []*beatmap.BeatMap {
 
 		beatMap.Diff.SetCS(mutils.ClampF64(cs, 0, 10))
 		beatMap.Diff.SetAR(mutils.ClampF64(ar, 0, 10))
-		beatMap.Diff.SetHPDrain(mutils.ClampF64(hp, 0, 10))
+		beatMap.Diff.SetHP(mutils.ClampF64(hp, 0, 10))
 		beatMap.Diff.SetOD(mutils.ClampF64(od, 0, 10))
 
 		beatmaps = append(beatmaps, beatMap)

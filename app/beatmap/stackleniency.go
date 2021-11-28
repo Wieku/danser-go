@@ -26,9 +26,9 @@ func calculateStackLeniency(b *BeatMap) {
 		return
 	}
 
-	diffNM := difficulty.NewDifficulty(b.Diff.GetHPDrain(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
-	diffEZ := difficulty.NewDifficulty(b.Diff.GetHPDrain(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
-	diffHR := difficulty.NewDifficulty(b.Diff.GetHPDrain(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
+	diffNM := difficulty.NewDifficulty(b.Diff.GetHP(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
+	diffEZ := difficulty.NewDifficulty(b.Diff.GetHP(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
+	diffHR := difficulty.NewDifficulty(b.Diff.GetHP(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
 
 	diffEZ.SetMods(difficulty.Easy)
 	diffHR.SetMods(difficulty.HardRock)

@@ -502,19 +502,19 @@ func run() {
 
 		if settings.PLAY || !settings.KNOCKOUT {
 			if !math.IsNaN(*ar) {
-				beatMap.Diff.SetAR(*ar)
+				beatMap.Diff.SetARCustom(*ar)
 			}
 
 			if !math.IsNaN(*od) {
-				beatMap.Diff.SetOD(*od)
+				beatMap.Diff.SetODCustom(*od)
 			}
 
 			if !math.IsNaN(*cs) {
-				beatMap.Diff.SetCS(*cs)
+				beatMap.Diff.SetCSCustom(*cs)
 			}
 
 			if !math.IsNaN(*hp) {
-				beatMap.Diff.SetHPDrain(*hp)
+				beatMap.Diff.SetHPCustom(*hp)
 			}
 
 			beatMap.Diff.SetCustomSpeed(speedBefore)

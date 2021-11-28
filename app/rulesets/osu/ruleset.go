@@ -163,7 +163,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
 	for i, cursor := range cursors {
-		diff := difficulty.NewDifficulty(beatMap.Diff.GetHPDrain(), beatMap.Diff.GetCS(), beatMap.Diff.GetOD(), beatMap.Diff.GetAR())
+		diff := difficulty.NewDifficulty(beatMap.Diff.GetBaseHP(), beatMap.Diff.GetBaseCS(), beatMap.Diff.GetBaseOD(), beatMap.Diff.GetBaseAR())
+
+		diff.SetHPCustom(beatMap.Diff.GetHP())
+		diff.SetCSCustom(beatMap.Diff.GetCS())
+		diff.SetODCustom(beatMap.Diff.GetOD())
+		diff.SetARCustom(beatMap.Diff.GetAR())
+
 		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.ScoreV2)) // if beatmap has ScoreV2 mod, force it for all players
 		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
 
@@ -311,7 +317,7 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, utils.Humanize(set.cursors[c].hits[Miss]))
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
 			data = append(data, utils.Humanize(set.cursors[c].maxCombo))
-			data = append(data, set.cursors[c].player.diff.Mods.String())
+			data = append(data, set.cursors[c].player.diff.GetModString())
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
 			table.Append(data)
 		}
