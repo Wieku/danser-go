@@ -180,14 +180,30 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff, ruleset.experimentalPP)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
-			log.Println("\tAim Stars:  ", star.Aim)
-			log.Println("\tSpeed Stars:", star.Speed)
+
+			log.Println("Stars:")
+			log.Println("\tAim:  ", star.Aim)
+			log.Println("\tSpeed:", star.Speed)
 
 			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
-				log.Println("\tFL Stars:   ", star.Flashlight)
+				log.Println("\tFlash:", star.Flashlight)
 			}
 
-			log.Println("\tTotal Stars:", star.Total)
+			log.Println("\tTotal:", star.Total)
+
+			pp := &performance.PPv2{}
+			pp.PPv2x(star, -1, -1, 0, 0, 0, diff, false)
+
+			log.Println("SS PP:")
+			log.Println("\tAim:  ", pp.Results.Aim)
+			log.Println("\tTap:  ", pp.Results.Speed)
+
+			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+				log.Println("\tFlash:", star.Flashlight)
+			}
+
+			log.Println("\tAcc:  ", pp.Results.Acc)
+			log.Println("\tTotal:", pp.Results.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
