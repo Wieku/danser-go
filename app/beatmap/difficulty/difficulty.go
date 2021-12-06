@@ -3,6 +3,7 @@ package difficulty
 import (
 	"fmt"
 	"math"
+	"strings"
 )
 
 const (
@@ -152,26 +153,30 @@ func (diff *Difficulty) GetModStringFull() []string {
 	mods := diff.Mods.StringFull()
 
 	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
-		mods = append(mods, fmt.Sprintf("DA:AR%.2g", ar))
+		mods = append(mods, fmt.Sprintf("DA:AR%s", confWOZeros(ar)))
 	}
 
 	if od := diff.GetOD(); od != diff.GetBaseOD() {
-		mods = append(mods, fmt.Sprintf("DA:OD%.2g", od))
+		mods = append(mods, fmt.Sprintf("DA:OD%s", confWOZeros(od)))
 	}
 
 	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
-		mods = append(mods, fmt.Sprintf("DA:CS%.2g", cs))
+		mods = append(mods, fmt.Sprintf("DA:CS%s", confWOZeros(cs)))
 	}
 
 	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
-		mods = append(mods, fmt.Sprintf("DA:HP%.2g", hp))
+		mods = append(mods, fmt.Sprintf("DA:HP%s", confWOZeros(hp)))
 	}
 
 	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
-		mods = append(mods, fmt.Sprintf("DA:%.2gx", cSpeed))
+		mods = append(mods, fmt.Sprintf("DA:%sx", confWOZeros(cSpeed)))
 	}
 
 	return mods
+}
+
+func confWOZeros(v float64) string { // Not using %g as it rounds values in a weird way, for example %.2g on 11.8 gives 12
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", v), "0"), ".")
 }
 
 func (diff *Difficulty) GetModString() string {
