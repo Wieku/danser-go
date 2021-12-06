@@ -169,6 +169,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 	circle.hitCircleOverlay.SetAlpha(0)
 	circle.approachCircle.SetAlpha(0)
 	circle.reverseArrow.SetAlpha(0)
+	circle.comboText.SetAlpha(0)
 
 	circles := []sprite.ISprite{circle.hitCircle, circle.hitCircleOverlay, circle.comboText}
 
