@@ -72,6 +72,9 @@ const (
 	shorthand      = " (shorthand)"
 )
 
+var libDir string
+var configDir string
+
 var player states.State
 
 var scheduleScreenshot = false
@@ -227,7 +230,7 @@ func run() {
 		settings.END = *end
 		settings.RECORD = recordMode || screenshotMode
 
-		newSettings := settings.LoadSettings(*settingsVersion)
+		newSettings := settings.LoadSettings(configDir, *settingsVersion)
 
 		if !newSettings && len(os.Args) == 1 {
 			platform.OpenURL("https://youtu.be/dQw4w9WgXcQ")
@@ -299,7 +302,7 @@ func run() {
 			database.Close()
 		}
 
-		assets.Init(build.Stream == "Dev")
+		assets.Init(libDir, build.Stream == "Dev")
 
 		if !closeAfterSettingsLoad {
 			log.Println("Initializing GLFW...")
@@ -809,17 +812,52 @@ func pushFrame() {
 	viewport.Pop()
 }
 
-func setWorkingDirectory() {
-	exec, err := os.Executable()
-	if err != nil {
+func setWorkingDirectories() {
+	execPath := platform.GetExecDir()
+
+	execPathLower := strings.ToLower(execPath)
+
+	if strings.HasPrefix(execPathLower, "/usr/bin") || strings.HasPrefix(execPathLower, "/usr/lib") { //if danser is a package
+		homePath, err := os.UserHomeDir()
+		if err != nil {
+			panic(err)
+		}
+
+		dataDir := filepath.Join(homePath, ".local", "share", "danser")
+		if env := strings.TrimSpace(os.Getenv("XDG_DATA_HOME")); env != "" {
+			dataDir = filepath.Join(env, "danser")
+		}
+
+		configDir = filepath.Join(homePath, ".config", "danser")
+		if env := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME")); env != "" {
+			configDir = filepath.Join(env, "danser")
+		}
+
+		if err = os.MkdirAll(dataDir, 0755); err != nil {
+			panic(err)
+		}
+
+		if err = os.MkdirAll(configDir, 0755); err != nil {
+			panic(err)
+		}
+
+		libDir = "/usr/lib/danser"
+
+		if err = os.Chdir(dataDir); err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
+	libDir = execPath
+	configDir = filepath.Join(execPath, "settings")
+
+	if err := os.MkdirAll(configDir, 0755); err != nil {
 		panic(err)
 	}
 
-	if exec, err = filepath.EvalSymlinks(exec); err != nil {
-		panic(err)
-	}
-
-	if err = os.Chdir(filepath.Dir(exec)); err != nil {
+	if err := os.Chdir(execPath); err != nil {
 		panic(err)
 	}
 }
@@ -941,7 +979,7 @@ func main() {
 		}
 	}()
 
-	setWorkingDirectory()
+	setWorkingDirectories()
 
 	file, err := os.Create("danser.log")
 	if err != nil {

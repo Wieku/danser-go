@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,16 +16,18 @@ var zipHeader = []byte{0x50, 0x4b, 0x03, 0x04}
 var initialized bool
 
 var local = true
+var localPath string
 
 var zipFile *zip.Reader
 var files map[string]*zip.File
 
-func Init(_local bool) {
+func Init(assetsPath string, _local bool) {
 	initialized = true
 	local = _local
+	localPath = assetsPath
 
 	if !local {
-		file, err := os.Open("assets.dpak")
+		file, err := os.Open(filepath.Join(localPath, "assets.dpak"))
 		if err != nil {
 			log.Println("Failed to open assets package")
 			panic(err)
@@ -61,7 +64,7 @@ func getFile(path string) (io.ReadCloser, int64, error) {
 	}
 
 	if local {
-		fS, err := os.Open(path)
+		fS, err := os.Open(filepath.Join(localPath, path))
 		if err != nil {
 			return nil, 0, err
 		}

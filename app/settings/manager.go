@@ -14,6 +14,7 @@ import (
 )
 
 var fileStorage *fileformat
+var settingsPath string
 var filePath string
 var watcher *fsnotify.Watcher
 
@@ -34,8 +35,9 @@ func initStorage() {
 	}
 }
 
-func LoadSettings(version string) bool {
-	err := os.Mkdir("settings", 0755)
+func LoadSettings(_settingsPath, version string) bool {
+	settingsPath = _settingsPath
+	err := os.Mkdir(settingsPath, 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
@@ -51,7 +53,7 @@ func LoadSettings(version string) bool {
 
 	fileName += ".json"
 
-	filePath = filepath.Join("settings", fileName)
+	filePath = filepath.Join(settingsPath, fileName)
 
 	file, err := os.Open(filePath)
 
@@ -189,14 +191,14 @@ func migrateSettings() {
 				destName = strings.TrimPrefix(osPathname, "settings-")
 			}
 
-			err := os.Rename(osPathname, filepath.Join("settings", destName))
+			err := os.Rename(osPathname, filepath.Join(settingsPath, destName))
 			if err != nil {
 				panic(err)
 			}
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
 		FollowSymbolicLinks: true,
 	})
 }
