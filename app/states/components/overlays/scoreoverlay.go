@@ -947,7 +947,7 @@ func (overlay *ScoreOverlay) initMods() {
 
 		initMod(mod, i)
 
-		if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
+		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.FoldInReplays {
 			offset -= 16 * scale
 		} else {
 			offset -= 80 * scale
