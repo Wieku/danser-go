@@ -11,6 +11,7 @@ func initSkin() *skin {
 		Cursor: &skinCursor{
 			UseSkinCursor:    false,
 			Scale:            1.0,
+			TrailScale:       1.0,
 			ForceLongTrail:   false,
 			LongTrailLength:  2048,
 			LongTrailDensity: 1.0,
@@ -30,6 +31,7 @@ type skin struct {
 type skinCursor struct {
 	UseSkinCursor    bool
 	Scale            float64 `max:"2"`
+	TrailScale       float64 `max:"2"`
 	ForceLongTrail   bool
 	LongTrailLength  int64
 	LongTrailDensity float64

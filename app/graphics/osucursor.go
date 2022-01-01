@@ -166,6 +166,8 @@ func (cursor *osuRenderer) Update(delta float64) {
 		cursor.sixtyDelta += delta
 		if cursor.sixtyDelta >= 16.6667 {
 			spr := sprite.NewSpriteSingle(cursor.trail, cursor.currentTime, cursor.Position.Copy64(), vector.Centre)
+
+			spr.SetScale(settings.Skin.Cursor.TrailScale)
 			spr.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.currentTime, cursor.currentTime+150, 1.0, 0.0))
 			spr.ResetValuesToTransforms()
 			spr.AdjustTimesToTransformations()
@@ -282,7 +284,7 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 
 		cursor.vao.Bind()
 
-		osuShader.SetUniform("scale", float32(scaleExpanded)*cursor.trail.Width/2)
+		osuShader.SetUniform("scale", float32(scaleExpanded)*cursor.trail.Width/2*float32(settings.Skin.Cursor.TrailScale))
 
 		blend.Push()
 		blend.Enable()
