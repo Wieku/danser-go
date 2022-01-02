@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
 	"github.com/wieku/danser-go/app/dance/spinners"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/rplpa"
 	"sort"
@@ -75,6 +76,8 @@ type ReplayController struct {
 }
 
 func NewReplayController() Controller {
+	_ = os.MkdirAll(filepath.Join(env.DataDir(), replaysMaster), 0755)
+
 	return &ReplayController{lastTime: -200}
 }
 
@@ -159,9 +162,11 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 }
 
 func organizeReplays() {
-	_ = godirwalk.Walk(replaysMaster, &godirwalk.Options{
+	replayDir := filepath.Join(env.DataDir(), replaysMaster)
+
+	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != replaysMaster {
+			if de.IsDir() && osPathname != replayDir {
 				return godirwalk.SkipThis
 			}
 
@@ -182,14 +187,14 @@ func organizeReplays() {
 					return nil
 				}
 
-				err = os.MkdirAll(filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5)), 0755)
+				err = os.MkdirAll(filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5)), 0755)
 				if err != nil {
 					log.Println("Error creating directory: ", err)
 					log.Println("Skipping... ")
 					return nil
 				}
 
-				err = os.Rename(osPathname, filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5), de.Name()))
+				err = os.Rename(osPathname, filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5), de.Name()))
 				if err != nil {
 					log.Println("Error moving file: ", err)
 					log.Println("Skipping... ")
@@ -204,12 +209,7 @@ func organizeReplays() {
 }
 
 func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
-	replayDir := filepath.Join(replaysMaster, controller.bMap.MD5)
-
-	err := os.MkdirAll(replayDir, 0755)
-	if err != nil {
-		panic(err)
-	}
+	replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
 
 	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
