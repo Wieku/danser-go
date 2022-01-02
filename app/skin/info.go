@@ -165,11 +165,11 @@ func ParseColor(text, errType string) color.Color {
 	return clr
 }
 
-func LoadInfo(path string) (*SkinInfo, error) {
+func LoadInfo(path string, local bool) (*SkinInfo, error) {
 	var file io.ReadCloser
 	var err error
 
-	if strings.HasPrefix(path, "assets") {
+	if local {
 		file, err = assets.Open(path)
 	} else {
 		file, err = os.Open(path)

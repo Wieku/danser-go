@@ -62,7 +62,7 @@ func loadDefault() {
 	FallbackSkin = defaultName
 
 	var err error
-	info, err = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"))
+	info, err = LoadInfo(filepath.Join("assets", "default-skin", "skin.ini"), true)
 
 	if err != nil {
 		log.Println("SkinManager: Default skin is corrupted! Please don't manipulate game's assets!")
@@ -115,7 +115,7 @@ func tryLoadSkin(name, fallbackName string) {
 		path, err := skinPathCache.GetFile("skin.ini")
 		if err != nil {
 			info = newDefaultInfo()
-		} else if info, err = LoadInfo(path); err != nil {
+		} else if info, err = LoadInfo(path, false); err != nil {
 			log.Println(fmt.Sprintf("SkinManager: %s is corrupted, falling back to %s...", name, fallbackName))
 			tryLoadSkin(fallbackName, defaultName)
 		}
