@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -15,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 )
 
@@ -232,7 +234,7 @@ func (entry *ScoreboardEntry) LoadDefaultAvatar() {
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {
 	key, err := utils.GetApiKey()
 	if err != nil {
-		log.Println("Please put your osu!api v1 key into 'api.txt' file")
+		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "api.txt")))
 	} else {
 		client := osuapi.NewClient(key)
 		err := client.Test()
