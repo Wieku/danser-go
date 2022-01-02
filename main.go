@@ -929,6 +929,8 @@ func main() {
 
 	env.Init("danser")
 
+	log.Println("danser-go version:", build.VERSION)
+
 	file, err := os.Create(filepath.Join(env.DataDir(), "danser.log"))
 	if err != nil {
 		panic(err)
