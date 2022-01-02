@@ -7,9 +7,11 @@ import (
 	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -132,8 +134,18 @@ func CloseWatcher() {
 }
 
 func load(file *os.File, target interface{}) {
-	decoder := json.NewDecoder(files.NewUnicodeReader(file))
-	if err := decoder.Decode(target); err != nil {
+	// I hope it won't backfire, replacing \ or \\\\\\\ with \\ so JSON can parse it as \
+
+	data, err := io.ReadAll(files.NewUnicodeReader(file))
+	if err != nil {
+		panic(err)
+	}
+
+	str := string(data)
+	str = regexp.MustCompile(`\\+`).ReplaceAllString(str, `\`)
+	str = strings.ReplaceAll(str, `\`, `\\`)
+
+	if err = json.Unmarshal([]byte(str), target); err != nil {
 		panic(fmt.Sprintf("Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err))
 	}
 
