@@ -166,8 +166,9 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
-			HideInReplays: false,
-			FoldInReplays: false,
+			HideInReplays:     false,
+			FoldInReplays:     false,
+			AdditionalSpacing: 0,
 		},
 		Boundaries: &boundaries{
 			Enabled:         true,
@@ -306,8 +307,9 @@ type scoreBoard struct {
 
 type mods struct {
 	*hudElementOffset
-	HideInReplays bool
-	FoldInReplays bool
+	HideInReplays     bool
+	FoldInReplays     bool
+	AdditionalSpacing float64
 }
 
 type strainGraph struct {
