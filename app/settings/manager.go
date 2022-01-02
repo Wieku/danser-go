@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/karrick/godirwalk"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"os"
@@ -14,7 +15,6 @@ import (
 )
 
 var fileStorage *fileformat
-var settingsPath string
 var filePath string
 var watcher *fsnotify.Watcher
 
@@ -35,9 +35,8 @@ func initStorage() {
 	}
 }
 
-func LoadSettings(_settingsPath, version string) bool {
-	settingsPath = _settingsPath
-	err := os.Mkdir(settingsPath, 0755)
+func LoadSettings(version string) bool {
+	err := os.Mkdir(env.ConfigDir(), 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
@@ -53,7 +52,7 @@ func LoadSettings(_settingsPath, version string) bool {
 
 	fileName += ".json"
 
-	filePath = filepath.Join(settingsPath, fileName)
+	filePath = filepath.Join(env.ConfigDir(), fileName)
 
 	file, err := os.Open(filePath)
 
@@ -173,9 +172,9 @@ func GetFormat() *fileformat {
 }
 
 func migrateSettings() {
-	_ = godirwalk.Walk("", &godirwalk.Options{
+	_ = godirwalk.Walk(env.DataDir(), &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if osPathname != "." && de.IsDir() {
+			if osPathname != env.DataDir() && de.IsDir() {
 				return godirwalk.SkipThis
 			}
 
@@ -191,7 +190,7 @@ func migrateSettings() {
 				destName = strings.TrimPrefix(osPathname, "settings-")
 			}
 
-			err := os.Rename(osPathname, filepath.Join(settingsPath, destName))
+			err := os.Rename(osPathname, filepath.Join(env.ConfigDir(), destName))
 			if err != nil {
 				panic(err)
 			}

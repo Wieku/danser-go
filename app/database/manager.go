@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/util"
 	"io"
@@ -42,9 +43,9 @@ func Init() error {
 
 	var err error
 
-	songsDir, err = filepath.Abs(settings.General.OsuSongsDir)
+	songsDir, err = filepath.Abs(settings.General.GetSongsDir())
 	if err != nil {
-		return fmt.Errorf("invalid song path given: %s", settings.General.OsuSongsDir)
+		return fmt.Errorf("invalid song path given: %s", settings.General.GetSongsDir())
 	}
 
 	_, err = os.Open(songsDir)
@@ -63,7 +64,7 @@ func Init() error {
 		&M20210423{},
 	}
 
-	dbFile, err = sql.Open("sqlite3", "danser.db")
+	dbFile, err = sql.Open("sqlite3", filepath.Join(env.DataDir(), "danser.db"))
 	if err != nil {
 		return err
 	}
@@ -248,7 +249,7 @@ func importMaps() {
 
 		if lastModified, ok := mapsInDB[candidate]; ok {
 			if lastModified == stat.ModTime().UnixNano()/1000000 {
-				// Map is up to date, so remove it from mapsInDB because values left in that map are later removed from database.
+				// Map is up-to-date, so remove it from mapsInDB because values left in that map are later removed from database.
 				delete(mapsInDB, candidate)
 
 				continue

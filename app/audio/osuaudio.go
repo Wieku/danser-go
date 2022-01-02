@@ -6,7 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/math/mutils"
-	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
@@ -212,7 +212,7 @@ func LoadBeatmapSamples(dir string) {
 		return []string{name}
 	}
 
-	fullPath := settings.General.OsuSongsDir + string(os.PathSeparator) + dir
+	fullPath := filepath.Join(settings.General.GetSongsDir(), dir)
 
 	_ = godirwalk.Walk(fullPath, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {

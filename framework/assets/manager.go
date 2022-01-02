@@ -2,6 +2,7 @@ package assets
 
 import (
 	"archive/zip"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"io"
 	"io/ioutil"
@@ -21,10 +22,10 @@ var localPath string
 var zipFile *zip.Reader
 var files map[string]*zip.File
 
-func Init(assetsPath string, _local bool) {
+func Init(_local bool) {
 	initialized = true
 	local = _local
-	localPath = assetsPath
+	localPath = env.LibDir()
 
 	if !local {
 		file, err := os.Open(filepath.Join(localPath, "assets.dpak"))

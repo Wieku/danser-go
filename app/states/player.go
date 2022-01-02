@@ -129,7 +129,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	track := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Audio))
+	track := bass.NewTrack(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.Audio))
 
 	if track == nil {
 		log.Println("Failed to create music stream, creating a dummy stream...")

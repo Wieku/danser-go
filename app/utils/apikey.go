@@ -4,11 +4,12 @@ import (
 	"github.com/wieku/danser-go/framework/files"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 func GetApiKey() (string, error) {
-	file, err := os.Open("api.txt")
+	file, err := os.Open(filepath.Join(env.DataDir(), "api.txt"))
 	if err != nil {
 		return "", err
 	}

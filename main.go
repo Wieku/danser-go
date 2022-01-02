@@ -35,6 +35,7 @@ import (
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/frame"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/blend"
@@ -71,9 +72,6 @@ const (
 	replayDesc     = "Play a map from specific replay file. Overrides -knockout, -mods and all beatmap arguments."
 	shorthand      = " (shorthand)"
 )
-
-var libDir string
-var configDir string
 
 var player states.State
 
@@ -230,7 +228,7 @@ func run() {
 		settings.END = *end
 		settings.RECORD = recordMode || screenshotMode
 
-		newSettings := settings.LoadSettings(configDir, *settingsVersion)
+		newSettings := settings.LoadSettings(*settingsVersion)
 
 		if !newSettings && len(os.Args) == 1 {
 			platform.OpenURL("https://youtu.be/dQw4w9WgXcQ")
@@ -302,7 +300,7 @@ func run() {
 			database.Close()
 		}
 
-		assets.Init(libDir, build.Stream == "Dev")
+		assets.Init(build.Stream == "Dev")
 
 		if !closeAfterSettingsLoad {
 			log.Println("Initializing GLFW...")
@@ -812,56 +810,6 @@ func pushFrame() {
 	viewport.Pop()
 }
 
-func setWorkingDirectories() {
-	execPath := platform.GetExecDir()
-
-	execPathLower := strings.ToLower(execPath)
-
-	if strings.HasPrefix(execPathLower, "/usr/bin") || strings.HasPrefix(execPathLower, "/usr/lib") { //if danser is a package
-		homePath, err := os.UserHomeDir()
-		if err != nil {
-			panic(err)
-		}
-
-		dataDir := filepath.Join(homePath, ".local", "share", "danser")
-		if env := strings.TrimSpace(os.Getenv("XDG_DATA_HOME")); env != "" {
-			dataDir = filepath.Join(env, "danser")
-		}
-
-		configDir = filepath.Join(homePath, ".config", "danser")
-		if env := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME")); env != "" {
-			configDir = filepath.Join(env, "danser")
-		}
-
-		if err = os.MkdirAll(dataDir, 0755); err != nil {
-			panic(err)
-		}
-
-		if err = os.MkdirAll(configDir, 0755); err != nil {
-			panic(err)
-		}
-
-		libDir = "/usr/lib/danser"
-
-		if err = os.Chdir(dataDir); err != nil {
-			panic(err)
-		}
-
-		return
-	}
-
-	libDir = execPath
-	configDir = filepath.Join(execPath, "settings")
-
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		panic(err)
-	}
-
-	if err := os.Chdir(execPath); err != nil {
-		panic(err)
-	}
-}
-
 func checkForUpdates() {
 	if build.Stream != "Release" || strings.Contains(build.VERSION, "dev") { //false positive, those are changed during compile
 		return
@@ -979,9 +927,9 @@ func main() {
 		}
 	}()
 
-	setWorkingDirectories()
+	env.Init("danser")
 
-	file, err := os.Create("danser.log")
+	file, err := os.Create(filepath.Join(env.DataDir(), "danser.log"))
 	if err != nil {
 		panic(err)
 	}

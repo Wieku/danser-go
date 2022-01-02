@@ -1,5 +1,10 @@
 package settings
 
+import (
+	"github.com/wieku/danser-go/framework/env"
+	"path/filepath"
+)
+
 var Recording = initRecording()
 
 func initRecording() *recording {
@@ -52,6 +57,22 @@ type recording struct {
 	Container      string
 	ShowFFmpegLogs bool
 	MotionBlur     *motionblur
+
+	outDir *string
+}
+
+func (g *recording) GetOutputDir() string {
+	if g.outDir == nil {
+		dir := filepath.Join(env.DataDir(), g.OutputDir)
+
+		if filepath.IsAbs(g.OutputDir) {
+			dir = g.OutputDir
+		}
+
+		g.outDir = &dir
+	}
+
+	return *g.outDir
 }
 
 type motionblur struct {

@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"github.com/wieku/danser-go/framework/env"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -38,4 +39,35 @@ type general struct {
 
 	// Whether danser should unpack .osz files in Songs folder, osu! may complain about it
 	UnpackOszFiles bool
+
+	songsDir *string
+	skinsDir *string
+}
+
+func (g *general) GetSongsDir() string {
+	if g.songsDir == nil {
+		dir := filepath.Join(env.DataDir(), g.OsuSongsDir)
+
+		if filepath.IsAbs(g.OsuSongsDir) {
+			dir = g.OsuSongsDir
+		}
+
+		g.songsDir = &dir
+	}
+
+	return *g.songsDir
+}
+
+func (g *general) GetSkinsDir() string {
+	if g.skinsDir == nil {
+		dir := filepath.Join(env.DataDir(), g.OsuSkinsDir)
+
+		if filepath.IsAbs(g.OsuSkinsDir) {
+			dir = g.OsuSkinsDir
+		}
+
+		g.skinsDir = &dir
+	}
+
+	return *g.skinsDir
 }

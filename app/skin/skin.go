@@ -83,7 +83,7 @@ func checkInit() {
 		log.Println("SkinManager: Loading fallback skin:", FallbackSkin)
 
 		var err error
-		fallbackPathCache, err = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, FallbackSkin))
+		fallbackPathCache, err = files.NewFileMap(filepath.Join(settings.General.GetSkinsDir(), FallbackSkin))
 
 		if err != nil {
 			log.Println("SkinManager:", FallbackSkin, "does not exist, falling back to default...")
@@ -106,7 +106,7 @@ func tryLoadSkin(name, fallbackName string) {
 	log.Println("SkinManager: Loading skin:", name)
 
 	var err error
-	skinPathCache, err = files.NewFileMap(filepath.Join(settings.General.OsuSkinsDir, name))
+	skinPathCache, err = files.NewFileMap(filepath.Join(settings.General.GetSkinsDir(), name))
 
 	if err != nil {
 		log.Println(fmt.Sprintf("SkinManager: %s does not exist, falling back to %s...", name, fallbackName))

@@ -142,7 +142,7 @@ func getSection(line string) string {
 }
 
 func ParseBeatMap(beatMap *BeatMap) error {
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 		return
 	}
 
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
 	}
@@ -281,7 +281,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 }
 
 func ParseObjects(beatMap *BeatMap) {
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
 	}
