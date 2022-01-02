@@ -1,11 +1,11 @@
 package audio
 
 import (
+	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/math/mutils"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -92,7 +92,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) {
 	balance := 0.0
 	if settings.DIVIDES == 1 {
-		balance = mutils.ClampF64((xPos - 256) / 512 * settings.Audio.HitsoundPositionMultiplier, -1, 1)
+		balance = mutils.ClampF64((xPos-256)/512*settings.Audio.HitsoundPositionMultiplier, -1, 1)
 	}
 
 	if settings.Audio.IgnoreBeatmapSampleVolume {
@@ -208,55 +208,62 @@ func LoadBeatmapSamples(dir string) {
 				return []string{name[:i], name[i:]}
 			}
 		}
+
 		return []string{name}
 	}
 
-	fullPath := settings.General.OsuSongsDir + string(os.PathSeparator) + dir
+	fullPath := filepath.Join(settings.General.GetSongsDir(), dir)
 
-	filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(info.Name(), ".wav") && !strings.HasSuffix(info.Name(), ".mp3") && !strings.HasSuffix(info.Name(), ".ogg") {
-			return nil
-		}
+	_ = godirwalk.Walk(fullPath, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() && osPathname != fullPath {
+				return godirwalk.SkipThis
+			}
 
-		rawName := strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(info.Name(), ".wav"), ".ogg"), ".mp3")
-
-		if separated := strings.Split(rawName, "-"); len(separated) == 2 {
-
-			setID := sets[separated[0]]
-
-			if setID == 0 {
+			if !strings.HasSuffix(de.Name(), ".wav") && !strings.HasSuffix(de.Name(), ".mp3") && !strings.HasSuffix(de.Name(), ".ogg") {
 				return nil
 			}
 
-			subSeparated := splitBeforeDigit(separated[1])
+			rawName := strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(de.Name(), ".wav"), ".ogg"), ".mp3")
 
-			hitSoundIndex := 1
+			if separated := strings.Split(rawName, "-"); len(separated) == 2 {
+				setID := sets[separated[0]]
 
-			if len(subSeparated) > 1 {
-				index, err := strconv.ParseInt(subSeparated[1], 10, 32)
-
-				if err != nil {
+				if setID == 0 {
 					return nil
 				}
 
-				hitSoundIndex = int(index)
+				subSeparated := splitBeforeDigit(separated[1])
+
+				hitSoundIndex := 1
+
+				if len(subSeparated) > 1 {
+					index, err := strconv.ParseInt(subSeparated[1], 10, 32)
+
+					if err != nil {
+						return nil
+					}
+
+					hitSoundIndex = int(index)
+				}
+
+				hitSoundID := hitsounds[subSeparated[0]]
+
+				if hitSoundID == 0 {
+					return nil
+				}
+
+				if MapSamples[setID-1][hitSoundID-1] == nil {
+					MapSamples[setID-1][hitSoundID-1] = make(map[int]*bass.Sample)
+				}
+
+				MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = bass.NewSample(osPathname)
 			}
 
-			hitSoundID := hitsounds[subSeparated[0]]
-
-			if hitSoundID == 0 {
-				return nil
-			}
-
-			if MapSamples[setID-1][hitSoundID-1] == nil {
-				MapSamples[setID-1][hitSoundID-1] = make(map[int]*bass.Sample)
-			}
-
-			MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = bass.NewSample(path)
-
-		}
-
-		return nil
+			return nil
+		},
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 }
 

@@ -86,7 +86,7 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 		beatMap.Timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
 	case "HPDrainRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
-		beatMap.Diff.SetHPDrain(mutils.ClampF64(parsed, 0, 10))
+		beatMap.Diff.SetHP(mutils.ClampF64(parsed, 0, 10))
 	case "OverallDifficulty":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
 		beatMap.Diff.SetOD(mutils.ClampF64(parsed, 0, 10))
@@ -142,7 +142,7 @@ func getSection(line string) string {
 }
 
 func ParseBeatMap(beatMap *BeatMap) error {
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 		return
 	}
 
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
 	}
@@ -281,7 +281,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 }
 
 func ParseObjects(beatMap *BeatMap) {
-	file, err := os.Open(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.File))
+	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
 	}

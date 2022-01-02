@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
 	"github.com/wieku/danser-go/app/dance/spinners"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/rplpa"
 	"sort"
@@ -75,6 +76,8 @@ type ReplayController struct {
 }
 
 func NewReplayController() Controller {
+	_ = os.MkdirAll(filepath.Join(env.DataDir(), replaysMaster), 0755)
+
 	return &ReplayController{lastTime: -200}
 }
 
@@ -103,7 +106,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			localReplay = true
 		}
-	} else {
+	} else if settings.Knockout.MaxPlayers > 0 {
 		candidates = controller.getCandidates()
 	}
 
@@ -159,9 +162,11 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 }
 
 func organizeReplays() {
-	_ = godirwalk.Walk(replaysMaster, &godirwalk.Options{
+	replayDir := filepath.Join(env.DataDir(), replaysMaster)
+
+	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != replaysMaster {
+			if de.IsDir() && osPathname != replayDir {
 				return godirwalk.SkipThis
 			}
 
@@ -182,14 +187,14 @@ func organizeReplays() {
 					return nil
 				}
 
-				err = os.MkdirAll(filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5)), 0755)
+				err = os.MkdirAll(filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5)), 0755)
 				if err != nil {
 					log.Println("Error creating directory: ", err)
 					log.Println("Skipping... ")
 					return nil
 				}
 
-				err = os.Rename(osPathname, filepath.Join(replaysMaster, strings.ToLower(replayD.BeatmapMD5), de.Name()))
+				err = os.Rename(osPathname, filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5), de.Name()))
 				if err != nil {
 					log.Println("Error moving file: ", err)
 					log.Println("Skipping... ")
@@ -198,55 +203,59 @@ func organizeReplays() {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 }
 
 func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
-	replayDir := filepath.Join(replaysMaster, controller.bMap.MD5)
-
-	err := os.MkdirAll(replayDir, 0755)
-	if err != nil {
-		panic(err)
-	}
+	replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
 
 	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
-	filepath.Walk(replayDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".osr") {
-			log.Println("Loading: ", f.Name())
-
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				panic(err)
+	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() && osPathname != replayDir {
+				return godirwalk.SkipThis
 			}
 
-			replayD, _ := rplpa.ParseReplay(data)
+			if strings.HasSuffix(de.Name(), ".osr") {
+				log.Println("Loading: ", de.Name())
 
-			if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
-				log.Println("Incompatible maps, skipping", replayD.Username)
-				return nil
+				data, err := ioutil.ReadFile(osPathname)
+				if err != nil {
+					panic(err)
+				}
+
+				replayD, _ := rplpa.ParseReplay(data)
+
+				if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
+					log.Println("Incompatible maps, skipping", replayD.Username)
+					return nil
+				}
+
+				if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+					log.Println("Excluding for incompatible mods:", replayD.Username)
+					return nil
+				}
+
+				if (replayD.Mods & uint32(excludedMods)) > 0 {
+					log.Println("Excluding for mods:", replayD.Username)
+					return nil
+				}
+
+				if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+					log.Println("Excluding for missing input data:", replayD.Username)
+					return nil
+				}
+
+				candidates = append(candidates, replayD)
 			}
 
-			if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
-				log.Println("Excluding for incompatible mods:", replayD.Username)
-				return nil
-			}
-
-			if (replayD.Mods & uint32(excludedMods)) > 0 {
-				log.Println("Excluding for mods:", replayD.Username)
-				return nil
-			}
-
-			if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-				log.Println("Excluding for missing input data:", replayD.Username)
-				return nil
-			}
-
-			candidates = append(candidates, replayD)
-		}
-
-		return nil
+			return nil
+		},
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 
 	return
@@ -291,7 +300,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	log.Println(fmt.Sprintf("\tMean cv frametime: %.2fms", meanFrameTime))
 
-	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay | difficulty.Relax | difficulty.Relax2) {
+	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay|difficulty.Relax|difficulty.Relax2) {
 		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
 
@@ -350,7 +359,7 @@ func (controller *ReplayController) InitCursors() {
 		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
 			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMoverSimple, 0, 0)
 
-			diff := difficulty.NewDifficulty(controller.bMap.Diff.GetHPDrain(), controller.bMap.Diff.GetCS(), controller.bMap.Diff.GetOD(), controller.bMap.Diff.GetAR())
+			diff := difficulty.NewDifficulty(controller.bMap.Diff.GetHP(), controller.bMap.Diff.GetCS(), controller.bMap.Diff.GetOD(), controller.bMap.Diff.GetAR())
 			diff.SetMods(controller.replays[i].ModsV)
 			diff.SetCustomSpeed(controller.bMap.Diff.CustomSpeed)
 
@@ -398,9 +407,9 @@ func (controller *ReplayController) updateMain(nTime float64) {
 			}
 
 			if int64(nTime) != c.lastTime {
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime), false)
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
-				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
 			}
 
 			c.lastTime = int64(nTime)
@@ -419,6 +428,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
 
+					// If next frame is not in the next millisecond, assume it's -36ms slider end
 					processAhead := true
 					if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
 						processAhead = false
@@ -452,14 +462,14 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 					// New replays (after 20190506) scores object ends only on replay frame
 					if c.newHandling || c.replayIndex == len(c.frames)-1 {
-						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime)
+						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime, processAhead)
 					} else {
 						localIndex := mutils.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
 						localFrame := c.frames[localIndex]
 
 						// HACK for older replays: update object ends till the next frame
 						for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
-							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime)
+							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime, false)
 						}
 					}
 
@@ -494,7 +504,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
-				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime))
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime), false)
 			}
 		}
 	}

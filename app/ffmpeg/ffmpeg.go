@@ -152,9 +152,9 @@ func StartFFmpeg(fps, _w, _h int, audioFPS float64, _output string) {
 
 	log.Println("Starting encoding!")
 
-	_ = os.RemoveAll(filepath.Join(settings.Recording.OutputDir, output+"_temp"))
+	_ = os.RemoveAll(filepath.Join(settings.Recording.GetOutputDir(), output+"_temp"))
 
-	err := os.MkdirAll(filepath.Join(settings.Recording.OutputDir, output+"_temp"), 0755)
+	err := os.MkdirAll(filepath.Join(settings.Recording.GetOutputDir(), output+"_temp"), 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
@@ -240,7 +240,7 @@ func startVideo(fps int) {
 		options = append(options, split...)
 	}
 
-	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "video."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "video."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -303,7 +303,7 @@ func startAudio(audioFPS float64) {
 		"-acodec", "pcm_f32le",
 		"-ar", "48000",
 		"-ac", "2",
-		"-i", inputName,//audioPipe.Name(),
+		"-i", inputName,
 
 		"-nostats", //hide audio encoding statistics because video ones are more important
 		"-vn",
@@ -322,7 +322,7 @@ func startAudio(audioFPS float64) {
 		options = append(options, split...)
 	}
 
-	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "audio."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
@@ -441,8 +441,8 @@ func StopFFmpeg() {
 func combine() {
 	options := []string{
 		"-y",
-		"-i", filepath.Join(settings.Recording.OutputDir, output+"_temp", "video."+settings.Recording.Container),
-		"-i", filepath.Join(settings.Recording.OutputDir, output+"_temp", "audio."+settings.Recording.Container),
+		"-i", filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "video."+settings.Recording.Container),
+		"-i", filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "audio."+settings.Recording.Container),
 		"-c:v", "copy",
 		"-c:a", "copy",
 	}
@@ -451,7 +451,7 @@ func combine() {
 		options = append(options, "-movflags", "+faststart")
 	}
 
-	options = append(options, filepath.Join(settings.Recording.OutputDir, output+"."+settings.Recording.Container))
+	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"."+settings.Recording.Container))
 
 	log.Println("Starting composing audio and video into one file...")
 	log.Println("Running ffmpeg with options:", options)
@@ -478,7 +478,7 @@ func combine() {
 func cleanup() {
 	log.Println("Cleaning up intermediate files...")
 
-	_ = os.RemoveAll(filepath.Join(settings.Recording.OutputDir, output+"_temp"))
+	_ = os.RemoveAll(filepath.Join(settings.Recording.GetOutputDir(), output+"_temp"))
 
 	log.Println("Finished.")
 }

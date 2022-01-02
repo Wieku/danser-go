@@ -64,7 +64,7 @@ type HitObject interface {
 	Init(ruleset *OsuRuleSet, object objects.IHitObject, players []*difficultyPlayer)
 	UpdateFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
-	UpdatePostFor(player *difficultyPlayer, time int64) bool
+	UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdatePost(time int64) bool
 	IsHit(player *difficultyPlayer) bool
 	GetFadeTime() int64
@@ -133,8 +133,7 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	mapStats []*MapTo
-	oppDiffs map[difficulty.Modifier][]performance.Stars
+	oppDiffs map[difficulty.Modifier][]performance.Attributes
 
 	queue        []HitObject
 	processed    []HitObject
@@ -150,29 +149,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Stars)
-
-	ruleset.mapStats = make([]*MapTo, 0, len(ruleset.beatMap.HitObjects))
-
-	for i, o := range ruleset.beatMap.HitObjects {
-		mapTo := &MapTo{}
-
-		if i > 0 {
-			*mapTo = *ruleset.mapStats[i-1]
-		}
-
-		if s, ok := o.(*objects.Slider); ok {
-			mapTo.nsliders++
-			mapTo.maxCombo += len(s.ScorePoints)
-		} else if _, ok := o.(*objects.Circle); ok {
-			mapTo.ncircles++
-		}
-
-		mapTo.maxCombo++
-		mapTo.nobjects++
-
-		ruleset.mapStats = append(ruleset.mapStats, mapTo)
-	}
+	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Attributes)
 
 	if settings.Gameplay.UseLazerPP {
 		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
@@ -186,7 +163,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
 	for i, cursor := range cursors {
-		diff := difficulty.NewDifficulty(beatMap.Diff.GetHPDrain(), beatMap.Diff.GetCS(), beatMap.Diff.GetOD(), beatMap.Diff.GetAR())
+		diff := difficulty.NewDifficulty(beatMap.Diff.GetBaseHP(), beatMap.Diff.GetBaseCS(), beatMap.Diff.GetBaseOD(), beatMap.Diff.GetBaseAR())
+
+		diff.SetHPCustom(beatMap.Diff.GetHP())
+		diff.SetCSCustom(beatMap.Diff.GetCS())
+		diff.SetODCustom(beatMap.Diff.GetOD())
+		diff.SetARCustom(beatMap.Diff.GetAR())
+
 		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.ScoreV2)) // if beatmap has ScoreV2 mod, force it for all players
 		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
 
@@ -197,14 +180,30 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff, ruleset.experimentalPP)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
-			log.Println("\tAim Stars:  ", star.Aim)
-			log.Println("\tSpeed Stars:", star.Speed)
+
+			log.Println("Stars:")
+			log.Println("\tAim:  ", star.Aim)
+			log.Println("\tSpeed:", star.Speed)
 
 			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
-				log.Println("\tFL Stars:   ", star.Flashlight)
+				log.Println("\tFlash:", star.Flashlight)
 			}
 
-			log.Println("\tTotal Stars:", star.Total)
+			log.Println("\tTotal:", star.Total)
+
+			pp := &performance.PPv2{}
+			pp.PPv2x(star, -1, -1, 0, 0, 0, diff, false)
+
+			log.Println("SS PP:")
+			log.Println("\tAim:  ", pp.Results.Aim)
+			log.Println("\tTap:  ", pp.Results.Speed)
+
+			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+				log.Println("\tFlash:", star.Flashlight)
+			}
+
+			log.Println("\tAcc:  ", pp.Results.Acc)
+			log.Println("\tTotal:", pp.Results.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
@@ -334,7 +333,7 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, utils.Humanize(set.cursors[c].hits[Miss]))
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
 			data = append(data, utils.Humanize(set.cursors[c].maxCombo))
-			data = append(data, set.cursors[c].player.diff.Mods.String())
+			data = append(data, set.cursors[c].player.diff.GetModString())
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
 			table.Append(data)
 		}
@@ -418,14 +417,14 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64, proc
 	}
 }
 
-func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64) {
+func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64, processSliderEndsAhead bool) {
 	player := set.cursors[cursor].player
 
 	if len(set.processed) > 0 {
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
-			g.UpdatePostFor(player, time)
+			g.UpdatePostFor(player, time, processSliderEndsAhead)
 		}
 	}
 }
@@ -485,10 +484,9 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	index := mutils.MaxI64(0, subSet.numObjects-1)
 
-	mapTo := set.mapStats[index]
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff, set.experimentalPP, mapTo.maxCombo, mapTo.nsliders, mapTo.ncircles, mapTo.nobjects, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff)
+	subSet.ppv2.PPv2x(diff, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, set.experimentalPP)
 
 	switch result {
 	case Hit100:
@@ -657,7 +655,10 @@ func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) performance.PPv2Results {
 
 func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {
 	subSet := set.cursors[cursor]
-	return subSet.maxCombo == int64(set.mapStats[subSet.numObjects-1].maxCombo)
+
+	oppDiff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask]
+
+	return subSet.maxCombo == int64(oppDiff[len(oppDiff)-1].MaxCombo)
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {

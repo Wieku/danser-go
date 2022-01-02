@@ -1,11 +1,13 @@
 package play
 
 import (
+	"fmt"
 	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -14,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
+	"path/filepath"
 	"sort"
 )
 
@@ -43,7 +46,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
 		first:            true,
 		explosionManager: sprite.NewManager(),
-		width: 768*settings.Graphics.GetAspectRatio(),
+		width:            768 * settings.Graphics.GetAspectRatio(),
 	}
 
 	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
@@ -55,7 +58,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 
 	key, err := utils.GetApiKey()
 	if err != nil {
-		log.Println("Please put your osu!api v1 key into 'api.txt' file")
+		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "api.txt")))
 	} else {
 		client := osuapi.NewClient(key)
 		err := client.Test()

@@ -289,7 +289,7 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 	return true
 }
 
-func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
+func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool {
 	state := slider.state[player]
 
 	if time > int64(slider.hitSlider.GetStartTime())+player.diff.Hit50 && !state.isStartHit {
@@ -313,7 +313,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64) bool {
 		state.startResult = Miss
 	}
 
-	if time >= int64(slider.hitSlider.GetEndTime()) && !state.isHit {
+	if (time >= int64(slider.hitSlider.GetEndTime()) || (processSliderEndsAhead && int64(slider.hitSlider.GetEndTime())-time == 1)) && !state.isHit {
 		if state.startResult != Miss {
 			state.scored++
 		}

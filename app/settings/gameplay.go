@@ -20,13 +20,15 @@ func initGameplay() *gameplay {
 			UnstableRateScale:    1.0,
 		},
 		AimErrorMeter: &aimError{
-			hudElement: &hudElement{
-				Show:    false,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementPosition: &hudElementPosition{
+				hudElement: &hudElement{
+					Show:    false,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XPosition: 1350,
+				YPosition: 650,
 			},
-			XPosition:            1350,
-			YPosition:            650,
 			DotScale:             1,
 			Align:                "Right",
 			ShowUnstableRate:     false,
@@ -67,28 +69,34 @@ func initGameplay() *gameplay {
 			YOffset: 0,
 		},
 		PPCounter: &ppCounter{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementPosition: &hudElementPosition{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XPosition: 5,
+				YPosition: 150,
 			},
 			Color: &hsv{
 				Hue:        0,
 				Saturation: 0,
 				Value:      1,
 			},
-			XPosition:        5,
-			YPosition:        150,
 			Decimals:         0,
 			Align:            "CentreLeft",
 			ShowInResults:    true,
 			ShowPPComponents: false,
 		},
 		HitCounter: &hitCounter{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+			hudElementPosition: &hudElementPosition{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XPosition: 5,
+				YPosition: 190,
 			},
 			Color: []*hsv{
 				{
@@ -97,14 +105,32 @@ func initGameplay() *gameplay {
 					Value:      1,
 				},
 			},
-			XPosition:  5,
-			YPosition:  190,
+
 			Spacing:    48,
 			FontScale:  1,
 			Align:      "Left",
 			ValueAlign: "Left",
 			Vertical:   false,
 			Show300:    false,
+		},
+		StrainGraph: &strainGraph{
+			Show:      true,
+			Opacity:   1,
+			XPosition: 5,
+			YPosition: 310,
+			Align:     "BottomLeft",
+			Width:     130,
+			Height:    70,
+			BgColor: &hsv{
+				Hue:        0,
+				Saturation: 0,
+				Value:      0.2,
+			},
+			FgColor: &hsv{
+				Hue:        297,
+				Saturation: 0.4,
+				Value:      0.92,
+			},
 		},
 		KeyOverlay: &hudElementOffset{
 			hudElement: &hudElement{
@@ -140,8 +166,9 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
-			HideInReplays: false,
-			FoldInReplays: false,
+			HideInReplays:     false,
+			FoldInReplays:     false,
+			AdditionalSpacing: 0,
 		},
 		Boundaries: &boundaries{
 			Enabled:         true,
@@ -179,6 +206,7 @@ type gameplay struct {
 	ComboCounter            *hudElementOffset
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
+	StrainGraph             *strainGraph
 	KeyOverlay              *hudElementOffset
 	ScoreBoard              *scoreBoard
 	Mods                    *mods
@@ -218,6 +246,12 @@ type hudElementOffset struct {
 	YOffset float64
 }
 
+type hudElementPosition struct {
+	*hudElement
+	XPosition float64
+	YPosition float64
+}
+
 type hitError struct {
 	*hudElementOffset
 	ShowPositionalMisses bool
@@ -227,9 +261,7 @@ type hitError struct {
 }
 
 type aimError struct {
-	*hudElement
-	XPosition            float64
-	YPosition            float64
+	*hudElementPosition
 	DotScale             float64
 	Align                string
 	ShowUnstableRate     bool
@@ -246,10 +278,8 @@ type score struct {
 }
 
 type ppCounter struct {
-	*hudElement
+	*hudElementPosition
 	Color            *hsv
-	XPosition        float64
-	YPosition        float64
 	Decimals         int
 	Align            string
 	ShowInResults    bool
@@ -257,10 +287,8 @@ type ppCounter struct {
 }
 
 type hitCounter struct {
-	*hudElement
+	*hudElementPosition
 	Color      []*hsv
-	XPosition  float64
-	YPosition  float64
 	Spacing    float64
 	FontScale  float64
 	Align      string
@@ -279,6 +307,19 @@ type scoreBoard struct {
 
 type mods struct {
 	*hudElementOffset
-	HideInReplays bool
-	FoldInReplays bool
+	HideInReplays     bool
+	FoldInReplays     bool
+	AdditionalSpacing float64
+}
+
+type strainGraph struct {
+	Show      bool
+	Opacity   float64
+	XPosition float64
+	YPosition float64
+	Align     string
+	Width     float64
+	Height    float64
+	BgColor   *hsv
+	FgColor   *hsv
 }

@@ -1,14 +1,18 @@
 package settings
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/karrick/godirwalk"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -35,8 +39,7 @@ func initStorage() {
 }
 
 func LoadSettings(version string) bool {
-	err := os.Mkdir("settings", 0755)
-	if err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(env.ConfigDir(), 0755); err != nil {
 		panic(err)
 	}
 
@@ -51,20 +54,21 @@ func LoadSettings(version string) bool {
 
 	fileName += ".json"
 
-	filePath = filepath.Join("settings", fileName)
+	filePath = filepath.Join(env.ConfigDir(), fileName)
 
 	file, err := os.Open(filePath)
 
-	defer file.Close()
-
 	if os.IsNotExist(err) {
-		saveSettings(filePath, fileStorage)
+		saveSettings(filePath, fileStorage, true)
 		return true
 	} else if err != nil {
 		panic(err)
 	} else {
 		load(file, fileStorage)
-		saveSettings(filePath, fileStorage) //this is done to save additions from the current format
+
+		file.Close()
+
+		saveSettings(filePath, fileStorage, false) // this is done to save additions from the current format
 	}
 
 	if !RECORD {
@@ -100,6 +104,8 @@ func setupWatcher(file string) {
 					load(sFile, fileStorage)
 
 					sFile.Close()
+
+					saveSettings(filePath, fileStorage, false) // re-save the file if it contained backslash fixes
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -131,38 +137,53 @@ func CloseWatcher() {
 }
 
 func load(file *os.File, target interface{}) {
-	decoder := json.NewDecoder(files.NewUnicodeReader(file))
-	if err := decoder.Decode(target); err != nil {
-		panic(fmt.Sprintf("Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err))
+	log.Println(fmt.Sprintf(`SettingsManager: Loading "%s"`, file.Name()))
+
+	// I hope it won't backfire, replacing \ or \\\\\\\ with \\ so JSON can parse it as \
+
+	data, err := io.ReadAll(files.NewUnicodeReader(file))
+	if err != nil {
+		panic(err)
+	}
+
+	tG := target.(*fileformat)
+	tG.srcData = data
+
+	str := string(data)
+	str = regexp.MustCompile(`\\+`).ReplaceAllString(str, `\`)
+	str = strings.ReplaceAll(str, `\`, `\\`)
+
+	if err = json.Unmarshal([]byte(str), target); err != nil {
+		panic(fmt.Sprintf("SettingsManager: Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err))
 	}
 
 	migrateCursorDance(target)
 }
 
 func Save() {
-	saveSettings(filePath, fileStorage)
+	saveSettings(filePath, fileStorage, false)
 }
 
-func saveSettings(path string, source interface{}) {
-	err := os.MkdirAll(filepath.Dir(path), 0755)
-	if err != nil && !os.IsExist(err) {
+func saveSettings(path string, source interface{}, forceSave bool) {
+	tG := source.(*fileformat)
+
+	data, err := json.MarshalIndent(source, "", "\t")
+	if err != nil {
 		panic(err)
 	}
 
-	file, err := os.Create(path)
-	if err != nil && !os.IsExist(err) {
-		panic(err)
-	}
+	if forceSave || !bytes.Equal(data, tG.srcData) { // Don't rewrite the file unless necessary
+		log.Println(fmt.Sprintf(`SettingsManager: Saving current settings to "%s"`, path))
 
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "\t")
+		tG.srcData = data
 
-	if err := encoder.Encode(source); err != nil {
-		panic(err)
-	}
+		if err = os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			panic(err)
+		}
 
-	if err := file.Close(); err != nil {
-		panic(err)
+		if err = os.WriteFile(path, data, 0644); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -171,9 +192,9 @@ func GetFormat() *fileformat {
 }
 
 func migrateSettings() {
-	_ = godirwalk.Walk("", &godirwalk.Options{
+	_ = godirwalk.Walk(env.DataDir(), &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if osPathname != "." && de.IsDir() {
+			if osPathname != env.DataDir() && de.IsDir() {
 				return godirwalk.SkipThis
 			}
 
@@ -189,14 +210,15 @@ func migrateSettings() {
 				destName = strings.TrimPrefix(osPathname, "settings-")
 			}
 
-			err := os.Rename(osPathname, filepath.Join("settings", destName))
+			err := os.Rename(osPathname, filepath.Join(env.ConfigDir(), destName))
 			if err != nil {
 				panic(err)
 			}
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 }
 

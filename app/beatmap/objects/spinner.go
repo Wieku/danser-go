@@ -30,6 +30,7 @@ type Spinner struct {
 	*HitObject
 
 	Timings  *Timings
+	diff     *difficulty.Difficulty
 	sample   int
 	rad      float32
 	pos      vector.Vector2f
@@ -92,11 +93,13 @@ func (spinner *Spinner) SetTiming(timings *Timings) {
 func (spinner *Spinner) UpdateStacking() {}
 
 func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
+	spinner.diff = diff
+
 	spinner.ScaledHeight = 768
 	spinner.ScaledWidth = settings.Graphics.GetAspectRatio() * spinner.ScaledHeight
 
 	spinner.fade = animation.NewGlider(0)
-	spinner.fade.AddEvent(spinner.StartTime-difficulty.HitFadeIn, spinner.StartTime, 1)
+	spinner.fade.AddEvent(spinner.StartTime-diff.TimeFadeIn, spinner.StartTime, 1)
 	spinner.fade.AddEvent(spinner.EndTime, spinner.EndTime+difficulty.HitFadeOut, 0)
 
 	spinner.sprites = sprite.NewManager()
@@ -141,12 +144,12 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 
 	spinner.UpdateCompletion(0.0)
 
-	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+240*/ 256-16-8), vector.Centre)
+	spinner.clear = sprite.NewSpriteSingle(skin.GetTexture("spinner-clear"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2 /*46.5+240*/, 256-16-8), vector.Centre)
 	spinner.clear.SetAlpha(0.0)
 
 	spinner.frontSprites.Add(spinner.clear)
 
-	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2, /*46.5+536*/ 608-12.8-16), vector.Centre)
+	spinner.spin = sprite.NewSpriteSingle(skin.GetTexture("spinner-spin"), 10.0, vector.NewVec2d(spinner.ScaledWidth/2 /*46.5+536*/, 608-12.8-16), vector.Centre)
 
 	spinner.frontSprites.Add(spinner.spin)
 
@@ -398,8 +401,8 @@ func (spinner *Spinner) StopSpinSample() {
 }
 
 func (spinner *Spinner) Clear() {
-	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutBack, spinner.lastTime, spinner.lastTime+difficulty.HitFadeIn, 2.0, 1.0))
-	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, spinner.lastTime, spinner.lastTime+difficulty.HitFadeIn, 0.0, 1.0))
+	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutBack, spinner.lastTime, spinner.lastTime+spinner.diff.TimeFadeIn, 2.0, 1.0))
+	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, spinner.lastTime, spinner.lastTime+spinner.diff.TimeFadeIn, 0.0, 1.0))
 }
 
 func (spinner *Spinner) Bonus() {

@@ -3,6 +3,8 @@ package settings
 import "math"
 
 type fileformat struct {
+	srcData []byte
+
 	General     *general     `icon:"\uF0AD"`
 	Graphics    *graphics    `icon:"\uF108"`
 	Audio       *audio       `icon:"\uF028"`

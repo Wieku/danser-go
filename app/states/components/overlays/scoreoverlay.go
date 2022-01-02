@@ -135,9 +135,9 @@ type ScoreOverlay struct {
 
 	circularMetre *texture.TextureRegion
 
-	hitCounts *play.HitDisplay
-
-	ppDisplay *play.PPDisplay
+	hitCounts   *play.HitDisplay
+	ppDisplay   *play.PPDisplay
+	strainGraph *play.StrainGraph
 }
 
 func loadFonts() {
@@ -180,6 +180,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
 
 	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
+
+	overlay.strainGraph = play.NewStrainGraph(ruleset)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -415,6 +417,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.rankBack.Update(overlay.audioTime)
 	overlay.rankFront.Update(overlay.audioTime)
 	overlay.arrows.Update(overlay.audioTime)
+	overlay.strainGraph.Update(overlay.audioTime)
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
@@ -636,6 +639,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	}
 
 	overlay.ppDisplay.Draw(batch, alpha)
+	overlay.strainGraph.Draw(batch, alpha)
 	overlay.hitCounts.Draw(batch, alpha)
 
 	if overlay.panel != nil {
@@ -902,16 +906,12 @@ func (overlay *ScoreOverlay) showPassInfo() {
 }
 
 func (overlay *ScoreOverlay) initMods() {
-	mods := overlay.ruleset.GetBeatMap().Diff.Mods.StringFull()
+	mods := overlay.ruleset.GetBeatMap().Diff.GetModStringFull()
 
 	scale := settings.Gameplay.Mods.Scale
 	alpha := settings.Gameplay.Mods.Opacity
 
-	offset := -48.0 * scale
-	for i, s := range mods {
-		modSpriteName := "selection-mod-" + strings.ToLower(s)
-
-		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+	initMod := func(mod sprite.ISprite, i int) {
 		mod.SetAlpha(0)
 		mod.ShowForever(true)
 
@@ -924,11 +924,33 @@ func (overlay *ScoreOverlay) initMods() {
 			startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
 			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0*alpha, 0))
 		}
+	}
 
-		if overlay.cursor.Name == "" || settings.Gameplay.Mods.FoldInReplays {
-			offset -= 16 * scale
+	offset := -48.0 * scale
+	for i, s := range mods {
+		var mod sprite.ISprite
+
+		if strings.HasPrefix(s, "DA:") {
+			bgTex := skin.GetTexture("selection-mod-base")
+
+			modBg := sprite.NewSpriteSingle(bgTex, float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+
+			initMod(modBg, i)
+
+			overlay.mods.Add(modBg)
+
+			mod = sprite.NewTextSpriteSize(strings.TrimPrefix(s, "DA:"), overlay.keyFont, float64(bgTex.Height)/4, float64(i)+0.5, vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
 		} else {
-			offset -= 80 * scale
+			modSpriteName := "selection-mod-" + strings.ToLower(s)
+			mod = sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
+		}
+
+		initMod(mod, i)
+
+		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.FoldInReplays {
+			offset -= (16 + settings.Gameplay.Mods.AdditionalSpacing) * scale
+		} else {
+			offset -= (80 + settings.Gameplay.Mods.AdditionalSpacing) * scale
 		}
 
 		overlay.mods.Add(mod)

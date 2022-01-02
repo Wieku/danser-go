@@ -2,9 +2,11 @@ package utils
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -17,7 +19,7 @@ func MakeScreenshot(w, h int, name string, async bool) {
 	save := func() {
 		defer pixmap.Dispose()
 
-		err := os.Mkdir("screenshots", 0755)
+		err := os.Mkdir(filepath.Join(env.DataDir(), "screenshots"), 0755)
 		if err != nil && !os.IsExist(err) {
 			log.Println("Failed to save the screenshot! Error:", err)
 			return
@@ -31,7 +33,7 @@ func MakeScreenshot(w, h int, name string, async bool) {
 
 		fileName += ".png"
 
-		err = pixmap.WritePng("screenshots/"+fileName, true)
+		err = pixmap.WritePng(filepath.Join(env.DataDir(), "screenshots", fileName), true)
 		if err != nil {
 			log.Println("Failed to save the screenshot! Error:", err)
 			return

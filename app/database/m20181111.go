@@ -22,7 +22,7 @@ func (m *M20181111) FieldsToMigrate() []string {
 
 func (m *M20181111) GetValues(beatMap *beatmap.BeatMap) []interface{} {
 	return []interface{}{
-		beatMap.Diff.GetHPDrain(),
+		beatMap.Diff.GetHP(),
 		beatMap.Diff.GetOD(),
 	}
 }

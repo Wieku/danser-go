@@ -23,11 +23,9 @@ type PPv2Results struct {
 type PPv2 struct {
 	Results PPv2Results
 
-	stars Stars
+	attribs Attributes
 
 	experimental bool
-
-	maxCombo, nsliders, ncircles, nobjects int
 
 	scoreMaxCombo      int
 	countGreat         int
@@ -43,24 +41,20 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(stars Stars, experimental bool,
-	maxCombo, nsliders, ncircles, nobjects,
-	combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
-	maxCombo = mutils.MaxI(1, maxCombo)
-
-	pp.maxCombo, pp.nsliders, pp.ncircles, pp.nobjects = maxCombo, nsliders, ncircles, nobjects
+func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty, experimental bool) PPv2 {
+	attribs.MaxCombo = mutils.MaxI(1, attribs.MaxCombo)
 
 	if combo < 0 {
-		combo = maxCombo
+		combo = attribs.MaxCombo
 	}
 
 	if n300 < 0 {
-		n300 = nobjects - n100 - n50 - nmiss
+		n300 = attribs.ObjectCount - n100 - n50 - nmiss
 	}
 
 	totalhits := n300 + n100 + n50 + nmiss
 
-	pp.stars = stars
+	pp.attribs = attribs
 	pp.experimental = experimental
 	pp.diff = diff
 	pp.totalHits = totalhits
@@ -85,9 +79,9 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {
-		pp.amountHitObjectsWithAccuracy = nobjects
+		pp.amountHitObjectsWithAccuracy = attribs.ObjectCount
 	} else {
-		pp.amountHitObjectsWithAccuracy = ncircles
+		pp.amountHitObjectsWithAccuracy = attribs.Circles
 	}
 
 	// total pp
@@ -99,13 +93,11 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 	}
 
 	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
-		nspinners := nobjects - nsliders - ncircles
-
-		finalMultiplier *= 1.0 - math.Pow(float64(nspinners)/float64(totalhits), 0.85)
+		finalMultiplier *= 1.0 - math.Pow(float64(attribs.Spinners)/float64(totalhits), 0.85)
 	}
 
 	if diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount + pp.countOk + pp.countMeh, pp.totalHits)
+		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount+pp.countOk+pp.countMeh, pp.totalHits)
 		finalMultiplier *= 0.6
 	}
 
@@ -125,7 +117,7 @@ func (pp *PPv2) PPv2x(stars Stars, experimental bool,
 }
 
 func (pp *PPv2) computeAimValue() float64 {
-	rawAim := pp.stars.Aim
+	rawAim := pp.attribs.Aim
 
 	if pp.diff.Mods.Active(difficulty.TouchDevice) {
 		rawAim = math.Pow(rawAim, 0.8)
@@ -147,8 +139,8 @@ func (pp *PPv2) computeAimValue() float64 {
 	}
 
 	// Combo scaling
-	if pp.maxCombo > 0 {
-		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 {
+		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
 	}
 
 	approachRateFactor := 0.0
@@ -158,7 +150,7 @@ func (pp *PPv2) computeAimValue() float64 {
 		approachRateFactor = 0.1 * (8.0 - pp.diff.ARReal)
 	}
 
-	aimValue *= 1.0 + approachRateFactor * lengthBonus
+	aimValue *= 1.0 + approachRateFactor*lengthBonus
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
 	if pp.diff.Mods.Active(difficulty.Hidden) {
@@ -166,11 +158,11 @@ func (pp *PPv2) computeAimValue() float64 {
 	}
 
 	// We assume 15% of sliders in a map are difficult since there's no way to tell from the performance calculator.
-	estimateDifficultSliders := float64(pp.nsliders) * 0.15
+	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
-	if pp.nsliders > 0 {
-		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk + pp.countMeh + pp.countMiss, pp.maxCombo - pp.scoreMaxCombo)), 0, estimateDifficultSliders)
-		sliderNerfFactor := (1 - pp.stars.SliderFactor) * math.Pow(1 - estimateSliderEndsDropped / estimateDifficultSliders, 3) + pp.stars.SliderFactor
+	if pp.attribs.Sliders > 0 {
+		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}
 
@@ -182,7 +174,7 @@ func (pp *PPv2) computeAimValue() float64 {
 }
 
 func (pp *PPv2) computeSpeedValue() float64 {
-	speedValue := ppBase(pp.stars.Speed)
+	speedValue := ppBase(pp.attribs.Speed)
 
 	// Longer maps are worth more
 	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
@@ -198,8 +190,8 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	}
 
 	// Combo scaling
-	if pp.maxCombo > 0 {
-		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 {
+		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
 	}
 
 	approachRateFactor := 0.0
@@ -207,7 +199,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	}
 
-	speedValue *= 1.0 + approachRateFactor * lengthBonus
+	speedValue *= 1.0 + approachRateFactor*lengthBonus
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
@@ -267,7 +259,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 		return 0
 	}
 
-	rawFlashlight := pp.stars.Flashlight
+	rawFlashlight := pp.attribs.Flashlight
 
 	if pp.diff.CheckModActive(difficulty.TouchDevice) {
 		rawFlashlight = math.Pow(rawFlashlight, 0.8)
@@ -286,8 +278,8 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	}
 
 	// Combo scaling.
-	if pp.maxCombo > 0 {
-		flashlightValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.maxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 {
+		flashlightValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
 	}
 
 	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
@@ -310,8 +302,8 @@ func (pp *PPv2) calculateEffectiveMissCount() int {
 	// guess the number of misses + slider breaks from combo
 	comboBasedMissCount := 0.0
 
-	if pp.nsliders > 0 {
-		fullComboThreshold := float64(pp.maxCombo) - 0.1*float64(pp.nsliders)
+	if pp.attribs.Sliders > 0 {
+		fullComboThreshold := float64(pp.attribs.MaxCombo) - 0.1*float64(pp.attribs.Sliders)
 		if float64(pp.scoreMaxCombo) < fullComboThreshold {
 			comboBasedMissCount = fullComboThreshold / math.Max(1.0, float64(pp.scoreMaxCombo))
 		}

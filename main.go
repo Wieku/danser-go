@@ -11,7 +11,6 @@ __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; /
 import "C"
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/dustin/go-humanize"
@@ -35,6 +34,7 @@ import (
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/frame"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/blend"
@@ -52,7 +52,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -227,10 +226,6 @@ func run() {
 		settings.END = *end
 		settings.RECORD = recordMode || screenshotMode
 
-		if settings.RECORD {
-			//bass.Offscreen = true
-		}
-
 		newSettings := settings.LoadSettings(*settingsVersion)
 
 		if !newSettings && len(os.Args) == 1 {
@@ -332,6 +327,16 @@ func run() {
 
 		if closeAfterSettingsLoad {
 			os.Exit(0)
+		}
+
+		allowDA := false
+
+		// if map was launched not in knockout or play mode but AT mod is present, use replay mode for danser, allowing custom ar,od,cs,hp
+		if !settings.KNOCKOUT && modsParsed.Active(difficulty2.Autoplay) {
+			settings.PLAY = false
+			settings.KNOCKOUT = true
+			settings.Knockout.MaxPlayers = 0
+			allowDA = true
 		}
 
 		lastSamples = int(settings.Graphics.MSAA)
@@ -504,21 +509,21 @@ func run() {
 			settings.SPEED *= 0.75
 		}
 
-		if settings.PLAY || !settings.KNOCKOUT {
+		if settings.PLAY || !settings.KNOCKOUT || allowDA {
 			if !math.IsNaN(*ar) {
-				beatMap.Diff.SetAR(*ar)
+				beatMap.Diff.SetARCustom(*ar)
 			}
 
 			if !math.IsNaN(*od) {
-				beatMap.Diff.SetOD(*od)
+				beatMap.Diff.SetODCustom(*od)
 			}
 
 			if !math.IsNaN(*cs) {
-				beatMap.Diff.SetCS(*cs)
+				beatMap.Diff.SetCSCustom(*cs)
 			}
 
 			if !math.IsNaN(*hp) {
-				beatMap.Diff.SetHPDrain(*hp)
+				beatMap.Diff.SetHPCustom(*hp)
 			}
 
 			beatMap.Diff.SetCustomSpeed(speedBefore)
@@ -606,13 +611,28 @@ func mainLoopRecord() {
 				progress = int(math.Round(timeOffset / p.RunningTime * 100))
 
 				if progress%5 == 0 && lastProgress != progress {
+					speed := float64(count-lastCount) * (1000 / fps) / (qpc.GetMilliTimeF() - lastRealTime)
+
+					eta := int((p.RunningTime - timeOffset) / 1000 / speed)
+
+					etaText := ""
+
+					if hours := eta / 3600; hours > 0 {
+						etaText += strconv.Itoa(hours) + "h"
+					}
+
+					if minutes := eta / 60; minutes > 0 {
+						etaText += fmt.Sprintf("%02dm", minutes%60)
+					}
+
+					etaText += fmt.Sprintf("%02ds", eta%60)
+
 					if settings.Recording.ShowFFmpegLogs {
 						fmt.Println()
 					}
 
-					speed := float64(count-lastCount) * (1000 / fps) / (qpc.GetMilliTimeF() - lastRealTime)
+					log.Println(fmt.Sprintf("Progress: %d%%, Speed: %.2fx, ETA: %s", progress, speed, etaText))
 
-					log.Println(fmt.Sprintf("Progress: %d%%, Speed: %.2fx", progress, speed))
 					lastProgress = progress
 
 					lastCount = count
@@ -788,21 +808,6 @@ func pushFrame() {
 	viewport.Pop()
 }
 
-func setWorkingDirectory() {
-	exec, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-
-	if exec, err = filepath.EvalSymlinks(exec); err != nil {
-		panic(err)
-	}
-
-	if err = os.Chdir(filepath.Dir(exec)); err != nil {
-		panic(err)
-	}
-}
-
 func checkForUpdates() {
 	if build.Stream != "Release" || strings.Contains(build.VERSION, "dev") { //false positive, those are changed during compile
 		return
@@ -810,40 +815,14 @@ func checkForUpdates() {
 
 	log.Println("Checking GitHub for a new version of danser...")
 
-	request, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/Wieku/danser-go/releases/latest", nil)
+	url, tag, err := utils.GetLatestVersionFromGitHub()
 	if err != nil {
-		log.Println("Can't create request")
+		log.Println("Can't get version from GitHub:", err)
 		return
 	}
 
-	client := new(http.Client)
-	response, err := client.Do(request)
-
-	if err != nil || response.StatusCode != 200 {
-		log.Println("Can't get release info from GitHub")
-		return
-	}
-
-	defer func() {
-		err := response.Body.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	var data struct {
-		URL string `json:"html_url"`
-		Tag string `json:"tag_name"`
-	}
-
-	err = json.NewDecoder(response.Body).Decode(&data)
-	if err != nil {
-		log.Println("Failed to decode the response from GitHub")
-		return
-	}
-
-	githubVersion, _ := strconv.ParseInt(transformVersion(data.Tag), 10, 64)
-	exeVersion, _ := strconv.ParseInt(transformVersion(build.VERSION), 10, 64)
+	githubVersion := utils.TransformVersion(tag)
+	exeVersion := utils.TransformVersion(build.VERSION)
 
 	if exeVersion >= githubVersion {
 		log.Println("You're using the newest version of danser.")
@@ -853,25 +832,9 @@ func checkForUpdates() {
 		}
 	} else {
 		log.Println("You're using an older version of danser.")
-		log.Println("You can download a newer version here:", data.URL)
+		log.Println("You can download a newer version here:", url)
 		time.Sleep(2 * time.Second)
 	}
-}
-
-func transformVersion(a string) string {
-	currentSplit := strings.Split(a, "-")
-	splitDots := strings.Split(strings.TrimSuffix(currentSplit[0], "b"), ".")
-
-	for i, s := range splitDots {
-		splitDots[i] = fmt.Sprintf("%04s", s)
-	}
-
-	snapshot := "9999"
-	if len(currentSplit) > 1 && !strings.HasPrefix(currentSplit[1], "dev") {
-		snapshot = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
-	}
-
-	return strings.Join(splitDots, "") + snapshot
 }
 
 func printPlatformInfo() {
@@ -920,9 +883,11 @@ func main() {
 		}
 	}()
 
-	setWorkingDirectory()
+	env.Init("danser")
 
-	file, err := os.Create("danser.log")
+	log.Println("danser-go version:", build.VERSION)
+
+	file, err := os.Create(filepath.Join(env.DataDir(), "danser.log"))
 	if err != nil {
 		panic(err)
 	}

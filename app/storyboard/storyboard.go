@@ -58,7 +58,7 @@ func getSection(line string) string {
 }
 
 func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
-	path := filepath.Join(settings.General.OsuSongsDir, beatMap.Dir)
+	path := filepath.Join(settings.General.GetSongsDir(), beatMap.Dir)
 
 	files := []string{
 		filepath.Join(path, beatMap.File),

@@ -74,7 +74,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	bg.SetColor(color.NewL(0.75))
 
 	bgLoadFunc := func() {
-		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, ruleset.GetBeatMap().Dir, ruleset.GetBeatMap().Bg))
+		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.GetSongsDir(), ruleset.GetBeatMap().Dir, ruleset.GetBeatMap().Bg))
 		if err != nil {
 			image, err = assets.GetPixmap("assets/textures/background-1.png")
 			if err != nil {
@@ -225,15 +225,25 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 }
 
 func (panel *RankingPanel) loadMods() {
-	mods := panel.ruleset.GetBeatMap().Diff.Mods.StringFull()
+	mods := panel.ruleset.GetBeatMap().Diff.GetModStringFull()
 
 	offset := -64.0
 	for i, s := range mods {
-		modSpriteName := "selection-mod-" + strings.ToLower(s)
+		if strings.HasPrefix(s, "DA:") {
+			bgTex := skin.GetTexture("selection-mod-base")
 
-		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+			modBg := sprite.NewSpriteSingle(bgTex, 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+			panel.manager.Add(modBg)
 
-		panel.manager.Add(mod)
+			mod := sprite.NewTextSpriteSize(strings.TrimPrefix(s, "DA:"), font.GetFont("Quicksand Bold"), float64(bgTex.Height)/4, 6+float64(i)+0.5, vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+			panel.manager.Add(mod)
+		} else {
+			modSpriteName := "selection-mod-" + strings.ToLower(s)
+
+			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
+
+			panel.manager.Add(mod)
+		}
 
 		offset -= 32
 	}
@@ -285,7 +295,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	if settings.Gameplay.PPCounter.ShowInResults {
 		pp := panel.ruleset.GetPP(panel.cursor).Total
-		ppText := fmt.Sprintf("%." + strconv.Itoa(settings.Gameplay.PPCounter.Decimals) + "fpp", pp)
+		ppText := fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", pp)
 
 		batch.SetColor(0, 0, 0, alpha*0.5)
 		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, vector.Centre, 61, false, ppText)
@@ -305,16 +315,16 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	begin := panel.hpGraph[0].X
 	end := panel.hpGraph[len(panel.hpGraph)-1].X
 
-	for i := 0; i < len(panel.hpGraph) - 1; i++ {
+	for i := 0; i < len(panel.hpGraph)-1; i++ {
 		p1 := panel.hpGraph[i]
 		p2 := panel.hpGraph[i+1]
 
-		p1X := 256 + 8 + 298*(p1.X-begin) / (end-begin)
+		p1X := 256 + 8 + 298*(p1.X-begin)/(end-begin)
 		p1Y := 608 + 8 + 137.6*(1-p1.Y)
-		p2X := 256 + 8 + 298*(p2.X-begin) / (end-begin)
+		p2X := 256 + 8 + 298*(p2.X-begin)/(end-begin)
 		p2Y := 608 + 8 + 137.6*(1-p2.Y)
 
-		meanHp := (p1.Y+p2.Y) / 2
+		meanHp := (p1.Y + p2.Y) / 2
 
 		if meanHp > 0.5 {
 			panel.shapeRenderer.SetColor(0.2, 1, 0.2, alpha)
@@ -341,13 +351,13 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	sY := float32(608 + 8 + 137.6*2/4)
 
 	sWidth := float32(0.0)
-	sHeight := 12.0*float32(len(panel.stats))+10
+	sHeight := 12.0*float32(len(panel.stats)) + 10
 
 	for _, s := range panel.stats {
 		sWidth = math32.Max(sWidth, float32(fnt2.GetWidth(12, s)+10))
 	}
 
-	sY -= sHeight/2
+	sY -= sHeight / 2
 
 	panel.shapeRenderer.DrawQuad(sX, sY, sX+sWidth, sY, sX+sWidth, sY+sHeight, sX, sY+sHeight)
 

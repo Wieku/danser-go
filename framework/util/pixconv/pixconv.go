@@ -2,7 +2,7 @@ package pixconv
 
 /*
 #cgo CFLAGS: -I/usr/include -I.
-#cgo LDFLAGS: -Wl,-rpath,$ORIGIN -L${SRCDIR} -L${SRCDIR}/../../../ -L/usr/lib -lyuv
+#cgo LDFLAGS: -Wl,-rpath,$ORIGIN -L${SRCDIR} -L${SRCDIR}/../../../ -L/usr/lib/danser -L/usr/lib -lyuv
 #include "libyuv.h"
 */
 import "C"
@@ -136,7 +136,7 @@ func ConvertI420ToRGB(input []byte, output []byte, w, h int) {
 func ConvertI422ToRGB(input []byte, output []byte, w, h int) {
 	checkDimensions(input, output, w*h*2, w*h*3)
 
-	temp := C.malloc(C.size_t(w*h*4))
+	temp := C.malloc(C.size_t(w * h * 4))
 
 	C.I422ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*3/2]), C.int(w/2), (*C.uint8_t)(temp), C.int(w*4), C.int(w), C.int(h))
 
@@ -148,7 +148,7 @@ func ConvertI422ToRGB(input []byte, output []byte, w, h int) {
 func ConvertI444ToRGB(input []byte, output []byte, w, h int) {
 	checkDimensions(input, output, w*h*3, w*h*3)
 
-	temp := C.malloc(C.size_t(w*h*4))
+	temp := C.malloc(C.size_t(w * h * 4))
 
 	C.I444ToARGB((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&input[w*h*2]), C.int(w), (*C.uint8_t)(temp), C.int(w*4), C.int(w), C.int(h))
 

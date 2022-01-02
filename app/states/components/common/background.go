@@ -62,7 +62,7 @@ func NewBackground() *Background {
 
 func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool) {
 	bgLoadFunc := func() {
-		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.OsuSongsDir, beatMap.Dir, beatMap.Bg))
+		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.Bg))
 		if err != nil {
 			image, err = assets.GetPixmap("assets/textures/background-1.png")
 			if err != nil {

@@ -36,6 +36,7 @@ func NewFileMap(path string) (*FileMap, error) {
 			return nil
 		},
 		Unsorted: true,
+		FollowSymbolicLinks: true,
 	})
 
 	return fileMap, nil

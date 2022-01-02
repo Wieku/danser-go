@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/util"
 	"io"
@@ -42,9 +43,9 @@ func Init() error {
 
 	var err error
 
-	songsDir, err = filepath.Abs(settings.General.OsuSongsDir)
+	songsDir, err = filepath.Abs(settings.General.GetSongsDir())
 	if err != nil {
-		return fmt.Errorf("invalid song path given: %s", settings.General.OsuSongsDir)
+		return fmt.Errorf("invalid song path given: %s", settings.General.GetSongsDir())
 	}
 
 	_, err = os.Open(songsDir)
@@ -63,7 +64,7 @@ func Init() error {
 		&M20210423{},
 	}
 
-	dbFile, err = sql.Open("sqlite3", "danser.db")
+	dbFile, err = sql.Open("sqlite3", filepath.Join(env.DataDir(), "danser.db"))
 	if err != nil {
 		return err
 	}
@@ -159,7 +160,7 @@ func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 
 	allMaps := loadBeatmapsFromDatabase()
 
-	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps) / 2)
+	stdMaps := make([]*beatmap.BeatMap, 0, len(allMaps)/2)
 
 	for _, b := range allMaps {
 		if b.Mode == 0 {
@@ -190,7 +191,8 @@ func unpackMaps() {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 }
 
@@ -215,7 +217,8 @@ func importMaps() {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
+		FollowSymbolicLinks: true,
 	})
 
 	if err != nil {
@@ -246,7 +249,7 @@ func importMaps() {
 
 		if lastModified, ok := mapsInDB[candidate]; ok {
 			if lastModified == stat.ModTime().UnixNano()/1000000 {
-				// Map is up to date, so remove it from mapsInDB because values left in that map are later removed from database.
+				// Map is up-to-date, so remove it from mapsInDB because values left in that map are later removed from database.
 				delete(mapsInDB, candidate)
 
 				continue
@@ -496,7 +499,7 @@ func insertBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.TimeAdded,
 					bMap.PlayCount,
 					bMap.LastPlayed,
-					bMap.Diff.GetHPDrain(),
+					bMap.Diff.GetHP(),
 					bMap.Diff.GetOD(),
 					bMap.Stars,
 					bMap.MinBPM,
@@ -577,7 +580,7 @@ func loadBeatmapsFromDatabase() []*beatmap.BeatMap {
 
 		beatMap.Diff.SetCS(mutils.ClampF64(cs, 0, 10))
 		beatMap.Diff.SetAR(mutils.ClampF64(ar, 0, 10))
-		beatMap.Diff.SetHPDrain(mutils.ClampF64(hp, 0, 10))
+		beatMap.Diff.SetHP(mutils.ClampF64(hp, 0, 10))
 		beatMap.Diff.SetOD(mutils.ClampF64(od, 0, 10))
 
 		beatmaps = append(beatmaps, beatMap)
