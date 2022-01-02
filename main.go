@@ -11,7 +11,6 @@ __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; /
 import "C"
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/dustin/go-humanize"
@@ -53,7 +52,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -817,40 +815,14 @@ func checkForUpdates() {
 
 	log.Println("Checking GitHub for a new version of danser...")
 
-	request, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/Wieku/danser-go/releases/latest", nil)
+	url, tag, err := utils.GetLatestVersionFromGitHub()
 	if err != nil {
-		log.Println("Can't create request")
+		log.Println("Can't get version from GitHub:", err)
 		return
 	}
 
-	client := new(http.Client)
-	response, err := client.Do(request)
-
-	if err != nil || response.StatusCode != 200 {
-		log.Println("Can't get release info from GitHub")
-		return
-	}
-
-	defer func() {
-		err := response.Body.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	var data struct {
-		URL string `json:"html_url"`
-		Tag string `json:"tag_name"`
-	}
-
-	err = json.NewDecoder(response.Body).Decode(&data)
-	if err != nil {
-		log.Println("Failed to decode the response from GitHub")
-		return
-	}
-
-	githubVersion, _ := strconv.ParseInt(transformVersion(data.Tag), 10, 64)
-	exeVersion, _ := strconv.ParseInt(transformVersion(build.VERSION), 10, 64)
+	githubVersion := utils.TransformVersion(tag)
+	exeVersion := utils.TransformVersion(build.VERSION)
 
 	if exeVersion >= githubVersion {
 		log.Println("You're using the newest version of danser.")
@@ -860,25 +832,9 @@ func checkForUpdates() {
 		}
 	} else {
 		log.Println("You're using an older version of danser.")
-		log.Println("You can download a newer version here:", data.URL)
+		log.Println("You can download a newer version here:", url)
 		time.Sleep(2 * time.Second)
 	}
-}
-
-func transformVersion(a string) string {
-	currentSplit := strings.Split(a, "-")
-	splitDots := strings.Split(strings.TrimSuffix(currentSplit[0], "b"), ".")
-
-	for i, s := range splitDots {
-		splitDots[i] = fmt.Sprintf("%04s", s)
-	}
-
-	snapshot := "9999"
-	if len(currentSplit) > 1 && !strings.HasPrefix(currentSplit[1], "dev") {
-		snapshot = fmt.Sprintf("%04s", strings.TrimPrefix(currentSplit[1], "snapshot"))
-	}
-
-	return strings.Join(splitDots, "") + snapshot
 }
 
 func printPlatformInfo() {
