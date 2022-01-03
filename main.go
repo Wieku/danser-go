@@ -137,7 +137,7 @@ func run() {
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
 		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
-		noUpdCheck := flag.Bool("noupdatecheck", false, "Don't check for updates. Speeds up startup if older version of danser is needed for various reasons.")
+		noUpdCheck := flag.Bool("noupdatecheck", strings.HasPrefix(env.LibDir(), "/usr/lib/"), "Don't check for updates. Speeds up startup if older version of danser is needed for various reasons. Has no effect if danser is running as a linux package")
 
 		ar := flag.Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
 		od := flag.Float64("od", math.NaN(), "Modify map's OD, only in cursordance/play modes")
