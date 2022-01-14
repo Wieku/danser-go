@@ -16,6 +16,7 @@ func initGameplay() *gameplay {
 			},
 			PointFadeOutTime:     10,
 			ShowPositionalMisses: true,
+			PositionalMissScale:  1.5,
 			ShowUnstableRate:     true,
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
@@ -258,6 +259,7 @@ type hitError struct {
 	*hudElementOffset
 	PointFadeOutTime     float64
 	ShowPositionalMisses bool
+	PositionalMissScale  float64
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64

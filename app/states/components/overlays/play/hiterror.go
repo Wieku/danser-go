@@ -122,7 +122,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 
 		middle.SetColor(colors[3])
 
-		middle.SetScaleV(vector.NewVec2d(3, errorBase*6).Scl(scale))
+		middle.SetScaleV(vector.NewVec2d(3, errorBase*4*settings.Gameplay.HitErrorMeter.PositionalMissScale).Scl(scale))
 		middle.SetAdditive(false)
 	} else {
 		switch {
