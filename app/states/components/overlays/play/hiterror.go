@@ -135,7 +135,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 		}
 	}
 
-	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+10000, baseFade, 0.0))
+	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+math.Max(0, settings.Gameplay.HitErrorMeter.PointFadeOutTime*1000), baseFade, 0.0))
 	middle.AdjustTimesToTransformations()
 
 	meter.errorDisplay.Add(middle)
