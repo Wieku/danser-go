@@ -328,7 +328,9 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 		overlay.newComboFadeB.Reset()
 		overlay.newComboFadeB.AddEventS(overlay.normalTime, overlay.normalTime+300, 0.6, 0.0)
 
-		overlay.animate(overlay.normalTime)
+		if overlay.combo < overlay.newCombo {
+			overlay.animate(overlay.normalTime)
+		}
 
 		overlay.combo = overlay.newCombo
 		overlay.newCombo++
@@ -486,7 +488,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 		}
 	}
 
-	if overlay.combo != overlay.newCombo && overlay.nextEnd < time+140 {
+	if overlay.combo < overlay.newCombo && overlay.nextEnd < time+140 {
 		overlay.animate(time)
 		overlay.combo = overlay.newCombo
 		overlay.nextEnd = math.MaxInt64
