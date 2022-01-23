@@ -44,7 +44,13 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 		return 0
 	}
 
-	distance := math.Min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
+	var distance float64
+	if s.Experimental {
+		distance = math.Min(singleSpacingThreshold, current.TravelDistance+current.MovementDistance)
+	} else {
+		distance = math.Min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
+	}
+
 	strainTime := current.StrainTime
 
 	previous := s.GetPrevious(0)
