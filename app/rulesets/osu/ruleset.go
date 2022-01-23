@@ -153,8 +153,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	if settings.Gameplay.UseLazerPP {
 		log.Println("Using pp calc version 2022-01-23:")
-		log.Println("\tMake speed skill consider only the shortest movement distance: https://github.com/ppy/osu/pull/16280")
 		log.Println("\tRemove decay factor in Flashlight skill: https://github.com/ppy/osu/pull/15728")
+		log.Println("\tMake speed skill consider only the shortest movement distance: https://github.com/ppy/osu/pull/15758")
+		log.Println("\tFix cumulative strain time calculation in Flashlight skill: https://github.com/ppy/osu/pull/15867")
 		log.Println("\tRemove combo scaling from Aim and Speed from osu! performance calculation: https://github.com/ppy/osu/pull/16280")
 		ruleset.experimentalPP = true
 	} else {

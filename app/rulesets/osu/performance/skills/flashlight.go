@@ -39,6 +39,8 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 
 	result := 0.0
 
+	lastObj := current
+
 	for i := 0; i < len(s.Previous); i++ {
 		previous := s.GetPrevious(i)
 
@@ -48,7 +50,11 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 
 		jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(s.diff.Mods).Dst(previous.BaseObject.GetStackedEndPositionMod(s.diff.Mods)))
 
-		cumulativeStrainTime += previous.StrainTime
+		if s.Experimental {
+			cumulativeStrainTime += lastObj.StrainTime
+		} else {
+			cumulativeStrainTime += previous.StrainTime
+		}
 
 		// We want to nerf objects that can be easily seen within the Flashlight circle radius.
 		if i == 0 {
@@ -63,6 +69,8 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 		} else {
 			result += math.Pow(0.8, float64(i)) * stackNerf * scalingFactor * jumpDistance / cumulativeStrainTime
 		}
+
+		lastObj = previous
 	}
 
 	return math.Pow(smallDistNerf*result, 2.0)
