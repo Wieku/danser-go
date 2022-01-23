@@ -44,30 +44,28 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 	for i := 0; i < len(s.Previous); i++ {
 		previous := s.GetPrevious(i)
 
-		if _, ok := previous.BaseObject.(*objects.Spinner); ok {
-			continue
-		}
+		if _, ok := previous.BaseObject.(*objects.Spinner); !ok {
+			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(s.diff.Mods).Dst(previous.BaseObject.GetStackedEndPositionMod(s.diff.Mods)))
 
-		jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(s.diff.Mods).Dst(previous.BaseObject.GetStackedEndPositionMod(s.diff.Mods)))
+			if s.Experimental {
+				cumulativeStrainTime += lastObj.StrainTime
+			} else {
+				cumulativeStrainTime += previous.StrainTime
+			}
 
-		if s.Experimental {
-			cumulativeStrainTime += lastObj.StrainTime
-		} else {
-			cumulativeStrainTime += previous.StrainTime
-		}
+			// We want to nerf objects that can be easily seen within the Flashlight circle radius.
+			if i == 0 {
+				smallDistNerf = math.Min(1.0, jumpDistance/75.0)
+			}
 
-		// We want to nerf objects that can be easily seen within the Flashlight circle radius.
-		if i == 0 {
-			smallDistNerf = math.Min(1.0, jumpDistance/75.0)
-		}
+			// We also want to nerf stacks so that only the first object of the stack is accounted for.
+			stackNerf := math.Min(1.0, (previous.JumpDistance/scalingFactor)/25.0)
 
-		// We also want to nerf stacks so that only the first object of the stack is accounted for.
-		stackNerf := math.Min(1.0, (previous.JumpDistance/scalingFactor)/25.0)
-
-		if s.Experimental {
-			result += stackNerf * scalingFactor * jumpDistance / cumulativeStrainTime
-		} else {
-			result += math.Pow(0.8, float64(i)) * stackNerf * scalingFactor * jumpDistance / cumulativeStrainTime
+			if s.Experimental {
+				result += stackNerf * scalingFactor * jumpDistance / cumulativeStrainTime
+			} else {
+				result += math.Pow(0.8, float64(i)) * stackNerf * scalingFactor * jumpDistance / cumulativeStrainTime
+			}
 		}
 
 		lastObj = previous
