@@ -152,8 +152,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Attributes)
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
-		//ruleset.experimentalPP = true
+		log.Println("Using pp calc version 2022-01-23:")
+		log.Println("\tRemove combo scaling from Aim and Speed from osu! performance calculation: https://github.com/ppy/osu/pull/16280")
+		ruleset.experimentalPP = true
 	} else {
 		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
 	}

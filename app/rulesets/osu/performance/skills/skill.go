@@ -168,6 +168,22 @@ func (skill *Skill) startNewSectionFrom(end float64) {
 	skill.currentSectionPeak = skill.CalculateInitialStrain(end)
 }
 
+func (skill *Skill) CountDifficultStrains(clockRate float64) float64 {
+	peaks := skill.GetCurrentStrainPeaks()
+
+	var topStrain, realtimeCount float64
+
+	for _, v := range peaks {
+		topStrain = math.Max(topStrain, v)
+	}
+
+	for _, v := range peaks {
+		realtimeCount += math.Pow(v/topStrain, 4)
+	}
+
+	return realtimeCount * clockRate
+}
+
 func reverseSortFloat64s(arr []float64) {
 	sort.Float64s(arr)
 

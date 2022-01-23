@@ -135,12 +135,16 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), float64(pp.effectiveMissCount))
+		if pp.experimental {
+			aimValue *= pp.calculateMissPenalty(float64(pp.effectiveMissCount), pp.attribs.AimDifficultStrainCount)
+		} else {
+			aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), float64(pp.effectiveMissCount))
+		}
 	}
 
 	// Combo scaling
-	if pp.attribs.MaxCombo > 0 {
-		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 && !pp.experimental {
+		aimValue *= pp.getComboScalingFactor()
 	}
 
 	approachRateFactor := 0.0
@@ -186,12 +190,16 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
+		if pp.experimental {
+			speedValue *= pp.calculateMissPenalty(float64(pp.effectiveMissCount), pp.attribs.SpeedDifficultStrainCount)
+		} else {
+			speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
+		}
 	}
 
 	// Combo scaling
-	if pp.attribs.MaxCombo > 0 {
-		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 && !pp.experimental {
+		speedValue *= pp.getComboScalingFactor()
 	}
 
 	approachRateFactor := 0.0
@@ -279,7 +287,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 
 	// Combo scaling.
 	if pp.attribs.MaxCombo > 0 {
-		flashlightValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+		flashlightValue *= pp.getComboScalingFactor()
 	}
 
 	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
@@ -313,4 +321,16 @@ func (pp *PPv2) calculateEffectiveMissCount() int {
 	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.totalHits))
 
 	return mutils.MaxI(pp.countMiss, int(math.Floor(comboBasedMissCount)))
+}
+
+func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
+	return 0.95 / ((missCount / (3 * math.Sqrt(difficultStrainCount))) + 1)
+}
+
+func (pp *PPv2) getComboScalingFactor() float64 {
+	if pp.attribs.MaxCombo <= 0 {
+		return 1.0
+	} else {
+		return math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+	}
 }
