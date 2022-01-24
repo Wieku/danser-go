@@ -32,7 +32,7 @@ type PPv2 struct {
 	countOk            int
 	countMeh           int
 	countMiss          int
-	effectiveMissCount int
+	effectiveMissCount float64
 
 	diff *difficulty.Difficulty
 
@@ -89,7 +89,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 	finalMultiplier := 1.12
 
 	if diff.Mods.Active(difficulty.NoFail) {
-		finalMultiplier *= math.Max(0.90, 1.0-0.02*float64(pp.effectiveMissCount))
+		finalMultiplier *= math.Max(0.90, 1.0-0.02*pp.effectiveMissCount)
 	}
 
 	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
@@ -97,7 +97,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 	}
 
 	if diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount+pp.countOk+pp.countMeh, pp.totalHits)
+		pp.effectiveMissCount = math.Min(pp.effectiveMissCount+float64(pp.countOk+pp.countMeh), float64(pp.totalHits))
 		finalMultiplier *= 0.6
 	}
 
@@ -136,9 +136,9 @@ func (pp *PPv2) computeAimValue() float64 {
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
 		if pp.experimental {
-			aimValue *= pp.calculateMissPenalty(float64(pp.effectiveMissCount), pp.attribs.AimDifficultStrainCount)
+			aimValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.AimDifficultStrainCount)
 		} else {
-			aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), float64(pp.effectiveMissCount))
+			aimValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), pp.effectiveMissCount)
 		}
 	}
 
@@ -191,9 +191,9 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
 		if pp.experimental {
-			speedValue *= pp.calculateMissPenalty(float64(pp.effectiveMissCount), pp.attribs.SpeedDifficultStrainCount)
+			speedValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.SpeedDifficultStrainCount)
 		} else {
-			speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
+			speedValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
 		}
 	}
 
@@ -282,7 +282,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		flashlightValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
+		flashlightValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
 	}
 
 	// Combo scaling.
@@ -306,7 +306,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	return flashlightValue
 }
 
-func (pp *PPv2) calculateEffectiveMissCount() int {
+func (pp *PPv2) calculateEffectiveMissCount() float64 {
 	// guess the number of misses + slider breaks from combo
 	comboBasedMissCount := 0.0
 
@@ -320,7 +320,11 @@ func (pp *PPv2) calculateEffectiveMissCount() int {
 	// we're clamping misscount because since its derived from combo it can be higher than total hits and that breaks some calculations
 	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.totalHits))
 
-	return mutils.MaxI(pp.countMiss, int(math.Floor(comboBasedMissCount)))
+	if pp.experimental {
+		return math.Max(float64(pp.countMiss), comboBasedMissCount)
+	} else {
+		return math.Max(float64(pp.countMiss), math.Floor(comboBasedMissCount))
+	}
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
