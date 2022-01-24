@@ -1,16 +1,19 @@
 package ffmpeg
 
 import (
+	"errors"
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -93,13 +96,20 @@ func createPBO(format pixconv.PixFmt) *PBO {
 
 // check used encoders exist
 func preCheck() {
-	out, err := exec.Command("ffmpeg", "-encoders").Output()
+	out, err := exec.Command(filepath.Join(env.LibDir(), "ffmpeg"), "-encoders").Output()
 	if err != nil {
-		if strings.Contains(err.Error(), "executable file not found") {
-			panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
-		}
+		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
+			out, err = exec.Command("ffmpeg", "-encoders").Output()
+			if err != nil {
+				if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
+					panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
+				}
 
-		panic(err)
+				panic(fmt.Sprintf("Failed to get encoder info. Error: %s", err))
+			}
+		} else {
+			panic(fmt.Sprintf("Failed to get encoder info. Error: %s", err))
+		}
 	}
 
 	encoders := strings.Split(string(out[:]), "\n")
@@ -409,7 +419,7 @@ func startThreads() {
 	}()
 }
 
-func Stopffmpeg() {
+func StopFFmpeg() {
 	log.Println("Finishing rendering...")
 
 	for len(syncPool) > 0 {
