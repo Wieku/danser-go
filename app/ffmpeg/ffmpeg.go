@@ -262,7 +262,7 @@ func startVideo(fps int) {
 
 	err = cmdVideo.Start()
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("ffmpeg's video process failed to start! Please check if video parameters are entered correctly or video codec is supported by provided container. Error: %s", err))
 	}
 
 	mainthread.Call(func() {
@@ -344,7 +344,7 @@ func startAudio(audioFPS float64) {
 
 	err = cmdAudio.Start()
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("ffmpeg's audio process failed to start! Please check if audio parameters are entered correctly or audio codec is supported by provided container. Error: %s", err))
 	}
 
 	audioBufSize := bass.GetMixerRequiredBufferSize(1 / audioFPS)
@@ -391,7 +391,7 @@ func startThreads() {
 			if data != nil {
 				_, err := audioPipe.Write(data)
 				if err != nil {
-					panic(err)
+					panic(fmt.Sprintf("ffmpeg's audio process finished abruptly! Please check if you have enough storage or audio parameters are entered correctly. Error: %s", err))
 				}
 
 				audioSync.Lock()
@@ -409,7 +409,7 @@ func startThreads() {
 	}()
 }
 
-func StopFFmpeg() {
+func Stopffmpeg() {
 	log.Println("Finishing rendering...")
 
 	for len(syncPool) > 0 {
@@ -466,7 +466,7 @@ func combine() {
 		log.Println("Failed to start ffmpeg:", err)
 	} else {
 		if err = cmd2.Wait(); err != nil {
-			log.Println("ffmpeg finished abruptly! Please check if you have enough storage or audio bitrate is entered correctly.")
+			log.Println("ffmpeg finished abruptly! Please check if you have enough storage. Error:", err)
 		} else {
 			log.Println("Finished!")
 		}
@@ -487,7 +487,8 @@ func PushAudio() {
 	audioSync.Lock()
 
 	//spin until at least one audio buffer is free
-	for len(audioPool) == 0 {}
+	for len(audioPool) == 0 {
+	}
 
 	data := audioPool[0]
 	audioPool = audioPool[1:]
@@ -582,7 +583,7 @@ func CheckData() {
 				}
 
 				if err != nil {
-					panic(err)
+					panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
 				}
 
 				pboSync.Lock()
