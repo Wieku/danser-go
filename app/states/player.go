@@ -938,7 +938,7 @@ func (player *Player) drawDebug() {
 			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() / 1000)
 
 			drawShadowed(false, 2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			drawShadowed(false, 1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(player.processed)*/, 0, settings.DIVIDES, len(player.bMap.HitObjects)))
+			drawShadowed(false, 1, fmt.Sprintf("%d(*%d) hitobjects, %d total", player.objectContainer.GetNumProcessed(), settings.DIVIDES, len(player.bMap.HitObjects)))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
 				drawShadowed(false, 0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", player.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))

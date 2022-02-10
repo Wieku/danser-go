@@ -26,11 +26,12 @@ type renderableProxy struct {
 }
 
 type HitObjectContainer struct {
-	beatMap       *beatmap.BeatMap
-	objectQueue   []objects.IHitObject
-	renderables   []*renderableProxy
-	spriteManager *sprite.Manager
-	lastTime      float64
+	beatMap        *beatmap.BeatMap
+	objectQueue    []objects.IHitObject
+	renderables    []*renderableProxy
+	spriteManager  *sprite.Manager
+	lastTime       float64
+	countProcessed int
 }
 
 func NewHitObjectContainer(beatMap *beatmap.BeatMap) *HitObjectContainer {
@@ -160,6 +161,8 @@ func (container *HitObjectContainer) preProcessQueue(time float64) {
 						})
 					}
 
+					container.countProcessed++
+
 					container.objectQueue = container.objectQueue[1:]
 					i--
 				}
@@ -283,6 +286,10 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 				}
 
 				if proxy.endTime <= time {
+					if !proxy.isSliderBody {
+						container.countProcessed--
+					}
+
 					container.renderables = append(container.renderables[:i], container.renderables[(i+1):]...)
 				}
 			}
@@ -308,4 +315,8 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 		batch.SetScale(1, 1)
 		batch.End()
 	}
+}
+
+func (container *HitObjectContainer) GetNumProcessed() int {
+	return container.countProcessed
 }
