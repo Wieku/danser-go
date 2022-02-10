@@ -497,11 +497,14 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circleTime := slider.StartTime + math.Floor(slider.partLen*float64(i))
 
 		appearTime := slider.StartTime - math.Floor(slider.diff.Preempt)
+		bounceStartTime := slider.StartTime - math.Min(math.Floor(slider.diff.Preempt), 15000)
+
 		if i > 1 {
 			appearTime = circleTime - math.Floor(slider.partLen*2)
+			bounceStartTime = appearTime
 		}
 
-		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == slider.RepeatCount)
+		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, bounceStartTime, circleTime, i == 1, i == slider.RepeatCount)
 		circle.ComboNumber = slider.ComboNumber
 		circle.ComboSet = slider.ComboSet
 		circle.ComboSetHax = slider.ComboSetHax

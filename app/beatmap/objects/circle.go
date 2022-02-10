@@ -32,14 +32,15 @@ type Circle struct {
 	reverseArrow     *sprite.Sprite
 	comboText        *sprite.TextSprite
 
-	sprites        []sprite.ISprite
-	diff           *difficulty.Difficulty
-	lastTime       float64
-	silent         bool
-	firstEndCircle bool
-	textureName    string
-	appearTime     float64
-	ArrowRotation  float64
+	sprites         []sprite.ISprite
+	diff            *difficulty.Difficulty
+	lastTime        float64
+	silent          bool
+	firstEndCircle  bool
+	textureName     string
+	appearTime      float64
+	bounceStartTime float64
+	ArrowRotation   float64
 
 	SliderPoint      bool
 	SliderPointStart bool
@@ -78,7 +79,7 @@ func DummyCircleInherit(pos vector.Vector2f, time float64, inherit bool, inherit
 	return circle
 }
 
-func NewSliderEndCircle(pos vector.Vector2f, appearTime, time float64, first, last bool) *Circle {
+func NewSliderEndCircle(pos vector.Vector2f, appearTime, bounceStartTime, time float64, first, last bool) *Circle {
 	circle := &Circle{HitObject: &HitObject{}}
 	circle.StartPosRaw = pos
 	circle.EndPosRaw = pos
@@ -90,6 +91,7 @@ func NewSliderEndCircle(pos vector.Vector2f, appearTime, time float64, first, la
 	circle.silent = true
 	circle.textureName = "sliderend"
 	circle.appearTime = appearTime
+	circle.bounceStartTime = bounceStartTime
 
 	return circle
 }
@@ -196,7 +198,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 		circle.sprites = append(circle.sprites, circle.reverseArrow)
 
-		for t := startTime; t < endTime; t += 300 {
+		for t := circle.bounceStartTime; t < endTime; t += 300 {
 			length := math.Min(300, endTime-t)
 			circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, t, t+length, 1.3, 1.0))
 
