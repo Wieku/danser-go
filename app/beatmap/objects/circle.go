@@ -345,7 +345,7 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 }
 
 func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batch.QuadBatch) {
-	if circle.approachCircle == nil {
+	if circle.approachCircle == nil || circle.diff.Preempt > 15000 {
 		return
 	}
 
