@@ -145,12 +145,12 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	endTime := circle.StartTime
 
-	defaul := skin.GetTexture(defaultCircleName + "circle")
+	base := skin.GetTexture(defaultCircleName + "circle")
 	named := skin.GetTexture(circle.textureName + "circle")
 
 	name := circle.textureName + "circle"
 
-	if named == nil || skin.GetMostSpecific(named, defaul) == defaul {
+	if named == nil || skin.GetMostSpecific(named, base) == base {
 		name = defaultCircleName + "circle"
 	}
 
@@ -159,16 +159,14 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	circle.hitCircle = sprite.NewSpriteSingle(circle.hitCircleTexture, 0, vector.NewVec2d(0, 0), vector.Centre)
 	circle.hitCircleOverlay = sprite.NewSpriteSingle(skin.GetTexture(name+"overlay"), 0, vector.NewVec2d(0, 0), vector.Centre)
-	circle.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), vector.Centre)
-	circle.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), vector.Centre)
+
 	circle.comboText = sprite.NewTextSpriteSize(strconv.Itoa(int(circle.ComboNumber)), skin.GetFont("default"), skin.GetFont("default").GetSize()*0.8, 0, vector.NewVec2d(0, 0), vector.Centre)
 
-	circle.sprites = append(circle.sprites, circle.hitCircle, circle.hitCircleOverlay, circle.approachCircle, circle.reverseArrow, circle.comboText)
+	circle.sprites = append(circle.sprites, circle.hitCircle, circle.hitCircleOverlay, circle.comboText)
 
 	circle.hitCircle.SetAlpha(0)
 	circle.hitCircleOverlay.SetAlpha(0)
-	circle.approachCircle.SetAlpha(0)
-	circle.reverseArrow.SetAlpha(0)
+
 	circle.comboText.SetAlpha(0)
 
 	circles := []sprite.ISprite{circle.hitCircle, circle.hitCircleOverlay, circle.comboText}
@@ -189,22 +187,34 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		}
 	}
 
-	circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, startTime+150), 0.0, 1.0))
-	circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
+	if circle.SliderPoint && !circle.SliderPointStart {
+		circle.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), vector.Centre)
+		circle.reverseArrow.SetAlpha(0)
 
-	if !diff.CheckModActive(difficulty.Hidden) || circle.HitObjectID == 0 {
-		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+diff.TimeFadeIn*2), 0.0, 0.9))
-		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
+		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, startTime+150), 0.0, 1.0))
+		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
 
-		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, endTime, 4.0, 1.0))
-	}
+		circle.sprites = append(circle.sprites, circle.reverseArrow)
 
-	for t := startTime; t < endTime; t += 300 {
-		length := math.Min(300, endTime-t)
-		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, t, t+length, 1.3, 1.0))
+		for t := startTime; t < endTime; t += 300 {
+			length := math.Min(300, endTime-t)
+			circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, t, t+length, 1.3, 1.0))
 
-		if skin.GetInfo().Version < 2 {
-			circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Rotate, easing.Linear, t, t+length, 6*math.Pi/180, -6*math.Pi/180))
+			if skin.GetInfo().Version < 2 {
+				circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Rotate, easing.Linear, t, t+length, 6*math.Pi/180, -6*math.Pi/180))
+			}
+		}
+	} else {
+		circle.approachCircle = sprite.NewSpriteSingle(skin.GetTexture("approachcircle"), 0, vector.NewVec2d(0, 0), vector.Centre)
+		circle.approachCircle.SetAlpha(0)
+
+		circle.sprites = append(circle.sprites, circle.approachCircle)
+
+		if !diff.CheckModActive(difficulty.Hidden) || circle.HitObjectID == 0 {
+			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+diff.TimeFadeIn*2), 0.0, 0.9))
+			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
+
+			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, endTime, 4.0, 1.0))
 		}
 	}
 }
@@ -216,8 +226,10 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 
 	startTime := time
 
-	circle.approachCircle.ClearTransformations()
-	circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
+	if circle.approachCircle != nil {
+		circle.approachCircle.ClearTransformations()
+		circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime, 0.0, 0.0))
+	}
 
 	endScale := 1.4
 	if skin.GetInfo().Version < 2 {
@@ -228,7 +240,10 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 		endTime := startTime + difficulty.HitFadeOut
 		circle.hitCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
 		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
-		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
+
+		if circle.reverseArrow != nil {
+			circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
+		}
 
 		if skin.GetInfo().Version < 2 {
 			circle.comboText.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
@@ -236,7 +251,10 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 
 		circle.hitCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
 		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
-		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
+
+		if circle.reverseArrow != nil {
+			circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
+		}
 
 		if skin.GetInfo().Version < 2 {
 			circle.comboText.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, endTime, 1.0, 0.0))
@@ -325,6 +343,10 @@ func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBa
 }
 
 func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batch.QuadBatch) {
+	if circle.approachCircle == nil {
+		return
+	}
+
 	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
 
 	batch.SetSubScale(1, 1)
