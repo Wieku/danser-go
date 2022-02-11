@@ -12,7 +12,7 @@ type event struct {
 	hasStartValue bool
 	startValue    float64
 	targetValue   float64
-	easing        func(float64) float64
+	easeFunc      easing.Easing
 }
 
 type Glider struct {
@@ -23,7 +23,7 @@ type Glider struct {
 	value      float64
 	startValue float64
 
-	easing func(float64) float64
+	easeFunc easing.Easing
 
 	sorting bool
 	dirty   bool
@@ -39,10 +39,10 @@ func NewGlider(value float64) *Glider {
 			targetValue:   value,
 			hasStartValue: false,
 			startValue:    0,
-			easing:        easing.Linear,
+			easeFunc:      easing.Linear,
 		},
-		easing:  easing.Linear,
-		sorting: true,
+		easeFunc: easing.Linear,
+		sorting:  true,
 	}
 }
 
@@ -51,33 +51,33 @@ func (glider *Glider) SetSorting(sorting bool) {
 }
 
 func (glider *Glider) SetEasing(easing func(float64) float64) {
-	glider.easing = easing
+	glider.easeFunc = easing
 }
 
 func (glider *Glider) AddEvent(startTime, endTime, targetValue float64) {
-	glider.addEvent(startTime, endTime, 0, targetValue, false, glider.easing)
+	glider.addEvent(startTime, endTime, 0, targetValue, false, glider.easeFunc)
 }
 
 func (glider *Glider) AddEventS(startTime, endTime, startValue, targetValue float64) {
-	glider.addEvent(startTime, endTime, startValue, targetValue, true, glider.easing)
+	glider.addEvent(startTime, endTime, startValue, targetValue, true, glider.easeFunc)
 }
 
-func (glider *Glider) AddEventEase(startTime, endTime, targetValue float64, easing func(float64) float64) {
-	glider.addEvent(startTime, endTime, 0, targetValue, false, easing)
+func (glider *Glider) AddEventEase(startTime, endTime, targetValue float64, easeFunc easing.Easing) {
+	glider.addEvent(startTime, endTime, 0, targetValue, false, easeFunc)
 }
 
-func (glider *Glider) AddEventSEase(startTime, endTime, startValue, targetValue float64, easing func(float64) float64) {
-	glider.addEvent(startTime, endTime, startValue, targetValue, true, easing)
+func (glider *Glider) AddEventSEase(startTime, endTime, startValue, targetValue float64, easeFunc easing.Easing) {
+	glider.addEvent(startTime, endTime, startValue, targetValue, true, easeFunc)
 }
 
-func (glider *Glider) addEvent(startTime, endTime, startValue, targetValue float64, hasStartValue bool, easing func(float64) float64) {
+func (glider *Glider) addEvent(startTime, endTime, startValue, targetValue float64, hasStartValue bool, easeFunc easing.Easing) {
 	glider.eventQueue = append(glider.eventQueue, event{
 		startTime:     startTime,
 		endTime:       endTime,
 		hasStartValue: hasStartValue,
 		startValue:    startValue,
 		targetValue:   targetValue,
-		easing:        easing,
+		easeFunc:      easeFunc,
 	})
 
 	glider.dirty = true
@@ -129,7 +129,7 @@ func (glider *Glider) updateCurrent(time float64) {
 	if time < glider.current.endTime && glider.current.startTime != glider.current.endTime {
 		e := glider.current
 		t := mutils.ClampF64(0, 1, (time-e.startTime)/(e.endTime-e.startTime))
-		glider.value = glider.startValue + e.easing(t)*(e.targetValue-glider.startValue)
+		glider.value = glider.startValue + e.easeFunc(t)*(e.targetValue-glider.startValue)
 	} else {
 		glider.value = glider.current.targetValue
 		glider.startValue = glider.value
