@@ -426,13 +426,13 @@ func StopFFmpeg() {
 		CheckData()
 	}
 
-	log.Println("Finished! Stopping video videoPipe...")
+	log.Println("Finished! Stopping video pipe...")
 
 	close(videoQueue)
 	endSyncVideo.Wait()
 	_ = videoPipe.Close()
 
-	log.Println("Finished! Stopping audio videoPipe...")
+	log.Println("Finished! Stopping audio pipe...")
 
 	close(audioQueue)
 	endSyncAudio.Wait()
