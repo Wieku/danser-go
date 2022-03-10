@@ -2,8 +2,10 @@ package video
 
 import (
 	"fmt"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
+	"log"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -22,12 +24,13 @@ type VideoDecoder struct {
 	decodingQueue chan Frame
 	readyQueue    chan Frame
 
-	command  *exec.Cmd
-	pipe     io.ReadCloser
-	running  bool
-	wg       *sync.WaitGroup
-	finished bool
-	format   pixconv.PixFmt
+	ffmpegExec string
+	command    *exec.Cmd
+	pipe       io.ReadCloser
+	running    bool
+	wg         *sync.WaitGroup
+	finished   bool
+	format     pixconv.PixFmt
 }
 
 func NewVideoDecoder(filePath string) *VideoDecoder {
@@ -36,11 +39,17 @@ func NewVideoDecoder(filePath string) *VideoDecoder {
 		return nil
 	}
 
+	ffmpegExec, err := files.GetCommandExec("ffmpeg", "ffmpeg")
+	if err != nil {
+		log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
+	}
+
 	decoder := &VideoDecoder{
-		filePath: filePath,
-		Metadata: metadata,
-		wg:       &sync.WaitGroup{},
-		format:   pixconv.RGB,
+		ffmpegExec: ffmpegExec,
+		filePath:   filePath,
+		Metadata:   metadata,
+		wg:         &sync.WaitGroup{},
+		format:     pixconv.RGB,
 	}
 
 	switch strings.ToLower(metadata.PixFmt) {
@@ -101,7 +110,7 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 	args = append(args, "-")
 
 	dec.command = exec.Command(
-		"ffmpeg",
+		dec.ffmpegExec,
 		args...,
 	)
 
@@ -111,7 +120,15 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 		panic(err)
 	}
 
-	dec.command.Start()
+	err = dec.command.Start()
+	if err != nil {
+		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
+			panic(fmt.Sprintf("ffmpeg was installed incorrectly! Please make sure needed libraries (libs/*.so or bin/*.dll) are installed as well. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg. Error: %s", err))
+		}
+
+		panic(fmt.Sprintf("Failed to start ffmpeg decoder. Error: %s", err))
+	}
+
 	dec.running = true
 
 	dec.decodingQueue = make(chan Frame, BufferSize)

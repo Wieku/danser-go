@@ -2,6 +2,8 @@ package video
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"math"
 	"os"
@@ -42,8 +44,14 @@ func LoadMetadata(path string) *Metadata {
 		return nil
 	}
 
+	probeExec, err := files.GetCommandExec("ffmpeg", "ffprobe")
+	if err != nil {
+		log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
+		return nil
+	}
+
 	output, err := exec.Command(
-		"ffprobe",
+		probeExec,
 		"-i", path,
 		"-select_streams", "v:0",
 		"-show_entries", "stream",
@@ -53,8 +61,10 @@ func LoadMetadata(path string) *Metadata {
 	).Output()
 
 	if err != nil {
-		if strings.Contains(err.Error(), "executable file not found") {
-			log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
+		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
+			log.Println(fmt.Sprintf("ffmpeg was installed incorrectly! Please make sure needed libraries (libs/*.so or bin/*.dll) are installed as well. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg. Error: %s", err))
+		} else {
+			log.Println(fmt.Sprintf("ffprobe: Failed to get media info. Error: %s", err))
 		}
 
 		return nil

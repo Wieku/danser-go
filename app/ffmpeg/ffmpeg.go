@@ -1,19 +1,16 @@
 package ffmpeg
 
 import (
-	"errors"
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
-	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
-	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -28,6 +25,8 @@ import (
 
 const MaxVideoBuffers = 10
 const MaxAudioBuffers = 2000
+
+var ffmpegExec string
 
 var cmdVideo *exec.Cmd
 var cmdAudio *exec.Cmd
@@ -96,20 +95,20 @@ func createPBO(format pixconv.PixFmt) *PBO {
 
 // check used encoders exist
 func preCheck() {
-	out, err := exec.Command(filepath.Join(env.LibDir(), "ffmpeg"), "-encoders").Output()
-	if err != nil {
-		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
-			out, err = exec.Command("ffmpeg", "-encoders").Output()
-			if err != nil {
-				if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
-					panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
-				}
+	var err error
 
-				panic(fmt.Sprintf("Failed to get encoder info. Error: %s", err))
-			}
-		} else {
-			panic(fmt.Sprintf("Failed to get encoder info. Error: %s", err))
+	ffmpegExec, err = files.GetCommandExec("ffmpeg", "ffmpeg")
+	if err != nil {
+		panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
+	}
+
+	out, err := exec.Command(ffmpegExec, "-encoders").Output()
+	if err != nil {
+		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
+			panic(fmt.Sprintf("ffmpeg was installed incorrectly! Please make sure needed libraries (libs/*.so or bin/*.dll) are installed as well. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg. Error: %s", err))
 		}
+
+		panic(fmt.Sprintf("Failed to get encoder info. Error: %s", err))
 	}
 
 	encoders := strings.Split(string(out[:]), "\n")
@@ -254,7 +253,7 @@ func startVideo(fps int) {
 
 	log.Println("Running ffmpeg with options:", options)
 
-	cmdVideo = exec.Command("ffmpeg", options...)
+	cmdVideo = exec.Command(ffmpegExec, options...)
 
 	var err error
 
@@ -336,7 +335,7 @@ func startAudio(audioFPS float64) {
 
 	log.Println("Running ffmpeg with options:", options)
 
-	cmdAudio = exec.Command("ffmpeg", options...)
+	cmdAudio = exec.Command(ffmpegExec, options...)
 
 	var err error
 
