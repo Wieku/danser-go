@@ -130,6 +130,22 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		loadFrames(control, replay.ReplayData)
 
+		// Check if the replay ends earlier than expected with 100ms of leniency
+		totalTime := int64(0)
+		for _, f := range replay.ReplayData {
+			// Ignore mania seed frame
+			if f.Time != -12345 {
+				totalTime += f.Time
+			}
+		}
+		replayEndDiff := totalTime - int64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()+3000)
+		endsEarly := replayEndDiff < -100
+		extraText := ""
+		if endsEarly {
+			extraText = fmt.Sprintf(" (by %.3fs)", -float64(replayEndDiff)/1000.0)
+		}
+		log.Println(fmt.Sprintf("\tEnds early: %t%s", endsEarly, extraText))
+
 		mxCombo := replay.MaxCombo
 
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
@@ -493,6 +509,10 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					}
 
 					controller.cursors[i].IsReplayFrame = false
+				}
+
+				if c.replayIndex == len(c.frames)-1 {
+					controller.ruleset.SetCanHardFail(controller.cursors[i], true)
 				}
 			} else {
 				controller.cursors[i].LeftKey = false

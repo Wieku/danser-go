@@ -26,7 +26,7 @@ const (
 	MaxHp = 200.0
 )
 
-type FailListener func()
+type FailListener func() FailResult
 
 type drain struct {
 	start, end int64

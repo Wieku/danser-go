@@ -75,4 +75,10 @@ const (
 
 	//Other result than 300 will knock the player out
 	SSOrQuit
+
+	// Players get knocked out if they fail
+	Fail
+
+	// Same as Fail, but allows players to get revived if they get above 95% HP (for multi replays)
+	FailWithRecovery
 )

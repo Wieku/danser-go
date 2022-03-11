@@ -47,6 +47,9 @@ type knockoutPlayer struct {
 	scores    []int64
 	pps       []float64
 	displayHp float64
+	failed    bool
+	recovered bool
+	hardFail  bool
 
 	lastHit  osu.HitResult
 	fadeHit  *animation.Glider
@@ -125,6 +128,8 @@ type KnockoutOverlay struct {
 
 	breakMode bool
 	fade      *animation.Glider
+
+	lastSort int64
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -152,7 +157,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewGlider(0), animation.NewGlider(0), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, false, false, false, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 	}
@@ -174,65 +179,21 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	}
 
 	replayController.GetRuleset().SetListener(overlay.hitReceived)
-
-	sortFunc := func(number int64, instantSort bool) {
-		alive := 0
-		for _, g := range overlay.playersArray {
-			if !g.hasBroken {
-				alive++
-			}
-		}
-
-		if settings.Knockout.LiveSort {
-			cond := strings.ToLower(settings.Knockout.SortBy)
-
-			sort.SliceStable(overlay.playersArray, func(i, j int) bool {
-				mainCond := true
-				switch cond {
-				case "pp":
-					mainCond = overlay.playersArray[i].pps[number] > overlay.playersArray[j].pps[number]
-				default:
-					mainCond = overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number]
-				}
-
-				return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && mainCond) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && mainCond)))
-			})
-
-			for i, g := range overlay.playersArray {
-				if i != g.currentIndex {
-					g.index.Reset()
-
-					animDuration := 0.0
-					if !instantSort {
-						animDuration = 200 + math.Abs(float64(i-g.currentIndex))*10
-					}
-
-					g.index.AddEvent(overlay.normalTime, overlay.normalTime+animDuration, float64(i))
-					g.currentIndex = i
-				}
-			}
-		}
-
-		discord.UpdateKnockout(alive, len(overlay.playersArray))
-	}
+	replayController.GetRuleset().SetFailListener(overlay.failReceived)
+	replayController.GetRuleset().SetRecoveryListener(overlay.recoveryReceived)
 
 	replayController.GetRuleset().SetEndListener(func(time int64, number int64) {
 		if number == int64(len(replayController.GetBeatMap().HitObjects)-1) && settings.Knockout.RevivePlayersAtEnd {
-			for _, player := range overlay.players {
-				player.hasBroken = false
-				player.breakTime = 0
-
-				player.fade.Reset()
-				player.fade.AddEvent(overlay.normalTime, overlay.normalTime+750, 1)
-
-				player.height.Reset()
-				player.height.SetEasing(easing.InQuad)
-				player.height.AddEvent(overlay.normalTime, overlay.normalTime+200, overlay.ScaledHeight*0.9*1.04/(51))
+			for _, cursor := range overlay.controller.GetCursors() {
+				player := overlay.players[overlay.names[cursor]]
+				if !player.hardFail {
+					overlay.revivePlayer(player)
+				}
 			}
 
-			sortFunc(number, true)
+			overlay.sort(number, true)
 		} else {
-			sortFunc(number, false)
+			overlay.sort(number, false)
 		}
 	})
 
@@ -242,6 +203,61 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	overlay.ButtonClicked = skin.GetTexture("knockout-button-active")
 
 	return overlay
+}
+
+func (overlay *KnockoutOverlay) sort(number int64, instantSort bool) {
+	alive := 0
+	for _, g := range overlay.playersArray {
+		if !g.hasBroken {
+			alive++
+		}
+	}
+
+	if settings.Knockout.LiveSort {
+		cond := strings.ToLower(settings.Knockout.SortBy)
+
+		sort.SliceStable(overlay.playersArray, func(i, j int) bool {
+			mainCond := true
+			switch cond {
+			case "pp":
+				mainCond = overlay.playersArray[i].pps[number] > overlay.playersArray[j].pps[number]
+			default:
+				mainCond = overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number]
+			}
+
+			return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && mainCond) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && mainCond)))
+		})
+
+		for i, g := range overlay.playersArray {
+			if i != g.currentIndex {
+				g.index.Reset()
+
+				animDuration := 0.0
+				if !instantSort {
+					animDuration = 200 + math.Abs(float64(i-g.currentIndex))*10
+				}
+
+				g.index.AddEvent(overlay.normalTime, overlay.normalTime+animDuration, float64(i))
+				g.currentIndex = i
+			}
+		}
+	}
+
+	discord.UpdateKnockout(alive, len(overlay.playersArray))
+
+	overlay.lastSort = number
+}
+
+func (overlay *KnockoutOverlay) revivePlayer(player *knockoutPlayer) {
+	player.hasBroken = false
+	player.breakTime = 0
+
+	player.fade.Reset()
+	player.fade.AddEvent(overlay.normalTime, overlay.normalTime+750, 1)
+
+	player.height.Reset()
+	player.height.SetEasing(easing.InQuad)
+	player.height.AddEvent(overlay.normalTime, overlay.normalTime+200, overlay.ScaledHeight*0.9*1.04/(51))
 }
 
 func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, score int64) {
@@ -286,7 +302,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	}
 
 	comboBreak := comboResult == osu.ComboResults.Reset
-	if (settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
+	if ((settings.Knockout.Mode == settings.Fail || settings.Knockout.Mode == settings.FailWithRecovery) && player.failed || settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
 
 		if !player.hasBroken {
 			if settings.Knockout.Mode == settings.XReplays {
@@ -294,7 +310,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, overlay.normalTime, overlay.names[cursor], player.sCombo, resultClean, comboResult))
 					log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
 				}
-			} else if settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
+			} else if (settings.Knockout.Mode == settings.Fail || settings.Knockout.Mode == settings.FailWithRecovery) && player.failed || settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
 				//Fade out player name
 				player.hasBroken = true
 				player.breakTime = time
@@ -314,6 +330,27 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	if comboBreak {
 		player.sCombo = 0
 	}
+}
+
+func (overlay *KnockoutOverlay) failReceived(cursor *graphics.Cursor, failResult osu.FailResult) {
+	player := overlay.players[overlay.names[cursor]]
+	player.failed = true
+	if failResult == osu.SoftFail {
+		log.Println(overlay.names[cursor], "soft failed!")
+	} else {
+		player.hardFail = true
+		log.Println(overlay.names[cursor], "hard failed!")
+	}
+}
+
+func (overlay *KnockoutOverlay) recoveryReceived(cursor *graphics.Cursor) {
+	player := overlay.players[overlay.names[cursor]]
+	if player.hardFail {
+		return
+	}
+	log.Println(overlay.names[cursor], "recovered!")
+	player.failed = false
+	player.recovered = true
 }
 
 func (overlay *KnockoutOverlay) Update(time float64) {
@@ -353,6 +390,12 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 		} else if player.displayHp > currentHp {
 			player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6*delta/16.667)
 		}
+
+		if settings.Knockout.Mode == settings.FailWithRecovery && player.recovered && !player.failed {
+			overlay.revivePlayer(player)
+			overlay.sort(overlay.lastSort, true)
+		}
+		player.recovered = false
 	}
 }
 
