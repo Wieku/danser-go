@@ -315,11 +315,15 @@ func importMaps() {
 			return nil
 		})
 
-		log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
+		if len(newBeatmaps) > 0 {
+			log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
 
-		insertBeatmaps(newBeatmaps)
+			insertBeatmaps(newBeatmaps)
 
-		log.Println("DatabaseManager: Insert complete.")
+			log.Println("DatabaseManager: Insert complete.")
+		} else {
+			log.Println("DatabaseManager: No new/updated beatmaps imported.")
+		}
 	}
 }
 
