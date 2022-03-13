@@ -228,7 +228,7 @@ func importMaps() {
 	log.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
 	log.Println("DatabaseManager: Comparing files with database...")
 
-	mapsToImport := make([]interface{}, 0)
+	mapsToImport := make([]mapLocation, 0)
 
 	for _, candidate := range candidates {
 		partialPath := filepath.Join(candidate.dir, candidate.file)
@@ -282,9 +282,7 @@ func importMaps() {
 	if len(mapsToImport) > 0 {
 		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps...")
 
-		loaded := util.Balance(4, mapsToImport, func(a interface{}) interface{} {
-			candidate := a.(mapLocation)
-
+		newBeatmaps := util.Balance(4, mapsToImport, func(candidate mapLocation) *beatmap.BeatMap {
 			partialPath := filepath.Join(candidate.dir, candidate.file)
 			mapPath := filepath.Join(songsDir, partialPath)
 
@@ -316,11 +314,6 @@ func importMaps() {
 
 			return nil
 		})
-
-		newBeatmaps := make([]*beatmap.BeatMap, len(loaded))
-		for i, o := range loaded {
-			newBeatmaps[i] = o.(*beatmap.BeatMap)
-		}
 
 		log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
 
