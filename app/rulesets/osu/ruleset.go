@@ -112,6 +112,7 @@ type subSet struct {
 	recoveries     int
 	scoreProcessor scoreProcessor
 	failed         bool
+	sdpfFail       bool
 }
 
 type MapTo struct {
@@ -446,6 +447,13 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		return
 	}
 
+	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == ComboResults.Reset) ||
+		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (result&BaseHitsM > 0 && result&BaseHitsM != Hit300)) {
+		result = Miss
+		comboResult = ComboResults.Reset
+		subSet.sdpfFail = true
+	}
+
 	result = subSet.scoreProcessor.ModifyResult(result, src)
 	subSet.scoreProcessor.AddResult(result, comboResult)
 
@@ -537,7 +545,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.currentKatu = 0
 	}
 
-	subSet.hp.AddResult(result)
+	if subSet.sdpfFail {
+		subSet.hp.Increase(-100000, true)
+	} else {
+		subSet.hp.AddResult(result)
+	}
 
 	if set.hitListener != nil {
 		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
@@ -611,7 +623,7 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	}
 
 	// EZ mod gives 2 additional lives
-	if subSet.recoveries > 0 {
+	if subSet.recoveries > 0 && !subSet.sdpfFail {
 		subSet.hp.Increase(160, false)
 		subSet.recoveries--
 
