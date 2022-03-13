@@ -253,7 +253,7 @@ func (hp *HealthProcessor) AddResult(result HitResult) {
 
 func (hp *HealthProcessor) Increase(amount float64, fromHitObject bool) {
 	hp.HealthUncapped = math.Max(0.0, hp.HealthUncapped+amount)
-	hp.Health = mutils.ClampF64(hp.Health+amount, 0.0, MaxHp)
+	hp.Health = mutils.ClampF(hp.Health+amount, 0.0, MaxHp)
 
 	if hp.playing && hp.Health <= 0 && fromHitObject {
 		for _, f := range hp.failListeners {

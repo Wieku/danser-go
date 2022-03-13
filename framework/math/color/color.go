@@ -49,7 +49,7 @@ func (c Color) GetHue() float32 {
 }
 
 func (c Color) Mix(c1 Color, t float32) Color {
-	t = mutils.ClampF32(t, 0.0, 1.0)
+	t = mutils.ClampF(t, 0.0, 1.0)
 	return NewRGBA(
 		c.R+(c1.R-c.R)*t,
 		c.G+(c1.G-c.G)*t,
@@ -66,8 +66,8 @@ func (c Color) Shift(h, s, v float32) Color {
 		hR += 360
 	}
 
-	sR := mutils.ClampF32(s1+s, 0, 1)
-	vR := mutils.ClampF32(v1+v, 0, 1)
+	sR := mutils.ClampF(s1+s, 0, 1)
+	vR := mutils.ClampF(v1+v, 0, 1)
 
 	return NewHSVA(hR, sR, vR, c.A)
 }

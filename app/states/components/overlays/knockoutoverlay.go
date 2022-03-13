@@ -460,10 +460,10 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	for _, r := range replays {
 		cumulativeHeight += overlay.players[r.Name].height.GetValue()
 
-		highestCombo = mutils.MaxI64(highestCombo, overlay.players[r.Name].sCombo)
+		highestCombo = mutils.Max(highestCombo, overlay.players[r.Name].sCombo)
 		highestPP = math.Max(highestPP, overlay.players[r.Name].pp)
 		highestACC = math.Max(highestACC, r.Accuracy)
-		highestScore = mutils.MaxI64(highestScore, overlay.players[r.Name].score)
+		highestScore = mutils.Max(highestScore, overlay.players[r.Name].score)
 
 		pWidth := overlay.font.GetWidth(scl, r.Name)
 

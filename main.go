@@ -694,7 +694,7 @@ func mainLoopNormal() {
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
-					settings.DIVIDES = mutils.MaxI(1, settings.DIVIDES-1)
+					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
 				}

@@ -77,19 +77,19 @@ func parseDifficulty(line []string, beatMap *BeatMap) {
 		beatMap.Timings.SliderMult = beatMap.SliderMultiplier
 	case "ApproachRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
-		beatMap.Diff.SetAR(mutils.ClampF64(parsed, 0, 10))
+		beatMap.Diff.SetAR(mutils.ClampF(parsed, 0, 10))
 		beatMap.ARSpecified = true
 	case "CircleSize":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
-		beatMap.Diff.SetCS(mutils.ClampF64(parsed, 0, 10))
+		beatMap.Diff.SetCS(mutils.ClampF(parsed, 0, 10))
 	case "SliderTickRate":
 		beatMap.Timings.TickRate, _ = strconv.ParseFloat(line[1], 64)
 	case "HPDrainRate":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
-		beatMap.Diff.SetHP(mutils.ClampF64(parsed, 0, 10))
+		beatMap.Diff.SetHP(mutils.ClampF(parsed, 0, 10))
 	case "OverallDifficulty":
 		parsed, _ := strconv.ParseFloat(line[1], 64)
-		beatMap.Diff.SetOD(mutils.ClampF64(parsed, 0, 10))
+		beatMap.Diff.SetOD(mutils.ClampF(parsed, 0, 10))
 
 		if !beatMap.ARSpecified {
 			beatMap.Diff.SetAR(beatMap.Diff.GetOD())
@@ -209,7 +209,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 				}
 				timeI, _ := strconv.Atoi(time)
 
-				beatMap.Length = mutils.MaxI(beatMap.Length, timeI)
+				beatMap.Length = mutils.Max(beatMap.Length, timeI)
 			}
 		}
 	}

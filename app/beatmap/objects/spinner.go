@@ -167,7 +167,7 @@ func (spinner *Spinner) Update(time float64) bool {
 
 	if time >= spinner.StartTime && time <= spinner.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-			rRPMS := rpms * mutils.ClampF32(float32(time-spinner.StartTime)/500, 0.0, 1.0)
+			rRPMS := rpms * mutils.ClampF(float32(time-spinner.StartTime)/500, 0.0, 1.0)
 
 			spinner.rad = rRPMS * float32(time-spinner.StartTime) * 2 * math32.Pi
 

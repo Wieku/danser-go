@@ -77,7 +77,7 @@ func (body *Body) setupPoints(curve *curves.MultiCurve, hardRock bool) {
 		body.bottomRight = pointAt(curve, 0, hardRock)
 
 		for i := 0; i <= int(numPoints); i++ {
-			point := pointAt(curve, float32(i) / numPoints, hardRock)
+			point := pointAt(curve, float32(i)/numPoints, hardRock)
 
 			body.topLeft.X = math32.Min(body.topLeft.X, point.X)
 			body.topLeft.Y = math32.Min(body.topLeft.Y, point.Y)
@@ -138,8 +138,8 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 		return
 	}
 
-	startInstance := int(math.Ceil(mutils.ClampF64(head, 0.0, 1.0) * float64(body.maxInstances-1)))
-	endInstance := int(math.Floor(mutils.ClampF64(tail, 0.0, 1.0) * float64(body.maxInstances-1)))
+	startInstance := int(math.Ceil(mutils.ClampF(head, 0.0, 1.0) * float64(body.maxInstances-1)))
+	endInstance := int(math.Floor(mutils.ClampF(tail, 0.0, 1.0) * float64(body.maxInstances-1)))
 
 	if startInstance > endInstance {
 		startInstance, endInstance = endInstance, startInstance

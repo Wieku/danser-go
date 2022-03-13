@@ -842,9 +842,9 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 
 	musicPos := overlay.audioTime
 
-	progress := mutils.ClampF64((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	progress := mutils.ClampF((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
 	if musicPos < startTime {
-		progress = mutils.ClampF64(-1.0+musicPos/startTime, -1.0, 0.0)
+		progress = mutils.ClampF(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
 	return progress
@@ -1006,12 +1006,12 @@ func (overlay *ScoreOverlay) initArrows() {
 	bMap := overlay.ruleset.GetBeatMap()
 
 	if bMap.HitObjects[0].GetStartTime() > 6000 {
-		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+mutils.MinI(2, int(bMap.Diff.Preempt/blinkTime)))
+		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+mutils.Min(2, int(bMap.Diff.Preempt/blinkTime)))
 	}
 
 	for _, pause := range bMap.Pauses {
-		blinks := mutils.MinI(minBlinks, int(pause.Length()/blinkTime))
-		extra := mutils.MinI(2, int(bMap.Diff.Preempt/blinkTime))
+		blinks := mutils.Min(minBlinks, int(pause.Length()/blinkTime))
+		extra := mutils.Min(2, int(bMap.Diff.Preempt/blinkTime))
 		addTransforms(pause.EndTime-float64(blinks)*blinkTime, blinks+extra)
 	}
 }

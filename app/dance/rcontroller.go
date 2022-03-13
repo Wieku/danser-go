@@ -115,7 +115,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			return candidates[i].Score > candidates[j].Score
 		})
 
-		candidates = candidates[:mutils.MinI(len(candidates), settings.Knockout.MaxPlayers)]
+		candidates = candidates[:mutils.Min(len(candidates), settings.Knockout.MaxPlayers)]
 	}
 
 	displayedMods := ^difficulty.ParseMods(settings.Knockout.HideMods)
@@ -470,7 +470,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					if c.newHandling || c.replayIndex == len(c.frames)-1 {
 						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime, processAhead)
 					} else {
-						localIndex := mutils.ClampI(c.replayIndex+1, 0, len(c.frames)-1)
+						localIndex := mutils.Clamp(c.replayIndex+1, 0, len(c.frames)-1)
 						localFrame := c.frames[localIndex]
 
 						// HACK for older replays: update object ends till the next frame
@@ -486,11 +486,11 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 				if !wasUpdated {
 					if !isAutopilot {
-						localIndex := mutils.ClampI(c.replayIndex, 0, len(c.frames)-1)
+						localIndex := mutils.Clamp(c.replayIndex, 0, len(c.frames)-1)
 
 						progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
 
-						prevIndex := mutils.MaxI(0, localIndex-1)
+						prevIndex := mutils.Max(0, localIndex-1)
 
 						mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
 						mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY

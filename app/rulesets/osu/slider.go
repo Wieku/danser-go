@@ -86,7 +86,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 		}
 
 		if len(slider.state[player].points) > 0 {
-			slider.state[player].points[len(slider.state[player].points)-1].time = mutils.MaxI64(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
+			slider.state[player].points[len(slider.state[player].points)-1].time = mutils.Max(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
 			slider.state[player].points[len(slider.state[player].points)-1].scoreGiven = SliderEnd
 		}
 	}

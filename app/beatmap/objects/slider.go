@@ -188,9 +188,9 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 		return float64(slider.scorePath[i].Time2) >= time
 	})
 
-	pLine := slider.scorePath[mutils.ClampI(index, 0, len(slider.scorePath)-1)]
+	pLine := slider.scorePath[mutils.Clamp(index, 0, len(slider.scorePath)-1)]
 
-	clamped := mutils.ClampF64(time, float64(pLine.Time1), float64(pLine.Time2))
+	clamped := mutils.ClampF(time, float64(pLine.Time1), float64(pLine.Time2))
 
 	var pos vector.Vector2f
 	if pLine.Time2 == pLine.Time1 {
@@ -207,7 +207,7 @@ func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
 		return slider.StartPosRaw
 	}
 
-	t1 := mutils.ClampF64(time, slider.StartTime, slider.EndTimeLazer)
+	t1 := mutils.ClampF(time, slider.StartTime, slider.EndTimeLazer)
 
 	progress := (t1 - slider.StartTime) / slider.spanDuration
 
@@ -434,8 +434,8 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeTail = animation.NewGlider(0)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
-	fadeMultiplier := 1.0 - mutils.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
-	durationMultiplier := mutils.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+	fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+	durationMultiplier := mutils.ClampF(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
 
 	slSnInS := slider.StartTime - diff.Preempt
 	slSnInE := slider.StartTime - diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
@@ -873,8 +873,8 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
-	bodyOpacityInner := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
-	bodyOpacityOuter := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
+	bodyOpacityInner := mutils.ClampF(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
+	bodyOpacityOuter := mutils.ClampF(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
 
 	borderInner := color2.NewRGBA(innerBorder.R, innerBorder.G, innerBorder.B, float32(colorAlpha))
 	borderOuter := color2.NewRGBA(outerBorder.R, outerBorder.G, outerBorder.B, float32(colorAlpha))
