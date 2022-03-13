@@ -277,10 +277,14 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	times := make([]float64, 0, len(frames))
 
+	duration := 0
+
 	for _, frame := range frames {
 		if frame.Time >= 0 {
 			times = append(times, float64(frame.Time))
 		}
+
+		duration += int(frame.Time)
 	}
 
 	sort.Float64s(times)
@@ -303,6 +307,8 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay|difficulty.Relax|difficulty.Relax2) {
 		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
+
+	log.Println(fmt.Sprintf("\tReplay duration: %dms", duration))
 
 	subController.frames = frames
 }
