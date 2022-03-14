@@ -500,6 +500,10 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 					controller.cursors[i].IsReplayFrame = false
 				}
+
+				if c.replayIndex >= len(c.frames) {
+					controller.ruleset.PlayerStopped(controller.cursors[i], c.replayTime)
+				}
 			} else {
 				controller.cursors[i].LeftKey = false
 				controller.cursors[i].RightKey = false

@@ -638,6 +638,15 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	subSet.failed = true
 }
 
+func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
+	subSet := set.cursors[cursor]
+
+	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())+subSet.player.diff.Hit50+20 {
+		subSet.sdpfFail = true
+		subSet.hp.Increase(-10000, true)
+	}
+}
+
 func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
 }
