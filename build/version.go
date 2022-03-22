@@ -12,16 +12,12 @@ var Stream = "Dev"
 func init() {
 	if VERSION == "dev" {
 		if bI, ok := debug.ReadBuildInfo(); ok {
-			rev := ""
-
 			for _, k := range bI.Settings {
 				if k.Key == "vcs.revision" {
-					rev = k.Value
-				}
-			}
+					VERSION += "-" + k.Value[:mutils.Min(7, len(k.Value))]
 
-			if rev != "" {
-				VERSION += "-" + rev[:mutils.Min(7, len(rev))]
+					break
+				}
 			}
 		}
 	}
