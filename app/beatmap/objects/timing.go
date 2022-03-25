@@ -52,7 +52,6 @@ type Timings struct {
 	Current TimingPoint
 
 	BaseSet int
-	LastSet int
 }
 
 func NewTimings() *Timings {
@@ -70,7 +69,6 @@ func NewTimings() *Timings {
 			OmitFirstBarLine: false,
 		},
 		BaseSet: 1,
-		LastSet: 1,
 	}
 }
 

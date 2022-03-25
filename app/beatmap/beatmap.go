@@ -120,7 +120,7 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 	}
 
 	signature := 4
-	sampleSet := beatMap.Timings.LastSet
+	sampleSet := beatMap.Timings.BaseSet
 	sampleIndex := 1
 	sampleVolume := 1.0
 	inherited := false
@@ -159,7 +159,6 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 	}
 
 	beatMap.Timings.AddPoint(float64(pointTime), bpm, sampleSet, sampleIndex, sampleVolume, signature, inherited, kiai, omitFirstBarLine)
-	beatMap.Timings.LastSet = sampleSet
 }
 
 func (beatMap *BeatMap) FinalizePoints() {

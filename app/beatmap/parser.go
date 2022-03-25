@@ -39,7 +39,6 @@ func parseGeneral(line []string, beatMap *BeatMap) bool {
 		case "Drum":
 			beatMap.Timings.BaseSet = 3
 		}
-		beatMap.Timings.LastSet = beatMap.Timings.BaseSet
 	}
 
 	return false
