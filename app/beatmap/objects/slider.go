@@ -130,20 +130,28 @@ func NewSlider(data []string) *Slider {
 
 	if len(data) > 8 {
 		subData := strings.Split(data[8], "|")
-		for i, v := range subData {
-			f, _ := strconv.ParseInt(v, 10, 64)
-			slider.samples[i] = int(f)
+
+		n := mutils.Min(len(subData), len(slider.samples))
+
+		for i := 0; i < n; i++ {
+			sample, _ := strconv.Atoi(subData[i])
+			slider.samples[i] = sample
 		}
 	}
 
 	if len(data) > 9 {
 		subData := strings.Split(data[9], "|")
-		for i, v := range subData {
-			extras := strings.Split(v, ":")
-			sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
-			additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
-			slider.sampleSets[i] = int(sampleSet)
-			slider.additionSets[i] = int(additionSet)
+
+		n := mutils.Min(len(subData), len(slider.sampleSets))
+
+		for i := 0; i < n; i++ {
+			extras := strings.Split(subData[i], ":")
+
+			sampleSet, _ := strconv.Atoi(extras[0])
+			additionSet, _ := strconv.Atoi(extras[1])
+
+			slider.sampleSets[i] = sampleSet
+			slider.additionSets[i] = additionSet
 		}
 	}
 
