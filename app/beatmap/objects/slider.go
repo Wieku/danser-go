@@ -126,6 +126,8 @@ func NewSlider(data []string) *Slider {
 
 	for i := range slider.samples {
 		slider.samples[i] = slider.baseSample
+		slider.sampleSets[i] = slider.BasicHitSound.SampleSet
+		slider.additionSets[i] = slider.BasicHitSound.AdditionSet
 	}
 
 	if len(data) > 8 {
@@ -831,7 +833,12 @@ func (slider *Slider) PlayEdgeSample(index int) {
 		return
 	}
 
-	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
+	sampleSet := slider.sampleSets[index]
+	if sampleSet == 0 && index == 0 {
+		sampleSet = slider.BasicHitSound.SampleSet
+	}
+
+	slider.playSampleT(sampleSet, slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
 }
 
 func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
@@ -857,14 +864,11 @@ func (slider *Slider) PlayTick() {
 
 func (slider *Slider) playSampleT(sampleSet, additionSet, sample int, point TimingPoint, pos vector.Vector2f) {
 	if sampleSet == 0 {
-		sampleSet = slider.BasicHitSound.SampleSet
-		if sampleSet == 0 {
-			sampleSet = point.SampleSet
-		}
+		sampleSet = point.SampleSet
 	}
 
 	if additionSet == 0 {
-		additionSet = slider.BasicHitSound.AdditionSet
+		additionSet = sampleSet
 	}
 
 	audio.PlaySample(sampleSet, additionSet, sample, point.SampleIndex, point.SampleVolume, slider.HitObjectID, pos.X64())
