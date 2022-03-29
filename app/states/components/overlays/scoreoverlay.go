@@ -580,7 +580,7 @@ func (overlay *ScoreOverlay) DrawBackground(batch *batch.QuadBatch, c []color2.C
 }
 
 func (overlay *ScoreOverlay) DrawBeforeObjects(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
-	overlay.results.DrawBottom(batch, c, 1.0)
+	overlay.results.DrawBottom(batch, c, alpha)
 }
 
 func (overlay *ScoreOverlay) DrawNormal(batch *batch.QuadBatch, _ []color2.Color, alpha float64) {
