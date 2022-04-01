@@ -42,18 +42,6 @@ const (
 	blinkTime    = 200
 )
 
-type Overlay interface {
-	Update(float64)
-	SetMusic(bass.ITrack)
-	DrawBackground(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
-	DrawBeforeObjects(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
-	DrawNormal(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
-	DrawHUD(batch *batch.QuadBatch, colors []color2.Color, alpha float64)
-	IsBroken(cursor *graphics.Cursor) bool
-	DisableAudioSubmission(b bool)
-	ShouldDrawHUDBeforeCursor() bool
-}
-
 type ScoreOverlay struct {
 	lastTime float64
 	combo    int64
