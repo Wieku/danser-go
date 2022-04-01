@@ -68,11 +68,8 @@ func (counter *ComboCounter) Increase() {
 	counter.popCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, counter.time, counter.time+300, 1.563, 1))
 	counter.popCounter.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, counter.time, counter.time+300, 0.6, 0.0))
 
-	if counter.combo < counter.newCombo {
-		counter.animate(counter.time)
-	}
+	counter.updateMain(counter.newCombo, counter.combo < counter.newCombo)
 
-	counter.combo = counter.newCombo
 	counter.newCombo++
 	counter.nextEnd = counter.time + 300
 
@@ -97,10 +94,16 @@ func (counter *ComboCounter) DisableAudioSubmission(b bool) {
 	counter.audioDisabled = b
 }
 
-func (counter *ComboCounter) animate(time float64) {
-	counter.mainCounter.ClearTransformationsOfType(animation.Scale)
-	counter.mainCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.InQuad, time, time+50, 1, 1.094))
-	counter.mainCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, time+50, time+100, 1.094, 1))
+func (counter *ComboCounter) updateMain(combo int, bump bool) {
+	counter.combo = combo
+
+	counter.mainCounter.SetText(fmt.Sprintf("%dx", combo))
+
+	if bump {
+		counter.mainCounter.ClearTransformationsOfType(animation.Scale)
+		counter.mainCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.InQuad, counter.time, counter.time+50, 1, 1.094))
+		counter.mainCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, counter.time+50, counter.time+100, 1.094, 1))
+	}
 }
 
 func (counter *ComboCounter) Update(time float64) {
@@ -110,19 +113,16 @@ func (counter *ComboCounter) Update(time float64) {
 		counter.delta -= 16.6667
 
 		if counter.combo > counter.newCombo && counter.newCombo == 0 {
-			counter.combo--
+			counter.updateMain(counter.combo-1, false)
 		}
 	}
 
+	counter.time = time
+
 	if counter.combo < counter.newCombo && counter.nextEnd < time+140 {
-		counter.animate(time)
-		counter.combo = counter.newCombo
+		counter.updateMain(counter.newCombo, true)
 		counter.nextEnd = math.MaxInt64
 	}
-
-	counter.mainCounter.SetText(fmt.Sprintf("%dx", counter.combo))
-
-	counter.time = time
 
 	counter.mainCounter.Update(time)
 	counter.popCounter.Update(time)
