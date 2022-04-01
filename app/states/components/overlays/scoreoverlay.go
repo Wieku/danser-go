@@ -44,23 +44,17 @@ const (
 
 type ScoreOverlay struct {
 	lastTime float64
-	combo    int64
-	newCombo int64
-
-	comboSlide     *animation.Glider
-	newComboScale  *animation.Glider
-	newComboScaleB *animation.Glider
-	newComboFadeB  *animation.Glider
 
 	scoreGlider    *animation.TargetGlider
 	accuracyGlider *animation.TargetGlider
 
-	ruleset    *osu.OsuRuleSet
-	cursor     *graphics.Cursor
-	combobreak *bass.Sample
-	music      bass.ITrack
-	nextEnd    float64
-	results    *play.HitResults
+	ruleset *osu.OsuRuleSet
+
+	cursor *graphics.Cursor
+
+	music bass.ITrack
+
+	results *play.HitResults
 
 	keyStates   [4]bool
 	keyCounters [4]int
@@ -74,7 +68,6 @@ type ScoreOverlay struct {
 
 	keyFont    *font.Font
 	scoreFont  *font.Font
-	comboFont  *font.Font
 	scoreEFont *font.Font
 
 	bgDim *animation.Glider
@@ -107,6 +100,8 @@ type ScoreOverlay struct {
 	rankFront *sprite.Sprite
 
 	oldGrade osu.Grade
+
+	comboCounter *play.ComboCounter
 
 	hpBar *play.HpBar
 
@@ -157,13 +152,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.ruleset = ruleset
 	overlay.cursor = cursor
 
-	overlay.comboSlide = animation.NewGlider(0)
-	overlay.comboSlide.SetEasing(easing.OutQuad)
-
-	overlay.newComboScale = animation.NewGlider(1.28)
-	overlay.newComboScaleB = animation.NewGlider(1.28)
-	overlay.newComboFadeB = animation.NewGlider(0)
-
 	overlay.scoreGlider = animation.NewTargetGlider(0, 0)
 	overlay.accuracyGlider = animation.NewTargetGlider(0, 2)
 
@@ -174,8 +162,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.resultsFade = animation.NewGlider(0)
 
 	overlay.bgDim = animation.NewGlider(1)
-
-	overlay.combobreak = audio.LoadSample("combobreak")
 
 	audio.LoadSample("sectionpass")
 	audio.LoadSample("sectionfail")
@@ -201,7 +187,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.keyFont = font.GetFont("Quicksand Bold")
 	overlay.scoreEFont = skin.GetFont("scoreentry")
 	overlay.scoreFont = skin.GetFont("score")
-	overlay.comboFont = skin.GetFont("combo")
 	overlay.circularMetre = skin.GetTextureSource("circularmetre", skin.LOCAL)
 
 	ruleset.SetListener(overlay.hitReceived)
@@ -254,6 +239,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, 0, 400, 0.0, 0.6))
 		overlay.skip.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, overlay.skipTo, overlay.skipTo+200, 0.6, 0.0))
 	}
+
+	overlay.comboCounter = play.NewComboCounter()
 
 	overlay.hpBar = play.NewHpBar()
 
@@ -310,28 +297,13 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 	}
 
 	if comboResult == osu.ComboResults.Increase {
-		overlay.newComboScaleB.Reset()
-		overlay.newComboScaleB.AddEventS(overlay.normalTime, overlay.normalTime+300, 2, 1.28)
-
-		overlay.newComboFadeB.Reset()
-		overlay.newComboFadeB.AddEventS(overlay.normalTime, overlay.normalTime+300, 0.6, 0.0)
-
-		if overlay.combo < overlay.newCombo {
-			overlay.animate(overlay.normalTime)
-		}
-
-		overlay.combo = overlay.newCombo
-		overlay.newCombo++
-		overlay.nextEnd = overlay.normalTime + 300
+		overlay.comboCounter.Increase()
 	} else if comboResult == osu.ComboResults.Reset {
-		if overlay.newCombo > 20 && overlay.combobreak != nil && !overlay.audioDisabled {
-			overlay.combobreak.Play()
-		}
-		overlay.newCombo = 0
+		overlay.comboCounter.Reset()
 	}
 
 	if overlay.flashlight != nil {
-		overlay.flashlight.UpdateCombo(overlay.newCombo)
+		overlay.flashlight.UpdateCombo(int64(overlay.comboCounter.GetCombo()))
 	}
 
 	accuracy, mCombo, score, grade := overlay.ruleset.GetResults(overlay.cursor)
@@ -357,12 +329,6 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 			overlay.oldGrade = grade
 		}()
 	}
-}
-
-func (overlay *ScoreOverlay) animate(time float64) {
-	overlay.newComboScale.Reset()
-	overlay.newComboScale.AddEventSEase(time, time+50, 1.28, 1.4, easing.InQuad)
-	overlay.newComboScale.AddEventSEase(time+50, time+100, 1.4, 1.28, easing.OutQuad)
 }
 
 func (overlay *ScoreOverlay) Update(time float64) {
@@ -458,29 +424,12 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	overlay.mods.Update(time)
 
-	overlay.newComboScale.Update(time)
-	overlay.newComboScaleB.Update(time)
-	overlay.newComboFadeB.Update(time)
-	overlay.comboSlide.Update(time)
+	overlay.comboCounter.Update(time)
 
 	overlay.hpBar.SetHp(overlay.ruleset.GetHP(overlay.cursor))
 	overlay.hpBar.Update(time)
 
 	overlay.entry.Update(time)
-
-	overlay.delta += time - overlay.lastTime
-	if overlay.delta >= 16.6667 {
-		overlay.delta -= 16.6667
-		if overlay.combo > overlay.newCombo && overlay.newCombo == 0 {
-			overlay.combo--
-		}
-	}
-
-	if overlay.combo < overlay.newCombo && overlay.nextEnd < time+140 {
-		overlay.animate(time)
-		overlay.combo = overlay.newCombo
-		overlay.nextEnd = math.MaxInt64
-	}
 
 	overlay.scoreGlider.Update(time)
 	overlay.accuracyGlider.Update(time)
@@ -547,11 +496,11 @@ func (overlay *ScoreOverlay) updateBreaks(time float64) {
 	if !overlay.breakMode && inBreak {
 		overlay.showPassInfo()
 
-		overlay.comboSlide.AddEvent(time, time+500, -1)
+		overlay.comboCounter.SlideOut()
 		overlay.bgDim.AddEvent(time, time+500, 0)
 		overlay.hpBar.SlideOut()
 	} else if overlay.breakMode && !inBreak {
-		overlay.comboSlide.AddEvent(time, time+500, 0)
+		overlay.comboCounter.SlideIn()
 		overlay.bgDim.AddEvent(time, time+500, 1)
 		overlay.hpBar.SlideIn()
 	}
@@ -611,7 +560,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	overlay.passContainer.Draw(overlay.audioTime, batch)
 
 	overlay.drawScore(batch, alpha)
-	overlay.drawCombo(batch, alpha)
+	overlay.comboCounter.Draw(batch, alpha)
 	overlay.hpBar.Draw(batch, alpha)
 	overlay.drawKeys(batch, alpha)
 
@@ -736,42 +685,6 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	} else if overlay.rankBack.Texture != nil {
 		batch.DrawTexture(*overlay.rankBack.Texture)
 	}
-}
-
-func (overlay *ScoreOverlay) drawCombo(batch *batch.QuadBatch, alpha float64) {
-	comboAlpha := settings.Gameplay.ComboCounter.Opacity * alpha
-
-	if comboAlpha < 0.001 || !settings.Gameplay.ComboCounter.Show {
-		return
-	}
-
-	cmbSize := overlay.comboFont.GetSize() * settings.Gameplay.ComboCounter.Scale
-
-	slideAmount := overlay.comboSlide.GetValue()
-
-	if settings.Gameplay.ComboCounter.XOffset > 0.01 {
-		slideAmount = 0
-		comboAlpha *= 1 + overlay.comboSlide.GetValue()
-	}
-
-	posX := slideAmount*overlay.comboFont.GetWidth(cmbSize*overlay.newComboScale.GetValue(), fmt.Sprintf("%dx", overlay.combo)) + 2.5
-	posY := overlay.ScaledHeight - 12.8
-	origY := overlay.comboFont.GetSize()*0.375 - 9
-
-	batch.ResetTransform()
-	batch.SetTranslation(vector.NewVec2d(settings.Gameplay.ComboCounter.XOffset, settings.Gameplay.ComboCounter.YOffset))
-
-	batch.SetAdditive(true)
-
-	batch.SetColor(1, 1, 1, overlay.newComboFadeB.GetValue()*comboAlpha)
-	overlay.comboFont.DrawOrigin(batch, posX-2.4*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, posY+origY*overlay.newComboScaleB.GetValue()*settings.Gameplay.ComboCounter.Scale, vector.BottomLeft, cmbSize*overlay.newComboScaleB.GetValue(), false, fmt.Sprintf("%dx", overlay.newCombo))
-
-	batch.SetAdditive(false)
-
-	batch.SetColor(1, 1, 1, comboAlpha)
-	overlay.comboFont.DrawOrigin(batch, posX, posY+origY*overlay.newComboScale.GetValue()*settings.Gameplay.ComboCounter.Scale, vector.BottomLeft, cmbSize*overlay.newComboScale.GetValue(), false, fmt.Sprintf("%dx", overlay.combo))
-
-	batch.ResetTransform()
 }
 
 func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
@@ -1006,6 +919,8 @@ func (overlay *ScoreOverlay) initArrows() {
 
 func (overlay *ScoreOverlay) DisableAudioSubmission(b bool) {
 	overlay.audioDisabled = b
+
+	overlay.comboCounter.DisableAudioSubmission(b)
 }
 
 func (overlay *ScoreOverlay) SetBeatmapEnd(end float64) {
