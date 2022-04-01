@@ -25,9 +25,9 @@ type ComboCounter struct {
 
 	comboBreak *bass.Sample
 
-	time    float64
-	delta   float64
-	nextEnd float64
+	time         float64
+	delta        float64
+	nextTransfer float64
 
 	combo        int
 	comboDisplay int
@@ -42,11 +42,12 @@ func NewComboCounter() *ComboCounter {
 	fnt := skin.GetFont("combo")
 
 	counter := &ComboCounter{
-		comboFont:   fnt,
-		mainCounter: sprite.NewTextSprite("0x", fnt, 0, vector.NewVec2d(0, 0), vector.BottomLeft),
-		popCounter:  sprite.NewTextSprite("0x", fnt, 0, vector.NewVec2d(0, 0), vector.BottomLeft),
-		comboSlide:  animation.NewGlider(0),
-		comboBreak:  audio.LoadSample("combobreak"),
+		comboFont:    fnt,
+		mainCounter:  sprite.NewTextSprite("0x", fnt, 0, vector.NewVec2d(0, 0), vector.BottomLeft),
+		popCounter:   sprite.NewTextSprite("0x", fnt, 0, vector.NewVec2d(0, 0), vector.BottomLeft),
+		comboSlide:   animation.NewGlider(0),
+		comboBreak:   audio.LoadSample("combobreak"),
+		nextTransfer: math.MaxFloat64,
 	}
 
 	counter.mainCounter.SetScale(1.28)
@@ -71,7 +72,7 @@ func (counter *ComboCounter) Increase() {
 	counter.updateMain(counter.combo, counter.comboDisplay < counter.combo)
 
 	counter.combo++
-	counter.nextEnd = counter.time + 300
+	counter.nextTransfer = counter.time + 160
 
 	counter.popCounter.SetText(fmt.Sprintf("%dx", counter.combo))
 }
@@ -119,9 +120,9 @@ func (counter *ComboCounter) Update(time float64) {
 
 	counter.time = time
 
-	if counter.comboDisplay < counter.combo && counter.nextEnd < time+140 {
+	if counter.comboDisplay < counter.combo && counter.nextTransfer <= time {
 		counter.updateMain(counter.combo, true)
-		counter.nextEnd = math.MaxInt64
+		counter.nextTransfer = math.MaxFloat64
 	}
 
 	counter.mainCounter.Update(time)
