@@ -29,8 +29,8 @@ type ComboCounter struct {
 	delta   float64
 	nextEnd float64
 
-	newCombo int
-	combo    int
+	combo        int
+	comboDisplay int
 
 	audioDisabled bool
 
@@ -68,26 +68,26 @@ func (counter *ComboCounter) Increase() {
 	counter.popCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, counter.time, counter.time+300, 1.563, 1))
 	counter.popCounter.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, counter.time, counter.time+300, 0.6, 0.0))
 
-	counter.updateMain(counter.newCombo, counter.combo < counter.newCombo)
+	counter.updateMain(counter.combo, counter.comboDisplay < counter.combo)
 
-	counter.newCombo++
+	counter.combo++
 	counter.nextEnd = counter.time + 300
 
-	counter.popCounter.SetText(fmt.Sprintf("%dx", counter.newCombo))
+	counter.popCounter.SetText(fmt.Sprintf("%dx", counter.combo))
 }
 
 func (counter *ComboCounter) Reset() {
-	if counter.newCombo > 20 && counter.comboBreak != nil && !counter.audioDisabled {
+	if counter.combo > 20 && counter.comboBreak != nil && !counter.audioDisabled {
 		counter.comboBreak.Play()
 	}
 
-	counter.newCombo = 0
+	counter.combo = 0
 
-	counter.popCounter.SetText(fmt.Sprintf("%dx", counter.newCombo))
+	counter.popCounter.SetText(fmt.Sprintf("%dx", counter.combo))
 }
 
 func (counter *ComboCounter) GetCombo() int {
-	return counter.newCombo
+	return counter.combo
 }
 
 func (counter *ComboCounter) DisableAudioSubmission(b bool) {
@@ -95,7 +95,7 @@ func (counter *ComboCounter) DisableAudioSubmission(b bool) {
 }
 
 func (counter *ComboCounter) updateMain(combo int, bump bool) {
-	counter.combo = combo
+	counter.comboDisplay = combo
 
 	counter.mainCounter.SetText(fmt.Sprintf("%dx", combo))
 
@@ -112,15 +112,15 @@ func (counter *ComboCounter) Update(time float64) {
 	if counter.delta >= 16.6667 {
 		counter.delta -= 16.6667
 
-		if counter.combo > counter.newCombo && counter.newCombo == 0 {
-			counter.updateMain(counter.combo-1, false)
+		if counter.comboDisplay > counter.combo && counter.combo == 0 {
+			counter.updateMain(counter.comboDisplay-1, false)
 		}
 	}
 
 	counter.time = time
 
-	if counter.combo < counter.newCombo && counter.nextEnd < time+140 {
-		counter.updateMain(counter.newCombo, true)
+	if counter.comboDisplay < counter.combo && counter.nextEnd < time+140 {
+		counter.updateMain(counter.combo, true)
 		counter.nextEnd = math.MaxInt64
 	}
 
