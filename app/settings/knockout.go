@@ -7,7 +7,7 @@ func initKnockout() *knockout {
 		Mode:                ComboBreak,
 		GraceEndTime:        -10,
 		BubbleMinimumCombo:  200,
-		ExcludeMods:         "EZHT",
+		ExcludeMods:         "",
 		MaxPlayers:          50,
 		RevivePlayersAtEnd:  false,
 		LiveSort:            true,
