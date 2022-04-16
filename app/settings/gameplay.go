@@ -155,6 +155,7 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
+			ModsOnly:       false,
 			AlignRight:     false,
 			HideOthers:     false,
 			ShowAvatars:    false,
@@ -307,6 +308,7 @@ type hitCounter struct {
 
 type scoreBoard struct {
 	*hudElementOffset
+	ModsOnly       bool
 	AlignRight     bool
 	HideOthers     bool
 	ShowAvatars    bool
