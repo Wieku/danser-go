@@ -30,6 +30,12 @@ import (
 	"strings"
 )
 
+type stats struct {
+	pp       float64
+	score    int64
+	accuracy float64
+}
+
 type knockoutPlayer struct {
 	fade   *animation.Glider
 	slide  *animation.Glider
@@ -47,8 +53,9 @@ type knockoutPlayer struct {
 	breakTime int64
 	pp        float64
 	score     int64
-	scores    []int64
-	pps       []float64
+
+	perObjectStats []stats
+
 	displayHp float64
 
 	lastHit  osu.HitResult
@@ -155,7 +162,7 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 
 	for i, r := range replayController.GetReplays() {
 		overlay.names[replayController.GetCursors()[i]] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewTargetGlider(0, 0), animation.NewTargetGlider(0, 2), animation.NewTargetGlider(0, 2), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]int64, len(replayController.GetBeatMap().HitObjects)), make([]float64, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewTargetGlider(0, 0), animation.NewTargetGlider(0, 2), animation.NewTargetGlider(0, 2), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]stats, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
 	}
@@ -193,9 +200,11 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 				mainCond := true
 				switch cond {
 				case "pp":
-					mainCond = overlay.playersArray[i].pps[number] > overlay.playersArray[j].pps[number]
+					mainCond = overlay.playersArray[i].perObjectStats[number].pp > overlay.playersArray[j].perObjectStats[number].pp
+				case "acc", "accuracy":
+					mainCond = overlay.playersArray[i].perObjectStats[number].accuracy > overlay.playersArray[j].perObjectStats[number].accuracy
 				default:
-					mainCond = overlay.playersArray[i].scores[number] > overlay.playersArray[j].scores[number]
+					mainCond = overlay.playersArray[i].perObjectStats[number].score > overlay.playersArray[j].perObjectStats[number].score
 				}
 
 				return (!overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) || ((!overlay.playersArray[i].hasBroken && !overlay.playersArray[j].hasBroken) && mainCond) || ((overlay.playersArray[i].hasBroken && overlay.playersArray[j].hasBroken) && (overlay.playersArray[i].breakTime > overlay.playersArray[j].breakTime || (overlay.playersArray[i].breakTime == overlay.playersArray[j].breakTime && mainCond)))
@@ -259,16 +268,16 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	}
 
 	player.score = score
-	player.scores[number] = score
-
 	player.pp = ppResults.Total
-	player.pps[number] = ppResults.Total
 
 	player.scoreDisp.SetTarget(float64(score))
-
 	player.ppDisp.SetTarget(player.pp)
 
 	acc, _, _, _ := overlay.controller.GetRuleset().GetResults(cursor)
+
+	player.perObjectStats[number].score = score
+	player.perObjectStats[number].pp = ppResults.Total
+	player.perObjectStats[number].accuracy = acc
 
 	player.accDisp.SetTarget(acc)
 
