@@ -20,6 +20,7 @@ func initGameplay() *gameplay {
 			ShowUnstableRate:     true,
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
+			ScaleWithSpeed:       false,
 		},
 		AimErrorMeter: &aimError{
 			hudElementPosition: &hudElementPosition{
@@ -263,6 +264,7 @@ type hitError struct {
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64
+	ScaleWithSpeed       bool
 }
 
 type aimError struct {
