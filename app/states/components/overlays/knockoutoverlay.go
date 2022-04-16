@@ -308,7 +308,9 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, overlay.normalTime, overlay.names[cursor], player.sCombo, resultClean, comboResult))
 					log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
 				}
-			} else if settings.Knockout.Mode == settings.SSOrQuit || settings.Knockout.Mode == settings.ComboBreak || (settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
+			} else if settings.Knockout.Mode == settings.SSOrQuit ||
+				(settings.Knockout.Mode == settings.ComboBreak && time > int64(settings.Knockout.GraceEndTime*1000)) ||
+				(settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
 				//Fade out player name
 				player.hasBroken = true
 				player.breakTime = time
