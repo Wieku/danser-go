@@ -144,6 +144,8 @@ func run() {
 		cs := flag.Float64("cs", math.NaN(), "Modify map's CS, only in cursordance/play modes")
 		hp := flag.Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
 
+		offset := flag.Int("offset", 0, "Specify local audio offset in ms. Applies to recordings, unlike 'Audio.Offset'. Inverted compared to stable's local offset.")
+
 		flag.Parse()
 
 		if !*noUpdCheck {
@@ -225,6 +227,7 @@ func run() {
 		settings.START = *start
 		settings.END = *end
 		settings.RECORD = recordMode || screenshotMode
+		settings.LOCALOFFSET = *offset
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 

@@ -69,6 +69,7 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-noupdatecheck` - skips checking GitHub for a newer version of danser
 * `-ss=20.5` - creates a screenshot at the given time in .png format
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
+* `-offset=20` - local audio offset, applies to recordings unlike `Audio.Offset`. Inverted compared to stable.
 
 Since danser 0.4.0b artist, creator, difficulty names and titles don't have to exactly match the `.osu` file. 
 

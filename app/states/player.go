@@ -518,7 +518,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				platformOffset = windowsOffset
 			}
 
-			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset))*speed
+			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset)+float64(settings.LOCALOFFSET))*speed
 
 			player.updateMain(delta)
 
@@ -535,17 +535,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 }
 
 func (player *Player) Update(delta float64) bool {
+	speed := 1.0
+
 	if player.musicPlayer.GetState() == bass.MusicPlaying {
-		player.progressMsF += delta * player.musicPlayer.GetTempo() * player.musicPlayer.GetRelativeFrequency()
-	} else {
-		if player.progressMsF < player.startPointE || player.start {
-			player.progressMsF += delta
-		} else {
-			player.progressMsF += delta * settings.SPEED
-		}
+		speed = player.musicPlayer.GetTempo() * player.musicPlayer.GetRelativeFrequency()
+	} else if !(player.progressMsF < player.startPointE || player.start) {
+		speed = settings.SPEED
 	}
 
-	player.rawPositionF = player.progressMsF
+	player.rawPositionF += delta * speed
+
+	player.progressMsF = player.rawPositionF + float64(settings.LOCALOFFSET)*speed
 
 	player.updateMain(delta)
 
