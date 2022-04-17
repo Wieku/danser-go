@@ -152,9 +152,7 @@ func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
 		unpackMaps()
 	}
 
-	if !skipDatabaseCheck {
-		importMaps()
-	}
+	importMaps(skipDatabaseCheck)
 
 	log.Println("DatabaseManager: Loading beatmaps from database...")
 
@@ -196,16 +194,27 @@ func unpackMaps() {
 	})
 }
 
-func importMaps() {
-	mapsInDB := getLastModified()
+func importMaps(skipDatabaseCheck bool) {
+	cachedFolders, mapsInDB := getLastModified()
+
 	candidates := make([]mapLocation, 0)
 
 	log.Println(fmt.Sprintf("DatabaseManager: Scanning \"%s\" for .osu files...", songsDir))
+
+	if skipDatabaseCheck {
+		log.Println("DatabaseManager: '-nodbcheck' is active so only new directories will be imported.")
+	}
 
 	err := godirwalk.Walk(songsDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 			if de.IsDir() && osPathname != songsDir && filepath.Dir(osPathname) != songsDir {
 				return godirwalk.SkipThis
+			}
+
+			if skipDatabaseCheck && de.IsDir() {
+				if _, ok := cachedFolders[filepath.Base(osPathname)]; ok {
+					return godirwalk.SkipThis
+				}
 			}
 
 			if strings.HasSuffix(de.Name(), ".osu") {
@@ -226,6 +235,11 @@ func importMaps() {
 	}
 
 	log.Println("DatabaseManager: Scan complete. Found", len(candidates), "files.")
+
+	if len(candidates) == 0 {
+		return
+	}
+
 	log.Println("DatabaseManager: Comparing files with database...")
 
 	mapsToImport := make([]mapLocation, 0)
@@ -366,7 +380,7 @@ func removeBeatmaps(toRemove []mapLocation) {
 }
 
 func migrateBeatmaps() {
-	lastModified := getLastModified()
+	_, lastModified := getLastModified()
 
 	var removeList []mapLocation
 
@@ -586,8 +600,10 @@ func loadBeatmapsFromDatabase() []*beatmap.BeatMap {
 	return beatmaps
 }
 
-func getLastModified() map[mapLocation]int64 {
+func getLastModified() (map[string]uint8, map[mapLocation]int64) {
 	res, _ := dbFile.Query("SELECT dir, file, lastModified FROM beatmaps")
+
+	dirs := make(map[string]uint8)
 
 	mod := make(map[mapLocation]int64)
 
@@ -597,13 +613,15 @@ func getLastModified() map[mapLocation]int64 {
 
 		res.Scan(&dir, &file, &lastModified)
 
+		dirs[dir] = 1
+
 		mod[mapLocation{
 			dir:  dir,
 			file: file,
 		}] = lastModified
 	}
 
-	return mod
+	return dirs, mod
 }
 
 func Close() {
