@@ -279,7 +279,7 @@ func importMaps(skipDatabaseCheck bool) {
 
 	log.Println("DatabaseManager: Compare complete.")
 
-	if len(mapsInDB) > 0 {
+	if len(mapsInDB) > 0 && !skipDatabaseCheck {
 		log.Println("DatabaseManager: Removing leftover maps from database...")
 
 		mapsToRemove := make([]mapLocation, 0, len(mapsInDB))
