@@ -269,8 +269,10 @@ func importMaps(skipDatabaseCheck bool) {
 				continue
 			}
 
-			log.Println("DatabaseManager: New beatmap version found:", candidate.file)
-		} else {
+			if settings.General.VerboseImportLogs {
+				log.Println("DatabaseManager: New beatmap version found:", candidate.file)
+			}
+		} else if settings.General.VerboseImportLogs {
 			log.Println("DatabaseManager: New beatmap found:", candidate.file)
 		}
 
@@ -294,7 +296,7 @@ func importMaps(skipDatabaseCheck bool) {
 	}
 
 	if len(mapsToImport) > 0 {
-		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps...")
+		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps. It may take up to several minutes...")
 
 		newBeatmaps := util.Balance(4, mapsToImport, func(candidate mapLocation) *beatmap.BeatMap {
 			partialPath := filepath.Join(candidate.dir, candidate.file)
@@ -308,7 +310,9 @@ func importMaps(skipDatabaseCheck bool) {
 
 			defer file.Close()
 
-			log.Println("DatabaseManager: Importing:", partialPath)
+			if settings.General.VerboseImportLogs {
+				log.Println("DatabaseManager: Importing:", partialPath)
+			}
 
 			if bMap := beatmap.ParseBeatMapFile(file); bMap != nil {
 				stat, _ := file.Stat()
@@ -320,7 +324,10 @@ func importMaps(skipDatabaseCheck bool) {
 					bMap.MD5 = hex.EncodeToString(hash.Sum(nil))
 				}
 
-				log.Println("DatabaseManager: Imported:", partialPath)
+				if settings.General.VerboseImportLogs {
+					log.Println("DatabaseManager: Imported:", partialPath)
+				}
+
 				return bMap
 			} else {
 				log.Println("DatabaseManager: Failed to import:", partialPath)

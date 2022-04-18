@@ -23,6 +23,7 @@ func initGeneral() *general {
 		OsuSkinsDir:       filepath.Join(osuBaseDir, "Skins"),
 		DiscordPresenceOn: true,
 		UnpackOszFiles:    true,
+		VerboseImportLogs: false,
 	}
 }
 
@@ -39,6 +40,9 @@ type general struct {
 
 	// Whether danser should unpack .osz files in Songs folder, osu! may complain about it
 	UnpackOszFiles bool
+
+	// Whether import details should be shown. If false, only failures will be logged.
+	VerboseImportLogs bool
 
 	songsDir *string
 	skinsDir *string
