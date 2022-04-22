@@ -191,7 +191,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 	meter.avgPos = averageP / math.Max(float64(countP), 1)
 	meter.unstableRate = math.Sqrt(urBase) * 10
 
-	meter.urGlider.SetTarget(meter.GetUnstableRateConverted())
+	meter.urGlider.SetValue(meter.GetUnstableRateConverted(), false)
 }
 
 func (meter *HitErrorMeter) Update(time float64) {

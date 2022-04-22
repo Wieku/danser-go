@@ -33,8 +33,8 @@ type PPDisplay struct {
 
 	mText string
 
-	decimals       int
-	format         string
+	decimals int
+	format   string
 
 	mods           difficulty.Modifier
 	experimentalPP bool
@@ -42,30 +42,30 @@ type PPDisplay struct {
 
 func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
 	return &PPDisplay{
-		ppFont:    font.GetFont("Quicksand Bold"),
-		aimGlider: animation.NewTargetGlider(0, 0),
-		tapGlider: animation.NewTargetGlider(0, 0),
-		accGlider: animation.NewTargetGlider(0, 0),
+		ppFont:           font.GetFont("Quicksand Bold"),
+		aimGlider:        animation.NewTargetGlider(0, 0),
+		tapGlider:        animation.NewTargetGlider(0, 0),
+		accGlider:        animation.NewTargetGlider(0, 0),
 		flashlightGlider: animation.NewTargetGlider(0, 0),
-		ppGlider:  animation.NewTargetGlider(0, 0),
-		aimText:   "0pp",
-		tapText:   "0pp",
-		accText:   "0pp",
-		ppText:    "0pp",
-		mText:     "0pp",
-		decimals:  0,
-		format:    "%.0fpp",
-		mods: mods,
-		experimentalPP: experimentalPP,
+		ppGlider:         animation.NewTargetGlider(0, 0),
+		aimText:          "0pp",
+		tapText:          "0pp",
+		accText:          "0pp",
+		ppText:           "0pp",
+		mText:            "0pp",
+		decimals:         0,
+		format:           "%.0fpp",
+		mods:             mods,
+		experimentalPP:   experimentalPP,
 	}
 }
 
 func (ppDisplay *PPDisplay) Add(results performance.PPv2Results) {
-	ppDisplay.aimGlider.SetTarget(results.Aim)
-	ppDisplay.tapGlider.SetTarget(results.Speed)
-	ppDisplay.accGlider.SetTarget(results.Acc)
-	ppDisplay.flashlightGlider.SetTarget(results.Flashlight)
-	ppDisplay.ppGlider.SetTarget(results.Total)
+	ppDisplay.aimGlider.SetValue(results.Aim, false)
+	ppDisplay.tapGlider.SetValue(results.Speed, false)
+	ppDisplay.accGlider.SetValue(results.Acc, false)
+	ppDisplay.flashlightGlider.SetValue(results.Flashlight, false)
+	ppDisplay.ppGlider.SetValue(results.Total, false)
 }
 
 func (ppDisplay *PPDisplay) Update(time float64) {

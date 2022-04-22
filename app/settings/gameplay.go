@@ -53,6 +53,8 @@ func initGameplay() *gameplay {
 			},
 			ProgressBar:     "Pie",
 			ShowGradeAlways: false,
+			StaticScore:     false,
+			StaticAccuracy:  false,
 		},
 		HpBar: &hudElementOffset{
 			hudElement: &hudElement{
@@ -288,6 +290,8 @@ type score struct {
 	*hudElementOffset
 	ProgressBar     string
 	ShowGradeAlways bool
+	StaticScore     bool
+	StaticAccuracy  bool
 }
 
 type comboCounter struct {

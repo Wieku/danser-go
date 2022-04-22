@@ -270,8 +270,8 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	player.score = score
 	player.pp = ppResults.Total
 
-	player.scoreDisp.SetTarget(float64(score))
-	player.ppDisp.SetTarget(player.pp)
+	player.scoreDisp.SetValue(float64(score), false)
+	player.ppDisp.SetValue(player.pp, false)
 
 	sc := overlay.controller.GetRuleset().GetScore(cursor)
 
@@ -279,7 +279,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	player.perObjectStats[number].pp = ppResults.Total
 	player.perObjectStats[number].accuracy = sc.Accuracy
 
-	player.accDisp.SetTarget(sc.Accuracy)
+	player.accDisp.SetValue(sc.Accuracy, false)
 
 	if comboResult == osu.Increase {
 		player.sCombo++

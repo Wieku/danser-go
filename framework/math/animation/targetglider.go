@@ -48,13 +48,12 @@ func (glider *TargetGlider) GetValue() float64 {
 	return glider.value
 }
 
-func (glider *TargetGlider) SetValue(value float64) {
-	glider.value = value
+func (glider *TargetGlider) SetValue(value float64, instant bool) {
 	glider.targetValue = value
-}
 
-func (glider *TargetGlider) SetTarget(value float64) {
-	glider.targetValue = value
+	if instant {
+		glider.value = value
+	}
 }
 
 func (glider *TargetGlider) SetDecimals(decimals int) {

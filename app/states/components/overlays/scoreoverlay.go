@@ -310,8 +310,8 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 	overlay.entry.UpdatePlayer(sc.Score, int64(sc.Combo))
 
-	overlay.scoreGlider.SetTarget(float64(sc.Score))
-	overlay.accuracyGlider.SetTarget(sc.Accuracy)
+	overlay.scoreGlider.SetValue(float64(sc.Score), settings.Gameplay.Score.StaticScore)
+	overlay.accuracyGlider.SetValue(sc.Accuracy, settings.Gameplay.Score.StaticAccuracy)
 
 	overlay.ppDisplay.Add(ppResults)
 
