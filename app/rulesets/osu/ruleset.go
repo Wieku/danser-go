@@ -130,13 +130,6 @@ type subSet struct {
 	sdpfFail   bool
 }
 
-type MapTo struct {
-	ncircles int
-	nsliders int
-	nobjects int
-	maxCombo int
-}
-
 type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
 
 type endListener func(time int64, number int64)
