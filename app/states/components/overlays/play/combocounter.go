@@ -53,6 +53,8 @@ func NewComboCounter() *ComboCounter {
 	counter.popCounter.SetAlpha(0)
 	counter.popCounter.SetAdditive(true)
 
+	counter.mainCounter.SetAlpha(0)
+
 	counter.ScaledHeight = 768
 	counter.ScaledWidth = settings.Graphics.GetAspectRatio() * counter.ScaledHeight
 
@@ -62,6 +64,9 @@ func NewComboCounter() *ComboCounter {
 }
 
 func (counter *ComboCounter) Increase() {
+	counter.mainCounter.ClearTransformationsOfType(animation.Fade)
+	counter.mainCounter.SetAlpha(1)
+
 	if settings.Gameplay.ComboCounter.Static {
 		counter.combo++
 		counter.comboDisplay++
@@ -125,6 +130,10 @@ func (counter *ComboCounter) Update(time float64) {
 
 		if counter.comboDisplay > counter.combo && counter.combo == 0 {
 			counter.updateMain(counter.comboDisplay-1, false)
+
+			if counter.comboDisplay == 0 {
+				counter.mainCounter.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, counter.time, counter.time+100, counter.mainCounter.GetAlpha(), 0.0))
+			}
 		}
 	}
 
