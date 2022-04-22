@@ -20,22 +20,6 @@ import (
 
 const Tolerance2B = 3
 
-type Grade int64
-
-const (
-	D = Grade(iota)
-	C
-	B
-	A
-	S
-	SH
-	SS
-	SSH
-	NONE
-)
-
-var GradesText = []string{"D", "C", "B", "A", "S", "SH", "SS", "SSH", "None"}
-
 type ClickAction int64
 
 const (
@@ -338,7 +322,7 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, c.Name)
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy))
-			data = append(data, GradesText[set.cursors[c].score.Grade])
+			data = append(data, set.cursors[c].score.Grade.String())
 			data = append(data, utils.Humanize(set.cursors[c].score.Count300))
 			data = append(data, utils.Humanize(set.cursors[c].score.Count100))
 			data = append(data, utils.Humanize(set.cursors[c].score.Count50))

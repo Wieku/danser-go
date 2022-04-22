@@ -138,7 +138,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 
 	panel.pp = fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", score.PP.Total)
 
-	panel.gradeS = sprite.NewSpriteSingle(getTexture(score.Grade), 5, rRPos, vector.Centre)
+	panel.gradeS = sprite.NewSpriteSingle(skin.GetTexture("ranking-"+score.Grade.TextureName()), 5, rRPos, vector.Centre)
 
 	p := graphics.Pixel.GetRegion()
 	rTop := sprite.NewSpriteSingle(&p, 999, vector.NewVec2d(0, 0), vector.TopLeft)
@@ -372,9 +372,4 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	for i, s := range panel.stats {
 		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+6, vector.TopLeft, 12, false, s)
 	}
-}
-
-func getTexture(grade osu.Grade) *texture.TextureRegion {
-	gText := strings.ReplaceAll(osu.GradesText[grade], "SS", "X")
-	return skin.GetTexture("ranking-" + gText)
 }

@@ -319,12 +319,13 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 
 	if overlay.oldGrade != sc.Grade {
 		go func() {
-			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[sc.Grade], "SS", "X"))
+			var tex *texture.TextureRegion
+			if sc.Grade != osu.NONE {
+				tex = skin.GetTexture("ranking-" + sc.Grade.TextureName() + "-small")
+			}
 
-			text := skin.GetTexture("ranking-" + gText + "-small")
-
-			overlay.rankBack.Texture = text
-			overlay.rankFront.Texture = text
+			overlay.rankBack.Texture = tex
+			overlay.rankFront.Texture = tex
 
 			overlay.oldGrade = sc.Grade
 		}()

@@ -550,8 +550,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		batch.SetTranslation(vector.NewVec2d(2*scl+scl*0.1+nWidth+xSlideLeft, rowBaseY))
 
 		if r.Grade != osu.NONE {
-			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[r.Grade], "SS", "X"))
-			text := skin.GetTexture("ranking-" + gText + "-small")
+			text := skin.GetTexture("ranking-" + r.Grade.TextureName() + "-small")
 			batch.DrawUnit(*text)
 		}
 
