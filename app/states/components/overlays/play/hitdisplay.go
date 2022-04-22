@@ -27,17 +27,21 @@ type HitDisplay struct {
 
 	hitMiss     uint
 	hitMissText string
+
+	sliderBreaks     uint
+	sliderBreaksText string
 }
 
 func NewHitDisplay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor, fnt *font.Font) *HitDisplay {
 	aSprite := &HitDisplay{
-		ruleset:     ruleset,
-		cursor:      cursor,
-		fnt:         fnt,
-		hit300Text:  "0",
-		hit100Text:  "0",
-		hit50Text:   "0",
-		hitMissText: "0",
+		ruleset:          ruleset,
+		cursor:           cursor,
+		fnt:              fnt,
+		hit300Text:       "0",
+		hit100Text:       "0",
+		hit50Text:        "0",
+		hitMissText:      "0",
+		sliderBreaksText: "0",
 	}
 
 	return aSprite
@@ -65,6 +69,11 @@ func (sprite *HitDisplay) Update(_ float64) {
 		sprite.hitMiss = score.CountMiss
 		sprite.hitMissText = strconv.Itoa(int(sprite.hitMiss))
 	}
+
+	if sprite.sliderBreaks != score.CountSB {
+		sprite.sliderBreaks = score.CountSB
+		sprite.sliderBreaksText = strconv.Itoa(int(sprite.sliderBreaks))
+	}
 }
 
 func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
@@ -86,16 +95,22 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	fontScale := scale * settings.Gameplay.HitCounter.FontScale
 
-	align := vector.ParseOrigin(settings.Gameplay.HitCounter.Align).AddS(1, 1)
+	align := vector.ParseOrigin(settings.Gameplay.HitCounter.Align).AddS(1, 1).Scl(0.5)
+
+	bC := 3.0
 
 	if settings.Gameplay.HitCounter.Show300 {
-		align = align.Scl(1.5)
+		bC += 1.0
+	}
+
+	if settings.Gameplay.HitCounter.ShowSliderBreaks {
+		bC += 1.0
 	}
 
 	valueAlign := vector.ParseOrigin(settings.Gameplay.HitCounter.ValueAlign)
 
-	baseX := settings.Gameplay.HitCounter.XPosition - align.X*hSpacing
-	baseY := settings.Gameplay.HitCounter.YPosition - align.Y*vSpacing
+	baseX := settings.Gameplay.HitCounter.XPosition - align.X*hSpacing*(bC-1)
+	baseY := settings.Gameplay.HitCounter.YPosition - align.Y*vSpacing*(bC-1)
 
 	offsetI := 0
 
@@ -110,6 +125,10 @@ func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, offsetI, float32(alpha), sprite.hit100Text)
 	sprite.drawShadowed(batch, baseX+hSpacing, baseY+vSpacing, valueAlign, fontScale, offsetI+1, float32(alpha), sprite.hit50Text)
 	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY+vSpacing*2, valueAlign, fontScale, offsetI+2, float32(alpha), sprite.hitMissText)
+
+	if settings.Gameplay.HitCounter.ShowSliderBreaks {
+		sprite.drawShadowed(batch, baseX+hSpacing*3, baseY+vSpacing*3, valueAlign, fontScale, offsetI+3, float32(alpha), sprite.sliderBreaksText)
+	}
 
 	batch.ResetTransform()
 }

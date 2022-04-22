@@ -107,6 +107,7 @@ type Score struct {
 	CountKatu    uint
 	Count50      uint
 	CountMiss    uint
+	CountSB      uint
 	PP           performance.PPv2Results
 }
 
@@ -470,6 +471,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	subSet.scoreProcessor.AddResult(result, comboResult)
 
 	subSet.score.Score = subSet.scoreProcessor.GetScore()
+
+	if comboResult == ComboResults.Reset && result != Miss {
+		subSet.score.CountSB++
+	}
 
 	bResult := result & BaseHitsM
 
