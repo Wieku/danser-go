@@ -116,7 +116,7 @@ func initGameplay() *gameplay {
 			ValueAlign:       "Left",
 			Vertical:         false,
 			Show300:          false,
-			ShowSliderBreaks: true,
+			ShowSliderBreaks: false,
 		},
 		StrainGraph: &strainGraph{
 			Show:      true,
