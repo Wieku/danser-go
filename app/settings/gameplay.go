@@ -63,14 +63,17 @@ func initGameplay() *gameplay {
 			XOffset: 0,
 			YOffset: 0,
 		},
-		ComboCounter: &hudElementOffset{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+		ComboCounter: &comboCounter{
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
-			XOffset: 0,
-			YOffset: 0,
+			Static: false,
 		},
 		PPCounter: &ppCounter{
 			hudElementPosition: &hudElementPosition{
@@ -209,7 +212,7 @@ type gameplay struct {
 	AimErrorMeter           *aimError
 	Score                   *score
 	HpBar                   *hudElementOffset
-	ComboCounter            *hudElementOffset
+	ComboCounter            *comboCounter
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
 	StrainGraph             *strainGraph
@@ -285,6 +288,11 @@ type score struct {
 	*hudElementOffset
 	ProgressBar     string
 	ShowGradeAlways bool
+}
+
+type comboCounter struct {
+	*hudElementOffset
+	Static bool
 }
 
 type ppCounter struct {

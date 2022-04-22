@@ -50,9 +50,6 @@ func NewComboCounter() *ComboCounter {
 		nextTransfer: math.MaxFloat64,
 	}
 
-	counter.mainCounter.SetScale(1.28)
-
-	counter.popCounter.SetScale(1.28)
 	counter.popCounter.SetAlpha(0)
 	counter.popCounter.SetAdditive(true)
 
@@ -65,6 +62,14 @@ func NewComboCounter() *ComboCounter {
 }
 
 func (counter *ComboCounter) Increase() {
+	if settings.Gameplay.ComboCounter.Static {
+		counter.combo++
+		counter.comboDisplay++
+		counter.mainCounter.SetText(fmt.Sprintf("%dx", counter.comboDisplay))
+
+		return
+	}
+
 	counter.popCounter.ClearTransformations()
 	counter.popCounter.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, counter.time, counter.time+300, 1.563, 1))
 	counter.popCounter.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, counter.time, counter.time+300, 0.6, 0.0))
@@ -83,6 +88,11 @@ func (counter *ComboCounter) Reset() {
 	}
 
 	counter.combo = 0
+
+	if settings.Gameplay.ComboCounter.Static {
+		counter.comboDisplay = 0
+		counter.mainCounter.SetText(fmt.Sprintf("%dx", counter.comboDisplay))
+	}
 
 	counter.popCounter.SetText(fmt.Sprintf("%dx", counter.combo))
 }
