@@ -30,11 +30,11 @@ const (
 
 type ComboResult int64
 
-var ComboResults = struct {
-	Reset,
-	Hold,
-	Increase ComboResult
-}{0, 1, 2}
+const (
+	Reset = ComboResult(iota)
+	Hold
+	Increase
+)
 
 type buttonState struct {
 	Left, Right bool
@@ -437,10 +437,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		return
 	}
 
-	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == ComboResults.Reset) ||
+	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == Reset) ||
 		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (result&BaseHitsM > 0 && result&BaseHitsM != Hit300)) {
 		result = Miss
-		comboResult = ComboResults.Reset
+		comboResult = Reset
 		subSet.sdpfFail = true
 	}
 
@@ -449,7 +449,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	subSet.score.Score = subSet.scoreProcessor.GetScore()
 
-	if comboResult == ComboResults.Reset && result != Miss {
+	if comboResult == Reset && result != Miss {
 		subSet.score.CountSB++
 	}
 

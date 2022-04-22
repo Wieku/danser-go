@@ -126,7 +126,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				}
 
 				hit := SliderMiss
-				combo := ComboResults.Reset
+				combo := Reset
 
 				relative := int64(math.Abs(float64(time) - slider.hitSlider.GetStartTime()))
 
@@ -142,7 +142,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 				if state.startResult != Miss {
 					hit = SliderStart
-					combo = ComboResults.Increase
+					combo = Increase
 				}
 
 				if hit != Ignore {
@@ -159,7 +159,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				player.rightCondE = false
 			}
 		} else if action == Click {
-			slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, PositionalMiss, ComboResults.Hold)
+			slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, PositionalMiss, Hold)
 		}
 	}
 
@@ -264,13 +264,13 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 					scoreGiven = SliderPoint
 				}
 
-				slider.ruleSet.SendResult(time, player.cursor, slider, sliderPosition.X, sliderPosition.Y, scoreGiven, ComboResults.Increase)
+				slider.ruleSet.SendResult(time, player.cursor, slider, sliderPosition.X, sliderPosition.Y, scoreGiven, Increase)
 			} else {
 				state.missed++
 
-				combo := ComboResults.Reset
+				combo := Reset
 				if state.scored+state.missed == len(state.points) {
-					combo = ComboResults.Hold
+					combo = Hold
 				}
 
 				slider.ruleSet.SendResult(time, player.cursor, slider, sliderPosition.X, sliderPosition.Y, SliderMiss, combo)
@@ -299,7 +299,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
 
-		slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, SliderMiss, ComboResults.Reset)
+		slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, SliderMiss, Reset)
 
 		if player.leftCond {
 			state.downButton = Left
@@ -319,7 +319,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 		}
 
 		hit := Miss
-		combo := ComboResults.Reset
+		combo := Reset
 
 		rate := float64(state.scored) / float64(len(state.points)+1)
 
@@ -336,7 +336,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 		}
 
 		if hit != Miss {
-			combo = ComboResults.Hold
+			combo = Hold
 		}
 
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)

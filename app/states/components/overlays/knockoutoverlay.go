@@ -281,7 +281,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 
 	player.accDisp.SetTarget(sc.Accuracy)
 
-	if comboResult == osu.ComboResults.Increase {
+	if comboResult == osu.Increase {
 		player.sCombo++
 	}
 
@@ -299,7 +299,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 		}
 	}
 
-	comboBreak := comboResult == osu.ComboResults.Reset
+	comboBreak := comboResult == osu.Reset
 	if (settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
 
 		if !player.hasBroken {
@@ -408,7 +408,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 		if bubble.deathFade.GetValue() >= 0.01 {
 			if settings.Knockout.Mode == settings.OneVsOne {
 				val := strconv.Itoa(int(bubble.lastHit.ScoreValue()))
-				if bubble.lastCombo == osu.ComboResults.Reset {
+				if bubble.lastCombo == osu.Reset {
 					val = "X"
 				}
 
@@ -424,7 +424,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 
 				batch.SetColor(1, 1, 1, alpha*bubble.deathFade.GetValue())
 
-				if bubble.lastCombo == osu.ComboResults.Reset {
+				if bubble.lastCombo == osu.Reset {
 					combo := fmt.Sprintf("%dx", bubble.combo)
 					comboWidth := overlay.font.GetWidth(scl*0.8, combo)
 					overlay.font.Draw(batch, bubble.deathX-comboWidth/2, bubble.deathSlide.GetValue()+scl*0.8/2, scl*0.8, combo)

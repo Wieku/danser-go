@@ -44,9 +44,9 @@ func (s *scoreV1Processor) AddResult(result HitResult, comboResult ComboResult) 
 		}
 	}
 
-	if comboResult == ComboResults.Reset || result == Miss {
+	if comboResult == Reset || result == Miss {
 		s.combo = 0
-	} else if comboResult == ComboResults.Increase {
+	} else if comboResult == Increase {
 		s.combo++
 	}
 }

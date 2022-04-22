@@ -10,8 +10,8 @@ type scoreV2Processor struct {
 	score         int64
 	combo         int64
 	modMultiplier float64
-	comboPartMax float64
-	comboPart    float64
+	comboPartMax  float64
+	comboPart     float64
 
 	hitMap map[HitResult]int64
 
@@ -36,17 +36,17 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 
 	for _, o := range beatMap.HitObjects {
 		if o.GetType() == objects.CIRCLE || o.GetType() == objects.SPINNER {
-			s.AddResult(Hit300, ComboResults.Increase)
+			s.AddResult(Hit300, Increase)
 		} else if slider, ok := o.(*objects.Slider); ok {
 			for j := 0; j < len(slider.TickReverse)+1; j++ {
-				s.AddResult(SliderRepeat, ComboResults.Increase)
+				s.AddResult(SliderRepeat, Increase)
 			}
 
 			for j := 0; j < len(slider.TickPoints); j++ {
-				s.AddResult(SliderPoint, ComboResults.Increase)
+				s.AddResult(SliderPoint, Increase)
 			}
 
-			s.AddResult(Hit300, ComboResults.Hold)
+			s.AddResult(Hit300, Hold)
 		}
 	}
 
@@ -61,9 +61,9 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 }
 
 func (s *scoreV2Processor) AddResult(result HitResult, comboResult ComboResult) {
-	if comboResult == ComboResults.Reset || result == Miss {
+	if comboResult == Reset || result == Miss {
 		s.combo = 0
-	} else if comboResult == ComboResults.Increase {
+	} else if comboResult == Increase {
 		s.combo++
 	}
 

@@ -296,9 +296,9 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 		return
 	}
 
-	if comboResult == osu.ComboResults.Increase {
+	if comboResult == osu.Increase {
 		overlay.comboCounter.Increase()
-	} else if comboResult == osu.ComboResults.Reset {
+	} else if comboResult == osu.Reset {
 		overlay.comboCounter.Reset()
 	}
 
