@@ -37,7 +37,7 @@ func initCursor() *cursor {
 		BounceOnEdges:               false,
 		TrailScale:                  1.0,
 		TrailEndScale:               0.4,
-		TrailDensity:                0.5,
+		TrailDensity:                1,
 		TrailMaxLength:              2000,
 		TrailRemoveSpeed:            1,
 		GlowEndScale:                0.4,
