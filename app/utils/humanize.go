@@ -1,9 +1,12 @@
 package utils
 
-import "strconv"
+import (
+	"golang.org/x/exp/constraints"
+	"strconv"
+)
 
-func Humanize(number int64) string {
-	stringified := strconv.FormatInt(number, 10)
+func Humanize[T constraints.Integer](number T) string {
+	stringified := strconv.FormatInt(int64(number), 10)
 
 	a := len(stringified) % 3
 	if a == 0 {

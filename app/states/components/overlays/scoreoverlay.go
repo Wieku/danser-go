@@ -306,27 +306,27 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 		overlay.flashlight.UpdateCombo(int64(overlay.comboCounter.GetCombo()))
 	}
 
-	accuracy, mCombo, score, grade := overlay.ruleset.GetResults(overlay.cursor)
+	sc := overlay.ruleset.GetScore(overlay.cursor)
 
-	overlay.entry.UpdatePlayer(score, mCombo)
+	overlay.entry.UpdatePlayer(sc.Score, int64(sc.Combo))
 
-	overlay.scoreGlider.SetTarget(float64(score))
-	overlay.accuracyGlider.SetTarget(accuracy)
+	overlay.scoreGlider.SetTarget(float64(sc.Score))
+	overlay.accuracyGlider.SetTarget(sc.Accuracy)
 
 	overlay.ppDisplay.Add(ppResults)
 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
-	if overlay.oldGrade != grade {
+	if overlay.oldGrade != sc.Grade {
 		go func() {
-			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[grade], "SS", "X"))
+			gText := strings.ToLower(strings.ReplaceAll(osu.GradesText[sc.Grade], "SS", "X"))
 
 			text := skin.GetTexture("ranking-" + gText + "-small")
 
 			overlay.rankBack.Texture = text
 			overlay.rankFront.Texture = text
 
-			overlay.oldGrade = grade
+			overlay.oldGrade = sc.Grade
 		}()
 	}
 }
