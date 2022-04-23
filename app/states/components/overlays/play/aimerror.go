@@ -155,7 +155,7 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 
 	meter.unstableRate = math.Sqrt(urBase) * 10
 
-	meter.urGlider.SetValue(meter.unstableRate, false)
+	meter.urGlider.SetValue(meter.unstableRate, settings.Gameplay.AimErrorMeter.StaticUnstableRate)
 }
 
 func (meter *AimErrorMeter) Update(time float64) {

@@ -39,6 +39,7 @@ func initGameplay() *gameplay {
 			ShowUnstableRate:     false,
 			UnstableRateScale:    1,
 			UnstableRateDecimals: 0,
+			StaticUnstableRate:   false,
 			CapPositionalMisses:  true,
 			AngleNormalized:      false,
 		},
@@ -285,6 +286,7 @@ type aimError struct {
 	ShowUnstableRate     bool
 	UnstableRateScale    float64
 	UnstableRateDecimals int
+	StaticUnstableRate   bool
 	CapPositionalMisses  bool
 	AngleNormalized      bool
 }
