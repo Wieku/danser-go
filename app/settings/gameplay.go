@@ -96,6 +96,7 @@ func initGameplay() *gameplay {
 			Align:            "CentreLeft",
 			ShowInResults:    true,
 			ShowPPComponents: false,
+			Static:           false,
 		},
 		HitCounter: &hitCounter{
 			hudElementPosition: &hudElementPosition{
@@ -306,6 +307,7 @@ type ppCounter struct {
 	Align            string
 	ShowInResults    bool
 	ShowPPComponents bool
+	Static           bool
 }
 
 type hitCounter struct {

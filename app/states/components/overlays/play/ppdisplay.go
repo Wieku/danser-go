@@ -61,11 +61,13 @@ func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
 }
 
 func (ppDisplay *PPDisplay) Add(results performance.PPv2Results) {
-	ppDisplay.aimGlider.SetValue(results.Aim, false)
-	ppDisplay.tapGlider.SetValue(results.Speed, false)
-	ppDisplay.accGlider.SetValue(results.Acc, false)
-	ppDisplay.flashlightGlider.SetValue(results.Flashlight, false)
-	ppDisplay.ppGlider.SetValue(results.Total, false)
+	static := settings.Gameplay.PPCounter.Static
+
+	ppDisplay.aimGlider.SetValue(results.Aim, static)
+	ppDisplay.tapGlider.SetValue(results.Speed, static)
+	ppDisplay.accGlider.SetValue(results.Acc, static)
+	ppDisplay.flashlightGlider.SetValue(results.Flashlight, static)
+	ppDisplay.ppGlider.SetValue(results.Total, static)
 }
 
 func (ppDisplay *PPDisplay) Update(time float64) {
