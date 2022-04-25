@@ -496,10 +496,10 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	cA := strconv.FormatInt(int64(highestACC), 10)
 	cS := overlay.font.GetWidthMonospaced(scl, utils.Humanize(highestScore))
 
-	accuracy1 := cA + ".00% " + cP + ".00pp "
+	accuracy1 := cA + ".00% " + cP + ".00pp"
 	nWidth := overlay.font.GetWidthMonospaced(scl, accuracy1)
 
-	maxLength := 3*scl + nWidth + maxPlayerWidth
+	maxLength := 3.2*scl + nWidth + maxPlayerWidth
 
 	xSlideLeft := (overlay.fade.GetValue() - 1.0) * maxLength
 	xSlideRight := (1.0 - overlay.fade.GetValue()) * (cS + overlay.font.GetWidthMonospaced(scl, fmt.Sprintf("%dx ", highestCombo)) + 0.5*scl)
@@ -546,12 +546,18 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 			width += overlay.font.GetWidth(scl*0.8, "+"+r.Mods)
 		}
 
-		batch.SetSubScale(scl*0.85/2, scl*0.85/2)
-		batch.SetTranslation(vector.NewVec2d(2*scl+scl*0.1+nWidth+xSlideLeft, rowBaseY))
-
 		if r.Grade != osu.NONE {
 			text := skin.GetTexture("ranking-" + r.Grade.TextureName() + "-small")
-			batch.DrawUnit(*text)
+
+			ratio := 1.0 / 44.0 // default skin's grade height
+			if text.Height < 44 {
+				ratio = 1.0 / float64(text.Height) // if skin's grade is smaller, make it bigger
+			}
+
+			batch.SetSubScale(scl*0.9*ratio, scl*0.9*ratio)
+			batch.SetTranslation(vector.NewVec2d(2.6*scl+nWidth+xSlideLeft, rowBaseY))
+
+			batch.DrawTexture(*text)
 		}
 
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue()*player.fadeHit.GetValue())
@@ -582,7 +588,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 			if tex != "" {
 				hitTexture := skin.GetTexture(tex)
 				batch.SetSubScale(scl*0.8/2*player.scaleHit.GetValue()*(float64(hitTexture.Width)/float64(hitTexture.Height)), scl*0.8/2*player.scaleHit.GetValue())
-				batch.SetTranslation(vector.NewVec2d(3*scl+width+nWidth+scl*(float64(hitTexture.Width)/float64(hitTexture.Height))*0.5+xSlideLeft, rowBaseY))
+				batch.SetTranslation(vector.NewVec2d(3.2*scl+width+nWidth+scl*(float64(hitTexture.Width)/float64(hitTexture.Height))*0.5+xSlideLeft, rowBaseY))
 				batch.DrawUnit(*hitTexture)
 			}
 		}
@@ -616,13 +622,13 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 		overlay.font.DrawOrigin(batch, overlay.ScaledWidth-0.5*scl+xSlideRight, rowBaseY, vector.CentreRight, scl, true, scorestr)
 
 		batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*player.fade.GetValue())
-		overlay.font.DrawOrigin(batch, 3*scl+nWidth+xSlideLeft, rowBaseY, vector.CentreLeft, scl, false, r.Name)
+		overlay.font.DrawOrigin(batch, 3.2*scl+nWidth+xSlideLeft, rowBaseY, vector.CentreLeft, scl, false, r.Name)
 		width := overlay.font.GetWidth(scl, r.Name)
 
 		batch.SetColor(1, 1, 1, alpha*player.fade.GetValue())
 
 		if r.Mods != "" {
-			overlay.font.DrawOrigin(batch, 3*scl+width+nWidth+xSlideLeft, rowBaseY+ascScl, vector.BottomLeft, scl*0.8, false, "+"+r.Mods)
+			overlay.font.DrawOrigin(batch, 3.2*scl+width+nWidth+xSlideLeft, rowBaseY+ascScl, vector.BottomLeft, scl*0.8, false, "+"+r.Mods)
 		}
 	}
 }
