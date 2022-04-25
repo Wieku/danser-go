@@ -234,8 +234,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		sc.Init(beatMap, player)
 
 		ruleset.cursors[cursor] = &subSet{
-			player:         player,
-			score:          new(Score),
+			player: player,
+			score: &Score{
+				Accuracy: 100,
+			},
 			ppv2:           &performance.PPv2{},
 			hp:             hp,
 			recoveries:     recoveries,
