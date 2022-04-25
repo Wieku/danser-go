@@ -20,7 +20,7 @@ import (
 
 const Tolerance2B = 3
 
-type ClickAction int64
+type ClickAction uint8
 
 const (
 	Ignored = ClickAction(iota)
@@ -28,7 +28,7 @@ const (
 	Click
 )
 
-type ComboResult int64
+type ComboResult uint8
 
 const (
 	Reset = ComboResult(iota)
