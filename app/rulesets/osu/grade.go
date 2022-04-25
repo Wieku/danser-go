@@ -1,9 +1,10 @@
 package osu
 
-type Grade int64
+type Grade uint8
 
 const (
-	D = Grade(iota)
+	NONE = Grade(iota)
+	D
 	C
 	B
 	A
@@ -11,7 +12,6 @@ const (
 	SH
 	SS
 	SSH
-	NONE
 )
 
 func (grade Grade) String() string {

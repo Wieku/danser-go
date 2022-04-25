@@ -143,7 +143,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay := new(ScoreOverlay)
 
 	overlay.beatmapEnd = math.Inf(1)
-	overlay.oldGrade = -10
 
 	overlay.ScaledHeight = 768
 	overlay.ScaledWidth = settings.Graphics.GetAspectRatio() * overlay.ScaledHeight
