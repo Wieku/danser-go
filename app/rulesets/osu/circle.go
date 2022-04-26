@@ -78,9 +78,9 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 					}
 
 					if hit != Ignore {
-						combo := ComboResults.Increase
+						combo := Increase
 						if hit == Miss {
-							combo = ComboResults.Reset
+							combo = Reset
 						} else {
 							if len(circle.players) == 1 {
 								circle.hitCircle.PlaySound()
@@ -104,7 +104,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 					}
 				}
 			} else if action == Click {
-				circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, PositionalMiss, ComboResults.Hold)
+				circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, PositionalMiss, Hold)
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64, _ bool
 
 	if time > int64(circle.hitCircle.GetEndTime())+player.diff.Hit50 && !state.isHit {
 		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
-		circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, Miss, ComboResults.Reset)
+		circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, Miss, Reset)
 
 		if len(circle.players) == 1 {
 			circle.hitCircle.Arm(false, float64(time))

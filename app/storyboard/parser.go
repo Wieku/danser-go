@@ -147,7 +147,7 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	var transforms []*animation.Transformation
 
-	for i := 0; i < mutils.MaxI(1, numSections-1); i++ {
+	for i := 0; i < mutils.Max(1, numSections-1); i++ {
 		start := startTime + float64(i)*sectionTime
 		end := startTime + float64(i+1)*sectionTime
 

@@ -4,11 +4,11 @@ import (
 	"sync"
 )
 
-func Balance(workers int, candidates []interface{}, workerFunc func(a interface{}) interface{}) []interface{} {
-	results := make([]interface{}, 0, len(candidates))
+func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*B {
+	results := make([]*B, 0, len(candidates))
 
-	channel := make(chan interface{}, workers)
-	channelB := make(chan interface{}, len(candidates))
+	channel := make(chan T, workers)
+	channelB := make(chan *B, len(candidates))
 
 	var wg sync.WaitGroup
 

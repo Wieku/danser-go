@@ -20,23 +20,7 @@ import (
 
 const Tolerance2B = 3
 
-type Grade int64
-
-const (
-	D = Grade(iota)
-	C
-	B
-	A
-	S
-	SH
-	SS
-	SSH
-	NONE
-)
-
-var GradesText = []string{"D", "C", "B", "A", "S", "SH", "SS", "SSH", "None"}
-
-type ClickAction int64
+type ClickAction uint8
 
 const (
 	Ignored = ClickAction(iota)
@@ -44,13 +28,13 @@ const (
 	Click
 )
 
-type ComboResult int64
+type ComboResult uint8
 
-var ComboResults = struct {
-	Reset,
-	Hold,
-	Increase ComboResult
-}{0, 1, 2}
+const (
+	Reset = ComboResult(iota)
+	Hold
+	Increase
+)
 
 type buttonState struct {
 	Left, Right bool
@@ -95,30 +79,39 @@ type scoreProcessor interface {
 	GetCombo() int64
 }
 
-type subSet struct {
-	player         *difficultyPlayer
-	rawScore       int64
-	accuracy       float64
-	maxCombo       int64
-	numObjects     int64
-	grade          Grade
-	ppv2           *performance.PPv2
-	hits           map[HitResult]int64
-	currentKatu    int
-	currentBad     int
-	hp             *HealthProcessor
-	gekiCount      int64
-	katuCount      int64
-	recoveries     int
-	scoreProcessor scoreProcessor
-	failed         bool
+type Score struct {
+	Score        int64
+	Accuracy     float64
+	Grade        Grade
+	Combo        uint
+	PerfectCombo bool
+	Count300     uint
+	CountGeki    uint
+	Count100     uint
+	CountKatu    uint
+	Count50      uint
+	CountMiss    uint
+	CountSB      uint
+	PP           performance.PPv2Results
 }
 
-type MapTo struct {
-	ncircles int
-	nsliders int
-	nobjects int
-	maxCombo int
+type subSet struct {
+	player *difficultyPlayer
+
+	score          *Score
+	hp             *HealthProcessor
+	scoreProcessor scoreProcessor
+	rawScore       int64
+	currentKatu    int
+	currentBad     int
+
+	numObjects uint
+
+	ppv2 *performance.PPv2
+
+	recoveries int
+	failed     bool
+	sdpfFail   bool
 }
 
 type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
@@ -152,8 +145,13 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Attributes)
 
 	if settings.Gameplay.UseLazerPP {
-		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
-		//ruleset.experimentalPP = true
+		log.Println("Using pp calc version 2022-01-23:")
+		log.Println("\tRemove decay factor in Flashlight skill: https://github.com/ppy/osu/pull/15728")
+		log.Println("\tMake speed skill consider only the shortest movement distance: https://github.com/ppy/osu/pull/15758")
+		log.Println("\tFix cumulative strain time calculation in Flashlight skill: https://github.com/ppy/osu/pull/15867")
+		log.Println("\tRemove combo scaling from Aim and Speed from osu! performance calculation: https://github.com/ppy/osu/pull/16280")
+		log.Println("\tDon't floor effectiveMissCount: https://github.com/ppy/osu/pull/16331")
+		ruleset.experimentalPP = true
 	} else {
 		log.Println("Using pp calc version 2021-11-09 with hotfix: https://osu.ppy.sh/home/news/2021-11-09-performance-points-star-rating-updates")
 	}
@@ -236,11 +234,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		sc.Init(beatMap, player)
 
 		ruleset.cursors[cursor] = &subSet{
-			player:         player,
-			accuracy:       100,
-			grade:          NONE,
+			player: player,
+			score: &Score{
+				Accuracy: 100,
+			},
 			ppv2:           &performance.PPv2{},
-			hits:           make(map[HitResult]int64),
 			hp:             hp,
 			recoveries:     recoveries,
 			scoreProcessor: sc,
@@ -325,14 +323,14 @@ func (set *OsuRuleSet) Update(time int64) {
 			data = append(data, fmt.Sprintf("%d", i+1))
 			data = append(data, c.Name)
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].accuracy))
-			data = append(data, GradesText[set.cursors[c].grade])
-			data = append(data, utils.Humanize(set.cursors[c].hits[Hit300]))
-			data = append(data, utils.Humanize(set.cursors[c].hits[Hit100]))
-			data = append(data, utils.Humanize(set.cursors[c].hits[Hit50]))
-			data = append(data, utils.Humanize(set.cursors[c].hits[Miss]))
+			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy))
+			data = append(data, set.cursors[c].score.Grade.String())
+			data = append(data, utils.Humanize(set.cursors[c].score.Count300))
+			data = append(data, utils.Humanize(set.cursors[c].score.Count100))
+			data = append(data, utils.Humanize(set.cursors[c].score.Count50))
+			data = append(data, utils.Humanize(set.cursors[c].score.CountMiss))
 			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
-			data = append(data, utils.Humanize(set.cursors[c].maxCombo))
+			data = append(data, utils.Humanize(set.cursors[c].score.Combo))
 			data = append(data, set.cursors[c].player.diff.GetModString())
 			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
 			table.Append(data)
@@ -441,52 +439,82 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		return
 	}
 
+	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == Reset) ||
+		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (result&BaseHitsM > 0 && result&BaseHitsM != Hit300)) {
+		result = Miss
+		comboResult = Reset
+		subSet.sdpfFail = true
+	}
+
 	result = subSet.scoreProcessor.ModifyResult(result, src)
 	subSet.scoreProcessor.AddResult(result, comboResult)
 
-	if result&BaseHitsM > 0 {
+	subSet.score.Score = subSet.scoreProcessor.GetScore()
+
+	if comboResult == Reset && result != Miss {
+		subSet.score.CountSB++
+	}
+
+	bResult := result & BaseHitsM
+
+	if bResult > 0 {
 		subSet.rawScore += result.ScoreValue()
-		subSet.hits[result]++
+
+		switch bResult {
+		case Hit300:
+			subSet.score.Count300++
+		case Hit100:
+			subSet.score.Count100++
+		case Hit50:
+			subSet.score.Count50++
+		case Miss:
+			subSet.score.CountMiss++
+		}
+
 		subSet.numObjects++
 	}
 
-	subSet.maxCombo = mutils.MaxI64(subSet.scoreProcessor.GetCombo(), subSet.maxCombo)
+	subSet.score.Combo = mutils.Max(uint(subSet.scoreProcessor.GetCombo()), subSet.score.Combo)
 
 	if subSet.numObjects == 0 {
-		subSet.accuracy = 100
+		subSet.score.Accuracy = 100
 	} else {
-		subSet.accuracy = 100 * float64(subSet.rawScore) / float64(subSet.numObjects*300)
+		subSet.score.Accuracy = 100 * float64(subSet.rawScore) / float64(subSet.numObjects*300)
 	}
 
-	ratio := float64(subSet.hits[Hit300]) / float64(subSet.numObjects)
+	ratio := float64(subSet.score.Count300) / float64(subSet.numObjects)
 
-	if subSet.hits[Hit300] == subSet.numObjects {
+	if subSet.score.Count300 == subSet.numObjects {
 		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			subSet.grade = SSH
+			subSet.score.Grade = SSH
 		} else {
-			subSet.grade = SS
+			subSet.score.Grade = SS
 		}
-	} else if ratio > 0.9 && float64(subSet.hits[Hit50])/float64(subSet.numObjects) < 0.01 && subSet.hits[Miss] == 0 {
+	} else if ratio > 0.9 && float64(subSet.score.Count50)/float64(subSet.numObjects) < 0.01 && subSet.score.CountMiss == 0 {
 		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			subSet.grade = SH
+			subSet.score.Grade = SH
 		} else {
-			subSet.grade = S
+			subSet.score.Grade = S
 		}
-	} else if ratio > 0.8 && subSet.hits[Miss] == 0 || ratio > 0.9 {
-		subSet.grade = A
-	} else if ratio > 0.7 && subSet.hits[Miss] == 0 || ratio > 0.8 {
-		subSet.grade = B
+	} else if ratio > 0.8 && subSet.score.CountMiss == 0 || ratio > 0.9 {
+		subSet.score.Grade = A
+	} else if ratio > 0.7 && subSet.score.CountMiss == 0 || ratio > 0.8 {
+		subSet.score.Grade = B
 	} else if ratio > 0.6 {
-		subSet.grade = C
+		subSet.score.Grade = C
 	} else {
-		subSet.grade = D
+		subSet.score.Grade = D
 	}
 
-	index := mutils.MaxI64(0, subSet.numObjects-1)
+	index := mutils.Max(1, subSet.numObjects) - 1
 
 	diff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask][index]
 
-	subSet.ppv2.PPv2x(diff, int(subSet.maxCombo), int(subSet.hits[Hit300]), int(subSet.hits[Hit100]), int(subSet.hits[Hit50]), int(subSet.hits[Miss]), subSet.player.diff, set.experimentalPP)
+	subSet.score.PerfectCombo = uint(diff.MaxCombo) == subSet.score.Combo
+
+	subSet.ppv2.PPv2x(diff, int(subSet.score.Combo), int(subSet.score.Count300), int(subSet.score.Count100), int(subSet.score.Count50), int(subSet.score.CountMiss), subSet.player.diff, set.experimentalPP)
+
+	subSet.score.PP = subSet.ppv2.Results
 
 	switch result {
 	case Hit100:
@@ -519,10 +547,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		if result&BaseHits > 0 {
 			if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
 				result |= GekiAddition
-				subSet.gekiCount++
+				subSet.score.CountGeki++
 			} else if subSet.currentBad == 0 && allClicked {
 				result |= KatuAddition
-				subSet.katuCount++
+				subSet.score.CountKatu++
 			} else {
 				result |= MuAddition
 			}
@@ -532,7 +560,11 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.currentKatu = 0
 	}
 
-	subSet.hp.AddResult(result)
+	if subSet.sdpfFail {
+		subSet.hp.Increase(-100000, true)
+	} else {
+		subSet.hp.AddResult(result)
+	}
 
 	if set.hitListener != nil {
 		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
@@ -543,13 +575,13 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f",
 			result.ScoreValue(),
 			subSet.scoreProcessor.GetCombo(),
-			subSet.maxCombo,
+			subSet.score.Combo,
 			subSet.scoreProcessor.GetScore(),
-			subSet.accuracy,
-			subSet.hits[Hit300],
-			subSet.hits[Hit100],
-			subSet.hits[Hit50],
-			subSet.hits[Miss],
+			subSet.score.Accuracy,
+			subSet.score.Count300,
+			subSet.score.Count100,
+			subSet.score.Count50,
+			subSet.score.CountMiss,
 			number,
 			time,
 			x,
@@ -606,7 +638,7 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	}
 
 	// EZ mod gives 2 additional lives
-	if subSet.recoveries > 0 {
+	if subSet.recoveries > 0 && !subSet.sdpfFail {
 		subSet.hp.Increase(160, false)
 		subSet.recoveries--
 
@@ -621,6 +653,15 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	subSet.failed = true
 }
 
+func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
+	subSet := set.cursors[cursor]
+
+	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())+subSet.player.diff.Hit50+20 {
+		subSet.sdpfFail = true
+		subSet.hp.Increase(-10000, true)
+	}
+}
+
 func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
 }
@@ -633,32 +674,13 @@ func (set *OsuRuleSet) SetFailListener(listener failListener) {
 	set.failListener = listener
 }
 
-func (set *OsuRuleSet) GetResults(cursor *graphics.Cursor) (float64, int64, int64, Grade) {
-	subSet := set.cursors[cursor]
-	return subSet.accuracy, subSet.maxCombo, subSet.scoreProcessor.GetScore(), subSet.grade
-}
-
-func (set *OsuRuleSet) GetHits(cursor *graphics.Cursor) (int64, int64, int64, int64, int64, int64) {
-	subSet := set.cursors[cursor]
-	return subSet.hits[Hit300], subSet.hits[Hit100], subSet.hits[Hit50], subSet.hits[Miss], subSet.gekiCount, subSet.katuCount
+func (set *OsuRuleSet) GetScore(cursor *graphics.Cursor) Score {
+	return *(set.cursors[cursor].score)
 }
 
 func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	subSet := set.cursors[cursor]
 	return subSet.hp.Health / MaxHp
-}
-
-func (set *OsuRuleSet) GetPP(cursor *graphics.Cursor) performance.PPv2Results {
-	subSet := set.cursors[cursor]
-	return subSet.ppv2.Results
-}
-
-func (set *OsuRuleSet) IsPerfect(cursor *graphics.Cursor) bool {
-	subSet := set.cursors[cursor]
-
-	oppDiff := set.oppDiffs[subSet.player.diff.Mods&difficulty.DifficultyAdjustMask]
-
-	return subSet.maxCombo == int64(oppDiff[len(oppDiff)-1].MaxCombo)
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {

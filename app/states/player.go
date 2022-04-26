@@ -518,7 +518,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				platformOffset = windowsOffset
 			}
 
-			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset))*speed
+			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset)+float64(settings.LOCALOFFSET))*speed
 
 			player.updateMain(delta)
 
@@ -535,17 +535,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 }
 
 func (player *Player) Update(delta float64) bool {
+	speed := 1.0
+
 	if player.musicPlayer.GetState() == bass.MusicPlaying {
-		player.progressMsF += delta * player.musicPlayer.GetTempo()
-	} else {
-		if player.progressMsF < player.startPointE || player.start {
-			player.progressMsF += delta
-		} else {
-			player.progressMsF += delta * settings.SPEED
-		}
+		speed = player.musicPlayer.GetTempo() * player.musicPlayer.GetRelativeFrequency()
+	} else if !(player.progressMsF < player.startPointE || player.start) {
+		speed = settings.SPEED
 	}
 
-	player.rawPositionF = player.progressMsF
+	player.rawPositionF += delta * speed
+
+	player.progressMsF = player.rawPositionF + float64(settings.LOCALOFFSET)*speed
 
 	player.updateMain(delta)
 
@@ -657,7 +657,7 @@ func (player *Player) updateMain(delta float64) {
 func (player *Player) updateMusic(delta float64) {
 	player.musicPlayer.Update()
 
-	target := mutils.ClampF64(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
+	target := mutils.ClampF(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
 
 	if settings.Audio.BeatUseTimingPoints {
 		player.Scl = 1 + player.coin.Beat*(settings.Audio.BeatScale-1.0)
@@ -678,10 +678,10 @@ func (player *Player) Draw(float64) {
 
 	fps := player.profiler.GetFPS()
 
-	player.updateLimiter.FPS = mutils.ClampI(int(fps*1.2), player.baseLimit, 10000)
+	player.updateLimiter.FPS = mutils.Clamp(int(fps*1.2), player.baseLimit, 10000)
 
 	if player.background.GetStoryboard() != nil {
-		player.background.GetStoryboard().SetFPS(mutils.ClampI(int(fps*1.2), player.baseLimit, 10000))
+		player.background.GetStoryboard().SetFPS(mutils.Clamp(int(fps*1.2), player.baseLimit, 10000))
 	}
 
 	if fps > 58 && timMs > 18 && !settings.RECORD {
@@ -697,7 +697,7 @@ func (player *Player) Draw(float64) {
 
 	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha = mutils.ClampF64(bgAlpha*player.Scl, 0, 1)
+		bgAlpha = mutils.ClampF(bgAlpha*player.Scl, 0, 1)
 	}
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
@@ -938,7 +938,7 @@ func (player *Player) drawDebug() {
 			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() / 1000)
 
 			drawShadowed(false, 2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			drawShadowed(false, 1, fmt.Sprintf("%d(*%d) hitobjects, %d total" /*len(player.processed)*/, 0, settings.DIVIDES, len(player.bMap.HitObjects)))
+			drawShadowed(false, 1, fmt.Sprintf("%d(*%d) hitobjects, %d total", player.objectContainer.GetNumProcessed(), settings.DIVIDES, len(player.bMap.HitObjects)))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
 				drawShadowed(false, 0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", player.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
@@ -965,7 +965,7 @@ func (player *Player) drawDebug() {
 				sbFPS = fmt.Sprintf("%0.0ffps (%0.2fms)", fpsS, 1000/fpsS)
 			}
 
-			shift := strconv.Itoa(mutils.MaxI(len(drawFPS), mutils.MaxI(len(updateFPS), len(sbFPS))))
+			shift := strconv.Itoa(mutils.Max(len(drawFPS), mutils.Max(len(updateFPS), len(sbFPS))))
 
 			drawShadowed(true, 1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
 			drawShadowed(true, 0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))

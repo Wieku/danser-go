@@ -61,7 +61,7 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 func (vbo *VertexBufferObject) Resize(newCapacity int) {
 	if vbo.data != nil {
 		data := make([]float32, newCapacity)
-		copy(data, vbo.data[:mutils.MinI(vbo.capacity, newCapacity)])
+		copy(data, vbo.data[:mutils.Min(vbo.capacity, newCapacity)])
 		vbo.data = data
 	}
 

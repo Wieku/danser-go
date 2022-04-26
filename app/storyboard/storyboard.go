@@ -225,7 +225,7 @@ func (storyboard *Storyboard) loadSprite(currentSprite string, commands []string
 
 	pos := vector.NewVec2d(x, y)
 
-	image := strings.Replace(spl[3], `"`, "", -1)
+	image := strings.TrimSpace(strings.Replace(spl[3], `"`, "", -1))
 
 	if filepath.Ext(image) == "" {
 		image += ".png"

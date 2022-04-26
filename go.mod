@@ -1,6 +1,6 @@
 module github.com/wieku/danser-go
 
-go 1.17
+go 1.18
 
 require (
 	github.com/EdlinOrg/prominentcolor v1.0.0
@@ -31,9 +31,11 @@ require (
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
-	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
+	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654
 	golang.org/x/text v0.3.6
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
+
+require golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
 
 require github.com/rivo/uniseg v0.2.0 // indirect

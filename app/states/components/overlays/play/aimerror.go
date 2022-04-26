@@ -118,7 +118,7 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 	middle.SetScaleV(vector.NewVec2d(dotSize, dotSize))
 	middle.SetRotation(math.Pi / 4)
 
-	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+10000, 0.7, 0.0))
+	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+math.Max(0, settings.Gameplay.AimErrorMeter.PointFadeOutTime*1000), 0.7, 0.0))
 	middle.AdjustTimesToTransformations()
 
 	meter.errorDisplay.Add(middle)
@@ -155,7 +155,7 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 
 	meter.unstableRate = math.Sqrt(urBase) * 10
 
-	meter.urGlider.SetTarget(meter.unstableRate)
+	meter.urGlider.SetValue(meter.unstableRate, settings.Gameplay.AimErrorMeter.StaticUnstableRate)
 }
 
 func (meter *AimErrorMeter) Update(time float64) {
@@ -231,7 +231,7 @@ func (meter *AimErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 		if settings.Gameplay.AimErrorMeter.ShowUnstableRate {
 			scale := settings.Gameplay.AimErrorMeter.UnstableRateScale
 
-			fnt := font.GetFont("Quicksand Bold")
+			fnt := font.GetFont("HUDFont")
 			fnt.DrawOrigin(batch, 0, scl+4, vector.TopCentre, 15*scale, true, meter.urText)
 		}
 	}

@@ -32,7 +32,7 @@ type PPv2 struct {
 	countOk            int
 	countMeh           int
 	countMiss          int
-	effectiveMissCount int
+	effectiveMissCount float64
 
 	diff *difficulty.Difficulty
 
@@ -42,7 +42,7 @@ type PPv2 struct {
 }
 
 func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty, experimental bool) PPv2 {
-	attribs.MaxCombo = mutils.MaxI(1, attribs.MaxCombo)
+	attribs.MaxCombo = mutils.Max(1, attribs.MaxCombo)
 
 	if combo < 0 {
 		combo = attribs.MaxCombo
@@ -75,7 +75,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 			float64(n300)*300) /
 			(float64(totalhits) * 300)
 
-		pp.accuracy = mutils.ClampF64(acc, 0, 1)
+		pp.accuracy = mutils.ClampF(acc, 0, 1)
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {
@@ -89,7 +89,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 	finalMultiplier := 1.12
 
 	if diff.Mods.Active(difficulty.NoFail) {
-		finalMultiplier *= math.Max(0.90, 1.0-0.02*float64(pp.effectiveMissCount))
+		finalMultiplier *= math.Max(0.90, 1.0-0.02*pp.effectiveMissCount)
 	}
 
 	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
@@ -97,7 +97,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 	}
 
 	if diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount = mutils.MinI(pp.effectiveMissCount+pp.countOk+pp.countMeh, pp.totalHits)
+		pp.effectiveMissCount = math.Min(pp.effectiveMissCount+float64(pp.countOk+pp.countMeh), float64(pp.totalHits))
 		finalMultiplier *= 0.6
 	}
 
@@ -135,12 +135,16 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		aimValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), float64(pp.effectiveMissCount))
+		if pp.experimental {
+			aimValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.AimDifficultStrainCount)
+		} else {
+			aimValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), pp.effectiveMissCount)
+		}
 	}
 
 	// Combo scaling
-	if pp.attribs.MaxCombo > 0 {
-		aimValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 && !pp.experimental {
+		aimValue *= pp.getComboScalingFactor()
 	}
 
 	approachRateFactor := 0.0
@@ -161,7 +165,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 {
-		estimateSliderEndsDropped := mutils.ClampF64(float64(mutils.MinI(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		estimateSliderEndsDropped := mutils.ClampF(float64(mutils.Min(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
 		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}
@@ -186,12 +190,16 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		speedValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
+		if pp.experimental {
+			speedValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.SpeedDifficultStrainCount)
+		} else {
+			speedValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
+		}
 	}
 
 	// Combo scaling
-	if pp.attribs.MaxCombo > 0 {
-		speedValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+	if pp.attribs.MaxCombo > 0 && !pp.experimental {
+		speedValue *= pp.getComboScalingFactor()
 	}
 
 	approachRateFactor := 0.0
@@ -274,12 +282,12 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		flashlightValue *= 0.97 * math.Pow(1-math.Pow(float64(pp.effectiveMissCount)/float64(pp.totalHits), 0.775), math.Pow(float64(pp.effectiveMissCount), 0.875))
+		flashlightValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
 	}
 
 	// Combo scaling.
 	if pp.attribs.MaxCombo > 0 {
-		flashlightValue *= math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+		flashlightValue *= pp.getComboScalingFactor()
 	}
 
 	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
@@ -298,7 +306,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	return flashlightValue
 }
 
-func (pp *PPv2) calculateEffectiveMissCount() int {
+func (pp *PPv2) calculateEffectiveMissCount() float64 {
 	// guess the number of misses + slider breaks from combo
 	comboBasedMissCount := 0.0
 
@@ -312,5 +320,21 @@ func (pp *PPv2) calculateEffectiveMissCount() int {
 	// we're clamping misscount because since its derived from combo it can be higher than total hits and that breaks some calculations
 	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.totalHits))
 
-	return mutils.MaxI(pp.countMiss, int(math.Floor(comboBasedMissCount)))
+	if pp.experimental {
+		return math.Max(float64(pp.countMiss), comboBasedMissCount)
+	} else {
+		return math.Max(float64(pp.countMiss), math.Floor(comboBasedMissCount))
+	}
+}
+
+func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
+	return 0.95 / ((missCount / (3 * math.Sqrt(difficultStrainCount))) + 1)
+}
+
+func (pp *PPv2) getComboScalingFactor() float64 {
+	if pp.attribs.MaxCombo <= 0 {
+		return 1.0
+	} else {
+		return math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+	}
 }

@@ -90,7 +90,7 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 				acuteAngleBonus *= calcAcuteAngleBonus(lastAngle) * // Multiply by previous angle, we don't want to buff unless this is a wiggle type pattern.
 					math.Min(angleBonus, 125/osuCurrObj.StrainTime) * // The maximum velocity we buff is equal to 125 / strainTime
 					math.Pow(math.Sin(math.Pi/2*math.Min(1, (100-osuCurrObj.StrainTime)/25)), 2) * // scale buff from 150 bpm 1/4 to 200 bpm 1/4
-					math.Pow(math.Sin(math.Pi/2*(mutils.ClampF64(osuCurrObj.JumpDistance, 50, 100)-50)/50), 2) // Buff distance exceeding 50 (radius) up to 100 (diameter).
+					math.Pow(math.Sin(math.Pi/2*(mutils.ClampF(osuCurrObj.JumpDistance, 50, 100)-50)/50), 2) // Buff distance exceeding 50 (radius) up to 100 (diameter).
 			}
 
 			// Penalize wide angles if they're repeated, reducing the penalty as the lastAngle gets more acute.

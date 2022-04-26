@@ -22,6 +22,7 @@ type HitResults struct {
 	lastTime float64
 	diff     *difficulty.Difficulty
 	color    color2.Color
+	alpha    float64
 }
 
 func NewHitResults(diff *difficulty.Difficulty) *HitResults {
@@ -135,7 +136,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 
 	results.top.Add(hit)
 
-	if !settings.Gameplay.ShowHitLighting || result & osu.BaseHitsM < osu.Hit50 {
+	if !settings.Gameplay.ShowHitLighting || result&osu.BaseHitsM < osu.Hit50 {
 		return
 	}
 
@@ -155,10 +156,12 @@ func (results *HitResults) Update(time float64) {
 	results.lastTime = time
 }
 
-func (results *HitResults) DrawBottom(batch *batch.QuadBatch, c []color2.Color, _ float64) {
+func (results *HitResults) DrawBottom(batch *batch.QuadBatch, c []color2.Color, alpha float64) {
 	results.color = c[0]
+	results.alpha = alpha
 
 	batch.ResetTransform()
+	batch.SetColor(1, 1, 1, alpha)
 
 	scale := results.diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
@@ -170,6 +173,7 @@ func (results *HitResults) DrawBottom(batch *batch.QuadBatch, c []color2.Color, 
 
 func (results *HitResults) DrawTop(batch *batch.QuadBatch, _ float64) {
 	batch.ResetTransform()
+	batch.SetColor(1, 1, 1, results.alpha)
 
 	scale := results.diff.CircleRadius / 64
 	batch.SetScale(scale, scale)
@@ -177,4 +181,5 @@ func (results *HitResults) DrawTop(batch *batch.QuadBatch, _ float64) {
 	results.top.Draw(results.lastTime, batch)
 
 	batch.ResetTransform()
+	batch.SetColor(1, 1, 1, 1)
 }

@@ -73,7 +73,7 @@ func (bz *Bezier) GetStartAngle() float32 {
 }
 
 func (bz *Bezier) GetEndAngle() float32 {
-	return bz.Points[len(bz.Points)-1].AngleRV(bz.PointAt(1.0 - 1.0 / bz.controlLength))
+	return bz.Points[len(bz.Points)-1].AngleRV(bz.PointAt(1.0 - 1.0/bz.controlLength))
 }
 
 // https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
@@ -86,7 +86,7 @@ func BinomialCoefficient(n, k int64) int64 {
 		return 1
 	}
 
-	k = mutils.MinI64(k, n-k)
+	k = mutils.Min(k, n-k)
 
 	c := int64(1)
 	for i := int64(1); i <= k; i++ {

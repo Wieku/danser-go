@@ -19,6 +19,10 @@ func GetFont(name string) *Font {
 	return fonts[name]
 }
 
+func AddAlias(font *Font, name string) {
+	fonts[name] = font
+}
+
 type glyphData struct {
 	region  *texture.TextureRegion
 	advance float64

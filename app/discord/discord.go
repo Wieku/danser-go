@@ -28,11 +28,15 @@ func Connect() {
 		return
 	}
 
+	log.Println("Trying to connect to Discord RPC...")
+
 	err := client.Login(appId)
 	if err != nil {
-		log.Println("Can't login to Discord RPC")
+		log.Println("Can't login to Discord RPC! Error:", err.Error())
 		return
 	}
+
+	log.Println("Connected!")
 
 	connected = true
 

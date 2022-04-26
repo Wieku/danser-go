@@ -30,7 +30,7 @@ func (limiter *Limiter) Sync() {
 
 	sleepTime := int64(1000000000) / int64(limiter.FPS) // nanoseconds to sleep this frame
 	// yieldTime + remainder micro & nano seconds if smaller than sleepTime
-	yieldTime := mutils.MinI64(sleepTime, limiter.variableYieldTime+sleepTime%int64(1000*1000))
+	yieldTime := mutils.Min(sleepTime, limiter.variableYieldTime+sleepTime%int64(1000*1000))
 	overSleep := int64(0) // time the sync goes over by
 
 	for {
@@ -47,15 +47,15 @@ func (limiter *Limiter) Sync() {
 		}
 	}
 
-	limiter.lastTime = qpc.GetNanoTime() - mutils.MinI64(overSleep, sleepTime)
+	limiter.lastTime = qpc.GetNanoTime() - mutils.Min(overSleep, sleepTime)
 
 	// auto tune the time sync should yield
 	if overSleep > limiter.variableYieldTime {
 		// increase by 200 microseconds (1/5 a ms)
-		limiter.variableYieldTime = mutils.MinI64(limiter.variableYieldTime+200*1000, sleepTime)
+		limiter.variableYieldTime = mutils.Min(limiter.variableYieldTime+200*1000, sleepTime)
 	} else if overSleep < limiter.variableYieldTime-200*1000 {
 		// decrease by 2 microseconds
-		limiter.variableYieldTime = mutils.MaxI64(limiter.variableYieldTime-2*1000, 0)
+		limiter.variableYieldTime = mutils.Max(limiter.variableYieldTime-2*1000, 0)
 	}
 
 }

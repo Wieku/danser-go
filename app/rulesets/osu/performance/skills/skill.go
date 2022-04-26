@@ -139,11 +139,11 @@ func (skill *Skill) DifficultyValue() float64 {
 	strains := skill.GetCurrentStrainPeaks()
 	reverseSortFloat64s(strains)
 
-	numReduced := mutils.MinI(len(strains), skill.ReducedSectionCount)
+	numReduced := mutils.Min(len(strains), skill.ReducedSectionCount)
 
 	for i := 0; i < numReduced; i++ {
-		scale := math.Log10(mutils.LerpF64(1, 10, mutils.ClampF64(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
-		strains[i] *= mutils.LerpF64(skill.ReducedStrainBaseline, 1.0, scale)
+		scale := math.Log10(mutils.Lerp(1, 10, mutils.ClampF(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
+		strains[i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 
 	reverseSortFloat64s(strains)
@@ -166,6 +166,22 @@ func (skill *Skill) saveCurrentPeak() {
 
 func (skill *Skill) startNewSectionFrom(end float64) {
 	skill.currentSectionPeak = skill.CalculateInitialStrain(end)
+}
+
+func (skill *Skill) CountDifficultStrains(clockRate float64) float64 {
+	peaks := skill.GetCurrentStrainPeaks()
+
+	var topStrain, realtimeCount float64
+
+	for _, v := range peaks {
+		topStrain = math.Max(topStrain, v)
+	}
+
+	for _, v := range peaks {
+		realtimeCount += math.Pow(v/topStrain, 4)
+	}
+
+	return realtimeCount * clockRate
 }
 
 func reverseSortFloat64s(arr []float64) {

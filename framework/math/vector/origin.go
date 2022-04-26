@@ -23,9 +23,9 @@ func ParseOrigin(v string) Vector2d {
 		return CentreLeft
 	case "TopRight":
 		return TopRight
-	case "BottomCentre":
+	case "BottomCentre", "Bottom":
 		return BottomCentre
-	case "TopCentre":
+	case "TopCentre", "Top":
 		return TopCentre
 	case "CentreRight", "Right":
 		return CentreRight

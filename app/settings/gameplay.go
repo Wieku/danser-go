@@ -14,10 +14,14 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
+			PointFadeOutTime:     10,
 			ShowPositionalMisses: true,
+			PositionalMissScale:  1.5,
 			ShowUnstableRate:     true,
 			UnstableRateDecimals: 0,
 			UnstableRateScale:    1.0,
+			StaticUnstableRate:   false,
+			ScaleWithSpeed:       false,
 		},
 		AimErrorMeter: &aimError{
 			hudElementPosition: &hudElementPosition{
@@ -29,11 +33,13 @@ func initGameplay() *gameplay {
 				XPosition: 1350,
 				YPosition: 650,
 			},
+			PointFadeOutTime:     10,
 			DotScale:             1,
 			Align:                "Right",
 			ShowUnstableRate:     false,
 			UnstableRateScale:    1,
 			UnstableRateDecimals: 0,
+			StaticUnstableRate:   false,
 			CapPositionalMisses:  true,
 			AngleNormalized:      false,
 		},
@@ -49,6 +55,8 @@ func initGameplay() *gameplay {
 			},
 			ProgressBar:     "Pie",
 			ShowGradeAlways: false,
+			StaticScore:     false,
+			StaticAccuracy:  false,
 		},
 		HpBar: &hudElementOffset{
 			hudElement: &hudElement{
@@ -59,14 +67,17 @@ func initGameplay() *gameplay {
 			XOffset: 0,
 			YOffset: 0,
 		},
-		ComboCounter: &hudElementOffset{
-			hudElement: &hudElement{
-				Show:    true,
-				Scale:   1.0,
-				Opacity: 1.0,
+		ComboCounter: &comboCounter{
+			hudElementOffset: &hudElementOffset{
+				hudElement: &hudElement{
+					Show:    true,
+					Scale:   1.0,
+					Opacity: 1.0,
+				},
+				XOffset: 0,
+				YOffset: 0,
 			},
-			XOffset: 0,
-			YOffset: 0,
+			Static: false,
 		},
 		PPCounter: &ppCounter{
 			hudElementPosition: &hudElementPosition{
@@ -87,6 +98,7 @@ func initGameplay() *gameplay {
 			Align:            "CentreLeft",
 			ShowInResults:    true,
 			ShowPPComponents: false,
+			Static:           false,
 		},
 		HitCounter: &hitCounter{
 			hudElementPosition: &hudElementPosition{
@@ -106,12 +118,13 @@ func initGameplay() *gameplay {
 				},
 			},
 
-			Spacing:    48,
-			FontScale:  1,
-			Align:      "Left",
-			ValueAlign: "Left",
-			Vertical:   false,
-			Show300:    false,
+			Spacing:          48,
+			FontScale:        1,
+			Align:            "Left",
+			ValueAlign:       "Left",
+			Vertical:         false,
+			Show300:          false,
+			ShowSliderBreaks: false,
 		},
 		StrainGraph: &strainGraph{
 			Show:      true,
@@ -151,6 +164,7 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
+			ModsOnly:       false,
 			AlignRight:     false,
 			HideOthers:     false,
 			ShowAvatars:    false,
@@ -187,6 +201,11 @@ func initGameplay() *gameplay {
 			},
 			BackgroundOpacity: 0.5,
 		},
+		Underlay: &underlay{
+			Path:       "",
+			AboveHpBar: false,
+		},
+		HUDFont:                 "",
 		ShowResultsScreen:       true,
 		ResultsScreenTime:       5,
 		ResultsUseLocalTimeZone: false,
@@ -203,7 +222,7 @@ type gameplay struct {
 	AimErrorMeter           *aimError
 	Score                   *score
 	HpBar                   *hudElementOffset
-	ComboCounter            *hudElementOffset
+	ComboCounter            *comboCounter
 	PPCounter               *ppCounter
 	HitCounter              *hitCounter
 	StrainGraph             *strainGraph
@@ -211,6 +230,8 @@ type gameplay struct {
 	ScoreBoard              *scoreBoard
 	Mods                    *mods
 	Boundaries              *boundaries
+	Underlay                *underlay
+	HUDFont                 string
 	ShowResultsScreen       bool
 	ResultsScreenTime       float64
 	ResultsUseLocalTimeZone bool
@@ -254,19 +275,25 @@ type hudElementPosition struct {
 
 type hitError struct {
 	*hudElementOffset
+	PointFadeOutTime     float64
 	ShowPositionalMisses bool
+	PositionalMissScale  float64
 	ShowUnstableRate     bool
 	UnstableRateDecimals int
 	UnstableRateScale    float64
+	StaticUnstableRate   bool
+	ScaleWithSpeed       bool
 }
 
 type aimError struct {
 	*hudElementPosition
+	PointFadeOutTime     float64
 	DotScale             float64
 	Align                string
 	ShowUnstableRate     bool
 	UnstableRateScale    float64
 	UnstableRateDecimals int
+	StaticUnstableRate   bool
 	CapPositionalMisses  bool
 	AngleNormalized      bool
 }
@@ -275,6 +302,13 @@ type score struct {
 	*hudElementOffset
 	ProgressBar     string
 	ShowGradeAlways bool
+	StaticScore     bool
+	StaticAccuracy  bool
+}
+
+type comboCounter struct {
+	*hudElementOffset
+	Static bool
 }
 
 type ppCounter struct {
@@ -284,21 +318,24 @@ type ppCounter struct {
 	Align            string
 	ShowInResults    bool
 	ShowPPComponents bool
+	Static           bool
 }
 
 type hitCounter struct {
 	*hudElementPosition
-	Color      []*hsv
-	Spacing    float64
-	FontScale  float64
-	Align      string
-	ValueAlign string
-	Vertical   bool
-	Show300    bool
+	Color            []*hsv
+	Spacing          float64
+	FontScale        float64
+	Align            string
+	ValueAlign       string
+	Vertical         bool
+	Show300          bool
+	ShowSliderBreaks bool
 }
 
 type scoreBoard struct {
 	*hudElementOffset
+	ModsOnly       bool
 	AlignRight     bool
 	HideOthers     bool
 	ShowAvatars    bool
@@ -322,4 +359,9 @@ type strainGraph struct {
 	Height    float64
 	BgColor   *hsv
 	FgColor   *hsv
+}
+
+type underlay struct {
+	Path       string
+	AboveHpBar bool
 }

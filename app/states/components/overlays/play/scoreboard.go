@@ -73,7 +73,14 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 					log.Println(err)
 				}
 			} else {
-				scores, err := client.GetScores(osuapi.GetScoresOpts{BeatmapID: beatMaps[0].BeatmapID, Limit: 51})
+				opts := osuapi.GetScoresOpts{BeatmapID: beatMaps[0].BeatmapID, Limit: 51}
+
+				if settings.Gameplay.ScoreBoard.ModsOnly {
+					mods1 := osuapi.Mods(beatMap.Diff.Mods)
+					opts.Mods = &mods1
+				}
+
+				scores, err := client.GetScores(opts)
 				if len(scores) == 0 || err != nil {
 					log.Println("Can't find online scores!")
 					if err != nil {
@@ -91,7 +98,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 						return scores[i].Score.Score > scores[j].Score.Score
 					})
 
-					for i := 0; i < mutils.MinI(len(scores), 50); i++ {
+					for i := 0; i < mutils.Min(len(scores), 50); i++ {
 						s := scores[i]
 
 						entry := NewScoreboardEntry(s.Username, s.Score.Score, int64(s.MaxCombo), i+1, false)

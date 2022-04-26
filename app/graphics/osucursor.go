@@ -216,7 +216,7 @@ func (cursor *osuRenderer) Update(delta float64) {
 
 			dirtyLocal = true
 		} else if times > 0 {
-			times = mutils.MinI(times, len(cursor.Points))
+			times = mutils.Min(times, len(cursor.Points))
 
 			cursor.Points = cursor.Points[times:]
 			cursor.PointsC = cursor.PointsC[times:]

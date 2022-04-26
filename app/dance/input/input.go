@@ -47,9 +47,9 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 				releaseAt := endTime + 50.0
 
 				if i+1 < len(processor.queue) {
-					nTime := processor.queue[mutils.MinI(i+2, len(processor.queue)-1)].GetStartTime()
+					nTime := processor.queue[mutils.Min(i+2, len(processor.queue)-1)].GetStartTime()
 
-					releaseAt = mutils.ClampF64(nTime-2, endTime+1, releaseAt)
+					releaseAt = mutils.ClampF(nTime-2, endTime+1, releaseAt)
 				}
 
 				shouldBeLeft := !processor.wasLeftBefore && startTime-processor.previousEnd < singleTapThreshold

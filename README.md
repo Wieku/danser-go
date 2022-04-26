@@ -50,9 +50,9 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-id=433005` - overrides all map selection arguments and attempts to find `.osu` file with matching BeatmapID (not BeatmapSetID!)
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of cursors in TAG mode
-* `-speed=1.5` - music speed. Value of 1.5 is equal to osu!'s DoubleTime mod
+* `-speed=1.5` - music speed. Value of 1.5 is equal to osu!'s DoubleTime mod.
 * `-pitch=1.5` - music pitch. Value of 1.5 is equal to osu!'s Nightcore pitch. To recreate osu!'s Nightcore mod, use with speed 1.5
-* `-settings=name` - settings filename - for example `settings-name.json` instead of `settings.json`
+* `-settings=name` - settings filename - for example `settings/name.json` instead of `settings/default.json`
 * `-debug` - shows additional info when running Danser, overrides `Graphics.DrawFPS` setting
 * `-play` - play through the map in osu!standard mode
 * `-skip` - skips map's intro like in osu!
@@ -69,6 +69,7 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-noupdatecheck` - skips checking GitHub for a newer version of danser
 * `-ss=20.5` - creates a screenshot at the given time in .png format
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
+* `-offset=20` - local audio offset in ms, applies to recordings unlike `Audio.Offset`. Inverted compared to stable.
 
 Since danser 0.4.0b artist, creator, difficulty names and titles don't have to exactly match the `.osu` file. 
 

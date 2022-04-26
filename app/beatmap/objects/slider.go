@@ -126,24 +126,34 @@ func NewSlider(data []string) *Slider {
 
 	for i := range slider.samples {
 		slider.samples[i] = slider.baseSample
+		slider.sampleSets[i] = slider.BasicHitSound.SampleSet
+		slider.additionSets[i] = slider.BasicHitSound.AdditionSet
 	}
 
 	if len(data) > 8 {
 		subData := strings.Split(data[8], "|")
-		for i, v := range subData {
-			f, _ := strconv.ParseInt(v, 10, 64)
-			slider.samples[i] = int(f)
+
+		n := mutils.Min(len(subData), len(slider.samples))
+
+		for i := 0; i < n; i++ {
+			sample, _ := strconv.Atoi(subData[i])
+			slider.samples[i] = sample
 		}
 	}
 
 	if len(data) > 9 {
 		subData := strings.Split(data[9], "|")
-		for i, v := range subData {
-			extras := strings.Split(v, ":")
-			sampleSet, _ := strconv.ParseInt(extras[0], 10, 64)
-			additionSet, _ := strconv.ParseInt(extras[1], 10, 64)
-			slider.sampleSets[i] = int(sampleSet)
-			slider.additionSets[i] = int(additionSet)
+
+		n := mutils.Min(len(subData), len(slider.sampleSets))
+
+		for i := 0; i < n; i++ {
+			extras := strings.Split(subData[i], ":")
+
+			sampleSet, _ := strconv.Atoi(extras[0])
+			additionSet, _ := strconv.Atoi(extras[1])
+
+			slider.sampleSets[i] = sampleSet
+			slider.additionSets[i] = additionSet
 		}
 	}
 
@@ -188,9 +198,9 @@ func (slider *Slider) PositionAt(time float64) vector.Vector2f {
 		return float64(slider.scorePath[i].Time2) >= time
 	})
 
-	pLine := slider.scorePath[mutils.ClampI(index, 0, len(slider.scorePath)-1)]
+	pLine := slider.scorePath[mutils.Clamp(index, 0, len(slider.scorePath)-1)]
 
-	clamped := mutils.ClampF64(time, float64(pLine.Time1), float64(pLine.Time2))
+	clamped := mutils.ClampF(time, float64(pLine.Time1), float64(pLine.Time2))
 
 	var pos vector.Vector2f
 	if pLine.Time2 == pLine.Time1 {
@@ -207,7 +217,7 @@ func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
 		return slider.StartPosRaw
 	}
 
-	t1 := mutils.ClampF64(time, slider.StartTime, slider.EndTimeLazer)
+	t1 := mutils.ClampF(time, slider.StartTime, slider.EndTimeLazer)
 
 	progress := (t1 - slider.StartTime) / slider.spanDuration
 
@@ -434,8 +444,8 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeTail = animation.NewGlider(0)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
-	fadeMultiplier := 1.0 - mutils.ClampF64(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
-	durationMultiplier := mutils.ClampF64(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+	fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+	durationMultiplier := mutils.ClampF(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
 
 	slSnInS := slider.StartTime - diff.Preempt
 	slSnInE := slider.StartTime - diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
@@ -497,11 +507,14 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circleTime := slider.StartTime + math.Floor(slider.partLen*float64(i))
 
 		appearTime := slider.StartTime - math.Floor(slider.diff.Preempt)
+		bounceStartTime := slider.StartTime - math.Min(math.Floor(slider.diff.Preempt), 15000)
+
 		if i > 1 {
 			appearTime = circleTime - math.Floor(slider.partLen*2)
+			bounceStartTime = appearTime
 		}
 
-		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, circleTime, i == 1, i == slider.RepeatCount)
+		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, bounceStartTime, circleTime, i == 1, i == slider.RepeatCount)
 		circle.ComboNumber = slider.ComboNumber
 		circle.ComboSet = slider.ComboSet
 		circle.ComboSetHax = slider.ComboSetHax
@@ -820,7 +833,12 @@ func (slider *Slider) PlayEdgeSample(index int) {
 		return
 	}
 
-	slider.playSampleT(slider.sampleSets[index], slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
+	sampleSet := slider.sampleSets[index]
+	if sampleSet == 0 && index == 0 {
+		sampleSet = slider.BasicHitSound.SampleSet
+	}
+
+	slider.playSampleT(sampleSet, slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
 }
 
 func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
@@ -846,14 +864,11 @@ func (slider *Slider) PlayTick() {
 
 func (slider *Slider) playSampleT(sampleSet, additionSet, sample int, point TimingPoint, pos vector.Vector2f) {
 	if sampleSet == 0 {
-		sampleSet = slider.BasicHitSound.SampleSet
-		if sampleSet == 0 {
-			sampleSet = point.SampleSet
-		}
+		sampleSet = point.SampleSet
 	}
 
 	if additionSet == 0 {
-		additionSet = slider.BasicHitSound.AdditionSet
+		additionSet = sampleSet
 	}
 
 	audio.PlaySample(sampleSet, additionSet, sample, point.SampleIndex, point.SampleVolume, slider.HitObjectID, pos.X64())
@@ -870,8 +885,8 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
-	bodyOpacityInner := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
-	bodyOpacityOuter := mutils.ClampF32(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
+	bodyOpacityInner := mutils.ClampF(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
+	bodyOpacityOuter := mutils.ClampF(float32(settings.Objects.Colors.Sliders.Body.OuterAlpha), 0.0, 1.0)
 
 	borderInner := color2.NewRGBA(innerBorder.R, innerBorder.G, innerBorder.B, float32(colorAlpha))
 	borderOuter := color2.NewRGBA(outerBorder.R, outerBorder.G, outerBorder.B, float32(colorAlpha))

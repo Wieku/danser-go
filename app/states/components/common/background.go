@@ -126,8 +126,8 @@ func (bg *Background) Update(time float64, x, y float64) {
 	pY := 0.0
 
 	if math.Abs(settings.Playfield.Background.Parallax.Amount) > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) && settings.DIVIDES == 1 {
-		pX = mutils.ClampF64(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
-		pY = mutils.ClampF64(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		pX = mutils.ClampF(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
+		pY = mutils.ClampF(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
 	}
 
 	delta := math.Abs(time - bg.lastTime)

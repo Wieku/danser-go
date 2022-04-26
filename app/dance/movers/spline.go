@@ -167,7 +167,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 	timeDiff := make([]float32, len(timing)-1)
 
-	for j:=0; j < len(timeDiff); j++ {
+	for j := 0; j < len(timeDiff); j++ {
 		timeDiff[j] = float32(timing[j+1] - timing[j])
 	}
 
@@ -191,6 +191,6 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *SplineMover) Update(time float64) vector.Vector2f {
-	t := mutils.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.ClampF((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(float32(t))
 }

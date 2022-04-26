@@ -92,7 +92,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) {
 	balance := 0.0
 	if settings.DIVIDES == 1 {
-		balance = mutils.ClampF64((xPos-256)/512*settings.Audio.HitsoundPositionMultiplier, -1, 1)
+		balance = mutils.ClampF((xPos-256)/512*settings.Audio.HitsoundPositionMultiplier, -1, 1)
 	}
 
 	if settings.Audio.IgnoreBeatmapSampleVolume {

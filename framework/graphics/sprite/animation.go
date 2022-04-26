@@ -19,9 +19,9 @@ type Animation struct {
 
 func NewAnimation(textures []*texture.TextureRegion, frameDelay float64, loopForever bool, depth float64, position vector.Vector2d, origin vector.Vector2d) *Animation {
 	animation := &Animation{
-		Sprite: NewSpriteSingle(nil, depth, position, origin),
-		textures: textures,
-		frameDelay: frameDelay,
+		Sprite:      NewSpriteSingle(nil, depth, position, origin),
+		textures:    textures,
+		frameDelay:  frameDelay,
 		loopForever: loopForever,
 	}
 
@@ -36,7 +36,7 @@ func (animation *Animation) Update(time float64) {
 	if animation.textures != nil && len(animation.textures) > 1 && time >= animation.startTime {
 		frame := int(math.Floor((time - animation.startTime) / animation.frameDelay))
 		if !animation.loopForever {
-			frame = mutils.MinI(frame, len(animation.textures)-1)
+			frame = mutils.Min(frame, len(animation.textures)-1)
 		} else {
 			frame = frame % len(animation.textures)
 		}

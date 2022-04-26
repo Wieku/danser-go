@@ -22,11 +22,15 @@ type Attributes struct {
 	// Aim stars, needed for Performance Points (aka PP) calculations
 	Aim float64
 
+	AimDifficultStrainCount float64
+
 	// SliderFactor is a ratio of Aim calculated without sliders to Aim with them
 	SliderFactor float64
 
 	// Speed stars, needed for Performance Points (aka PP) calculations
 	Speed float64
+
+	SpeedDifficultStrainCount float64
 
 	// Flashlight stars, needed for Performance Points (aka PP) calculations
 	Flashlight float64
@@ -101,7 +105,7 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 
 // Retrieves skill values and converts to Attributes
 func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, attr Attributes, experimental bool) Attributes {
-	return getStarsFromRawValues(
+	attr = getStarsFromRawValues(
 		aim.DifficultyValue(),
 		aimNoSliders.DifficultyValue(),
 		speed.DifficultyValue(),
@@ -110,6 +114,11 @@ func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills
 		attr,
 		experimental,
 	)
+
+	attr.AimDifficultStrainCount = aim.CountDifficultStrains(diff.Speed)
+	attr.SpeedDifficultStrainCount = speed.CountDifficultStrains(diff.Speed)
+
+	return attr
 }
 
 func addObjectToAttribs(o objects.IHitObject, attr *Attributes) {

@@ -39,7 +39,7 @@ func timeClamp(start, end, time float64) float64 {
 		return 1.0
 	}
 
-	return mutils.ClampF64((time-start)/(end-start), 0, 1)
+	return mutils.ClampF((time-start)/(end-start), 0, 1)
 }
 
 type Transformation struct {

@@ -50,6 +50,7 @@ type RankingPanel struct {
 	score       string
 	maxCombo    string
 	accuracy    string
+	pp          string
 
 	beatmapName    string
 	beatmapCreator string
@@ -133,9 +134,11 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	rAcc := sprite.NewSpriteSingle(skin.GetTexture("ranking-accuracy"), 3, rAPos, vector.TopLeft)
 	rCombo := sprite.NewSpriteSingle(skin.GetTexture("ranking-maxcombo"), 4, rCPos, vector.TopLeft)
 
-	accuracy, maxCombo, score, grade := panel.ruleset.GetResults(panel.cursor)
+	score := panel.ruleset.GetScore(panel.cursor)
 
-	panel.gradeS = sprite.NewSpriteSingle(getTexture(grade), 5, rRPos, vector.Centre)
+	panel.pp = fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", score.PP.Total)
+
+	panel.gradeS = sprite.NewSpriteSingle(skin.GetTexture("ranking-"+score.Grade.TextureName()), 5, rRPos, vector.Centre)
 
 	p := graphics.Pixel.GetRegion()
 	rTop := sprite.NewSpriteSingle(&p, 999, vector.NewVec2d(0, 0), vector.TopLeft)
@@ -154,14 +157,12 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 	panel.manager.Add(rTop)
 	panel.manager.Add(rTitle)
 
-	c300, c100, c50, cMiss, cGeki, cKatu := panel.ruleset.GetHits(panel.cursor)
-
-	panel.count300 = NewHitCounter("hit300", fmt.Sprintf("%dx", c300), vector.NewVec2d(img1, row1))
-	panel.count100 = NewHitCounter("hit100", fmt.Sprintf("%dx", c100), vector.NewVec2d(img1, row2))
-	panel.count50 = NewHitCounter("hit50", fmt.Sprintf("%dx", c50), vector.NewVec2d(img1, row3))
-	panel.countGeki = NewHitCounter("hit300g", fmt.Sprintf("%dx", cGeki), vector.NewVec2d(img2, row1))
-	panel.countKatu = NewHitCounter("hit100k", fmt.Sprintf("%dx", cKatu), vector.NewVec2d(img2, row2))
-	panel.countMiss = NewHitCounter("hit0", fmt.Sprintf("%dx", cMiss), vector.NewVec2d(img2, row3))
+	panel.count300 = NewHitCounter("hit300", fmt.Sprintf("%dx", score.Count300), vector.NewVec2d(img1, row1))
+	panel.count100 = NewHitCounter("hit100", fmt.Sprintf("%dx", score.Count100), vector.NewVec2d(img1, row2))
+	panel.count50 = NewHitCounter("hit50", fmt.Sprintf("%dx", score.Count50), vector.NewVec2d(img1, row3))
+	panel.countGeki = NewHitCounter("hit300g", fmt.Sprintf("%dx", score.CountGeki), vector.NewVec2d(img2, row1))
+	panel.countKatu = NewHitCounter("hit100k", fmt.Sprintf("%dx", score.CountKatu), vector.NewVec2d(img2, row2))
+	panel.countMiss = NewHitCounter("hit0", fmt.Sprintf("%dx", score.CountMiss), vector.NewVec2d(img2, row3))
 
 	panel.manager.Add(panel.count300)
 	panel.manager.Add(panel.count100)
@@ -182,9 +183,9 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 
 	panel.playedBy = fmt.Sprintf("Played by %s on %s", panel.cursor.Name, scoreTime.Format("2006-01-02 15:04:05 MST"))
 
-	panel.score = fmt.Sprintf("%08d", score)
-	panel.maxCombo = fmt.Sprintf("%dx", maxCombo)
-	panel.accuracy = fmt.Sprintf("%.2f%%", accuracy)
+	panel.score = fmt.Sprintf("%08d", score.Score)
+	panel.maxCombo = fmt.Sprintf("%dx", score.Combo)
+	panel.accuracy = fmt.Sprintf("%.2f%%", score.Accuracy)
 
 	panel.hpGraph = make([]vector.Vector2d, len(hpGraph))
 	copy(panel.hpGraph, hpGraph)
@@ -195,7 +196,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		}
 	}
 
-	if ruleset.IsPerfect(cursor) {
+	if score.PerfectCombo {
 		log.Println("PERFECT")
 		pPos := vector.NewVec2d(320, 688)
 		if skin.GetInfo().Version >= 2 {
@@ -294,13 +295,10 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	fnt2.Draw(batch, 5, 30+22+22, 22, panel.playedBy)
 
 	if settings.Gameplay.PPCounter.ShowInResults {
-		pp := panel.ruleset.GetPP(panel.cursor).Total
-		ppText := fmt.Sprintf("%."+strconv.Itoa(settings.Gameplay.PPCounter.Decimals)+"fpp", pp)
-
 		batch.SetColor(0, 0, 0, alpha*0.5)
-		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, vector.Centre, 61, false, ppText)
+		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, vector.Centre, 61, false, panel.pp)
 		batch.SetColor(1, 1, 1, alpha)
-		fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, vector.Centre, 61, false, ppText)
+		fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, vector.Centre, 61, false, panel.pp)
 	}
 
 	if panel.shapeRenderer == nil {
@@ -374,9 +372,4 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	for i, s := range panel.stats {
 		fnt2.DrawOrigin(batch, float64(sX)+5, float64(sY)+float64(i)*12+6, vector.TopLeft, 12, false, s)
 	}
-}
-
-func getTexture(grade osu.Grade) *texture.TextureRegion {
-	gText := strings.ReplaceAll(osu.GradesText[grade], "SS", "X")
-	return skin.GetTexture("ranking-" + gText)
 }

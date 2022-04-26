@@ -44,7 +44,13 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 		return 0
 	}
 
-	distance := math.Min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
+	var distance float64
+	if s.Experimental {
+		distance = math.Min(singleSpacingThreshold, current.TravelDistance+current.MovementDistance)
+	} else {
+		distance = math.Min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
+	}
+
 	strainTime := current.StrainTime
 
 	previous := s.GetPrevious(0)
@@ -53,12 +59,12 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 
 	// Aim to nerf cheesy rhythms (Very fast consecutive doubles with large deltatimes between)
 	if previous != nil && strainTime < greatWindowFull && previous.StrainTime > strainTime {
-		strainTime = mutils.LerpF64(previous.StrainTime, strainTime, speedWindowRatio)
+		strainTime = mutils.Lerp(previous.StrainTime, strainTime, speedWindowRatio)
 	}
 
 	// Cap deltatime to the OD 300 hitwindow.
 	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
-	strainTime /= mutils.ClampF64((strainTime/greatWindowFull)/0.93, 0.92, 1)
+	strainTime /= mutils.ClampF((strainTime/greatWindowFull)/0.93, 0.92, 1)
 
 	speedBonus := 1.0
 

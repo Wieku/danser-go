@@ -5,9 +5,10 @@ var Knockout = initKnockout()
 func initKnockout() *knockout {
 	return &knockout{
 		Mode:                ComboBreak,
-		ExcludeMods:         "EZHT",
-		MaxPlayers:          50,
+		GraceEndTime:        -10,
 		BubbleMinimumCombo:  200,
+		ExcludeMods:         "",
+		MaxPlayers:          50,
 		RevivePlayersAtEnd:  false,
 		LiveSort:            true,
 		SortBy:              "Score",
@@ -23,6 +24,12 @@ type knockout struct {
 	// Knockout mode. More info below
 	Mode KnockoutMode
 
+	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
+	GraceEndTime float64
+
+	// In Mode = XReplays it will show combo break bubble if combo was bigger than BubbleMinimumCombo
+	BubbleMinimumCombo int
+
 	// Exclude plays which contain one of the mods set here
 	ExcludeMods string
 
@@ -31,9 +38,6 @@ type knockout struct {
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
 	MaxPlayers int
-
-	// Minimum combo before combo break to show a bubble in XReplays mode
-	BubbleMinimumCombo int
 
 	// Whether knocked out players should appear on map end
 	RevivePlayersAtEnd bool
@@ -64,15 +68,15 @@ const (
 	// Players get knocked out when they lose a combo to a miss or slider break
 	ComboBreak = KnockoutMode(iota)
 
-	// Players get knocked as in ComboBreak but only when they reached their max combo on the map
+	// ComboBreak but only when they reached their max combo on the map
 	MaxCombo
 
 	// Players won't get knocked out
 	XReplays
 
-	// Players scores other than 300's will be shown on the map (NOTE: this overrides MaxPlayer value)
+	// XReplays but Player scores other than 300's will be shown on the map
 	OneVsOne
 
-	//Other result than 300 will knock the player out
+	// Forced Perfect mod
 	SSOrQuit
 )

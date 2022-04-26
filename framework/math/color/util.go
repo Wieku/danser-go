@@ -12,8 +12,8 @@ func HSVToRGB(h, s, v float32) (r, g, b float32) {
 		h += 360
 	}
 
-	s = mutils.ClampF32(s, 0, 1)
-	v = mutils.ClampF32(v, 0, 1)
+	s = mutils.ClampF(s, 0, 1)
+	v = mutils.ClampF(v, 0, 1)
 
 	hp := h / 60
 	c := v * s
@@ -50,9 +50,9 @@ func HSVToRGB(h, s, v float32) (r, g, b float32) {
 }
 
 func RGBToHSV(r, g, b float32) (h, s, v float32) {
-	r = mutils.ClampF32(r, 0, 1)
-	g = mutils.ClampF32(g, 0, 1)
-	b = mutils.ClampF32(b, 0, 1)
+	r = mutils.ClampF(r, 0, 1)
+	g = mutils.ClampF(g, 0, 1)
+	b = mutils.ClampF(b, 0, 1)
 
 	min := math32.Min(math32.Min(r, g), b)
 	v = math32.Max(math32.Max(r, g), b)

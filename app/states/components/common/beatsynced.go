@@ -107,7 +107,7 @@ func (bs *BeatSynced) Update(time float64) {
 
 	beatRatio := math.Pow(0.5, ratio60)
 
-	beat := mutils.ClampF64(1.0-(volumeProgress*0.5+bs.beatProgress*0.5), 0.0, 1.0)
+	beat := mutils.ClampF(1.0-(volumeProgress*0.5+bs.beatProgress*0.5), 0.0, 1.0)
 
 	bs.Beat = bs.lastBeat*beatRatio + beat*(1-beatRatio)
 	bs.lastBeat = bs.Beat

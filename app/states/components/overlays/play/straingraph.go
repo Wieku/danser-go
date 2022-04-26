@@ -40,7 +40,7 @@ func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
 		strains:       performance.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff, settings.Gameplay.UseLazerPP),
-		startTime:     ruleset.GetBeatMap().HitObjects[mutils.MinI(1, len(ruleset.GetBeatMap().HitObjects)-1)].GetStartTime(),
+		startTime:     ruleset.GetBeatMap().HitObjects[mutils.Min(1, len(ruleset.GetBeatMap().HitObjects)-1)].GetStartTime(),
 		endTime:       ruleset.GetBeatMap().HitObjects[len(ruleset.GetBeatMap().HitObjects)-1].GetStartTime(),
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
 	}
@@ -61,7 +61,7 @@ func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 
 func (graph *StrainGraph) Update(time float64) {
 	graph.time = time
-	graph.progress = mutils.ClampF64((time-graph.startTime)/(graph.endTime-graph.startTime), 0, 1)
+	graph.progress = mutils.ClampF((time-graph.startTime)/(graph.endTime-graph.startTime), 0, 1)
 	graph.leftSprite.SetCutX(1 - graph.progress)
 	graph.rightSprite.SetCutX(graph.progress)
 }
@@ -70,12 +70,12 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 	// Number of strain sections to merge
 	// For example for a 5-minute map we will get 10 sections, so 4s because one section is 400ms
 	// It's also scaled with width of the strain graph so wider one shows more detailed graph
-	sectSize := mutils.MaxI(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
+	sectSize := mutils.Max(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
 
 	toM := []vector.Vector2f{vector.NewVec2f(0, 0)}
 
 	for i := 0; i < len(graph.strains.Total); i += sectSize {
-		maxI := mutils.MinI(len(graph.strains.Total), i+sectSize)
+		maxI := mutils.Min(len(graph.strains.Total), i+sectSize)
 
 		max := 0.0
 

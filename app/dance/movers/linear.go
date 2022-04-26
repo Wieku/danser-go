@@ -53,7 +53,7 @@ func (mover *LinearMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *LinearMover) Update(time float64) vector.Vector2f {
-	t := mutils.ClampF64((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.ClampF((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.line.PointAt(float32(easing.OutQuad(t)))
 }
 

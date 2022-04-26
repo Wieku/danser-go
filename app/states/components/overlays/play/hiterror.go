@@ -51,18 +51,21 @@ func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitEr
 	meter.urText = "0UR"
 	meter.urGlider = animation.NewTargetGlider(0, 0)
 
-	sum := float64(meter.diff.Hit50) * 0.8
+	baseScale := 0.8
+	if settings.Gameplay.HitErrorMeter.ScaleWithSpeed {
+		baseScale /= meter.diff.Speed
+	}
+
+	vals := []float64{float64(meter.diff.Hit300) * baseScale, float64(meter.diff.Hit100) * baseScale, float64(meter.diff.Hit50) * baseScale}
 
 	scale := settings.Gameplay.HitErrorMeter.Scale
 
 	pixel := graphics.Pixel.GetRegion()
 	bg := sprite.NewSpriteSingle(&pixel, 0.0, vector.NewVec2d(meter.Width/2, meter.Height-errorBase*2*scale), vector.Centre)
-	bg.SetScaleV(vector.NewVec2d(sum*2, errorBase*4).Scl(scale))
+	bg.SetScaleV(vector.NewVec2d(vals[2]*2, errorBase*4).Scl(scale))
 	bg.SetColor(color2.NewL(0))
 	bg.SetAlpha(0.6)
 	meter.errorDisplay.Add(bg)
-
-	vals := []float64{float64(meter.diff.Hit300) * 0.8, float64(meter.diff.Hit100) * 0.8, float64(meter.diff.Hit50) * 0.8}
 
 	for i, v := range vals {
 		pos := 0.0
@@ -111,7 +114,12 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 
 	pixel := graphics.Pixel.GetRegion()
 
-	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+error*0.8*scale, meter.Height-errorBase*2*scale), vector.Centre)
+	errorPos := error * 0.8
+	if settings.Gameplay.HitErrorMeter.ScaleWithSpeed {
+		errorPos /= meter.diff.Speed
+	}
+
+	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+errorPos*scale, meter.Height-errorBase*2*scale), vector.Centre)
 	middle.SetScaleV(vector.NewVec2d(3, errorBase*4).Scl(scale))
 	middle.SetAdditive(true)
 
@@ -122,7 +130,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 
 		middle.SetColor(colors[3])
 
-		middle.SetScaleV(vector.NewVec2d(3, errorBase*6).Scl(scale))
+		middle.SetScaleV(vector.NewVec2d(3, errorBase*4*settings.Gameplay.HitErrorMeter.PositionalMissScale).Scl(scale))
 		middle.SetAdditive(false)
 	} else {
 		switch {
@@ -135,7 +143,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 		}
 	}
 
-	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+10000, baseFade, 0.0))
+	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+math.Max(0, settings.Gameplay.HitErrorMeter.PointFadeOutTime*1000), baseFade, 0.0))
 	middle.AdjustTimesToTransformations()
 
 	meter.errorDisplay.Add(middle)
@@ -144,7 +152,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 		return
 	}
 
-	meter.errorCurrent = meter.errorCurrent*0.8 + error*0.8*0.2
+	meter.errorCurrent = meter.errorCurrent*0.8 + errorPos*0.2
 
 	meter.triangle.ClearTransformations()
 	meter.triangle.AddTransform(animation.NewSingleTransform(animation.MoveX, easing.OutQuad, time, time+800, meter.triangle.GetPosition().X, meter.Width/2+meter.errorCurrent*scale))
@@ -183,7 +191,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 	meter.avgPos = averageP / math.Max(float64(countP), 1)
 	meter.unstableRate = math.Sqrt(urBase) * 10
 
-	meter.urGlider.SetTarget(meter.GetUnstableRateConverted())
+	meter.urGlider.SetValue(meter.GetUnstableRateConverted(), settings.Gameplay.HitErrorMeter.StaticUnstableRate)
 }
 
 func (meter *HitErrorMeter) Update(time float64) {
@@ -211,7 +219,7 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 			pY := meter.Height - (errorBase*4+3.75)*settings.Gameplay.HitErrorMeter.Scale
 			scale := settings.Gameplay.HitErrorMeter.UnstableRateScale
 
-			fnt := font.GetFont("Quicksand Bold")
+			fnt := font.GetFont("HUDFont")
 			fnt.DrawOrigin(batch, meter.Width/2, pY, vector.BottomCentre, 15*scale, true, meter.urText)
 		}
 	}

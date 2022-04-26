@@ -69,12 +69,12 @@ func NewMonotoneCubic(points []vector.Vector2f) *MonotoneCubic {
 }
 
 func (bz *MonotoneCubic) PointAt(t float32) vector.Vector2f {
-	x := bz.Points[0].X + bz.length*mutils.ClampF32(t, 0.0, 1.0)
+	x := bz.Points[0].X + bz.length*mutils.ClampF(t, 0.0, 1.0)
 
 	i := sort.Search(len(bz.c3s), func(i int) bool {
 		return bz.Points[i].X >= x
 	})
-	i = mutils.ClampI(i-1, 0, len(bz.c3s)-1)
+	i = mutils.Clamp(i-1, 0, len(bz.c3s)-1)
 
 	// Interpolate
 	diff := x - bz.Points[i].X
