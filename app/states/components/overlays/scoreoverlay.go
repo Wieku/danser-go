@@ -19,6 +19,7 @@ import (
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/shape"
@@ -29,7 +30,9 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"log"
 	"math"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -121,6 +124,8 @@ type ScoreOverlay struct {
 	hitCounts   *play.HitDisplay
 	ppDisplay   *play.PPDisplay
 	strainGraph *play.StrainGraph
+
+	underlay *sprite.Sprite
 }
 
 func loadFonts() {
@@ -146,6 +151,8 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.ScaledHeight = 768
 	overlay.ScaledWidth = settings.Graphics.GetAspectRatio() * overlay.ScaledHeight
+
+	overlay.initUnderlay()
 
 	overlay.results = play.NewHitResults(ruleset.GetBeatMap().Diff)
 	overlay.ruleset = ruleset
@@ -261,6 +268,37 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 	overlay.initArrows()
 
 	return overlay
+}
+
+func (overlay *ScoreOverlay) initUnderlay() {
+	var underlayTexture *texture.TextureRegion
+
+	uScale := 1.0
+
+	if strings.TrimSpace(settings.Gameplay.Underlay.Path) != "" {
+		uPath := settings.Gameplay.Underlay.Path
+		if !filepath.IsAbs(uPath) {
+			uPath = filepath.Join(env.DataDir(), uPath)
+		}
+
+		pixmap, err := texture.NewPixmapFileString(uPath)
+		if err != nil {
+			log.Println("Failed to read underlay texture:", err.Error())
+		} else {
+			tex := texture.NewTextureSingle(pixmap.Width, pixmap.Height, 4)
+			tex.SetData(0, 0, pixmap.Width, pixmap.Height, pixmap.Data)
+			pixmap.Dispose()
+
+			region := tex.GetRegion()
+
+			underlayTexture = &region
+
+			uScale = overlay.ScaledHeight / float64(tex.GetHeight())
+		}
+	}
+
+	overlay.underlay = sprite.NewSpriteSingle(underlayTexture, 0, vector.NewVec2d(0, 0), vector.TopLeft)
+	overlay.underlay.SetScale(uScale)
 }
 
 func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults performance.PPv2Results, _ int64) {
@@ -553,7 +591,11 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	prev := batch.Projection
 	batch.SetCamera(overlay.camera.GetProjectionView())
 	batch.ResetTransform()
-	batch.SetColor(1, 1, 1, alpha)
+
+	if !settings.Gameplay.Underlay.AboveHpBar {
+		batch.SetColor(1, 1, 1, alpha)
+		overlay.underlay.Draw(0, batch)
+	}
 
 	overlay.entry.Draw(batch, alpha)
 
@@ -562,6 +604,13 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	overlay.drawScore(batch, alpha)
 	overlay.comboCounter.Draw(batch, alpha)
 	overlay.hpBar.Draw(batch, alpha)
+
+	if settings.Gameplay.Underlay.AboveHpBar {
+		batch.ResetTransform()
+		batch.SetColor(1, 1, 1, alpha)
+		overlay.underlay.Draw(0, batch)
+	}
+
 	overlay.drawKeys(batch, alpha)
 
 	batch.ResetTransform()

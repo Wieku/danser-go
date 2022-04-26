@@ -201,6 +201,10 @@ func initGameplay() *gameplay {
 			},
 			BackgroundOpacity: 0.5,
 		},
+		Underlay: &underlay{
+			Path:       "",
+			AboveHpBar: false,
+		},
 		ShowResultsScreen:       true,
 		ResultsScreenTime:       5,
 		ResultsUseLocalTimeZone: false,
@@ -225,6 +229,7 @@ type gameplay struct {
 	ScoreBoard              *scoreBoard
 	Mods                    *mods
 	Boundaries              *boundaries
+	Underlay                *underlay
 	ShowResultsScreen       bool
 	ResultsScreenTime       float64
 	ResultsUseLocalTimeZone bool
@@ -352,4 +357,9 @@ type strainGraph struct {
 	Height    float64
 	BgColor   *hsv
 	FgColor   *hsv
+}
+
+type underlay struct {
+	Path       string
+	AboveHpBar bool
 }
