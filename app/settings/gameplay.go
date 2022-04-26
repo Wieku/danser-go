@@ -205,6 +205,7 @@ func initGameplay() *gameplay {
 			Path:       "",
 			AboveHpBar: false,
 		},
+		HUDFont:                 "",
 		ShowResultsScreen:       true,
 		ResultsScreenTime:       5,
 		ResultsUseLocalTimeZone: false,
@@ -230,6 +231,7 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
+	HUDFont                 string
 	ShowResultsScreen       bool
 	ResultsScreenTime       float64
 	ResultsUseLocalTimeZone bool

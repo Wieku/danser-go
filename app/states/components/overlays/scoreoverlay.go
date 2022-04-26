@@ -32,6 +32,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -142,6 +143,24 @@ func loadFonts() {
 	}
 
 	font.AddAlias(font.GetFont("Quicksand Bold"), "HUDFont")
+
+	if strings.TrimSpace(settings.Gameplay.HUDFont) != "" {
+		uPath := settings.Gameplay.HUDFont
+		if !filepath.IsAbs(uPath) {
+			uPath = filepath.Join(env.DataDir(), uPath)
+		}
+
+		file, err := os.Open(uPath)
+
+		if err == nil {
+			fnt := font.LoadFont(file)
+			file.Close()
+
+			font.AddAlias(fnt, "HUDFont")
+		} else {
+			log.Println("Can't open HUDFont:", err.Error())
+		}
+	}
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
