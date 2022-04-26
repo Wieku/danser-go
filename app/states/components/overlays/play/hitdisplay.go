@@ -32,11 +32,11 @@ type HitDisplay struct {
 	sliderBreaksText string
 }
 
-func NewHitDisplay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor, fnt *font.Font) *HitDisplay {
+func NewHitDisplay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *HitDisplay {
 	aSprite := &HitDisplay{
 		ruleset:          ruleset,
 		cursor:           cursor,
-		fnt:              fnt,
+		fnt:              font.GetFont("HUDFont"),
 		hit300Text:       "0",
 		hit100Text:       "0",
 		hit50Text:        "0",

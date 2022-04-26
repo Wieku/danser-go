@@ -231,7 +231,7 @@ func (meter *AimErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 		if settings.Gameplay.AimErrorMeter.ShowUnstableRate {
 			scale := settings.Gameplay.AimErrorMeter.UnstableRateScale
 
-			fnt := font.GetFont("Quicksand Bold")
+			fnt := font.GetFont("HUDFont")
 			fnt.DrawOrigin(batch, 0, scl+4, vector.TopCentre, 15*scale, true, meter.urText)
 		}
 	}

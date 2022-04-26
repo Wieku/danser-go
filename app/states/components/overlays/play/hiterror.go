@@ -219,7 +219,7 @@ func (meter *HitErrorMeter) Draw(batch *batch.QuadBatch, alpha float64) {
 			pY := meter.Height - (errorBase*4+3.75)*settings.Gameplay.HitErrorMeter.Scale
 			scale := settings.Gameplay.HitErrorMeter.UnstableRateScale
 
-			fnt := font.GetFont("Quicksand Bold")
+			fnt := font.GetFont("HUDFont")
 			fnt.DrawOrigin(batch, meter.Width/2, pY, vector.BottomCentre, 15*scale, true, meter.urText)
 		}
 	}

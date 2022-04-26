@@ -42,7 +42,7 @@ type PPDisplay struct {
 
 func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
 	return &PPDisplay{
-		ppFont:           font.GetFont("Quicksand Bold"),
+		ppFont:           font.GetFont("HUDFont"),
 		aimGlider:        animation.NewTargetGlider(0, 0),
 		tapGlider:        animation.NewTargetGlider(0, 0),
 		accGlider:        animation.NewTargetGlider(0, 0),

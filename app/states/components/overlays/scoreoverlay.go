@@ -140,6 +140,8 @@ func loadFonts() {
 		font.LoadFont(file)
 		file.Close()
 	}
+
+	font.AddAlias(font.GetFont("Quicksand Bold"), "HUDFont")
 }
 
 func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOverlay {
@@ -250,7 +252,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.hpBar = play.NewHpBar()
 
-	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor, overlay.keyFont)
+	overlay.hitCounts = play.NewHitDisplay(overlay.ruleset, overlay.cursor)
 
 	overlay.shapeRenderer = shape.NewRenderer()
 
