@@ -389,8 +389,6 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 
 	scl := 384.0 * (1080.0 / 900.0 * 0.9) / (51)
 
-	batch.ResetTransform()
-
 	alive := 0
 	for _, r := range overlay.controller.GetReplays() {
 		player := overlay.players[r.Name]
@@ -400,6 +398,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 	}
 
 	for i := 0; i < len(overlay.deathBubbles); i++ {
+		batch.ResetTransform()
 		bubble := overlay.deathBubbles[i]
 		bubble.deathFade.Update(overlay.normalTime)
 		bubble.deathSlide.Update(overlay.normalTime)
