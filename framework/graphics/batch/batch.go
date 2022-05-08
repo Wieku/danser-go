@@ -85,8 +85,8 @@ func newQuadBatchSize(maxSprites int, persistent bool) *QuadBatch {
 		{Name: "in_scale", Type: attribute.Vec2},
 		{Name: "in_position", Type: attribute.Vec2},
 		{Name: "in_rotation", Type: attribute.Float},
-		{Name: "in_u", Type: attribute.Vec2Packed},
-		{Name: "in_v", Type: attribute.Vec2Packed},
+		{Name: "in_u", Type: attribute.Vec2},
+		{Name: "in_v", Type: attribute.Vec2},
 		{Name: "in_layer", Type: attribute.Float},
 		{Name: "in_color", Type: attribute.ColorPacked},
 		{Name: "in_additive", Type: attribute.Float},
@@ -310,11 +310,13 @@ func (batch *QuadBatch) drawTextureBase(texture texture.TextureRegion, useTextur
 	batch.data[idx+3] = posX
 	batch.data[idx+4] = posY
 	batch.data[idx+5] = rot
-	batch.data[idx+6] = packUV(u1, u2)
-	batch.data[idx+7] = packUV(v1, v2)
-	batch.data[idx+8] = layer
-	batch.data[idx+9] = batch.color.PackFloat()
-	batch.data[idx+10] = add
+	batch.data[idx+6] = u1
+	batch.data[idx+7] = u2
+	batch.data[idx+8] = v1
+	batch.data[idx+9] = v2
+	batch.data[idx+10] = layer
+	batch.data[idx+11] = batch.color.PackFloat()
+	batch.data[idx+12] = add
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
@@ -337,7 +339,7 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 	posX := float32(position.X + batch.position.X)
 	posY := float32(position.Y + batch.position.Y)
 
-	rot := float32(math.Mod(rotation + batch.rotation, math.Pi*2))
+	rot := float32(math.Mod(rotation+batch.rotation, math.Pi*2))
 
 	u1 := texture.U1
 	u2 := texture.U2
@@ -372,11 +374,13 @@ func (batch *QuadBatch) DrawStObject(position, origin, scale vector.Vector2d, fl
 	batch.data[idx+3] = posX
 	batch.data[idx+4] = posY
 	batch.data[idx+5] = rot
-	batch.data[idx+6] = packUV(u1, u2)
-	batch.data[idx+7] = packUV(v1, v2)
-	batch.data[idx+8] = layer
-	batch.data[idx+9] = color2.PackFloat(r, g, b, a)
-	batch.data[idx+10] = add
+	batch.data[idx+6] = u1
+	batch.data[idx+7] = u2
+	batch.data[idx+8] = v1
+	batch.data[idx+9] = v2
+	batch.data[idx+10] = layer
+	batch.data[idx+11] = color2.PackFloat(r, g, b, a)
+	batch.data[idx+12] = add
 
 	batch.currentFloats += batch.vertexSize
 	batch.currentSize++
