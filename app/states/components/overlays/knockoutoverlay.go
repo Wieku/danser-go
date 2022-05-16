@@ -65,7 +65,6 @@ type knockoutPlayer struct {
 	name         string
 	oldIndex     int
 	currentIndex int
-	isAutoplay bool
 }
 
 type bubble struct {
@@ -136,6 +135,7 @@ type KnockoutOverlay struct {
 
 	breakMode bool
 	fade      *animation.Glider
+	alivePlayers int
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -164,9 +164,13 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	for i, r := range replayController.GetReplays() {
 		cursor := replayController.GetCursors()[i]
 		overlay.names[cursor] = r.Name
-		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewTargetGlider(0, 0), animation.NewTargetGlider(0, 2), animation.NewTargetGlider(100, 2), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]stats, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i, cursor.IsAutoplay}
+		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewTargetGlider(0, 0), animation.NewTargetGlider(0, 2), animation.NewTargetGlider(100, 2), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]stats, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
+
+		if !cursor.IsAutoplay {
+			overlay.alivePlayers++
+		}
 	}
 
 	if settings.Knockout.LiveSort {
@@ -301,16 +305,9 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 		}
 	}
 
-	alive := 0
-	for _, player := range overlay.players {
-		if !player.hasBroken && !player.isAutoplay {
-			alive++
-		}
-	}
-
 	comboBreak := comboResult == osu.Reset
 	if ((settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0)) &&
-		alive > settings.Knockout.MinPlayers {
+		overlay.alivePlayers >= settings.Knockout.MinPlayers {
 
 		if !player.hasBroken {
 			if settings.Knockout.Mode == settings.XReplays {
@@ -324,6 +321,10 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 				//Fade out player name
 				player.hasBroken = true
 				player.breakTime = time
+
+				if !cursor.IsAutoplay {
+					overlay.alivePlayers--
+				}
 
 				player.fade.AddEvent(overlay.normalTime, overlay.normalTime+3000, 0)
 
