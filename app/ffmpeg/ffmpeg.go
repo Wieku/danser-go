@@ -121,7 +121,7 @@ func combine() {
 
 	log.Println("Starting composing audio and video into one file...")
 	log.Println("Running ffmpeg with options:", options)
-	cmd2 := exec.Command("ffmpeg", options...)
+	cmd2 := exec.Command(ffmpegExec, options...)
 
 	if settings.Recording.ShowFFmpegLogs {
 		cmd2.Stdout = os.Stdout
