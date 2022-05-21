@@ -74,8 +74,8 @@ type playfield struct {
 	Scale                        float64 `label:"Playfield scale" min:"0.1" max:"2"`   //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
 	OsuShift                     bool    `label:"Position the playfield like in osu!"` //false, offset the playfield like in osu! | Overrides ShiftY
 	playfieldShift               string  `vector:"true" label:"Playfield shift" left:"ShiftX" right:"ShiftY"`
-	ShiftY                       float64 //offset the playfield by Y osu!pixels
 	ShiftX                       float64 //offset the playfield by X osu!pixels
+	ShiftY                       float64 //offset the playfield by Y osu!pixels
 	ScaleStoryboardWithPlayfield bool
 	LeadInTime                   float64 `max:"10" format:"%.1fs"` //5
 	LeadInHold                   float64 `max:"10" format:"%.1fs"` //2
