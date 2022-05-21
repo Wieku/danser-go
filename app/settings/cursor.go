@@ -12,12 +12,9 @@ func initCursor() *cursor {
 		Style23Speed: 0.18,
 		Style4Shift:  0.5,
 		Colors: &color{
-			EnableRainbow: true,
-			RainbowSpeed:  8,
-			BaseColor: &hsv{
-				0,
-				1.0,
-				1.0},
+			EnableRainbow:         true,
+			RainbowSpeed:          8,
+			BaseColor:             DefaultsFactory.InitHSV(),
 			EnableCustomHueOffset: false,
 			HueOffset:             0,
 			FlashToTheBeat:        false,
@@ -49,31 +46,31 @@ func initCursor() *cursor {
 }
 
 type cursor struct {
-	TrailStyle                  int
-	Style23Speed                float64
-	Style4Shift                 float64
-	Colors                      *color
+	TrailStyle                  int     `combo:"1|1. Unified color,2|2. Distance-based rainbow,3|3. Time-based rainbow,4|4. Gradient"`
+	Style23Speed                float64 `label:"Style 2/3 Speed" scale:"1000" min:"-1" max:"1" format:"%.0f°/(s or 1000px)"`
+	Style4Shift                 float64 `label:"Style 4 Hue Shift" scale:"360" min:"-1" max:"1"`
+	Colors                      *color  `label:"Color"`
 	EnableCustomTagColorOffset  bool    //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used
-	TagColorOffset              float64 //-36, offset of the next tag cursor
+	TagColorOffset              float64 `min:"-360" max:"360" format:"%.0f°"` //-36, offset of the next tag cursor
 	EnableTrailGlow             bool    //true
 	EnableCustomTrailGlowOffset bool    //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
-	TrailGlowOffset             float64 //-36, offset of the cursor trail glow
+	TrailGlowOffset             float64 `min:"-360" max:"360" format:"%.0f°"` //-36, offset of the cursor trail glow
 	ScaleToCS                   bool    //false, if enabled, cursor will scale to beatmap CS value
-	CursorSize                  float64 //18, cursor radius in osu!pixels
+	CursorSize                  float64 `label:"Cursor Size" min:"0.1" max:"50"` //18, cursor radius in osu!pixels
 	CursorExpand                bool    //Should cursor be scaled to 1.3 when clicked
 	ScaleToTheBeat              bool    //true, cursor size is changing with music peak amplitude
 	ShowCursorsOnBreaks         bool    //true
 	BounceOnEdges               bool    //false
 	TrailScale                  float64 //0.4
 	TrailEndScale               float64 //0.4
-	TrailDensity                float64 //0.5 - 1/TrailDensity = distance between trail points
-	TrailMaxLength              int64   //2000 - maximum width (in osu!pixels) of cursortrail
-	TrailRemoveSpeed            float64 //1.0 - trail removal multiplier, 0.5 means half the speed
+	TrailDensity                float64 `min:"0.001" max:"3"` //0.5 - 1/TrailDensity = distance between trail points
+	TrailMaxLength              int64   `max:"10000"`         //2000 - maximum width (in osu!pixels) of cursortrail
+	TrailRemoveSpeed            float64 `max:"5"`             //1.0 - trail removal multiplier, 0.5 means half the speed
 	GlowEndScale                float64 //0.4
 	InnerLengthMult             float64 //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
 	AdditiveBlending            bool
 	CursorRipples               bool
-	SmokeEnabled                bool
+	SmokeEnabled                bool `label:"Cursor Smoke"`
 }
 
 func (cr *cursor) GetColors(divides, cursors int, beatScale, alpha float64) []color2.Color {

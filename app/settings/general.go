@@ -28,15 +28,14 @@ func initGeneral() *general {
 }
 
 type general struct {
-
 	// Directory that contains osu! songs,
-	OsuSongsDir string
+	OsuSongsDir string `long:"true" path:"Select osu! Songs directory"`
 
 	// Directory that contains osu! skins,
-	OsuSkinsDir string
+	OsuSkinsDir string `long:"true" path:"Select osu! Skins directory"`
 
 	// Whether discord should show that danser is on
-	DiscordPresenceOn bool
+	DiscordPresenceOn bool `label:"Discord Rich Presence"`
 
 	// Whether danser should unpack .osz files in Songs folder, osu! may complain about it
 	UnpackOszFiles bool

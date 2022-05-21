@@ -191,6 +191,10 @@ func GetFormat() *fileformat {
 	return fileStorage
 }
 
+func CreateDefault() {
+	initStorage()
+}
+
 func migrateSettings() {
 	_ = godirwalk.Walk(env.DataDir(), &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {

@@ -21,5 +21,5 @@ type input struct {
 	SmokeKey             string
 	MouseButtonsDisabled bool
 	MouseHighPrecision   bool
-	MouseSensitivity     float64
+	MouseSensitivity     float64 `min:"0.4" max:"6"`
 }

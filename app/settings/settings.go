@@ -2,6 +2,10 @@ package settings
 
 import "math"
 
+type defaultsFactory struct{}
+
+var DefaultsFactory = &defaultsFactory{}
+
 type fileformat struct {
 	srcData []byte
 
@@ -15,7 +19,7 @@ type fileformat struct {
 	Objects     *objects     `icon:"\uF1CD"`
 	Playfield   *playfield   `icon:"\uF853"`
 	Dance       *danceOld    `json:",omitempty" icon:"\uF5B7"`
-	CursorDance *cursorDance `icon:"\uF5B7"`
+	CursorDance *cursorDance `icon:"\uE599"`
 	Knockout    *knockout    `icon:"\uF0CB"`
 	Recording   *recording   `icon:"\uF03D"`
 }

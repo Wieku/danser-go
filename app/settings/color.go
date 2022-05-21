@@ -6,18 +6,26 @@ import (
 	"math"
 )
 
-type hsv struct {
+type HSV struct {
 	Hue, Saturation, Value float64
 }
 
+func (d *defaultsFactory) InitHSV() *HSV {
+	return &HSV{
+		Hue:        0,
+		Saturation: 1,
+		Value:      1,
+	}
+}
+
 type color struct {
-	EnableRainbow         bool    //true
-	RainbowSpeed          float64 //8, degrees per second
-	BaseColor             *hsv    //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
-	EnableCustomHueOffset bool    //false, false means that every iteration has an offset of i*360/n
-	HueOffset             float64 //0, custom hue offset for mirror collages
+	EnableRainbow         bool    `label:"Enable Rainbow"`                                                //true
+	RainbowSpeed          float64 `label:"Rainbow Speed" min:"-360" max:"360" format:"%.0f°/s"`           //8, degrees per second
+	BaseColor             *HSV    `label:"Basic Color" short:"true"`                                      //0..360, if EnableRainbow is disabled then this value will be used to calculate base color
+	EnableCustomHueOffset bool    `label:"Enable Custom Hue Offset"`                                      //false, false means that every iteration has an offset of i*360/n
+	HueOffset             float64 `min:"-360" max:"360" format:"%.0f°" label:"Mirror Collage Hue Offset"` //0, custom hue offset for mirror collages
 	FlashToTheBeat        bool    //true, objects size is changing with music peak amplitude
-	FlashAmplitude        float64 //50, hue offset for flashes
+	FlashAmplitude        float64 `min:"-360" max:"360" format:"%.0f°"` //50, hue offset for flashes
 	currentHue            float64
 }
 

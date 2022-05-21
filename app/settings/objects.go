@@ -34,20 +34,19 @@ func initObjects() *objects {
 			MandalaTexturesTrigger: 5,
 			MandalaTexturesAlpha:   0.3,
 			Color: &color{
-				EnableRainbow: true,
-				RainbowSpeed:  8,
-				BaseColor: &hsv{
-					0,
-					1.0,
-					1.0},
+				EnableRainbow:         true,
+				RainbowSpeed:          8,
+				BaseColor:             DefaultsFactory.InitHSV(),
 				EnableCustomHueOffset: false,
 				HueOffset:             0,
 				FlashToTheBeat:        false,
 				FlashAmplitude:        100,
 				currentHue:            0,
 			},
-			UseComboColors:        false,
-			ComboColors:           []*hsv{{Hue: 0, Saturation: 1, Value: 1}},
+			UseComboColors: false,
+			ComboColors: []*HSV{
+				DefaultsFactory.InitHSV(),
+			},
 			UseSkinComboColors:    false,
 			UseBeatmapComboColors: false,
 			Sliders: &sliderColors{
@@ -59,7 +58,7 @@ func initObjects() *objects {
 					Color: &color{
 						EnableRainbow: false,
 						RainbowSpeed:  8,
-						BaseColor: &hsv{
+						BaseColor: &HSV{
 							0,
 							0.0,
 							1.0},
@@ -77,7 +76,7 @@ func initObjects() *objects {
 					Color: &color{
 						EnableRainbow: false,
 						RainbowSpeed:  8,
-						BaseColor: &hsv{
+						BaseColor: &HSV{
 							0,
 							1.0,
 							0.0},
@@ -114,8 +113,8 @@ type sliders struct {
 	DrawSliderFollowCircle bool
 	DrawScorePoints        bool //true
 	SliderMerge            bool
-	SliderDistortions      bool //true, osu!stable slider distortions on aspire maps
-	BorderWidth            float64
+	SliderDistortions      bool    //true, osu!stable slider distortions on aspire maps
+	BorderWidth            float64 `max:"9"`
 	Quality                *quality
 	Snaking                *snaking
 }
@@ -141,7 +140,7 @@ type objectcolors struct {
 	MandalaTexturesAlpha   float64 //0.3
 	Color                  *color
 	UseComboColors         bool
-	ComboColors            []*hsv
+	ComboColors            []*HSV `new:"InitHSV"`
 	UseSkinComboColors     bool
 	UseBeatmapComboColors  bool
 	Sliders                *sliderColors
@@ -165,8 +164,8 @@ type borderColors struct {
 type bodyColors struct {
 	UseHitCircleColor bool
 	Color             *color
-	InnerOffset       float64
-	OuterOffset       float64
-	InnerAlpha        float64
-	OuterAlpha        float64
+	InnerOffset       float64 `min:"-2" max:"2"`
+	OuterOffset       float64 `min:"-2" max:"2"`
+	InnerAlpha        float64 `label:"Inner body opacity" scale:"100.0" format:"%.0f%%"`
+	OuterAlpha        float64 `label:"Outer body opacity" scale:"100.0" format:"%.0f%%"`
 }

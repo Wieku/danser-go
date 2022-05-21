@@ -22,13 +22,13 @@ func initKnockout() *knockout {
 
 type knockout struct {
 	// Knockout mode. More info below
-	Mode KnockoutMode
+	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit"`
 
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
-	GraceEndTime float64
+	GraceEndTime float64 `string:"true" min:"-10"`
 
 	// In Mode = XReplays it will show combo break bubble if combo was bigger than BubbleMinimumCombo
-	BubbleMinimumCombo int
+	BubbleMinimumCombo int `string:"true" min:"1"`
 
 	// Exclude plays which contain one of the mods set here
 	ExcludeMods string
@@ -37,7 +37,7 @@ type knockout struct {
 	HideMods string
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
-	MaxPlayers int
+	MaxPlayers int `min:"0" max:"100"`
 
 	// Whether knocked out players should appear on map end
 	RevivePlayersAtEnd bool
@@ -46,16 +46,16 @@ type knockout struct {
 	LiveSort bool
 
 	// Whether players should be sorted by Score or PP
-	SortBy string
+	SortBy string `combo:"Score,PP,Accuracy"`
 
 	// Whether knockout overlay (player list with stats) should be hidden in breaks
 	HideOverlayOnBreaks bool
 
 	//Minimum cursor size (when all players are alive)
-	MinCursorSize float64
+	MinCursorSize float64 `min:"1" max:"20"`
 
 	//Maximum cursor size (when there is only 1 player left)
-	MaxCursorSize float64
+	MaxCursorSize float64 `min:"1" max:"20"`
 
 	// Self explanatory
 	AddDanser  bool
