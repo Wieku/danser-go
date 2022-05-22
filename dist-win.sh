@@ -32,7 +32,7 @@ BEGIN
     BEGIN
       VALUE "CompanyName", "Wieku"
       VALUE "FileDescription", "3rd party osu! cursordance/replay client"
-      VALUE "LegalCopyright", "Wieku 2018-2021"
+      VALUE "LegalCopyright", "Wieku 2018-2022"
       VALUE "ProductName", "danser"
       VALUE "ProductVersion", "'$build'"
     END
