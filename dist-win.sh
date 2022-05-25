@@ -31,7 +31,7 @@ BEGIN
     BLOCK "040904b0"
     BEGIN
       VALUE "CompanyName", "Wieku"
-      VALUE "FileDescription", "3rd party osu! cursordance/replay client"
+      VALUE "FileDescription", "DAИSER"
       VALUE "LegalCopyright", "Wieku 2018-2022"
       VALUE "ProductName", "danser"
       VALUE "ProductVersion", "'$build'"
@@ -47,7 +47,7 @@ END
 
 echo $base > danser.rc
 
-windres -l 0 $WINDRESFLAGS -i danser.rc -o danser.syso
+windres -l 0 $WINDRESFLAGS -i danser.rc -o danser.syso --codepage=65001
 
 go run tools/assets/assets.go ./
 go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -o danser.exe -v -x
