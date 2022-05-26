@@ -45,19 +45,17 @@ func (d *defaultsFactory) SkinOptions() []string {
 		skinCache = []string{}
 
 		fs, err := ioutil.ReadDir(skinPath)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, f := range fs {
-			if f.IsDir() {
-				skinCache = append(skinCache, filepath.Base(f.Name()))
+		if err == nil {
+			for _, f := range fs {
+				if f.IsDir() {
+					skinCache = append(skinCache, filepath.Base(f.Name()))
+				}
 			}
-		}
 
-		sort.Slice(skinCache, func(i, j int) bool {
-			return strings.ToLower(skinCache[i]) < strings.ToLower(skinCache[j])
-		})
+			sort.Slice(skinCache, func(i, j int) bool {
+				return strings.ToLower(skinCache[i]) < strings.ToLower(skinCache[j])
+			})
+		}
 
 		skinCache = append([]string{"default"}, skinCache...)
 	}
