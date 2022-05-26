@@ -263,16 +263,16 @@ type hudElement struct {
 
 type hudElementOffset struct {
 	*hudElement
-	offset  string `vector:"true" left:"XOffset" right:"YOffset"`
-	XOffset float64
-	YOffset float64
+	offset  string  `vector:"true" left:"XOffset" right:"YOffset"`
+	XOffset float64 `min:"-10000" max:"10000"`
+	YOffset float64 `min:"-10000" max:"10000"`
 }
 
 type hudElementPosition struct {
 	*hudElement
-	position  string `vector:"true" left:"XPosition" right:"YPosition"`
-	XPosition float64
-	YPosition float64
+	position  string  `vector:"true" left:"XPosition" right:"YPosition"`
+	XPosition float64 `min:"-10000" max:"10000"`
+	YPosition float64 `min:"-10000" max:"10000"`
 }
 
 type hitError struct {
@@ -326,7 +326,7 @@ type ppCounter struct {
 type hitCounter struct {
 	*hudElementPosition
 	Color            []*HSV  `new:"InitHSV" label:"Color list"`
-	Spacing          float64 `string:"true" min:"0"`
+	Spacing          float64 `string:"true" min:"0" max:"1366"`
 	FontScale        float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
 	Align            string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	ValueAlign       string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
@@ -355,15 +355,15 @@ type strainGraph struct {
 	Show    bool
 	Opacity float64 `scale:"100.0" format:"%.0f%%"`
 
-	position  string `vector:"true" left:"XPosition" right:"YPosition"`
-	XPosition float64
-	YPosition float64
+	position  string  `vector:"true" left:"XPosition" right:"YPosition"`
+	XPosition float64 `min:"-10000" max:"10000"`
+	YPosition float64 `min:"-10000" max:"10000"`
 
 	Align string `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 
 	size   string  `vector:"true" left:"Width" right:"Height"`
-	Width  float64 `string:"true" min:"1"`
-	Height float64 `string:"true" min:"1"`
+	Width  float64 `string:"true" min:"1" max:"10000"`
+	Height float64 `string:"true" min:"1" max:"768"`
 
 	BgColor *HSV `label:"Background color" short:"true"`
 	FgColor *HSV `label:"Foreground color" short:"true"`
