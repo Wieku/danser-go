@@ -80,6 +80,8 @@ var recordMode bool
 var screenshotMode bool
 var screenshotTime float64
 
+var preciseProgress bool
+
 func run() {
 	mainthread.Call(func() {
 		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
@@ -136,6 +138,8 @@ func run() {
 		hp := flag.Float64("hp", math.NaN(), "Modify map's HP, only in cursordance/play modes")
 
 		offset := flag.Int("offset", 0, "Specify local audio offset in ms. Applies to recordings, unlike 'Audio.Offset'. Inverted compared to stable's local offset.")
+
+		flag.BoolVar(&preciseProgress, "preciseprogress", false, "Show rendering progress in 1% increments")
 
 		flag.Parse()
 
@@ -603,7 +607,7 @@ func mainLoopRecord() {
 				timeOffset := p.GetTimeOffset()
 				progress = int(math.Round(timeOffset / p.RunningTime * 100))
 
-				if progress%5 == 0 && lastProgress != progress {
+				if (preciseProgress || progress%5 == 0) && lastProgress != progress {
 					speed := float64(count-lastCount) * (1000 / fps) / (qpc.GetMilliTimeF() - lastRealTime)
 
 					eta := int((p.RunningTime - timeOffset) / 1000 / speed)
