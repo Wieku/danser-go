@@ -224,6 +224,10 @@ func run() {
 		settings.RECORD = recordMode || screenshotMode
 		settings.LOCALOFFSET = *offset
 
+		if *settingsVersion == "credentials" || *settingsVersion == "launcher" {
+			panic(fmt.Sprintf("flag -settings: name \"%s\" is forbidden", *settingsVersion))
+		}
+
 		newSettings := settings.LoadSettings(*settingsVersion)
 
 		if !newSettings && len(os.Args) == 1 {
@@ -413,8 +417,6 @@ func run() {
 		gl.Init()
 
 		extensionCheck()
-
-		C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.RENDERER))))
 
 		glVendor := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VENDOR))))
 		glRenderer := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.RENDERER))))
@@ -741,10 +743,7 @@ func extensionCheck() {
 		"GL_ARB_direct_state_access",
 		"GL_ARB_texture_storage",
 		"GL_ARB_vertex_attrib_binding",
-	}
-
-	if settings.RECORD || settings.Graphics.Experimental.UsePersistentBuffers {
-		extensions = append(extensions, "GL_ARB_buffer_storage")
+		"GL_ARB_buffer_storage",
 	}
 
 	var notSupported []string
@@ -758,8 +757,6 @@ func extensionCheck() {
 	if len(notSupported) > 0 {
 		panic(fmt.Sprintf("Your GPU does not support one or more required OpenGL extensions: %s. Please update your graphics drivers or upgrade your GPU", notSupported))
 	}
-
-	_ = extensions
 }
 
 func pushFrame() {
