@@ -25,10 +25,10 @@ type knockout struct {
 	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit"`
 
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
-	GraceEndTime float64 `string:"true" min:"-10"`
+	GraceEndTime float64 `string:"true" min:"-10" max:"1000000"`
 
 	// In Mode = XReplays it will show combo break bubble if combo was bigger than BubbleMinimumCombo
-	BubbleMinimumCombo int `string:"true" min:"1"`
+	BubbleMinimumCombo int `string:"true" min:"1" max:"1000000"`
 
 	// Exclude plays which contain one of the mods set here
 	ExcludeMods string
