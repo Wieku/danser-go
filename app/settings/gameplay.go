@@ -231,7 +231,7 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	HUDFont                 string
+	HUDFont                 string `file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf"`
 	ShowResultsScreen       bool
 	ResultsScreenTime       float64
 	ResultsUseLocalTimeZone bool
@@ -370,6 +370,6 @@ type strainGraph struct {
 }
 
 type underlay struct {
-	Path       string
+	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png"`
 	AboveHpBar bool
 }
