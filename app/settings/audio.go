@@ -33,7 +33,7 @@ type audio struct {
 	IgnoreBeatmapSampleVolume  bool        `label:"Ignore hitsound volume changes"` //= false
 	PlayNightcoreSamples       bool        `label:"Play nightcore beats"`
 	BeatScale                  float64     `min:"1.0" max:"2.0"`
-	BeatUseTimingPoints        bool        `label:"Add metronome beats"`
+	BeatUseTimingPoints        bool        `label:"Add metronome to Beat scale"`
 	NonWindows                 *nonWindows `json:"Linux/Unix" label:"Linux/Unix only"`
 }
 
