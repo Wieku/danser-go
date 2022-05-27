@@ -233,8 +233,8 @@ type gameplay struct {
 	Underlay                *underlay
 	HUDFont                 string `file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf"`
 	ShowResultsScreen       bool
-	ResultsScreenTime       float64
-	ResultsUseLocalTimeZone bool
+	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs"`
+	ResultsUseLocalTimeZone bool    `label:"Show PC's time zone instead of UTC"`
 	ShowWarningArrows       bool
 	ShowHitLighting         bool
 	FlashlightDim           float64
@@ -319,7 +319,7 @@ type ppCounter struct {
 	Decimals         int    `max:"5"`
 	Align            string `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	ShowInResults    bool
-	ShowPPComponents bool
+	ShowPPComponents bool `label:"Show PP breakdown"`
 	Static           bool
 }
 
@@ -331,7 +331,7 @@ type hitCounter struct {
 	Align            string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	ValueAlign       string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	Vertical         bool
-	Show300          bool
+	Show300          bool `label:"Show perfect hits"`
 	ShowSliderBreaks bool
 }
 

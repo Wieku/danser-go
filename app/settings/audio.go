@@ -29,11 +29,11 @@ type audio struct {
 	SampleVolume               float64 `scale:"100.0" format:"%.0f%%"` //=0.5
 	Offset                     int64   `min:"-300" max:"300" format:"%dms" label:"Universal Offset"`
 	HitsoundPositionMultiplier float64
-	IgnoreBeatmapSamples       bool //= false
-	IgnoreBeatmapSampleVolume  bool //= false
-	PlayNightcoreSamples       bool
-	BeatScale                  float64 `min:"1.0" max:"2.0"`
-	BeatUseTimingPoints        bool
+	IgnoreBeatmapSamples       bool        `label:"Ignore beatmap hitsounds"`       //= false
+	IgnoreBeatmapSampleVolume  bool        `label:"Ignore hitsound volume changes"` //= false
+	PlayNightcoreSamples       bool        `label:"Play nightcore beats"`
+	BeatScale                  float64     `min:"1.0" max:"2.0"`
+	BeatUseTimingPoints        bool        `label:"Add metronome beats"`
 	NonWindows                 *nonWindows `json:"Linux/Unix" label:"Linux/Unix only"`
 }
 

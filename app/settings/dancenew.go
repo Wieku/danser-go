@@ -75,7 +75,7 @@ type cursorDance struct {
 	ComboTag           bool
 	Battle             bool
 	DoSpinnersTogether bool
-	TAGSliderDance     bool
+	TAGSliderDance     bool `label:"TAG slider dance"`
 	MoverSettings      *moverSettings
 }
 

@@ -102,7 +102,7 @@ type objects struct {
 	DrawFollowPoints    bool
 	LoadSpinners        bool
 	ScaleToTheBeat      bool //true, objects size is changing with music peak amplitude
-	StackEnabled        bool //true, stack leniency
+	StackEnabled        bool `label:"Enable stack leniency"` //true, stack leniency
 	Sliders             *sliders
 	Colors              *objectcolors
 }
@@ -130,7 +130,7 @@ type quality struct {
 type snaking struct {
 	In                 bool
 	Out                bool
-	OutFadeInstant     bool
+	OutFadeInstant     bool `label:"Fade out the slider instantly"`
 	DurationMultiplier float64
 	FadeMultiplier     float64
 }
@@ -148,7 +148,7 @@ type objectcolors struct {
 
 type sliderColors struct {
 	WhiteScorePoints      bool    //true
-	ScorePointColorOffset float64 //0.0, hue offset of the followpoint
+	ScorePointColorOffset float64 `min:"-180" max:"180" format:"%.0f°"` //0.0, hue offset of the followpoint
 	SliderBallTint        bool
 	Border                *borderColors
 	Body                  *bodyColors
@@ -158,7 +158,7 @@ type borderColors struct {
 	UseHitCircleColor          bool
 	Color                      *color
 	EnableCustomGradientOffset bool
-	CustomGradientOffset       float64 //18, hue offset of slider outer border
+	CustomGradientOffset       float64 `min:"-180" max:"180" format:"%.0f°"` //18, hue offset of slider outer border
 }
 
 type bodyColors struct {
