@@ -23,7 +23,7 @@ type graphics struct {
 	fSize        string `vector:"true" label:"Fullscreen resolution" left:"Width" right:"Height"`
 	Width        int64  `min:"1" max:"30720"`
 	Height       int64  `min:"1" max:"17280"`
-	wSize        string `vector:"true" label:"Windowed size" left:"WindowWidth" right:"WindowHeight"`
+	wSize        string `vector:"true" label:"Windowed resolution" left:"WindowWidth" right:"WindowHeight"`
 	WindowWidth  int64  `min:"1" max:"30720"`
 	WindowHeight int64  `min:"1" max:"17280"`
 	Fullscreen   bool   //true
