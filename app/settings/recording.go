@@ -125,7 +125,7 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 	case "h264_qsv":
 		return g.H264QSVSettings
 	case "hevc_qsv":
-		return g.H264QSVSettings
+		return g.HEVCQSVSettings
 	default:
 		return g.CustomSettings
 	}
