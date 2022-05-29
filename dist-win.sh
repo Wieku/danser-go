@@ -4,6 +4,7 @@ export GOARCH=amd64
 export CGO_ENABLED=1
 export CC=x86_64-w64-mingw32-gcc
 export CXX=x86_64-w64-mingw32-g++
+export CGO_LDFLAGS="-static-libstdc++ -static-libgcc -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic"
 export WINDRESFLAGS="-F pe-x86-64"
 
 exec=$1
@@ -51,5 +52,5 @@ windres -l 0 $WINDRESFLAGS -i danser.rc -o danser.syso --codepage=65001
 
 go run tools/assets/assets.go ./
 go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -o danser.exe -v -x
-go run tools/pack/pack.go danser-$exec-win.zip danser.exe bass.dll bass_fx.dll bassmix.dll libyuv.dll assets.dpak libwinpthread-1.dll
+go run tools/pack/pack.go danser-$exec-win.zip danser.exe bass.dll bass_fx.dll bassmix.dll libyuv.dll assets.dpak
 rm -f danser.exe assets.dpak danser.rc danser.syso
