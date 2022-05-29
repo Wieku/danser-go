@@ -134,8 +134,6 @@ func startVideo(fps, _w, _h int) {
 		"-an",
 
 		"-vf", "vflip" + videoFilters,
-		"-profile:v", settings.Recording.Profile,
-		"-preset", settings.Recording.Preset,
 		"-c:v", settings.Recording.Encoder,
 		"-color_range", "1",
 		"-colorspace", "1",
@@ -148,10 +146,11 @@ func startVideo(fps, _w, _h int) {
 		options = append(options, "-pix_fmt", strings.ToLower(settings.Recording.PixelFormat))
 	}
 
-	encOptions := strings.TrimSpace(settings.Recording.EncoderOptions)
-	if encOptions != "" {
-		split := strings.Split(encOptions, " ")
-		options = append(options, split...)
+	encOptions, err := settings.Recording.GetEncoderOptions().GenerateFFmpegArgs()
+	if err != nil {
+		panic(fmt.Sprintf("encoder \"%s\": %s", settings.Recording.Encoder, err))
+	} else if encOptions != nil {
+		options = append(options, encOptions...)
 	}
 
 	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "video."+settings.Recording.Container))
@@ -159,8 +158,6 @@ func startVideo(fps, _w, _h int) {
 	log.Println("Running ffmpeg with options:", options)
 
 	cmdVideo = exec.Command(ffmpegExec, options...)
-
-	var err error
 
 	if runtime.GOOS == "windows" {
 		videoPipe, err = cmdVideo.StdinPipe()
