@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"log"
 	"sync"
 	"time"
@@ -46,7 +47,7 @@ func Connect() {
 
 	endSync.Add(1)
 
-	go func() {
+	goroutines.Run(func() {
 		for {
 			f, keepOpen := <-queue
 
@@ -59,7 +60,7 @@ func Connect() {
 				break
 			}
 		}
-	}()
+	})
 }
 
 func SetDuration(duration int64) {

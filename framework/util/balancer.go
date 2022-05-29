@@ -1,6 +1,7 @@
 package util
 
 import (
+	"github.com/wieku/danser-go/framework/goroutines"
 	"sync"
 )
 
@@ -15,13 +16,13 @@ func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 
-		go func() {
+		goroutines.Run(func() {
 			defer wg.Done()
 
 			for candidate := range channel {
 				channelB <- workerFunc(candidate)
 			}
-		}()
+		})
 	}
 
 	for _, candidate := range candidates {

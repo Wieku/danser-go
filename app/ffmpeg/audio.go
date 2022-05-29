@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"io"
 	"log"
 	"os"
@@ -106,9 +107,7 @@ func startAudio(audioFPS float64) {
 
 	endSyncAudio.Add(1)
 
-	go func() {
-		runtime.LockOSThread()
-
+	goroutines.RunOS(func() {
 		for {
 			data, keepOpen := <-audioQueue
 
@@ -130,7 +129,7 @@ func startAudio(audioFPS float64) {
 				break
 			}
 		}
-	}()
+	})
 }
 
 func stopAudio() {

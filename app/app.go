@@ -27,6 +27,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -83,6 +84,13 @@ var screenshotTime float64
 var preciseProgress bool
 
 func run() {
+	defer func() {
+		if err := recover(); err != nil {
+			stackTrace := goroutines.GetStackTrace(4)
+			closeHandler(err, stackTrace)
+		}
+	}()
+
 	mainthread.Call(func() {
 		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
 
@@ -862,20 +870,17 @@ func printPlatformInfo() {
 
 func Run() {
 	defer func() {
-		settings.CloseWatcher()
-		discord.Disconnect()
-		platform.EnableQuickEdit()
+		var err any
+		var stackTrace []string
 
-		if err := recover(); err != nil {
-			log.Println("panic:", err)
-
-			for _, s := range utils.GetPanicStackTrace() {
-				log.Println(s)
-			}
-
-			os.Exit(1)
+		if err = recover(); err != nil {
+			stackTrace = goroutines.GetStackTrace(4)
 		}
+
+		closeHandler(err, stackTrace)
 	}()
+
+	goroutines.SetCrashHandler(closeHandler)
 
 	log.Println("danser-go version:", build.VERSION)
 
@@ -895,4 +900,22 @@ func Run() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	mainthread.CallQueueCap = 100000
 	mainthread.Run(run)
+}
+
+func closeHandler(err any, stackTrace []string) {
+	settings.CloseWatcher()
+	discord.Disconnect()
+	platform.EnableQuickEdit()
+
+	if err != nil {
+		log.Println("panic:", err)
+
+		for _, s := range stackTrace {
+			log.Println(s)
+		}
+
+		os.Exit(1)
+	}
+
+	log.Println("Exiting normally.")
 }

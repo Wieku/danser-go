@@ -4,6 +4,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"log"
 	"os"
 	"path/filepath"
@@ -75,7 +76,7 @@ func setupWatcher(file string) {
 		log.Fatal(err)
 	}
 
-	go func() {
+	goroutines.Run(func() {
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -108,7 +109,7 @@ func setupWatcher(file string) {
 				log.Println("error:", err)
 			}
 		}
-	}()
+	})
 
 	abs, _ := filepath.Abs(file)
 

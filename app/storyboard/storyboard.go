@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	files2 "github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -351,7 +352,7 @@ func (storyboard *Storyboard) StartThread() {
 		return
 	}
 
-	go func() {
+	goroutines.RunOS(func() {
 		lastTime := qpc.GetMilliTimeF()
 
 		for storyboard.shouldRun {
@@ -363,7 +364,7 @@ func (storyboard *Storyboard) StartThread() {
 
 			storyboard.limiter.Sync()
 		}
-	}()
+	})
 
 	storyboard.shouldRun = true
 }

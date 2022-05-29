@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/graphics/font"
@@ -31,7 +32,6 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -464,21 +464,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		return player
 	}
 
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Println("panic:", err)
-
-				for _, s := range utils.GetPanicStackTrace() {
-					log.Println(s)
-				}
-
-				os.Exit(1)
-			}
-		}()
-
-		runtime.LockOSThread()
-
+	goroutines.RunOS(func() {
 		var lastTimeNano = qpc.GetNanoTime()
 
 		for !input.Win.ShouldClose() {
@@ -529,7 +515,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		player.musicPlayer.Stop()
 		bass.StopLoops()
-	}()
+	})
 
 	return player
 }

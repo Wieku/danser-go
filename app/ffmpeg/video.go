@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
@@ -199,9 +200,7 @@ func startVideo(fps, _w, _h int) {
 
 	endSyncVideo.Add(1)
 
-	go func() {
-		runtime.LockOSThread()
-
+	goroutines.RunOS(func() {
 		for {
 			f, keepOpen := <-videoQueue
 
@@ -214,7 +213,7 @@ func startVideo(fps, _w, _h int) {
 				break
 			}
 		}
-	}()
+	})
 }
 
 func stopVideo() {
