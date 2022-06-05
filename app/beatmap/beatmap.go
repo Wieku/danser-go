@@ -38,7 +38,8 @@ type BeatMap struct {
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 
-	Stars float64
+	Stars        float64
+	StarsVersion int
 
 	Length   int
 	Circles  int

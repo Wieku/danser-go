@@ -24,7 +24,7 @@ import (
 
 var dbFile *sql.DB
 
-const databaseVersion = 20210423
+const databaseVersion = 20220605
 
 var currentPreVersion = databaseVersion
 var currentSchemaPreVersion = databaseVersion
@@ -62,6 +62,7 @@ func Init() error {
 		&M20210104{},
 		&M20210326{},
 		&M20210423{},
+		&M20220605{},
 	}
 
 	dbFile, err = sql.Open("sqlite3", filepath.Join(env.DataDir(), "danser.db"))
@@ -70,7 +71,7 @@ func Init() error {
 	}
 
 	_, err = dbFile.Exec(`
-		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1, bpmMin REAL, bpmMax REAL, circles INTEGER, sliders INTEGER, spinners INTEGER, endTime INTEGER, setID INTEGER, mapID INTEGER);
+		CREATE TABLE IF NOT EXISTS beatmaps (dir TEXT, file TEXT, lastModified INTEGER, title TEXT, titleUnicode TEXT, artist TEXT, artistUnicode TEXT, creator TEXT, version TEXT, source TEXT, tags TEXT, cs REAL, ar REAL, sliderMultiplier REAL, sliderTickRate REAL, audioFile TEXT, previewTime INTEGER, sampleSet INTEGER, stackLeniency REAL, mode INTEGER, bg TEXT, md5 TEXT, dateAdded INTEGER, playCount INTEGER, lastPlayed INTEGER, hpdrain REAL, od REAL, stars REAL DEFAULT -1, bpmMin REAL, bpmMax REAL, circles INTEGER, sliders INTEGER, spinners INTEGER, endTime INTEGER, setID INTEGER, mapID INTEGER, starsVersion INTEGER DEFAULT 0);
 		CREATE INDEX IF NOT EXISTS idx ON beatmaps (dir, file);
 		CREATE TABLE IF NOT EXISTS info (key TEXT NOT NULL UNIQUE, value TEXT);
 	`)
@@ -488,7 +489,7 @@ func insertBeatmaps(bMaps []*beatmap.BeatMap) {
 
 	if err == nil {
 		var st *sql.Stmt
-		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		st, err = tx.Prepare("INSERT INTO beatmaps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
 		if err == nil {
 			for _, bMap := range bMaps {
@@ -528,6 +529,7 @@ func insertBeatmaps(bMaps []*beatmap.BeatMap) {
 					bMap.Length,
 					bMap.SetID,
 					bMap.ID,
+					bMap.StarsVersion,
 				)
 
 				if err1 != nil {
@@ -594,6 +596,7 @@ func loadBeatmapsFromDatabase() []*beatmap.BeatMap {
 			&beatMap.Length,
 			&beatMap.SetID,
 			&beatMap.ID,
+			&beatMap.StarsVersion,
 		)
 
 		beatMap.Diff.SetCS(mutils.ClampF(cs, 0, 10))
