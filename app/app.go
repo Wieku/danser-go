@@ -589,6 +589,10 @@ func mainLoopRecord() {
 
 	var lastProgress, progress int
 
+	if preciseProgress {
+		lastProgress = -1
+	}
+
 	for !p.Update(updateDelta) {
 		deltaSumA += updateDelta
 		for deltaSumA >= audioDelta {
