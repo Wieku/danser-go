@@ -16,7 +16,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
 	"math"
 	"sort"
 	"strconv"
@@ -413,9 +412,9 @@ func (slider *Slider) SetTiming(timings *Timings) {
 
 	slider.EndPosRaw = slider.GetPositionAt(slider.EndTime)
 
-	if len(slider.scorePath) == 0 || slider.StartTime == slider.EndTime {
-		log.Println("Warning: slider", slider.HitObjectID, "at ", slider.StartTime, "is broken.")
-	}
+	//if len(slider.scorePath) == 0 || slider.StartTime == slider.EndTime {
+	//	log.Println("Warning: slider", slider.HitObjectID, "at ", slider.StartTime, "is broken.")
+	//}
 
 	slider.calculateFollowPoints()
 
