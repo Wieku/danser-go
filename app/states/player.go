@@ -811,7 +811,7 @@ func (player *Player) drawEpilepsyWarning() {
 }
 
 func (player *Player) drawCoin() {
-	if player.fxGlider.GetValue() < 0.01 {
+	if !settings.Playfield.Logo.Enabled || player.fxGlider.GetValue() < 0.01 {
 		return
 	}
 

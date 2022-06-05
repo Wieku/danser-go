@@ -51,6 +51,7 @@ func initPlayfield() *playfield {
 			},
 		},
 		Logo: &logo{
+			Enabled:      true,
 			DrawSpectrum: false,
 			Dim: &dim{
 				Intro:  0,
@@ -143,6 +144,7 @@ type triangles struct {
 }
 
 type logo struct {
+	Enabled      bool
 	DrawSpectrum bool `label:"Draw spectrum analyzer"`
 	Dim          *dim
 }
