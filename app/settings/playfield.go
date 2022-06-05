@@ -28,8 +28,9 @@ func initPlayfield() *playfield {
 				Breaks: 0.5,
 			},
 			Parallax: &parallax{
-				Amount: 0.1,
-				Speed:  0.5,
+				Enabled: true,
+				Amount:  0.1,
+				Speed:   0.5,
 			},
 			Blur: &blur{
 				Enabled: false,
@@ -116,8 +117,10 @@ type background struct {
 }
 
 type parallax struct {
+	Enabled bool
+
 	// Amount of parallax, also scales bg by (1+Amount), set to 0 to disable it
-	Amount float64
+	Amount float64 `min:"-1"`
 
 	// Speed of parallax
 	Speed float64

@@ -125,14 +125,16 @@ func (bg *Background) Update(time float64, x, y float64) {
 	pX := 0.0
 	pY := 0.0
 
-	if math.Abs(settings.Playfield.Background.Parallax.Amount) > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) && settings.DIVIDES == 1 {
-		pX = mutils.ClampF(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
-		pY = mutils.ClampF(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+	parallax := settings.Playfield.Background.Parallax
+
+	if parallax.Enabled && math.Abs(parallax.Amount) > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) && settings.DIVIDES == 1 {
+		pX = mutils.ClampF(x, -1, 1) * parallax.Amount
+		pY = mutils.ClampF(y, -1, 1) * parallax.Amount
 	}
 
 	delta := math.Abs(time - bg.lastTime)
 
-	p := math.Pow(1-settings.Playfield.Background.Parallax.Speed, delta/100)
+	p := math.Pow(1-parallax.Speed, delta/100)
 
 	bg.position.X = pX*(1-p) + p*bg.position.X
 	bg.position.Y = pY*(1-p) + p*bg.position.Y
