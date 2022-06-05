@@ -80,14 +80,14 @@ func (d *defaultsFactory) InitSpline() *spline {
 type momentum struct {
 	SkipStackAngles bool
 	StreamRestrict  bool
-	DurationMult    float64
-	DurationTrigger float64
-	StreamMult      float64
-	RestrictAngle   float64
-	RestrictArea    float64
+	DurationMult    float64 `max:"4"`
+	DurationTrigger float64 `max:"4000" format:"%.0fms"`
+	StreamMult      float64 `min:"-5" max:"5"`
+	RestrictAngle   float64 `min:"0" max:"180" format:"%.0f°"`
+	RestrictArea    float64 `min:"0" max:"180" format:"%.0f°"`
 	RestrictInvert  bool
-	DistanceMult    float64
-	DistanceMultOut float64
+	DistanceMult    float64 `min:"-2" max:"2"`
+	DistanceMultOut float64 `min:"-2" max:"2"`
 }
 
 func (d *defaultsFactory) InitMomentum() *momentum {
