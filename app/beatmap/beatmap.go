@@ -80,6 +80,11 @@ func (beatMap *BeatMap) Reset() {
 	}
 }
 
+func (beatMap *BeatMap) Clear() {
+	beatMap.HitObjects = make([]objects.IHitObject, 0)
+	beatMap.Timings = objects.NewTimings()
+}
+
 func (beatMap *BeatMap) Update(time float64) {
 	beatMap.Timings.Update(time)
 

@@ -8,6 +8,7 @@ import (
 	"github.com/karrick/godirwalk"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
@@ -346,6 +347,80 @@ func importMaps(skipDatabaseCheck bool) {
 		} else {
 			log.Println("DatabaseManager: No new/updated beatmaps imported.")
 		}
+	}
+}
+
+func UpdateStarRating(maps []*beatmap.BeatMap) {
+	var toCalculate []*beatmap.BeatMap
+
+	for _, b := range maps {
+		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < performance.CurrentVersion) {
+			toCalculate = append(toCalculate, b)
+		}
+	}
+
+	if len(toCalculate) > 0 {
+		log.Println("DatabaseManager: Updating star rating...")
+		log.Println("DatabaseManager: Calculating star rating...")
+
+		util.Balance(4, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
+			defer func() {
+				bMap.StarsVersion = performance.CurrentVersion
+				bMap.Clear() //Clear objects and timing to avoid OOM
+
+				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
+					bMap.Stars = 0
+					log.Println("DatabaseManager: Failed to load \"", bMap.Dir+"/"+bMap.File, "\":", err)
+				}
+			}()
+
+			beatmap.ParseTimingPointsAndPauses(bMap)
+			beatmap.ParseObjects(bMap)
+
+			if len(bMap.HitObjects) < 2 {
+				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")
+				bMap.Stars = 0
+			} else {
+				attr := performance.CalculateSingle(bMap.HitObjects, bMap.Diff, false)
+				bMap.Stars = attr.Total
+			}
+
+			return bMap
+		})
+
+		log.Println("DatabaseManager: Star rating calculated!")
+
+		tx, err := dbFile.Begin()
+		if err != nil {
+			panic(err)
+		}
+
+		st, err := tx.Prepare("UPDATE beatmaps SET stars = ?, starsVersion = ? WHERE dir = ? AND file = ?")
+		if err != nil {
+			panic(err)
+		}
+
+		for _, bMap := range toCalculate {
+			_, err1 := st.Exec(
+				bMap.Stars,
+				bMap.StarsVersion,
+				bMap.Dir,
+				bMap.File)
+
+			if err1 != nil {
+				log.Println(err1)
+			}
+		}
+
+		if err = st.Close(); err != nil {
+			panic(err)
+		}
+
+		if err = tx.Commit(); err != nil {
+			panic(err)
+		}
+
+		log.Println("DatabaseManager: Star rating updated!")
 	}
 }
 

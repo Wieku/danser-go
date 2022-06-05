@@ -13,6 +13,7 @@ import (
 const (
 	// StarScalingFactor is a global stars multiplier
 	StarScalingFactor float64 = 0.0675
+	CurrentVersion    int     = 20211112
 )
 
 type Attributes struct {
