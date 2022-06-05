@@ -28,10 +28,10 @@ var nvencPresets = []string{
 
 type h264NvencSettings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,cqp|Constant Frame Compression (CQP),cq|Constant Quality"`
-	Bitrate           string
-	CQ                int    `string:"true" min:"0" max:"51"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	CQ                int    `string:"true" min:"0" max:"51" showif:"RateControl=cqp,cq"`
 	Profile           string `combo:"baseline,main,high"`
-	Preset            string `combo:"slow,medium,fast,p1,p2,p3,p4,p5,p6,p7"`
+	Preset            string `combo:"fast|fast (legacy),medium|medium (legacy),slow|slow (legacy),p1|fastest (p1),p2|faster (p2),p3|fast (p3),p4|medium (p4),p5|slow (p5),p6|slower (p6),p7|slowest (p7)"`
 	AdditionalOptions string
 }
 
@@ -57,9 +57,9 @@ func (s *h264NvencSettings) GenerateFFmpegArgs() (ret []string, err error) {
 
 type hevcNvencSettings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,cqp|Constant Frame Compression (CQP),cq|Constant Quality"`
-	Bitrate           string
-	CQ                int    `string:"true" min:"0" max:"51"`
-	Preset            string `combo:"slow,medium,fast,p1,p2,p3,p4,p5,p6,p7"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	CQ                int    `string:"true" min:"0" max:"51" showif:"RateControl=cqp,cq"`
+	Preset            string `combo:"fast|fast (legacy),medium|medium (legacy),slow|slow (legacy),p1|fastest (p1),p2|faster (p2),p3|fast (p3),p4|medium (p4),p5|slow (p5),p6|slower (p6),p7|slowest (p7)"`
 	AdditionalOptions string
 }
 

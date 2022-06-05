@@ -25,8 +25,8 @@ var qsvPresets = []string{
 
 type h264QSVSettings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,icq|Intelligent Constant Quality"`
-	Bitrate           string
-	Quality           int    `string:"true" min:"1" max:"51"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	Quality           int    `string:"true" min:"1" max:"51" showif:"RateControl=icq"`
 	Profile           string `combo:"baseline,main,high"`
 	Preset            string `combo:"veryfast,faster,fast,medium,slow,slower,veryslow"`
 	AdditionalOptions string
@@ -54,8 +54,8 @@ func (s *h264QSVSettings) GenerateFFmpegArgs() (ret []string, err error) {
 
 type hevcQSVSettings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,icq|Intelligent Constant Quality"`
-	Bitrate           string
-	Quality           int    `string:"true" min:"1" max:"51"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	Quality           int    `string:"true" min:"1" max:"51" showif:"RateControl=icq"`
 	Preset            string `combo:"veryfast,faster,fast,medium,slow,slower,veryslow"`
 	AdditionalOptions string
 }

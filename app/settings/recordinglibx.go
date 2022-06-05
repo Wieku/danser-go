@@ -29,8 +29,8 @@ var libxPresets = []string{
 
 type x264Settings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,crf|Constant Rate Factor (CRF)"`
-	Bitrate           string
-	CRF               int    `string:"true" min:"0" max:"51"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	CRF               int    `string:"true" min:"0" max:"51" showif:"RateControl=crf"`
 	Profile           string `combo:"baseline,main,high"`
 	Preset            string `combo:"ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo"`
 	AdditionalOptions string
@@ -58,8 +58,8 @@ func (s *x264Settings) GenerateFFmpegArgs() (ret []string, err error) {
 
 type x265Settings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,crf|Constant Rate Factor (CRF)"`
-	Bitrate           string
-	CRF               int    `string:"true" min:"0" max:"51"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	CRF               int    `string:"true" min:"0" max:"51" showif:"RateControl=crf"`
 	Preset            string `combo:"ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo"`
 	AdditionalOptions string
 }
