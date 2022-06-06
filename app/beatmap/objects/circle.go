@@ -132,7 +132,7 @@ func (circle *Circle) PlaySound() {
 	audio.PlaySample(sampleSet, circle.BasicHitSound.AdditionSet, circle.sample, index, point.SampleVolume, circle.HitObjectID, circle.GetStackedStartPosition().X64())
 }
 
-func (circle *Circle) SetTiming(timings *Timings) {
+func (circle *Circle) SetTiming(timings *Timings, _ bool) {
 	circle.Timings = timings
 }
 

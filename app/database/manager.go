@@ -375,7 +375,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap) {
 			}()
 
 			beatmap.ParseTimingPointsAndPauses(bMap)
-			beatmap.ParseObjects(bMap, false)
+			beatmap.ParseObjects(bMap, true, false)
 
 			if len(bMap.HitObjects) < 2 {
 				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")

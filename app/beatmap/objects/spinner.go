@@ -86,7 +86,7 @@ func (spinner *Spinner) GetPosition() vector.Vector2f {
 	return spinner.pos
 }
 
-func (spinner *Spinner) SetTiming(timings *Timings) {
+func (spinner *Spinner) SetTiming(timings *Timings, _ bool) {
 	spinner.Timings = timings
 }
 

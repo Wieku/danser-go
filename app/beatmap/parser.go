@@ -297,7 +297,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 	beatMap.FinalizePoints()
 }
 
-func ParseObjects(beatMap *BeatMap, parseColors bool) {
+func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
@@ -378,7 +378,7 @@ func ParseObjects(beatMap *BeatMap, parseColors bool) {
 	}
 
 	for _, obj := range beatMap.HitObjects {
-		obj.SetTiming(beatMap.Timings)
+		obj.SetTiming(beatMap.Timings, diffCalcOnly)
 	}
 
 	calculateStackLeniency(beatMap)

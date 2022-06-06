@@ -538,7 +538,7 @@ func run() {
 
 		beatMap.Diff.SetMods(modsParsed)
 		beatmap.ParseTimingPointsAndPauses(beatMap)
-		beatmap.ParseObjects(beatMap, true)
+		beatmap.ParseObjects(beatMap, false, true)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
 
