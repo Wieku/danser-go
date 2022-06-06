@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const bufferSize = 10 * 1024 * 1024
@@ -140,6 +141,13 @@ func getSection(line string) string {
 	return ""
 }
 
+var bufferPool = &sync.Pool{
+	New: func() any {
+		buf := make([]byte, bufferSize)
+		return &buf
+	},
+}
+
 func ParseBeatMap(beatMap *BeatMap) error {
 	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
@@ -148,7 +156,12 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 	defer file.Close()
 
-	scanner := files.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScanner(file)
+
+	buf := bufferPool.Get().(*[]byte)
+	scanner.Buffer(*buf, cap(*buf))
+
+	defer bufferPool.Put(buf)
 
 	var currentSection string
 
@@ -251,7 +264,12 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := files.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScanner(file)
+
+	buf := bufferPool.Get().(*[]byte)
+	scanner.Buffer(*buf, cap(*buf))
+
+	defer bufferPool.Put(buf)
 
 	var currentSection string
 
@@ -287,7 +305,12 @@ func ParseObjects(beatMap *BeatMap, parseColors bool) {
 
 	defer file.Close()
 
-	scanner := files.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScanner(file)
+
+	buf := bufferPool.Get().(*[]byte)
+	scanner.Buffer(*buf, cap(*buf))
+
+	defer bufferPool.Put(buf)
 
 	var currentSection string
 
