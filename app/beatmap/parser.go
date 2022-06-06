@@ -279,7 +279,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 	beatMap.FinalizePoints()
 }
 
-func ParseObjects(beatMap *BeatMap) {
+func ParseObjects(beatMap *BeatMap, parseColors bool) {
 	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
@@ -307,8 +307,10 @@ func ParseObjects(beatMap *BeatMap) {
 
 		switch currentSection {
 		case "Colours": //nolint:misspell
-			if arr := tokenize(line, ":"); arr != nil {
-				skin.AddBeatmapColor(arr)
+			if parseColors {
+				if arr := tokenize(line, ":"); arr != nil {
+					skin.AddBeatmapColor(arr)
+				}
 			}
 		case "HitObjects":
 			if arr := tokenize(line, ","); arr != nil {
@@ -321,7 +323,9 @@ func ParseObjects(beatMap *BeatMap) {
 		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
-	skin.FinishBeatmapColors()
+	if parseColors {
+		skin.FinishBeatmapColors()
+	}
 
 	num := 0
 	comboNumber := 1

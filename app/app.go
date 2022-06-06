@@ -538,7 +538,7 @@ func run() {
 
 		beatMap.Diff.SetMods(modsParsed)
 		beatmap.ParseTimingPointsAndPauses(beatMap)
-		beatmap.ParseObjects(beatMap)
+		beatmap.ParseObjects(beatMap, true)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
 
@@ -632,7 +632,7 @@ func mainLoopRecord() {
 						etaText += strconv.Itoa(hours) + "h"
 					}
 
-					if minutes := eta / 60; minutes > 0 {
+					if minutes := (eta / 60) % 60; minutes > 0 {
 						etaText += fmt.Sprintf("%02dm", minutes%60)
 					}
 
