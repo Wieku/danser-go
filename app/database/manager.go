@@ -12,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/util"
 	"io"
@@ -350,7 +351,7 @@ func importMaps(skipDatabaseCheck bool) {
 	}
 }
 
-func UpdateStarRating(maps []*beatmap.BeatMap) {
+func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, target int)) {
 	var toCalculate []*beatmap.BeatMap
 
 	for _, b := range maps {
@@ -360,11 +361,24 @@ func UpdateStarRating(maps []*beatmap.BeatMap) {
 	}
 
 	if len(toCalculate) > 0 {
-		log.Println("DatabaseManager: Updating star rating...")
-		log.Println("DatabaseManager: Calculating star rating...")
+		recChannel := make(chan int, 4)
+
+		processed := 0
+		target := len(toCalculate)
+
+		goroutines.Run(func() {
+			progressListener(processed, target)
+
+			for range recChannel {
+				processed++
+				progressListener(processed, target)
+			}
+		})
 
 		util.Balance(4, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
 			defer func() {
+				recChannel <- 0
+
 				bMap.StarsVersion = performance.CurrentVersion
 				bMap.Clear() //Clear objects and timing to avoid OOM
 
@@ -387,6 +401,8 @@ func UpdateStarRating(maps []*beatmap.BeatMap) {
 
 			return bMap
 		})
+
+		close(recChannel)
 
 		log.Println("DatabaseManager: Star rating calculated!")
 
