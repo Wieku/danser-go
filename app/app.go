@@ -251,7 +251,7 @@ func run() {
 			if err != nil {
 				log.Println("Failed to initialize database:", err)
 			} else {
-				beatmaps := database.LoadBeatmaps(*noDbCheck)
+				beatmaps := database.LoadBeatmaps(*noDbCheck, nil)
 
 				if *id > -1 {
 					for _, b := range beatmaps {

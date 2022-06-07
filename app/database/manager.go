@@ -150,12 +150,12 @@ func Init() error {
 	return nil
 }
 
-func LoadBeatmaps(skipDatabaseCheck bool) []*beatmap.BeatMap {
+func LoadBeatmaps(skipDatabaseCheck bool, importListener ImportListener) []*beatmap.BeatMap {
 	if settings.General.UnpackOszFiles {
 		unpackMaps()
 	}
 
-	importMaps(skipDatabaseCheck)
+	importMaps(skipDatabaseCheck, importListener)
 
 	log.Println("DatabaseManager: Loading beatmaps from database...")
 
@@ -197,7 +197,19 @@ func unpackMaps() {
 	})
 }
 
-func importMaps(skipDatabaseCheck bool) {
+type ImportListener func(stage ImportStage, progress, target int)
+
+type ImportStage int
+
+const (
+	Discovery = ImportStage(iota)
+	Comparison
+	Cleanup
+	Import
+	Finalize
+)
+
+func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
 	cachedFolders, mapsInDB := getLastModified()
 
 	candidates := make([]mapLocation, 0)
@@ -207,6 +219,8 @@ func importMaps(skipDatabaseCheck bool) {
 	if skipDatabaseCheck {
 		log.Println("DatabaseManager: '-nodbcheck' is active so only new directories will be imported.")
 	}
+
+	trySendStatus(importListener, Discovery, 0, 0)
 
 	err := godirwalk.Walk(songsDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
@@ -247,6 +261,8 @@ func importMaps(skipDatabaseCheck bool) {
 
 	mapsToImport := make([]mapLocation, 0)
 
+	trySendStatus(importListener, Comparison, 0, 0)
+
 	for _, candidate := range candidates {
 		partialPath := filepath.Join(candidate.dir, candidate.file)
 		mapPath := filepath.Join(songsDir, partialPath)
@@ -285,6 +301,8 @@ func importMaps(skipDatabaseCheck bool) {
 	log.Println("DatabaseManager: Compare complete.")
 
 	if len(mapsInDB) > 0 && !skipDatabaseCheck {
+		trySendStatus(importListener, Cleanup, 100, 100)
+
 		log.Println("DatabaseManager: Removing leftover maps from database...")
 
 		mapsToRemove := make([]mapLocation, 0, len(mapsInDB))
@@ -301,7 +319,25 @@ func importMaps(skipDatabaseCheck bool) {
 	if len(mapsToImport) > 0 {
 		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps. It may take up to several minutes...")
 
+		recChannel := make(chan int, 4)
+
+		processed := 0
+		target := len(mapsToImport)
+
+		goroutines.Run(func() {
+			trySendStatus(importListener, Import, processed, target)
+
+			for range recChannel {
+				processed++
+				trySendStatus(importListener, Import, processed, target)
+			}
+		})
+
 		newBeatmaps := util.Balance(4, mapsToImport, func(candidate mapLocation) *beatmap.BeatMap {
+			defer func() {
+				recChannel <- 0
+			}()
+
 			partialPath := filepath.Join(candidate.dir, candidate.file)
 			mapPath := filepath.Join(songsDir, partialPath)
 
@@ -339,7 +375,11 @@ func importMaps(skipDatabaseCheck bool) {
 			return nil
 		})
 
+		close(recChannel)
+
 		if len(newBeatmaps) > 0 {
+			trySendStatus(importListener, Finalize, 100, 100)
+
 			log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
 
 			insertBeatmaps(newBeatmaps)
@@ -348,6 +388,12 @@ func importMaps(skipDatabaseCheck bool) {
 		} else {
 			log.Println("DatabaseManager: No new/updated beatmaps imported.")
 		}
+	}
+}
+
+func trySendStatus(listener ImportListener, stage ImportStage, progress, target int) {
+	if listener != nil {
+		listener(stage, progress, target)
 	}
 }
 
