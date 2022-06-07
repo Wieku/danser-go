@@ -375,7 +375,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 			}
 		})
 
-		util.Balance(4, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
+		util.Balance(1, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap { //Using only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
 			defer func() {
 				recChannel <- 0
 
