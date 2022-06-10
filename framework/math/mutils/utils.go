@@ -1,8 +1,10 @@
 package mutils
 
 import (
+	"fmt"
 	"golang.org/x/exp/constraints"
 	"math"
+	"strings"
 )
 
 func ClampF[T constraints.Float](x, min, max T) T {
@@ -31,4 +33,9 @@ func Clamp[T constraints.Integer](x, min, max T) T {
 
 func Lerp[T constraints.Float](min, max, t T) T {
 	return min + (max-min)*t
+}
+
+// FormatWOZeros formats the float with specified precision but removes trailing zeros
+func FormatWOZeros[T constraints.Float](val T, precision int) string {
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.*f", precision, val), "0"), ".")
 }
