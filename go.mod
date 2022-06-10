@@ -36,6 +36,18 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
-require golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
+require (
+	github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf
+	github.com/sqweek/dialog v0.0.0-20220504154117-be45b268883a
+	golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
+)
 
-require github.com/rivo/uniseg v0.2.0 // indirect
+require (
+	//github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1
+	github.com/inkyblackness/imgui-go/v4 v4.4.1-0.20220209062255-f8ed29c1276f
+	github.com/rivo/uniseg v0.2.0 // indirect
+)
+
+replace github.com/inkyblackness/imgui-go/v4 => github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1
+
+replace github.com/sqweek/dialog => github.com/wieku/dialog v0.0.0-20220604021040-6e9dd6e8efa4

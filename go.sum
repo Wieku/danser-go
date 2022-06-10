@@ -4,6 +4,8 @@ github.com/Microsoft/go-winio v0.5.0 h1:Elr9Wn+sGKPlkaBvwu4mTrxtmOp3F3yV9qhaHbXG
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/StackExchange/wmi v1.2.1 h1:VIkavFPXSjcnS+O8yTq7NI32k0R5Aj+v39y29VYDOSA=
 github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9SBzvHz7e8=
+github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf h1:FPsprx82rdrX2jiKyS17BH6IrTmUBYqZa/CXT4uvb+I=
+github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf/go.mod h1:peYoMncQljjNS6tZwI9WVyQB3qZS6u79/N3mBOcnd3I=
 github.com/ananagame/rich-go v0.0.0-20200319172754-527649f3d36d/go.mod h1:U9YxCfeNzWcDUs4O8lQfUyz9txKHTojVykpQicaZhyU=
 github.com/ananagame/rich-go v0.0.0-20210525072106-9d45f0e06959 h1:JKgYojLXqnVzgJ3SwLsxMm7GvKtZa/KryMO/mTAukEM=
 github.com/ananagame/rich-go v0.0.0-20210525072106-9d45f0e06959/go.mod h1:U9YxCfeNzWcDUs4O8lQfUyz9txKHTojVykpQicaZhyU=
@@ -39,6 +41,8 @@ github.com/mattn/go-sqlite3 v1.14.8 h1:gDp86IdQsN/xWjIEmr9MF6o9mpksUgh0fu+9ByFxz
 github.com/mattn/go-sqlite3 v1.14.8/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
 github.com/nattawitc/rich-go v0.0.0-20200402133947-4fcadd738f5b h1:XbxVgEbF+s3Jtq4wKlpvbzxgIYBhmgBiba8l5Gh07DE=
 github.com/nattawitc/rich-go v0.0.0-20200402133947-4fcadd738f5b/go.mod h1:YKl2hK9Pfe1y+D/MwN/XMCcRzGnoTcTPPa58U5DT3NQ=
+github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1 h1:ZHqsVunsVAMkYgn7oTGEQYagfWbDUMJDC01WgQyP5lU=
+github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1/go.mod h1:g8SAGtOYUP7rYaOB2AsVKCEHmPMDmJKgt4z6d+flhb0=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S/RLdc7JQKbRpFeM1dOBd8T9ki5s+AY8=
 github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=
@@ -55,6 +59,7 @@ github.com/shirou/gopsutil v3.21.7+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881 h1:FAuvIwAbe8iDo0RGdCcF6eb20snyOumyaHU9BdxlCac=
@@ -64,6 +69,8 @@ github.com/tklauser/go-sysconf v0.3.8/go.mod h1:z4zYWRS+X53WUKtBcmDg1comV3fPhdQn
 github.com/tklauser/numcpus v0.2.3/go.mod h1:vpEPS/JC+oZGGQ/My/vJnNsvMDQL6PwOqt8dsCw5j+E=
 github.com/tklauser/numcpus v0.3.0 h1:ILuRUQBtssgnxw0XXIjKUC56fgnOrFoQQ/4+DeU2biQ=
 github.com/tklauser/numcpus v0.3.0/go.mod h1:yFGUr7TUHQRAhyqBcEg0Ge34zDBAsIvJJcyE6boqnA8=
+github.com/wieku/dialog v0.0.0-20220604021040-6e9dd6e8efa4 h1:InnMK6aJgmcgl3SCpCbSpjIamKDnKR7vz607a0/6uP8=
+github.com/wieku/dialog v0.0.0-20220604021040-6e9dd6e8efa4/go.mod h1:/qNPSY91qTz/8TgHEMioAUc6q7+3SOybeKczHMXFcXw=
 github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1 h1:IBfA+cAja6jBYBoUXmgrPsOTG6bcV4mhKVpZz8/uf3Q=
 github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1/go.mod h1:Lk/V/AJfEHrusnmshAeqt7FQiOnFK9T3BtEGWkNmWY0=
 golang.org/x/exp v0.0.0-20220312040426-20fd27f61765 h1:p80Xjx7+xLY3+FFWW3KSo34VwQwWFdSKANfks5INL2g=

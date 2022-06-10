@@ -5,11 +5,15 @@
 /settings/
 settings.json
 settings-*
-danser.db
+*.db
 danser
+danser-launcher
 danser*.exe
 danser*.zip
 danser.log
+launcher.log
 assets.dpak
+danser-core.*
+libdanser*
 api.txt
 *.osr

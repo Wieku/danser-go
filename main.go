@@ -13,10 +13,16 @@ import "C"
 import (
 	"github.com/wieku/danser-go/app"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/launcher"
+	"os"
 )
 
 func main() {
 	env.Init("danser")
 
-	app.Run()
+	if len(os.Args) == 1 {
+		launcher.StartLauncher()
+	} else {
+		app.Run()
+	}
 }

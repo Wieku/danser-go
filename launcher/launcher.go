@@ -1,0 +1,1397 @@
+package launcher
+
+/*
+#ifdef _WIN32
+
+#include <windows.h>
+#include <winuser.h>
+
+void beep_custom() {
+	MessageBeep(0x00000000L);
+}
+void beep_error() {
+	MessageBeep(0x00000030L);
+}
+
+#else
+
+void beep_custom() {}
+
+void beep_error() {}
+
+#endif
+*/
+import "C"
+import (
+	"bufio"
+	"fmt"
+	"github.com/faiface/mainthread"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/sqweek/dialog"
+	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/database"
+	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/input"
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/states/components/common"
+	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/qpc"
+	"github.com/wieku/danser-go/framework/util"
+	"github.com/wieku/rplpa"
+	"golang.org/x/exp/slices"
+	"image"
+	"io"
+	"io/fs"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+)
+
+type Mode int
+
+const (
+	CursorDance Mode = iota
+	DanserReplay
+	Replay
+	Knockout
+	Play
+)
+
+func (m Mode) String() string {
+	switch m {
+	case CursorDance:
+		return "Cursor dance / mandala / tag"
+	case DanserReplay:
+		return "Cursor dance with UI"
+	case Replay:
+		return "Watch a replay"
+	case Knockout:
+		return "Watch knockout"
+	case Play:
+		return "Play osu!standard"
+	}
+
+	return ""
+}
+
+var modes = []Mode{CursorDance, DanserReplay, Replay, Knockout, Play}
+
+type PMode int
+
+const (
+	Watch PMode = iota
+	Record
+	Screenshot
+)
+
+func (m PMode) String() string {
+	switch m {
+	case Watch:
+		return "Watch"
+	case Record:
+		return "Record"
+	case Screenshot:
+		return "Screenshot"
+	}
+
+	return ""
+}
+
+var pModes = []PMode{Watch, Record, Screenshot}
+
+type ConfigMode int
+
+const (
+	Rename ConfigMode = iota
+	Clone
+	New
+)
+
+type launcher struct {
+	win *glfw.Window
+
+	bg *common.Background
+
+	batch *batch.QuadBatch
+	coin  *common.DanserCoin
+
+	bld *builder
+
+	beatmaps []*beatmap.BeatMap
+
+	configList    []string
+	currentConfig *settings.Config
+
+	newDefault bool
+
+	mapsLoaded bool
+
+	newCloneOpened bool
+
+	configManiMode ConfigMode
+	configPrevName string
+
+	newCloneName     string
+	refreshRate      int
+	configEditOpened bool
+	configEditPos    imgui.Vec2
+
+	danserRunning       bool
+	recordProgress      float32
+	recordStatus        string
+	recordStatusSpeed   string
+	recordStatusElapsed string
+	recordStatusETA     string
+	showProgressBar     bool
+
+	triangleSpeed    *animation.Glider
+	encodeInProgress bool
+	encodeStart      time.Time
+	danserCmd        *exec.Cmd
+	popupStack       []iPopup
+
+	selectWindow *songSelectPopup
+	splashText   string
+
+	prevMap *beatmap.BeatMap
+}
+
+func StartLauncher() {
+	defer func() {
+		var err any
+		var stackTrace []string
+
+		if err = recover(); err != nil {
+			stackTrace = goroutines.GetStackTrace(4)
+		}
+
+		closeHandler(err, stackTrace)
+	}()
+
+	goroutines.SetCrashHandler(closeHandler)
+
+	launcher := &launcher{
+		bld:        newBuilder(),
+		popupStack: make([]iPopup, 0),
+	}
+
+	file, err := os.Create(filepath.Join(env.DataDir(), "launcher.log"))
+	if err != nil {
+		panic(err)
+	}
+
+	log.SetOutput(io.MultiWriter(os.Stdout, file))
+
+	log.Println("danser-go version:", build.VERSION)
+
+	loadLauncherConfig()
+
+	settings.CreateDefault()
+
+	settings.Playfield.Background.Triangles.Enabled = true
+	settings.Playfield.Background.Triangles.DrawOverBlur = true
+	settings.Playfield.Background.Blur.Enabled = false
+	settings.Playfield.Background.Parallax.Enabled = false
+
+	assets.Init(build.Stream == "Dev")
+
+	mainthread.Run(func() {
+		defer func() {
+			if err := recover(); err != nil {
+				stackTrace := goroutines.GetStackTrace(4)
+				closeHandler(err, stackTrace)
+			}
+		}()
+
+		mainthread.Call(launcher.startGLFW)
+
+		for !launcher.win.ShouldClose() {
+			mainthread.Call(func() {
+				if launcher.win.GetAttrib(glfw.Iconified) == glfw.False {
+					if launcher.win.GetAttrib(glfw.Focused) == glfw.False {
+						glfw.SwapInterval(2)
+					} else {
+						glfw.SwapInterval(1)
+					}
+				} else {
+					glfw.SwapInterval(launcher.refreshRate / 10)
+				}
+				launcher.Draw()
+				launcher.win.SwapBuffers()
+				glfw.PollEvents()
+			})
+		}
+	})
+}
+
+func closeHandler(err any, stackTrace []string) {
+	if err != nil {
+		log.Println("panic:", err)
+
+		for _, s := range stackTrace {
+			log.Println(s)
+		}
+
+		dialog.Message("Launcher crashed with message:\n %s", err).Error()
+
+		os.Exit(1)
+	}
+
+	log.Println("Exiting normally.")
+}
+
+func (l *launcher) startGLFW() {
+	err := glfw.Init()
+	if err != nil {
+		panic("Failed to initialize GLFW: " + err.Error())
+	}
+
+	l.refreshRate = glfw.GetPrimaryMonitor().GetVideoMode().RefreshRate
+
+	l.tryCreateDefaultConfig()
+	l.createConfigList()
+
+	l.bld.config = *launcherConfig.Profile
+
+	c, err := l.loadConfig(l.bld.config)
+	if err != nil {
+		dialog.Message("Failed to read \"%s\" profile.\nReverting to \"default\".\nError: %s", l.bld.config, err).Error()
+
+		l.bld.config = "default"
+		*launcherConfig.Profile = l.bld.config
+		saveLauncherConfig()
+
+		c, err = l.loadConfig(l.bld.config)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	settings.General.OsuSongsDir = c.General.OsuSongsDir
+
+	l.currentConfig = c
+
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.Samples, 0)
+
+	settings.Graphics.Fullscreen = false
+	settings.Graphics.WindowWidth = int64(800)
+	settings.Graphics.WindowHeight = int64(500)
+
+	l.win, err = glfw.CreateWindow(800, 500, "danser-go "+build.VERSION+" launcher", nil, nil)
+
+	if err != nil {
+		panic(err)
+	}
+
+	input.Win = l.win
+
+	icon, eee := assets.GetPixmap("assets/textures/dansercoin.png")
+	if eee != nil {
+		log.Println(eee)
+	}
+	icon2, _ := assets.GetPixmap("assets/textures/dansercoin48.png")
+	icon3, _ := assets.GetPixmap("assets/textures/dansercoin24.png")
+	icon4, _ := assets.GetPixmap("assets/textures/dansercoin16.png")
+
+	l.win.SetIcon([]image.Image{icon.NRGBA(), icon2.NRGBA(), icon3.NRGBA(), icon4.NRGBA()})
+
+	icon.Dispose()
+	icon2.Dispose()
+	icon3.Dispose()
+	icon4.Dispose()
+
+	l.win.MakeContextCurrent()
+
+	log.Println("GLFW initialized!")
+
+	gl.Init()
+
+	extensionCheck()
+
+	glfw.SwapInterval(1)
+
+	SetupImgui(l.win)
+
+	graphics.LoadTextures()
+
+	bass.Init(false)
+
+	l.triangleSpeed = animation.NewGlider(1)
+	l.triangleSpeed.SetEasing(easing.OutQuad)
+
+	l.batch = batch.NewQuadBatch()
+
+	l.bg = common.NewBackground(false)
+
+	settings.Playfield.Background.Triangles.Enabled = true
+
+	l.coin = common.NewDanserCoin()
+
+	l.coin.DrawVisualiser(true)
+
+	goroutines.RunOS(func() {
+		l.splashText = "Loading maps...\nThis may take a while..."
+
+		l.beatmaps = make([]*beatmap.BeatMap, 0)
+
+		err := database.Init()
+		if err != nil {
+			dialog.Message("Failed to initialize database! Error: %s\nMake sure Song's folder does exist or change it to the correct directory in settings.", err).Error()
+			l.beatmaps = make([]*beatmap.BeatMap, 0)
+		} else {
+			bSplash := "Loading maps...\nThis may take a while...\n\n"
+
+			beatmaps := database.LoadBeatmaps(false, func(stage database.ImportStage, processed, target int) {
+				switch stage {
+				case database.Discovery:
+					l.splashText = bSplash + "Searching for .osu files...\n\n"
+				case database.Comparison:
+					l.splashText = bSplash + "Comparing files with database...\n\n"
+				case database.Cleanup:
+					l.splashText = bSplash + "Removing leftover maps from database...\n\n"
+				case database.Import:
+					percent := float64(processed) / float64(target) * 100
+					l.splashText = bSplash + fmt.Sprintf("Importing maps...\n%d / %d\n%.0f%%", processed, target, percent)
+				case database.Finalize:
+					l.splashText = bSplash + "Updating the database...\n\n"
+				}
+			})
+
+			slices.SortFunc(beatmaps, func(a, b *beatmap.BeatMap) bool {
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			})
+
+			bSplash = "Calculating Star Rating...\nThis may take a while...\n\n\n"
+
+			l.splashText = bSplash + "\n"
+
+			database.UpdateStarRating(beatmaps, func(processed, target int) {
+				percent := float64(processed) / float64(target) * 100
+				l.splashText = bSplash + fmt.Sprintf("%d / %d\n%.0f%%", processed, target, percent)
+			})
+
+			for _, bMap := range beatmaps {
+				l.beatmaps = append(l.beatmaps, bMap)
+			}
+
+			database.Close()
+		}
+
+		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
+			if !strings.HasSuffix(names[0], ".osr") {
+				dialog.Message("It's not a replay file!").Error()
+				return
+			}
+
+			l.loadReplay(names[0])
+		})
+
+		if len(os.Args) > 1 { //won't work in combined mode
+			l.loadReplay(os.Args[1])
+		}
+
+		l.mapsLoaded = true
+	})
+}
+
+func extensionCheck() {
+	extensions := []string{
+		"GL_ARB_clear_texture",
+		"GL_ARB_direct_state_access",
+		"GL_ARB_texture_storage",
+		"GL_ARB_vertex_attrib_binding",
+		"GL_ARB_buffer_storage",
+	}
+
+	var notSupported []string
+
+	for _, ext := range extensions {
+		if !glfw.ExtensionSupported(ext) {
+			notSupported = append(notSupported, ext)
+		}
+	}
+
+	if len(notSupported) > 0 {
+		panic(fmt.Sprintf("Your GPU does not support one or more required OpenGL extensions: %s. Please update your graphics drivers or upgrade your GPU", notSupported))
+	}
+}
+
+func (l *launcher) Draw() {
+	if l.bg.HasBackground() {
+		gl.ClearColor(0, 0, 0, 1.0)
+	} else {
+		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+	}
+
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.Enable(gl.SCISSOR_TEST)
+
+	w, h := int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
+	gl.Viewport(0, 0, int32(w), int32(h))
+
+	settings.Graphics.Fullscreen = false
+	settings.Graphics.WindowWidth = int64(w)
+	settings.Graphics.WindowHeight = int64(h)
+
+	if l.currentConfig != nil {
+		settings.Audio.GeneralVolume = l.currentConfig.Audio.GeneralVolume
+		settings.Audio.MusicVolume = l.currentConfig.Audio.MusicVolume
+	}
+
+	t := qpc.GetMilliTimeF()
+
+	l.triangleSpeed.Update(t)
+
+	settings.Playfield.Background.Triangles.Speed = l.triangleSpeed.GetValue()
+
+	l.bg.Update(t, 0, 0)
+
+	l.batch.SetCamera(mgl32.Ortho(-float32(w)/2, float32(w)/2, float32(h)/2, -float32(h)/2, -1, 1))
+
+	bgA := 1.0
+	if l.bg.HasBackground() {
+		bgA = 0.33
+	}
+
+	l.bg.Draw(t, l.batch, 0, bgA, l.batch.Projection)
+
+	l.batch.SetColor(1, 1, 1, 1)
+	l.batch.ResetTransform()
+	l.batch.SetCamera(mgl32.Ortho(-float32(w)/2, float32(w)/2, float32(h)/2, -float32(h)/2, -1, 1))
+
+	l.batch.Begin()
+
+	if l.mapsLoaded {
+		if l.bld.currentMap != nil && l.prevMap != l.bld.currentMap {
+			l.bg.SetBeatmap(l.bld.currentMap, false, false)
+
+			l.prevMap = l.bld.currentMap
+		}
+
+		if l.selectWindow != nil {
+			if l.selectWindow.PreviewedSong != nil {
+				l.selectWindow.PreviewedSong.Update()
+				l.coin.SetMap(l.selectWindow.prevMap, l.selectWindow.PreviewedSong)
+				l.bg.SetTrack(l.selectWindow.PreviewedSong)
+			} else {
+				l.coin.SetMap(nil, nil)
+				l.bg.SetTrack(nil)
+			}
+		}
+
+		l.coin.SetPosition(vector.NewVec2d(238, -18))
+		l.coin.SetScale(float64(h) / 4)
+		l.coin.SetRotation(0.1)
+
+		l.coin.Update(t)
+		l.coin.Draw(t, l.batch)
+	}
+
+	l.batch.End()
+
+	l.drawImgui()
+}
+
+func (l *launcher) drawImgui() {
+	Begin()
+
+	lock := l.danserRunning
+
+	if lock {
+		imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+	}
+
+	wW, wH := int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
+
+	imgui.SetNextWindowSize(imgui.Vec2{
+		X: float32(wW),
+		Y: float32(wH),
+	})
+
+	imgui.SetNextWindowPos(imgui.Vec2{})
+
+	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{
+		X: 20,
+		Y: 20,
+	})
+
+	imgui.BeginV("main", nil, imgui.WindowFlagsNoDecoration /*|imgui.WindowFlagsNoMove*/ |imgui.WindowFlagsNoBackground|imgui.WindowFlagsNoScrollWithMouse|imgui.WindowFlagsNoBringToFrontOnFocus)
+
+	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{
+		X: 5,
+		Y: 5,
+	})
+
+	if l.mapsLoaded {
+		l.drawMain()
+	} else {
+		l.drawSplash()
+	}
+
+	imgui.PopStyleVar()
+
+	imgui.End()
+
+	imgui.PopStyleVar()
+
+	if lock {
+		imgui.PopItemFlag()
+	}
+
+	DrawImgui()
+}
+
+func (l *launcher) drawMain() {
+	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+
+	imgui.PushFont(Font24)
+	imgui.PushItemWidth(-w/2 + imgui.CurrentStyle().CellPadding().X*4 + imgui.CurrentStyle().FramePadding().X)
+	imgui.Text("Mode:")
+	imgui.SameLine()
+
+	if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
+		for _, m := range modes {
+			if imgui.Selectable(m.String()) {
+				if m == Play {
+					l.bld.currentPMode = Watch
+				}
+
+				l.bld.currentMode = m
+			}
+		}
+
+		imgui.EndCombo()
+	}
+
+	l.drawConfigPanel()
+
+	l.drawControls()
+
+	imgui.PopItemWidth()
+
+	imgui.SetCursorPos(imgui.Vec2{
+		X: imgui.WindowContentRegionMin().X,
+		Y: float32(h) - imgui.FrameHeightWithSpacing(),
+	})
+
+	if l.bld.currentPMode == Record && l.showProgressBar {
+		if l.recordStatus == "Done" {
+			imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.Vec4{
+				X: 0.16,
+				Y: 0.75,
+				Z: 0.18,
+				W: 1,
+			})
+		} else {
+			imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.CurrentStyle().Color(imgui.StyleColorCheckMark))
+		}
+
+		h := imgui.FrameHeight()
+
+		imgui.ProgressBarV(l.recordProgress, imgui.Vec2{-300, h}, l.recordStatus)
+
+		if l.encodeInProgress {
+			imgui.PushFont(Font16)
+
+			cPos := imgui.CursorPos()
+
+			imgui.Text(l.recordStatusSpeed)
+
+			cPos.X += 95
+
+			imgui.SetCursorPos(cPos)
+
+			eta := int(time.Since(l.encodeStart).Seconds())
+
+			imgui.Text("| Elapsed: " + util.FormatSeconds(eta))
+
+			cPos.X += 135
+
+			imgui.SetCursorPos(cPos)
+
+			imgui.Text("| " + l.recordStatusETA)
+
+			imgui.PopFont()
+		}
+
+		imgui.PopStyleColor()
+	}
+
+	fHwS := imgui.FrameHeightWithSpacing()*2 - imgui.CurrentStyle().FramePadding().X
+
+	bW := (w) / 4
+	dW := (300+bW)/2 - imgui.CurrentStyle().FramePadding().X*2
+
+	imgui.SetCursorPos(imgui.Vec2{
+		X: imgui.WindowContentRegionMax().X - dW, //- imgui.CurrentStyle().FramePadding().X,
+		Y: float32(h) - imgui.FrameHeightWithSpacing()*2,
+	})
+
+	imgui.PushFont(Font48)
+	{
+		dRun := l.danserRunning && l.bld.currentPMode == Record
+
+		s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) || (l.bld.currentMode != Replay && l.bld.currentMap == nil)
+
+		if !dRun {
+			if s {
+				imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+			}
+		} else {
+			imgui.PopItemFlag()
+		}
+
+		name := "danse!"
+		if dRun {
+			name = "CANCEL"
+		}
+
+		if imgui.ButtonV(name, imgui.Vec2{X: bW, Y: fHwS}) {
+			if dRun {
+				if l.danserCmd != nil {
+					goroutines.Run(func() {
+						res := dialog.Message("Do you really want to cancel?").YesNo()
+
+						if res && l.danserCmd != nil {
+							l.danserCmd.Process.Kill()
+							l.danserCleanup()
+						}
+					})
+				}
+			} else {
+				if l.selectWindow != nil {
+					l.selectWindow.stopPreview()
+				}
+
+				log.Println(l.bld.getArguments())
+
+				l.triangleSpeed.AddEventS(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+1000, 50, 1)
+
+				if l.bld.currentPMode != Watch {
+					l.startDanser()
+				} else {
+					goroutines.Run(func() {
+						time.Sleep(500 * time.Millisecond)
+						l.startDanser()
+					})
+				}
+			}
+		}
+
+		if !dRun {
+			if s {
+				imgui.PopItemFlag()
+			}
+		} else {
+			imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+		}
+
+		imgui.PopFont()
+	}
+
+	if l.selectWindow != nil {
+		l.selectWindow.update()
+	}
+
+	for i := 0; i < len(l.popupStack); i++ {
+		p := l.popupStack[i]
+		p.draw()
+		if p.shouldClose() {
+			l.popupStack = append(l.popupStack[:i], l.popupStack[i+1:]...)
+			i--
+		}
+	}
+
+	imgui.PopFont()
+
+	if imgui.IsMouseClicked(0) && !l.danserRunning {
+		l.showProgressBar = false
+		l.recordStatus = ""
+		l.recordProgress = 0
+	}
+}
+
+func (l *launcher) drawSplash() {
+	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+
+	imgui.PushFont(Font48)
+
+	splText := strings.Split(l.splashText, "\n")
+
+	var height float32
+
+	for _, sText := range splText {
+		height += imgui.CalcTextSize(sText, false, 0).Y
+	}
+
+	var dHeight float32
+
+	for _, sText := range splText {
+		tSize := imgui.CalcTextSize(sText, false, 0)
+
+		imgui.SetCursorPos(imgui.Vec2{
+			X: 20 + (w-tSize.X)/2,
+			Y: 20 + (h-height)/2 + dHeight,
+		})
+
+		dHeight += tSize.Y
+
+		imgui.Text(sText)
+	}
+
+	imgui.PopFont()
+}
+
+func (l *launcher) drawControls() {
+	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 88})
+	switch l.bld.currentMode {
+	case Replay:
+		l.selectReplay()
+	default:
+		l.showSelect()
+	}
+
+	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 204})
+
+	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+
+	if imgui.BeginTableV("abtn", 2, imgui.TableFlagsSizingStretchSame, imgui.Vec2{float32(w) / 2, -1}, -1) {
+		imgui.TableNextColumn()
+
+		if imgui.ButtonV("Speed/Pitch", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+			l.openPopup(newPopupF("Speed adjust", popMedium, func() {
+				drawSpeedMenu(l.bld)
+			}))
+		}
+
+		imgui.TableNextColumn()
+
+		if l.bld.currentMode != Replay {
+			if imgui.ButtonV("Mods", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+				l.openPopup(newModPopup(l.bld))
+			}
+		}
+
+		imgui.TableNextColumn()
+		if l.bld.currentMode != Replay {
+			if imgui.ButtonV("Adjust difficulty", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+				l.openPopup(newPopupF("Difficulty adjust", popMedium, func() {
+					drawParamMenu(l.bld)
+				}))
+			}
+		} else {
+			imgui.Dummy(imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2})
+		}
+
+		imgui.TableNextColumn()
+
+		if l.bld.currentMode == CursorDance {
+			if imgui.ButtonV("Mirrors/Tags", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+				l.openPopup(newPopupF("Difficulty adjust", popDynamic, func() {
+					drawCDMenu(l.bld)
+				}))
+			}
+		}
+
+		imgui.TableNextColumn()
+
+		if imgui.ButtonV("Start/End time", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+			l.openPopup(newPopupF("Set times", popMedium, func() {
+				drawTimeMenu(l.bld)
+			}))
+		}
+
+		imgui.EndTable()
+	}
+
+	if l.bld.currentMode != Play {
+		imgui.SetCursorPos(imgui.Vec2{
+			X: 20,
+			Y: h - imgui.FrameHeightWithSpacing()*2,
+		})
+
+		imgui.SetNextItemWidth((imgui.WindowWidth() - 40) / 4)
+
+		if imgui.BeginComboV("##Watch mode", l.bld.currentPMode.String(), 5) {
+			for _, m := range pModes {
+				if imgui.Selectable(m.String()) {
+					l.bld.currentPMode = m
+				}
+			}
+
+			imgui.EndCombo()
+		}
+
+		if l.bld.currentPMode != Watch {
+			imgui.SameLine()
+			if imgui.Button("Configure") {
+				l.openPopup(newPopupF("Record settings", popDynamic, func() {
+					drawRecordMenu(l.bld)
+				}))
+			}
+		}
+	}
+}
+
+func (l *launcher) selectReplay() {
+	bSize := imgui.Vec2{X: (imgui.WindowWidth() - 40) / 4, Y: imgui.TextLineHeight() * 2}
+
+	imgui.PushFont(Font32)
+
+	if imgui.ButtonV("Select replay", bSize) {
+		rDir := filepath.Join(filepath.Dir(settings.General.GetSongsDir()), "Replays")
+
+		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(rDir).Load()
+		if err == nil {
+			l.loadReplay(p)
+		}
+	}
+
+	imgui.PopFont()
+
+	imgui.PushFont(Font20)
+	imgui.IndentV(5)
+
+	if l.bld.currentReplay != nil {
+		b := l.bld.currentMap
+
+		mString := fmt.Sprintf("%s - %s [%s]\nPlayed by: %s", b.Artist, b.Name, b.Difficulty, l.bld.currentReplay.Username)
+
+		imgui.PushTextWrapPosV((imgui.WindowWidth() - 40) * 2 / 3)
+		imgui.Text(mString)
+		imgui.PopTextWrapPos()
+	} else {
+		imgui.Text("No replay selected")
+	}
+
+	imgui.UnindentV(5)
+	imgui.PopFont()
+}
+
+func (l *launcher) loadReplay(p string) {
+	log.Println(p)
+
+	rData, err := os.ReadFile(p)
+	if err != nil {
+		dialog.Message("Failed to open file:\n%s", err.Error()).Error()
+		return
+	}
+
+	replay, err := rplpa.ParseReplay(rData)
+	if err != nil {
+		dialog.Message("Failed to open replay:\n%s", err.Error()).Error()
+		return
+	}
+
+	for _, bMap := range l.beatmaps {
+		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.BeatmapMD5) {
+			l.bld.currentMode = Replay
+			l.bld.replayPath = p
+			l.bld.currentReplay = replay
+			l.bld.setMap(bMap)
+			return
+		}
+	}
+
+	dialog.Message("Replay uses an unknown map. Please download the map beforehand.").Error()
+}
+
+func (l *launcher) showSelect() {
+	bSize := imgui.Vec2{X: (imgui.WindowWidth() - 40) / 4, Y: imgui.TextLineHeight() * 2}
+
+	imgui.PushFont(Font32)
+
+	if imgui.ButtonV("Select map", bSize) {
+		if l.selectWindow == nil {
+			l.selectWindow = newSongSelectPopup(l.bld, l.beatmaps)
+		}
+
+		l.selectWindow.open()
+		l.openPopup(l.selectWindow)
+	}
+
+	imgui.PopFont()
+
+	imgui.PushFont(Font20)
+
+	imgui.IndentV(5)
+
+	if l.bld.currentMap != nil {
+		b := l.bld.currentMap
+
+		mString := fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty)
+
+		imgui.PushTextWrapPosV((imgui.WindowWidth() - 40) * 2 / 3)
+		imgui.Text(mString)
+		imgui.PopTextWrapPos()
+	} else {
+		imgui.Text("No map selected")
+	}
+
+	imgui.UnindentV(5)
+
+	imgui.PopFont()
+}
+
+func (l *launcher) drawConfigPanel() {
+	w := imgui.WindowContentRegionMax().X
+
+	imgui.SetCursorPos(imgui.Vec2{
+		X: imgui.WindowContentRegionMax().X - float32(w)/2.5, //bW - 8*imgui.CurrentStyle().FramePadding().X,
+		Y: 18,
+	})
+
+	if imgui.BeginTableV("rtpanel", 3, imgui.TableFlagsSizingStretchProp, imgui.Vec2{float32(w) / 2.5, 0}, -1) {
+		imgui.TableSetupColumnV("rtpanel1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+		imgui.TableSetupColumnV("rtpanel2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+		imgui.TableSetupColumnV("rtpanel3", imgui.TableColumnFlagsWidthFixed, 0, uint(2))
+
+		imgui.TableNextColumn()
+
+		imgui.Text("Config:")
+
+		imgui.TableNextColumn()
+
+		imgui.SetNextItemWidth(-1)
+
+		if imgui.BeginCombo("##config", l.bld.config) {
+			if imgui.Selectable("Create new...") {
+				l.newCloneOpened = true
+				l.configManiMode = New
+			}
+
+			for _, s := range l.configList {
+				if imgui.SelectableV(s, s == l.bld.config, 0, imgui.Vec2{}) {
+					if s != l.bld.config {
+						l.setConfig(s)
+					}
+				}
+
+				if imgui.IsMouseClicked(1) && imgui.IsItemHovered() {
+					l.configEditOpened = true
+
+					imgui.SetNextWindowPosV(imgui.MousePos(), imgui.ConditionAlways, imgui.Vec2{})
+
+					imgui.OpenPopup("##context" + s)
+				}
+
+				if imgui.BeginPopupModalV("##context"+s, &l.configEditOpened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
+
+					if s != "default" {
+						if imgui.Selectable("Rename") {
+							l.newCloneOpened = true
+							l.configPrevName = s
+							l.configManiMode = Rename
+						}
+					}
+
+					if imgui.Selectable("Clone") {
+						l.newCloneOpened = true
+						l.configPrevName = s
+						l.configManiMode = Clone
+					}
+
+					if s != "default" {
+						if imgui.Selectable("Remove") {
+							if dialog.Message("Are you sure you want to remove \"%s\" profile?", s).YesNo() {
+								l.removeConfig(s)
+							}
+						}
+					}
+
+					if (imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
+						l.configEditOpened = false
+					}
+
+					imgui.EndPopup()
+				}
+			}
+
+			imgui.EndCombo()
+		}
+
+		imgui.TableNextColumn()
+
+		if imgui.Button("Edit") {
+			l.openPopup(newSettingsEditor(l.currentConfig, func() {
+				l.currentConfig.Save("", false)
+
+				if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
+					dialog.Message("This config has different osu! Songs directory.\nRestart the launcher to see updated maps").Info()
+				}
+			}))
+		}
+
+		imgui.EndTable()
+	}
+
+	if l.newCloneOpened {
+		popupSmall("Clone/new box", &l.newCloneOpened, true, func() {
+			if imgui.BeginTable("rfa", 1) {
+				imgui.TableNextColumn()
+
+				imgui.Text("Name:")
+
+				imgui.SameLine()
+
+				imgui.SetNextItemWidth(imgui.TextLineHeight() * 10)
+
+				if imgui.InputTextV("##nclonename", &l.newCloneName /*imgui.InputTextFlagsCallbackAlways|*/, imgui.InputTextFlagsCallbackCharFilter, func(data imgui.InputTextCallbackData) int32 {
+					if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
+						run := data.EventChar()
+
+						switch run {
+						case '\\':
+							data.SetEventChar('/')
+						case '<', '>', '|', '?', '*', ':', '"':
+							data.SetEventChar(0)
+						}
+					}
+
+					return 0
+				}) {
+					l.newCloneName = strings.TrimSpace(l.newCloneName)
+				}
+
+				if !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+					imgui.SetKeyboardFocusHereV(-1)
+				}
+
+				imgui.TableNextColumn()
+
+				cPos := imgui.CursorPos()
+
+				imgui.SetCursorPos(imgui.Vec2{
+					X: cPos.X + (imgui.ContentRegionAvail().X-imgui.CalcTextSize("Save", false, 0).X-imgui.CurrentStyle().FramePadding().X*2)/2,
+					Y: cPos.Y,
+				})
+
+				e := l.newCloneName == ""
+
+				if e {
+					imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+				}
+
+				if imgui.Button("Save##newclone") {
+					_, err := os.Stat(filepath.Join(env.ConfigDir(), l.newCloneName+".json"))
+					if err == nil {
+						dialog.Message("Config with that name already exists!\nPlease pick a different name").Error()
+					} else {
+						log.Println("ok")
+						switch l.configManiMode {
+						case Rename:
+							l.renameConfig(l.configPrevName, l.newCloneName)
+						case Clone:
+							l.cloneConfig(l.configPrevName, l.newCloneName)
+						case New:
+							l.createConfig(l.newCloneName)
+						}
+
+						l.newCloneOpened = false
+						l.newCloneName = ""
+					}
+				}
+
+				if e {
+					imgui.PopItemFlag()
+				}
+
+				imgui.EndTable()
+			}
+		})
+	}
+}
+
+func (l *launcher) tryCreateDefaultConfig() {
+	_, err := os.Stat(filepath.Join(env.ConfigDir(), "default.json"))
+	if err != nil {
+		l.createConfig("default")
+	}
+}
+
+func (l *launcher) createConfig(name string) {
+	vm := glfw.GetPrimaryMonitor().GetVideoMode()
+
+	conf := settings.NewConfigFile()
+	conf.Graphics.SetDefaults(int64(vm.Width), int64(vm.Height))
+	conf.Save(filepath.Join(env.ConfigDir(), name+".json"), true)
+
+	l.createConfigList()
+
+	l.setConfig(name)
+}
+
+func (l *launcher) removeConfig(name string) {
+	os.Remove(filepath.Join(env.ConfigDir(), name+".json"))
+
+	l.createConfigList()
+
+	if l.bld.config == name {
+		l.setConfig("default")
+	}
+}
+
+func (l *launcher) cloneConfig(toClone, name string) {
+	cConfig, err := l.loadConfig(toClone)
+
+	if err != nil {
+		dialog.Message(err.Error()).Error()
+		return
+	}
+
+	cConfig.Save(filepath.Join(env.ConfigDir(), name+".json"), true)
+
+	l.createConfigList()
+
+	l.setConfig(name)
+}
+
+func (l *launcher) renameConfig(toRename, name string) {
+	cConfig, err := l.loadConfig(toRename)
+
+	if err != nil {
+		dialog.Message(err.Error()).Error()
+		return
+	}
+
+	cConfig.Save(filepath.Join(env.ConfigDir(), name+".json"), true)
+
+	os.Remove(filepath.Join(env.ConfigDir(), toRename+".json"))
+
+	l.createConfigList()
+
+	l.setConfig(name)
+}
+
+func (l *launcher) createConfigList() {
+	l.configList = []string{}
+
+	filepath.Walk(env.ConfigDir(), func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() && strings.HasSuffix(path, ".json") {
+			stPath := strings.ReplaceAll(strings.TrimPrefix(strings.TrimSuffix(path, ".json"), env.ConfigDir()+string(os.PathSeparator)), "\\", "/")
+
+			if stPath != "credentials" && stPath != "default" && stPath != "launcher" {
+				log.Println("Config:", stPath)
+				l.configList = append(l.configList, stPath)
+			}
+		}
+
+		return nil
+	})
+
+	sort.Strings(l.configList)
+
+	l.configList = append([]string{"default"}, l.configList...)
+}
+
+func (l *launcher) loadConfig(name string) (*settings.Config, error) {
+	f, err := os.Open(filepath.Join(env.ConfigDir(), name+".json"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid file state. Please don't modify the folder while launcher is running. Error: %s", err)
+	}
+
+	defer f.Close()
+
+	return settings.LoadConfig(f)
+}
+
+func (l *launcher) setConfig(s string) {
+	eConfig, err := l.loadConfig(s)
+
+	if err != nil {
+		dialog.Message("Failed to read \"%s\" profile. Error: %s", s, err).Error()
+	} else {
+		if !compareDirs(eConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
+			dialog.Message("This config has different osu! Songs directory.\nRestart the launcher to see updated maps").Info()
+		}
+
+		l.bld.config = s
+		l.currentConfig = eConfig
+
+		*launcherConfig.Profile = l.bld.config
+		saveLauncherConfig()
+	}
+}
+
+// covers cases:
+// one of them is an abs path to data dir
+// has path separator suffixed
+// one of them has backwards slashes
+func compareDirs(str1, str2 string) bool {
+	abPath := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
+
+	str1D := strings.TrimSuffix(strings.ReplaceAll(str1, "\\", "/"), "/")
+	str2D := strings.TrimSuffix(strings.ReplaceAll(str2, "\\", "/"), "/")
+
+	return strings.TrimPrefix(str1D, abPath) == strings.TrimPrefix(str2D, abPath)
+}
+
+func (l *launcher) startDanser() {
+	l.recordProgress = 0
+	l.recordStatus = ""
+	l.recordStatusSpeed = ""
+	l.recordStatusETA = ""
+	l.encodeInProgress = false
+
+	dExec := os.Args[0]
+
+	if build.Stream == "Release" {
+		dExec = filepath.Join(env.LibDir(), "danser")
+	}
+
+	l.danserCmd = exec.Command(dExec, l.bld.getArguments()...)
+
+	rFile, oFile, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
+
+	l.danserCmd.Stderr = os.Stderr
+	l.danserCmd.Stdin = os.Stdin
+	l.danserCmd.Stdout = io.MultiWriter(os.Stdout, oFile)
+
+	err = l.danserCmd.Start()
+	if err != nil {
+		dialog.Message("danser failed to start! %s", err.Error()).Error()
+		return
+	}
+
+	if l.bld.currentPMode == Watch {
+		l.win.Iconify()
+	} else if l.bld.currentPMode == Record {
+		l.showProgressBar = true
+	}
+
+	l.danserRunning = true
+	l.recordStatus = "Preparing..."
+
+	panicMessage := ""
+	panicWait := &sync.WaitGroup{}
+	panicWait.Add(1)
+
+	goroutines.Run(func() {
+		sc := bufio.NewScanner(rFile)
+
+		l.encodeInProgress = false
+
+		for sc.Scan() {
+			line := sc.Text()
+
+			if strings.Contains(line, "panic:") {
+				panicMessage = line[strings.Index(line, "panic:"):]
+				panicWait.Done()
+			}
+
+			if strings.Contains(line, "Starting encoding!") {
+				l.encodeInProgress = true
+				l.encodeStart = time.Now()
+			}
+
+			if strings.Contains(line, "Finishing rendering") {
+				l.encodeInProgress = false
+
+				l.recordProgress = 1
+				l.recordStatus = "Finalizing..."
+				l.recordStatusSpeed = ""
+				l.recordStatusETA = ""
+			}
+
+			if strings.Contains(line, "Progress") && l.encodeInProgress {
+				line = line[strings.Index(line, "Progress"):]
+
+				rStats := strings.Split(line, ",")
+
+				spl := strings.TrimSpace(strings.Split(rStats[0], ":")[1])
+
+				l.recordStatus = spl
+
+				l.recordStatusSpeed = strings.TrimSpace(rStats[1])
+				l.recordStatusETA = strings.TrimSpace(rStats[2])
+
+				speed := strings.TrimSpace(strings.Split(rStats[1], ":")[1])
+
+				speedP, _ := strconv.ParseFloat(speed[:len(speed)-1], 32)
+
+				l.triangleSpeed.AddEvent(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+500, speedP)
+
+				at, _ := strconv.Atoi(spl[:len(spl)-1])
+
+				l.recordProgress = float32(at) / 100
+			}
+		}
+
+		l.recordProgress = 100
+		l.recordStatus = "Done"
+		l.recordStatusSpeed = ""
+		l.recordStatusETA = ""
+	})
+
+	goroutines.Run(func() {
+		err = l.danserCmd.Wait()
+
+		l.danserCleanup()
+
+		if err != nil {
+			panicWait.Wait()
+
+			id := strings.Index(panicMessage, "http")
+
+			mainthread.Call(func() {
+				if id == -1 {
+					dialog.Message("danser crashed! %s\n\n%s", err.Error(), panicMessage).Error()
+				} else {
+					url := panicMessage[id:]
+
+					if dialog.Message("danser crashed! %s\n\n%s\n\nDo you want to go there?", err.Error(), panicMessage).ErrorYesNo() {
+						platform.OpenURL(url)
+					}
+				}
+			})
+
+		} else if l.bld.currentPMode != Watch && l.bld.currentMode != Play {
+			C.beep_custom()
+		}
+
+		rFile.Close()
+		oFile.Close()
+
+		l.win.Restore()
+	})
+}
+
+func (l *launcher) danserCleanup() {
+	l.recordStatus = ""
+	l.recordStatusSpeed = ""
+	l.recordStatusETA = ""
+	l.showProgressBar = false
+	l.danserRunning = false
+	l.triangleSpeed.AddEvent(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+500, 1)
+	l.danserCmd = nil
+}
+
+func (l *launcher) openPopup(p iPopup) {
+	l.popupStack = append(l.popupStack, p)
+}
