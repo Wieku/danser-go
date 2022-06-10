@@ -38,6 +38,7 @@ import (
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
 	"image"
 	"io"
@@ -47,7 +48,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -626,17 +626,7 @@ func mainLoopRecord() {
 
 					eta := int((p.RunningTime - timeOffset) / 1000 / speed)
 
-					etaText := ""
-
-					if hours := eta / 3600; hours > 0 {
-						etaText += strconv.Itoa(hours) + "h"
-					}
-
-					if minutes := (eta / 60) % 60; minutes > 0 {
-						etaText += fmt.Sprintf("%02dm", minutes%60)
-					}
-
-					etaText += fmt.Sprintf("%02ds", eta%60)
+					etaText := util.FormatSeconds(eta)
 
 					if settings.Recording.ShowFFmpegLogs {
 						fmt.Println()
