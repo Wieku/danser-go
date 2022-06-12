@@ -282,7 +282,7 @@ func (editor *settingsEditor) drawSettings() {
 			if drawNew {
 				iSc1 := imgui.CursorPos().Y
 
-				editor.buildMainSection("Main."+lbl, lbl, field)
+				editor.buildMainSection(dF.Name, "Main."+lbl, lbl, field)
 
 				iSc2 := imgui.CursorPos().Y
 
@@ -294,7 +294,7 @@ func (editor *settingsEditor) drawSettings() {
 	}
 }
 
-func (editor *settingsEditor) buildMainSection(sPath, name string, u reflect.Value) {
+func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u reflect.Value) {
 	posLocal := imgui.CursorPos()
 
 	imgui.PushFont(Font48)
@@ -303,7 +303,7 @@ func (editor *settingsEditor) buildMainSection(sPath, name string, u reflect.Val
 	imgui.PopFont()
 	imgui.Separator()
 
-	editor.traverseChildren(sPath, u, reflect.StructField{})
+	editor.traverseChildren(jsonPath, sPath, u, reflect.StructField{})
 
 	posLocal1 := imgui.CursorPos()
 
@@ -352,13 +352,13 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 	}
 }
 
-func (editor *settingsEditor) buildSubSection(sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
+func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
 	editor.subSectionTempl(sPath, name, first, last, func() {}, func() {
-		editor.traverseChildren(sPath, u, d)
+		editor.traverseChildren(jsonPath, sPath, u, d)
 	})
 }
 
-func (editor *settingsEditor) buildArray(sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
+func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
 	editor.subSectionTempl(sPath, name, first, last, func() {
 		imgui.SameLine()
 		imgui.Dummy(imgui.Vec2{2, 0})
@@ -384,7 +384,7 @@ func (editor *settingsEditor) buildArray(sPath, name string, u reflect.Value, d 
 		}
 
 		for j := 0; j < u.Len(); j++ {
-			editor.buildArrayElement(sPath, u.Index(j), d, rCal, j)
+			editor.buildArrayElement(fmt.Sprintf("%s[%d]", jsonPath, j), sPath, u.Index(j), d, rCal, j)
 		}
 
 		if tRem > -1 && u.Len() > 1 {
@@ -393,7 +393,7 @@ func (editor *settingsEditor) buildArray(sPath, name string, u reflect.Value, d 
 	})
 }
 
-func (editor *settingsEditor) buildArrayElement(sPath string, u reflect.Value, d reflect.StructField, removeCb func(idx int), childNum int) {
+func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflect.Value, d reflect.StructField, removeCb func(idx int), childNum int) {
 	if editor.searchCache[sPath] == 0 {
 		return
 	}
@@ -417,7 +417,7 @@ func (editor *settingsEditor) buildArrayElement(sPath string, u reflect.Value, d
 
 		imgui.BeginGroup()
 
-		editor.traverseChildren(sPath, u, d)
+		editor.traverseChildren(jsonPath, sPath, u, d)
 
 		imgui.EndGroup()
 
@@ -452,12 +452,12 @@ func (editor *settingsEditor) buildArrayElement(sPath string, u reflect.Value, d
 	}
 }
 
-func (editor *settingsEditor) traverseChildren(lPath string, u reflect.Value, d reflect.StructField) {
+func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect.Value, d reflect.StructField) {
 	typ := u.Elem()
 	def := u.Type().Elem()
 
 	if u.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
-		editor.buildColor(u, d, false)
+		editor.buildColor(jsonPath, u, d, false)
 		return
 	}
 
@@ -505,6 +505,16 @@ func (editor *settingsEditor) traverseChildren(lPath string, u reflect.Value, d 
 
 		sPath2 := lPath + "." + label
 
+		jsonPath1 := jsonPath + "." + dF.Name
+
+		if tD, ok := dF.Tag.Lookup("json"); ok {
+			sp := strings.Split(tD, ",")[0]
+
+			if sp != "" {
+				jsonPath1 = jsonPath + "." + sp
+			}
+		}
+
 		if editor.searchCache[sPath2] == 0 || skipMap[dF.Name] == 1 {
 			continue
 		}
@@ -531,26 +541,29 @@ func (editor *settingsEditor) traverseChildren(lPath string, u reflect.Value, d 
 				skipMap[lName] = 1
 				skipMap[rName] = 1
 
-				editor.buildVector(field, dF, l, ld, r, rd)
+				jsonPathL := jsonPath + "." + lName
+				jsonPathR := jsonPath + "." + rName
+
+				editor.buildVector(jsonPathL, jsonPathR, field, dF, l, ld, r, rd)
 			} else {
-				editor.buildString(field, dF)
+				editor.buildString(jsonPath1, field, dF)
 			}
 		case reflect.Float64:
-			editor.buildFloat(field, dF)
+			editor.buildFloat(jsonPath1, field, dF)
 		case reflect.Int64, reflect.Int, reflect.Int32:
-			editor.buildInt(field, dF)
+			editor.buildInt(jsonPath1, field, dF)
 		case reflect.Bool:
-			editor.buildBool(field, dF)
+			editor.buildBool(jsonPath1, field, dF)
 		case reflect.Slice:
-			editor.buildArray(sPath2, label, field, dF, index == 0, index == count-1)
+			editor.buildArray(jsonPath1, sPath2, label, field, dF, index == 0, index == count-1)
 		case reflect.Ptr:
 			if field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
-				editor.buildColor(field, dF, true)
+				editor.buildColor(jsonPath1, field, dF, true)
 			} else if !field.IsNil() {
 				if dF.Anonymous {
-					editor.traverseChildren(sPath2, field, dF)
+					editor.traverseChildren(jsonPath, sPath2, field, dF)
 				} else if field.CanInterface() {
-					editor.buildSubSection(sPath2, label, field, dF, index == 0, index == count-1)
+					editor.buildSubSection(jsonPath1, sPath2, label, field, dF, index == 0, index == count-1)
 				} else {
 					index--
 				}
@@ -583,8 +596,8 @@ func (editor *settingsEditor) getLabel(d reflect.StructField) string {
 	return strings.Join(parts, " ")
 }
 
-func (editor *settingsEditor) buildBool(f reflect.Value, d reflect.StructField) {
-	editor.drawComponent(editor.getLabel(d), false, true, d, func() {
+func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d reflect.StructField) {
+	editor.drawComponent(jsonPath, editor.getLabel(d), false, true, d, func() {
 		base := f.Interface().(bool)
 
 		if imgui.Checkbox(editor.getId(), &base) {
@@ -593,8 +606,8 @@ func (editor *settingsEditor) buildBool(f reflect.Value, d reflect.StructField) 
 	})
 }
 
-func (editor *settingsEditor) buildVector(f reflect.Value, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
-	editor.drawComponent(editor.getLabel(d), false, false, d, func() {
+func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, f reflect.Value, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
+	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, d, func() {
 		if imgui.BeginTableV(editor.getId(), 3, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
 			imgui.TableSetupColumnV(editor.getId(), imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 			imgui.TableSetupColumnV(editor.getId(), imgui.TableColumnFlagsWidthFixed, 0, uint(1))
@@ -664,8 +677,8 @@ func (editor *settingsEditor) buildIntBox(f reflect.Value, d reflect.StructField
 	}
 }
 
-func (editor *settingsEditor) buildString(f reflect.Value, d reflect.StructField) {
-	editor.drawComponent(editor.getLabel(d), d.Tag.Get("long") != "", false, d, func() {
+func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d reflect.StructField) {
+	editor.drawComponent(jsonPath, editor.getLabel(d), d.Tag.Get("long") != "", false, d, func() {
 		imgui.SetNextItemWidth(-1)
 
 		base := f.String()
@@ -787,13 +800,13 @@ func (editor *settingsEditor) buildString(f reflect.Value, d reflect.StructField
 	})
 }
 
-func (editor *settingsEditor) buildInt(f reflect.Value, d reflect.StructField) {
+func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d reflect.StructField) {
 	base := int32(f.Int())
 
 	_, okS := d.Tag.Lookup("string")
 	cSpec, okC := d.Tag.Lookup("combo")
 
-	editor.drawComponent(editor.getLabel(d), !okS && !okC, false, d, func() {
+	editor.drawComponent(jsonPath, editor.getLabel(d), !okS && !okC, false, d, func() {
 		imgui.SetNextItemWidth(-1)
 
 		format := firstOf(d.Tag.Get("format"), "%d")
@@ -855,8 +868,8 @@ func (editor *settingsEditor) buildInt(f reflect.Value, d reflect.StructField) {
 	})
 }
 
-func (editor *settingsEditor) buildFloat(f reflect.Value, d reflect.StructField) {
-	editor.drawComponent(editor.getLabel(d), d.Tag.Get("string") == "", false, d, func() {
+func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d reflect.StructField) {
+	editor.drawComponent(jsonPath, editor.getLabel(d), d.Tag.Get("string") == "", false, d, func() {
 		imgui.SetNextItemWidth(-1)
 
 		if d.Tag.Get("string") != "" {
@@ -891,7 +904,7 @@ func (editor *settingsEditor) buildFloat(f reflect.Value, d reflect.StructField)
 	})
 }
 
-func (editor *settingsEditor) buildColor(f reflect.Value, d reflect.StructField, withLabel bool) {
+func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d reflect.StructField, withLabel bool) {
 	dComp := func() {
 		imgui.SetNextItemWidth(-1)
 
@@ -911,13 +924,13 @@ func (editor *settingsEditor) buildColor(f reflect.Value, d reflect.StructField,
 	}
 
 	if withLabel {
-		editor.drawComponent(editor.getLabel(d), false, false, d, dComp)
+		editor.drawComponent(jsonPath, editor.getLabel(d), false, false, d, dComp)
 	} else {
 		dComp()
 	}
 }
 
-func (editor *settingsEditor) drawComponent(label string, long, dynamic bool, d reflect.StructField, draw func()) {
+func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynamic bool, d reflect.StructField, draw func()) {
 	width := 240 + imgui.CalcTextSize("x", false, 0).X + imgui.CurrentStyle().FramePadding().X*4
 
 	cCount := 1
@@ -936,18 +949,21 @@ func (editor *settingsEditor) drawComponent(label string, long, dynamic bool, d 
 
 		imgui.TableNextColumn()
 
-		if t, ok := d.Tag.Lookup("tooltip"); ok {
-			imgui.BeginGroup()
-			imgui.Text(label)
-			imgui.EndGroup()
+		imgui.BeginGroup()
+		imgui.Text(label)
+		imgui.EndGroup()
 
-			if imgui.IsItemHovered() {
-				imgui.BeginTooltip()
-				imgui.SetTooltip(t)
-				imgui.EndTooltip()
+		if imgui.IsItemHovered() {
+			imgui.BeginTooltip()
+
+			tTip := jsonPath
+
+			if t, ok := d.Tag.Lookup("tooltip"); ok {
+				tTip += "\n\n" + t
 			}
-		} else {
-			imgui.Text(label)
+
+			imgui.SetTooltip(tTip)
+			imgui.EndTooltip()
 		}
 
 		imgui.TableNextColumn()
