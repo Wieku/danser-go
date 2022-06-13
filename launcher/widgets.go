@@ -73,6 +73,9 @@ func sliderC(label string, val *floatParam, min, max float32, format string) {
 	imgui.PushFont(Font16)
 
 	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+
 		imgui.TableNextColumn()
 
 		imgui.SetNextItemWidth(-1)
@@ -105,6 +108,9 @@ func sliderCStep(label string, val *floatParam, min, max, step float32, format s
 	imgui.PushFont(Font16)
 
 	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+
 		imgui.TableNextColumn()
 
 		imgui.SetNextItemWidth(-1)
@@ -169,6 +175,9 @@ func sliderIC(label string, val *intParam, min, max int32, format string) {
 	imgui.PushFont(Font16)
 
 	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+
 		imgui.TableNextColumn()
 
 		imgui.SetNextItemWidth(-1)
