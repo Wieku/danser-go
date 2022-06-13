@@ -565,7 +565,7 @@ func (l *launcher) drawImgui() {
 }
 
 func (l *launcher) drawMain() {
-	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+	w := imgui.WindowContentRegionMax().X
 
 	imgui.PushFont(Font24)
 
@@ -603,123 +603,7 @@ func (l *launcher) drawMain() {
 
 	l.drawControls()
 
-	imgui.SetCursorPos(imgui.Vec2{
-		X: imgui.WindowContentRegionMin().X,
-		Y: float32(h) - imgui.FrameHeightWithSpacing(),
-	})
-
-	if l.bld.currentPMode == Record && l.showProgressBar {
-		if l.recordStatus == "Done" {
-			imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.Vec4{
-				X: 0.16,
-				Y: 0.75,
-				Z: 0.18,
-				W: 1,
-			})
-		} else {
-			imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.CurrentStyle().Color(imgui.StyleColorCheckMark))
-		}
-
-		imgui.ProgressBarV(l.recordProgress, imgui.Vec2{w / 2, imgui.FrameHeight()}, l.recordStatus)
-
-		if l.encodeInProgress {
-			imgui.PushFont(Font16)
-
-			cPos := imgui.CursorPos()
-
-			imgui.Text(l.recordStatusSpeed)
-
-			cPos.X += 95
-
-			imgui.SetCursorPos(cPos)
-
-			eta := int(time.Since(l.encodeStart).Seconds())
-
-			imgui.Text("| Elapsed: " + util.FormatSeconds(eta))
-
-			cPos.X += 135
-
-			imgui.SetCursorPos(cPos)
-
-			imgui.Text("| " + l.recordStatusETA)
-
-			imgui.PopFont()
-		}
-
-		imgui.PopStyleColor()
-	}
-
-	fHwS := imgui.FrameHeightWithSpacing()*2 - imgui.CurrentStyle().FramePadding().X
-
-	bW := (w) / 4
-	dW := (300+bW)/2 - imgui.CurrentStyle().FramePadding().X*2
-
-	imgui.SetCursorPos(imgui.Vec2{
-		X: imgui.WindowContentRegionMax().X - dW, //- imgui.CurrentStyle().FramePadding().X,
-		Y: float32(h) - imgui.FrameHeightWithSpacing()*2,
-	})
-
-	imgui.PushFont(Font48)
-	{
-		dRun := l.danserRunning && l.bld.currentPMode == Record
-
-		s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) || (l.bld.currentMode != Replay && l.bld.currentMap == nil)
-
-		if !dRun {
-			if s {
-				imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
-			}
-		} else {
-			imgui.PopItemFlag()
-		}
-
-		name := "danse!"
-		if dRun {
-			name = "CANCEL"
-		}
-
-		if imgui.ButtonV(name, imgui.Vec2{X: bW, Y: fHwS}) {
-			if dRun {
-				if l.danserCmd != nil {
-					goroutines.Run(func() {
-						res := dialog.Message("Do you really want to cancel?").YesNo()
-
-						if res && l.danserCmd != nil {
-							l.danserCmd.Process.Kill()
-							l.danserCleanup()
-						}
-					})
-				}
-			} else {
-				if l.selectWindow != nil {
-					l.selectWindow.stopPreview()
-				}
-
-				log.Println(l.bld.getArguments())
-
-				l.triangleSpeed.AddEventS(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+1000, 50, 1)
-
-				if l.bld.currentPMode != Watch {
-					l.startDanser()
-				} else {
-					goroutines.Run(func() {
-						time.Sleep(500 * time.Millisecond)
-						l.startDanser()
-					})
-				}
-			}
-		}
-
-		if !dRun {
-			if s {
-				imgui.PopItemFlag()
-			}
-		} else {
-			imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
-		}
-
-		imgui.PopFont()
-	}
+	l.drawLowerPanel()
 
 	if l.selectWindow != nil {
 		l.selectWindow.update()
@@ -785,7 +669,7 @@ func (l *launcher) drawControls() {
 
 	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 204})
 
-	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+	w := imgui.WindowContentRegionMax().X
 
 	if imgui.BeginTableV("abtn", 2, imgui.TableFlagsSizingStretchSame, imgui.Vec2{float32(w) / 2, -1}, -1) {
 		imgui.TableNextColumn()
@@ -836,33 +720,6 @@ func (l *launcher) drawControls() {
 		imgui.EndTable()
 	}
 
-	if l.bld.currentMode != Play {
-		imgui.SetCursorPos(imgui.Vec2{
-			X: 20,
-			Y: h - imgui.FrameHeightWithSpacing()*2,
-		})
-
-		imgui.SetNextItemWidth((imgui.WindowWidth() - 40) / 4)
-
-		if imgui.BeginComboV("##Watch mode", l.bld.currentPMode.String(), 5) {
-			for _, m := range pModes {
-				if imgui.Selectable(m.String()) {
-					l.bld.currentPMode = m
-				}
-			}
-
-			imgui.EndCombo()
-		}
-
-		if l.bld.currentPMode != Watch {
-			imgui.SameLine()
-			if imgui.Button("Configure") {
-				l.openPopup(newPopupF("Record settings", popDynamic, func() {
-					drawRecordMenu(l.bld)
-				}))
-			}
-		}
-	}
 }
 
 func (l *launcher) selectReplay() {
@@ -963,6 +820,163 @@ func (l *launcher) showSelect() {
 	imgui.UnindentV(5)
 
 	imgui.PopFont()
+}
+
+func (l *launcher) drawLowerPanel() {
+	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+
+	if l.bld.currentMode != Play {
+		showProgress := l.bld.currentPMode == Record && l.showProgressBar
+
+		spacing := imgui.FrameHeightWithSpacing()
+		if showProgress {
+			spacing *= 2
+		}
+
+		imgui.SetCursorPos(imgui.Vec2{
+			X: 20,
+			Y: h - spacing,
+		})
+
+		imgui.SetNextItemWidth((imgui.WindowWidth() - 40) / 4)
+
+		if imgui.BeginComboV("##Watch mode", l.bld.currentPMode.String(), 5) {
+			for _, m := range pModes {
+				if imgui.Selectable(m.String()) {
+					l.bld.currentPMode = m
+				}
+			}
+
+			imgui.EndCombo()
+		}
+
+		if l.bld.currentPMode != Watch {
+			imgui.SameLine()
+			if imgui.Button("Configure") {
+				l.openPopup(newPopupF("Record settings", popDynamic, func() {
+					drawRecordMenu(l.bld)
+				}))
+			}
+		}
+
+		imgui.SetCursorPos(imgui.Vec2{
+			X: imgui.WindowContentRegionMin().X,
+			Y: float32(h) - imgui.FrameHeightWithSpacing(),
+		})
+
+		if showProgress {
+			if l.recordStatus == "Done" {
+				imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.Vec4{
+					X: 0.16,
+					Y: 0.75,
+					Z: 0.18,
+					W: 1,
+				})
+			} else {
+				imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.CurrentStyle().Color(imgui.StyleColorCheckMark))
+			}
+
+			imgui.ProgressBarV(l.recordProgress, imgui.Vec2{w / 2, imgui.FrameHeight()}, l.recordStatus)
+
+			if l.encodeInProgress {
+				imgui.PushFont(Font16)
+
+				cPos := imgui.CursorPos()
+
+				imgui.Text(l.recordStatusSpeed)
+
+				cPos.X += 95
+
+				imgui.SetCursorPos(cPos)
+
+				eta := int(time.Since(l.encodeStart).Seconds())
+
+				imgui.Text("| Elapsed: " + util.FormatSeconds(eta))
+
+				cPos.X += 135
+
+				imgui.SetCursorPos(cPos)
+
+				imgui.Text("| " + l.recordStatusETA)
+
+				imgui.PopFont()
+			}
+
+			imgui.PopStyleColor()
+		}
+	}
+
+	fHwS := imgui.FrameHeightWithSpacing()*2 - imgui.CurrentStyle().FramePadding().X
+
+	bW := (w) / 4
+	dW := (w/2.5+bW)/2 - imgui.CurrentStyle().FramePadding().X*2
+
+	imgui.SetCursorPos(imgui.Vec2{
+		X: imgui.WindowContentRegionMax().X - dW, //- imgui.CurrentStyle().FramePadding().X,
+		Y: float32(h) - imgui.FrameHeightWithSpacing()*2,
+	})
+
+	imgui.PushFont(Font48)
+	{
+		dRun := l.danserRunning && l.bld.currentPMode == Record
+
+		s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) || (l.bld.currentMode != Replay && l.bld.currentMap == nil)
+
+		if !dRun {
+			if s {
+				imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+			}
+		} else {
+			imgui.PopItemFlag()
+		}
+
+		name := "danse!"
+		if dRun {
+			name = "CANCEL"
+		}
+
+		if imgui.ButtonV(name, imgui.Vec2{X: bW, Y: fHwS}) {
+			if dRun {
+				if l.danserCmd != nil {
+					goroutines.Run(func() {
+						res := dialog.Message("Do you really want to cancel?").YesNo()
+
+						if res && l.danserCmd != nil {
+							l.danserCmd.Process.Kill()
+							l.danserCleanup()
+						}
+					})
+				}
+			} else {
+				if l.selectWindow != nil {
+					l.selectWindow.stopPreview()
+				}
+
+				log.Println(l.bld.getArguments())
+
+				l.triangleSpeed.AddEventS(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+1000, 50, 1)
+
+				if l.bld.currentPMode != Watch {
+					l.startDanser()
+				} else {
+					goroutines.Run(func() {
+						time.Sleep(500 * time.Millisecond)
+						l.startDanser()
+					})
+				}
+			}
+		}
+
+		if !dRun {
+			if s {
+				imgui.PopItemFlag()
+			}
+		} else {
+			imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+		}
+
+		imgui.PopFont()
+	}
 }
 
 func (l *launcher) drawConfigPanel() {
