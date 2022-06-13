@@ -5,19 +5,17 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/rplpa"
+	"golang.org/x/exp/constraints"
 	"strconv"
 	"strings"
 )
 
-type floatParam struct {
-	ogValue float32
-	value   float32
-	changed bool
-}
+type floatParam param[float32]
+type intParam param[int32]
 
-type intParam struct {
-	ogValue int32
-	value   int32
+type param[T constraints.Integer | constraints.Float] struct {
+	ogValue T
+	value   T
 	changed bool
 }
 

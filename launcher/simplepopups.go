@@ -13,7 +13,7 @@ func drawTimeMenu(bld *builder) {
 	start := &bld.start
 	end := &bld.end
 
-	sliderIC("Start time", start, 0, end.ogValue-1, util.FormatSeconds(int(start.value)))
+	sliderIntReset("Start time", start, 0, end.ogValue-1, util.FormatSeconds(int(start.value)))
 
 	if start.value >= end.value {
 		end.value = start.value + 1
@@ -21,7 +21,7 @@ func drawTimeMenu(bld *builder) {
 
 	imgui.Spacing()
 
-	sliderIC("End time", end, 1, end.ogValue, util.FormatSeconds(int(end.value)))
+	sliderIntReset("End time", end, 1, end.ogValue, util.FormatSeconds(int(end.value)))
 
 	if start.value >= end.value {
 		start.value = end.value - 1
@@ -31,27 +31,27 @@ func drawTimeMenu(bld *builder) {
 }
 
 func drawSpeedMenu(bld *builder) {
-	sliderCStep("Speed", &bld.speed, 0.1, 3, 0.05, "%.2f")
+	sliderFloatResetStep("Speed", &bld.speed, 0.1, 3, 0.05, "%.2f")
 	imgui.Spacing()
 
-	sliderCStep("Pitch", &bld.pitch, 0.1, 3, 0.05, "%.2f")
+	sliderFloatResetStep("Pitch", &bld.pitch, 0.1, 3, 0.05, "%.2f")
 	imgui.Spacing()
 }
 
 func drawParamMenu(bld *builder) {
-	sliderC("Approach Rate (AR)", &bld.ar, 0, 10, "%.1f")
+	sliderFloatReset("Approach Rate (AR)", &bld.ar, 0, 10, "%.1f")
 	imgui.Spacing()
 
 	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderC("Overall Difficulty (OD)", &bld.od, 0, 10, "%.1f")
+		sliderFloatReset("Overall Difficulty (OD)", &bld.od, 0, 10, "%.1f")
 		imgui.Spacing()
 	}
 
-	sliderC("Circle Size (CS)", &bld.cs, 0, 10, "%.1f")
+	sliderFloatReset("Circle Size (CS)", &bld.cs, 0, 10, "%.1f")
 	imgui.Spacing()
 
 	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderC("Health Drain (HP)", &bld.hp, 0, 10, "%.1f")
+		sliderFloatReset("Health Drain (HP)", &bld.hp, 0, 10, "%.1f")
 		imgui.Spacing()
 	}
 }
