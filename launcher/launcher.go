@@ -568,29 +568,40 @@ func (l *launcher) drawMain() {
 	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
 
 	imgui.PushFont(Font24)
-	imgui.PushItemWidth(-w/2 + imgui.CurrentStyle().CellPadding().X*4 + imgui.CurrentStyle().FramePadding().X)
-	imgui.Text("Mode:")
-	imgui.SameLine()
 
-	if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
-		for _, m := range modes {
-			if imgui.Selectable(m.String()) {
-				if m == Play {
-					l.bld.currentPMode = Watch
+	if imgui.BeginTableV("ltpanel", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{float32(w) / 2, 0}, -1) {
+		imgui.TableSetupColumnV("ltpanel1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+		imgui.TableSetupColumnV("ltpanel2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+
+		imgui.TableNextColumn()
+
+		imgui.AlignTextToFramePadding()
+		imgui.Text("Mode:")
+
+		imgui.TableNextColumn()
+
+		imgui.SetNextItemWidth(-1)
+
+		if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
+			for _, m := range modes {
+				if imgui.Selectable(m.String()) {
+					if m == Play {
+						l.bld.currentPMode = Watch
+					}
+
+					l.bld.currentMode = m
 				}
-
-				l.bld.currentMode = m
 			}
+
+			imgui.EndCombo()
 		}
 
-		imgui.EndCombo()
+		imgui.EndTable()
 	}
 
 	l.drawConfigPanel()
 
 	l.drawControls()
-
-	imgui.PopItemWidth()
 
 	imgui.SetCursorPos(imgui.Vec2{
 		X: imgui.WindowContentRegionMin().X,
