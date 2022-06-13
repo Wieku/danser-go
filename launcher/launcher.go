@@ -746,7 +746,7 @@ func (l *launcher) selectReplay() {
 
 		mString := fmt.Sprintf("%s - %s [%s]\nPlayed by: %s", b.Artist, b.Name, b.Difficulty, l.bld.currentReplay.Username)
 
-		imgui.PushTextWrapPosV((imgui.WindowWidth() - 40) * 2 / 3)
+		imgui.PushTextWrapPosV(imgui.ContentRegionMax().X / 2)
 		imgui.Text(mString)
 		imgui.PopTextWrapPos()
 	} else {
@@ -810,7 +810,7 @@ func (l *launcher) showSelect() {
 
 		mString := fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty)
 
-		imgui.PushTextWrapPosV((imgui.WindowWidth() - 40) * 2 / 3)
+		imgui.PushTextWrapPosV(imgui.ContentRegionMax().X / 2)
 		imgui.Text(mString)
 		imgui.PopTextWrapPos()
 	} else {
