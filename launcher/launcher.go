@@ -909,74 +909,75 @@ func (l *launcher) drawLowerPanel() {
 	fHwS := imgui.FrameHeightWithSpacing()*2 - imgui.CurrentStyle().FramePadding().X
 
 	bW := (w) / 4
-	dW := (w/2.5+bW)/2 - imgui.CurrentStyle().FramePadding().X*2
 
 	imgui.SetCursorPos(imgui.Vec2{
-		X: imgui.WindowContentRegionMax().X - dW, //- imgui.CurrentStyle().FramePadding().X,
+		X: imgui.WindowContentRegionMax().X - w/2.5,
 		Y: float32(h) - imgui.FrameHeightWithSpacing()*2,
 	})
 
-	imgui.PushFont(Font48)
-	{
-		dRun := l.danserRunning && l.bld.currentPMode == Record
+	centerTable("dansebutton", w/2.5, func() {
+		imgui.PushFont(Font48)
+		{
+			dRun := l.danserRunning && l.bld.currentPMode == Record
 
-		s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) || (l.bld.currentMode != Replay && l.bld.currentMap == nil)
+			s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) || (l.bld.currentMode != Replay && l.bld.currentMap == nil)
 
-		if !dRun {
-			if s {
-				imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
-			}
-		} else {
-			imgui.PopItemFlag()
-		}
-
-		name := "danse!"
-		if dRun {
-			name = "CANCEL"
-		}
-
-		if imgui.ButtonV(name, imgui.Vec2{X: bW, Y: fHwS}) {
-			if dRun {
-				if l.danserCmd != nil {
-					goroutines.Run(func() {
-						res := dialog.Message("Do you really want to cancel?").YesNo()
-
-						if res && l.danserCmd != nil {
-							l.danserCmd.Process.Kill()
-							l.danserCleanup()
-						}
-					})
+			if !dRun {
+				if s {
+					imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
 				}
 			} else {
-				if l.selectWindow != nil {
-					l.selectWindow.stopPreview()
-				}
-
-				log.Println(l.bld.getArguments())
-
-				l.triangleSpeed.AddEventS(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+1000, 50, 1)
-
-				if l.bld.currentPMode != Watch {
-					l.startDanser()
-				} else {
-					goroutines.Run(func() {
-						time.Sleep(500 * time.Millisecond)
-						l.startDanser()
-					})
-				}
-			}
-		}
-
-		if !dRun {
-			if s {
 				imgui.PopItemFlag()
 			}
-		} else {
-			imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
-		}
 
-		imgui.PopFont()
-	}
+			name := "danse!"
+			if dRun {
+				name = "CANCEL"
+			}
+
+			if imgui.ButtonV(name, imgui.Vec2{X: bW, Y: fHwS}) {
+				if dRun {
+					if l.danserCmd != nil {
+						goroutines.Run(func() {
+							res := dialog.Message("Do you really want to cancel?").YesNo()
+
+							if res && l.danserCmd != nil {
+								l.danserCmd.Process.Kill()
+								l.danserCleanup()
+							}
+						})
+					}
+				} else {
+					if l.selectWindow != nil {
+						l.selectWindow.stopPreview()
+					}
+
+					log.Println(l.bld.getArguments())
+
+					l.triangleSpeed.AddEventS(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+1000, 50, 1)
+
+					if l.bld.currentPMode != Watch {
+						l.startDanser()
+					} else {
+						goroutines.Run(func() {
+							time.Sleep(500 * time.Millisecond)
+							l.startDanser()
+						})
+					}
+				}
+			}
+
+			if !dRun {
+				if s {
+					imgui.PopItemFlag()
+				}
+			} else {
+				imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+			}
+
+			imgui.PopFont()
+		}
+	})
 }
 
 func (l *launcher) drawConfigPanel() {

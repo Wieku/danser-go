@@ -61,18 +61,11 @@ func (m *modPopup) drawModMenu() {
 		imgui.EndTable()
 	}
 
-	rPX := (imgui.WindowContentRegionMax().X - imgui.CurrentStyle().ItemSpacing().X*2 - imgui.CalcTextSize("Reset", false, 0).X) / 2
-
-	cPos := imgui.CursorPos()
-
-	imgui.SetCursorPos(imgui.Vec2{
-		X: cPos.X + rPX,
-		Y: cPos.Y,
+	centerTable("modresettable", -1, func() {
+		if imgui.Button("Reset##Mods") {
+			m.bld.mods = difficulty.None
+		}
 	})
-
-	if imgui.Button("Reset##Mods") {
-		m.bld.mods = difficulty.None
-	}
 
 	imgui.PopStyleVar()
 }

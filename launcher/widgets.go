@@ -267,3 +267,25 @@ func keySlideFloat[T constraints.Float](value *T, min, max, step T) (ret bool) {
 
 	return
 }
+
+func centerTable(label string, width float32, draw func()) {
+	if imgui.BeginTableV(label, 3, imgui.TableFlagsSizingStretchProp, imgui.Vec2{width, 0}, -1) {
+		imgui.TableSetupColumnV("1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+		imgui.TableSetupColumnV("2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+		imgui.TableSetupColumnV("3"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(2))
+
+		imgui.TableNextColumn()
+
+		imgui.Dummy(imgui.Vec2{1, 1})
+
+		imgui.TableNextColumn()
+
+		draw()
+
+		imgui.TableNextColumn()
+
+		imgui.Dummy(imgui.Vec2{1, 1})
+
+		imgui.EndTable()
+	}
+}
