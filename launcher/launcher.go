@@ -620,9 +620,7 @@ func (l *launcher) drawMain() {
 			imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.CurrentStyle().Color(imgui.StyleColorCheckMark))
 		}
 
-		h := imgui.FrameHeight()
-
-		imgui.ProgressBarV(l.recordProgress, imgui.Vec2{-300, h}, l.recordStatus)
+		imgui.ProgressBarV(l.recordProgress, imgui.Vec2{w / 2, imgui.FrameHeight()}, l.recordStatus)
 
 		if l.encodeInProgress {
 			imgui.PushFont(Font16)
