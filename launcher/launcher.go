@@ -297,10 +297,10 @@ func (l *launcher) startGLFW() {
 	glfw.WindowHint(glfw.Samples, 0)
 
 	settings.Graphics.Fullscreen = false
-	settings.Graphics.WindowWidth = int64(800)
-	settings.Graphics.WindowHeight = int64(500)
+	settings.Graphics.WindowWidth = 800
+	settings.Graphics.WindowHeight = 534
 
-	l.win, err = glfw.CreateWindow(800, 500, "danser-go "+build.VERSION+" launcher", nil, nil)
+	l.win, err = glfw.CreateWindow(800, 534, "danser-go "+build.VERSION+" launcher", nil, nil)
 
 	if err != nil {
 		panic(err)
@@ -480,7 +480,7 @@ func (l *launcher) Draw() {
 
 	l.batch.SetColor(1, 1, 1, 1)
 	l.batch.ResetTransform()
-	l.batch.SetCamera(mgl32.Ortho(-float32(w)/2, float32(w)/2, float32(h)/2, -float32(h)/2, -1, 1))
+	l.batch.SetCamera(mgl32.Ortho(0, float32(w), float32(h), 0, -1, 1))
 
 	l.batch.Begin()
 
@@ -502,7 +502,7 @@ func (l *launcher) Draw() {
 			}
 		}
 
-		l.coin.SetPosition(vector.NewVec2d(238, -18))
+		l.coin.SetPosition(vector.NewVec2d(468+155.5, 180+85))
 		l.coin.SetScale(float64(h) / 4)
 		l.coin.SetRotation(0.1)
 
@@ -667,7 +667,7 @@ func (l *launcher) drawControls() {
 		l.showSelect()
 	}
 
-	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 204})
+	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 204 + 34})
 
 	w := imgui.WindowContentRegionMax().X
 
@@ -984,24 +984,32 @@ func (l *launcher) drawConfigPanel() {
 	w := imgui.WindowContentRegionMax().X
 
 	imgui.SetCursorPos(imgui.Vec2{
-		X: imgui.WindowContentRegionMax().X - float32(w)/2.5, //bW - 8*imgui.CurrentStyle().FramePadding().X,
-		Y: 18,
+		X: imgui.WindowContentRegionMax().X - float32(w)/2.5,
+		Y: 20,
 	})
 
-	if imgui.BeginTableV("rtpanel", 3, imgui.TableFlagsSizingStretchProp, imgui.Vec2{float32(w) / 2.5, 0}, -1) {
-		imgui.TableSetupColumnV("rtpanel1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("rtpanel2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
-		imgui.TableSetupColumnV("rtpanel3", imgui.TableColumnFlagsWidthFixed, 0, uint(2))
+	if imgui.BeginTableV("rtpanel", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{float32(w) / 2.5, 0}, -1) {
+		imgui.TableSetupColumnV("rtpanel1", imgui.TableColumnFlagsWidthStretch, 0, 0)
+		imgui.TableSetupColumnV("rtpanel2", imgui.TableColumnFlagsWidthFixed, 0, 1)
 
 		imgui.TableNextColumn()
 
+		imgui.ButtonV("Launcher settings", imgui.Vec2{-1, 0})
+
+		imgui.TableNextColumn()
+
+		imgui.Button("About")
+
+		imgui.TableNextColumn()
+
+		imgui.AlignTextToFramePadding()
 		imgui.Text("Config:")
 
-		imgui.TableNextColumn()
+		imgui.SameLine()
 
 		imgui.SetNextItemWidth(-1)
 
-		if imgui.BeginCombo("##config", l.bld.config) {
+		if imgui.BeginCombo("##config" /*"Config: "+*/, l.bld.config) {
 			if imgui.Selectable("Create new...") {
 				l.newCloneOpened = true
 				l.configManiMode = New
@@ -1059,7 +1067,7 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
-		if imgui.Button("Edit") {
+		if imgui.ButtonV("Edit", imgui.Vec2{-1, 0}) {
 			l.openPopup(newSettingsEditor(l.currentConfig, func() {
 				l.currentConfig.Save("", false)
 
