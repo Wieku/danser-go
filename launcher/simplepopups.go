@@ -2,7 +2,10 @@ package launcher
 
 import (
 	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/util"
 	"strconv"
 )
@@ -124,6 +127,60 @@ func drawRecordMenu(bld *builder) {
 				}
 			}
 		}
+
+		imgui.EndTable()
+	}
+}
+
+func drawAbout(dTex texture.Texture) {
+	centerTable("about1", -1, func() {
+		imgui.Image(imgui.TextureID(dTex.GetID()), imgui.Vec2{100, 100})
+	})
+
+	centerTable("about2", -1, func() {
+		imgui.Text("danser-go " + build.VERSION)
+	})
+
+	centerTable("about3", -1, func() {
+		imgui.Button("Check for updates")
+	})
+
+	imgui.Dummy(imgui.Vec2{1, imgui.FrameHeight()})
+
+	centerTable("about4.1", -1, func() {
+		imgui.Text("Advanced visualisation multi-tool")
+	})
+
+	centerTable("about4.2", -1, func() {
+		imgui.Text("for osu!")
+	})
+
+	imgui.Dummy(imgui.Vec2{1, imgui.FrameHeight()})
+
+	if imgui.BeginTableV("about5", 3, imgui.TableFlagsSizingStretchSame, imgui.Vec2{-1, 0}, -1) {
+		imgui.TableNextColumn()
+
+		centerTable("aboutgithub", -1, func() {
+			if imgui.Button("GitHub") {
+				platform.OpenURL("https://wieku.me/danser")
+			}
+		})
+
+		imgui.TableNextColumn()
+
+		centerTable("aboutdonate", -1, func() {
+			if imgui.Button("Donate") {
+				platform.OpenURL("https://wieku.me/donate")
+			}
+		})
+
+		imgui.TableNextColumn()
+
+		centerTable("aboutdiscord", -1, func() {
+			if imgui.Button("Discord") {
+				platform.OpenURL("https://wieku.me/lair")
+			}
+		})
 
 		imgui.EndTable()
 	}

@@ -998,7 +998,11 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
-		imgui.Button("About")
+		if imgui.Button("About") {
+			l.openPopup(newPopupF("About", popDynamic, func() {
+				drawAbout(l.coin.Texture.Texture)
+			}))
+		}
 
 		imgui.TableNextColumn()
 

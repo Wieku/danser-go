@@ -16,9 +16,9 @@ import (
 type DanserCoin struct {
 	*BeatSynced
 
-	coinBottom     *sprite.Sprite
-	coinTop        *sprite.Sprite
-	vis            *drawables.Visualiser
+	coinBottom *sprite.Sprite
+	coinTop    *sprite.Sprite
+	vis        *drawables.Visualiser
 
 	drawVisualiser bool
 }
@@ -31,7 +31,7 @@ func NewDanserCoin() *DanserCoin {
 	coin.SetColor(color2.NewL(1))
 	coin.SetAlpha(1)
 
-	coin.vis = drawables.NewVisualiser(1.0, 400.0, vector.NewVec2d(0,0))
+	coin.vis = drawables.NewVisualiser(1.0, 400.0, vector.NewVec2d(0, 0))
 
 	pixmap, err := assets.GetPixmap("assets/textures/coinbig.png")
 	if err != nil {
@@ -46,6 +46,8 @@ func NewDanserCoin() *DanserCoin {
 
 	coin.coinBottom = sprite.NewSpriteSingle(&rg, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
 	coin.coinTop = sprite.NewSpriteSingle(&rg, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0))
+
+	coin.Texture = &rg
 
 	return coin
 }
@@ -63,11 +65,11 @@ func (coin *DanserCoin) Update(time float64) {
 
 	scl := (1.0 / float64(coin.coinBottom.Texture.Width)) * 1.05
 
-	nScl := coin.GetScale().Scl(scl*2)
+	nScl := coin.GetScale().Scl(scl * 2)
 
 	bScl := nScl.Scl(innerCircleScale)
 
-	coin.vis.SetStartDistance(coin.GetScale().X*innerCircleScale)
+	coin.vis.SetStartDistance(coin.GetScale().X * innerCircleScale)
 
 	coin.coinBottom.SetScaleV(bScl)
 	coin.coinTop.SetScaleV(nScl.Scl(outerCircleScale))
@@ -79,7 +81,7 @@ func (coin *DanserCoin) Update(time float64) {
 
 	coin.vis.SetKiai(coin.Kiai)
 
-	coin.coinTop.SetAlpha(float32(alpha * (1 - easing.OutQuad(coin.Beat))*coin.GetAlpha()))
+	coin.coinTop.SetAlpha(float32(alpha * (1 - easing.OutQuad(coin.Beat)) * coin.GetAlpha()))
 	coin.coinBottom.SetAlpha(coin.GetAlpha32())
 
 	coin.vis.Position = coin.GetPosition()
