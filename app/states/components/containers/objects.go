@@ -78,7 +78,7 @@ func (container *HitObjectContainer) createFollowPoints() {
 		distance := vec.Len()
 		rotation := vec.AngleR()
 
-		for progress := lineDist * 1.5; progress < distance-lineDist; progress += lineDist {
+		for progress := math.Max(lineDist*1.5, distance-5_000); progress < distance-lineDist; progress += lineDist { // Limit the points to 5k osu!pixels from the next object
 			t := progress / distance
 
 			tStart := prevTime + t*duration - preEmpt
