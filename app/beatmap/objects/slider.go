@@ -100,6 +100,10 @@ func NewSlider(data []string) *Slider {
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
 	slider.RepeatCount, _ = strconv.ParseInt(data[6], 10, 64)
 
+	// Sanity limits, XNOR reaches 10M pixel length so 100M should be enough
+	slider.pixelLength = math.Min(slider.pixelLength, 100_000_000)
+	slider.RepeatCount = mutils.Min(slider.RepeatCount, 10_000) // The same limit as in Lazer
+
 	list := strings.Split(data[5], "|")
 	points := []vector.Vector2f{slider.StartPosRaw}
 
@@ -296,12 +300,17 @@ func (slider *Slider) SetTiming(timings *Timings, diffCalcOnly bool) {
 		tickDistance = slider.pixelLength
 	}
 
+	// Sanity limit to 32768 ticks per repeat
+	if cLength/tickDistance > 32768 {
+		tickDistance = cLength / 32768
+	}
+
 	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
 	for span := 0; span < int(slider.RepeatCount); span++ {
 		spanStartTime := slider.StartTime + float64(span)*slider.spanDuration
 		reversed := span%2 == 1
 
-		// skip ticks if timingPoint has NaN beatLength
+		// Skip ticks if timingPoint has NaN beatLength
 		for d := tickDistance; d <= cLength && !nanTimingPoint; d += tickDistance {
 			if d >= cLength-minDistanceFromEnd {
 				break
