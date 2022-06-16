@@ -32,6 +32,9 @@ type popup struct {
 	popType popupType
 
 	opened bool
+
+	closeListener  func()
+	listenerCalled bool
 }
 
 func newPopup(name string, popType popupType) *popup {
@@ -60,11 +63,24 @@ func (p *popup) draw() {
 }
 
 func (p *popup) shouldClose() bool {
+	if !p.opened && !p.listenerCalled {
+		if p.closeListener != nil {
+			p.closeListener()
+		}
+
+		p.listenerCalled = true
+	}
+
 	return !p.opened
 }
 
 func (p *popup) open() {
+	p.listenerCalled = false
 	p.opened = true
+}
+
+func (p *popup) setCloseListener(closeListener func()) {
+	p.closeListener = closeListener
 }
 
 func popupSmall(name string, opened *bool, dynamicSize bool, content func()) {

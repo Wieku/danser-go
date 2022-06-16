@@ -187,3 +187,17 @@ func drawAbout(dTex texture.Texture) {
 		imgui.EndTable()
 	}
 }
+
+func drawLauncherConfig() {
+	if imgui.BeginTable("lconfigtable", 2) {
+		imgui.TableNextColumn()
+
+		imgui.Text("Check for updates on danser's launch")
+
+		imgui.TableNextColumn()
+
+		imgui.Checkbox("##Check for updates on danser's launch", &launcherConfig.CheckForUpdates)
+
+		imgui.EndTable()
+	}
+}

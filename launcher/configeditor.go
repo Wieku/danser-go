@@ -32,19 +32,17 @@ type settingsEditor struct {
 	current      *settings.Config
 
 	listenerCalled bool
-	closeListener  func()
 	sectionCache   map[string]imgui.Vec2
 
 	active     string
 	lastActive string
 }
 
-func newSettingsEditor(config *settings.Config, closeListener func()) *settingsEditor {
+func newSettingsEditor(config *settings.Config) *settingsEditor {
 	editor := &settingsEditor{
-		popup:         newPopup("Settings Editor", popBig),
-		searchCache:   make(map[string]int),
-		closeListener: closeListener,
-		sectionCache:  make(map[string]imgui.Vec2),
+		popup:        newPopup("Settings Editor", popBig),
+		searchCache:  make(map[string]int),
+		sectionCache: make(map[string]imgui.Vec2),
 	}
 
 	editor.internalDraw = editor.drawEditor
@@ -53,15 +51,6 @@ func newSettingsEditor(config *settings.Config, closeListener func()) *settingsE
 	editor.buildSearchCache("Main", reflect.ValueOf(config), editor.searchString, false)
 
 	return editor
-}
-
-func (editor *settingsEditor) shouldClose() bool {
-	if !editor.opened && !editor.listenerCalled {
-		editor.closeListener()
-		editor.listenerCalled = true
-	}
-
-	return !editor.opened
 }
 
 func (editor *settingsEditor) drawEditor() {

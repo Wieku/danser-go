@@ -1001,7 +1001,15 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
-		imgui.ButtonV("Launcher settings", imgui.Vec2{-1, 0})
+		if imgui.ButtonV("Launcher settings", imgui.Vec2{-1, 0}) {
+			lEditor := newPopupF("About", popDynamic, drawLauncherConfig)
+
+			lEditor.setCloseListener(func() {
+				saveLauncherConfig()
+			})
+
+			l.openPopup(lEditor)
+		}
 
 		imgui.TableNextColumn()
 
@@ -1079,13 +1087,17 @@ func (l *launcher) drawConfigPanel() {
 		imgui.TableNextColumn()
 
 		if imgui.ButtonV("Edit", imgui.Vec2{-1, 0}) {
-			l.openPopup(newSettingsEditor(l.currentConfig, func() {
+			sEditor := newSettingsEditor(l.currentConfig)
+
+			sEditor.setCloseListener(func() {
 				l.currentConfig.Save("", false)
 
 				if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
 					showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
 				}
-			}))
+			})
+
+			l.openPopup(sEditor)
 		}
 
 		imgui.EndTable()
