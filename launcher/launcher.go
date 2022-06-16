@@ -418,6 +418,23 @@ func (l *launcher) loadBeatmaps() {
 		l.loadReplay(names[0])
 	})
 
+	l.win.SetCloseCallback(func(w *glfw.Window) {
+		if l.danserCmd != nil {
+			l.win.SetShouldClose(false)
+
+			goroutines.Run(func() {
+				if showMessage(mQuestion, "Recording is in progress, do you want to exit?") {
+					if l.danserCmd != nil {
+						l.danserCmd.Process.Kill()
+						l.danserCleanup(false)
+					}
+
+					l.win.SetShouldClose(true)
+				}
+			})
+		}
+	})
+
 	if len(os.Args) > 1 { //won't work in combined mode
 		l.loadReplay(os.Args[1])
 	}
