@@ -16,7 +16,37 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 )
+
+type SortBy int
+
+const (
+	Title = SortBy(iota)
+	Artist
+	Creator
+	DateAdded
+	Difficulty
+)
+
+var sortMethods = []SortBy{Title, Artist, Creator, DateAdded, Difficulty}
+
+func (s SortBy) String() string {
+	switch s {
+	case Title:
+		return "Title"
+	case Artist:
+		return "Artist"
+	case Creator:
+		return "Creator"
+	case DateAdded:
+		return "Date Added"
+	case Difficulty:
+		return "Difficulty"
+	}
+
+	return ""
+}
 
 type mapWithName struct {
 	name string
@@ -68,6 +98,8 @@ type songSelectPopup struct {
 
 	preIndex, postIndex int
 	focusTheMap         bool
+
+	comboOpened bool
 }
 
 func newSongSelectPopup(bld *builder, beatmaps []*beatmap.BeatMap) *songSelectPopup {
@@ -118,7 +150,7 @@ func (m *songSelectPopup) drawSongSelect() {
 		m.focusTheMap = true
 	}
 
-	if !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+	if !m.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
 		imgui.SetKeyboardFocusHereV(-1)
 	}
 
@@ -130,6 +162,36 @@ func (m *songSelectPopup) drawSongSelect() {
 	imgui.PopStyleVar()
 
 	imgui.PopFont()
+
+	imgui.PushFont(Font20)
+
+	imgui.AlignTextToFramePadding()
+	imgui.Text("Sort by:")
+
+	imgui.SameLine()
+
+	m.comboOpened = false
+
+	imgui.SetNextItemWidth(150)
+
+	if imgui.BeginCombo("##sortcombo", launcherConfig.SortMapsBy.String()) {
+		m.comboOpened = true
+
+		for _, s := range sortMethods {
+			if imgui.SelectableV(s.String(), s == launcherConfig.SortMapsBy, 0, imgui.Vec2{}) && s != launcherConfig.SortMapsBy {
+				launcherConfig.SortMapsBy = s
+				m.search()
+				m.focusTheMap = true
+				saveLauncherConfig()
+			}
+		}
+
+		imgui.EndCombo()
+	}
+
+	imgui.PopFont()
+
+	csPos := imgui.CursorScreenPos()
 
 	imgui.BeginChild("##bsets")
 
@@ -383,6 +445,8 @@ func (m *songSelectPopup) drawSongSelect() {
 	m.sizeCalculated++
 
 	imgui.EndChild()
+
+	imgui.WindowDrawList().AddLine(csPos, csPos.Plus(imgui.Vec2{imgui.ContentRegionAvail().X, 0}), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
 }
 
 func (m *songSelectPopup) stopPreview() {
@@ -420,25 +484,24 @@ func (m *songSelectPopup) search() {
 
 	sString := strings.ToLower(m.searchStr)
 
-	setToSet := make(map[string]int) //set locator if maps got mangled
+	foundMaps := make([]*beatmap.BeatMap, 0, len(m.beatmaps))
 
 	for _, b := range m.beatmaps {
 		if sString != "" && !strings.Contains(b.name, sString) {
 			continue
 		}
 
-		if i, ok := setToSet[b.bMap.Dir]; ok {
-			m.searchResults[i].bMaps = append(m.searchResults[i].bMaps, b.bMap)
-		} else {
-			setToSet[b.bMap.Dir] = len(m.searchResults)
-			m.searchResults = append(m.searchResults, &beatmapSet{bMaps: []*beatmap.BeatMap{b.bMap}})
-		}
+		foundMaps = append(foundMaps, b.bMap)
 	}
 
-	for _, set := range m.searchResults {
-		slices.SortFunc(set.bMaps, func(a, b *beatmap.BeatMap) bool {
-			return a.Stars < b.Stars
-		})
+	sortMaps(foundMaps, launcherConfig.SortMapsBy)
+
+	for _, b := range foundMaps {
+		if len(m.searchResults) == 0 || m.searchResults[len(m.searchResults)-1].bMaps[0].Dir != b.Dir {
+			m.searchResults = append(m.searchResults, &beatmapSet{bMaps: make([]*beatmap.BeatMap, 0, 1)})
+		}
+
+		m.searchResults[len(m.searchResults)-1].bMaps = append(m.searchResults[len(m.searchResults)-1].bMaps, b)
 	}
 
 	m.preIndex = 0
@@ -449,4 +512,62 @@ func (m *songSelectPopup) open() {
 	m.focusTheMap = true
 
 	m.popup.open()
+}
+
+func compareStrings(l, r string) int {
+	lRa := []rune(l)
+	rRa := []rune(r)
+	lenM := mutils.Min(len(lRa), len(rRa))
+
+	for i := 0; i < lenM; i++ {
+		cL := unicode.ToLower(lRa[i])
+		cR := unicode.ToLower(rRa[i])
+		if cL < cR {
+			return -1
+		} else if cL > cR {
+			return 1
+		}
+	}
+
+	if len(lRa) == len(rRa) {
+		return 0
+	} else if len(lRa) > len(rRa) {
+		return 1
+	}
+
+	return -1
+}
+
+func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
+	slices.SortStableFunc(bMaps, func(b1, b2 *beatmap.BeatMap) bool {
+		var res int
+
+		switch sortBy {
+		case Title:
+			res = compareStrings(b1.Name, b2.Name)
+		case Artist:
+			res = compareStrings(b1.Artist, b2.Artist)
+		case Creator:
+			res = compareStrings(b1.Creator, b2.Creator)
+		case DateAdded:
+			if compareStrings(b1.Dir, b2.Dir) != 0 || mutils.Abs(b1.LastModified/1000-b2.LastModified/1000) > 10 {
+				res = mutils.Compare(b1.LastModified/1000, b2.LastModified/1000)
+			} else {
+				res = 0
+			}
+		case Difficulty:
+			res = mutils.Compare(b1.Stars, b2.Stars)
+		}
+
+		if res != 0 {
+			return res == -1
+		}
+
+		res = compareStrings(b1.Dir, b2.Dir)
+		if res != 0 {
+			return res == -1
+		}
+
+		return mutils.Compare(b1.Stars, b2.Stars) < 1
+	})
 }

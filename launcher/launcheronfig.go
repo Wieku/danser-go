@@ -16,12 +16,14 @@ var launcherConfig = &launcherConf{
 	Profile:         nil,
 	CheckForUpdates: true,
 	ShowFileAfter:   true,
+	SortMapsBy:      Title,
 }
 
 type launcherConf struct {
 	Profile         *string
 	CheckForUpdates bool
 	ShowFileAfter   bool
+	SortMapsBy      SortBy
 }
 
 func loadLauncherConfig() {
