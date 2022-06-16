@@ -117,7 +117,9 @@ func combine() {
 		options = append(options, "-movflags", "+faststart")
 	}
 
-	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"."+settings.Recording.Container))
+	finalOutputPath := filepath.Join(settings.Recording.GetOutputDir(), output+"."+settings.Recording.Container)
+
+	options = append(options, finalOutputPath)
 
 	log.Println("Starting composing audio and video into one file...")
 	log.Println("Running ffmpeg with options:", options)
@@ -135,6 +137,7 @@ func combine() {
 			log.Println("ffmpeg finished abruptly! Please check if you have enough storage. Error:", err)
 		} else {
 			log.Println("Finished!")
+			log.Println("Video is available at:", finalOutputPath)
 		}
 	}
 
