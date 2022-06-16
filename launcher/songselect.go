@@ -281,6 +281,15 @@ func (m *songSelectPopup) drawSongSelect() {
 				continue
 			}
 
+			isPreviewed := false
+
+			for _, bMap := range b.bMaps {
+				if bMap == m.prevMap {
+					isPreviewed = true
+					break
+				}
+			}
+
 			c1 := imgui.CursorPos().Y
 
 			rId := strconv.Itoa(i)
@@ -315,12 +324,8 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(FontAw)
 
 					name := "\uF04B"
-
-					for _, bMap := range b.bMaps {
-						if bMap == m.prevMap {
-							name = "\uF04D"
-							break
-						}
+					if isPreviewed {
+						name = "\uF04D"
 					}
 
 					imgui.AlignTextToFramePadding()
@@ -356,6 +361,11 @@ func (m *songSelectPopup) drawSongSelect() {
 
 				if imgui.SelectableV(fDiffName+"##"+rId+"s"+strconv.Itoa(j), bMap == m.bld.currentMap, 0, imgui.Vec2{}) {
 					m.bld.setMap(bMap)
+
+					if !isPreviewed {
+						m.stopPreview()
+						m.startPreview(bMap)
+					}
 
 					m.opened = false
 				}
@@ -498,7 +508,6 @@ func (m *songSelectPopup) selectRandom() {
 
 	bMap := m.searchResults[i].bMaps[len(m.searchResults[i].bMaps)-1]
 
-	m.stopPreview()
 	m.bld.setMap(bMap)
 	m.focusTheMap = true
 	m.startPreview(bMap)
