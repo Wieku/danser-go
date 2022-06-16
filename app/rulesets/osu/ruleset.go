@@ -441,7 +441,12 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == Reset) ||
 		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (result&BaseHitsM > 0 && result&BaseHitsM != Hit300)) {
-		result = Miss
+		if result&BaseHitsM > 0 {
+			result = Miss
+		} else if result&(SliderHits) > 0 {
+			result = SliderMiss
+		}
+
 		comboResult = Reset
 		subSet.sdpfFail = true
 	}
