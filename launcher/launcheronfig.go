@@ -12,10 +12,14 @@ import (
 	"time"
 )
 
-var launcherConfig = &launcherConf{Profile: nil}
+var launcherConfig = &launcherConf{
+	Profile:         nil,
+	CheckForUpdates: true,
+}
 
 type launcherConf struct {
-	Profile *string
+	Profile         *string
+	CheckForUpdates bool
 }
 
 func loadLauncherConfig() {
