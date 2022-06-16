@@ -951,7 +951,7 @@ func (l *launcher) drawLowerPanel() {
 
 							if res && l.danserCmd != nil {
 								l.danserCmd.Process.Kill()
-								l.danserCleanup()
+								l.danserCleanup(false)
 							}
 						})
 					}
@@ -1419,7 +1419,7 @@ func (l *launcher) startDanser() {
 	goroutines.Run(func() {
 		err = l.danserCmd.Wait()
 
-		l.danserCleanup()
+		l.danserCleanup(err == nil)
 
 		if err != nil {
 			panicWait.Wait()
@@ -1442,14 +1442,17 @@ func (l *launcher) startDanser() {
 	})
 }
 
-func (l *launcher) danserCleanup() {
-	l.recordStatus = ""
+func (l *launcher) danserCleanup(success bool) {
 	l.recordStatusSpeed = ""
 	l.recordStatusETA = ""
-	l.showProgressBar = false
 	l.danserRunning = false
 	l.triangleSpeed.AddEvent(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+500, 1)
 	l.danserCmd = nil
+
+	if !success {
+		l.recordStatus = ""
+		l.showProgressBar = false
+	}
 }
 
 func (l *launcher) openPopup(p iPopup) {
