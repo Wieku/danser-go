@@ -142,7 +142,9 @@ func drawAbout(dTex texture.Texture) {
 	})
 
 	centerTable("about3", -1, func() {
-		imgui.Button("Check for updates")
+		if imgui.Button("Check for updates") {
+			checkForUpdates(true)
+		}
 	})
 
 	imgui.Dummy(imgui.Vec2{1, imgui.FrameHeight()})
