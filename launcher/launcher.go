@@ -352,68 +352,76 @@ func (l *launcher) startGLFW() {
 	l.coin.DrawVisualiser(true)
 
 	goroutines.RunOS(func() {
-		l.splashText = "Loading maps...\nThis may take a while..."
+		l.loadBeatmaps()
 
-		l.beatmaps = make([]*beatmap.BeatMap, 0)
-
-		err := database.Init()
-		if err != nil {
-			showMessage(mError, "Failed to initialize database! Error: %s\nMake sure Song's folder does exist or change it to the correct directory in settings.", err)
-			l.beatmaps = make([]*beatmap.BeatMap, 0)
-		} else {
-			bSplash := "Loading maps...\nThis may take a while...\n\n"
-
-			beatmaps := database.LoadBeatmaps(false, func(stage database.ImportStage, processed, target int) {
-				switch stage {
-				case database.Discovery:
-					l.splashText = bSplash + "Searching for .osu files...\n\n"
-				case database.Comparison:
-					l.splashText = bSplash + "Comparing files with database...\n\n"
-				case database.Cleanup:
-					l.splashText = bSplash + "Removing leftover maps from database...\n\n"
-				case database.Import:
-					percent := float64(processed) / float64(target) * 100
-					l.splashText = bSplash + fmt.Sprintf("Importing maps...\n%d / %d\n%.0f%%", processed, target, percent)
-				case database.Finalize:
-					l.splashText = bSplash + "Updating the database...\n\n"
-				}
-			})
-
-			slices.SortFunc(beatmaps, func(a, b *beatmap.BeatMap) bool {
-				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
-			})
-
-			bSplash = "Calculating Star Rating...\nThis may take a while...\n\n\n"
-
-			l.splashText = bSplash + "\n"
-
-			database.UpdateStarRating(beatmaps, func(processed, target int) {
-				percent := float64(processed) / float64(target) * 100
-				l.splashText = bSplash + fmt.Sprintf("%d / %d\n%.0f%%", processed, target, percent)
-			})
-
-			for _, bMap := range beatmaps {
-				l.beatmaps = append(l.beatmaps, bMap)
-			}
-
-			database.Close()
+		if launcherConfig.CheckForUpdates {
+			checkForUpdates(false)
 		}
+	})
+}
 
-		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
-			if !strings.HasSuffix(names[0], ".osr") {
-				showMessage(mError, "It's not a replay file!")
-				return
+func (l *launcher) loadBeatmaps() {
+	l.splashText = "Loading maps...\nThis may take a while..."
+
+	l.beatmaps = make([]*beatmap.BeatMap, 0)
+
+	err := database.Init()
+	if err != nil {
+		showMessage(mError, "Failed to initialize database! Error: %s\nMake sure Song's folder does exist or change it to the correct directory in settings.", err)
+		l.beatmaps = make([]*beatmap.BeatMap, 0)
+	} else {
+		bSplash := "Loading maps...\nThis may take a while...\n\n"
+
+		beatmaps := database.LoadBeatmaps(false, func(stage database.ImportStage, processed, target int) {
+			switch stage {
+			case database.Discovery:
+				l.splashText = bSplash + "Searching for .osu files...\n\n"
+			case database.Comparison:
+				l.splashText = bSplash + "Comparing files with database...\n\n"
+			case database.Cleanup:
+				l.splashText = bSplash + "Removing leftover maps from database...\n\n"
+			case database.Import:
+				percent := float64(processed) / float64(target) * 100
+				l.splashText = bSplash + fmt.Sprintf("Importing maps...\n%d / %d\n%.0f%%", processed, target, percent)
+			case database.Finalize:
+				l.splashText = bSplash + "Updating the database...\n\n"
 			}
-
-			l.loadReplay(names[0])
 		})
 
-		if len(os.Args) > 1 { //won't work in combined mode
-			l.loadReplay(os.Args[1])
+		slices.SortFunc(beatmaps, func(a, b *beatmap.BeatMap) bool {
+			return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+		})
+
+		bSplash = "Calculating Star Rating...\nThis may take a while...\n\n\n"
+
+		l.splashText = bSplash + "\n"
+
+		database.UpdateStarRating(beatmaps, func(processed, target int) {
+			percent := float64(processed) / float64(target) * 100
+			l.splashText = bSplash + fmt.Sprintf("%d / %d\n%.0f%%", processed, target, percent)
+		})
+
+		for _, bMap := range beatmaps {
+			l.beatmaps = append(l.beatmaps, bMap)
 		}
 
-		l.mapsLoaded = true
+		database.Close()
+	}
+
+	l.win.SetDropCallback(func(w *glfw.Window, names []string) {
+		if !strings.HasSuffix(names[0], ".osr") {
+			showMessage(mError, "It's not a replay file!")
+			return
+		}
+
+		l.loadReplay(names[0])
 	})
+
+	if len(os.Args) > 1 { //won't work in combined mode
+		l.loadReplay(os.Args[1])
+	}
+
+	l.mapsLoaded = true
 }
 
 func extensionCheck() {
