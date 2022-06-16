@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/util"
 	"golang.org/x/exp/slices"
 	"math"
+	"math/rand"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -165,50 +166,65 @@ func (m *songSelectPopup) drawSongSelect() {
 
 	imgui.PushFont(Font20)
 
-	imgui.AlignTextToFramePadding()
-	imgui.Text("Sort by:")
+	if imgui.BeginTableV("sortrandom", 2, 0, imgui.Vec2{-1, 0}, -1) {
+		imgui.TableSetupColumnV("##sortrandom1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+		imgui.TableSetupColumnV("##sortrandom2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
-	imgui.SameLine()
+		imgui.TableNextColumn()
 
-	m.comboOpened = false
+		imgui.AlignTextToFramePadding()
+		imgui.Text("Sort by:")
 
-	imgui.SetNextItemWidth(150)
+		imgui.SameLine()
 
-	if imgui.BeginCombo("##sortcombo", launcherConfig.SortMapsBy.String()) {
-		m.comboOpened = true
+		m.comboOpened = false
 
-		for _, s := range sortMethods {
-			if imgui.SelectableV(s.String(), s == launcherConfig.SortMapsBy, 0, imgui.Vec2{}) && s != launcherConfig.SortMapsBy {
-				launcherConfig.SortMapsBy = s
-				m.search()
-				m.focusTheMap = true
-				saveLauncherConfig()
+		imgui.SetNextItemWidth(150)
+
+		if imgui.BeginCombo("##sortcombo", launcherConfig.SortMapsBy.String()) {
+			m.comboOpened = true
+
+			for _, s := range sortMethods {
+				if imgui.SelectableV(s.String(), s == launcherConfig.SortMapsBy, 0, imgui.Vec2{}) && s != launcherConfig.SortMapsBy {
+					launcherConfig.SortMapsBy = s
+					m.search()
+					m.focusTheMap = true
+					saveLauncherConfig()
+				}
 			}
+
+			imgui.EndCombo()
 		}
 
-		imgui.EndCombo()
+		imgui.SameLine()
+
+		ImIO.SetFontGlobalScale(20.0 / 32)
+		imgui.PushFont(FontAw)
+
+		sDir := "\uF882"
+		if launcherConfig.SortAscending {
+			sDir = "\uF15D"
+		}
+
+		if imgui.Button(sDir) {
+			launcherConfig.SortAscending = !launcherConfig.SortAscending
+			m.search()
+			m.focusTheMap = true
+			saveLauncherConfig()
+		}
+
+		ImIO.SetFontGlobalScale(1)
+		imgui.PopFont()
+
+		imgui.TableNextColumn()
+
+		if imgui.Button("Random") {
+			m.selectRandom()
+		}
+
+		imgui.EndTable()
 	}
 
-	imgui.PopFont()
-
-	imgui.SameLine()
-
-	ImIO.SetFontGlobalScale(20.0 / 32)
-	imgui.PushFont(FontAw)
-
-	sDir := "\uF882"
-	if launcherConfig.SortAscending {
-		sDir = "\uF15D"
-	}
-
-	if imgui.Button(sDir) {
-		launcherConfig.SortAscending = !launcherConfig.SortAscending
-		m.search()
-		m.focusTheMap = true
-		saveLauncherConfig()
-	}
-
-	ImIO.SetFontGlobalScale(1)
 	imgui.PopFont()
 
 	csPos := imgui.CursorScreenPos()
@@ -299,8 +315,12 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(FontAw)
 
 					name := "\uF04B"
-					if b.bMaps[0] == m.prevMap {
-						name = "\uF04D"
+
+					for _, bMap := range b.bMaps {
+						if bMap == m.prevMap {
+							name = "\uF04D"
+							break
+						}
 					}
 
 					imgui.AlignTextToFramePadding()
@@ -467,6 +487,21 @@ func (m *songSelectPopup) drawSongSelect() {
 	imgui.EndChild()
 
 	imgui.WindowDrawList().AddLine(csPos, csPos.Plus(imgui.Vec2{imgui.ContentRegionAvail().X, 0}), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
+}
+
+func (m *songSelectPopup) selectRandom() {
+	if len(m.searchResults) == 0 {
+		return
+	}
+
+	i := rand.Intn(len(m.searchResults))
+
+	bMap := m.searchResults[i].bMaps[len(m.searchResults[i].bMaps)-1]
+
+	m.stopPreview()
+	m.bld.setMap(bMap)
+	m.focusTheMap = true
+	m.startPreview(bMap)
 }
 
 func (m *songSelectPopup) stopPreview() {
