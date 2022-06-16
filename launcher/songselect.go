@@ -520,7 +520,12 @@ func (m *songSelectPopup) startPreview(bMap *beatmap.BeatMap) {
 	if track != nil {
 		beatmap.ParseTimingPointsAndPauses(bMap)
 
-		track.SetPosition(float64(bMap.PreviewTime) / 1000)
+		prevTime := float64(bMap.PreviewTime)
+		if prevTime < 0 {
+			prevTime = float64(bMap.Length) * 0.4
+		}
+
+		track.SetPosition(prevTime / 1000)
 		track.PlayV(0)
 		m.PreviewedSong = track
 
