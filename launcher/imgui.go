@@ -106,6 +106,8 @@ func SetupImgui(win *glfw.Window) {
 	awesomeBuilder.Add(0xE599, 0xE599)
 	awesomeBuilder.Add(0xF0CB, 0xF0CB)
 	awesomeBuilder.Add(0xF03D, 0xF03D)
+	awesomeBuilder.Add(0xF882, 0xF882)
+	awesomeBuilder.Add(0xF15D, 0xF15D)
 
 	//awesomeBuilder.Add(0x0020, 0xffff)
 

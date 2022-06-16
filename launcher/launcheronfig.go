@@ -17,6 +17,7 @@ var launcherConfig = &launcherConf{
 	CheckForUpdates: true,
 	ShowFileAfter:   true,
 	SortMapsBy:      Title,
+	SortAscending:   true,
 }
 
 type launcherConf struct {
@@ -24,6 +25,7 @@ type launcherConf struct {
 	CheckForUpdates bool
 	ShowFileAfter   bool
 	SortMapsBy      SortBy
+	SortAscending   bool
 }
 
 func loadLauncherConfig() {

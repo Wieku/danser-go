@@ -191,6 +191,26 @@ func (m *songSelectPopup) drawSongSelect() {
 
 	imgui.PopFont()
 
+	imgui.SameLine()
+
+	ImIO.SetFontGlobalScale(20.0 / 32)
+	imgui.PushFont(FontAw)
+
+	sDir := "\uF882"
+	if launcherConfig.SortAscending {
+		sDir = "\uF15D"
+	}
+
+	if imgui.Button(sDir) {
+		launcherConfig.SortAscending = !launcherConfig.SortAscending
+		m.search()
+		m.focusTheMap = true
+		saveLauncherConfig()
+	}
+
+	ImIO.SetFontGlobalScale(1)
+	imgui.PopFont()
+
 	csPos := imgui.CursorScreenPos()
 
 	imgui.BeginChild("##bsets")
@@ -559,15 +579,24 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 			res = mutils.Compare(b1.Stars, b2.Stars)
 		}
 
+		if !launcherConfig.SortAscending {
+			res = -res
+		}
+
 		if res != 0 {
-			return res == -1
+			return res < 0
 		}
 
 		res = compareStrings(b1.Dir, b2.Dir)
-		if res != 0 {
-			return res == -1
+
+		if !launcherConfig.SortAscending {
+			res = -res
 		}
 
-		return mutils.Compare(b1.Stars, b2.Stars) < 1
+		if res != 0 {
+			return res < 0
+		}
+
+		return mutils.Compare(b1.Stars, b2.Stars) < 1 // Don't flip grouped difficulties
 	})
 }
