@@ -46,6 +46,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
@@ -1002,7 +1003,7 @@ func (l *launcher) drawConfigPanel() {
 		imgui.TableNextColumn()
 
 		if imgui.ButtonV("Launcher settings", imgui.Vec2{-1, 0}) {
-			lEditor := newPopupF("About", popDynamic, drawLauncherConfig)
+			lEditor := newPopupF("About", popMedium, drawLauncherConfig)
 
 			lEditor.setCloseListener(func() {
 				saveLauncherConfig()
@@ -1347,6 +1348,8 @@ func (l *launcher) startDanser() {
 	panicWait := &sync.WaitGroup{}
 	panicWait.Add(1)
 
+	resultFile := ""
+
 	goroutines.Run(func() {
 		sc := bufio.NewScanner(rFile)
 
@@ -1372,6 +1375,15 @@ func (l *launcher) startDanser() {
 				l.recordStatus = "Finalizing..."
 				l.recordStatusSpeed = ""
 				l.recordStatusETA = ""
+			}
+
+			if idx := strings.Index(line, "Video is available at: "); idx > -1 {
+				resultFile = strings.TrimPrefix(line[idx:], "Video is available at: ")
+			}
+
+			if idx := strings.Index(line, "Screenshot "); idx > -1 && strings.Contains(line, " saved!") {
+				resultFile = strings.TrimSuffix(strings.TrimPrefix(line[idx:], "Screenshot "), " saved!")
+				resultFile = filepath.Join(env.DataDir(), "screenshots", resultFile)
 			}
 
 			if strings.Contains(line, "Progress") && l.encodeInProgress {
@@ -1416,6 +1428,10 @@ func (l *launcher) startDanser() {
 				showMessage(mError, "danser crashed! %s\n\n%s", err.Error(), panicMessage)
 			})
 		} else if l.bld.currentPMode != Watch && l.bld.currentMode != Play {
+			if launcherConfig.ShowFileAfter && resultFile != "" {
+				platform.ShowFileInManager(resultFile)
+			}
+
 			C.beep_custom()
 		}
 

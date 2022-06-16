@@ -15,11 +15,13 @@ import (
 var launcherConfig = &launcherConf{
 	Profile:         nil,
 	CheckForUpdates: true,
+	ShowFileAfter:   true,
 }
 
 type launcherConf struct {
 	Profile         *string
 	CheckForUpdates bool
+	ShowFileAfter   bool
 }
 
 func loadLauncherConfig() {

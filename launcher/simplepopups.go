@@ -189,15 +189,36 @@ func drawAbout(dTex texture.Texture) {
 }
 
 func drawLauncherConfig() {
-	if imgui.BeginTable("lconfigtable", 2) {
+	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, imgui.Vec2{imgui.CurrentStyle().CellPadding().X, 10})
+
+	if imgui.BeginTableV("lconfigtable", 2, 0, imgui.Vec2{-1, 0}, -1) {
+		imgui.TableSetupColumnV("1lconfigtable", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+		imgui.TableSetupColumnV("2lconfigtable", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+
 		imgui.TableNextColumn()
 
-		imgui.Text("Check for updates on danser's launch")
+		imgui.Text("Check for updates on startup")
 
 		imgui.TableNextColumn()
 
-		imgui.Checkbox("##Check for updates on danser's launch", &launcherConfig.CheckForUpdates)
+		imgui.Checkbox("##CheckForUpdates", &launcherConfig.CheckForUpdates)
+
+		imgui.TableNextColumn()
+
+		posLocal := imgui.CursorPos()
+
+		imgui.Text("Show exported videos/images\nin explorer")
+
+		posLocal1 := imgui.CursorPos()
+
+		imgui.TableNextColumn()
+
+		imgui.SetCursorPos(imgui.Vec2{imgui.CursorPosX(), (posLocal.Y + posLocal1.Y - imgui.FrameHeightWithSpacing()) / 2})
+
+		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
 
 		imgui.EndTable()
 	}
+
+	imgui.PopStyleVar()
 }
