@@ -805,28 +805,17 @@ func pushFrame() {
 }
 
 func checkForUpdates() {
-	if build.Stream != "Release" || strings.Contains(build.VERSION, "dev") { //false positive, those are changed during compile
-		return
-	}
+	status, url, err := utils.CheckForUpdate()
 
-	log.Println("Checking GitHub for a new version of danser...")
-
-	url, tag, err := utils.GetLatestVersionFromGitHub()
-	if err != nil {
+	switch status {
+	case utils.Failed:
 		log.Println("Can't get version from GitHub:", err)
-		return
-	}
-
-	githubVersion := utils.TransformVersion(tag)
-	exeVersion := utils.TransformVersion(build.VERSION)
-
-	if exeVersion >= githubVersion {
+	case utils.UpToDate:
 		log.Println("You're using the newest version of danser.")
-
-		if strings.Contains(build.VERSION, "snapshot") {
-			log.Println("For newer version of snapshots please visit an official danser discord server at: https://discord.gg/UTPvbe8")
-		}
-	} else {
+	case utils.Snapshot:
+		log.Println("You're using a snapshot version of danser.")
+		log.Println("For newer version of snapshots please visit an official danser discord server at:", url)
+	case utils.UpdateAvailable:
 		log.Println("You're using an older version of danser.")
 		log.Println("You can download a newer version here:", url)
 		time.Sleep(2 * time.Second)
