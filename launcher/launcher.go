@@ -46,7 +46,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
@@ -250,7 +249,7 @@ func closeHandler(err any, stackTrace []string) {
 			log.Println(s)
 		}
 
-		dialog.Message("Launcher crashed with message:\n %s", err).Error()
+		showMessage(mError, "Launcher crashed with message:\n %s", err)
 
 		os.Exit(1)
 	}
@@ -273,7 +272,7 @@ func (l *launcher) startGLFW() {
 
 	c, err := l.loadConfig(l.bld.config)
 	if err != nil {
-		dialog.Message("Failed to read \"%s\" profile.\nReverting to \"default\".\nError: %s", l.bld.config, err).Error()
+		showMessage(mError, "Failed to read \"%s\" profile.\nReverting to \"default\".\nError: %s", l.bld.config, err)
 
 		l.bld.config = "default"
 		*launcherConfig.Profile = l.bld.config
@@ -359,7 +358,7 @@ func (l *launcher) startGLFW() {
 
 		err := database.Init()
 		if err != nil {
-			dialog.Message("Failed to initialize database! Error: %s\nMake sure Song's folder does exist or change it to the correct directory in settings.", err).Error()
+			showMessage(mError, "Failed to initialize database! Error: %s\nMake sure Song's folder does exist or change it to the correct directory in settings.", err)
 			l.beatmaps = make([]*beatmap.BeatMap, 0)
 		} else {
 			bSplash := "Loading maps...\nThis may take a while...\n\n"
@@ -402,7 +401,7 @@ func (l *launcher) startGLFW() {
 
 		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
 			if !strings.HasSuffix(names[0], ".osr") {
-				dialog.Message("It's not a replay file!").Error()
+				showMessage(mError, "It's not a replay file!")
 				return
 			}
 
@@ -762,13 +761,13 @@ func (l *launcher) loadReplay(p string) {
 
 	rData, err := os.ReadFile(p)
 	if err != nil {
-		dialog.Message("Failed to open file:\n%s", err.Error()).Error()
+		showMessage(mError, "Failed to open file:\n%s", err.Error())
 		return
 	}
 
 	replay, err := rplpa.ParseReplay(rData)
 	if err != nil {
-		dialog.Message("Failed to open replay:\n%s", err.Error()).Error()
+		showMessage(mError, "Failed to open replay:\n%s", err.Error())
 		return
 	}
 
@@ -782,7 +781,7 @@ func (l *launcher) loadReplay(p string) {
 		}
 	}
 
-	dialog.Message("Replay uses an unknown map. Please download the map beforehand.").Error()
+	showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
 }
 
 func (l *launcher) showSelect() {
@@ -939,7 +938,7 @@ func (l *launcher) drawLowerPanel() {
 				if dRun {
 					if l.danserCmd != nil {
 						goroutines.Run(func() {
-							res := dialog.Message("Do you really want to cancel?").YesNo()
+							res := showMessage(mQuestion, "Do you really want to cancel?")
 
 							if res && l.danserCmd != nil {
 								l.danserCmd.Process.Kill()
@@ -1052,7 +1051,7 @@ func (l *launcher) drawConfigPanel() {
 
 					if s != "default" {
 						if imgui.Selectable("Remove") {
-							if dialog.Message("Are you sure you want to remove \"%s\" profile?", s).YesNo() {
+							if showMessage(mQuestion, "Are you sure you want to remove \"%s\" profile?", s) {
 								l.removeConfig(s)
 							}
 						}
@@ -1076,7 +1075,7 @@ func (l *launcher) drawConfigPanel() {
 				l.currentConfig.Save("", false)
 
 				if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
-					dialog.Message("This config has different osu! Songs directory.\nRestart the launcher to see updated maps").Info()
+					showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
 				}
 			}))
 		}
@@ -1134,7 +1133,7 @@ func (l *launcher) drawConfigPanel() {
 				if imgui.Button("Save##newclone") {
 					_, err := os.Stat(filepath.Join(env.ConfigDir(), l.newCloneName+".json"))
 					if err == nil {
-						dialog.Message("Config with that name already exists!\nPlease pick a different name").Error()
+						showMessage(mError, "Config with that name already exists!\nPlease pick a different name")
 					} else {
 						log.Println("ok")
 						switch l.configManiMode {
@@ -1194,7 +1193,7 @@ func (l *launcher) cloneConfig(toClone, name string) {
 	cConfig, err := l.loadConfig(toClone)
 
 	if err != nil {
-		dialog.Message(err.Error()).Error()
+		showMessage(mError, err.Error())
 		return
 	}
 
@@ -1209,7 +1208,7 @@ func (l *launcher) renameConfig(toRename, name string) {
 	cConfig, err := l.loadConfig(toRename)
 
 	if err != nil {
-		dialog.Message(err.Error()).Error()
+		showMessage(mError, err.Error())
 		return
 	}
 
@@ -1258,10 +1257,10 @@ func (l *launcher) setConfig(s string) {
 	eConfig, err := l.loadConfig(s)
 
 	if err != nil {
-		dialog.Message("Failed to read \"%s\" profile. Error: %s", s, err).Error()
+		showMessage(mError, "Failed to read \"%s\" profile. Error: %s", s, err)
 	} else {
 		if !compareDirs(eConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
-			dialog.Message("This config has different osu! Songs directory.\nRestart the launcher to see updated maps").Info()
+			showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
 		}
 
 		l.bld.config = s
@@ -1311,7 +1310,7 @@ func (l *launcher) startDanser() {
 
 	err = l.danserCmd.Start()
 	if err != nil {
-		dialog.Message("danser failed to start! %s", err.Error()).Error()
+		showMessage(mError, "danser failed to start! %s", err.Error())
 		return
 	}
 
@@ -1393,20 +1392,9 @@ func (l *launcher) startDanser() {
 		if err != nil {
 			panicWait.Wait()
 
-			id := strings.Index(panicMessage, "http")
-
 			mainthread.Call(func() {
-				if id == -1 {
-					dialog.Message("danser crashed! %s\n\n%s", err.Error(), panicMessage).Error()
-				} else {
-					url := panicMessage[id:]
-
-					if dialog.Message("danser crashed! %s\n\n%s\n\nDo you want to go there?", err.Error(), panicMessage).ErrorYesNo() {
-						platform.OpenURL(url)
-					}
-				}
+				showMessage(mError, "danser crashed! %s\n\n%s", err.Error(), panicMessage)
 			})
-
 		} else if l.bld.currentPMode != Watch && l.bld.currentMode != Play {
 			C.beep_custom()
 		}
