@@ -324,7 +324,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(FontAw)
 
 					name := "\uF04B"
-					if isPreviewed {
+					if isPreviewed && launcherConfig.PreviewSelected {
 						name = "\uF04D"
 					}
 
@@ -510,7 +510,11 @@ func (m *songSelectPopup) selectRandom() {
 
 	m.bld.setMap(bMap)
 	m.focusTheMap = true
-	m.startPreview(bMap)
+
+	if launcherConfig.PreviewSelected {
+		m.stopPreview()
+		m.startPreview(bMap)
+	}
 }
 
 func (m *songSelectPopup) stopPreview() {

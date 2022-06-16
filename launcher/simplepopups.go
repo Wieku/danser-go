@@ -217,6 +217,14 @@ func drawLauncherConfig() {
 
 		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
 
+		imgui.TableNextColumn()
+
+		imgui.Text("Preview selected maps")
+
+		imgui.TableNextColumn()
+
+		imgui.Checkbox("##PreviewSelected", &launcherConfig.PreviewSelected)
+
 		imgui.EndTable()
 	}
 

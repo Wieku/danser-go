@@ -16,6 +16,7 @@ var launcherConfig = &launcherConf{
 	Profile:         nil,
 	CheckForUpdates: true,
 	ShowFileAfter:   true,
+	PreviewSelected: true,
 	SortMapsBy:      Title,
 	SortAscending:   true,
 }
@@ -24,6 +25,7 @@ type launcherConf struct {
 	Profile         *string
 	CheckForUpdates bool
 	ShowFileAfter   bool
+	PreviewSelected bool
 	SortMapsBy      SortBy
 	SortAscending   bool
 }
