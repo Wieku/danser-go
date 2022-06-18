@@ -25,6 +25,8 @@ func preCheck() {
 		panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
 	}
 
+	log.Println("FFmpeg exec location:", ffmpegExec)
+
 	out, err := exec.Command(ffmpegExec, "-encoders").Output()
 	if err != nil {
 		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
