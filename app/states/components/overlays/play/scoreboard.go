@@ -6,7 +6,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -18,6 +17,7 @@ import (
 	"math"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 const spacing = 57.6
@@ -56,9 +56,9 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 		return board
 	}
 
-	key, err := utils.GetApiKey()
-	if err != nil {
-		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "api.txt")))
+	key := strings.TrimSpace(settings.Credentails.ApiV1Key)
+	if key == "" {
+		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "credentials.json")))
 	} else {
 		client := osuapi.NewClient(key)
 		err := client.Test()

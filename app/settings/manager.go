@@ -59,6 +59,8 @@ func LoadSettings(version string) bool {
 		currentConfig.Save("", false) // this is done to save additions from the current format
 	}
 
+	LoadCredentials()
+
 	currentConfig.attachToGlobals()
 
 	if !RECORD {

@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type ScoreboardEntry struct {
@@ -232,9 +233,9 @@ func (entry *ScoreboardEntry) LoadDefaultAvatar() {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {
-	key, err := utils.GetApiKey()
-	if err != nil {
-		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "api.txt")))
+	key := strings.TrimSpace(settings.Credentails.ApiV1Key)
+	if key == "" {
+		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "credentials.json")))
 	} else {
 		client := osuapi.NewClient(key)
 		err := client.Test()
