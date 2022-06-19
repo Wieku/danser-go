@@ -615,6 +615,11 @@ func (l *launcher) drawMain() {
 						l.bld.currentPMode = Watch
 					}
 
+					if m != Replay {
+						l.bld.replayPath = ""
+						l.bld.currentReplay = nil
+					}
+
 					l.bld.currentMode = m
 				}
 			}
