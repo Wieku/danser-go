@@ -120,7 +120,9 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 		if imgui.BeginPopupModalV("##"+name, opened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
 			content()
 
-			if (imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
+			hovered := imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows | imgui.HoveredFlagsAllowWhenBlockedByActiveItem | imgui.HoveredFlagsAllowWhenBlockedByPopup)
+
+			if ((imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !hovered) || imgui.IsKeyPressed(imgui.KeyEscape) {
 				*opened = false
 			}
 
