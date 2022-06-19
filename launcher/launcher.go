@@ -610,7 +610,7 @@ func (l *launcher) drawMain() {
 
 		if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
 			for _, m := range modes {
-				if imgui.Selectable(m.String()) {
+				if selectableFocus(m.String(), l.bld.currentMode == m) {
 					if m == Play {
 						l.bld.currentPMode = Watch
 					}
@@ -869,9 +869,9 @@ func (l *launcher) drawLowerPanel() {
 
 		imgui.SetNextItemWidth((imgui.WindowWidth() - 40) / 4)
 
-		if imgui.BeginComboV("##Watch mode", l.bld.currentPMode.String(), 5) {
+		if imgui.BeginCombo("##Watch mode", l.bld.currentPMode.String()) {
 			for _, m := range pModes {
-				if imgui.Selectable(m.String()) {
+				if selectableFocus(m.String(), l.bld.currentPMode == m) {
 					l.bld.currentPMode = m
 				}
 			}
@@ -1057,7 +1057,7 @@ func (l *launcher) drawConfigPanel() {
 			}
 
 			for _, s := range l.configList {
-				if imgui.SelectableV(s, s == l.bld.config, 0, imgui.Vec2{}) {
+				if selectableFocus(s, s == l.bld.config) {
 					if s != l.bld.config {
 						l.setConfig(s)
 					}

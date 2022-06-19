@@ -307,3 +307,13 @@ func centerTable(label string, width float32, draw func()) {
 		imgui.EndTable()
 	}
 }
+
+func selectableFocus(label string, selected bool) (clicked bool) {
+	clicked = imgui.SelectableV(label, selected, 0, imgui.Vec2{})
+
+	if selected {
+		imgui.SetItemDefaultFocus()
+	}
+
+	return
+}

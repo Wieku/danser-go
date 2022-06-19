@@ -811,7 +811,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				editor.comboOpened = true
 
 				for i, l := range labels {
-					if imgui.SelectableV(l, l == lb, 0, imgui.Vec2{0, 0}) {
+					if selectableFocus(l, l == lb) {
 						f.SetString(values[i])
 					}
 				}
@@ -897,7 +897,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 				editor.comboOpened = true
 
 				for i, l := range labels {
-					if imgui.SelectableV(l, l == lb, 0, imgui.Vec2{0, 0}) {
+					if selectableFocus(l, l == lb) {
 						f.SetInt(int64(values[i]))
 					}
 				}
