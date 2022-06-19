@@ -16,7 +16,9 @@ import (
 var Credentails = &credentials{}
 
 type credentials struct {
-	ApiV1Key string `label:"API V1 Key" long:"true" password:"true" tooltip:"Valid API V1 Key has to be provided to have access to global leaderboards"`
+	ApiV1Key string `label:"API V1 Key" long:"true" password:"true" tooltip:"Valid API V1 Key has to be provided to have access to global leaderboards\n\nDON'T SHARE IT WITH OTHERS!!!" hidePath:"true"`
+
+	//Future stuff
 	//ClientId     string
 	//ClientSecret string
 	//

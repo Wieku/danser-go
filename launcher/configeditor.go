@@ -30,12 +30,14 @@ type settingsEditor struct {
 	searchString string
 	id           int
 	current      *settings.Config
+	combined     *settings.CombinedConfig
 
 	listenerCalled bool
 	sectionCache   map[string]imgui.Vec2
 
 	active     string
 	lastActive string
+	pwShowHide map[string]bool
 }
 
 func newSettingsEditor(config *settings.Config) *settingsEditor {
@@ -43,18 +45,20 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 		popup:        newPopup("Settings Editor", popBig),
 		searchCache:  make(map[string]int),
 		sectionCache: make(map[string]imgui.Vec2),
+		pwShowHide:   make(map[string]bool),
 	}
 
 	editor.internalDraw = editor.drawEditor
 
 	editor.current = config
-	editor.buildSearchCache("Main", reflect.ValueOf(config), editor.searchString, false)
+	editor.combined = config.GetCombined()
+	editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
 
 	return editor
 }
 
 func (editor *settingsEditor) drawEditor() {
-	settings.General.OsuSkinsDir = editor.current.General.OsuSkinsDir
+	settings.General.OsuSkinsDir = editor.combined.General.OsuSkinsDir
 
 	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{0, 0})
 	imgui.PushStyleColor(imgui.StyleColorWindowBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
@@ -70,7 +74,7 @@ func (editor *settingsEditor) drawEditor() {
 		{
 			if imgui.BeginChildV(editor.getId(), imgui.Vec2{X: imgui.FontSize()*1.5 + 15, Y: -1}, false, imgui.WindowFlagsAlwaysVerticalScrollbar /*imgui.ScrollbWindowFlagsNoScrollbar*/) {
 				editor.scrollTo = ""
-				editor.buildNavigationFor(editor.current)
+				editor.buildNavigationFor(editor.combined)
 			}
 			imgui.EndChild()
 		}
@@ -89,7 +93,7 @@ func (editor *settingsEditor) drawEditor() {
 				{
 					if imgui.InputTextWithHint(editor.getId(), "Search", &editor.searchString) {
 						editor.searchCache = make(map[string]int)
-						editor.buildSearchCache("Main", reflect.ValueOf(editor.current), editor.searchString, false)
+						editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
 					}
 
 					if !editor.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
@@ -230,7 +234,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 }
 
 func (editor *settingsEditor) drawSettings() {
-	rVal := reflect.ValueOf(editor.current)
+	rVal := reflect.ValueOf(editor.combined)
 
 	typ := rVal.Elem()
 	def := rVal.Type().Elem()
@@ -676,6 +680,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 		fDesc, okF := d.Tag.Lookup("file")
 		cSpec, okC := d.Tag.Lookup("combo")
 		cFunc, okCS := d.Tag.Lookup("comboSrc")
+		_, okPW := d.Tag.Lookup("password")
 
 		if okP || okF {
 			cId := editor.getId()
@@ -780,6 +785,40 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				}
 
 				imgui.EndCombo()
+			}
+		} else if okPW {
+			cId := editor.getId()
+			if imgui.BeginTableV(cId, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+				imgui.TableSetupColumnV(cId+"c1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+				imgui.TableSetupColumnV(cId+"c2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+
+				show := editor.pwShowHide[jsonPath]
+
+				iTFlags := imgui.InputTextFlagsNone
+				if !show {
+					iTFlags = imgui.InputTextFlagsPassword
+				}
+
+				imgui.TableNextColumn()
+
+				imgui.SetNextItemWidth(-1)
+
+				if imgui.InputTextV(editor.getId(), &base, iTFlags, nil) {
+					f.SetString(base)
+				}
+
+				imgui.TableNextColumn()
+
+				tx := "Show"
+				if show {
+					tx = "Hide"
+				}
+
+				if imgui.ButtonV(tx+editor.getId(), imgui.Vec2{imgui.CalcTextSize("Show", false, 0).X + imgui.CurrentStyle().FramePadding().X*2, 0}) {
+					editor.pwShowHide[jsonPath] = !editor.pwShowHide[jsonPath]
+				}
+
+				imgui.EndTable()
 			}
 		} else {
 			if imgui.InputText(editor.getId(), &base) {
@@ -945,13 +984,25 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynami
 		if imgui.IsItemHovered() {
 			imgui.BeginTooltip()
 
-			tTip := jsonPath
+			_, hPath := d.Tag.Lookup("hidePath")
 
-			if t, ok := d.Tag.Lookup("tooltip"); ok {
-				tTip += "\n\n" + t
+			tTip := ""
+			if !hPath {
+				tTip = jsonPath
 			}
 
-			imgui.SetTooltip(tTip)
+			if t, ok := d.Tag.Lookup("tooltip"); ok {
+				if !hPath {
+					tTip += "\n\n"
+				}
+				tTip += t
+			}
+
+			imgui.PushTextWrapPosV(300)
+
+			imgui.Text(tTip)
+
+			imgui.PopTextWrapPos()
 			imgui.EndTooltip()
 		}
 

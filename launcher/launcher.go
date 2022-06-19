@@ -268,6 +268,7 @@ func (l *launcher) startGLFW() {
 
 	l.tryCreateDefaultConfig()
 	l.createConfigList()
+	settings.LoadCredentials()
 
 	l.bld.config = *launcherConfig.Profile
 
@@ -1108,6 +1109,7 @@ func (l *launcher) drawConfigPanel() {
 			sEditor := newSettingsEditor(l.currentConfig)
 
 			sEditor.setCloseListener(func() {
+				settings.SaveCredentials(false)
 				l.currentConfig.Save("", false)
 
 				if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {

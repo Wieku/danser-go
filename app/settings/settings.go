@@ -36,6 +36,23 @@ type Config struct {
 	Recording   *recording   `icon:"\uF03D"`
 }
 
+type CombinedConfig struct {
+	Credentials *credentials `icon:"\uF084" label:"Credentials (Global)"`
+	General     *general     `icon:"\uF0AD"`
+	Graphics    *graphics    `icon:"\uF108"`
+	Audio       *audio       `icon:"\uF028"`
+	Input       *input       `icon:"\uF11C"`
+	Gameplay    *gameplay    `icon:"\uF140"`
+	Skin        *skin        `icon:"\uF53F"`
+	Cursor      *cursor      `icon:"\uF245"`
+	Objects     *objects     `icon:"\uF1CD"`
+	Playfield   *playfield   `icon:"\uF853"`
+	Dance       *danceOld    `json:",omitempty" icon:"\uF5B7"`
+	CursorDance *cursorDance `icon:"\uE599"`
+	Knockout    *knockout    `icon:"\uF0CB"`
+	Recording   *recording   `icon:"\uF03D"`
+}
+
 func LoadConfig(file *os.File) (*Config, error) {
 	log.Println(fmt.Sprintf(`SettingsManager: Loading "%s"`, file.Name()))
 
@@ -153,6 +170,25 @@ func (config *Config) attachToGlobals() {
 	CursorDance = config.CursorDance
 	Knockout = config.Knockout
 	Recording = config.Recording
+}
+
+func (config *Config) GetCombined() *CombinedConfig {
+	return &CombinedConfig{
+		Credentials: Credentails,
+		General:     config.General,
+		Graphics:    config.Graphics,
+		Audio:       config.Audio,
+		Input:       config.Input,
+		Gameplay:    config.Gameplay,
+		Skin:        config.Skin,
+		Cursor:      config.Cursor,
+		Objects:     config.Objects,
+		Playfield:   config.Playfield,
+		Dance:       config.Dance,
+		CursorDance: config.CursorDance,
+		Knockout:    config.Knockout,
+		Recording:   config.Recording,
+	}
 }
 
 func (config *Config) Save(path string, forceSave bool) {
