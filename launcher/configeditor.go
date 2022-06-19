@@ -74,14 +74,28 @@ func (editor *settingsEditor) drawEditor() {
 
 		imgui.TableNextColumn()
 
-		imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
+		imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .5})
 
 		imgui.PushFont(FontAw)
 		{
-			if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize() * 1.5, Y: -1}, false, imgui.WindowFlagsNoScrollbar) {
+
+			imgui.PushStyleVarFloat(imgui.StyleVarScrollbarSize, 9)
+
+			if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize()*1.5 + 9, Y: -1}, false, imgui.WindowFlagsAlwaysVerticalScrollbar) {
 				editor.scrollTo = ""
+
+				imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
+				imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
+				imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, imgui.Vec2{})
+
 				editor.buildNavigationFor(editor.combined)
+
+				imgui.PopStyleVar()
+				imgui.PopStyleVar()
+				imgui.PopStyleVar()
 			}
+
+			imgui.PopStyleVar()
 
 			imgui.EndChild()
 		}
@@ -198,8 +212,6 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 	count := typ.NumField()
 
 	imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0, 0, 0, 0})
-	imgui.PushStyleColor(imgui.StyleColorButtonHovered, imgui.Vec4{0.3, 0.3, 0.3, 0.6})
-	imgui.PushStyleColor(imgui.StyleColorButtonActive, imgui.Vec4{0.5, 0.5, 0.5, 0.6})
 
 	buttonSize := imgui.FontSize() * 1.5
 
@@ -214,6 +226,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 			if editor.active == label {
 				cColor := imgui.CurrentStyle().Color(imgui.StyleColorCheckMark)
 
+				imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0.2, 0.2, 0.2, 0.6})
 				imgui.PushStyleColor(imgui.StyleColorText, imgui.Vec4{cColor.X * 1.2, cColor.Y * 1.2, cColor.Z * 1.2, 1})
 			}
 
@@ -239,6 +252,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 				}
 
 				imgui.PopStyleColor()
+				imgui.PopStyleColor()
 			}
 
 			if imgui.IsItemHovered() {
@@ -251,8 +265,6 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 		}
 	}
 
-	imgui.PopStyleColor()
-	imgui.PopStyleColor()
 	imgui.PopStyleColor()
 }
 
