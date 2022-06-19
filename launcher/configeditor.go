@@ -983,6 +983,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynami
 		imgui.TableNextColumn()
 
 		imgui.BeginGroup()
+		imgui.AlignTextToFramePadding()
 		imgui.Text(label)
 		imgui.EndGroup()
 
