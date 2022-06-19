@@ -326,7 +326,7 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 
 	pos := imgui.CursorScreenPos()
 
-	imgui.Dummy(imgui.Vec2{5, 0})
+	imgui.Dummy(imgui.Vec2{3, 0})
 	imgui.SameLine()
 
 	imgui.BeginGroup()
@@ -417,7 +417,7 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 		pos := imgui.CursorScreenPos()
 		posLocal := imgui.CursorPos()
 
-		imgui.Dummy(imgui.Vec2{5, 0})
+		imgui.Dummy(imgui.Vec2{3, 0})
 		imgui.SameLine()
 
 		imgui.BeginGroup()
@@ -435,7 +435,7 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 
 		imgui.TableSetColumnIndex(0)
 
-		imgui.Dummy(imgui.Vec2{2, 0})
+		imgui.Dummy(imgui.Vec2{1, 0})
 		imgui.SameLine()
 
 		ImIO.SetFontGlobalScale(0.625)
