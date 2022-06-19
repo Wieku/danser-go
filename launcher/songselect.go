@@ -138,15 +138,8 @@ func (m *songSelectPopup) update() {
 func (m *songSelectPopup) drawSongSelect() {
 	imgui.PushFont(Font32)
 
-	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
-	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-
-	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{0, 0, 0, 1})
-	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, imgui.Vec4{0.1, 0.1, 0.1, 1})
-	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, imgui.Vec4{0.1, 0.1, 0.1, 1})
-
 	imgui.SetNextItemWidth(-1)
-	if imgui.InputTextWithHint("##searchpath", "Search", &m.searchStr) {
+	if searchBox("##searchpath", &m.searchStr) {
 		m.search()
 		m.focusTheMap = true
 	}
@@ -154,13 +147,6 @@ func (m *songSelectPopup) drawSongSelect() {
 	if !m.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
 		imgui.SetKeyboardFocusHereV(-1)
 	}
-
-	imgui.PopStyleColor()
-	imgui.PopStyleColor()
-	imgui.PopStyleColor()
-
-	imgui.PopStyleVar()
-	imgui.PopStyleVar()
 
 	imgui.PopFont()
 

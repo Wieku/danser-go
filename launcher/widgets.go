@@ -317,3 +317,23 @@ func selectableFocus(label string, selected bool) (clicked bool) {
 
 	return
 }
+
+func searchBox(label string, searchString *string) (ok bool) {
+	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
+	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
+
+	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{0, 0, 0, 1})
+	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, imgui.Vec4{0.1, 0.1, 0.1, 1})
+	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, imgui.Vec4{0.1, 0.1, 0.1, 1})
+
+	ok = imgui.InputTextWithHint(label, "Search", searchString)
+
+	imgui.PopStyleColor()
+	imgui.PopStyleColor()
+	imgui.PopStyleColor()
+
+	imgui.PopStyleVar()
+	imgui.PopStyleVar()
+
+	return
+}
