@@ -64,71 +64,70 @@ func (editor *settingsEditor) drawEditor() {
 	imgui.PushStyleColor(imgui.StyleColorWindowBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
 	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: .2, Y: .2, Z: .2, W: 1})
 
-	imgui.PushFont(Font20)
-	{
+	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, imgui.Vec2{2, 0})
 
-		imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, imgui.Vec2{2, 0})
+	if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, -1}, -1) {
+		imgui.PopStyleVar()
 
-		if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, -1}, -1) {
-			imgui.PopStyleVar()
+		imgui.TableSetupColumnV("Edit main table 1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+		imgui.TableSetupColumnV("Edit main table 2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
 
-			imgui.TableSetupColumnV("Edit main table 1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-			imgui.TableSetupColumnV("Edit main table 2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+		imgui.TableNextColumn()
 
-			imgui.TableNextColumn()
+		imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
 
-			imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
-
-			imgui.PushFont(FontAw)
-			{
-				if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize() * 1.5, Y: -1}, false, imgui.WindowFlagsNoScrollbar) {
-					editor.scrollTo = ""
-					editor.buildNavigationFor(editor.combined)
-				}
-
-				imgui.EndChild()
-			}
-			imgui.PopFont()
-
-			imgui.PopStyleColor()
-
-			imgui.TableNextColumn()
-
-			imgui.PushFont(Font32)
-			{
-				imgui.PushItemWidth(-1)
-				{
-					if imgui.InputTextWithHint("##Editor search", "Search", &editor.searchString) {
-						editor.searchCache = make(map[string]int)
-						editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
-					}
-
-					if !editor.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
-						imgui.SetKeyboardFocusHereV(-1)
-					}
-				}
-				imgui.PopItemWidth()
-			}
-			imgui.PopFont()
-
-			imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{5, 0})
-
-			if imgui.BeginChildV("##Editor main", imgui.Vec2{-1, -1}, false, imgui.WindowFlagsAlwaysUseWindowPadding) {
-				editor.comboOpened = false
-
-				editor.drawSettings()
+		imgui.PushFont(FontAw)
+		{
+			if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize() * 1.5, Y: -1}, false, imgui.WindowFlagsNoScrollbar) {
+				editor.scrollTo = ""
+				editor.buildNavigationFor(editor.combined)
 			}
 
 			imgui.EndChild()
-
-			imgui.PopStyleVar()
-
-			imgui.EndTable()
-		} else {
-			imgui.PopStyleVar()
 		}
+		imgui.PopFont()
+
+		imgui.PopStyleColor()
+
+		imgui.TableNextColumn()
+
+		imgui.PushFont(Font32)
+		{
+			imgui.PushItemWidth(-1)
+			{
+				if imgui.InputTextWithHint("##Editor search", "Search", &editor.searchString) {
+					editor.searchCache = make(map[string]int)
+					editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
+				}
+
+				if !editor.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+					imgui.SetKeyboardFocusHereV(-1)
+				}
+			}
+			imgui.PopItemWidth()
+		}
+		imgui.PopFont()
+
+		imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{5, 0})
+
+		if imgui.BeginChildV("##Editor main", imgui.Vec2{-1, -1}, false, imgui.WindowFlagsAlwaysUseWindowPadding) {
+			editor.comboOpened = false
+
+			imgui.PushFont(Font20)
+
+			editor.drawSettings()
+
+			imgui.PopFont()
+		}
+
+		imgui.EndChild()
+
+		imgui.PopStyleVar()
+
+		imgui.EndTable()
+	} else {
+		imgui.PopStyleVar()
 	}
-	imgui.PopFont()
 
 	imgui.PopStyleColor()
 	imgui.PopStyleColor()
