@@ -30,13 +30,13 @@ func initGeneral() *general {
 
 type general struct {
 	// Directory that contains osu! songs
-	OsuSongsDir string `long:"true" path:"Select osu! Songs directory"`
+	OsuSongsDir string `long:"true" label:"osu! Songs directory" path:"Select osu! Songs directory"`
 
 	// Directory that contains osu! skins
-	OsuSkinsDir string `long:"true" path:"Select osu! Skins directory"`
+	OsuSkinsDir string `long:"true" label:"osu! Skins directory" path:"Select osu! Skins directory"`
 
 	// Directory that contains osu! replays
-	OsuReplaysDir string `long:"true" path:"Select osu! Replays directory"`
+	OsuReplaysDir string `long:"true" label:"osu! Replays directory" path:"Select osu! Replays directory" tooltip:"Don't use replays directory inside danser's directory!"`
 
 	// Whether discord should show that danser is on
 	DiscordPresenceOn bool `label:"Discord Rich Presence"`
