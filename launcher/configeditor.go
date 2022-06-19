@@ -66,23 +66,34 @@ func (editor *settingsEditor) drawEditor() {
 
 	imgui.PushFont(Font20)
 	{
-		imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
 
-		imgui.PushFont(FontAw)
-		{
-			if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize()*1.5 + 15, Y: -1}, false, imgui.WindowFlagsAlwaysVerticalScrollbar /*imgui.ScrollbWindowFlagsNoScrollbar*/) {
-				editor.scrollTo = ""
-				editor.buildNavigationFor(editor.combined)
+		imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, imgui.Vec2{2, 0})
+
+		if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, -1}, -1) {
+			imgui.PopStyleVar()
+
+			imgui.TableSetupColumnV("Edit main table 1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+			imgui.TableSetupColumnV("Edit main table 2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+
+			imgui.TableNextColumn()
+
+			imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
+
+			imgui.PushFont(FontAw)
+			{
+				if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize() * 1.5, Y: -1}, false, imgui.WindowFlagsNoScrollbar) {
+					editor.scrollTo = ""
+					editor.buildNavigationFor(editor.combined)
+				}
+
+				imgui.EndChild()
 			}
-			imgui.EndChild()
-		}
-		imgui.PopFont()
+			imgui.PopFont()
 
-		imgui.PopStyleColor()
+			imgui.PopStyleColor()
 
-		imgui.SameLine()
+			imgui.TableNextColumn()
 
-		if imgui.BeginChildV("##Editor right", imgui.Vec2{X: -1, Y: -1}, false, 0) {
 			imgui.PushFont(Font32)
 			{
 				imgui.PushItemWidth(-1)
@@ -111,8 +122,11 @@ func (editor *settingsEditor) drawEditor() {
 			imgui.EndChild()
 
 			imgui.PopStyleVar()
+
+			imgui.EndTable()
+		} else {
+			imgui.PopStyleVar()
 		}
-		imgui.EndChild()
 	}
 	imgui.PopFont()
 
