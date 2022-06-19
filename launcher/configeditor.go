@@ -337,7 +337,10 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 	afterTitle()
 
 	imgui.PopFont()
-	imgui.Separator()
+
+	imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Plus(imgui.Vec2{imgui.ContentRegionMax().X, 0}), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
+
+	imgui.Spacing()
 
 	content()
 
