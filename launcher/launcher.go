@@ -754,9 +754,7 @@ func (l *launcher) selectReplay() {
 	imgui.PushFont(Font32)
 
 	if imgui.ButtonV("Select replay", bSize) {
-		rDir := filepath.Join(filepath.Dir(settings.General.GetSongsDir()), "Replays")
-
-		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(rDir).Load()
+		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(l.currentConfig.General.GetReplaysDir()).Load()
 		if err == nil {
 			l.loadReplay(p)
 		}

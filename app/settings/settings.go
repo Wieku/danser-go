@@ -62,6 +62,9 @@ func LoadConfig(file *os.File) (*Config, error) {
 	}
 
 	config := NewConfigFile()
+
+	config.General.OsuReplaysDir = "" // Clear Replay path, so we can migrate it from Songs if JSON misses it
+
 	config.srcPath = file.Name()
 	config.srcData = data
 
@@ -77,6 +80,10 @@ func LoadConfig(file *os.File) (*Config, error) {
 	}
 
 	config.migrateCursorDance()
+
+	if config.General.OsuReplaysDir == "" { // Set the replay directory if it hasn't been loaded
+		config.General.OsuReplaysDir = filepath.Join(filepath.Dir(config.General.OsuSongsDir), "Replays")
+	}
 
 	log.Println(fmt.Sprintf(`SettingsManager: "%s" loaded!`, file.Name()))
 
