@@ -87,7 +87,7 @@ func (container *HitObjectContainer) createFollowPoints() {
 			pStart := prevPos.Add(vec.Scl(t - 0.1))
 			pos := prevPos.Add(vec.Scl(t))
 
-			followPoint := sprite.NewAnimation(textures, 1000.0/float64(len(textures)), true, -float64(i), pos, vector.Centre)
+			followPoint := sprite.NewAnimation(textures, skin.GetInfo().GetFrameTime(len(textures)), true, -float64(i), pos, vector.Centre)
 			followPoint.SetRotation(rotation)
 			followPoint.SetAlpha(0)
 			followPoint.ShowForever(false)
