@@ -441,6 +441,28 @@ func (l *launcher) loadBeatmaps() {
 
 	if len(os.Args) > 1 { //won't work in combined mode
 		l.loadReplay(os.Args[1])
+	} else if launcherConfig.LoadLatestReplay {
+		lastModified := time.UnixMilli(0)
+		replayPath := ""
+
+		filepath.Walk(l.currentConfig.General.GetReplaysDir(), func(path string, info fs.FileInfo, err error) error {
+			if info.IsDir() && path != l.currentConfig.General.GetReplaysDir() {
+				return filepath.SkipDir
+			}
+
+			if !info.IsDir() && strings.HasSuffix(path, ".osr") {
+				if info.ModTime().After(lastModified) {
+					lastModified = info.ModTime()
+					replayPath = path
+				}
+			}
+
+			return nil
+		})
+
+		if replayPath != "" {
+			l.loadReplay(replayPath)
+		}
 	}
 
 	l.mapsLoaded = true

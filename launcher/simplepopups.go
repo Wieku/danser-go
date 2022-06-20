@@ -197,6 +197,7 @@ func drawLauncherConfig() {
 
 		imgui.TableNextColumn()
 
+		imgui.AlignTextToFramePadding()
 		imgui.Text("Check for updates on startup")
 
 		imgui.TableNextColumn()
@@ -207,6 +208,7 @@ func drawLauncherConfig() {
 
 		posLocal := imgui.CursorPos()
 
+		imgui.AlignTextToFramePadding()
 		imgui.Text("Show exported videos/images\nin explorer")
 
 		posLocal1 := imgui.CursorPos()
@@ -219,11 +221,21 @@ func drawLauncherConfig() {
 
 		imgui.TableNextColumn()
 
+		imgui.AlignTextToFramePadding()
 		imgui.Text("Preview selected maps")
 
 		imgui.TableNextColumn()
 
 		imgui.Checkbox("##PreviewSelected", &launcherConfig.PreviewSelected)
+
+		imgui.TableNextColumn()
+
+		imgui.AlignTextToFramePadding()
+		imgui.Text("Load latest replay on startup")
+
+		imgui.TableNextColumn()
+
+		imgui.Checkbox("##LoadLatestReplay", &launcherConfig.LoadLatestReplay)
 
 		imgui.EndTable()
 	}
