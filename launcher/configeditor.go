@@ -798,7 +798,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 			if _, okSearch := d.Tag.Lookup("search"); okSearch {
 				mWidth := imgui.CalcItemWidth() - imgui.CurrentStyle().FramePadding().X*2
 
-				if imgui.BeginComboV("##config", lb, imgui.ComboFlagsHeightLarge) {
+				if imgui.BeginComboV(jsonPath, lb, imgui.ComboFlagsHeightLarge) {
 					editor.blockSearch = true
 
 					for _, s := range labels {
@@ -809,7 +809,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 
 					cSearch := editor.comboSearch[jsonPath]
 
-					focusScroll := searchBox("##configSearch", &cSearch)
+					focusScroll := searchBox("##search"+jsonPath, &cSearch)
 
 					editor.comboSearch[jsonPath] = cSearch
 
@@ -837,11 +837,11 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					if len(searchResults) > 0 {
 						sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
-						if imgui.BeginListBoxV("##blistbox", imgui.Vec2{mWidth, sHeight}) {
+						if imgui.BeginListBoxV("##listbox"+jsonPath, imgui.Vec2{mWidth, sHeight}) {
 							focusScroll = focusScroll || imgui.IsWindowAppearing()
 
 							for i, l := range searchResults {
-								if selectableFocus(l, l == lb, focusScroll) {
+								if selectableFocus(l+jsonPath, l == lb, focusScroll) {
 									f.SetString(searchValues[i])
 								}
 							}
@@ -864,7 +864,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					editor.blockSearch = true
 
 					for i, l := range labels {
-						if selectableFocus(l, l == lb, justOpened) {
+						if selectableFocus(l+jsonPath, l == lb, justOpened) {
 							f.SetString(values[i])
 						}
 					}
@@ -952,7 +952,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 				editor.blockSearch = true
 
 				for i, l := range labels {
-					if selectableFocus(l, l == lb, justOpened) {
+					if selectableFocus(l+jsonPath, l == lb, justOpened) {
 						f.SetInt(int64(values[i]))
 					}
 				}
