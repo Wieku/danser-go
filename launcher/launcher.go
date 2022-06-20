@@ -45,6 +45,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -172,6 +173,8 @@ type launcher struct {
 	splashText   string
 
 	prevMap *beatmap.BeatMap
+
+	configSearch string
 }
 
 func StartLauncher() {
@@ -610,7 +613,7 @@ func (l *launcher) drawMain() {
 
 		if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
 			for _, m := range modes {
-				if selectableFocus(m.String(), l.bld.currentMode == m) {
+				if imgui.SelectableV(m.String(), l.bld.currentMode == m, 0, imgui.Vec2{}) {
 					if m == Play {
 						l.bld.currentPMode = Watch
 					}
@@ -871,7 +874,7 @@ func (l *launcher) drawLowerPanel() {
 
 		if imgui.BeginCombo("##Watch mode", l.bld.currentPMode.String()) {
 			for _, m := range pModes {
-				if selectableFocus(m.String(), l.bld.currentPMode == m) {
+				if imgui.SelectableV(m.String(), l.bld.currentPMode == m, 0, imgui.Vec2{}) {
 					l.bld.currentPMode = m
 				}
 			}
@@ -1050,58 +1053,101 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.SetNextItemWidth(-1)
 
-		if imgui.BeginCombo("##config" /*"Config: "+*/, l.bld.config) {
+		mWidth := imgui.CalcItemWidth() - imgui.CurrentStyle().FramePadding().X*2
+
+		if imgui.BeginComboV("##config", l.bld.config, imgui.ComboFlagsHeightLarge) {
+			for _, s := range l.configList {
+				mWidth = mutils.Max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
+			}
+
+			imgui.SetNextItemWidth(mWidth)
+
+			focusScroll := searchBox("##configSearch", &l.configSearch)
+
+			if !imgui.IsMouseClicked(0) && !imgui.IsMouseClicked(1) && !imgui.IsAnyItemActive() && !(imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()) {
+				imgui.SetKeyboardFocusHereV(-1)
+			}
+
 			if imgui.Selectable("Create new...") {
 				l.newCloneOpened = true
 				l.configManiMode = New
 			}
 
+			imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
+			imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
+			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{})
+			imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: 0})
+
+			searchResults := make([]string, 0, len(l.configList))
+
+			search := strings.ToLower(l.configSearch)
+
 			for _, s := range l.configList {
-				if selectableFocus(s, s == l.bld.config) {
-					if s != l.bld.config {
-						l.setConfig(s)
-					}
-				}
-
-				if imgui.IsMouseClicked(1) && imgui.IsItemHovered() {
-					l.configEditOpened = true
-
-					imgui.SetNextWindowPosV(imgui.MousePos(), imgui.ConditionAlways, imgui.Vec2{})
-
-					imgui.OpenPopup("##context" + s)
-				}
-
-				if imgui.BeginPopupModalV("##context"+s, &l.configEditOpened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
-
-					if s != "default" {
-						if imgui.Selectable("Rename") {
-							l.newCloneOpened = true
-							l.configPrevName = s
-							l.configManiMode = Rename
-						}
-					}
-
-					if imgui.Selectable("Clone") {
-						l.newCloneOpened = true
-						l.configPrevName = s
-						l.configManiMode = Clone
-					}
-
-					if s != "default" {
-						if imgui.Selectable("Remove") {
-							if showMessage(mQuestion, "Are you sure you want to remove \"%s\" profile?", s) {
-								l.removeConfig(s)
-							}
-						}
-					}
-
-					if (imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
-						l.configEditOpened = false
-					}
-
-					imgui.EndPopup()
+				if l.configSearch == "" || strings.Contains(strings.ToLower(s), search) {
+					searchResults = append(searchResults, s)
 				}
 			}
+
+			if len(searchResults) > 0 {
+				sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
+
+				if imgui.BeginListBoxV("##blistbox", imgui.Vec2{mWidth, sHeight}) {
+					focusScroll = focusScroll || imgui.IsWindowAppearing()
+
+					for _, s := range searchResults {
+						if selectableFocus(s, s == l.bld.config, focusScroll) {
+							if s != l.bld.config {
+								l.setConfig(s)
+							}
+						}
+
+						if imgui.IsMouseClicked(1) && imgui.IsItemHovered() {
+							l.configEditOpened = true
+
+							imgui.SetNextWindowPosV(imgui.MousePos(), imgui.ConditionAlways, imgui.Vec2{})
+
+							imgui.OpenPopup("##context" + s)
+						}
+
+						if imgui.BeginPopupModalV("##context"+s, &l.configEditOpened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
+							if s != "default" {
+								if imgui.Selectable("Rename") {
+									l.newCloneOpened = true
+									l.configPrevName = s
+									l.configManiMode = Rename
+								}
+							}
+
+							if imgui.Selectable("Clone") {
+								l.newCloneOpened = true
+								l.configPrevName = s
+								l.configManiMode = Clone
+							}
+
+							if s != "default" {
+								if imgui.Selectable("Remove") {
+									if showMessage(mQuestion, "Are you sure you want to remove \"%s\" profile?", s) {
+										l.removeConfig(s)
+									}
+								}
+							}
+
+							if (imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
+								l.configEditOpened = false
+							}
+
+							imgui.EndPopup()
+						}
+					}
+
+					imgui.EndListBox()
+				}
+			}
+
+			imgui.PopStyleVar()
+			imgui.PopStyleVar()
+			imgui.PopStyleVar()
+			imgui.PopStyleColor()
 
 			imgui.EndCombo()
 		}

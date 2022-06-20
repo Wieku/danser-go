@@ -308,11 +308,15 @@ func centerTable(label string, width float32, draw func()) {
 	}
 }
 
-func selectableFocus(label string, selected bool) (clicked bool) {
+func selectableFocus(label string, selected, justOpened bool) (clicked bool) {
+	if selected && justOpened {
+		imgui.SetScrollY(imgui.CursorPosY()) //SetScrollHereY was not working reliably
+	}
+
 	clicked = imgui.SelectableV(label, selected, 0, imgui.Vec2{})
 
-	if selected {
-		imgui.SetItemDefaultFocus()
+	if clicked {
+		imgui.CloseCurrentPopup()
 	}
 
 	return

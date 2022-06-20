@@ -35,9 +35,10 @@ type settingsEditor struct {
 	listenerCalled bool
 	sectionCache   map[string]imgui.Vec2
 
-	active     string
-	lastActive string
-	pwShowHide map[string]bool
+	active      string
+	lastActive  string
+	pwShowHide  map[string]bool
+	comboSearch map[string]string
 }
 
 func newSettingsEditor(config *settings.Config) *settingsEditor {
@@ -46,6 +47,7 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 		searchCache:  make(map[string]int),
 		sectionCache: make(map[string]imgui.Vec2),
 		pwShowHide:   make(map[string]bool),
+		comboSearch:  make(map[string]string),
 	}
 
 	editor.internalDraw = editor.drawEditor
@@ -60,7 +62,7 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 func (editor *settingsEditor) drawEditor() {
 	settings.General.OsuSkinsDir = editor.combined.General.OsuSkinsDir
 
-	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{0, 0})
+	//imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{0, 0})
 	imgui.PushStyleColor(imgui.StyleColorWindowBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
 	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: .2, Y: .2, Z: .2, W: 1})
 
@@ -123,6 +125,8 @@ func (editor *settingsEditor) drawEditor() {
 		imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{5, 0})
 
 		if imgui.BeginChildV("##Editor main", imgui.Vec2{-1, -1}, false, imgui.WindowFlagsAlwaysUseWindowPadding) {
+			imgui.PopStyleVar()
+
 			editor.comboOpened = false
 
 			imgui.PushFont(Font20)
@@ -130,11 +134,11 @@ func (editor *settingsEditor) drawEditor() {
 			editor.drawSettings()
 
 			imgui.PopFont()
+		} else {
+			imgui.PopStyleVar()
 		}
 
 		imgui.EndChild()
-
-		imgui.PopStyleVar()
 
 		imgui.EndTable()
 	} else {
@@ -143,7 +147,7 @@ func (editor *settingsEditor) drawEditor() {
 
 	imgui.PopStyleColor()
 	imgui.PopStyleColor()
-	imgui.PopStyleVar()
+	//imgui.PopStyleVar()
 }
 
 func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, search string, omitSearch bool) bool {
@@ -791,16 +795,82 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				}
 			}
 
-			if imgui.BeginCombo(jsonPath, lb) {
-				editor.comboOpened = true
+			if _, okSearch := d.Tag.Lookup("search"); okSearch {
+				mWidth := imgui.CalcItemWidth() - imgui.CurrentStyle().FramePadding().X*2
 
-				for i, l := range labels {
-					if selectableFocus(l, l == lb) {
-						f.SetString(values[i])
+				if imgui.BeginComboV("##config", lb, imgui.ComboFlagsHeightLarge) {
+					editor.comboOpened = true
+
+					for _, s := range labels {
+						mWidth = mutils.Max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
 					}
-				}
 
-				imgui.EndCombo()
+					imgui.SetNextItemWidth(mWidth)
+
+					cSearch := editor.comboSearch[jsonPath]
+
+					focusScroll := searchBox("##configSearch", &cSearch)
+
+					editor.comboSearch[jsonPath] = cSearch
+
+					if !imgui.IsMouseClicked(0) && !imgui.IsMouseClicked(1) && !imgui.IsAnyItemActive() && !(imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()) {
+						imgui.SetKeyboardFocusHereV(-1)
+					}
+
+					imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
+					imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
+					imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{})
+					imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: 0})
+
+					searchResults := make([]string, 0, len(labels))
+					searchValues := make([]string, 0, len(labels))
+
+					search := strings.ToLower(cSearch)
+
+					for i, s := range labels {
+						if cSearch == "" || strings.Contains(strings.ToLower(s), search) {
+							searchResults = append(searchResults, s)
+							searchValues = append(searchValues, values[i])
+						}
+					}
+
+					if len(searchResults) > 0 {
+						sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
+
+						if imgui.BeginListBoxV("##blistbox", imgui.Vec2{mWidth, sHeight}) {
+							focusScroll = focusScroll || imgui.IsWindowAppearing()
+
+							for i, l := range searchResults {
+								if selectableFocus(l, l == lb, focusScroll) {
+									f.SetString(searchValues[i])
+								}
+							}
+
+							imgui.EndListBox()
+						}
+					}
+
+					imgui.PopStyleVar()
+					imgui.PopStyleVar()
+					imgui.PopStyleVar()
+					imgui.PopStyleColor()
+
+					imgui.EndCombo()
+				}
+			} else {
+				if imgui.BeginCombo(jsonPath, lb) {
+					justOpened := imgui.IsWindowAppearing()
+
+					editor.comboOpened = true
+
+					for i, l := range labels {
+						if selectableFocus(l, l == lb, justOpened) {
+							f.SetString(values[i])
+						}
+					}
+
+					imgui.EndCombo()
+				}
 			}
 		} else if okPW {
 			if imgui.BeginTableV("tpw"+jsonPath+"tb", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
@@ -878,10 +948,11 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 			}
 
 			if imgui.BeginCombo(jsonPath, lb) {
+				justOpened := imgui.IsWindowAppearing()
 				editor.comboOpened = true
 
 				for i, l := range labels {
-					if selectableFocus(l, l == lb) {
+					if selectableFocus(l, l == lb, justOpened) {
 						f.SetInt(int64(values[i]))
 					}
 				}
