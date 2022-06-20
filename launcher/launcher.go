@@ -897,7 +897,7 @@ func (l *launcher) drawLowerPanel() {
 		})
 
 		if showProgress {
-			if l.recordStatus == "Done" {
+			if strings.HasPrefix(l.recordStatus, "Done") {
 				imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.Vec4{
 					X: 0.16,
 					Y: 0.75,
@@ -1479,7 +1479,7 @@ func (l *launcher) startDanser() {
 		}
 
 		l.recordProgress = 100
-		l.recordStatus = "Done"
+		l.recordStatus = "Done in " + util.FormatSeconds(int(time.Since(l.encodeStart).Seconds()))
 		l.recordStatusSpeed = ""
 		l.recordStatusETA = ""
 	})
