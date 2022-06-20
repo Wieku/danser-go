@@ -26,7 +26,7 @@ type settingsEditor struct {
 
 	searchCache  map[string]int
 	scrollTo     string
-	comboOpened  bool
+	blockSearch  bool
 	searchString string
 
 	current  *settings.Config
@@ -116,7 +116,7 @@ func (editor *settingsEditor) drawEditor() {
 				editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
 			}
 
-			if !editor.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+			if !editor.blockSearch && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
 				imgui.SetKeyboardFocusHereV(-1)
 			}
 		}
@@ -127,7 +127,7 @@ func (editor *settingsEditor) drawEditor() {
 		if imgui.BeginChildV("##Editor main", imgui.Vec2{-1, -1}, false, imgui.WindowFlagsAlwaysUseWindowPadding) {
 			imgui.PopStyleVar()
 
-			editor.comboOpened = false
+			editor.blockSearch = false
 
 			imgui.PushFont(Font20)
 
@@ -799,7 +799,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				mWidth := imgui.CalcItemWidth() - imgui.CurrentStyle().FramePadding().X*2
 
 				if imgui.BeginComboV("##config", lb, imgui.ComboFlagsHeightLarge) {
-					editor.comboOpened = true
+					editor.blockSearch = true
 
 					for _, s := range labels {
 						mWidth = mutils.Max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
@@ -861,7 +861,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				if imgui.BeginCombo(jsonPath, lb) {
 					justOpened := imgui.IsWindowAppearing()
 
-					editor.comboOpened = true
+					editor.blockSearch = true
 
 					for i, l := range labels {
 						if selectableFocus(l, l == lb, justOpened) {
@@ -949,7 +949,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 
 			if imgui.BeginCombo(jsonPath, lb) {
 				justOpened := imgui.IsWindowAppearing()
-				editor.comboOpened = true
+				editor.blockSearch = true
 
 				for i, l := range labels {
 					if selectableFocus(l, l == lb, justOpened) {
@@ -974,6 +974,9 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 			imgui.PopStyleVar()
 
 			if imgui.IsItemHovered() || imgui.IsItemActive() {
+				imgui.SetKeyboardFocusHereV(-1)
+				editor.blockSearch = true
+
 				imgui.BeginTooltip()
 				imgui.SetTooltip(fmt.Sprintf(format, base))
 				imgui.EndTooltip()
@@ -1010,6 +1013,9 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 			imgui.PopStyleVar()
 
 			if imgui.IsItemHovered() || imgui.IsItemActive() {
+				imgui.SetKeyboardFocusHereV(-1)
+				editor.blockSearch = true
+
 				imgui.BeginTooltip()
 				imgui.SetTooltip(fmt.Sprintf(format, valSpeed))
 				imgui.EndTooltip()
@@ -1034,7 +1040,7 @@ func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d ref
 			hsv.Value = float64(v)
 		}
 
-		editor.comboOpened = editor.comboOpened || imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()
+		editor.blockSearch = editor.blockSearch || imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()
 	}
 
 	if withLabel {
