@@ -39,7 +39,7 @@ func NewTrack(path string) *TrackBass {
 		relativeFrequency: 1,
 	}
 
-	flags := C.BASS_STREAM_DECODE | C.BASS_STREAM_PRESCAN | C.BASS_ASYNCFILE
+	flags := C.BASS_STREAM_DECODE | C.BASS_STREAM_PRESCAN //| C.BASS_ASYNCFILE
 
 	if runtime.GOOS == "windows" {
 		wFile := utf16.Encode([]rune(path))
@@ -47,6 +47,9 @@ func NewTrack(path string) *TrackBass {
 
 		player.channel = C.BASS_StreamCreateFile(0, unsafe.Pointer(&wFile[0]), 0, 0, C.DWORD(flags|C.BASS_UNICODE))
 	} else {
+		// For the time being, only Linux will use ASYNC flag as it recently got bugged on Windows
+		flags |= C.BASS_ASYNCFILE
+
 		player.channel = C.BASS_StreamCreateFile(0, unsafe.Pointer(C.CString(path)), 0, 0, C.DWORD(flags))
 	}
 
