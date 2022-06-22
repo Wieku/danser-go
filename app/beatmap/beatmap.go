@@ -56,6 +56,8 @@ type BeatMap struct {
 	Version    int
 
 	ARSpecified bool
+
+	LocalOffset int
 }
 
 func NewBeatMap() *BeatMap {
