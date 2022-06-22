@@ -494,6 +494,13 @@ func UpdatePlayStats(beatmap *beatmap.BeatMap) {
 	}
 }
 
+func UpdateLocalOffset(beatmap *beatmap.BeatMap) {
+	_, err := dbFile.Exec("UPDATE beatmaps SET localOffset = ? WHERE dir = ? AND file = ?", beatmap.LocalOffset, beatmap.Dir, beatmap.File)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func removeBeatmaps(toRemove []mapLocation) {
 	if len(toRemove) == 0 {
 		return

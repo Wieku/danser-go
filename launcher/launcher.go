@@ -410,7 +410,7 @@ func (l *launcher) loadBeatmaps() {
 			l.beatmaps = append(l.beatmaps, bMap)
 		}
 
-		database.Close()
+		//database.Close()
 	}
 
 	l.win.SetDropCallback(func(w *glfw.Window, names []string) {
@@ -768,9 +768,18 @@ func (l *launcher) drawControls() {
 		imgui.TableNextColumn()
 
 		if imgui.ButtonV("Time/Offset", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
-			l.openPopup(newPopupF("Set times", popMedium, func() {
+			timePopup := newPopupF("Set times", popMedium, func() {
 				drawTimeMenu(l.bld)
-			}))
+			})
+
+			timePopup.setCloseListener(func() {
+				if l.bld.currentMap != nil && l.bld.currentMap.LocalOffset != int(l.bld.offset.value) {
+					l.bld.currentMap.LocalOffset = int(l.bld.offset.value)
+					database.UpdateLocalOffset(l.bld.currentMap)
+				}
+			})
+
+			l.openPopup(timePopup)
 		}
 
 		imgui.EndTable()

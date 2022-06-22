@@ -106,6 +106,9 @@ func (b *builder) setMap(bMap *beatmap.BeatMap) {
 		value:   mEnd,
 		changed: false,
 	}
+
+	b.offset.value = int32(bMap.LocalOffset)
+	b.offset.changed = b.offset.value != 0
 }
 
 func (b *builder) getArguments() (args []string) {
