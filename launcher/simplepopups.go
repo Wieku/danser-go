@@ -22,15 +22,19 @@ func drawTimeMenu(bld *builder) {
 		end.value = start.value + 1
 	}
 
-	imgui.Spacing()
+	iPos1 := imgui.CursorPosY()
 
 	sliderIntReset("End time", end, 1, end.ogValue, util.FormatSeconds(int(end.value)))
+
+	iPos2 := imgui.CursorPosY()
 
 	if start.value >= end.value {
 		start.value = end.value - 1
 	}
 
-	imgui.Spacing()
+	imgui.Dummy(imgui.Vec2{0, iPos2 - iPos1})
+
+	sliderIntReset("Audio offset", &bld.offset, -300, 300, "%dms")
 }
 
 func drawSpeedMenu(bld *builder) {

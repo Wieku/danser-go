@@ -39,9 +39,10 @@ type builder struct {
 	replayPath    string
 	currentReplay *rplpa.Replay
 
-	start intParam
-	end   intParam
-	skip  bool
+	offset intParam
+	start  intParam
+	end    intParam
+	skip   bool
 
 	mirrors int32
 	tags    int32
@@ -53,6 +54,8 @@ type builder struct {
 
 func newBuilder() *builder {
 	return &builder{
+		currentMode:  CursorDance,
+		currentPMode: Watch,
 		speed: floatParam{
 			ogValue: 1,
 			value:   1,
@@ -61,11 +64,13 @@ func newBuilder() *builder {
 			ogValue: 1,
 			value:   1,
 		},
-		currentMode:  CursorDance,
-		currentPMode: Watch,
-		mirrors:      1,
-		tags:         1,
-		config:       "default",
+		offset: intParam{
+			ogValue: 0,
+			value:   0,
+		},
+		mirrors: 1,
+		tags:    1,
+		config:  "default",
 	}
 }
 
@@ -199,6 +204,10 @@ func (b *builder) getArguments() (args []string) {
 
 	if b.skip {
 		args = append(args, "-skip")
+	}
+
+	if b.offset.changed && b.currentPMode != Screenshot {
+		args = append(args, "-offset", strconv.Itoa(int(b.offset.value)))
 	}
 
 	return

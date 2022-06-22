@@ -767,7 +767,7 @@ func (l *launcher) drawControls() {
 
 		imgui.TableNextColumn()
 
-		if imgui.ButtonV("Start/End time", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+		if imgui.ButtonV("Time/Offset", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
 			l.openPopup(newPopupF("Set times", popMedium, func() {
 				drawTimeMenu(l.bld)
 			}))
