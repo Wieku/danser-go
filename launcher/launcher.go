@@ -24,6 +24,7 @@ void beep_error() {}
 import "C"
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -64,6 +65,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 type Mode int
@@ -795,7 +797,31 @@ func (l *launcher) selectReplay() {
 	if imgui.ButtonV("Select replay", bSize) {
 		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(l.currentConfig.General.GetReplaysDir()).Load()
 		if err == nil {
-			l.loadReplay(p)
+			replay, err := l.loadReplay(p)
+
+			if err != nil {
+				e := []rune(err.Error())
+				showMessage(mError, string(unicode.ToUpper(e[0]))+string(e[1:]))
+				return
+			} else {
+				ok := false
+
+				for _, bMap := range l.beatmaps {
+					if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+						l.bld.currentMode = Replay
+						l.bld.replayPath = p
+						l.bld.currentReplay = replay.parsedReplay
+						l.bld.setMap(bMap)
+
+						ok = true
+						break
+					}
+				}
+
+				if !ok {
+					showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
+				}
+			}
 		}
 	}
 
@@ -823,29 +849,26 @@ func (l *launcher) selectReplay() {
 func (l *launcher) loadReplay(p string) {
 	log.Println(p)
 
+func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 	rData, err := os.ReadFile(p)
 	if err != nil {
-		showMessage(mError, "Failed to open file:\n%s", err.Error())
-		return
+		return nil, fmt.Errorf("failed to open file: %s", err)
 	}
 
 	replay, err := rplpa.ParseReplay(rData)
 	if err != nil {
-		showMessage(mError, "Failed to open replay:\n%s", err.Error())
-		return
+		return nil, fmt.Errorf("failed to parse replay: %s", err)
 	}
 
-	for _, bMap := range l.beatmaps {
-		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.BeatmapMD5) {
-			l.bld.currentMode = Replay
-			l.bld.replayPath = p
-			l.bld.currentReplay = replay
-			l.bld.setMap(bMap)
-			return
-		}
+	if replay.ReplayData == nil || len(replay.ReplayData) < 2 {
+		return nil, errors.New("replay is missing input data")
 	}
 
-	showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
+	return &knockoutReplay{
+		path:         p,
+		parsedReplay: replay,
+		included:     true,
+	}, nil
 }
 
 func (l *launcher) showSelect() {

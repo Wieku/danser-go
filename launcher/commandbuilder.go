@@ -19,6 +19,12 @@ type param[T constraints.Integer | constraints.Float] struct {
 	changed bool
 }
 
+type knockoutReplay struct {
+	path         string
+	parsedReplay *rplpa.Replay
+	included     bool
+}
+
 type builder struct {
 	currentMode  Mode
 	currentPMode PMode
