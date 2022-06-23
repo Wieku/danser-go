@@ -8,6 +8,7 @@ var SKIP = false
 var START = 0.0
 var END = math.Inf(1)
 var KNOCKOUT = false
+var KNOCKOUTREPLAYS []string = nil
 var PLAYERS = 1
 var DIVIDES = 2
 var SPEED = 1.0

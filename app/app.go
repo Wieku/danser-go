@@ -2,6 +2,7 @@ package app
 
 import "C"
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/dustin/go-humanize"
@@ -111,7 +112,10 @@ func run() {
 		settingsVersion := flag.String("settings", "", "Specify settings version, -settings=abc means that settings/abc.json will be loaded")
 		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
 		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
+
 		knockout := flag.Bool("knockout", false, "Use knockout feature")
+		knockout2 := flag.String("knockout2", "", "Use knockout feature, but using compatible replays provided in a JSON list")
+
 		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
 		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
 		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
@@ -150,6 +154,16 @@ func run() {
 		flag.BoolVar(&preciseProgress, "preciseprogress", false, "Show rendering progress in 1% increments")
 
 		flag.Parse()
+
+		var knockoutReplays []string
+
+		if *knockout2 != "" {
+			if err := json.Unmarshal([]byte(*knockout2), &knockoutReplays); err != nil {
+				panic(fmt.Sprintf("Failed to parse replay list: %s", err))
+			}
+
+			*knockout = true
+		}
 
 		if !*noUpdCheck {
 			checkForUpdates()
@@ -221,6 +235,7 @@ func run() {
 
 		settings.DEBUG = *debug
 		settings.KNOCKOUT = *knockout
+		settings.KNOCKOUTREPLAYS = knockoutReplays
 		settings.PLAY = *play
 		settings.DIVIDES = *cursors
 		settings.TAG = *tag

@@ -209,54 +209,69 @@ func organizeReplays() {
 }
 
 func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
-	replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
-
 	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
-	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != replayDir {
-				return godirwalk.SkipThis
-			}
+	tryAddReplay := func(path string) {
+		log.Println("Loading: ", path)
 
-			if strings.HasSuffix(de.Name(), ".osr") {
-				log.Println("Loading: ", de.Name())
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
 
-				data, err := ioutil.ReadFile(osPathname)
-				if err != nil {
-					panic(err)
+		replayD, err := rplpa.ParseReplay(data)
+
+		if err != nil {
+			log.Println("Failed to load replay:", err)
+			return
+		}
+
+		if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
+			log.Println("Incompatible maps, skipping", replayD.Username)
+			return
+		}
+
+		if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+			log.Println("Excluding for incompatible mods:", replayD.Username)
+			return
+		}
+
+		if (replayD.Mods & uint32(excludedMods)) > 0 {
+			log.Println("Excluding for mods:", replayD.Username)
+			return
+		}
+
+		if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+			log.Println("Excluding for missing input data:", replayD.Username)
+			return
+		}
+
+		candidates = append(candidates, replayD)
+	}
+
+	if settings.KNOCKOUTREPLAYS != nil && len(settings.KNOCKOUTREPLAYS) > 0 {
+		for _, r := range settings.KNOCKOUTREPLAYS {
+			tryAddReplay(r)
+		}
+	} else {
+		replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
+
+		_ = godirwalk.Walk(replayDir, &godirwalk.Options{
+			Callback: func(osPathname string, de *godirwalk.Dirent) error {
+				if de.IsDir() && osPathname != replayDir {
+					return godirwalk.SkipThis
 				}
 
-				replayD, _ := rplpa.ParseReplay(data)
-
-				if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
-					log.Println("Incompatible maps, skipping", replayD.Username)
-					return nil
+				if strings.HasSuffix(de.Name(), ".osr") {
+					tryAddReplay(osPathname)
 				}
 
-				if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
-					log.Println("Excluding for incompatible mods:", replayD.Username)
-					return nil
-				}
-
-				if (replayD.Mods & uint32(excludedMods)) > 0 {
-					log.Println("Excluding for mods:", replayD.Username)
-					return nil
-				}
-
-				if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-					log.Println("Excluding for missing input data:", replayD.Username)
-					return nil
-				}
-
-				candidates = append(candidates, replayD)
-			}
-
-			return nil
-		},
-		Unsorted:            true,
-		FollowSymbolicLinks: true,
-	})
+				return nil
+			},
+			Unsorted:            true,
+			FollowSymbolicLinks: true,
+		})
+	}
 
 	return
 }
