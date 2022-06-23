@@ -24,7 +24,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
-	"math"
 	//"net/http"
 	//"net/url"
 	"os"
@@ -139,7 +138,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("\tExpected score:", replay.Score)
-		log.Println("\tExpected pp:", math.NaN())
 		log.Println("\tReplay loaded!")
 	}
 
