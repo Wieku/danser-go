@@ -903,7 +903,7 @@ func (l *launcher) newKnockout() {
 				}
 
 				if !found {
-					showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
+					showMessage(mError, "Replays use an unknown map. Please download the map beforehand.")
 				} else {
 					var finalReplays []*knockoutReplay
 
