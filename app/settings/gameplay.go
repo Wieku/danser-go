@@ -348,7 +348,7 @@ type mods struct {
 	*hudElementOffset
 	HideInReplays     bool
 	FoldInReplays     bool
-	AdditionalSpacing float64 `string:"true" min:"0"`
+	AdditionalSpacing float64 `string:"true" min:"-1366" max:"1366"`
 }
 
 type strainGraph struct {
