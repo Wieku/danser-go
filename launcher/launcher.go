@@ -75,6 +75,7 @@ const (
 	DanserReplay
 	Replay
 	Knockout
+	NewKnockout
 	Play
 )
 
@@ -87,6 +88,8 @@ func (m Mode) String() string {
 	case Replay:
 		return "Watch a replay"
 	case Knockout:
+		return "Watch knockout (classic)"
+	case NewKnockout:
 		return "Watch knockout"
 	case Play:
 		return "Play osu!standard"
@@ -95,7 +98,7 @@ func (m Mode) String() string {
 	return ""
 }
 
-var modes = []Mode{CursorDance, DanserReplay, Replay, Knockout, Play}
+var modes = []Mode{CursorDance, DanserReplay, Replay, Knockout, NewKnockout, Play}
 
 type PMode int
 
@@ -647,6 +650,10 @@ func (l *launcher) drawMain() {
 						l.bld.currentReplay = nil
 					}
 
+					if m != NewKnockout {
+						l.bld.knockoutReplays = nil
+					}
+
 					l.bld.currentMode = m
 				}
 			}
@@ -721,6 +728,8 @@ func (l *launcher) drawControls() {
 	switch l.bld.currentMode {
 	case Replay:
 		l.selectReplay()
+	case NewKnockout:
+		l.newKnockout()
 	default:
 		l.showSelect()
 	}
@@ -845,8 +854,109 @@ func (l *launcher) selectReplay() {
 	imgui.PopFont()
 }
 
-func (l *launcher) loadReplay(p string) {
-	log.Println(p)
+func (l *launcher) newKnockout() {
+	bSize := imgui.Vec2{X: (imgui.WindowWidth() - 40) / 4, Y: imgui.TextLineHeight() * 2}
+
+	imgui.PushFont(Font32)
+
+	if imgui.ButtonV("Select replays", bSize) {
+		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay files").SetStartDir(env.DataDir()).LoadMultiple()
+		if err == nil {
+			var errorCollection string
+			var replays []*knockoutReplay
+
+			for _, rPath := range p {
+				replay, err := l.loadReplay(rPath)
+
+				if err != nil {
+					if errorCollection != "" {
+						errorCollection += "\n"
+					}
+
+					errorCollection += fmt.Sprintf("%s:\n\t%s", filepath.Base(rPath), err)
+				} else {
+					replays = append(replays, replay)
+				}
+			}
+
+			if errorCollection != "" {
+				showMessage(mError, "There were errors opening replays:\n%s", errorCollection)
+			}
+
+			if replays != nil && len(replays) > 0 {
+				found := false
+
+				for _, replay := range replays {
+					for _, bMap := range l.beatmaps {
+						if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+							l.bld.currentMode = NewKnockout
+							l.bld.setMap(bMap)
+
+							found = true
+							break
+						}
+					}
+
+					if found {
+						break
+					}
+				}
+
+				if !found {
+					showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
+				} else {
+					var finalReplays []*knockoutReplay
+
+					for _, replay := range replays {
+						if strings.ToLower(l.bld.currentMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+							finalReplays = append(finalReplays, replay)
+						}
+					}
+
+					slices.SortFunc(finalReplays, func(a, b *knockoutReplay) bool {
+						return a.parsedReplay.Score > b.parsedReplay.Score
+					})
+
+					l.bld.knockoutReplays = finalReplays
+				}
+			}
+		}
+	}
+
+	imgui.PopFont()
+
+	imgui.PushFont(Font20)
+
+	imgui.IndentV(5)
+
+	if l.bld.knockoutReplays != nil && l.bld.currentMap != nil {
+		b := l.bld.currentMap
+
+		imgui.PushTextWrapPosV(imgui.ContentRegionMax().X / 2)
+
+		imgui.Text(fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty))
+
+		imgui.AlignTextToFramePadding()
+
+		imgui.Text(fmt.Sprintf("%d replays loaded", len(l.bld.knockoutReplays)))
+
+		imgui.PopTextWrapPos()
+
+		imgui.SameLine()
+
+		if imgui.Button("Manage##knockout") {
+			l.openPopup(newPopupF("Manage replays", popBig, func() {
+				drawReplayManager(l.bld)
+			}))
+		}
+	} else {
+		imgui.Text("No replays selected")
+	}
+
+	imgui.UnindentV(5)
+
+	imgui.PopFont()
+}
 
 func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 	rData, err := os.ReadFile(p)
@@ -1005,7 +1115,9 @@ func (l *launcher) drawLowerPanel() {
 		{
 			dRun := l.danserRunning && l.bld.currentPMode == Record
 
-			s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) || (l.bld.currentMode != Replay && l.bld.currentMap == nil)
+			s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) ||
+				(l.bld.currentMode != Replay && l.bld.currentMap == nil) ||
+				(l.bld.currentMode == NewKnockout && l.bld.numKnockoutReplays() == 0)
 
 			if !dRun {
 				if s {

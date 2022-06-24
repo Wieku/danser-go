@@ -1,6 +1,7 @@
 package launcher
 
 import (
+	"encoding/json"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/framework/math/math32"
@@ -56,6 +57,8 @@ type builder struct {
 	mods difficulty.Modifier
 
 	config string
+
+	knockoutReplays []*knockoutReplay
 }
 
 func newBuilder() *builder {
@@ -117,6 +120,18 @@ func (b *builder) setMap(bMap *beatmap.BeatMap) {
 	b.offset.changed = b.offset.value != 0
 }
 
+func (b *builder) numKnockoutReplays() (ret int) {
+	if b.knockoutReplays != nil {
+		for _, r := range b.knockoutReplays {
+			if r.included {
+				ret++
+			}
+		}
+	}
+
+	return
+}
+
 func (b *builder) getArguments() (args []string) {
 	args = append(args, "-nodbcheck", "-noupdatecheck")
 
@@ -135,6 +150,17 @@ func (b *builder) getArguments() (args []string) {
 			args = append(args, "-play")
 		} else if b.currentMode == Knockout {
 			args = append(args, "-knockout")
+		} else if b.currentMode == NewKnockout {
+			var list []string
+
+			for _, r := range b.knockoutReplays {
+				if r.included {
+					list = append(list, r.path)
+				}
+			}
+
+			data, _ := json.Marshal(list)
+			args = append(args, "-knockout2", string(data))
 		} else if b.currentMode == DanserReplay {
 			mods = "AT"
 		}
