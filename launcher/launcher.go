@@ -802,7 +802,6 @@ func (l *launcher) selectReplay() {
 			if err != nil {
 				e := []rune(err.Error())
 				showMessage(mError, string(unicode.ToUpper(e[0]))+string(e[1:]))
-				return
 			} else {
 				ok := false
 
