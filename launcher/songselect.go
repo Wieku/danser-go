@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
 	"golang.org/x/exp/slices"
@@ -286,7 +287,7 @@ func (m *songSelectPopup) drawSongSelect() {
 				imgui.PushFont(Font32)
 
 				imgui.TableSetupColumnV("##hhh"+rId, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-				imgui.TableSetupColumnV("##hhhg"+rId, imgui.TableColumnFlagsWidthFixed, imgui.FrameHeight(), uint(1))
+				imgui.TableSetupColumnV("##hhhg"+rId, imgui.TableColumnFlagsWidthFixed, imgui.FrameHeight()*2+imgui.CurrentStyle().ItemSpacing().X, uint(1))
 
 				imgui.TableNextColumn()
 
@@ -301,18 +302,55 @@ func (m *songSelectPopup) drawSongSelect() {
 				imgui.TableNextColumn()
 
 				if b.hovered {
+					imgui.PushFont(Font20)
+
 					imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
 					imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0, 0, 0, 1})
 					imgui.PushStyleColor(imgui.StyleColorButtonActive, imgui.Vec4{0.2, 0.2, 0.2, 1})
 					imgui.PushStyleColor(imgui.StyleColorButtonHovered, imgui.Vec4{0.4, 0.4, 0.4, 1})
 
+					s := b.bMaps[0].SetID == 0
+
+					if s {
+						imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+					}
+
 					ImIO.SetFontGlobalScale(16.0 / 32)
 					imgui.PushFont(FontAw)
+
+					imgui.AlignTextToFramePadding()
+					if imgui.ButtonV("\uF7A2##"+rId, imgui.Vec2{imgui.FrameHeight() * 2, imgui.FrameHeight() * 2}) {
+						platform.OpenURL(fmt.Sprintf("https://osu.ppy.sh/s/%d", b.bMaps[0].SetID))
+					}
+
+					ImIO.SetFontGlobalScale(1)
+					imgui.PopFont()
+
+					if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
+						imgui.BeginTooltip()
+
+						if s {
+							imgui.Text("Not available")
+						} else {
+							imgui.Text(fmt.Sprintf("https://osu.ppy.sh/s/%d", b.bMaps[0].SetID))
+						}
+
+						imgui.EndTooltip()
+					}
+
+					if s {
+						imgui.PopItemFlag()
+					}
+
+					imgui.SameLine()
 
 					name := "\uF04B"
 					if isPreviewed {
 						name = "\uF04D"
 					}
+
+					ImIO.SetFontGlobalScale(16.0 / 32)
+					imgui.PushFont(FontAw)
 
 					imgui.AlignTextToFramePadding()
 					if imgui.ButtonV(name+"##"+rId, imgui.Vec2{imgui.FrameHeight() * 2, imgui.FrameHeight() * 2}) {
@@ -325,10 +363,25 @@ func (m *songSelectPopup) drawSongSelect() {
 
 					ImIO.SetFontGlobalScale(1)
 					imgui.PopFont()
+
+					if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
+						imgui.BeginTooltip()
+
+						if isPreviewed {
+							imgui.Text("Stop preview")
+						} else {
+							imgui.Text("Play preview")
+						}
+
+						imgui.EndTooltip()
+					}
+
 					imgui.PopStyleVar()
 					imgui.PopStyleColor()
 					imgui.PopStyleColor()
 					imgui.PopStyleColor()
+
+					imgui.PopFont()
 				}
 
 				imgui.EndTable()
