@@ -51,4 +51,4 @@ require (
 
 replace github.com/inkyblackness/imgui-go/v4 => github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1
 
-replace github.com/sqweek/dialog => github.com/wieku/dialog v0.0.0-20220624012907-fb10dca08d71
+replace github.com/sqweek/dialog => github.com/wieku/dialog v0.0.0-20220624021813-6651e87950e9
