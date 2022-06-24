@@ -105,7 +105,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			localReplay = true
 		}
-	} else if settings.Knockout.MaxPlayers > 0 {
+	} else if settings.Knockout.MaxPlayers > 0 || (settings.KNOCKOUTREPLAYS != nil && len(settings.KNOCKOUTREPLAYS) > 0) { // ignore max player limit with new knockout
 		candidates = controller.getCandidates()
 	}
 
@@ -114,7 +114,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			return candidates[i].Score > candidates[j].Score
 		})
 
-		candidates = candidates[:mutils.Min(len(candidates), settings.Knockout.MaxPlayers)]
+		if settings.KNOCKOUTREPLAYS == nil || len(settings.KNOCKOUTREPLAYS) == 0 { // limit only with classic knockout
+			candidates = candidates[:mutils.Min(len(candidates), settings.Knockout.MaxPlayers)]
+		}
 	}
 
 	displayedMods := ^difficulty.ParseMods(settings.Knockout.HideMods)
@@ -209,7 +211,7 @@ func organizeReplays() {
 func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
 	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
-	tryAddReplay := func(path string) {
+	tryAddReplay := func(path string, modExclude bool) {
 		log.Println("Loading: ", path)
 
 		data, err := ioutil.ReadFile(path)
@@ -234,7 +236,7 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 			return
 		}
 
-		if (replayD.Mods & uint32(excludedMods)) > 0 {
+		if (replayD.Mods&uint32(excludedMods)) > 0 && modExclude {
 			log.Println("Excluding for mods:", replayD.Username)
 			return
 		}
@@ -249,7 +251,7 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 
 	if settings.KNOCKOUTREPLAYS != nil && len(settings.KNOCKOUTREPLAYS) > 0 {
 		for _, r := range settings.KNOCKOUTREPLAYS {
-			tryAddReplay(r)
+			tryAddReplay(r, false)
 		}
 	} else {
 		replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
@@ -261,7 +263,7 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 				}
 
 				if strings.HasSuffix(de.Name(), ".osr") {
-					tryAddReplay(osPathname)
+					tryAddReplay(osPathname, true)
 				}
 
 				return nil

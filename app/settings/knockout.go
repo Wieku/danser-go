@@ -31,13 +31,13 @@ type knockout struct {
 	BubbleMinimumCombo int `string:"true" min:"1" max:"1000000"`
 
 	// Exclude plays which contain one of the mods set here
-	ExcludeMods string
+	ExcludeMods string `tooltip:"Applicable only to classic knockout"`
 
 	// Hide specific mods from being displayed in overlay (like NF)
 	HideMods string
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
-	MaxPlayers int `min:"0" max:"100"`
+	MaxPlayers int `string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
 
 	// Whether knocked out players should appear on map end
 	RevivePlayersAtEnd bool
