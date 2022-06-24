@@ -27,7 +27,8 @@ As danser is in development phase, some things may break. If that happens please
 
 You can download the newest Windows/Linux 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
-After unpacking it to your desired directory, you need to run it using a command-line application/terminal:
+After unpacking it to your desired directory, you need to run it using launcher (using `danser-launcher` executable) or
+a command-line application/terminal:
 
 ##### Windows cmd:
 ```bash
@@ -39,7 +40,7 @@ danser <arguments>
 ./danser <arguments>
 ```
 
-If you try to run Danser without any arguments there's a surprise waiting for you ;)
+If you try to run *danser* (not *danser-launcher*) without any arguments there's a surprise waiting for you ;)
 
 ## Run arguments
 * `-artist="NOMA"` or `-a="NOMA"`
@@ -51,7 +52,8 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of cursors in TAG mode
 * `-speed=1.5` - music speed. Value of 1.5 is equal to osu!'s DoubleTime mod.
-* `-pitch=1.5` - music pitch. Value of 1.5 is equal to osu!'s Nightcore pitch. To recreate osu!'s Nightcore mod, use with speed 1.5
+* `-pitch=1.5` - music pitch. Value of 1.5 is equal to osu!'s Nightcore pitch. To recreate osu!'s Nightcore mod, use
+  with speed 1.5
 * `-settings=name` - settings filename - for example `settings/name.json` instead of `settings/default.json`
 * `-debug` - shows additional info when running Danser, overrides `Graphics.DrawFPS` setting
 * `-play` - play through the map in osu!standard mode
@@ -59,10 +61,16 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-start=20.5` - start the map at a given time (in seconds)
 * `-end=30.5` - end the map at the given time (in seconds)
 * `-knockout` - knockout mode
-* `-record` - Records danser's output to a video file. Needs a globally accessible [ffmpeg](https://ffmpeg.org/download.html) installation.
-* `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the file is set in settings. When the `-ss` flag is used, this sets the output filename as well.
-* `-replay="path_to_replay.osr"` or `-r="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\` with `\\` or `/`. Overrides all map selection arguments
-* `-mods=HDHR` - displays the map with given mods. This argument is ignored when `-replay` is used
+* `-knockout2="[\"replay1.osr\",\"replay2.osr\"]"` - knockout mode, but instead of using danser's replays folder,
+  sources replays from the given JSON array. `Knockout.MaxPlayers` and `Knockout.ExcludeMods` settings are ignored.
+* `-record` - Records danser's output to a video file. Needs an
+  accessible [FFmpeg](https://github.com/Wieku/danser-go/wiki/FFmpeg) installation.
+* `-out=abcd` - overrides `-record` flag, records to a given filename instead of auto-generating it. Extension of the
+  file is set in settings. When the `-ss` flag is used, this sets the output filename as well.
+* `-replay="path_to_replay.osr"` or `-r="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\`
+  with `\\` or `/`. Overrides all map selection arguments
+* `-mods=HDHR` - displays the map with given mods. This argument is ignored when `-replay` is used. `-mods=AT` will
+  trigger cursordance with replay UI.
 * `-skin` - overrides `Skin.CurrentSkin` in settings
 * `-cs`, `-ar`, `-od`, `-hp` - overrides maps' difficulty settings (values outside of osu!'s normal limits accepted)
 * `-nodbcheck` - skips updating the database with new, changed or deleted maps
@@ -70,6 +78,7 @@ If you try to run Danser without any arguments there's a surprise waiting for yo
 * `-ss=20.5` - creates a screenshot at the given time in .png format
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
 * `-offset=20` - local audio offset in ms, applies to recordings unlike `Audio.Offset`. Inverted compared to stable.
+* `-preciseprogress` - prints record progress in 1% increments.
 
 Since danser 0.4.0b artist, creator, difficulty names and titles don't have to exactly match the `.osu` file. 
 
@@ -85,6 +94,8 @@ Examples which should give the same result:
 <executable> -t="ain pow" -difficulty="rdrive" -tag=2
 
 <executable> -md5=59f3708114c73b2334ad18f31ef49046 -tag=2
+
+<executable> -id=933228 -tag=2
 ```
 
 Settings and knockout usage are detailed in the [wiki](https://github.com/Wieku/danser-go/wiki).
@@ -94,16 +105,18 @@ You need to clone it or download as a .zip (and unpack it to desired directory)
 
 #### Prerequisites
 
-* [64-bit go (1.17 at least)](https://golang.org/dl/)
-* gcc (Linux/Unix), [mingw-w64](http://mingw-w64.org/) or [WinLibs](http://winlibs.com/) (Windows, TDM-GCC won't work)
+* [64-bit go (1.18 at least)](https://golang.org/dl/)
+* gcc (Linux/Unix), [WinLibs](http://winlibs.com/) (Windows, TDM-GCC won't work, mingw-w64 is outdated)
 * OpenGL library (shipped with drivers)
 * xorg-dev (Linux)
+* libgtk-3 and libgtk-3-dev (Linux)
 
 #### Building and running the project
 
 First, enter the cloned/downloaded repository.
 
 When you're running it for the first time or if you made any changes type:
+
 ```bash
 go build
 ```
@@ -111,12 +124,17 @@ go build
 This will automatically download and build needed dependencies.
 
 Afterwards type:
+
 ```bash
 ./danser-go <arguments>
 ```
 
+Running without arguments (as opposed in [Running Danser](#running-danser)) will give you the launcher, though you can't
+use drag&drop on the executable to preload a replay. If that ability is desired, build danser using dist scripts.
+
 ## Credits
 
-Software created by Sebastian Krajewski ([@Wieku](https://github.com/ppy)) and [contributors](https://github.com/Wieku/danser-go/graphs/contributors)
+Software created by Sebastian Krajewski ([@Wieku](https://github.com/ppy))
+and [contributors](https://github.com/Wieku/danser-go/graphs/contributors)
 
 Full credits can be found [here](CREDITS.md).
