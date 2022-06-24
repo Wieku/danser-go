@@ -69,8 +69,8 @@ github.com/tklauser/go-sysconf v0.3.8/go.mod h1:z4zYWRS+X53WUKtBcmDg1comV3fPhdQn
 github.com/tklauser/numcpus v0.2.3/go.mod h1:vpEPS/JC+oZGGQ/My/vJnNsvMDQL6PwOqt8dsCw5j+E=
 github.com/tklauser/numcpus v0.3.0 h1:ILuRUQBtssgnxw0XXIjKUC56fgnOrFoQQ/4+DeU2biQ=
 github.com/tklauser/numcpus v0.3.0/go.mod h1:yFGUr7TUHQRAhyqBcEg0Ge34zDBAsIvJJcyE6boqnA8=
-github.com/wieku/dialog v0.0.0-20220623173944-41f5642715a4 h1:sRMQRWntuf+10tSL5jNXDmAgfzsHvDXK/ytFwo5aZvI=
-github.com/wieku/dialog v0.0.0-20220623173944-41f5642715a4/go.mod h1:/qNPSY91qTz/8TgHEMioAUc6q7+3SOybeKczHMXFcXw=
+github.com/wieku/dialog v0.0.0-20220624012907-fb10dca08d71 h1:B5SUNQ8iqgtXl/Yvv9P9kvROS1DE/drZnVVxg07UsVg=
+github.com/wieku/dialog v0.0.0-20220624012907-fb10dca08d71/go.mod h1:/qNPSY91qTz/8TgHEMioAUc6q7+3SOybeKczHMXFcXw=
 github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1 h1:IBfA+cAja6jBYBoUXmgrPsOTG6bcV4mhKVpZz8/uf3Q=
 github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1/go.mod h1:Lk/V/AJfEHrusnmshAeqt7FQiOnFK9T3BtEGWkNmWY0=
 golang.org/x/exp v0.0.0-20220312040426-20fd27f61765 h1:p80Xjx7+xLY3+FFWW3KSo34VwQwWFdSKANfks5INL2g=
