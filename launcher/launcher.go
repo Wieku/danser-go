@@ -424,7 +424,7 @@ func (l *launcher) loadBeatmaps() {
 			return
 		}
 
-		l.loadReplay(names[0])
+		l.trySelectReplay(names[0])
 	})
 
 	l.win.SetCloseCallback(func(w *glfw.Window) {
@@ -445,7 +445,7 @@ func (l *launcher) loadBeatmaps() {
 	})
 
 	if len(os.Args) > 1 { //won't work in combined mode
-		l.loadReplay(os.Args[1])
+		l.trySelectReplay(os.Args[1])
 	} else if launcherConfig.LoadLatestReplay {
 		lastModified := time.UnixMilli(0)
 		replayPath := ""
@@ -466,7 +466,7 @@ func (l *launcher) loadBeatmaps() {
 		})
 
 		if replayPath != "" {
-			l.loadReplay(replayPath)
+			l.trySelectReplay(replayPath)
 		}
 	}
 
@@ -806,30 +806,7 @@ func (l *launcher) selectReplay() {
 	if imgui.ButtonV("Select replay", bSize) {
 		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(l.currentConfig.General.GetReplaysDir()).Load()
 		if err == nil {
-			replay, err := l.loadReplay(p)
-
-			if err != nil {
-				e := []rune(err.Error())
-				showMessage(mError, string(unicode.ToUpper(e[0]))+string(e[1:]))
-			} else {
-				ok := false
-
-				for _, bMap := range l.beatmaps {
-					if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-						l.bld.currentMode = Replay
-						l.bld.replayPath = p
-						l.bld.currentReplay = replay.parsedReplay
-						l.bld.setMap(bMap)
-
-						ok = true
-						break
-					}
-				}
-
-				if !ok {
-					showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
-				}
-			}
+			l.trySelectReplay(p)
 		}
 	}
 
@@ -852,6 +829,29 @@ func (l *launcher) selectReplay() {
 
 	imgui.UnindentV(5)
 	imgui.PopFont()
+}
+
+func (l *launcher) trySelectReplay(p string) {
+	replay, err := l.loadReplay(p)
+
+	if err != nil {
+		e := []rune(err.Error())
+		showMessage(mError, string(unicode.ToUpper(e[0]))+string(e[1:]))
+		return
+	}
+
+	for _, bMap := range l.beatmaps {
+		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+			l.bld.currentMode = Replay
+			l.bld.replayPath = p
+			l.bld.currentReplay = replay.parsedReplay
+			l.bld.setMap(bMap)
+
+			return
+		}
+	}
+
+	showMessage(mError, "Replay uses an unknown map. Please download the map beforehand.")
 }
 
 func (l *launcher) newKnockout() {
