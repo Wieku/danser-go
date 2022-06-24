@@ -424,7 +424,7 @@ func (l *launcher) loadBeatmaps() {
 			return
 		}
 
-		l.trySelectReplay(names[0])
+		l.trySelectReplayFromPath(names[0])
 	})
 
 	l.win.SetCloseCallback(func(w *glfw.Window) {
@@ -445,10 +445,14 @@ func (l *launcher) loadBeatmaps() {
 	})
 
 	if len(os.Args) > 1 { //won't work in combined mode
-		l.trySelectReplay(os.Args[1])
+		l.trySelectReplayFromPath(os.Args[1])
 	} else if launcherConfig.LoadLatestReplay {
-		lastModified := time.UnixMilli(0)
-		replayPath := ""
+		type lastModPath struct {
+			tStamp time.Time
+			path   string
+		}
+
+		var list []*lastModPath
 
 		filepath.Walk(l.currentConfig.General.GetReplaysDir(), func(path string, info fs.FileInfo, err error) error {
 			if info.IsDir() && path != l.currentConfig.General.GetReplaysDir() {
@@ -456,17 +460,26 @@ func (l *launcher) loadBeatmaps() {
 			}
 
 			if !info.IsDir() && strings.HasSuffix(path, ".osr") {
-				if info.ModTime().After(lastModified) {
-					lastModified = info.ModTime()
-					replayPath = path
-				}
+				list = append(list, &lastModPath{
+					tStamp: info.ModTime(),
+					path:   path,
+				})
 			}
 
 			return nil
 		})
 
-		if replayPath != "" {
-			l.trySelectReplay(replayPath)
+		slices.SortFunc(list, func(a, b *lastModPath) bool {
+			return a.tStamp.After(b.tStamp)
+		})
+
+		// Load the newest that can be used
+		for _, lMP := range list {
+			r, err := l.loadReplay(lMP.path)
+			if err == nil {
+				l.trySelectReplay(r)
+				break
+			}
 		}
 	}
 
@@ -806,7 +819,7 @@ func (l *launcher) selectReplay() {
 	if imgui.ButtonV("Select replay", bSize) {
 		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(l.currentConfig.General.GetReplaysDir()).Load()
 		if err == nil {
-			l.trySelectReplay(p)
+			l.trySelectReplayFromPath(p)
 		}
 	}
 
@@ -831,7 +844,7 @@ func (l *launcher) selectReplay() {
 	imgui.PopFont()
 }
 
-func (l *launcher) trySelectReplay(p string) {
+func (l *launcher) trySelectReplayFromPath(p string) {
 	replay, err := l.loadReplay(p)
 
 	if err != nil {
@@ -840,10 +853,14 @@ func (l *launcher) trySelectReplay(p string) {
 		return
 	}
 
+	l.trySelectReplay(replay)
+}
+
+func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 	for _, bMap := range l.beatmaps {
 		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
 			l.bld.currentMode = Replay
-			l.bld.replayPath = p
+			l.bld.replayPath = replay.path
 			l.bld.currentReplay = replay.parsedReplay
 			l.bld.setMap(bMap)
 
