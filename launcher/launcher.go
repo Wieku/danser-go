@@ -973,6 +973,10 @@ func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 		return nil, errors.New("replay is missing input data")
 	}
 
+	// dump unneeded data as it's not needed anymore to save memory
+	replay.LifebarGraph = nil
+	replay.ReplayData = nil
+
 	return &knockoutReplay{
 		path:         p,
 		parsedReplay: replay,
