@@ -5,7 +5,7 @@ export CGO_ENABLED=1
 export CC=x86_64-w64-mingw32-gcc
 export CXX=x86_64-w64-mingw32-g++
 export CGO_LDFLAGS="-static-libstdc++ -static-libgcc -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic"
-export WINDRESFLAGS="-F pe-x86-64 --codepage=65001"
+export WINDRESFLAGS="-F pe-x86-64"
 
 exec=$1
 build=$1
@@ -63,11 +63,11 @@ go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=
 
 $resgen <<< $resDanser
 
-gcc --verbose -O3 -o danser.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso
+gcc --verbose -O3 -o danser.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
 
 $resgen <<< $resLauncher
 
-gcc --verbose -O3 -D LAUNCHER -o danser-launcher.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso
+gcc --verbose -O3 -D LAUNCHER -o danser-launcher.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
 
 go run tools/pack/pack.go danser-$exec-win.zip danser-core.dll danser.exe danser-launcher.exe bass.dll bass_fx.dll bassmix.dll libyuv.dll assets.dpak
 
