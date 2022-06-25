@@ -96,9 +96,16 @@ func startVideo(fps, _w, _h int) {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
 
+	encoder := strings.ToLower(settings.Recording.Encoder)
+	outputFormat := strings.ToLower(settings.Recording.PixelFormat)
+
+	if strings.HasSuffix(encoder, "_qsv") {
+		outputFormat = "nv12"
+	}
+
 	parsedFormat = pixconv.ARGB
 
-	switch strings.ToLower(settings.Recording.PixelFormat) {
+	switch outputFormat {
 	case "yuv420p":
 		parsedFormat = pixconv.I420
 	case "yuv422p":
@@ -113,7 +120,7 @@ func startVideo(fps, _w, _h int) {
 
 	inputPixFmt := "rgb24"
 	if parsedFormat != pixconv.ARGB {
-		inputPixFmt = strings.ToLower(settings.Recording.PixelFormat)
+		inputPixFmt = outputFormat
 	}
 
 	videoFilters := strings.TrimSpace(settings.Recording.Filters)
@@ -146,7 +153,7 @@ func startVideo(fps, _w, _h int) {
 		"-an",
 
 		"-vf", "vflip" + videoFilters,
-		"-c:v", settings.Recording.Encoder,
+		"-c:v", encoder,
 		"-color_range", "1",
 		"-colorspace", "1",
 		"-color_trc", "1",
@@ -155,12 +162,12 @@ func startVideo(fps, _w, _h int) {
 	}
 
 	if parsedFormat == pixconv.ARGB {
-		options = append(options, "-pix_fmt", strings.ToLower(settings.Recording.PixelFormat))
+		options = append(options, "-pix_fmt", outputFormat)
 	}
 
 	encOptions, err := settings.Recording.GetEncoderOptions().GenerateFFmpegArgs()
 	if err != nil {
-		panic(fmt.Sprintf("encoder \"%s\": %s", settings.Recording.Encoder, err))
+		panic(fmt.Sprintf("encoder \"%s\": %s", encoder, err))
 	} else if encOptions != nil {
 		options = append(options, encOptions...)
 	}
