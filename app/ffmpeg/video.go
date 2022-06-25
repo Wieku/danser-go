@@ -35,6 +35,8 @@ var readyQueue chan *PBO
 var endSyncVideo *sync.WaitGroup
 var endSyncReady *sync.WaitGroup
 
+var emptySync *sync.WaitGroup
+
 var pboSync *sync.Mutex
 var pboPool = make([]*PBO, 0)
 var syncPool = make([]*PBO, 0)
@@ -212,6 +214,8 @@ func startVideo(fps, _w, _h int) {
 
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
 
+	emptySync = &sync.WaitGroup{}
+
 	endSyncVideo = &sync.WaitGroup{}
 	endSyncReady = &sync.WaitGroup{}
 
@@ -263,7 +267,13 @@ func startVideo(fps, _w, _h int) {
 				}
 
 				pboSync.Lock()
+
+				if len(pboPool) == 0 {
+					emptySync.Done()
+				}
+
 				pboPool = append(pboPool, pbo)
+
 				pboSync.Unlock()
 			}
 
@@ -278,9 +288,7 @@ func startVideo(fps, _w, _h int) {
 func stopVideo() {
 	log.Println("Waiting for video to finish writing...")
 
-	for len(syncPool) > 0 {
-		CheckData()
-	}
+	checkData(true, true)
 
 	log.Println("Finished! Stopping video pipe...")
 
@@ -336,15 +344,20 @@ func MakeFrame() {
 		retTex1, retTex2 = rgbToYuvConverter.Draw()
 	}
 
-	//spin until at least one pbo is free, fix this ffs
-	for len(pboPool) == 0 {
-		CheckData()
+	checkData(len(pboPool) == 0, false) // Force wait for at least one frame to be retrieved if pbo pool is empty
+
+	if len(pboPool) == 0 {
+		emptySync.Wait() // Wait for at least one PBO
 	}
 
 	pboSync.Lock()
 
 	pbo := pboPool[0]
 	pboPool = pboPool[1:]
+
+	if len(pboPool) == 0 {
+		emptySync.Add(1)
+	}
 
 	pboSync.Unlock()
 
@@ -373,11 +386,13 @@ func MakeFrame() {
 
 	syncPool = append(syncPool, pbo)
 
+	checkData(false, false)
+
 	limiter.Sync()
 }
 
-func CheckData() {
-	for {
+func checkData(waitForFirst, waitForAll bool) {
+	for i := 0; ; i++ {
 		if len(syncPool) == 0 {
 			return
 		}
@@ -386,7 +401,12 @@ func CheckData() {
 
 		var status int32
 
-		gl.GetSynciv(pbo.sync, gl.SYNC_STATUS, 1, nil, &status)
+		if i == 0 && waitForFirst || waitForAll {
+			gl.WaitSync(pbo.sync, 0, gl.TIMEOUT_IGNORED)
+			status = gl.SIGNALED
+		} else {
+			gl.GetSynciv(pbo.sync, gl.SYNC_STATUS, 1, nil, &status)
+		}
 
 		if status == gl.SIGNALED {
 			gl.DeleteSync(pbo.sync)

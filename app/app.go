@@ -656,10 +656,6 @@ func mainLoopRecord() {
 				}
 			})
 
-			mainthread.Call(func() {
-				ffmpeg.CheckData()
-			})
-
 			deltaSumF -= fpsDelta
 		}
 	}
