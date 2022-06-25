@@ -595,24 +595,15 @@ func (l *launcher) drawImgui() {
 
 	wW, wH := int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
 
-	imgui.SetNextWindowSize(imgui.Vec2{
-		X: float32(wW),
-		Y: float32(wH),
-	})
+	imgui.SetNextWindowSize(vec2(float32(wW), float32(wH)))
 
-	imgui.SetNextWindowPos(imgui.Vec2{})
+	imgui.SetNextWindowPos(vzero())
 
-	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{
-		X: 20,
-		Y: 20,
-	})
+	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, vec2(20, 20))
 
 	imgui.BeginV("main", nil, imgui.WindowFlagsNoDecoration /*|imgui.WindowFlagsNoMove*/ |imgui.WindowFlagsNoBackground|imgui.WindowFlagsNoScrollWithMouse|imgui.WindowFlagsNoBringToFrontOnFocus)
 
-	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{
-		X: 5,
-		Y: 5,
-	})
+	imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, vec2(5, 5))
 
 	if l.mapsLoaded {
 		l.drawMain()
@@ -638,7 +629,7 @@ func (l *launcher) drawMain() {
 
 	imgui.PushFont(Font24)
 
-	if imgui.BeginTableV("ltpanel", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{float32(w) / 2, 0}, -1) {
+	if imgui.BeginTableV("ltpanel", 2, imgui.TableFlagsSizingStretchProp, vec2(float32(w)/2, 0), -1) {
 		imgui.TableSetupColumnV("ltpanel1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
 		imgui.TableSetupColumnV("ltpanel2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
 
@@ -653,7 +644,7 @@ func (l *launcher) drawMain() {
 
 		if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
 			for _, m := range modes {
-				if imgui.SelectableV(m.String(), l.bld.currentMode == m, 0, imgui.Vec2{}) {
+				if imgui.SelectableV(m.String(), l.bld.currentMode == m, 0, vzero()) {
 					if m == Play {
 						l.bld.currentPMode = Watch
 					}
@@ -723,10 +714,7 @@ func (l *launcher) drawSplash() {
 	for _, sText := range splText {
 		tSize := imgui.CalcTextSize(sText, false, 0)
 
-		imgui.SetCursorPos(imgui.Vec2{
-			X: 20 + (w-tSize.X)/2,
-			Y: 20 + (h-height)/2 + dHeight,
-		})
+		imgui.SetCursorPos(vec2(20+(w-tSize.X)/2, 20+(h-height)/2+dHeight))
 
 		dHeight += tSize.Y
 
@@ -737,7 +725,7 @@ func (l *launcher) drawSplash() {
 }
 
 func (l *launcher) drawControls() {
-	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 88})
+	imgui.SetCursorPos(vec2(20, 88))
 	switch l.bld.currentMode {
 	case Replay:
 		l.selectReplay()
@@ -747,14 +735,14 @@ func (l *launcher) drawControls() {
 		l.showSelect()
 	}
 
-	imgui.SetCursorPos(imgui.Vec2{X: 20, Y: 204 + 34})
+	imgui.SetCursorPos(vec2(20, 204+34))
 
 	w := imgui.WindowContentRegionMax().X
 
-	if imgui.BeginTableV("abtn", 2, imgui.TableFlagsSizingStretchSame, imgui.Vec2{float32(w) / 2, -1}, -1) {
+	if imgui.BeginTableV("abtn", 2, imgui.TableFlagsSizingStretchSame, vec2(float32(w)/2, -1), -1) {
 		imgui.TableNextColumn()
 
-		if imgui.ButtonV("Speed/Pitch", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+		if imgui.ButtonV("Speed/Pitch", vec2(-1, imgui.TextLineHeight()*2)) {
 			l.openPopup(newPopupF("Speed adjust", popMedium, func() {
 				drawSpeedMenu(l.bld)
 			}))
@@ -763,26 +751,26 @@ func (l *launcher) drawControls() {
 		imgui.TableNextColumn()
 
 		if l.bld.currentMode != Replay {
-			if imgui.ButtonV("Mods", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+			if imgui.ButtonV("Mods", vec2(-1, imgui.TextLineHeight()*2)) {
 				l.openPopup(newModPopup(l.bld))
 			}
 		}
 
 		imgui.TableNextColumn()
 		if l.bld.currentMode != Replay {
-			if imgui.ButtonV("Adjust difficulty", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+			if imgui.ButtonV("Adjust difficulty", vec2(-1, imgui.TextLineHeight()*2)) {
 				l.openPopup(newPopupF("Difficulty adjust", popMedium, func() {
 					drawParamMenu(l.bld)
 				}))
 			}
 		} else {
-			imgui.Dummy(imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2})
+			imgui.Dummy(vec2(-1, imgui.TextLineHeight()*2))
 		}
 
 		imgui.TableNextColumn()
 
 		if l.bld.currentMode == CursorDance {
-			if imgui.ButtonV("Mirrors/Tags", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+			if imgui.ButtonV("Mirrors/Tags", vec2(-1, imgui.TextLineHeight()*2)) {
 				l.openPopup(newPopupF("Difficulty adjust", popDynamic, func() {
 					drawCDMenu(l.bld)
 				}))
@@ -791,7 +779,7 @@ func (l *launcher) drawControls() {
 
 		imgui.TableNextColumn()
 
-		if imgui.ButtonV("Time/Offset", imgui.Vec2{X: -1, Y: imgui.TextLineHeight() * 2}) {
+		if imgui.ButtonV("Time/Offset", vec2(-1, imgui.TextLineHeight()*2)) {
 			timePopup := newPopupF("Set times", popMedium, func() {
 				drawTimeMenu(l.bld)
 			})
@@ -812,7 +800,7 @@ func (l *launcher) drawControls() {
 }
 
 func (l *launcher) selectReplay() {
-	bSize := imgui.Vec2{X: (imgui.WindowWidth() - 40) / 4, Y: imgui.TextLineHeight() * 2}
+	bSize := vec2((imgui.WindowWidth()-40)/4, imgui.TextLineHeight()*2)
 
 	imgui.PushFont(Font32)
 
@@ -872,7 +860,7 @@ func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 }
 
 func (l *launcher) newKnockout() {
-	bSize := imgui.Vec2{X: (imgui.WindowWidth() - 40) / 4, Y: imgui.TextLineHeight() * 2}
+	bSize := vec2((imgui.WindowWidth()-40)/4, imgui.TextLineHeight()*2)
 
 	imgui.PushFont(Font32)
 
@@ -1002,7 +990,7 @@ func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 }
 
 func (l *launcher) showSelect() {
-	bSize := imgui.Vec2{X: (imgui.WindowWidth() - 40) / 4, Y: imgui.TextLineHeight() * 2}
+	bSize := vec2((imgui.WindowWidth()-40)/4, imgui.TextLineHeight()*2)
 
 	imgui.PushFont(Font32)
 
@@ -1049,16 +1037,13 @@ func (l *launcher) drawLowerPanel() {
 			spacing *= 2
 		}
 
-		imgui.SetCursorPos(imgui.Vec2{
-			X: 20,
-			Y: h - spacing,
-		})
+		imgui.SetCursorPos(vec2(20, h-spacing))
 
 		imgui.SetNextItemWidth((imgui.WindowWidth() - 40) / 4)
 
 		if imgui.BeginCombo("##Watch mode", l.bld.currentPMode.String()) {
 			for _, m := range pModes {
-				if imgui.SelectableV(m.String(), l.bld.currentPMode == m, 0, imgui.Vec2{}) {
+				if imgui.SelectableV(m.String(), l.bld.currentPMode == m, 0, vzero()) {
 					l.bld.currentPMode = m
 				}
 			}
@@ -1075,10 +1060,7 @@ func (l *launcher) drawLowerPanel() {
 			}
 		}
 
-		imgui.SetCursorPos(imgui.Vec2{
-			X: imgui.WindowContentRegionMin().X,
-			Y: float32(h) - imgui.FrameHeightWithSpacing(),
-		})
+		imgui.SetCursorPos(vec2(imgui.WindowContentRegionMin().X, h-imgui.FrameHeightWithSpacing()))
 
 		if showProgress {
 			if strings.HasPrefix(l.recordStatus, "Done") {
@@ -1092,7 +1074,7 @@ func (l *launcher) drawLowerPanel() {
 				imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.CurrentStyle().Color(imgui.StyleColorCheckMark))
 			}
 
-			imgui.ProgressBarV(l.recordProgress, imgui.Vec2{w / 2, imgui.FrameHeight()}, l.recordStatus)
+			imgui.ProgressBarV(l.recordProgress, vec2(w/2, imgui.FrameHeight()), l.recordStatus)
 
 			if l.encodeInProgress {
 				imgui.PushFont(Font16)
@@ -1126,10 +1108,7 @@ func (l *launcher) drawLowerPanel() {
 
 	bW := (w) / 4
 
-	imgui.SetCursorPos(imgui.Vec2{
-		X: imgui.WindowContentRegionMax().X - w/2.5,
-		Y: float32(h) - imgui.FrameHeightWithSpacing()*2,
-	})
+	imgui.SetCursorPos(vec2(imgui.WindowContentRegionMax().X-w/2.5, h-imgui.FrameHeightWithSpacing()*2))
 
 	centerTable("dansebutton", w/2.5, func() {
 		imgui.PushFont(Font48)
@@ -1153,7 +1132,7 @@ func (l *launcher) drawLowerPanel() {
 				name = "CANCEL"
 			}
 
-			if imgui.ButtonV(name, imgui.Vec2{X: bW, Y: fHwS}) {
+			if imgui.ButtonV(name, vec2(bW, fHwS)) {
 				if dRun {
 					if l.danserCmd != nil {
 						goroutines.Run(func() {
@@ -1201,18 +1180,15 @@ func (l *launcher) drawLowerPanel() {
 func (l *launcher) drawConfigPanel() {
 	w := imgui.WindowContentRegionMax().X
 
-	imgui.SetCursorPos(imgui.Vec2{
-		X: imgui.WindowContentRegionMax().X - float32(w)/2.5,
-		Y: 20,
-	})
+	imgui.SetCursorPos(vec2(imgui.WindowContentRegionMax().X-float32(w)/2.5, 20))
 
-	if imgui.BeginTableV("rtpanel", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{float32(w) / 2.5, 0}, -1) {
+	if imgui.BeginTableV("rtpanel", 2, imgui.TableFlagsSizingStretchProp, vec2(float32(w)/2.5, 0), -1) {
 		imgui.TableSetupColumnV("rtpanel1", imgui.TableColumnFlagsWidthStretch, 0, 0)
 		imgui.TableSetupColumnV("rtpanel2", imgui.TableColumnFlagsWidthFixed, 0, 1)
 
 		imgui.TableNextColumn()
 
-		if imgui.ButtonV("Launcher settings", imgui.Vec2{-1, 0}) {
+		if imgui.ButtonV("Launcher settings", vec2(-1, 0)) {
 			lEditor := newPopupF("About", popMedium, drawLauncherConfig)
 
 			lEditor.setCloseListener(func() {
@@ -1261,7 +1237,7 @@ func (l *launcher) drawConfigPanel() {
 
 			imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
 			imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{})
+			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vzero())
 			imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: 0})
 
 			searchResults := make([]string, 0, len(l.configList))
@@ -1277,7 +1253,7 @@ func (l *launcher) drawConfigPanel() {
 			if len(searchResults) > 0 {
 				sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
-				if imgui.BeginListBoxV("##blistbox", imgui.Vec2{mWidth, sHeight}) {
+				if imgui.BeginListBoxV("##blistbox", vec2(mWidth, sHeight)) {
 					focusScroll = focusScroll || imgui.IsWindowAppearing()
 
 					for _, s := range searchResults {
@@ -1290,7 +1266,7 @@ func (l *launcher) drawConfigPanel() {
 						if imgui.IsMouseClicked(1) && imgui.IsItemHovered() {
 							l.configEditOpened = true
 
-							imgui.SetNextWindowPosV(imgui.MousePos(), imgui.ConditionAlways, imgui.Vec2{})
+							imgui.SetNextWindowPosV(imgui.MousePos(), imgui.ConditionAlways, vzero())
 
 							imgui.OpenPopup("##context" + s)
 						}
@@ -1340,7 +1316,7 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
-		if imgui.ButtonV("Edit", imgui.Vec2{-1, 0}) {
+		if imgui.ButtonV("Edit", vec2(-1, 0)) {
 			sEditor := newSettingsEditor(l.currentConfig)
 
 			sEditor.setCloseListener(func() {
@@ -1394,10 +1370,7 @@ func (l *launcher) drawConfigPanel() {
 
 				cPos := imgui.CursorPos()
 
-				imgui.SetCursorPos(imgui.Vec2{
-					X: cPos.X + (imgui.ContentRegionAvail().X-imgui.CalcTextSize("Save", false, 0).X-imgui.CurrentStyle().FramePadding().X*2)/2,
-					Y: cPos.Y,
-				})
+				imgui.SetCursorPos(vec2(cPos.X+(imgui.ContentRegionAvail().X-imgui.CalcTextSize("Save", false, 0).X-imgui.CurrentStyle().FramePadding().X*2)/2, cPos.Y))
 
 				e := l.newCloneName == ""
 

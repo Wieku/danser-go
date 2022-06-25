@@ -44,18 +44,18 @@ func SetupImgui(win *glfw.Window) {
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarGrabRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 1)
-	imgui.PushStyleColor(imgui.StyleColorBorder, imgui.Vec4{1, 1, 1, 1})
-	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{0.1, 0.1, 0.1, 0.8})
-	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, imgui.Vec4{0.2, 0.2, 0.2, 0.8})
-	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, imgui.Vec4{0.4, 0.4, 0.4, 0.8})
+	imgui.PushStyleColor(imgui.StyleColorBorder, vec4(1, 1, 1, 1))
+	imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(0.1, 0.1, 0.1, 0.8))
+	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, vec4(0.4, 0.4, 0.4, 0.8))
 
-	imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0.1, 0.1, 0.1, 0.8})
-	imgui.PushStyleColor(imgui.StyleColorButtonActive, imgui.Vec4{0.2, 0.2, 0.2, 0.8})
-	imgui.PushStyleColor(imgui.StyleColorButtonHovered, imgui.Vec4{0.4, 0.4, 0.4, 0.8})
+	imgui.PushStyleColor(imgui.StyleColorButton, vec4(0.1, 0.1, 0.1, 0.8))
+	imgui.PushStyleColor(imgui.StyleColorButtonActive, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColor(imgui.StyleColorButtonHovered, vec4(0.4, 0.4, 0.4, 0.8))
 
-	imgui.PushStyleColor(imgui.StyleColorTitleBg, imgui.Vec4{0.2, 0.2, 0.2, 0.8})
-	imgui.PushStyleColor(imgui.StyleColorTitleBgActive, imgui.Vec4{0.2, 0.2, 0.2, 0.8})
-	imgui.PushStyleColor(imgui.StyleColorTitleBgCollapsed, imgui.Vec4{0.2, 0.2, 0.2, 0.8})
+	imgui.PushStyleColor(imgui.StyleColorTitleBg, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColor(imgui.StyleColorTitleBgActive, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColor(imgui.StyleColorTitleBgCollapsed, vec4(0.2, 0.2, 0.2, 0.8))
 
 	//imgui.PushStyleColor(imgui.StyleColorFrameBg)
 

@@ -153,7 +153,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 	imgui.PushFont(Font20)
 
-	if imgui.BeginTableV("sortrandom", 2, 0, imgui.Vec2{-1, 0}, -1) {
+	if imgui.BeginTableV("sortrandom", 2, 0, vec2(-1, 0), -1) {
 		imgui.TableSetupColumnV("##sortrandom1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 		imgui.TableSetupColumnV("##sortrandom2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
@@ -172,7 +172,7 @@ func (m *songSelectPopup) drawSongSelect() {
 			m.comboOpened = true
 
 			for _, s := range sortMethods {
-				if imgui.SelectableV(s.String(), s == launcherConfig.SortMapsBy, 0, imgui.Vec2{}) && s != launcherConfig.SortMapsBy {
+				if imgui.SelectableV(s.String(), s == launcherConfig.SortMapsBy, 0, vzero()) && s != launcherConfig.SortMapsBy {
 					launcherConfig.SortMapsBy = s
 					m.search()
 					m.focusTheMap = true
@@ -247,10 +247,10 @@ func (m *songSelectPopup) drawSongSelect() {
 		}
 	}
 
-	imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{5, 0})
+	imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(5, 0))
 
-	if imgui.BeginTableV("bsetstab", 1, imgui.TableFlagsRowBg|imgui.TableFlagsPadOuterX|imgui.TableFlagsBordersH, imgui.Vec2{-1, 0}, -1) {
-		imgui.TableSetBgColor(imgui.TableBgTargetRowBg1, imgui.Vec4{0.5, 0.5, 0.5, 1})
+	if imgui.BeginTableV("bsetstab", 1, imgui.TableFlagsRowBg|imgui.TableFlagsPadOuterX|imgui.TableFlagsBordersH, vec2(-1, 0), -1) {
+		imgui.TableSetBgColor(imgui.TableBgTargetRowBg1, vec4(0.5, 0.5, 0.5, 1))
 
 		for i := 0; i < len(m.searchResults); i++ {
 			b := m.searchResults[i]
@@ -264,7 +264,7 @@ func (m *songSelectPopup) drawSongSelect() {
 			}
 
 			if i < m.preIndex || i > m.postIndex {
-				imgui.SetCursorPos(imgui.Vec2{imgui.CursorPos().X, b.bounds.Y})
+				imgui.SetCursorPos(vec2(imgui.CursorPos().X, b.bounds.Y))
 				continue
 			}
 
@@ -283,7 +283,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 			imgui.BeginGroup()
 
-			if imgui.BeginTableV("bsetstab"+rId, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+			if imgui.BeginTableV("bsetstab"+rId, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 				imgui.PushFont(Font32)
 
 				imgui.TableSetupColumnV("##hhh"+rId, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
@@ -305,9 +305,9 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(Font20)
 
 					imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-					imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0, 0, 0, 1})
-					imgui.PushStyleColor(imgui.StyleColorButtonActive, imgui.Vec4{0.2, 0.2, 0.2, 1})
-					imgui.PushStyleColor(imgui.StyleColorButtonHovered, imgui.Vec4{0.4, 0.4, 0.4, 1})
+					imgui.PushStyleColor(imgui.StyleColorButton, vec4(0, 0, 0, 1))
+					imgui.PushStyleColor(imgui.StyleColorButtonActive, vec4(0.2, 0.2, 0.2, 1))
+					imgui.PushStyleColor(imgui.StyleColorButtonHovered, vec4(0.4, 0.4, 0.4, 1))
 
 					s := b.bMaps[0].SetID == 0
 
@@ -319,7 +319,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(FontAw)
 
 					imgui.AlignTextToFramePadding()
-					if imgui.ButtonV("\uF7A2##"+rId, imgui.Vec2{imgui.FrameHeight() * 2, imgui.FrameHeight() * 2}) {
+					if imgui.ButtonV("\uF7A2##"+rId, vec2(imgui.FrameHeight()*2, imgui.FrameHeight()*2)) {
 						platform.OpenURL(fmt.Sprintf("https://osu.ppy.sh/s/%d", b.bMaps[0].SetID))
 					}
 
@@ -353,7 +353,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(FontAw)
 
 					imgui.AlignTextToFramePadding()
-					if imgui.ButtonV(name+"##"+rId, imgui.Vec2{imgui.FrameHeight() * 2, imgui.FrameHeight() * 2}) {
+					if imgui.ButtonV(name+"##"+rId, vec2(imgui.FrameHeight()*2, imgui.FrameHeight()*2)) {
 						m.stopPreview()
 
 						if name == "\uF04B" {
@@ -398,7 +398,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 				sPos := imgui.CursorScreenPos()
 
-				if imgui.SelectableV(fDiffName+"##"+rId+"s"+strconv.Itoa(j), bMap == m.bld.currentMap, 0, imgui.Vec2{}) {
+				if imgui.SelectableV(fDiffName+"##"+rId+"s"+strconv.Itoa(j), bMap == m.bld.currentMap, 0, vzero()) {
 					m.bld.setMap(bMap)
 
 					if !isPreviewed && launcherConfig.PreviewSelected {
@@ -438,8 +438,8 @@ func (m *songSelectPopup) drawSongSelect() {
 					}
 
 					if m.thumbTex != nil {
-						uvTL := imgui.Vec2{X: 0, Y: 0}
-						uvBR := imgui.Vec2{X: 1, Y: 1}
+						uvTL := vec2(0, 0)
+						uvBR := vec2(1, 1)
 
 						asp := float32(m.thumbTex.GetWidth()) / float32(m.thumbTex.GetHeight())
 
@@ -451,7 +451,7 @@ func (m *songSelectPopup) drawSongSelect() {
 							uvBR.Y = 1 - uvTL.X
 						}
 
-						imgui.ImageV(imgui.TextureID(m.thumbTex.GetID()), imgui.Vec2{200 * tgAsp, 200}, uvTL, uvBR, imgui.Vec4{X: 1, Y: 1, Z: 1, W: 0.3}, imgui.Vec4{})
+						imgui.ImageV(imgui.TextureID(m.thumbTex.GetID()), vec2(200*tgAsp, 200), uvTL, uvBR, imgui.Vec4{X: 1, Y: 1, Z: 1, W: 0.3}, imgui.Vec4{})
 					}
 
 					imgui.SetCursorPos(cPos)
@@ -466,7 +466,7 @@ func (m *songSelectPopup) drawSongSelect() {
 						bpm = fmt.Sprintf("%.0f - %.0f", bMap.MinBPM, bMap.MaxBPM)
 					}
 
-					if imgui.BeginTableV("btooltip", 4, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoClip, imgui.Vec2{200.0 * tgAsp, 0}, -1) {
+					if imgui.BeginTableV("btooltip", 4, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoClip, vec2(200.0*tgAsp, 0), -1) {
 						imgui.TableSetupColumnV("btooltip1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
 						imgui.TableSetupColumnV("btooltip2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
 						imgui.TableSetupColumnV("btooltip3", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
@@ -511,7 +511,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 			imgui.PopFont()
 
-			imgui.SetCursorPos(imgui.CursorPos().Plus(imgui.Vec2{imgui.ContentRegionAvail().X, 0})) //hack to get cell hovering to work
+			imgui.SetCursorPos(imgui.CursorPos().Plus(vec2(imgui.ContentRegionAvail().X, 0))) //hack to get cell hovering to work
 
 			imgui.EndGroup()
 
@@ -519,7 +519,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 			c2 := imgui.CursorPos().Y
 
-			b.bounds = imgui.Vec2{c1, c2}
+			b.bounds = vec2(c1, c2)
 		}
 
 		if m.sizeCalculated > 1 {
@@ -535,7 +535,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 	imgui.EndChild()
 
-	imgui.WindowDrawList().AddLine(csPos, csPos.Plus(imgui.Vec2{imgui.ContentRegionAvail().X, 0}), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
+	imgui.WindowDrawList().AddLine(csPos, csPos.Plus(vec2(imgui.ContentRegionAvail().X, 0)), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
 }
 
 func (m *songSelectPopup) selectRandom() {

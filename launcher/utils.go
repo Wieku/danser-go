@@ -2,6 +2,7 @@ package launcher
 
 import (
 	"fmt"
+	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/platform"
@@ -58,4 +59,24 @@ func checkForUpdates(pingUpToDate bool) {
 			platform.OpenURL(url)
 		}
 	}
+}
+
+func vec2(x, y float32) imgui.Vec2 {
+	return imgui.Vec2{
+		X: x,
+		Y: y,
+	}
+}
+
+func vec4(x, y, z, w float32) imgui.Vec4 {
+	return imgui.Vec4{
+		X: x,
+		Y: y,
+		Z: z,
+		W: w,
+	}
+}
+
+func vzero() imgui.Vec2 {
+	return vec2(0, 0)
 }

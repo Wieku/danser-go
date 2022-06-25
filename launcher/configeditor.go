@@ -62,13 +62,12 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 func (editor *settingsEditor) drawEditor() {
 	settings.General.OsuSkinsDir = editor.combined.General.OsuSkinsDir
 
-	//imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{0, 0})
-	imgui.PushStyleColor(imgui.StyleColorWindowBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .9})
-	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: .2, Y: .2, Z: .2, W: 1})
+	imgui.PushStyleColor(imgui.StyleColorWindowBg, vec4(0, 0, 0, .9))
+	imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(.2, .2, .2, 1))
 
-	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, imgui.Vec2{2, 0})
+	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(2, 0))
 
-	if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, -1}, -1) {
+	if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, vec2(-1, -1), -1) {
 		imgui.PopStyleVar()
 
 		imgui.TableSetupColumnV("Edit main table 1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
@@ -76,19 +75,19 @@ func (editor *settingsEditor) drawEditor() {
 
 		imgui.TableNextColumn()
 
-		imgui.PushStyleColor(imgui.StyleColorChildBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: .5})
+		imgui.PushStyleColor(imgui.StyleColorChildBg, vec4(0, 0, 0, .5))
 
 		imgui.PushFont(FontAw)
 		{
 
 			imgui.PushStyleVarFloat(imgui.StyleVarScrollbarSize, 9)
 
-			if imgui.BeginChildV("##Editor navigation", imgui.Vec2{X: imgui.FontSize()*1.5 + 9, Y: -1}, false, imgui.WindowFlagsAlwaysVerticalScrollbar) {
+			if imgui.BeginChildV("##Editor navigation", vec2(imgui.FontSize()*1.5+9, -1), false, imgui.WindowFlagsAlwaysVerticalScrollbar) {
 				editor.scrollTo = ""
 
 				imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
 				imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-				imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, imgui.Vec2{})
+				imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, vzero())
 
 				editor.buildNavigationFor(editor.combined)
 
@@ -122,9 +121,9 @@ func (editor *settingsEditor) drawEditor() {
 		}
 		imgui.PopFont()
 
-		imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, imgui.Vec2{5, 0})
+		imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, vec2(5, 0))
 
-		if imgui.BeginChildV("##Editor main", imgui.Vec2{-1, -1}, false, imgui.WindowFlagsAlwaysUseWindowPadding) {
+		if imgui.BeginChildV("##Editor main", vec2(-1, -1), false, imgui.WindowFlagsAlwaysUseWindowPadding) {
 			imgui.PopStyleVar()
 
 			editor.blockSearch = false
@@ -199,7 +198,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 
 	count := typ.NumField()
 
-	imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0, 0, 0, 0})
+	imgui.PushStyleColor(imgui.StyleColorButton, vec4(0, 0, 0, 0))
 
 	buttonSize := imgui.FontSize() * 1.5
 
@@ -214,13 +213,13 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 			if editor.active == label {
 				cColor := imgui.CurrentStyle().Color(imgui.StyleColorCheckMark)
 
-				imgui.PushStyleColor(imgui.StyleColorButton, imgui.Vec4{0.2, 0.2, 0.2, 0.6})
-				imgui.PushStyleColor(imgui.StyleColorText, imgui.Vec4{cColor.X * 1.2, cColor.Y * 1.2, cColor.Z * 1.2, 1})
+				imgui.PushStyleColor(imgui.StyleColorButton, vec4(0.2, 0.2, 0.2, 0.6))
+				imgui.PushStyleColor(imgui.StyleColorText, vec4(cColor.X*1.2, cColor.Y*1.2, cColor.Z*1.2, 1))
 			}
 
 			c1 := imgui.CursorPos().Y
 
-			if imgui.ButtonV(def.Field(i).Tag.Get("icon"), imgui.Vec2{buttonSize, buttonSize}) {
+			if imgui.ButtonV(def.Field(i).Tag.Get("icon"), vec2(buttonSize, buttonSize)) {
 				editor.scrollTo = label
 			}
 
@@ -279,7 +278,7 @@ func (editor *settingsEditor) drawSettings() {
 
 		if field.CanInterface() && field.Type().Kind() == reflect.Ptr && !field.IsNil() {
 			if j > 0 {
-				imgui.Dummy(imgui.Vec2{0, 2 * padY})
+				imgui.Dummy(vec2(0, 2*padY))
 			}
 
 			drawNew := true
@@ -291,7 +290,7 @@ func (editor *settingsEditor) drawSettings() {
 				if sc1 > v.Y || sc2 < v.X {
 					drawNew = false
 
-					imgui.SetCursorPos(imgui.Vec2{imgui.CursorPosX(), v.Y})
+					imgui.SetCursorPos(vec2(imgui.CursorPosX(), v.Y))
 				}
 			}
 
@@ -302,7 +301,7 @@ func (editor *settingsEditor) drawSettings() {
 
 				iSc2 := imgui.CursorPos().Y
 
-				editor.sectionCache["Main."+lbl] = imgui.Vec2{iSc1, iSc2}
+				editor.sectionCache["Main."+lbl] = vec2(iSc1, iSc2)
 			}
 
 			j++
@@ -335,12 +334,12 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 	}
 
 	if !first {
-		imgui.Dummy(imgui.Vec2{0, padY / 2})
+		imgui.Dummy(vec2(0, padY/2))
 	}
 
 	pos := imgui.CursorScreenPos()
 
-	imgui.Dummy(imgui.Vec2{3, 0})
+	imgui.Dummy(vec2(3, 0))
 	imgui.SameLine()
 
 	imgui.BeginGroup()
@@ -352,7 +351,7 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 
 	imgui.PopFont()
 
-	imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Plus(imgui.Vec2{imgui.ContentRegionMax().X, 0}), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
+	imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Plus(vec2(imgui.ContentRegionMax().X, 0)), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
 
 	imgui.Spacing()
 
@@ -364,10 +363,10 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 
 	pos1.X = pos.X
 
-	imgui.WindowDrawList().AddLine(pos, pos1, imgui.PackedColorFromVec4(imgui.Vec4{1.0, 1.0, 1.0, 1.0}))
+	imgui.WindowDrawList().AddLine(pos, pos1, imgui.PackedColorFromVec4(vec4(1.0, 1.0, 1.0, 1.0)))
 
 	if !last {
-		imgui.Dummy(imgui.Vec2{0, padY / 2})
+		imgui.Dummy(vec2(0, padY/2))
 	}
 }
 
@@ -380,7 +379,7 @@ func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u re
 func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
 	editor.subSectionTempl(sPath, name, first, last, func() {
 		imgui.SameLine()
-		imgui.Dummy(imgui.Vec2{2, 0})
+		imgui.Dummy(vec2(2, 0))
 		imgui.SameLine()
 
 		ImIO.SetFontGlobalScale(20.0 / 32)
@@ -418,10 +417,10 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 	}
 
 	if childNum > 0 {
-		imgui.Dummy(imgui.Vec2{0, padY / 3})
+		imgui.Dummy(vec2(0, padY/3))
 	}
 
-	if imgui.BeginTableV(jsonPath+"tae", 2, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, imgui.Vec2{-1, 0}, -1) {
+	if imgui.BeginTableV(jsonPath+"tae", 2, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, vec2(-1, 0), -1) {
 		imgui.TableSetupColumnV(jsonPath+"tae1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
 		imgui.TableSetupColumnV(jsonPath+"tae2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
 
@@ -431,7 +430,7 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 		pos := imgui.CursorScreenPos()
 		posLocal := imgui.CursorPos()
 
-		imgui.Dummy(imgui.Vec2{3, 0})
+		imgui.Dummy(vec2(3, 0))
 		imgui.SameLine()
 
 		imgui.BeginGroup()
@@ -445,17 +444,17 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 
 		pos1.X = pos.X
 
-		imgui.WindowDrawList().AddLine(pos, pos1, imgui.PackedColorFromVec4(imgui.Vec4{1.0, 0.6, 1.0, 1.0}))
+		imgui.WindowDrawList().AddLine(pos, pos1, imgui.PackedColorFromVec4(vec4(1.0, 0.6, 1.0, 1.0)))
 
 		imgui.TableSetColumnIndex(0)
 
-		imgui.Dummy(imgui.Vec2{1, 0})
+		imgui.Dummy(vec2(1, 0))
 		imgui.SameLine()
 
 		ImIO.SetFontGlobalScale(0.625)
 		imgui.PushFont(FontAw)
 
-		imgui.SetCursorPos(imgui.Vec2{imgui.CursorPosX(), (posLocal.Y + posLocal1.Y - imgui.FrameHeight()) / 2})
+		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocal.Y+posLocal1.Y-imgui.FrameHeight())/2))
 
 		if imgui.Button("\uF068" + jsonPath) {
 			removeCb(childNum)
@@ -465,7 +464,7 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 		imgui.PopFont()
 
 		imgui.SameLine()
-		imgui.Dummy(imgui.Vec2{2, 0})
+		imgui.Dummy(vec2(2, 0))
 
 		imgui.EndTable()
 	}
@@ -544,7 +543,7 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 		}
 
 		if index > 0 {
-			imgui.Dummy(imgui.Vec2{0, 2})
+			imgui.Dummy(vec2(0, 2))
 		}
 
 		switch field.Type().Kind() {
@@ -627,7 +626,7 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 
 func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, f reflect.Value, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
 	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, d, func() {
-		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 			imgui.TableSetupColumnV("tv1"+jsonPath1, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 			imgui.TableSetupColumnV("tv2"+jsonPath1, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 			imgui.TableSetupColumnV("tv3"+jsonPath1, imgui.TableColumnFlagsWidthStretch, 0, uint(2))
@@ -709,7 +708,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 		_, okPW := d.Tag.Lookup("password")
 
 		if okP || okF {
-			if imgui.BeginTableV("tbr"+jsonPath, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+			if imgui.BeginTableV("tbr"+jsonPath, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 				imgui.TableSetupColumnV("tbr1"+jsonPath, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 				imgui.TableSetupColumnV("tbr2"+jsonPath, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
@@ -824,8 +823,8 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 
 					imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
 					imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-					imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{})
-					imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: 0})
+					imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vzero())
+					imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(0, 0, 0, 0))
 
 					searchResults := make([]string, 0, len(labels))
 					searchValues := make([]string, 0, len(labels))
@@ -842,7 +841,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					if len(searchResults) > 0 {
 						sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
-						if imgui.BeginListBoxV("##listbox"+jsonPath, imgui.Vec2{mWidth, sHeight}) {
+						if imgui.BeginListBoxV("##listbox"+jsonPath, vec2(mWidth, sHeight)) {
 							focusScroll = focusScroll || imgui.IsWindowAppearing()
 
 							for i, l := range searchResults {
@@ -878,7 +877,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				}
 			}
 		} else if okPW {
-			if imgui.BeginTableV("tpw"+jsonPath+"tb", 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+			if imgui.BeginTableV("tpw"+jsonPath+"tb", 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 				imgui.TableSetupColumnV("tpw1"+jsonPath, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 				imgui.TableSetupColumnV("tpw2"+jsonPath, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
@@ -904,7 +903,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					tx = "Hide"
 				}
 
-				if imgui.ButtonV(tx+jsonPath, imgui.Vec2{imgui.CalcTextSize("Show", false, 0).X + imgui.CurrentStyle().FramePadding().X*2, 0}) {
+				if imgui.ButtonV(tx+jsonPath, vec2(imgui.CalcTextSize("Show", false, 0).X+imgui.CurrentStyle().FramePadding().X*2, 0)) {
 					editor.pwShowHide[jsonPath] = !editor.pwShowHide[jsonPath]
 				}
 
@@ -970,7 +969,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 			min := parseIntOr(d.Tag.Get("min"), 0)
 			max := parseIntOr(d.Tag.Get("max"), 100)
 
-			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{X: 0, Y: -3})
+			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(0, -3))
 
 			if sliderIntSlide(jsonPath, &base, int32(min), int32(max), "##"+format, imgui.SliderFlagsNoInput) {
 				f.SetInt(int64(base))
@@ -1005,10 +1004,10 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 			base := float32(f.Float())
 			valSpeed := base * scale
 
-			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, imgui.Vec2{X: 0, Y: -3})
+			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(0, -3))
 
 			cSpacing := imgui.CurrentStyle().ItemSpacing()
-			imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, imgui.Vec2{X: cSpacing.X, Y: cSpacing.Y - 3})
+			imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, vec2(cSpacing.X, cSpacing.Y-3))
 
 			if sliderFloatSlide(jsonPath, &valSpeed, min*scale, max*scale, "##"+format, imgui.SliderFlagsNoInput) {
 				f.SetFloat(float64(valSpeed / scale))
@@ -1063,7 +1062,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynami
 		cCount = 2
 	}
 
-	if imgui.BeginTableV("lbl"+jsonPath, cCount, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+	if imgui.BeginTableV("lbl"+jsonPath, cCount, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 		imgui.TableSetupColumnV("lbl1"+jsonPath, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 
 		if dynamic {

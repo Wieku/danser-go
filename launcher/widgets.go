@@ -179,7 +179,7 @@ func sliderResetBase(label string, draw, reset func()) {
 
 	imgui.PushFont(Font16)
 
-	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, imgui.Vec2{-1, 0}, -1) {
+	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
@@ -287,14 +287,14 @@ func keySlideFloat[T constraints.Float](value *T, min, max, step T) (ret bool) {
 }
 
 func centerTable(label string, width float32, draw func()) {
-	if imgui.BeginTableV(label, 3, imgui.TableFlagsSizingStretchProp, imgui.Vec2{width, 0}, -1) {
+	if imgui.BeginTableV(label, 3, imgui.TableFlagsSizingStretchProp, vec2(width, 0), -1) {
 		imgui.TableSetupColumnV("1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 		imgui.TableSetupColumnV("2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 		imgui.TableSetupColumnV("3"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(2))
 
 		imgui.TableNextColumn()
 
-		imgui.Dummy(imgui.Vec2{1, 1})
+		imgui.Dummy(vec2(1, 1))
 
 		imgui.TableNextColumn()
 
@@ -302,7 +302,7 @@ func centerTable(label string, width float32, draw func()) {
 
 		imgui.TableNextColumn()
 
-		imgui.Dummy(imgui.Vec2{1, 1})
+		imgui.Dummy(vec2(1, 1))
 
 		imgui.EndTable()
 	}
@@ -326,9 +326,9 @@ func searchBox(label string, searchString *string) (ok bool) {
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
 
-	imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{0, 0, 0, 1})
-	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, imgui.Vec4{0.1, 0.1, 0.1, 1})
-	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, imgui.Vec4{0.1, 0.1, 0.1, 1})
+	imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(0, 0, 0, 1))
+	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, vec4(0.1, 0.1, 0.1, 1))
+	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, vec4(0.1, 0.1, 0.1, 1))
 
 	ok = imgui.InputTextWithHint(label, "Search", searchString)
 

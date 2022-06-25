@@ -34,7 +34,7 @@ func drawTimeMenu(bld *builder) {
 		start.value = end.value - 1
 	}
 
-	imgui.Dummy(imgui.Vec2{0, iPos2 - iPos1})
+	imgui.Dummy(vec2(0, iPos2-iPos1))
 
 	sliderIntReset("Audio offset", &bld.offset, -300, 300, "%dms")
 }
@@ -139,7 +139,7 @@ func drawRecordMenu(bld *builder) {
 }
 
 func drawReplayManager(bld *builder) {
-	if imgui.BeginTableV("replay table", 9, imgui.TableFlagsBorders|imgui.TableFlagsScrollY, imgui.Vec2{-1, imgui.ContentRegionAvail().Y}, -1) {
+	if imgui.BeginTableV("replay table", 9, imgui.TableFlagsBorders|imgui.TableFlagsScrollY, vec2(-1, imgui.ContentRegionAvail().Y), -1) {
 		imgui.TableSetupScrollFreeze(0, 1)
 
 		imgui.TableSetupColumnV("", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(0))
@@ -204,7 +204,7 @@ func drawReplayManager(bld *builder) {
 
 func drawAbout(dTex texture.Texture) {
 	centerTable("about1", -1, func() {
-		imgui.Image(imgui.TextureID(dTex.GetID()), imgui.Vec2{100, 100})
+		imgui.Image(imgui.TextureID(dTex.GetID()), vec2(100, 100))
 	})
 
 	centerTable("about2", -1, func() {
@@ -217,7 +217,7 @@ func drawAbout(dTex texture.Texture) {
 		}
 	})
 
-	imgui.Dummy(imgui.Vec2{1, imgui.FrameHeight()})
+	imgui.Dummy(vec2(1, imgui.FrameHeight()))
 
 	centerTable("about4.1", -1, func() {
 		imgui.Text("Advanced visualisation multi-tool")
@@ -227,9 +227,9 @@ func drawAbout(dTex texture.Texture) {
 		imgui.Text("for osu!")
 	})
 
-	imgui.Dummy(imgui.Vec2{1, imgui.FrameHeight()})
+	imgui.Dummy(vec2(1, imgui.FrameHeight()))
 
-	if imgui.BeginTableV("about5", 3, imgui.TableFlagsSizingStretchSame, imgui.Vec2{-1, 0}, -1) {
+	if imgui.BeginTableV("about5", 3, imgui.TableFlagsSizingStretchSame, vec2(-1, 0), -1) {
 		imgui.TableNextColumn()
 
 		centerTable("aboutgithub", -1, func() {
@@ -259,9 +259,9 @@ func drawAbout(dTex texture.Texture) {
 }
 
 func drawLauncherConfig() {
-	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, imgui.Vec2{imgui.CurrentStyle().CellPadding().X, 10})
+	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(imgui.CurrentStyle().CellPadding().X, 10))
 
-	if imgui.BeginTableV("lconfigtable", 2, 0, imgui.Vec2{-1, 0}, -1) {
+	if imgui.BeginTableV("lconfigtable", 2, 0, vec2(-1, 0), -1) {
 		imgui.TableSetupColumnV("1lconfigtable", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 		imgui.TableSetupColumnV("2lconfigtable", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
@@ -285,7 +285,7 @@ func drawLauncherConfig() {
 
 		imgui.TableNextColumn()
 
-		imgui.SetCursorPos(imgui.Vec2{imgui.CursorPosX(), (posLocal.Y + posLocal1.Y - imgui.FrameHeightWithSpacing()) / 2})
+		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocal.Y+posLocal1.Y-imgui.FrameHeightWithSpacing())/2))
 
 		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
 
