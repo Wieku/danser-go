@@ -497,19 +497,20 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 		if s, ok := dF.Tag.Lookup("showif"); ok {
 			s1 := strings.Split(s, "=")
 
-			if consumed[s1[0]] == 1 {
-				continue
-			}
-
 			if s1[1] != "!" {
 				cF := typ.FieldByName(s1[0]).String()
 
 				found := false
 
 				for _, toCheck := range strings.Split(s1[1], ",") {
-					if cF == toCheck {
+					if toCheck[:1] == "!" {
+						found = cF != toCheck[1:]
+
+						if !found {
+							break
+						}
+					} else if cF == toCheck {
 						found = true
-						consumed[s1[0]] = 1
 						break
 					}
 				}
@@ -517,6 +518,10 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 				if !found {
 					continue
 				}
+
+				consumed[s1[0]] = 1
+			} else if consumed[s1[0]] == 1 {
+				continue
 			}
 		}
 

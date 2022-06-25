@@ -99,7 +99,7 @@ type recording struct {
 	H264QSVSettings   *h264QSVSettings   `json:"h264_qsv" label:"Intel QuickSync H.264 (AVC) Settings" showif:"Encoder=h264_qsv"`
 	HEVCQSVSettings   *hevcQSVSettings   `json:"hevc_qsv" label:"Intel QuickSync H.265 (HEVC) Settings" showif:"Encoder=hevc_qsv"`
 	CustomSettings    *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
-	PixelFormat       string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21"`
+	PixelFormat       string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21" showif:"Encoder=!h264_qsv,!hevc_qsv"`
 	Filters           string             `label:"FFmpeg Video Filters"`
 	AudioCodec        string             `combo:"aac|AAC,libmp3lame|MP3,libopus|OPUS,flac|FLAC"`
 	AudioOptions      string             `label:"Audio Encoder Options"`
