@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/effects"
+	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
 	"log"
@@ -42,6 +43,8 @@ var w, h int
 
 var limiter *frame.Limiter
 
+var parsedFormat pixconv.PixFmt
+
 type PBO struct {
 	handle     uint32
 	memPointer unsafe.Pointer
@@ -57,15 +60,18 @@ func createPBO(format pixconv.PixFmt) *PBO {
 	pbo := new(PBO)
 	pbo.convFormat = format
 
-	channels := 3
-	if pbo.convFormat != pixconv.ARGB {
-		channels = 4
+	glSize := w * h * 3
 
+	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+		glSize = w * h * 3 / 2
+
+		if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+			pbo.convData = make([]byte, glSize)
+		}
+	} else if pbo.convFormat != pixconv.ARGB && pbo.convFormat != pixconv.I444 {
 		convSize := pixconv.GetRequiredBufferSize(pbo.convFormat, w, h)
 		pbo.convData = make([]byte, convSize)
 	}
-
-	glSize := w * h * channels
 
 	gl.CreateBuffers(1, &pbo.handle)
 	gl.NamedBufferStorage(pbo.handle, glSize, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
@@ -77,6 +83,8 @@ func createPBO(format pixconv.PixFmt) *PBO {
 	return pbo
 }
 
+var rgbToYuvConverter *effects.RGBYUV
+
 func startVideo(fps, _w, _h int) {
 	w, h = _w, _h
 
@@ -84,7 +92,7 @@ func startVideo(fps, _w, _h int) {
 		fps /= settings.Recording.MotionBlur.OversampleMultiplier
 	}
 
-	parsedFormat := pixconv.ARGB
+	parsedFormat = pixconv.ARGB
 
 	switch strings.ToLower(settings.Recording.PixelFormat) {
 	case "yuv420p":
@@ -177,6 +185,10 @@ func startVideo(fps, _w, _h int) {
 	}
 
 	mainthread.Call(func() {
+		if parsedFormat != pixconv.ARGB {
+			rgbToYuvConverter = effects.NewRGBYUV(w, h, parsedFormat != pixconv.I444 && parsedFormat != pixconv.I422)
+		}
+
 		for i := 0; i < MaxVideoBuffers; i++ {
 			pboPool = append(pboPool, createPBO(parsedFormat))
 		}
@@ -236,6 +248,8 @@ func stopVideo() {
 func PreFrame() {
 	if settings.Recording.MotionBlur.Enabled {
 		blend.Begin()
+	} else if rgbToYuvConverter != nil {
+		rgbToYuvConverter.Begin()
 	}
 }
 
@@ -251,10 +265,22 @@ func MakeFrame() {
 			return
 		}
 
+		if rgbToYuvConverter != nil {
+			rgbToYuvConverter.Begin()
+		}
+
 		blend.Blend()
 	}
 
-	//spin until at least one pbo is free
+	var retTex1, retTex2 texture.Texture
+
+	if rgbToYuvConverter != nil {
+		rgbToYuvConverter.End()
+
+		retTex1, retTex2 = rgbToYuvConverter.Draw()
+	}
+
+	//spin until at least one pbo is free, fix this ffs
 	for len(pboPool) == 0 {
 		CheckData()
 	}
@@ -272,12 +298,18 @@ func MakeFrame() {
 
 	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
 
-	glFmt := gl.RGB
-	if pbo.convFormat != pixconv.ARGB {
-		glFmt = gl.BGRA
-	}
+	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 { //Read as yuv420p
+		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
 
-	gl.ReadPixels(0, 0, int32(w), int32(h), uint32(glFmt), gl.UNSIGNED_BYTE, gl.Ptr(nil))
+		gl.GetTextureSubImage(retTex2.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(retTex2.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
+	} else if pbo.convFormat != pixconv.ARGB { //Read as yuv444p
+		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
+	} else {
+		gl.ReadPixels(0, 0, int32(w), int32(h), uint32(gl.RGB), gl.UNSIGNED_BYTE, gl.Ptr(nil))
+	}
 
 	pbo.sync = gl.FenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
 
@@ -308,11 +340,16 @@ func CheckData() {
 			videoQueue <- func() {
 				var err error
 
-				if pbo.convFormat != pixconv.ARGB {
-					pixconv.Convert(pbo.data, pixconv.ARGB, pbo.convData, pbo.convFormat, w, h)
-					_, err = videoPipe.Write(pbo.convData)
-				} else {
+				if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
 					_, err = videoPipe.Write(pbo.data)
+				} else {
+					if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+						pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
+					} else {
+						pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
+					}
+
+					_, err = videoPipe.Write(pbo.convData)
 				}
 
 				if err != nil {
