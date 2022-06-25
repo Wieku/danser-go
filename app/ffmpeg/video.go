@@ -29,11 +29,9 @@ var cmdVideo *exec.Cmd
 
 var videoPipe io.WriteCloser
 
-var videoQueue chan *PBO
-var readyQueue chan *PBO
+var frameQueue chan *PBO
 
-var endSyncVideo *sync.WaitGroup
-var endSyncReady *sync.WaitGroup
+var frameEndSync *sync.WaitGroup
 
 var emptySync *sync.WaitGroup
 
@@ -209,60 +207,24 @@ func startVideo(fps, _w, _h int) {
 
 	pboSync = &sync.Mutex{}
 
-	videoQueue = make(chan *PBO, MaxVideoBuffers)
-	readyQueue = make(chan *PBO, MaxVideoBuffers)
+	frameQueue = make(chan *PBO, MaxVideoBuffers)
 
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
 
 	emptySync = &sync.WaitGroup{}
 
-	endSyncVideo = &sync.WaitGroup{}
-	endSyncReady = &sync.WaitGroup{}
+	frameEndSync = &sync.WaitGroup{}
 
-	endSyncVideo.Add(1)
-	endSyncReady.Add(1)
+	frameEndSync.Add(1)
 
 	goroutines.RunOS(func() {
 		for {
-			pbo, keepOpen := <-videoQueue
+			pbo, keepOpen := <-frameQueue
 
 			if pbo != nil {
-				if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
-					pbo.convData = pbo.data
-				} else {
-					pbo.convertSync.Add(1)
+				pbo.convertSync.Wait() // Wait for conversion to end
 
-					goroutines.RunOS(func() { // offload conversion to another thread
-						if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
-							pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
-						} else {
-							pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
-						}
-
-						pbo.convertSync.Done()
-					})
-				}
-
-				readyQueue <- pbo
-			}
-
-			if !keepOpen {
-				endSyncVideo.Done()
-				break
-			}
-		}
-	})
-
-	goroutines.RunOS(func() {
-		for {
-			pbo, keepOpen := <-readyQueue
-
-			if pbo != nil {
-				pbo.convertSync.Wait()
-
-				_, err := videoPipe.Write(pbo.convData)
-
-				if err != nil {
+				if _, err := videoPipe.Write(pbo.convData); err != nil {
 					panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
 				}
 
@@ -278,7 +240,7 @@ func startVideo(fps, _w, _h int) {
 			}
 
 			if !keepOpen {
-				endSyncReady.Done()
+				frameEndSync.Done()
 				break
 			}
 		}
@@ -292,13 +254,9 @@ func stopVideo() {
 
 	log.Println("Finished! Stopping video pipe...")
 
-	close(videoQueue)
+	close(frameQueue)
 
-	endSyncVideo.Wait()
-
-	close(readyQueue)
-
-	endSyncReady.Wait()
+	frameEndSync.Wait()
 
 	_ = videoPipe.Close()
 
@@ -413,11 +371,31 @@ func checkData(waitForFirst, waitForAll bool) {
 
 			syncPool = syncPool[1:]
 
-			videoQueue <- pbo
+			submitFrame(pbo)
 
 			continue
 		}
 
 		return
 	}
+}
+
+func submitFrame(pbo *PBO) {
+	if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
+		pbo.convData = pbo.data
+	} else {
+		pbo.convertSync.Add(1)
+
+		goroutines.RunOS(func() { // offload conversion to another thread
+			if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+				pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
+			} else {
+				pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
+			}
+
+			pbo.convertSync.Done()
+		})
+	}
+
+	frameQueue <- pbo
 }
