@@ -33,10 +33,8 @@ var frameQueue chan *PBO
 
 var frameEndSync *sync.WaitGroup
 
-var emptySync *sync.WaitGroup
+var pboPool chan *PBO
 
-var pboSync *sync.Mutex
-var pboPool = make([]*PBO, 0)
 var syncPool = make([]*PBO, 0)
 
 var blend *effects.Blend
@@ -190,13 +188,15 @@ func startVideo(fps, _w, _h int) {
 		panic(fmt.Sprintf("ffmpeg's video process failed to start! Please check if video parameters are entered correctly or video codec is supported by provided container. Error: %s", err))
 	}
 
+	pboPool = make(chan *PBO, MaxVideoBuffers)
+
 	mainthread.Call(func() {
 		if parsedFormat != pixconv.ARGB {
 			rgbToYuvConverter = effects.NewRGBYUV(w, h, parsedFormat != pixconv.I444 && parsedFormat != pixconv.I422)
 		}
 
 		for i := 0; i < MaxVideoBuffers; i++ {
-			pboPool = append(pboPool, createPBO(parsedFormat))
+			pboPool <- createPBO(parsedFormat)
 		}
 
 		if settings.Recording.MotionBlur.Enabled {
@@ -205,13 +205,9 @@ func startVideo(fps, _w, _h int) {
 		}
 	})
 
-	pboSync = &sync.Mutex{}
-
 	frameQueue = make(chan *PBO, MaxVideoBuffers)
 
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
-
-	emptySync = &sync.WaitGroup{}
 
 	frameEndSync = &sync.WaitGroup{}
 
@@ -228,15 +224,7 @@ func startVideo(fps, _w, _h int) {
 					panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
 				}
 
-				pboSync.Lock()
-
-				if len(pboPool) == 0 {
-					emptySync.Done()
-				}
-
-				pboPool = append(pboPool, pbo)
-
-				pboSync.Unlock()
+				pboPool <- pbo
 			}
 
 			if !keepOpen {
@@ -304,20 +292,7 @@ func MakeFrame() {
 
 	checkData(len(pboPool) == 0, false) // Force wait for at least one frame to be retrieved if pbo pool is empty
 
-	if len(pboPool) == 0 {
-		emptySync.Wait() // Wait for at least one PBO
-	}
-
-	pboSync.Lock()
-
-	pbo := pboPool[0]
-	pboPool = pboPool[1:]
-
-	if len(pboPool) == 0 {
-		emptySync.Add(1)
-	}
-
-	pboSync.Unlock()
+	pbo := <-pboPool // Wait for free PBO
 
 	gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
 
