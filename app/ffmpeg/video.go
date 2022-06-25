@@ -29,13 +29,15 @@ var cmdVideo *exec.Cmd
 
 var videoPipe io.WriteCloser
 
-var videoQueue chan func()
+var videoQueue chan *PBO
+var readyQueue chan *PBO
+
+var endSyncVideo *sync.WaitGroup
+var endSyncReady *sync.WaitGroup
 
 var pboSync *sync.Mutex
 var pboPool = make([]*PBO, 0)
 var syncPool = make([]*PBO, 0)
-
-var endSyncVideo *sync.WaitGroup
 
 var blend *effects.Blend
 
@@ -54,6 +56,8 @@ type PBO struct {
 	convData   []byte
 
 	sync uintptr
+
+	convertSync *sync.WaitGroup
 }
 
 func createPBO(format pixconv.PixFmt) *PBO {
@@ -79,6 +83,8 @@ func createPBO(format pixconv.PixFmt) *PBO {
 	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
 
 	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[:glSize:glSize]
+
+	pbo.convertSync = &sync.WaitGroup{}
 
 	return pbo
 }
@@ -201,24 +207,68 @@ func startVideo(fps, _w, _h int) {
 
 	pboSync = &sync.Mutex{}
 
-	videoQueue = make(chan func(), MaxVideoBuffers)
+	videoQueue = make(chan *PBO, MaxVideoBuffers)
+	readyQueue = make(chan *PBO, MaxVideoBuffers)
 
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
 
 	endSyncVideo = &sync.WaitGroup{}
+	endSyncReady = &sync.WaitGroup{}
 
 	endSyncVideo.Add(1)
+	endSyncReady.Add(1)
 
 	goroutines.RunOS(func() {
 		for {
-			f, keepOpen := <-videoQueue
+			pbo, keepOpen := <-videoQueue
 
-			if f != nil {
-				f()
+			if pbo != nil {
+				if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
+					pbo.convData = pbo.data
+				} else {
+					pbo.convertSync.Add(1)
+
+					goroutines.RunOS(func() { // offload conversion to another thread
+						if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+							pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
+						} else {
+							pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
+						}
+
+						pbo.convertSync.Done()
+					})
+				}
+
+				readyQueue <- pbo
 			}
 
 			if !keepOpen {
 				endSyncVideo.Done()
+				break
+			}
+		}
+	})
+
+	goroutines.RunOS(func() {
+		for {
+			pbo, keepOpen := <-readyQueue
+
+			if pbo != nil {
+				pbo.convertSync.Wait()
+
+				_, err := videoPipe.Write(pbo.convData)
+
+				if err != nil {
+					panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
+				}
+
+				pboSync.Lock()
+				pboPool = append(pboPool, pbo)
+				pboSync.Unlock()
+			}
+
+			if !keepOpen {
+				endSyncReady.Done()
 				break
 			}
 		}
@@ -235,7 +285,13 @@ func stopVideo() {
 	log.Println("Finished! Stopping video pipe...")
 
 	close(videoQueue)
+
 	endSyncVideo.Wait()
+
+	close(readyQueue)
+
+	endSyncReady.Wait()
+
 	_ = videoPipe.Close()
 
 	log.Println("Video pipe closed. Waiting for video ffmpeg process to finish...")
@@ -337,29 +393,7 @@ func CheckData() {
 
 			syncPool = syncPool[1:]
 
-			videoQueue <- func() {
-				var err error
-
-				if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
-					_, err = videoPipe.Write(pbo.data)
-				} else {
-					if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
-						pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
-					} else {
-						pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
-					}
-
-					_, err = videoPipe.Write(pbo.convData)
-				}
-
-				if err != nil {
-					panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
-				}
-
-				pboSync.Lock()
-				pboPool = append(pboPool, pbo)
-				pboSync.Unlock()
-			}
+			videoQueue <- pbo
 
 			continue
 		}
