@@ -502,6 +502,11 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 				cF := fld.String()
 				if fld.CanInt() {
 					cF = strconv.Itoa(int(fld.Int()))
+				} else if fld.Type().String() == "bool" {
+					cF = "false"
+					if fld.Bool() {
+						cF = "true"
+					}
 				}
 
 				found := false

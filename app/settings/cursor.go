@@ -54,20 +54,20 @@ type cursor struct {
 	TagColorOffset              float64 `min:"-360" max:"360" format:"%.0f°"` //-36, offset of the next tag cursor
 	EnableTrailGlow             bool    //true
 	EnableCustomTrailGlowOffset bool    //true, if enabled, value set below will be used, if not, HueOffset of previous iteration will be used (or offset of 180° for single cursor)
-	TrailGlowOffset             float64 `min:"-360" max:"360" format:"%.0f°"` //-36, offset of the cursor trail glow
-	ScaleToCS                   bool    //false, if enabled, cursor will scale to beatmap CS value
-	CursorSize                  float64 `label:"Cursor Size" min:"0.1" max:"50"` //18, cursor radius in osu!pixels
-	CursorExpand                bool    //Should cursor be scaled to 1.3 when clicked
+	TrailGlowOffset             float64 `label:"Custom trail glow offset" min:"-360" max:"360" format:"%.0f°" showif:"EnableCustomTrailGlowOffset=true"` //-36, offset of the cursor trail glow
+	ScaleToCS                   bool    `skip:"true"`                                                                                                    // Not implemented yet
+	CursorSize                  float64 `label:"Cursor size" min:"0.1" max:"50"`                                                                         //18, cursor radius in osu!pixels
+	CursorExpand                bool    `label:"Expand cursors on clicks"`                                                                               //Should cursor be scaled to 1.3 when clicked
 	ScaleToTheBeat              bool    //true, cursor size is changing with music peak amplitude
 	ShowCursorsOnBreaks         bool    //true
 	BounceOnEdges               bool    //false
 	TrailScale                  float64 //0.4
-	TrailEndScale               float64 //0.4
-	TrailDensity                float64 `min:"0.001" max:"3"` //0.5 - 1/TrailDensity = distance between trail points
-	TrailMaxLength              int64   `max:"10000"`         //2000 - maximum width (in osu!pixels) of cursortrail
-	TrailRemoveSpeed            float64 `max:"5"`             //1.0 - trail removal multiplier, 0.5 means half the speed
-	GlowEndScale                float64 //0.4
-	InnerLengthMult             float64 //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
+	TrailEndScale               float64 `max:"3"`                             //0.4
+	TrailDensity                float64 `min:"0.001" max:"3"`                 //0.5 - 1/TrailDensity = distance between trail points
+	TrailMaxLength              int64   `max:"10000"`                         //2000 - maximum width (in osu!pixels) of cursortrail
+	TrailRemoveSpeed            float64 `max:"5"`                             //1.0 - trail removal multiplier, 0.5 means half the speed
+	GlowEndScale                float64 `max:"3"`                             //0.4
+	InnerLengthMult             float64 `label:"Relative inner trail length"` //0.9 - if glow is enabled, inner trail will be shortened to 0.9 * length
 	AdditiveBlending            bool
 	CursorRipples               bool
 	SmokeEnabled                bool `label:"Cursor Smoke"`
