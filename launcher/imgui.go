@@ -88,28 +88,26 @@ func SetupImgui(win *glfw.Window) {
 
 	//fontawesome is quite large so for now we will load only needed glyphs
 	awesomeBuilder := &imgui.GlyphRangesBuilder{}
-	awesomeBuilder.Add(0xF04B, 0xF04B)
-	awesomeBuilder.Add(0xF04D, 0xF04D)
+	awesomeBuilder.Add(0xF04B, 0xF04B) // play
+	awesomeBuilder.Add(0xF04D, 0xF04D) // stop
 	awesomeBuilder.Add('+', '+')
-	awesomeBuilder.Add(0xF068, 0xF068)
-
-	awesomeBuilder.Add(0xF0AD, 0xF0AD)
-	awesomeBuilder.Add(0xF108, 0xF108)
-	awesomeBuilder.Add(0xF028, 0xF028)
-	awesomeBuilder.Add(0xF11C, 0xF11C)
-	awesomeBuilder.Add(0xF140, 0xF140)
-	awesomeBuilder.Add(0xF53F, 0xF53F)
-	awesomeBuilder.Add(0xF245, 0xF245)
-	awesomeBuilder.Add(0xF1CD, 0xF1CD)
-	awesomeBuilder.Add(0xF853, 0xF853)
-	awesomeBuilder.Add(0xF5B7, 0xF5B7)
-	awesomeBuilder.Add(0xE599, 0xE599)
-	awesomeBuilder.Add(0xF0CB, 0xF0CB)
-	awesomeBuilder.Add(0xF03D, 0xF03D)
-	awesomeBuilder.Add(0xF882, 0xF882)
-	awesomeBuilder.Add(0xF15D, 0xF15D)
-	awesomeBuilder.Add(0xF084, 0xF084)
-	awesomeBuilder.Add(0xF7A2, 0xF7A2)
+	awesomeBuilder.Add(0xF068, 0xF068) // minus
+	awesomeBuilder.Add(0xF0AD, 0xF0AD) // wrench
+	awesomeBuilder.Add(0xE163, 0xE163) // display
+	awesomeBuilder.Add(0xF028, 0xF028) // volume-high
+	awesomeBuilder.Add(0xF11C, 0xF11C) // keyboard
+	awesomeBuilder.Add(0xF245, 0xF245) // arrow-pointer
+	awesomeBuilder.Add(0xE599, 0xE599) // worm
+	awesomeBuilder.Add(0xF0CB, 0xF0CB) // list-ol
+	awesomeBuilder.Add(0xF03D, 0xF03D) // video
+	awesomeBuilder.Add(0xF882, 0xF882) // arrow-up-z-a
+	awesomeBuilder.Add(0xF15D, 0xF15D) // arrow-down-a-z
+	awesomeBuilder.Add(0xF084, 0xF084) // key
+	awesomeBuilder.Add(0xF7A2, 0xF7A2) // earth-europe
+	awesomeBuilder.Add(0xF192, 0xF192) // circle-dot
+	awesomeBuilder.Add(0xF1E0, 0xF1E0) // share-nodes
+	awesomeBuilder.Add(0xF1FC, 0xF1FC) // paintbrush
+	awesomeBuilder.Add(0xF43C, 0xF43C) // chess-board
 
 	//awesomeBuilder.Add(0x0020, 0xffff)
 
