@@ -108,7 +108,7 @@ type objects struct {
 }
 
 type sliders struct {
-	ForceSliderBallTexture bool
+	ForceSliderBallTexture bool `label:"Force slider ball texture on mandalas"`
 	DrawEndCircles         bool
 	DrawSliderFollowCircle bool
 	DrawScorePoints        bool //true
@@ -130,17 +130,17 @@ type quality struct {
 type snaking struct {
 	In                 bool
 	Out                bool
-	OutFadeInstant     bool `label:"Fade out the slider instantly"`
-	DurationMultiplier float64
-	FadeMultiplier     float64
+	OutFadeInstant     bool    `label:"Fade out the slider instantly" showif:"Out=true"`
+	DurationMultiplier float64 `scale:"100" format:"%.0f%%" label:"In duration multiplier" showif:"In=true" tooltip:"How much of slider's duration should be added to snake in time"`
+	FadeMultiplier     float64 `scale:"100" format:"%.0f%%" label:"In fade multiplier" showif:"In=true" tooltip:"How close to slider's start time snake in should end"`
 }
 
 type objectcolors struct {
-	MandalaTexturesTrigger int     //5, minimum value of cursors needed to use more translucent texture
-	MandalaTexturesAlpha   float64 //0.3
+	MandalaTexturesTrigger int     `label:"Use Mandala textures at x mirrors" string:"true"`      //5, minimum value of cursors needed to use more translucent texture
+	MandalaTexturesAlpha   float64 `label:"Mandala textures opacity" scale:"100" format:"%.0f%%"` //0.3
 	Color                  *color
-	UseComboColors         bool
-	ComboColors            []*HSV `new:"InitHSV"`
+	UseComboColors         bool   `label:"Use custom combo colors"`
+	ComboColors            []*HSV `new:"InitHSV" label:"Custom combo colors" showif:"UseComboColors=true"`
 	UseSkinComboColors     bool
 	UseBeatmapComboColors  bool
 	Sliders                *sliderColors
@@ -148,7 +148,7 @@ type objectcolors struct {
 
 type sliderColors struct {
 	WhiteScorePoints      bool    //true
-	ScorePointColorOffset float64 `min:"-180" max:"180" format:"%.0f°"` //0.0, hue offset of the followpoint
+	ScorePointColorOffset float64 `min:"-180" max:"180" format:"%.0f°" showif:"WhiteScorePoints=false"` //0.0, hue offset of the followpoint
 	SliderBallTint        bool
 	Border                *borderColors
 	Body                  *bodyColors
@@ -158,7 +158,7 @@ type borderColors struct {
 	UseHitCircleColor          bool
 	Color                      *color
 	EnableCustomGradientOffset bool
-	CustomGradientOffset       float64 `min:"-180" max:"180" format:"%.0f°"` //18, hue offset of slider outer border
+	CustomGradientOffset       float64 `min:"-180" max:"180" format:"%.0f°" showif:"EnableCustomGradientOffset=true"` //18, hue offset of slider outer border
 }
 
 type bodyColors struct {
