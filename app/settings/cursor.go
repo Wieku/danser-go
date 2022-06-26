@@ -46,7 +46,7 @@ func initCursor() *cursor {
 }
 
 type cursor struct {
-	TrailStyle                  int     `combo:"1|1. Unified color,2|2. Distance-based rainbow,3|3. Time-based rainbow,4|4. Gradient"`
+	TrailStyle                  int     `combo:"1|Unified color,2|Distance-based rainbow,3|Time-based rainbow,4|Gradient"`
 	Style23Speed                float64 `label:"Speed" scale:"1000" min:"-1" max:"1" format:"%.0f°/(s or 1000px)" showif:"TrailStyle=2,3"`
 	Style4Shift                 float64 `label:"Hue Shift" scale:"360" min:"-1" max:"1" showif:"TrailStyle=4"`
 	Colors                      *color  `label:"Color"`
