@@ -733,19 +733,15 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				imgui.TableNextColumn()
 
 				if imgui.Button("Browse" + jsonPath) {
-					var dir string
+					dir := filepath.Join(env.DataDir(), base)
 
-					if okP {
-						dir = filepath.Join(env.DataDir(), base)
-
+					if strings.TrimSpace(base) != "" {
 						if filepath.IsAbs(base) {
 							dir = base
 						}
-					} else {
-						dir = filepath.Dir(filepath.Join(env.DataDir(), base))
 
-						if filepath.IsAbs(base) {
-							dir = filepath.Dir(base)
+						if okF {
+							dir = filepath.Dir(dir)
 						}
 					}
 
