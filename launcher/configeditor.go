@@ -1105,7 +1105,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynami
 				tTip += t
 			}
 
-			imgui.PushTextWrapPosV(300)
+			imgui.PushTextWrapPosV(400)
 
 			imgui.Text(tTip)
 
