@@ -1095,7 +1095,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynami
 
 			tTip := ""
 			if !hPath {
-				tTip = jsonPath[2:]
+				tTip = strings.ReplaceAll(jsonPath, "#", "")
 			}
 
 			if t, ok := d.Tag.Lookup("tooltip"); ok {
