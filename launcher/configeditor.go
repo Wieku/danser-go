@@ -497,7 +497,12 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 			s1 := strings.Split(s, "=")
 
 			if s1[1] != "!" {
-				cF := typ.FieldByName(s1[0]).String()
+				fld := typ.FieldByName(s1[0])
+
+				cF := fld.String()
+				if fld.CanInt() {
+					cF = strconv.Itoa(int(fld.Int()))
+				}
 
 				found := false
 
