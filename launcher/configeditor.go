@@ -54,7 +54,8 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 
 	editor.current = config
 	editor.combined = config.GetCombined()
-	editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
+
+	editor.search()
 
 	return editor
 }
@@ -111,8 +112,7 @@ func (editor *settingsEditor) drawEditor() {
 			imgui.SetNextItemWidth(-1)
 
 			if searchBox("##Editor search", &editor.searchString) {
-				editor.searchCache = make(map[string]int)
-				editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
+				editor.search()
 			}
 
 			if !editor.blockSearch && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
@@ -146,11 +146,15 @@ func (editor *settingsEditor) drawEditor() {
 
 	imgui.PopStyleColor()
 	imgui.PopStyleColor()
-	//imgui.PopStyleVar()
+}
+
+func (editor *settingsEditor) search() {
+	editor.sectionCache = make(map[string]imgui.Vec2)
+	editor.searchCache = make(map[string]int)
+	editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
 }
 
 func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, search string, omitSearch bool) bool {
-	editor.sectionCache = make(map[string]imgui.Vec2)
 	typ := u.Elem()
 	def := u.Type().Elem()
 
@@ -158,25 +162,31 @@ func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, sea
 
 	found := false
 
+	skipMap := make(map[string]uint8)
+	consumed := make(map[string]uint8)
+
 	for i := 0; i < count; i++ {
 		field := typ.Field(i)
-		fT := field.Type()
-		sT := fT.Kind()
+		dF := def.Field(i)
 
 		if def.Field(i).Tag.Get("skip") != "" {
 			continue
 		}
 
-		label := editor.getLabel(def.Field(i))
+		if editor.shouldBeHidden(consumed, skipMap, typ, dF) {
+			continue
+		}
+
+		label := editor.getLabel(dF)
 
 		sPath := path + "." + label
 
 		match := omitSearch || strings.Contains(strings.ToLower(label), search)
 
-		if sT == reflect.Ptr && (field.CanInterface() || def.Field(i).Anonymous) && !field.IsNil() && !field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
+		if field.Type().Kind() == reflect.Ptr && (field.CanInterface() || def.Field(i).Anonymous) && !field.IsNil() && !field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
 			sub := editor.buildSearchCache(sPath, field, search, match)
 			match = match || sub
-		} else if sT == reflect.Slice && field.CanInterface() {
+		} else if field.Type().Kind() == reflect.Slice && field.CanInterface() {
 			for j := 0; j < field.Len(); j++ {
 				sub := editor.buildSearchCache(sPath, field.Index(j), search, match)
 				match = match || sub
@@ -482,7 +492,6 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	count := typ.NumField()
 
 	skipMap := make(map[string]uint8)
-
 	consumed := make(map[string]uint8)
 
 	for i, index := 0, 0; i < count; i++ {
@@ -493,50 +502,17 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 			continue
 		}
 
-		if s, ok := dF.Tag.Lookup("showif"); ok {
-			s1 := strings.Split(s, "=")
-
-			if s1[1] != "!" {
-				fld := typ.FieldByName(s1[0])
-
-				cF := fld.String()
-				if fld.CanInt() {
-					cF = strconv.Itoa(int(fld.Int()))
-				} else if fld.Type().String() == "bool" {
-					cF = "false"
-					if fld.Bool() {
-						cF = "true"
-					}
-				}
-
-				found := false
-
-				for _, toCheck := range strings.Split(s1[1], ",") {
-					if toCheck[:1] == "!" {
-						found = cF != toCheck[1:]
-
-						if !found {
-							break
-						}
-					} else if cF == toCheck {
-						found = true
-						break
-					}
-				}
-
-				if !found {
-					continue
-				}
-
-				consumed[s1[0]] = 1
-			} else if consumed[s1[0]] == 1 {
-				continue
-			}
+		if editor.shouldBeHidden(consumed, skipMap, typ, dF) {
+			continue
 		}
 
 		label := editor.getLabel(def.Field(i))
 
 		sPath2 := lPath + "." + label
+
+		if editor.searchCache[sPath2] == 0 {
+			continue
+		}
 
 		jsonPath1 := jsonPath + "." + dF.Name
 
@@ -546,10 +522,6 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 			if sp != "" {
 				jsonPath1 = jsonPath + "." + sp
 			}
-		}
-
-		if editor.searchCache[sPath2] == 0 || skipMap[dF.Name] == 1 {
-			continue
 		}
 
 		if index > 0 {
@@ -570,9 +542,6 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 
 				r := typ.FieldByName(rName)
 				rd, _ := def.FieldByName(rName)
-
-				skipMap[lName] = 1
-				skipMap[rName] = 1
 
 				jsonPathL := jsonPath + "." + lName
 				jsonPathR := jsonPath + "." + rName
@@ -609,6 +578,64 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	}
 }
 
+func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHide map[string]uint8, parent reflect.Value, currentSField reflect.StructField) bool {
+	if _, ok := currentSField.Tag.Lookup("vector"); ok {
+		lName, ok1 := currentSField.Tag.Lookup("left")
+		rName, ok2 := currentSField.Tag.Lookup("right")
+		if ok1 && ok2 {
+			forceHide[lName] = 1
+			forceHide[rName] = 1
+		}
+	}
+
+	if forceHide[currentSField.Name] > 0 {
+		return true
+	}
+
+	if s, ok := currentSField.Tag.Lookup("showif"); ok {
+		s1 := strings.Split(s, "=")
+
+		if s1[1] != "!" {
+			fld := parent.FieldByName(s1[0])
+
+			cF := fld.String()
+			if fld.CanInt() {
+				cF = strconv.Itoa(int(fld.Int()))
+			} else if fld.Type().String() == "bool" {
+				cF = "false"
+				if fld.Bool() {
+					cF = "true"
+				}
+			}
+
+			found := false
+
+			for _, toCheck := range strings.Split(s1[1], ",") {
+				if toCheck[:1] == "!" {
+					found = cF != toCheck[1:]
+
+					if !found {
+						break
+					}
+				} else if cF == toCheck {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return true
+			}
+
+			consumed[s1[0]] = 1
+		} else if consumed[s1[0]] == 1 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (editor *settingsEditor) getLabel(d reflect.StructField) string {
 	if lb, ok := d.Tag.Lookup("label"); ok {
 		return lb
@@ -630,6 +657,7 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 
 		if imgui.Checkbox(jsonPath, &base) {
 			f.SetBool(base)
+			editor.search()
 		}
 	})
 }
@@ -853,6 +881,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 							for i, l := range searchResults {
 								if selectableFocus(l+jsonPath, l == lb, focusScroll) {
 									f.SetString(searchValues[i])
+									editor.search()
 								}
 							}
 
@@ -876,6 +905,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					for i, l := range labels {
 						if selectableFocus(l+jsonPath, l == lb, justOpened) {
 							f.SetString(values[i])
+							editor.search()
 						}
 					}
 
@@ -964,6 +994,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 				for i, l := range labels {
 					if selectableFocus(l+jsonPath, l == lb, justOpened) {
 						f.SetInt(int64(values[i]))
+						editor.search()
 					}
 				}
 
