@@ -128,7 +128,7 @@ func (m *songSelectPopup) update() {
 
 	m.volume.Update(cT)
 	if m.PreviewedSong != nil {
-		m.PreviewedSong.SetVolumeRelative(m.volume.GetValue())
+		m.PreviewedSong.SetVolumeRelative(m.volume.GetValue() * launcherConfig.PreviewVolume)
 
 		if cT >= m.stopTime {
 			m.stopPreview()
@@ -582,8 +582,8 @@ func (m *songSelectPopup) startPreview(bMap *beatmap.BeatMap) {
 		m.PreviewedSong = track
 
 		m.volume.Reset()
-		m.volume.AddEventS(cT, cT+1000, 0, 0.5)
-		m.volume.AddEventS(cT+9000, cT+10000, 0.5, 0)
+		m.volume.AddEventS(cT, cT+1000, 0, 1)
+		m.volume.AddEventS(cT+9000, cT+10000, 1, 0)
 		m.stopTime = cT + 10000
 		m.prevMap = bMap
 	}

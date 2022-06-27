@@ -292,23 +292,36 @@ func drawLauncherConfig() {
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Preview selected maps")
-
-		imgui.TableNextColumn()
-
-		imgui.Checkbox("##PreviewSelected", &launcherConfig.PreviewSelected)
-
-		imgui.TableNextColumn()
-
-		imgui.AlignTextToFramePadding()
 		imgui.Text("Load latest replay on startup")
 
 		imgui.TableNextColumn()
 
 		imgui.Checkbox("##LoadLatestReplay", &launcherConfig.LoadLatestReplay)
 
+		imgui.TableNextColumn()
+
+		imgui.AlignTextToFramePadding()
+		imgui.Text("Preview selected maps")
+
+		imgui.TableNextColumn()
+
+		imgui.Checkbox("##PreviewSelected", &launcherConfig.PreviewSelected)
+
 		imgui.EndTable()
 	}
+
+	imgui.AlignTextToFramePadding()
+	imgui.Text("Preview volume")
+
+	volume := int32(launcherConfig.PreviewVolume * 100)
+
+	imgui.PushFont(Font16)
+
+	if sliderIntSlide("##previewvolume", &volume, 0, 100, "%d%%", 0) {
+		launcherConfig.PreviewVolume = float64(volume) / 100
+	}
+
+	imgui.PopFont()
 
 	imgui.PopStyleVar()
 }

@@ -17,6 +17,7 @@ var launcherConfig = &launcherConf{
 	CheckForUpdates:  true,
 	ShowFileAfter:    true,
 	PreviewSelected:  true,
+	PreviewVolume:    0.25,
 	SortMapsBy:       Title,
 	SortAscending:    true,
 	LoadLatestReplay: false,
@@ -27,6 +28,7 @@ type launcherConf struct {
 	CheckForUpdates  bool
 	ShowFileAfter    bool
 	PreviewSelected  bool
+	PreviewVolume    float64
 	SortMapsBy       SortBy
 	SortAscending    bool
 	LoadLatestReplay bool
