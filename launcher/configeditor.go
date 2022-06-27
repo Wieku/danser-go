@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"log"
 	"os"
@@ -276,6 +277,8 @@ func (editor *settingsEditor) drawSettings() {
 	sc1 := imgui.ScrollY()
 	sc2 := sc1 + imgui.ContentRegionAvail().Y
 
+	forceDrawNew := false
+
 	for i, j := 0, 0; i < count; i++ {
 		field := typ.Field(i)
 		dF := def.Field(i)
@@ -297,7 +300,7 @@ func (editor *settingsEditor) drawSettings() {
 					imgui.SetScrollY(v.X)
 				}
 
-				if sc1 > v.Y || sc2 < v.X {
+				if (sc1 > v.Y || sc2 < v.X) && !forceDrawNew {
 					drawNew = false
 
 					imgui.SetCursorPos(vec2(imgui.CursorPosX(), v.Y))
@@ -310,6 +313,12 @@ func (editor *settingsEditor) drawSettings() {
 				editor.buildMainSection("##"+dF.Name, "Main."+lbl, lbl, field)
 
 				iSc2 := imgui.CursorPos().Y
+
+				cCacheVal := editor.sectionCache["Main."+lbl]
+
+				if math32.Abs(cCacheVal.X-iSc1) > 0.001 || math32.Abs(cCacheVal.Y-iSc2) > 0.001 { // if size of the section changed (dynamically hidden items/array changes) we need to redraw stuff below to have good metrics
+					forceDrawNew = true
+				}
 
 				editor.sectionCache["Main."+lbl] = vec2(iSc1, iSc2)
 			}
@@ -333,7 +342,7 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	posLocal1 := imgui.CursorPos()
 
 	scrY := imgui.ScrollY()
-	if scrY >= posLocal.Y-padY*2 && scrY <= posLocal1.Y /*+padY*/ {
+	if scrY >= posLocal.Y-padY*2 && scrY <= posLocal1.Y {
 		editor.active = name
 	}
 }
@@ -546,7 +555,7 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 				jsonPathL := jsonPath + "." + lName
 				jsonPathR := jsonPath + "." + rName
 
-				editor.buildVector(jsonPathL, jsonPathR, field, dF, l, ld, r, rd)
+				editor.buildVector(jsonPathL, jsonPathR, dF, l, ld, r, rd)
 			} else {
 				editor.buildString(jsonPath1, field, dF)
 			}
@@ -662,7 +671,7 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 	})
 }
 
-func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, f reflect.Value, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
+func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
 	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, d, func() {
 		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 			imgui.TableSetupColumnV("tv1"+jsonPath1, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
