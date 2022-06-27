@@ -431,14 +431,18 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 		imgui.Dummy(vec2(0, padY/3))
 	}
 
-	if imgui.BeginTableV(jsonPath+"tae", 2, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, vec2(-1, 0), -1) {
-		imgui.TableSetupColumnV(jsonPath+"tae1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV(jsonPath+"tae2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+	contentAvail := imgui.ContentRegionAvail().X
+
+	if imgui.BeginTableV(jsonPath+"tae", 2, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, vec2(contentAvail, 0), contentAvail) {
+		bWidth := imgui.FontSize() + imgui.CurrentStyle().FramePadding().X*2 + imgui.CurrentStyle().ItemSpacing().X*2 + 1
+
+		imgui.TableSetupColumnV(jsonPath+"tae1", imgui.TableColumnFlagsWidthFixed, bWidth, uint(0))
+		imgui.TableSetupColumnV(jsonPath+"tae2", imgui.TableColumnFlagsWidthFixed, contentAvail-bWidth, uint(1))
 
 		imgui.TableNextColumn()
 		imgui.TableNextColumn()
 
-		pos := imgui.CursorScreenPos()
+		pos := imgui.CursorScreenPos().Minus(vec2(0, imgui.CurrentStyle().FramePadding().Y-1))
 		posLocal := imgui.CursorPos()
 
 		imgui.Dummy(vec2(3, 0))
@@ -450,8 +454,8 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 
 		imgui.EndGroup()
 
-		pos1 := imgui.CursorScreenPos()
-		posLocal1 := imgui.CursorPos()
+		pos1 := imgui.CursorScreenPos().Minus(vec2(0, imgui.CurrentStyle().ItemSpacing().Y))
+		posLocal1 := imgui.CursorPos().Minus(vec2(0, imgui.CurrentStyle().ItemSpacing().Y))
 
 		pos1.X = pos.X
 
@@ -665,7 +669,9 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 
 func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
 	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, d, func() {
-		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
+		contentAvail := imgui.ContentRegionAvail().X
+
+		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(contentAvail, 0), contentAvail) {
 			imgui.TableSetupColumnV("tv1"+jsonPath1, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 			imgui.TableSetupColumnV("tv2"+jsonPath1, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 			imgui.TableSetupColumnV("tv3"+jsonPath1, imgui.TableColumnFlagsWidthStretch, 0, uint(2))
@@ -1068,7 +1074,7 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 
 func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d reflect.StructField, withLabel bool) {
 	dComp := func() {
-		imgui.SetNextItemWidth(-1)
+		imgui.SetNextItemWidth(imgui.ContentRegionAvail().X - 1)
 
 		hsv := f.Interface().(*settings.HSV)
 
@@ -1092,21 +1098,25 @@ func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d ref
 	}
 }
 
-func (editor *settingsEditor) drawComponent(jsonPath, label string, long, dynamic bool, d reflect.StructField, draw func()) {
-	width := 240 + imgui.CalcTextSize("x", false, 0).X + imgui.CurrentStyle().FramePadding().X*4
+func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkbox bool, d reflect.StructField, draw func()) {
+	width := imgui.FontSize() + imgui.CurrentStyle().FramePadding().X*2 - 1 // + imgui.CurrentStyle().ItemSpacing().X
+	if !checkbox {
+		width = 240 + imgui.CalcTextSize("x", false, 0).X + imgui.CurrentStyle().FramePadding().X*4
+	}
 
 	cCount := 1
 	if !long {
 		cCount = 2
 	}
 
-	if imgui.BeginTableV("lbl"+jsonPath, cCount, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
-		imgui.TableSetupColumnV("lbl1"+jsonPath, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+	contentAvail := imgui.ContentRegionAvail().X
 
-		if dynamic {
-			imgui.TableSetupColumnV("lbl2"+jsonPath, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
-		} else if !long {
+	if imgui.BeginTableV("lbl"+jsonPath, cCount, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX, vec2(contentAvail, 0), contentAvail) {
+		if !long {
+			imgui.TableSetupColumnV("lbl1"+jsonPath, imgui.TableColumnFlagsWidthFixed, contentAvail-width, uint(0))
 			imgui.TableSetupColumnV("lbl2"+jsonPath, imgui.TableColumnFlagsWidthFixed, width, uint(1))
+		} else {
+			imgui.TableSetupColumnV("lbl1"+jsonPath, imgui.TableColumnFlagsWidthFixed, contentAvail, uint(0))
 		}
 
 		imgui.TableNextColumn()
