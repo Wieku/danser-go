@@ -29,13 +29,12 @@ var cmdVideo *exec.Cmd
 
 var videoPipe io.WriteCloser
 
-var frameQueue chan *PBO
+var videoWriteQueue chan *PBO
+var endSyncVideo *sync.WaitGroup
 
-var frameEndSync *sync.WaitGroup
+var freePBOPool chan *PBO
 
-var pboPool chan *PBO
-
-var syncPool = make([]*PBO, 0)
+var frameReadQueue = make([]*PBO, 0)
 
 var blend *effects.Blend
 
@@ -99,7 +98,7 @@ func startVideo(fps, _w, _h int) {
 	encoder := strings.ToLower(settings.Recording.Encoder)
 	outputFormat := strings.ToLower(settings.Recording.PixelFormat)
 
-	if strings.HasSuffix(encoder, "_qsv") {
+	if strings.HasSuffix(encoder, "_qsv") { // qsv works best with nv12 format
 		outputFormat = "nv12"
 	}
 
@@ -195,7 +194,7 @@ func startVideo(fps, _w, _h int) {
 		panic(fmt.Sprintf("ffmpeg's video process failed to start! Please check if video parameters are entered correctly or video codec is supported by provided container. Error: %s", err))
 	}
 
-	pboPool = make(chan *PBO, MaxVideoBuffers)
+	freePBOPool = make(chan *PBO, MaxVideoBuffers)
 
 	mainthread.Call(func() {
 		if parsedFormat != pixconv.ARGB {
@@ -203,7 +202,7 @@ func startVideo(fps, _w, _h int) {
 		}
 
 		for i := 0; i < MaxVideoBuffers; i++ {
-			pboPool <- createPBO(parsedFormat)
+			freePBOPool <- createPBO(parsedFormat)
 		}
 
 		if settings.Recording.MotionBlur.Enabled {
@@ -212,33 +211,25 @@ func startVideo(fps, _w, _h int) {
 		}
 	})
 
-	frameQueue = make(chan *PBO, MaxVideoBuffers)
+	videoWriteQueue = make(chan *PBO, MaxVideoBuffers)
 
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
 
-	frameEndSync = &sync.WaitGroup{}
-
-	frameEndSync.Add(1)
+	endSyncVideo = &sync.WaitGroup{}
+	endSyncVideo.Add(1)
 
 	goroutines.RunOS(func() {
-		for {
-			pbo, keepOpen := <-frameQueue
+		for pbo := range videoWriteQueue {
+			pbo.convertSync.Wait() // Wait for conversion to end
 
-			if pbo != nil {
-				pbo.convertSync.Wait() // Wait for conversion to end
-
-				if _, err := videoPipe.Write(pbo.convData); err != nil {
-					panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
-				}
-
-				pboPool <- pbo
+			if _, err := videoPipe.Write(pbo.convData); err != nil {
+				panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
 			}
 
-			if !keepOpen {
-				frameEndSync.Done()
-				break
-			}
+			freePBOPool <- pbo
 		}
+
+		endSyncVideo.Done()
 	})
 }
 
@@ -247,11 +238,11 @@ func stopVideo() {
 
 	checkData(true, true)
 
+	close(videoWriteQueue)
+
+	endSyncVideo.Wait()
+
 	log.Println("Finished! Stopping video pipe...")
-
-	close(frameQueue)
-
-	frameEndSync.Wait()
 
 	_ = videoPipe.Close()
 
@@ -289,17 +280,17 @@ func MakeFrame() {
 		blend.Blend()
 	}
 
-	var retTex1, retTex2 texture.Texture
+	var yuvFull, yuvHalf texture.Texture
 
 	if rgbToYuvConverter != nil {
 		rgbToYuvConverter.End()
 
-		retTex1, retTex2 = rgbToYuvConverter.Draw()
+		yuvFull, yuvHalf = rgbToYuvConverter.Draw()
 	}
 
-	checkData(len(pboPool) == 0, false) // Force wait for at least one frame to be retrieved if pbo pool is empty
+	checkData(len(freePBOPool) == 0, false) // Force wait for at least one frame to be retrieved if pbo pool is empty
 
-	pbo := <-pboPool // Wait for free PBO
+	pbo := <-freePBOPool // Wait for free PBO
 
 	gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
 
@@ -308,14 +299,14 @@ func MakeFrame() {
 	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
 
 	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 { //Read as yuv420p
-		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
 
-		gl.GetTextureSubImage(retTex2.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
-		gl.GetTextureSubImage(retTex2.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
+		gl.GetTextureSubImage(yuvHalf.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(yuvHalf.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
 	} else if pbo.convFormat != pixconv.ARGB { //Read as yuv444p
-		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
-		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
-		gl.GetTextureSubImage(retTex1.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
+		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
 	} else {
 		gl.ReadPixels(0, 0, int32(w), int32(h), uint32(gl.RGB), gl.UNSIGNED_BYTE, gl.Ptr(nil))
 	}
@@ -324,41 +315,40 @@ func MakeFrame() {
 
 	gl.Flush()
 
-	syncPool = append(syncPool, pbo)
+	frameReadQueue = append(frameReadQueue, pbo)
 
 	checkData(false, false)
 
 	limiter.Sync()
 }
 
-func checkData(waitForFirst, waitForAll bool) {
-	for i := 0; ; i++ {
-		if len(syncPool) == 0 {
-			return
-		}
+func checkData(waitForFirst, waitForAll bool) { // I tried to do that on another thread, but it needs another opengl context and creates other funky problems
+	for i := 0; len(frameReadQueue) > 0; i++ {
+		pbo := frameReadQueue[0]
 
-		pbo := syncPool[0]
+		status := int32(gl.SIGNALED)
 
-		var status int32
+		if (i == 0 && waitForFirst) || waitForAll {
+			for {
+				iStat := gl.ClientWaitSync(pbo.sync, 0, gl.TIMEOUT_IGNORED)
 
-		if i == 0 && waitForFirst || waitForAll {
-			gl.WaitSync(pbo.sync, 0, gl.TIMEOUT_IGNORED)
-			status = gl.SIGNALED
+				if iStat == gl.ALREADY_SIGNALED || iStat == gl.CONDITION_SATISFIED {
+					break
+				}
+			}
 		} else {
 			gl.GetSynciv(pbo.sync, gl.SYNC_STATUS, 1, nil, &status)
 		}
 
-		if status == gl.SIGNALED {
-			gl.DeleteSync(pbo.sync)
-
-			syncPool = syncPool[1:]
-
-			submitFrame(pbo)
-
-			continue
+		if status != gl.SIGNALED {
+			return
 		}
 
-		return
+		gl.DeleteSync(pbo.sync)
+
+		frameReadQueue = frameReadQueue[1:]
+
+		submitFrame(pbo)
 	}
 }
 
@@ -379,5 +369,5 @@ func submitFrame(pbo *PBO) {
 		})
 	}
 
-	frameQueue <- pbo
+	videoWriteQueue <- pbo
 }
