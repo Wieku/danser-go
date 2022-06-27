@@ -317,6 +317,8 @@ func drawLauncherConfig() {
 
 	imgui.PushFont(Font16)
 
+	imgui.SetNextItemWidth(-1)
+
 	if sliderIntSlide("##previewvolume", &volume, 0, 100, "%d%%", 0) {
 		launcherConfig.PreviewVolume = float64(volume) / 100
 	}
