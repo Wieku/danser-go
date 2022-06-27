@@ -405,7 +405,6 @@ func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect
 		imgui.PushFont(FontAw)
 
 		if imgui.Button("+" + jsonPath) {
-			log.Println(u, d)
 			if fName, ok := d.Tag.Lookup("new"); ok {
 				u.Set(reflect.Append(u, reflect.ValueOf(settings.DefaultsFactory).MethodByName(fName).Call(nil)[0]))
 			}
@@ -414,25 +413,18 @@ func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect
 		ImIO.SetFontGlobalScale(1)
 		imgui.PopFont()
 	}, func() {
-		var tRem = -1
-
-		rCal := func(idx int) {
-			tRem = idx
-		}
-
 		for j := 0; j < u.Len(); j++ {
-			editor.buildArrayElement(fmt.Sprintf("%s[%d]", jsonPath, j), sPath, u.Index(j), d, rCal, j)
-		}
-
-		if tRem > -1 && u.Len() > 1 {
-			u.Set(reflect.AppendSlice(u.Slice(0, tRem), u.Slice(tRem+1, u.Len())))
+			if editor.buildArrayElement(fmt.Sprintf("%s[%d]", jsonPath, j), sPath, u.Index(j), d, j) && u.Len() > 1 {
+				u.Set(reflect.AppendSlice(u.Slice(0, j), u.Slice(j+1, u.Len())))
+				j--
+			}
 		}
 	})
 }
 
-func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflect.Value, d reflect.StructField, removeCb func(idx int), childNum int) {
+func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflect.Value, d reflect.StructField, childNum int) (removed bool) {
 	if editor.searchCache[sPath] == 0 {
-		return
+		return false
 	}
 
 	if childNum > 0 {
@@ -475,9 +467,7 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 
 		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocal.Y+posLocal1.Y-imgui.FrameHeight())/2))
 
-		if imgui.Button("\uF068" + jsonPath) {
-			removeCb(childNum)
-		}
+		removed = imgui.Button("\uF068" + jsonPath)
 
 		ImIO.SetFontGlobalScale(1)
 		imgui.PopFont()
@@ -487,13 +477,15 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 
 		imgui.EndTable()
 	}
+
+	return
 }
 
 func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect.Value, d reflect.StructField) {
 	typ := u.Elem()
 	def := u.Type().Elem()
 
-	if u.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
+	if u.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) { // special case, if it's an array of colors we want to see color picker instead of Hue, Saturation and Value sliders
 		editor.buildColor(jsonPath, u, d, false)
 		return
 	}
