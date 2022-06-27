@@ -40,7 +40,8 @@ func SetupImgui(win *glfw.Window) {
 
 	context = imgui.CreateContext(nil)
 
-	imgui.PushStyleVarFloat(imgui.StyleVarWindowRounding, 0)
+	imgui.PushStyleVarFloat(imgui.StyleVarPopupRounding, 5)
+	imgui.PushStyleVarFloat(imgui.StyleVarWindowRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarGrabRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 1)
