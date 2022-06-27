@@ -101,36 +101,55 @@ func drawCDMenu(bld *builder) {
 
 func drawRecordMenu(bld *builder) {
 	if imgui.BeginTable("rfa", 2) {
+		imgui.TableSetupColumnV("c1rfa", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+		imgui.TableSetupColumnV("c2rfa", imgui.TableColumnFlagsWidthFixed, imgui.TextLineHeight()*7, uint(1))
+
 		imgui.TableNextColumn()
 
+		imgui.AlignTextToFramePadding()
 		imgui.Text("Output name:")
 
 		imgui.TableNextColumn()
 
-		imgui.SetNextItemWidth(imgui.TextLineHeight() * 10)
+		imgui.SetNextItemWidth(-1)
 
 		imgui.InputText("##oname", &bld.outputName)
 
 		if bld.currentPMode == Screenshot {
 			imgui.TableNextColumn()
 
+			imgui.AlignTextToFramePadding()
 			imgui.Text("Screenshot at:")
 
 			imgui.TableNextColumn()
 
-			imgui.SetNextItemWidth(imgui.TextLineHeight() * 10)
+			if imgui.BeginTableV("rrfa", 2, 0, vec2(-1, 0), -1) {
+				imgui.TableSetupColumnV("c1rrfa", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+				imgui.TableSetupColumnV("c2rrfa", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("s", false, 0).X+imgui.CurrentStyle().CellPadding().X*2, uint(1))
 
-			valText := strconv.FormatFloat(float64(bld.ssTime), 'f', 3, 64)
-			prevText := valText
+				imgui.TableNextColumn()
 
-			if imgui.InputText("##sstime", &valText) {
-				parsed, err := strconv.ParseFloat(valText, 64)
-				if err != nil {
-					valText = prevText
-				} else {
-					parsed = mutils.ClampF(parsed, 0, float64(bld.end.ogValue))
-					bld.ssTime = float32(parsed)
+				imgui.SetNextItemWidth(-1)
+
+				valText := strconv.FormatFloat(float64(bld.ssTime), 'f', 3, 64)
+				prevText := valText
+
+				if imgui.InputText("##sstime", &valText) {
+					parsed, err := strconv.ParseFloat(valText, 64)
+					if err != nil {
+						valText = prevText
+					} else {
+						parsed = mutils.ClampF(parsed, 0, float64(bld.end.ogValue))
+						bld.ssTime = float32(parsed)
+					}
 				}
+
+				imgui.TableNextColumn()
+
+				imgui.AlignTextToFramePadding()
+				imgui.Text("s")
+
+				imgui.EndTable()
 			}
 		}
 
