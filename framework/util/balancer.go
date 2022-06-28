@@ -6,12 +6,26 @@ import (
 )
 
 func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*B {
+	receive := make(chan *B, workers)
+
+	goroutines.Run(func() {
+		BalanceChan(workers, candidates, workerFunc, receive)
+		close(receive)
+	})
+
 	results := make([]*B, 0, len(candidates))
 
-	channel := make(chan T, workers)
-	channelB := make(chan *B, len(candidates))
+	for ret := range receive {
+		results = append(results, ret)
+	}
 
-	var wg sync.WaitGroup
+	return results
+}
+
+func BalanceChan[T, B any](workers int, candidates []T, workerFunc func(a T) *B, receive chan<- *B) {
+	queue := make(chan T, workers)
+
+	wg := &sync.WaitGroup{}
 
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
@@ -19,28 +33,20 @@ func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*
 		goroutines.Run(func() {
 			defer wg.Done()
 
-			for candidate := range channel {
-				channelB <- workerFunc(candidate)
+			for candidate := range queue {
+				result := workerFunc(candidate)
+
+				if result != nil {
+					receive <- result
+				}
 			}
 		})
 	}
 
 	for _, candidate := range candidates {
-		channel <- candidate
+		queue <- candidate
 	}
 
-	close(channel)
+	close(queue)
 	wg.Wait()
-
-	for len(channelB) > 0 {
-		result := <-channelB
-
-		if result != nil {
-			results = append(results, result)
-		}
-	}
-
-	close(channelB)
-
-	return results
 }
