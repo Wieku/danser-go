@@ -399,6 +399,8 @@ func trySendStatus(listener ImportListener, stage ImportStage, progress, target 
 }
 
 func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, target int)) {
+	const workers = 1 // For now sing only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
+
 	var toCalculate []*beatmap.BeatMap
 
 	for _, b := range maps {
@@ -407,25 +409,19 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 		}
 	}
 
-	if len(toCalculate) > 0 {
-		recChannel := make(chan int, 4)
+	if len(toCalculate) == 0 {
+		return
+	}
 
-		processed := 0
-		target := len(toCalculate)
+	if progressListener != nil {
+		progressListener(0, len(toCalculate))
+	}
 
-		goroutines.Run(func() {
-			progressListener(processed, target)
+	receive := make(chan *beatmap.BeatMap, workers)
 
-			for range recChannel {
-				processed++
-				progressListener(processed, target)
-			}
-		})
-
-		util.Balance(1, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap { //Using only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
+	goroutines.Run(func() {
+		util.BalanceChan(workers, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
 			defer func() {
-				recChannel <- 0
-
 				bMap.StarsVersion = performance.CurrentVersion
 				bMap.Clear() //Clear objects and timing to avoid OOM
 
@@ -447,43 +443,65 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 			}
 
 			return bMap
-		})
+		}, receive)
 
-		close(recChannel)
+		close(receive)
+	})
 
-		log.Println("DatabaseManager: Star rating calculated!")
+	var calculated []*beatmap.BeatMap
+	var progress int
 
-		tx, err := dbFile.Begin()
-		if err != nil {
-			panic(err)
+	for bMap := range receive {
+		if progressListener != nil {
+			progress++
+			progressListener(progress, len(toCalculate))
 		}
 
-		st, err := tx.Prepare("UPDATE beatmaps SET stars = ?, starsVersion = ? WHERE dir = ? AND file = ?")
-		if err != nil {
-			panic(err)
+		calculated = append(calculated, bMap)
+
+		if len(calculated) >= 1000 { // Commit to database every 1k beatmaps to not lose progress in case of crash/close
+			pushSRToDB(calculated)
+
+			calculated = calculated[:0]
 		}
+	}
 
-		for _, bMap := range toCalculate {
-			_, err1 := st.Exec(
-				bMap.Stars,
-				bMap.StarsVersion,
-				bMap.Dir,
-				bMap.File)
+	if len(calculated) > 0 {
+		pushSRToDB(calculated)
+	}
 
-			if err1 != nil {
-				log.Println(err1)
-			}
+	log.Println("DatabaseManager: Star rating updated!")
+}
+
+func pushSRToDB(maps []*beatmap.BeatMap) {
+	tx, err := dbFile.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	st, err := tx.Prepare("UPDATE beatmaps SET stars = ?, starsVersion = ? WHERE dir = ? AND file = ?")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, bMap := range maps {
+		_, err1 := st.Exec(
+			bMap.Stars,
+			bMap.StarsVersion,
+			bMap.Dir,
+			bMap.File)
+
+		if err1 != nil {
+			log.Println(err1)
 		}
+	}
 
-		if err = st.Close(); err != nil {
-			panic(err)
-		}
+	if err = st.Close(); err != nil {
+		panic(err)
+	}
 
-		if err = tx.Commit(); err != nil {
-			panic(err)
-		}
-
-		log.Println("DatabaseManager: Star rating updated!")
+	if err = tx.Commit(); err != nil {
+		panic(err)
 	}
 }
 
