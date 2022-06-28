@@ -393,8 +393,8 @@ func (l *launcher) loadBeatmaps() {
 			case database.Import:
 				percent := float64(processed) / float64(target) * 100
 				l.splashText = bSplash + fmt.Sprintf("Importing maps...\n%d / %d\n%.0f%%", processed, target, percent)
-			case database.Finalize:
-				l.splashText = bSplash + "Updating the database...\n\n"
+			case database.Finished:
+				l.splashText = bSplash + "Finished!\n\n"
 			}
 		})
 

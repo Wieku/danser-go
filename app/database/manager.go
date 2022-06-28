@@ -207,10 +207,12 @@ const (
 	Comparison
 	Cleanup
 	Import
-	Finalize
+	Finished
 )
 
 func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
+	const workers = 4
+
 	cachedFolders, mapsInDB := getLastModified()
 
 	candidates := make([]mapLocation, 0)
@@ -317,28 +319,18 @@ func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
 		log.Println("DatabaseManager: Removal complete.")
 	}
 
-	if len(mapsToImport) > 0 {
-		log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps. It may take up to several minutes...")
+	if len(mapsToImport) == 0 {
+		return
+	}
 
-		recChannel := make(chan int, 4)
+	log.Println("DatabaseManager: Starting import of", len(mapsToImport), "maps. It may take up to several minutes...")
 
-		processed := 0
-		target := len(mapsToImport)
+	trySendStatus(importListener, Import, 0, len(mapsToImport))
 
-		goroutines.Run(func() {
-			trySendStatus(importListener, Import, processed, target)
+	receive := make(chan *beatmap.BeatMap, workers)
 
-			for range recChannel {
-				processed++
-				trySendStatus(importListener, Import, processed, target)
-			}
-		})
-
-		newBeatmaps := util.Balance(4, mapsToImport, func(candidate mapLocation) *beatmap.BeatMap {
-			defer func() {
-				recChannel <- 0
-			}()
-
+	goroutines.Run(func() {
+		util.BalanceChan(workers, mapsToImport, receive, func(candidate mapLocation) *beatmap.BeatMap {
 			partialPath := filepath.Join(candidate.dir, candidate.file)
 			mapPath := filepath.Join(songsDir, partialPath)
 
@@ -376,19 +368,35 @@ func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
 			return nil
 		})
 
-		close(recChannel)
+		close(receive)
+	})
 
-		if len(newBeatmaps) > 0 {
-			trySendStatus(importListener, Finalize, 100, 100)
+	var numImported int
+	var imported []*beatmap.BeatMap
 
-			log.Println("DatabaseManager: Imported", len(newBeatmaps), "new/updated beatmaps. Inserting to database...")
+	for bMap := range receive {
+		numImported++
+		trySendStatus(importListener, Import, numImported, len(mapsToImport))
 
-			insertBeatmaps(newBeatmaps)
+		imported = append(imported, bMap)
 
-			log.Println("DatabaseManager: Insert complete.")
-		} else {
-			log.Println("DatabaseManager: No new/updated beatmaps imported.")
+		if len(imported) >= 1000 { // Commit to database every 1k beatmaps to not lose progress in case of crash/close
+			insertBeatmaps(imported)
+
+			imported = imported[:0]
 		}
+	}
+
+	if len(imported) > 0 {
+		insertBeatmaps(imported)
+	}
+
+	trySendStatus(importListener, Finished, 100, 100)
+
+	if numImported > 0 {
+		log.Println("DatabaseManager: Imported", numImported, "new/updated beatmaps.")
+	} else {
+		log.Println("DatabaseManager: No new/updated beatmaps imported.")
 	}
 }
 
@@ -420,7 +428,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	receive := make(chan *beatmap.BeatMap, workers)
 
 	goroutines.Run(func() {
-		util.BalanceChan(workers, toCalculate, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
+		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
 			defer func() {
 				bMap.StarsVersion = performance.CurrentVersion
 				bMap.Clear() //Clear objects and timing to avoid OOM
@@ -443,7 +451,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 			}
 
 			return bMap
-		}, receive)
+		})
 
 		close(receive)
 	})

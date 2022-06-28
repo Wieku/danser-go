@@ -9,7 +9,7 @@ func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*
 	receive := make(chan *B, workers)
 
 	goroutines.Run(func() {
-		BalanceChan(workers, candidates, workerFunc, receive)
+		BalanceChan(workers, candidates, receive, workerFunc)
 		close(receive)
 	})
 
@@ -22,7 +22,7 @@ func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*
 	return results
 }
 
-func BalanceChan[T, B any](workers int, candidates []T, workerFunc func(a T) *B, receive chan<- *B) {
+func BalanceChan[T, B any](workers int, candidates []T, receive chan<- *B, workerFunc func(a T) *B) {
 	queue := make(chan T, workers)
 
 	wg := &sync.WaitGroup{}
