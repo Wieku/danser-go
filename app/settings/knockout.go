@@ -9,7 +9,7 @@ func initKnockout() *knockout {
 		BubbleMinimumCombo:  200,
 		ExcludeMods:         "",
 		MaxPlayers:          50,
-		MinPlayers:          0,
+		MinPlayers:          1,
 		RevivePlayersAtEnd:  false,
 		LiveSort:            true,
 		SortBy:              "Score",
