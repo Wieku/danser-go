@@ -9,6 +9,7 @@ func initKnockout() *knockout {
 		BubbleMinimumCombo:  200,
 		ExcludeMods:         "",
 		MaxPlayers:          50,
+		MinPlayers:          1,
 		RevivePlayersAtEnd:  false,
 		LiveSort:            true,
 		SortBy:              "Score",
@@ -38,6 +39,9 @@ type knockout struct {
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
 	MaxPlayers int `string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
+
+	// Min players shown (excluding danser) on a map.
+	MinPlayers int
 
 	// Whether knocked out players should appear on map end
 	RevivePlayersAtEnd bool

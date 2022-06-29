@@ -135,6 +135,8 @@ type KnockoutOverlay struct {
 
 	breakMode bool
 	fade      *animation.Glider
+
+	alivePlayers int
 }
 
 func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverlay {
@@ -161,10 +163,13 @@ func NewKnockoutOverlay(replayController *dance.ReplayController) *KnockoutOverl
 	overlay.fade = animation.NewGlider(1)
 
 	for i, r := range replayController.GetReplays() {
-		overlay.names[replayController.GetCursors()[i]] = r.Name
+		cursor := replayController.GetCursors()[i]
+		overlay.names[cursor] = r.Name
 		overlay.players[r.Name] = &knockoutPlayer{animation.NewGlider(1), animation.NewGlider(0), animation.NewGlider(overlay.ScaledHeight * 0.9 * 1.04 / (51)), animation.NewGlider(float64(i)), animation.NewTargetGlider(0, 0), animation.NewTargetGlider(0, 2), animation.NewTargetGlider(100, 2), 0, 0, r.MaxCombo, false, 0, 0.0, 0, make([]stats, len(replayController.GetBeatMap().HitObjects)), 0.0, osu.Hit300, animation.NewGlider(0), animation.NewGlider(0), r.Name, i, i}
 		overlay.players[r.Name].index.SetEasing(easing.InOutQuad)
 		overlay.playersArray = append(overlay.playersArray, overlay.players[r.Name])
+
+		overlay.alivePlayers++
 	}
 
 	if settings.Knockout.LiveSort {
@@ -301,19 +306,21 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 
 	comboBreak := comboResult == osu.Reset
 	if (settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
-
 		if !player.hasBroken {
 			if settings.Knockout.Mode == settings.XReplays {
 				if player.sCombo >= int64(settings.Knockout.BubbleMinimumCombo) {
 					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, overlay.normalTime, overlay.names[cursor], player.sCombo, resultClean, comboResult))
 					log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
 				}
-			} else if settings.Knockout.Mode == settings.SSOrQuit ||
+			} else if (settings.Knockout.Mode == settings.SSOrQuit ||
 				(settings.Knockout.Mode == settings.ComboBreak && time > int64(settings.Knockout.GraceEndTime*1000)) ||
-				(settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5) {
+				(settings.Knockout.Mode == settings.MaxCombo && math.Abs(float64(player.sCombo-player.maxCombo)) < 5)) &&
+				overlay.alivePlayers > settings.Knockout.MinPlayers {
 				//Fade out player name
 				player.hasBroken = true
 				player.breakTime = time
+
+				overlay.alivePlayers--
 
 				player.fade.AddEvent(overlay.normalTime, overlay.normalTime+3000, 0)
 
