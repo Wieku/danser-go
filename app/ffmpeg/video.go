@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -31,6 +32,9 @@ var videoPipe io.WriteCloser
 
 var videoWriteQueue chan *PBO
 var endSyncVideo *sync.WaitGroup
+
+var videoError string
+var videoErrorWait *sync.WaitGroup
 
 var freePBOPool chan *PBO
 
@@ -184,10 +188,21 @@ func startVideo(fps, _w, _h int) {
 		}
 	}
 
-	if settings.Recording.ShowFFmpegLogs {
-		cmdVideo.Stdout = os.Stdout
-		cmdVideo.Stderr = os.Stderr
+	rFile, oFile, err := os.Pipe()
+	if err != nil {
+		panic(err)
 	}
+
+	outList := []io.Writer{oFile}
+	errList := []io.Writer{oFile}
+
+	if settings.Recording.ShowFFmpegLogs {
+		outList = append(outList, os.Stdout)
+		errList = append(errList, os.Stderr)
+	}
+
+	cmdVideo.Stdout = io.MultiWriter(outList...)
+	cmdVideo.Stderr = io.MultiWriter(errList...)
 
 	err = cmdVideo.Start()
 	if err != nil {
@@ -215,6 +230,41 @@ func startVideo(fps, _w, _h int) {
 
 	limiter = frame.NewLimiter(settings.Recording.EncodingFPSCap)
 
+	videoErrorWait = &sync.WaitGroup{}
+	videoErrorWait.Add(1)
+
+	goroutines.Run(func() {
+		sc := bufio.NewScanner(rFile)
+
+		for sc.Scan() {
+			line := sc.Text()
+
+			cutIndex := strings.Index(line, "] ") //searching for encoder error
+
+			if cutIndex > -1 {
+				cutLine := line[cutIndex+2:]
+				lineLower := strings.ToLower(cutLine)
+
+				if strings.Contains(lineLower, "error setting") ||
+					strings.Contains(lineLower, "error initializing") ||
+					strings.Contains(lineLower, "invalid") ||
+					strings.Contains(lineLower, "incompatible") ||
+					strings.Contains(lineLower, "not divisible") ||
+					strings.Contains(lineLower, "exceeds") ||
+					strings.Contains(lineLower, "failed") ||
+					strings.Contains(lineLower, "no capable devices found") ||
+					strings.Contains(lineLower, "does not support") {
+
+					videoError = encoder + ": " + cutLine
+
+					oFile.Close()
+				}
+			}
+		}
+
+		videoErrorWait.Done()
+	})
+
 	endSyncVideo = &sync.WaitGroup{}
 	endSyncVideo.Add(1)
 
@@ -223,7 +273,15 @@ func startVideo(fps, _w, _h int) {
 			pbo.convertSync.Wait() // Wait for conversion to end
 
 			if _, err := videoPipe.Write(pbo.convData); err != nil {
-				panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", err))
+				errorMsg := err.Error()
+
+				videoErrorWait.Wait()
+
+				if videoError != "" {
+					errorMsg = videoError
+				}
+
+				panic(fmt.Sprintf("ffmpeg's video process finished abruptly! Please check if you have enough storage or video parameters are entered correctly. Error: %s", errorMsg))
 			}
 
 			freePBOPool <- pbo

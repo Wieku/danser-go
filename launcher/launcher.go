@@ -1652,7 +1652,12 @@ func (l *launcher) startDanser() {
 			panicWait.Wait()
 
 			mainthread.Call(func() {
-				showMessage(mError, "danser crashed! %s\n\n%s", err.Error(), panicMessage)
+				pMsg := panicMessage
+				if idx := strings.Index(pMsg, "Error:"); idx > -1 {
+					pMsg = pMsg[:idx-1] + "\n\n" + pMsg[idx+7:]
+				}
+
+				showMessage(mError, "danser crashed! %s\n\n%s", err.Error(), pMsg)
 			})
 		} else if l.bld.currentPMode != Watch && l.bld.currentMode != Play {
 			if launcherConfig.ShowFileAfter && resultFile != "" {
