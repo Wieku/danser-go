@@ -116,7 +116,7 @@ func (bg *Background) Update(time float64, x, y float64) {
 	}
 
 	if bg.storyboard != nil {
-		if settings.RECORD {
+		if settings.RECORD || !bg.storyboard.HasVisuals() { // Use update thread if we only have sounds
 			bg.storyboard.Update(time)
 		} else {
 			if !bg.storyboard.IsThreadRunning() {
