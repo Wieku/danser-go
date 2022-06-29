@@ -136,7 +136,7 @@ func combine() {
 		log.Println("Failed to start ffmpeg:", err)
 	} else {
 		if err = cmd2.Wait(); err != nil {
-			log.Println("ffmpeg finished abruptly! Please check if you have enough storage. Error:", err)
+			panic(fmt.Sprintf("ffmpeg finished abruptly! Please check if you have enough storage. Error: %s", err))
 		} else {
 			log.Println("Finished!")
 			log.Println("Video is available at:", finalOutputPath)
