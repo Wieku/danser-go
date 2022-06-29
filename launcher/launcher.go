@@ -248,6 +248,12 @@ func StartLauncher() {
 			})
 		}
 	})
+
+	// Save configs on exit
+	saveLauncherConfig()
+	if launcher.currentConfig != nil {
+		launcher.currentConfig.Save("", false)
+	}
 }
 
 func closeHandler(err any, stackTrace []string) {
