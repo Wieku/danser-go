@@ -135,7 +135,13 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					startTime, _ := strconv.ParseFloat(spl[1], 64)
 					volume, _ := strconv.ParseFloat(spl[4], 64)
 
-					sbSprite := sprite.NewAudioSprite(storyboard.getSample(files2.FixName(spl[3])), startTime, volume/100)
+					sample := strings.TrimSpace(strings.ReplaceAll(spl[3], `"`, ""))
+
+					if filepath.Ext(sample) == "" {
+						sample += ".wav"
+					}
+
+					sbSprite := sprite.NewAudioSprite(storyboard.getSample(sample), startTime, volume/100)
 
 					storyboard.addSpriteToLayer(spl[2], sbSprite)
 
@@ -143,7 +149,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 				} else if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
 					spl := strings.Split(line, ",")
 
-					video := video2.NewVideo(filepath.Join(path, files2.FixName(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
+					video := video2.NewVideo(filepath.Join(path, strings.TrimSpace(strings.ReplaceAll(spl[2], `"`, ""))), -1, vector.NewVec2d(320, 240), vector.Centre)
 
 					if video == nil {
 						continue
@@ -226,7 +232,7 @@ func (storyboard *Storyboard) loadSprite(currentSprite string, commands []string
 
 	pos := vector.NewVec2d(x, y)
 
-	image := strings.TrimSpace(strings.Replace(spl[3], `"`, "", -1))
+	image := strings.TrimSpace(strings.ReplaceAll(spl[3], `"`, ""))
 
 	if filepath.Ext(image) == "" {
 		image += ".png"
