@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
 type AudioSprite struct {
@@ -11,32 +12,43 @@ type AudioSprite struct {
 
 	sample *bass.Sample
 
-	played bool
-	playAt float64
+	sampleChannel *bass.SampleChannel
+
 	volume float64
 }
 
 func NewAudioSprite(sample *bass.Sample, playAt, volume float64) *AudioSprite {
 	aSprite := &AudioSprite{
 		Sprite: NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), vector.NewVec2d(0, 0)),
-		playAt: playAt,
 		sample: sample,
 		volume: volume,
 	}
 
-	aSprite.Sprite.ShowForever(true)
+	aSprite.SetStartTime(playAt)
+	aSprite.SetEndTime(playAt + 400)
+
+	if sample != nil {
+		length := sample.GetLength() * 1000
+
+		aSprite.SetEndTime(playAt + math.Max(100, length)) //some leeway for short samples
+	}
 
 	return aSprite
 }
 
 func (sprite *AudioSprite) Update(time float64) {
-	if time >= sprite.playAt && !sprite.played {
-		if sprite.sample != nil {
-			sprite.sample.PlayRV(sprite.volume)
-		}
+	if sprite.sample == nil {
+		return
+	}
 
-		sprite.played = true
-		sprite.Sprite.ShowForever(false)
+	if time >= sprite.GetStartTime() && time <= sprite.GetEndTime() && sprite.sampleChannel == nil {
+		sprite.sampleChannel = sprite.sample.PlayRV(sprite.volume)
+	}
+
+	if time >= sprite.GetEndTime() && sprite.sampleChannel != nil {
+		bass.StopSample(sprite.sampleChannel)
+
+		sprite.sampleChannel = nil
 	}
 }
 

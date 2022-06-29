@@ -62,6 +62,10 @@ func NewSampleData(data []byte) *Sample {
 	return sample
 }
 
+func (sample *Sample) GetLength() float64 {
+	return float64(C.BASS_ChannelBytes2Seconds(sample.bassSample, C.BASS_ChannelGetLength(sample.bassSample, C.BASS_POS_BYTE)))
+}
+
 func (sample *Sample) Play() *SampleChannel {
 	channel := &SampleChannel{source: sample.bassSample}
 
