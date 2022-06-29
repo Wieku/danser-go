@@ -21,6 +21,7 @@ func initGeneral() *general {
 	return &general{
 		OsuSongsDir:       filepath.Join(osuBaseDir, "Songs"),
 		OsuSkinsDir:       filepath.Join(osuBaseDir, "Skins"),
+		OsuReplaysDir:     filepath.Join(osuBaseDir, "Replays"),
 		DiscordPresenceOn: true,
 		UnpackOszFiles:    true,
 		VerboseImportLogs: false,
@@ -28,15 +29,17 @@ func initGeneral() *general {
 }
 
 type general struct {
+	// Directory that contains osu! songs
+	OsuSongsDir string `long:"true" label:"osu! Songs directory" path:"Select osu! Songs directory"`
 
-	// Directory that contains osu! songs,
-	OsuSongsDir string
+	// Directory that contains osu! skins
+	OsuSkinsDir string `long:"true" label:"osu! Skins directory" path:"Select osu! Skins directory"`
 
-	// Directory that contains osu! skins,
-	OsuSkinsDir string
+	// Directory that contains osu! replays
+	OsuReplaysDir string `long:"true" label:"osu! Replays directory" path:"Select osu! Replays directory" tooltip:"Don't use replays directory inside danser's directory!"`
 
 	// Whether discord should show that danser is on
-	DiscordPresenceOn bool
+	DiscordPresenceOn bool `label:"Discord Rich Presence"`
 
 	// Whether danser should unpack .osz files in Songs folder, osu! may complain about it
 	UnpackOszFiles bool
@@ -44,8 +47,9 @@ type general struct {
 	// Whether import details should be shown. If false, only failures will be logged.
 	VerboseImportLogs bool
 
-	songsDir *string
-	skinsDir *string
+	songsDir   *string
+	skinsDir   *string
+	replaysDir *string
 }
 
 func (g *general) GetSongsDir() string {
@@ -74,4 +78,18 @@ func (g *general) GetSkinsDir() string {
 	}
 
 	return *g.skinsDir
+}
+
+func (g *general) GetReplaysDir() string {
+	if g.replaysDir == nil {
+		dir := filepath.Join(env.DataDir(), g.OsuReplaysDir)
+
+		if filepath.IsAbs(g.OsuReplaysDir) {
+			dir = g.OsuReplaysDir
+		}
+
+		g.replaysDir = &dir
+	}
+
+	return *g.replaysDir
 }

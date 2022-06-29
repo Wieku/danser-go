@@ -2,8 +2,8 @@ package difficulty
 
 import (
 	"fmt"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
-	"strings"
 )
 
 const (
@@ -153,53 +153,49 @@ func (diff *Difficulty) GetModStringFull() []string {
 	mods := diff.Mods.StringFull()
 
 	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
-		mods = append(mods, fmt.Sprintf("DA:AR%s", confWOZeros(ar)))
+		mods = append(mods, fmt.Sprintf("DA:AR%s", mutils.FormatWOZeros(ar, 2)))
 	}
 
 	if od := diff.GetOD(); od != diff.GetBaseOD() {
-		mods = append(mods, fmt.Sprintf("DA:OD%s", confWOZeros(od)))
+		mods = append(mods, fmt.Sprintf("DA:OD%s", mutils.FormatWOZeros(od, 2)))
 	}
 
 	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
-		mods = append(mods, fmt.Sprintf("DA:CS%s", confWOZeros(cs)))
+		mods = append(mods, fmt.Sprintf("DA:CS%s", mutils.FormatWOZeros(cs, 2)))
 	}
 
 	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
-		mods = append(mods, fmt.Sprintf("DA:HP%s", confWOZeros(hp)))
+		mods = append(mods, fmt.Sprintf("DA:HP%s", mutils.FormatWOZeros(hp, 2)))
 	}
 
 	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
-		mods = append(mods, fmt.Sprintf("DA:%sx", confWOZeros(cSpeed)))
+		mods = append(mods, fmt.Sprintf("DA:%sx", mutils.FormatWOZeros(cSpeed, 2)))
 	}
 
 	return mods
-}
-
-func confWOZeros(v float64) string { // Not using %g as it rounds values in a weird way, for example %.2g on 11.8 gives 12
-	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", v), "0"), ".")
 }
 
 func (diff *Difficulty) GetModString() string {
 	mods := diff.Mods.String()
 
 	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
-		mods += fmt.Sprintf("AR%.2g", ar)
+		mods += fmt.Sprintf("AR%s", mutils.FormatWOZeros(ar, 2))
 	}
 
 	if od := diff.GetOD(); od != diff.GetBaseOD() {
-		mods += fmt.Sprintf("OD%.2g", od)
+		mods += fmt.Sprintf("OD%s", mutils.FormatWOZeros(od, 2))
 	}
 
 	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
-		mods += fmt.Sprintf("CS%.2g", cs)
+		mods += fmt.Sprintf("CS%s", mutils.FormatWOZeros(cs, 2))
 	}
 
 	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
-		mods += fmt.Sprintf("HP%.2g", hp)
+		mods += fmt.Sprintf("HP%s", mutils.FormatWOZeros(hp, 2))
 	}
 
 	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
-		mods += fmt.Sprintf("S%.2gx", cSpeed)
+		mods += fmt.Sprintf("S%sx", mutils.FormatWOZeros(cSpeed, 2))
 	}
 
 	return mods

@@ -20,6 +20,12 @@ const maxSize = 200.0
 const bars = 10
 const maxTriangles = 40
 
+type Triangle struct {
+	*sprite.Sprite
+	shade  float32
+	cIndex int
+}
+
 type Triangles struct {
 	manager *sprite.Manager
 
@@ -59,14 +65,16 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 		texture = graphics.TriangleShadowed
 	}
 
-	triangle := sprite.NewSpriteSingle(texture, -size, position, vector.NewVec2d(0, 0))
+	triangle := &Triangle{
+		Sprite: sprite.NewSpriteSingle(texture, -size, position, vector.NewVec2d(0, 0)),
+		shade:  rand.Float32() * 0.2,
+		cIndex: rand.Int(),
+	}
 
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
-		shade := rand.Float32()*0.2
-		triangle.SetColor(color2.NewL(shade))
+		triangle.SetColor(color2.NewL(triangle.shade))
 	} else {
-		col := vis.colorPalette[rand.Intn(len(vis.colorPalette))]
-		triangle.SetColor(col)
+		triangle.SetColor(vis.colorPalette[triangle.cIndex%len(vis.colorPalette)])
 	}
 
 	triangle.SetVFlip(rand.Float64() >= 0.5)
@@ -81,6 +89,18 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 
 func (vis *Triangles) SetColors(colors []color2.Color) {
 	vis.colorPalette = colors
+
+	triangles := vis.manager.GetProcessedSprites()
+
+	for i := 0; i < len(triangles); i++ {
+		t := triangles[i].(*Triangle)
+
+		if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
+			t.SetColor(color2.NewL(t.shade))
+		} else {
+			t.SetColor(vis.colorPalette[t.cIndex%len(vis.colorPalette)])
+		}
+	}
 }
 
 func (vis *Triangles) Update(time float64) {

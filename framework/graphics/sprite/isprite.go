@@ -1,7 +1,6 @@
 package sprite
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
@@ -55,7 +54,7 @@ type ISprite interface {
 
 	SetRotation(rad float64)
 
-	GetColor() mgl32.Vec3
+	GetColor() color2.Color
 
 	SetColor(color color2.Color)
 

@@ -89,7 +89,7 @@ func initGameplay() *gameplay {
 				XPosition: 5,
 				YPosition: 150,
 			},
-			Color: &hsv{
+			Color: &HSV{
 				Hue:        0,
 				Saturation: 0,
 				Value:      1,
@@ -110,7 +110,7 @@ func initGameplay() *gameplay {
 				XPosition: 5,
 				YPosition: 190,
 			},
-			Color: []*hsv{
+			Color: []*HSV{
 				{
 					Hue:        0,
 					Saturation: 0,
@@ -134,12 +134,12 @@ func initGameplay() *gameplay {
 			Align:     "BottomLeft",
 			Width:     130,
 			Height:    70,
-			BgColor: &hsv{
+			BgColor: &HSV{
 				Hue:        0,
 				Saturation: 0,
 				Value:      0.2,
 			},
-			FgColor: &hsv{
+			FgColor: &HSV{
 				Hue:        297,
 				Saturation: 0.4,
 				Value:      0.92,
@@ -188,13 +188,13 @@ func initGameplay() *gameplay {
 			Enabled:         true,
 			BorderThickness: 1,
 			BorderFill:      1,
-			BorderColor: &hsv{
+			BorderColor: &HSV{
 				Hue:        0,
 				Saturation: 0,
 				Value:      1,
 			},
 			BorderOpacity: 1,
-			BackgroundColor: &hsv{
+			BackgroundColor: &HSV{
 				Hue:        0,
 				Saturation: 1,
 				Value:      0,
@@ -231,10 +231,10 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	HUDFont                 string
+	HUDFont                 string `file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf"`
 	ShowResultsScreen       bool
-	ResultsScreenTime       float64
-	ResultsUseLocalTimeZone bool
+	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs"`
+	ResultsUseLocalTimeZone bool    `label:"Show PC's time zone instead of UTC"`
 	ShowWarningArrows       bool
 	ShowHitLighting         bool
 	FlashlightDim           float64
@@ -245,54 +245,56 @@ type gameplay struct {
 type boundaries struct {
 	Enabled bool
 
-	BorderThickness float64
+	BorderThickness float64 `min:"0.5" max:"10" format:"%.1f o!px"`
 	BorderFill      float64
 
-	BorderColor   *hsv
-	BorderOpacity float64
+	BorderColor   *HSV    `short:"true"`
+	BorderOpacity float64 `scale:"100.0" format:"%.0f%%"`
 
-	BackgroundColor   *hsv
-	BackgroundOpacity float64
+	BackgroundColor   *HSV    `short:"true"`
+	BackgroundOpacity float64 `scale:"100.0" format:"%.0f%%"`
 }
 
 type hudElement struct {
 	Show    bool
-	Scale   float64
-	Opacity float64
+	Scale   float64 `max:"3" scale:"100.0" format:"%.0f%%"`
+	Opacity float64 `scale:"100.0" format:"%.0f%%"`
 }
 
 type hudElementOffset struct {
 	*hudElement
-	XOffset float64
-	YOffset float64
+	offset  string  `vector:"true" left:"XOffset" right:"YOffset"`
+	XOffset float64 `min:"-10000" max:"10000"`
+	YOffset float64 `min:"-10000" max:"10000"`
 }
 
 type hudElementPosition struct {
 	*hudElement
-	XPosition float64
-	YPosition float64
+	position  string  `vector:"true" left:"XPosition" right:"YPosition"`
+	XPosition float64 `min:"-10000" max:"10000"`
+	YPosition float64 `min:"-10000" max:"10000"`
 }
 
 type hitError struct {
 	*hudElementOffset
-	PointFadeOutTime     float64
+	PointFadeOutTime     float64 `max:"10" format:"%.1fs"`
 	ShowPositionalMisses bool
-	PositionalMissScale  float64
+	PositionalMissScale  float64 `min:"1" max:"2" scale:"100" format:"%.0f%%"`
 	ShowUnstableRate     bool
-	UnstableRateDecimals int
-	UnstableRateScale    float64
+	UnstableRateDecimals int     `max:"5"`
+	UnstableRateScale    float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
 	StaticUnstableRate   bool
 	ScaleWithSpeed       bool
 }
 
 type aimError struct {
 	*hudElementPosition
-	PointFadeOutTime     float64
-	DotScale             float64
-	Align                string
+	PointFadeOutTime     float64 `max:"10" format:"%.1fs"`
+	DotScale             float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
+	Align                string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	ShowUnstableRate     bool
-	UnstableRateScale    float64
-	UnstableRateDecimals int
+	UnstableRateScale    float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
+	UnstableRateDecimals int     `max:"5"`
 	StaticUnstableRate   bool
 	CapPositionalMisses  bool
 	AngleNormalized      bool
@@ -300,8 +302,8 @@ type aimError struct {
 
 type score struct {
 	*hudElementOffset
-	ProgressBar     string
-	ShowGradeAlways bool
+	ProgressBar     string `combo:"Pie,Bar,BottomRight,Bottom"`
+	ShowGradeAlways bool   `label:"Always show grade"`
 	StaticScore     bool
 	StaticAccuracy  bool
 }
@@ -313,23 +315,23 @@ type comboCounter struct {
 
 type ppCounter struct {
 	*hudElementPosition
-	Color            *hsv
-	Decimals         int
-	Align            string
+	Color            *HSV   `short:"true"`
+	Decimals         int    `max:"5"`
+	Align            string `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	ShowInResults    bool
-	ShowPPComponents bool
+	ShowPPComponents bool `label:"Show PP breakdown"`
 	Static           bool
 }
 
 type hitCounter struct {
 	*hudElementPosition
-	Color            []*hsv
-	Spacing          float64
-	FontScale        float64
-	Align            string
-	ValueAlign       string
+	Color            []*HSV  `new:"InitHSV" label:"Color list"`
+	Spacing          float64 `string:"true" min:"0" max:"1366"`
+	FontScale        float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
+	Align            string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
+	ValueAlign       string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
 	Vertical         bool
-	Show300          bool
+	Show300          bool `label:"Show perfect hits"`
 	ShowSliderBreaks bool
 }
 
@@ -339,29 +341,35 @@ type scoreBoard struct {
 	AlignRight     bool
 	HideOthers     bool
 	ShowAvatars    bool
-	ExplosionScale float64
+	ExplosionScale float64 `min:"0.1" max:"2" scale:"100" format:"%.0f%%"`
 }
 
 type mods struct {
 	*hudElementOffset
 	HideInReplays     bool
 	FoldInReplays     bool
-	AdditionalSpacing float64
+	AdditionalSpacing float64 `string:"true" min:"-1366" max:"1366"`
 }
 
 type strainGraph struct {
-	Show      bool
-	Opacity   float64
-	XPosition float64
-	YPosition float64
-	Align     string
-	Width     float64
-	Height    float64
-	BgColor   *hsv
-	FgColor   *hsv
+	Show    bool
+	Opacity float64 `scale:"100.0" format:"%.0f%%"`
+
+	position  string  `vector:"true" left:"XPosition" right:"YPosition"`
+	XPosition float64 `min:"-10000" max:"10000"`
+	YPosition float64 `min:"-10000" max:"10000"`
+
+	Align string `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
+
+	size   string  `vector:"true" left:"Width" right:"Height"`
+	Width  float64 `string:"true" min:"1" max:"10000"`
+	Height float64 `string:"true" min:"1" max:"768"`
+
+	BgColor *HSV `label:"Background color" short:"true"`
+	FgColor *HSV `label:"Foreground color" short:"true"`
 }
 
 type underlay struct {
-	Path       string
+	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png"`
 	AboveHpBar bool
 }

@@ -38,7 +38,8 @@ type BeatMap struct {
 
 	LastModified, TimeAdded, PlayCount, LastPlayed, PreviewTime int64
 
-	Stars float64
+	Stars        float64
+	StarsVersion int
 
 	Length   int
 	Circles  int
@@ -55,6 +56,8 @@ type BeatMap struct {
 	Version    int
 
 	ARSpecified bool
+
+	LocalOffset int
 }
 
 func NewBeatMap() *BeatMap {
@@ -77,6 +80,11 @@ func (beatMap *BeatMap) Reset() {
 	for _, o := range beatMap.HitObjects {
 		o.SetDifficulty(beatMap.Diff)
 	}
+}
+
+func (beatMap *BeatMap) Clear() {
+	beatMap.HitObjects = make([]objects.IHitObject, 0)
+	beatMap.Timings = objects.NewTimings()
 }
 
 func (beatMap *BeatMap) Update(time float64) {

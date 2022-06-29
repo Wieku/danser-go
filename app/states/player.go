@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/graphics/font"
@@ -31,7 +32,6 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -188,8 +188,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	}
 
-	player.background = common.NewBackground()
-	player.background.SetBeatmap(beatMap, settings.Playfield.Background.LoadStoryboards || settings.Playfield.Background.LoadVideos)
+	player.background = common.NewBackground(true)
+	player.background.SetBeatmap(beatMap, true, true)
 
 	player.mainCamera = camera2.NewCamera()
 	player.mainCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
@@ -464,21 +464,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		return player
 	}
 
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Println("panic:", err)
-
-				for _, s := range utils.GetPanicStackTrace() {
-					log.Println(s)
-				}
-
-				os.Exit(1)
-			}
-		}()
-
-		runtime.LockOSThread()
-
+	goroutines.RunOS(func() {
 		var lastTimeNano = qpc.GetNanoTime()
 
 		for !input.Win.ShouldClose() {
@@ -529,7 +515,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 		player.musicPlayer.Stop()
 		bass.StopLoops()
-	}()
+	})
 
 	return player
 }
@@ -825,7 +811,7 @@ func (player *Player) drawEpilepsyWarning() {
 }
 
 func (player *Player) drawCoin() {
-	if player.fxGlider.GetValue() < 0.01 {
+	if !settings.Playfield.Logo.Enabled || player.fxGlider.GetValue() < 0.01 {
 		return
 	}
 
@@ -951,16 +937,17 @@ func (player *Player) drawDebug() {
 			fpsC := player.profiler.GetFPS()
 			fpsU := player.profilerU.GetFPS()
 
-			off := 0.0
-			if player.background.GetStoryboard() != nil {
-				off = 1.0
-			}
+			sbThread := player.background.GetStoryboard() != nil && player.background.GetStoryboard().HasVisuals()
 
 			drawFPS := fmt.Sprintf("%0.0ffps (%0.2fms)", fpsC, 1000/fpsC)
 			updateFPS := fmt.Sprintf("%0.0ffps (%0.2fms)", fpsU, 1000/fpsU)
 			sbFPS := ""
 
-			if player.background.GetStoryboard() != nil {
+			off := 0.0
+
+			if sbThread {
+				off = 1.0
+
 				fpsS := player.background.GetStoryboard().GetFPS()
 				sbFPS = fmt.Sprintf("%0.0ffps (%0.2fms)", fpsS, 1000/fpsS)
 			}
@@ -970,7 +957,7 @@ func (player *Player) drawDebug() {
 			drawShadowed(true, 1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
 			drawShadowed(true, 0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))
 
-			if player.background.GetStoryboard() != nil {
+			if sbThread {
 				drawShadowed(true, 0, fmt.Sprintf("Storyboard: %"+shift+"s", sbFPS))
 			}
 		}

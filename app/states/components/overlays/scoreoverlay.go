@@ -20,6 +20,7 @@ import (
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/shape"
@@ -376,7 +377,7 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
 
 	if overlay.oldGrade != sc.Grade {
-		go func() {
+		goroutines.Run(func() {
 			var tex *texture.TextureRegion
 			if sc.Grade != osu.NONE {
 				tex = skin.GetTexture("ranking-" + sc.Grade.TextureName() + "-small")
@@ -386,7 +387,7 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 			overlay.rankFront.Texture = tex
 
 			overlay.oldGrade = sc.Grade
-		}()
+		})
 	}
 }
 

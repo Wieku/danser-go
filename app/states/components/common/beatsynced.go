@@ -48,53 +48,53 @@ func (bs *BeatSynced) SetMap(bMap *beatmap.BeatMap, track bass.ITrack) {
 }
 
 func (bs *BeatSynced) Update(time float64) {
-	if bs.music == nil || bs.bMap == nil {
-		return
-	}
-
 	if math.IsNaN(bs.lastTime) {
 		bs.lastTime = time
 	}
 
 	bs.Sprite.Update(time)
 
-	var mTime float64
+	if bs.music != nil && bs.bMap != nil {
+		var mTime float64
 
-	if bs.music.GetState() == bass.MusicPlaying {
-		mTime = bs.music.GetPosition() * 1000
-		bs.timingPoint = bs.bMap.Timings.GetOriginalPointAt(mTime)
-		bs.IsSynced = true
+		if bs.music.GetState() == bass.MusicPlaying {
+			mTime = bs.music.GetPosition() * 1000
+			bs.timingPoint = bs.bMap.Timings.GetOriginalPointAt(mTime)
+			bs.IsSynced = true
+		} else {
+			mTime = time
+			bs.timingPoint = bs.bMap.Timings.GetDefault()
+			bs.IsSynced = false
+		}
+
+		beatLength := bs.timingPoint.GetBaseBeatLength() / bs.Divisor
+
+		bs.Kiai = bs.timingPoint.Kiai
+
+		bs.rawProgress = (mTime - bs.timingPoint.Time) / beatLength
+
+		bs.beatProgress = math.Mod(bs.rawProgress, 1)
+		if mTime < bs.timingPoint.Time {
+			bs.beatProgress += 1
+		}
+
+		bs.beatIndex = int(bs.rawProgress)
+		if bs.timingPoint.OmitFirstBarLine {
+			bs.beatIndex--
+		}
+
+		if mTime < bs.timingPoint.Time {
+			bs.beatIndex--
+		}
 	} else {
-		mTime = time
-		bs.timingPoint = bs.bMap.Timings.GetDefault()
-		bs.IsSynced = false
-	}
-
-	beatLength := bs.timingPoint.GetBaseBeatLength() / bs.Divisor
-
-	bs.Kiai = bs.timingPoint.Kiai
-
-	bs.rawProgress = (mTime - bs.timingPoint.Time) / beatLength
-
-	bs.beatProgress = math.Mod(bs.rawProgress, 1)
-	if mTime < bs.timingPoint.Time {
-		bs.beatProgress += 1
-	}
-
-	bs.beatIndex = int(bs.rawProgress)
-	if bs.timingPoint.OmitFirstBarLine {
-		bs.beatIndex--
-	}
-
-	if mTime < bs.timingPoint.Time {
-		bs.beatIndex--
+		bs.beatProgress = 1
 	}
 
 	delta := math.Max(0, time-bs.lastTime)
 
 	ratio60 := delta / 16.6666666666667
 
-	volume := 0.5
+	volume := 1.0
 	if bs.music != nil && bs.music.GetState() == bass.MusicPlaying {
 		volume = bs.music.GetLevelCombined()
 	}

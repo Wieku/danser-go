@@ -1,9 +1,10 @@
-// +build windows
+//go:build windows
 
 package files
 
 import (
 	"github.com/Microsoft/go-winio"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/util"
 	"net"
 	"strings"
@@ -14,7 +15,7 @@ type NamedPipe struct {
 	listener   net.Listener
 	connection net.Conn
 
-	wg *sync.WaitGroup
+	wg      *sync.WaitGroup
 	connErr error
 
 	name string
@@ -38,7 +39,7 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 
 	pipe := &NamedPipe{
 		listener: listener,
-		wg: &sync.WaitGroup{},
+		wg:       &sync.WaitGroup{},
 		name:     name,
 	}
 
@@ -47,13 +48,13 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 	wg2 := &sync.WaitGroup{}
 	wg2.Add(1)
 
-	go func() {
+	goroutines.Run(func() {
 		wg2.Done()
 
 		pipe.connection, pipe.connErr = pipe.listener.Accept()
 
 		pipe.wg.Done()
-	}()
+	})
 
 	// wait until goroutine starts
 	wg2.Wait()

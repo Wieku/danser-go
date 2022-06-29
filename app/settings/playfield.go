@@ -28,12 +28,13 @@ func initPlayfield() *playfield {
 				Breaks: 0.5,
 			},
 			Parallax: &parallax{
-				Amount: 0.1,
-				Speed:  0.5,
+				Enabled: true,
+				Amount:  0.1,
+				Speed:   0.5,
 			},
 			Blur: &blur{
 				Enabled: false,
-				Values: &dim{
+				Values: &dim2{
 					Intro:  0,
 					Normal: 0.6,
 					Breaks: 0.3,
@@ -50,6 +51,7 @@ func initPlayfield() *playfield {
 			},
 		},
 		Logo: &logo{
+			Enabled:      true,
 			DrawSpectrum: false,
 			Dim: &dim{
 				Intro:  0,
@@ -71,14 +73,15 @@ func initPlayfield() *playfield {
 type playfield struct {
 	DrawObjects                  bool
 	DrawCursors                  bool
-	Scale                        float64 //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
-	OsuShift                     bool    //false, offset the playfield like in osu! | Overrides ShiftY
-	ShiftY                       float64 //offset the playfield by Y osu!pixels
-	ShiftX                       float64 //offset the playfield by X osu!pixels
+	Scale                        float64 `label:"Playfield scale" min:"0.1" max:"2"`   //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
+	OsuShift                     bool    `label:"Position the playfield like in osu!"` //false, offset the playfield like in osu! | Overrides ShiftY
+	playfieldShift               string  `vector:"true" label:"Playfield shift" left:"ShiftX" right:"ShiftY"`
+	ShiftX                       float64 `min:"-512" max:"512"` //offset the playfield by X osu!pixels
+	ShiftY                       float64 `min:"-512" max:"512"` //offset the playfield by Y osu!pixels
 	ScaleStoryboardWithPlayfield bool
-	LeadInTime                   float64 //5
-	LeadInHold                   float64 //2
-	FadeOutTime                  float64 //5
+	LeadInTime                   float64 `max:"10" format:"%.1fs"` //5
+	LeadInHold                   float64 `max:"10" format:"%.1fs"` //2
+	FadeOutTime                  float64 `max:"10" format:"%.1fs"` //5
 	SeizureWarning               *seizure
 	Background                   *background
 	Logo                         *logo
@@ -89,7 +92,7 @@ type seizure struct {
 	// Whether seizure warning should be displayed before intro
 	Enabled bool
 
-	Duration float64
+	Duration float64 `max:"10" format:"%.1fs"`
 }
 
 // Background controls
@@ -115,8 +118,10 @@ type background struct {
 }
 
 type parallax struct {
+	Enabled bool
+
 	// Amount of parallax, also scales bg by (1+Amount), set to 0 to disable it
-	Amount float64
+	Amount float64 `min:"-1"`
 
 	// Speed of parallax
 	Speed float64
@@ -125,40 +130,52 @@ type parallax struct {
 type blur struct {
 	Enabled bool
 
-	Values *dim
+	Values *dim2
 }
 
 type triangles struct {
 	Enabled            bool
 	Shadowed           bool
-	DrawOverBlur       bool
-	ParallaxMultiplier float32
-	Density            float64
-	Scale              float64
-	Speed              float64
+	DrawOverBlur       bool    `label:"Don't blur with background"`
+	ParallaxMultiplier float32 `max:"2"`
+	Density            float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
+	Scale              float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
+	Speed              float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
 }
 
 type logo struct {
-	DrawSpectrum bool
+	Enabled      bool
+	DrawSpectrum bool `label:"Draw spectrum analyzer"`
 	Dim          *dim
 }
 
 type dim struct {
 	// Value before drain time start
-	Intro float64
+	Intro float64 `label:"During intro" scale:"100" format:"%.0f%%"`
 
 	// Value during drain time
-	Normal float64
+	Normal float64 `label:"During drain time" scale:"100" format:"%.0f%%"`
 
 	// Value during breaks
-	Breaks float64
+	Breaks float64 `label:"During breaks" scale:"100" format:"%.0f%%"`
+}
+
+type dim2 struct {
+	// Value before drain time start
+	Intro float64 `label:"During intro" max:"2"`
+
+	// Value during drain time
+	Normal float64 `label:"During drain time" max:"2"`
+
+	// Value during breaks
+	Breaks float64 `label:"During breaks" max:"2"`
 }
 
 type bloom struct {
 	Enabled           bool
 	BloomToTheBeat    bool
-	BloomBeatAddition float64
+	BloomBeatAddition float64 `max:"2"`
 	Threshold         float64
-	Blur              float64
-	Power             float64
+	Blur              float64 `max:"2"`
+	Power             float64 `max:"2"`
 }

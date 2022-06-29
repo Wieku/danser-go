@@ -1,11 +1,11 @@
-package utils
+package goroutines
 
 import (
 	"runtime"
 	"strings"
 )
 
-func GetPanicStackTrace() []string {
+func GetStackTrace(cutLines int) []string {
 	buf := make([]byte, 1024)
 	for {
 		n := runtime.Stack(buf, true)
@@ -18,7 +18,7 @@ func GetPanicStackTrace() []string {
 	}
 
 	stack := strings.Split(string(buf), "\n")
-	stack = append([]string{stack[0]}, stack[7:]...)
+	stack = append([]string{stack[0]}, stack[3+cutLines:]...)
 
 	return stack
 }

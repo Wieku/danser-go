@@ -19,7 +19,7 @@ type input struct {
 	RightKey             string
 	RestartKey           string
 	SmokeKey             string
-	MouseButtonsDisabled bool
-	MouseHighPrecision   bool
-	MouseSensitivity     float64
+	MouseButtonsDisabled bool    `label:"Disable mouse buttons"`
+	MouseHighPrecision   bool    `label:"Mouse raw input"`
+	MouseSensitivity     float64 `label:"Raw input sensitivity" min:"0.4" max:"6"`
 }

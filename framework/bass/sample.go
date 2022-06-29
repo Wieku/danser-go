@@ -13,6 +13,8 @@ import (
 	"unsafe"
 )
 
+var emptyData = make([]byte, 1024)
+
 type SampleChannel struct {
 	source  C.HSAMPLE
 	channel C.HSTREAM
@@ -47,14 +49,21 @@ func NewSample(path string) *Sample {
 }
 
 func NewSampleData(data []byte) *Sample {
-	if len(data) == 0 {
-		return nil
+	sample := new(Sample)
+
+	if len(data) < 1024 { // If we have useless data, create ~10ms empty sample, simpler solution than creating a flag and checking it later
+		sample.bassSample = C.BASS_SampleCreate(1024, 44100, 2, 32, C.BASS_SAMPLE_OVER_POS)
+
+		C.BASS_SampleSetData(sample.bassSample, unsafe.Pointer(&emptyData[0]))
+	} else {
+		sample.bassSample = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
 	}
 
-	sample := new(Sample)
-	sample.bassSample = C.BASS_SampleLoad(1, unsafe.Pointer(&data[0]), 0, C.DWORD(len(data)), 32, C.BASS_SAMPLE_OVER_POS)
-
 	return sample
+}
+
+func (sample *Sample) GetLength() float64 {
+	return float64(C.BASS_ChannelBytes2Seconds(sample.bassSample, C.BASS_ChannelGetLength(sample.bassSample, C.BASS_POS_BYTE)))
 }
 
 func (sample *Sample) Play() *SampleChannel {

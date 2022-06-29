@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const bufferSize = 10 * 1024 * 1024
@@ -140,6 +141,13 @@ func getSection(line string) string {
 	return ""
 }
 
+var bufferPool = &sync.Pool{
+	New: func() any {
+		buf := make([]byte, bufferSize)
+		return &buf
+	},
+}
+
 func ParseBeatMap(beatMap *BeatMap) error {
 	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
@@ -148,7 +156,12 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 	defer file.Close()
 
-	scanner := files.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScanner(file)
+
+	buf := bufferPool.Get().(*[]byte)
+	scanner.Buffer(*buf, cap(*buf))
+
+	defer bufferPool.Put(buf)
 
 	var currentSection string
 
@@ -251,7 +264,12 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := files.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScanner(file)
+
+	buf := bufferPool.Get().(*[]byte)
+	scanner.Buffer(*buf, cap(*buf))
+
+	defer bufferPool.Put(buf)
 
 	var currentSection string
 
@@ -279,7 +297,7 @@ func ParseTimingPointsAndPauses(beatMap *BeatMap) {
 	beatMap.FinalizePoints()
 }
 
-func ParseObjects(beatMap *BeatMap) {
+func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 	file, err := os.Open(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File))
 	if err != nil {
 		panic(err)
@@ -287,7 +305,12 @@ func ParseObjects(beatMap *BeatMap) {
 
 	defer file.Close()
 
-	scanner := files.NewScannerBuf(file, bufferSize)
+	scanner := files.NewScanner(file)
+
+	buf := bufferPool.Get().(*[]byte)
+	scanner.Buffer(*buf, cap(*buf))
+
+	defer bufferPool.Put(buf)
 
 	var currentSection string
 
@@ -307,8 +330,10 @@ func ParseObjects(beatMap *BeatMap) {
 
 		switch currentSection {
 		case "Colours": //nolint:misspell
-			if arr := tokenize(line, ":"); arr != nil {
-				skin.AddBeatmapColor(arr)
+			if parseColors {
+				if arr := tokenize(line, ":"); arr != nil {
+					skin.AddBeatmapColor(arr)
+				}
 			}
 		case "HitObjects":
 			if arr := tokenize(line, ","); arr != nil {
@@ -321,7 +346,9 @@ func ParseObjects(beatMap *BeatMap) {
 		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
 	})
 
-	skin.FinishBeatmapColors()
+	if parseColors {
+		skin.FinishBeatmapColors()
+	}
 
 	num := 0
 	comboNumber := 1
@@ -351,7 +378,7 @@ func ParseObjects(beatMap *BeatMap) {
 	}
 
 	for _, obj := range beatMap.HitObjects {
-		obj.SetTiming(beatMap.Timings)
+		obj.SetTiming(beatMap.Timings, diffCalcOnly)
 	}
 
 	calculateStackLeniency(beatMap)

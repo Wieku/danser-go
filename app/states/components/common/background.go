@@ -39,31 +39,35 @@ type Background struct {
 	forceRedraw    bool
 }
 
-func NewBackground() *Background {
+func NewBackground(loadDefault bool) *Background {
 	bg := new(Background)
 	bg.blurVal = -1
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
 
-	image, err := assets.GetPixmap("assets/textures/background-1.png")
-	if err != nil {
-		panic(err)
-	}
+	if loadDefault {
+		image, err := assets.GetPixmap("assets/textures/background-1.png")
+		if err != nil {
+			panic(err)
+		}
 
-	bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
+		bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
 
-	bg.triangles = drawables.NewTriangles(bg.getColors(image))
+		bg.triangles = drawables.NewTriangles(bg.getColors(image))
 
-	if image != nil {
-		image.Dispose()
+		if image != nil {
+			image.Dispose()
+		}
+	} else {
+		bg.triangles = drawables.NewTriangles(nil)
 	}
 
 	return bg
 }
 
-func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool) {
+func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadDefault, loadStoryboards bool) {
 	bgLoadFunc := func() {
 		image, err := texture.NewPixmapFileString(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.Bg))
-		if err != nil {
+		if err != nil && loadDefault {
 			image, err = assets.GetPixmap("assets/textures/background-1.png")
 			if err != nil {
 				panic(err)
@@ -72,14 +76,19 @@ func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool)
 
 		bg.triangles.SetColors(bg.getColors(image))
 
-		if image != nil {
-			mainthread.CallNonBlock(func() {
+		mainthread.CallNonBlock(func() {
+			if bg.background != nil { // Dispose old background texture
+				bg.background.Dispose()
+				bg.background = nil
+			}
+
+			if image != nil {
 				bg.background = texture.LoadTextureSingle(image.RGBA(), 0)
 				image.Dispose()
+			}
 
-				bg.forceRedraw = true
-			})
-		}
+			bg.forceRedraw = true
+		})
 	}
 
 	if settings.RECORD {
@@ -95,7 +104,6 @@ func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadStoryboards bool)
 			log.Println("Storyboard not found!")
 		}
 	}
-
 }
 
 func (bg *Background) SetTrack(track bass.ITrack) {
@@ -108,7 +116,7 @@ func (bg *Background) Update(time float64, x, y float64) {
 	}
 
 	if bg.storyboard != nil {
-		if settings.RECORD {
+		if settings.RECORD || !bg.storyboard.HasVisuals() { // Use update thread if we only have sounds
 			bg.storyboard.Update(time)
 		} else {
 			if !bg.storyboard.IsThreadRunning() {
@@ -125,14 +133,16 @@ func (bg *Background) Update(time float64, x, y float64) {
 	pX := 0.0
 	pY := 0.0
 
-	if math.Abs(settings.Playfield.Background.Parallax.Amount) > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) && settings.DIVIDES == 1 {
-		pX = mutils.ClampF(x, -1, 1) * settings.Playfield.Background.Parallax.Amount
-		pY = mutils.ClampF(y, -1, 1) * settings.Playfield.Background.Parallax.Amount
+	parallax := settings.Playfield.Background.Parallax
+
+	if parallax.Enabled && math.Abs(parallax.Amount) > 0.0001 && !math.IsNaN(x) && !math.IsNaN(y) && settings.DIVIDES == 1 {
+		pX = mutils.ClampF(x, -1, 1) * parallax.Amount
+		pY = mutils.ClampF(y, -1, 1) * parallax.Amount
 	}
 
 	delta := math.Abs(time - bg.lastTime)
 
-	p := math.Pow(1-settings.Playfield.Background.Parallax.Speed, delta/100)
+	p := math.Pow(1-parallax.Speed, delta/100)
 
 	bg.position.X = pX*(1-p) + p*bg.position.X
 	bg.position.Y = pY*(1-p) + p*bg.position.Y
@@ -340,17 +350,12 @@ func (bg *Background) GetStoryboard() *storyboard.Storyboard {
 func (bg *Background) getColors(image *texture.Pixmap) []color2.Color {
 	newCol := make([]color2.Color, 0)
 
-	var err error = nil
-
 	if image != nil {
 		cItems, err1 := prominentcolor.KmeansWithAll(10, image.NRGBA(), prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
-		newCol = make([]color2.Color, 0)
-
-		err = err1
 
 		if err1 == nil {
 			for i := 0; i < len(cItems); i++ {
-				if cItems[i].Color.R+cItems[i].Color.G+cItems[i].Color.B == 0 {
+				if cItems[i].Color.R+cItems[i].Color.G+cItems[i].Color.B == 0 { //skip black colors as they're useless
 					continue
 				}
 
@@ -359,13 +364,9 @@ func (bg *Background) getColors(image *texture.Pixmap) []color2.Color {
 		}
 	}
 
-	if err != nil {
-		color1 := color2.NewL(0.054)
-		color2 := color2.NewL(0.3)
-		for i := 0; i <= 10; i++ {
-			newCol = append(newCol, color1.Mix(color2, float32(i)/10))
-		}
-	}
-
 	return newCol
+}
+
+func (bg *Background) HasBackground() bool {
+	return bg.background != nil
 }

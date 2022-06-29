@@ -3,11 +3,11 @@ package video
 import (
 	"fmt"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
 	"log"
 	"os/exec"
-	"runtime"
 	"strings"
 	"sync"
 )
@@ -138,9 +138,7 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 		dec.decodingQueue <- make([]byte, dec.Metadata.Width*dec.Metadata.Height*3)
 	}
 
-	go func() {
-		runtime.LockOSThread()
-
+	goroutines.RunOS(func() {
 		for dec.running {
 			frame, opened := <-dec.decodingQueue
 			if !opened {
@@ -166,7 +164,7 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 		}
 
 		dec.wg.Done()
-	}()
+	})
 }
 
 func (dec *VideoDecoder) GetFrame() Frame {

@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"io"
 	"log"
 	"os"
@@ -21,11 +22,9 @@ var cmdAudio *exec.Cmd
 
 var audioPipe io.WriteCloser
 
-var audioQueue chan []byte
+var audioPool chan []byte
 
-var audioSync *sync.Mutex
-var audioPool = make([][]byte, 0)
-
+var audioWriteQueue chan []byte
 var endSyncAudio *sync.WaitGroup
 
 func startAudio(audioFPS float64) {
@@ -59,12 +58,13 @@ func startAudio(audioFPS float64) {
 		options = append(options, "-af", audioFilters)
 	}
 
-	options = append(options, "-c:a", settings.Recording.AudioCodec)
+	options = append(options, "-c:a", settings.Recording.AudioCodec, "-strict", "-2")
 
-	encOptions := strings.TrimSpace(settings.Recording.AudioOptions)
-	if encOptions != "" {
-		split := strings.Split(encOptions, " ")
-		options = append(options, split...)
+	encOptions, err := settings.Recording.GetAudioOptions().GenerateFFmpegArgs()
+	if err != nil {
+		panic(fmt.Sprintf("encoder \"%s\": %s", settings.Recording.AudioCodec, err))
+	} else if encOptions != nil {
+		options = append(options, encOptions...)
 	}
 
 	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "audio."+settings.Recording.Container))
@@ -72,8 +72,6 @@ func startAudio(audioFPS float64) {
 	log.Println("Running ffmpeg with options:", options)
 
 	cmdAudio = exec.Command(ffmpegExec, options...)
-
-	var err error
 
 	if runtime.GOOS == "windows" {
 		audioPipe, err = cmdAudio.StdinPipe()
@@ -94,50 +92,37 @@ func startAudio(audioFPS float64) {
 
 	audioBufSize := bass.GetMixerRequiredBufferSize(1 / audioFPS)
 
+	audioPool = make(chan []byte, MaxAudioBuffers)
+
 	for i := 0; i < MaxAudioBuffers; i++ {
-		audioPool = append(audioPool, make([]byte, audioBufSize))
+		audioPool <- make([]byte, audioBufSize)
 	}
 
-	audioSync = &sync.Mutex{}
-
-	audioQueue = make(chan []byte, MaxAudioBuffers)
+	audioWriteQueue = make(chan []byte, MaxAudioBuffers)
 
 	endSyncAudio = &sync.WaitGroup{}
-
 	endSyncAudio.Add(1)
 
-	go func() {
-		runtime.LockOSThread()
-
-		for {
-			data, keepOpen := <-audioQueue
-
-			if data != nil {
-				_, err := audioPipe.Write(data)
-				if err != nil {
-					panic(fmt.Sprintf("ffmpeg's audio process finished abruptly! Please check if you have enough storage or audio parameters are entered correctly. Error: %s", err))
-				}
-
-				audioSync.Lock()
-
-				audioPool = append(audioPool, data)
-
-				audioSync.Unlock()
+	goroutines.RunOS(func() {
+		for data := range audioWriteQueue {
+			if _, err := audioPipe.Write(data); err != nil {
+				panic(fmt.Sprintf("ffmpeg's audio process finished abruptly! Please check if you have enough storage or audio parameters are entered correctly. Error: %s", err))
 			}
 
-			if !keepOpen {
-				endSyncAudio.Done()
-				break
-			}
+			audioPool <- data
 		}
-	}()
+
+		endSyncAudio.Done()
+	})
 }
 
 func stopAudio() {
 	log.Println("Audio finished! Stopping audio pipe...")
 
-	close(audioQueue)
+	close(audioWriteQueue)
+
 	endSyncAudio.Wait()
+
 	_ = audioPipe.Close()
 
 	log.Println("Audio pipe closed. Waiting for audio ffmpeg process to finish...")
@@ -148,18 +133,9 @@ func stopAudio() {
 }
 
 func PushAudio() {
-	audioSync.Lock()
-
-	//spin until at least one audio buffer is free
-	for len(audioPool) == 0 {
-	}
-
-	data := audioPool[0]
-	audioPool = audioPool[1:]
-
-	audioSync.Unlock()
+	data := <-audioPool
 
 	bass.ProcessMixer(data)
 
-	audioQueue <- data
+	audioWriteQueue <- data
 }

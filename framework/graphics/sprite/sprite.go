@@ -1,7 +1,6 @@
 package sprite
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -221,7 +220,6 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	position := sprite.position
 	scale := sprite.scale.Abs()
 
-
 	if sprite.cutX > 0.0 {
 		if math.Abs(sprite.origin.X-sprite.cutOrigin.X) > 0 {
 			position.X -= sprite.origin.X * float64(region.Width) * scale.X * sprite.cutX
@@ -288,8 +286,8 @@ func (sprite *Sprite) SetRotation(rad float64) {
 	sprite.rotation = rad
 }
 
-func (sprite *Sprite) GetColor() mgl32.Vec3 {
-	return mgl32.Vec3{sprite.color.R, sprite.color.G, sprite.color.B}
+func (sprite *Sprite) GetColor() color2.Color {
+	return sprite.color
 }
 
 func (sprite *Sprite) SetColor(color color2.Color) {

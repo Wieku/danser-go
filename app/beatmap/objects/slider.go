@@ -16,7 +16,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
 	"math"
 	"sort"
 	"strconv"
@@ -100,6 +99,10 @@ func NewSlider(data []string) *Slider {
 
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
 	slider.RepeatCount, _ = strconv.ParseInt(data[6], 10, 64)
+
+	// Sanity limits, XNOR reaches 10M pixel length so 100M should be enough
+	slider.pixelLength = math.Min(slider.pixelLength, 100_000_000)
+	slider.RepeatCount = mutils.Min(slider.RepeatCount, 10_000) // The same limit as in Lazer
 
 	list := strings.Split(data[5], "|")
 	points := []vector.Vector2f{slider.StartPosRaw}
@@ -272,7 +275,7 @@ func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd b
 	return circle
 }
 
-func (slider *Slider) SetTiming(timings *Timings) {
+func (slider *Slider) SetTiming(timings *Timings, diffCalcOnly bool) {
 	slider.Timings = timings
 	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
@@ -297,12 +300,17 @@ func (slider *Slider) SetTiming(timings *Timings) {
 		tickDistance = slider.pixelLength
 	}
 
+	// Sanity limit to 32768 ticks per repeat
+	if cLength/tickDistance > 32768 {
+		tickDistance = cLength / 32768
+	}
+
 	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
 	for span := 0; span < int(slider.RepeatCount); span++ {
 		spanStartTime := slider.StartTime + float64(span)*slider.spanDuration
 		reversed := span%2 == 1
 
-		// skip ticks if timingPoint has NaN beatLength
+		// Skip ticks if timingPoint has NaN beatLength
 		for d := tickDistance; d <= cLength && !nanTimingPoint; d += tickDistance {
 			if d >= cLength-minDistanceFromEnd {
 				break
@@ -334,6 +342,10 @@ func (slider *Slider) SetTiming(timings *Timings) {
 	sort.Slice(slider.ScorePointsLazer, func(i, j int) bool {
 		return slider.ScorePointsLazer[i].Time < slider.ScorePointsLazer[j].Time
 	})
+
+	if diffCalcOnly { // We're not interested in stable-like path in difficulty calculator mode
+		return
+	}
 
 	scoringLengthTotal := 0.0
 	scoringDistance := 0.0
@@ -413,9 +425,9 @@ func (slider *Slider) SetTiming(timings *Timings) {
 
 	slider.EndPosRaw = slider.GetPositionAt(slider.EndTime)
 
-	if len(slider.scorePath) == 0 || slider.StartTime == slider.EndTime {
-		log.Println("Warning: slider", slider.HitObjectID, "at ", slider.StartTime, "is broken.")
-	}
+	//if len(slider.scorePath) == 0 || slider.StartTime == slider.EndTime {
+	//	log.Println("Warning: slider", slider.HitObjectID, "at ", slider.StartTime, "is broken.")
+	//}
 
 	slider.calculateFollowPoints()
 
@@ -522,7 +534,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circle.StackOffset = slider.StackOffset
 		circle.StackOffsetHR = slider.StackOffsetHR
 		circle.StackOffsetEZ = slider.StackOffsetEZ
-		circle.SetTiming(slider.Timings)
+		circle.SetTiming(slider.Timings, false)
 		circle.SetDifficulty(diff)
 
 		slider.endCircles = append(slider.endCircles, circle)

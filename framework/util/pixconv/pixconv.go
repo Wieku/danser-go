@@ -75,18 +75,34 @@ func Convert(input []byte, inputFormat PixFmt, output []byte, outputFormat PixFm
 		default:
 			panic(fmt.Sprintf("Invalid output format: %s (%d)", outputFormat.String(), outputFormat))
 		}
-	case I420, I422, I444, NV12, NV21:
+	case I444:
+		switch outputFormat {
+		case I420:
+			ConvertI444ToI420(input, output, w, h)
+		case RGB:
+			ConvertI444ToRGB(input, output, w, h)
+		default:
+			panic(fmt.Sprintf("Invalid output format: %s (%d)", outputFormat.String(), outputFormat))
+		}
+	case I420:
+		switch outputFormat {
+		case RGB:
+			ConvertI420ToRGB(input, output, w, h)
+		case NV12:
+			ConvertI420ToNV12(input, output, w, h)
+		case NV21:
+			ConvertI420ToNV21(input, output, w, h)
+		default:
+			panic(fmt.Sprintf("Invalid output format: %s (%d)", outputFormat.String(), outputFormat))
+		}
+	case I422, NV12, NV21:
 		if outputFormat != RGB {
 			panic(fmt.Sprintf("Invalid output format: %s (%d)", outputFormat.String(), outputFormat))
 		}
 
 		switch inputFormat {
-		case I420:
-			ConvertI420ToRGB(input, output, w, h)
 		case I422:
 			ConvertI422ToRGB(input, output, w, h)
-		case I444:
-			ConvertI444ToRGB(input, output, w, h)
 		case NV12:
 			ConvertNV12ToRGB(input, output, w, h)
 		case NV21:
@@ -133,6 +149,18 @@ func ConvertI420ToRGB(input []byte, output []byte, w, h int) {
 	C.I420ToRAW((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*5/4]), C.int(w/2), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
 }
 
+func ConvertI420ToNV12(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3/2, w*h*3/2)
+
+	C.I420ToNV12((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*5/4]), C.int(w/2), (*C.uint8_t)(&output[0]), C.int(w), (*C.uint8_t)(&output[w*h]), C.int(w), C.int(w), C.int(h))
+}
+
+func ConvertI420ToNV21(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3/2, w*h*3/2)
+
+	C.I420ToNV21((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w/2), (*C.uint8_t)(&input[w*h*5/4]), C.int(w/2), (*C.uint8_t)(&output[0]), C.int(w), (*C.uint8_t)(&output[w*h]), C.int(w), C.int(w), C.int(h))
+}
+
 func ConvertI422ToRGB(input []byte, output []byte, w, h int) {
 	checkDimensions(input, output, w*h*2, w*h*3)
 
@@ -143,6 +171,12 @@ func ConvertI422ToRGB(input []byte, output []byte, w, h int) {
 	C.ARGBToRAW((*C.uint8_t)(temp), C.int(w*4), (*C.uint8_t)(&output[0]), C.int(w*3), C.int(w), C.int(h))
 
 	C.free(temp)
+}
+
+func ConvertI444ToI420(input []byte, output []byte, w, h int) {
+	checkDimensions(input, output, w*h*3, w*h*3/2)
+
+	C.I444ToI420((*C.uint8_t)(&input[0]), C.int(w), (*C.uint8_t)(&input[w*h]), C.int(w), (*C.uint8_t)(&input[w*h*2]), C.int(w), (*C.uint8_t)(&output[0]), C.int(w), (*C.uint8_t)(&output[w*h]), C.int(w/2), (*C.uint8_t)(&output[w*h*5/4]), C.int(w/2), C.int(w), C.int(h))
 }
 
 func ConvertI444ToRGB(input []byte, output []byte, w, h int) {

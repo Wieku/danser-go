@@ -9,6 +9,7 @@ func initKnockout() *knockout {
 		BubbleMinimumCombo:  200,
 		ExcludeMods:         "",
 		MaxPlayers:          50,
+		MinPlayers:          1,
 		RevivePlayersAtEnd:  false,
 		LiveSort:            true,
 		SortBy:              "Score",
@@ -22,44 +23,47 @@ func initKnockout() *knockout {
 
 type knockout struct {
 	// Knockout mode. More info below
-	Mode KnockoutMode
+	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit"`
 
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
-	GraceEndTime float64
+	GraceEndTime float64 `string:"true" min:"-10" max:"1000000" showif:"Mode=0"`
 
 	// In Mode = XReplays it will show combo break bubble if combo was bigger than BubbleMinimumCombo
-	BubbleMinimumCombo int
+	BubbleMinimumCombo int `label:"Minimum combo to show break bubble" string:"true" min:"1" max:"1000000" showif:"Mode=2"`
 
 	// Exclude plays which contain one of the mods set here
-	ExcludeMods string
+	ExcludeMods string `label:"Excluded mods (legacy)" tooltip:"Applicable only to classic knockout"`
 
 	// Hide specific mods from being displayed in overlay (like NF)
 	HideMods string
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
-	MaxPlayers int
+	MaxPlayers int `label:"Max players loaded (legacy)" string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
+
+	// Min players shown on a map.
+	MinPlayers int `label:"Minimum alive players" string:"true" min:"0" max:"100" showif:"Mode=0,1,4"`
 
 	// Whether knocked out players should appear on map end
-	RevivePlayersAtEnd bool
+	RevivePlayersAtEnd bool `showif:"Mode=0,1,4"`
 
 	// Whether scores should be sorted in real time
 	LiveSort bool
 
 	// Whether players should be sorted by Score or PP
-	SortBy string
+	SortBy string `combo:"Score,PP,Accuracy"`
 
 	// Whether knockout overlay (player list with stats) should be hidden in breaks
 	HideOverlayOnBreaks bool
 
 	//Minimum cursor size (when all players are alive)
-	MinCursorSize float64
+	MinCursorSize float64 `min:"1" max:"20"`
 
 	//Maximum cursor size (when there is only 1 player left)
-	MaxCursorSize float64
+	MaxCursorSize float64 `min:"1" max:"20"`
 
 	// Self explanatory
 	AddDanser  bool
-	DanserName string
+	DanserName string `label:"Danser's name" tooltip:"It's also used in danser replay mode"`
 }
 
 type KnockoutMode int

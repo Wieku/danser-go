@@ -20,14 +20,16 @@ func initGraphics() *graphics {
 }
 
 type graphics struct {
-	Width        int64
-	Height       int64
-	WindowWidth  int64
-	WindowHeight int64
-	Fullscreen   bool  //true
-	VSync        bool  //false
-	FPSCap       int64 //1000
-	MSAA         int32 //16
+	fSize        string `vector:"true" label:"Fullscreen resolution" left:"Width" right:"Height"`
+	Width        int64  `min:"1" max:"30720"`
+	Height       int64  `min:"1" max:"17280"`
+	wSize        string `vector:"true" label:"Windowed resolution" left:"WindowWidth" right:"WindowHeight"`
+	WindowWidth  int64  `min:"1" max:"30720"`
+	WindowHeight int64  `min:"1" max:"17280"`
+	Fullscreen   bool   //true
+	VSync        bool   `label:"Vertical Sync"`                //false
+	FPSCap       int64  `label:"FPS limit" min:"0" max:"1000"` //1000
+	MSAA         int32  `combo:"0|OFF,2|2x,4|4x,8|8x,16|16x"`  //16
 	ShowFPS      bool
 	Experimental *experimental
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
-	"math"
 	//"net/http"
 	//"net/url"
 	"os"
@@ -106,7 +105,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 			localReplay = true
 		}
-	} else if settings.Knockout.MaxPlayers > 0 {
+	} else if settings.Knockout.MaxPlayers > 0 || (settings.KNOCKOUTREPLAYS != nil && len(settings.KNOCKOUTREPLAYS) > 0) { // ignore max player limit with new knockout
 		candidates = controller.getCandidates()
 	}
 
@@ -115,7 +114,9 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			return candidates[i].Score > candidates[j].Score
 		})
 
-		candidates = candidates[:mutils.Min(len(candidates), settings.Knockout.MaxPlayers)]
+		if settings.KNOCKOUTREPLAYS == nil || len(settings.KNOCKOUTREPLAYS) == 0 { // limit only with classic knockout
+			candidates = candidates[:mutils.Min(len(candidates), settings.Knockout.MaxPlayers)]
+		}
 	}
 
 	displayedMods := ^difficulty.ParseMods(settings.Knockout.HideMods)
@@ -139,7 +140,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("\tExpected score:", replay.Score)
-		log.Println("\tExpected pp:", math.NaN())
 		log.Println("\tReplay loaded!")
 	}
 
@@ -209,54 +209,69 @@ func organizeReplays() {
 }
 
 func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
-	replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
-
 	excludedMods := difficulty.ParseMods(settings.Knockout.ExcludeMods)
 
-	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != replayDir {
-				return godirwalk.SkipThis
-			}
+	tryAddReplay := func(path string, modExclude bool) {
+		log.Println("Loading: ", path)
 
-			if strings.HasSuffix(de.Name(), ".osr") {
-				log.Println("Loading: ", de.Name())
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
 
-				data, err := ioutil.ReadFile(osPathname)
-				if err != nil {
-					panic(err)
+		replayD, err := rplpa.ParseReplay(data)
+
+		if err != nil {
+			log.Println("Failed to load replay:", err)
+			return
+		}
+
+		if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
+			log.Println("Incompatible maps, skipping", replayD.Username)
+			return
+		}
+
+		if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+			log.Println("Excluding for incompatible mods:", replayD.Username)
+			return
+		}
+
+		if (replayD.Mods&uint32(excludedMods)) > 0 && modExclude {
+			log.Println("Excluding for mods:", replayD.Username)
+			return
+		}
+
+		if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
+			log.Println("Excluding for missing input data:", replayD.Username)
+			return
+		}
+
+		candidates = append(candidates, replayD)
+	}
+
+	if settings.KNOCKOUTREPLAYS != nil && len(settings.KNOCKOUTREPLAYS) > 0 {
+		for _, r := range settings.KNOCKOUTREPLAYS {
+			tryAddReplay(r, false)
+		}
+	} else {
+		replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
+
+		_ = godirwalk.Walk(replayDir, &godirwalk.Options{
+			Callback: func(osPathname string, de *godirwalk.Dirent) error {
+				if de.IsDir() && osPathname != replayDir {
+					return godirwalk.SkipThis
 				}
 
-				replayD, _ := rplpa.ParseReplay(data)
-
-				if !strings.EqualFold(replayD.BeatmapMD5, controller.bMap.MD5) {
-					log.Println("Incompatible maps, skipping", replayD.Username)
-					return nil
+				if strings.HasSuffix(de.Name(), ".osr") {
+					tryAddReplay(osPathname, true)
 				}
 
-				if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
-					log.Println("Excluding for incompatible mods:", replayD.Username)
-					return nil
-				}
-
-				if (replayD.Mods & uint32(excludedMods)) > 0 {
-					log.Println("Excluding for mods:", replayD.Username)
-					return nil
-				}
-
-				if replayD.ReplayData == nil || len(replayD.ReplayData) == 0 {
-					log.Println("Excluding for missing input data:", replayD.Username)
-					return nil
-				}
-
-				candidates = append(candidates, replayD)
-			}
-
-			return nil
-		},
-		Unsorted:            true,
-		FollowSymbolicLinks: true,
-	})
+				return nil
+			},
+			Unsorted:            true,
+			FollowSymbolicLinks: true,
+		})
+	}
 
 	return
 }

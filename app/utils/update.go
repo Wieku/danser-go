@@ -3,6 +3,8 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/wieku/danser-go/build"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -65,4 +67,40 @@ func TransformVersion(version string) uint64 {
 	}
 
 	return versionInt
+}
+
+type UpdateStatus int
+
+const (
+	Failed = UpdateStatus(iota)
+	Ignored
+	UpToDate
+	Snapshot
+	UpdateAvailable
+)
+
+func CheckForUpdate() (UpdateStatus, string, error) {
+	if build.Stream != "Release" || strings.Contains(build.VERSION, "dev") { // false positive, those are changed during compile
+		return Ignored, "", nil
+	}
+
+	log.Println("Checking Github for a new version of danser...")
+
+	url, tag, err := GetLatestVersionFromGitHub()
+	if err != nil {
+		return Failed, "", err
+	}
+
+	githubVersion := TransformVersion(tag)
+	exeVersion := TransformVersion(build.VERSION)
+
+	if exeVersion >= githubVersion {
+		if strings.Contains(build.VERSION, "snapshot") {
+			return Snapshot, "https://wieku.me/lair", nil
+		} else {
+			return UpToDate, "", nil
+		}
+	} else {
+		return UpdateAvailable, url, nil
+	}
 }

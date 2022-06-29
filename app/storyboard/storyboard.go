@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	files2 "github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
@@ -128,10 +129,27 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					}
 				}
 
-				if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
+				if strings.HasPrefix(line, "Sample") || strings.HasPrefix(line, "5") {
 					spl := strings.Split(line, ",")
 
-					video := video2.NewVideo(filepath.Join(path, files2.FixName(spl[2])), -1, vector.NewVec2d(320, 240), vector.Centre)
+					startTime, _ := strconv.ParseFloat(spl[1], 64)
+					volume, _ := strconv.ParseFloat(spl[4], 64)
+
+					sample := strings.TrimSpace(strings.ReplaceAll(spl[3], `"`, ""))
+
+					if filepath.Ext(sample) == "" {
+						sample += ".wav"
+					}
+
+					sbSprite := sprite.NewAudioSprite(storyboard.getSample(sample), startTime, volume/100)
+
+					storyboard.addSpriteToLayer(spl[2], sbSprite)
+
+					hasAudio = true
+				} else if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
+					spl := strings.Split(line, ",")
+
+					video := video2.NewVideo(filepath.Join(path, strings.TrimSpace(strings.ReplaceAll(spl[2], `"`, ""))), -1, vector.NewVec2d(320, 240), vector.Centre)
 
 					if video == nil {
 						continue
@@ -154,18 +172,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 
 					hasVideo = true
 				} else if settings.Playfield.Background.LoadStoryboards {
-					if strings.HasPrefix(line, "Sample") || strings.HasPrefix(line, "5") {
-						spl := strings.Split(line, ",")
-
-						startTime, _ := strconv.ParseFloat(spl[1], 64)
-						volume, _ := strconv.ParseFloat(spl[4], 64)
-
-						sbSprite := sprite.NewAudioSprite(storyboard.getSample(files2.FixName(spl[3])), startTime, volume/100)
-
-						storyboard.addSpriteToLayer(spl[2], sbSprite)
-
-						hasAudio = true
-					} else if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
+					if strings.HasPrefix(line, "Sprite") || strings.HasPrefix(line, "4") || strings.HasPrefix(line, "Animation") || strings.HasPrefix(line, "6") {
 						if currentSprite != "" {
 							storyboard.loadSprite(currentSprite, commands)
 						}
@@ -225,7 +232,7 @@ func (storyboard *Storyboard) loadSprite(currentSprite string, commands []string
 
 	pos := vector.NewVec2d(x, y)
 
-	image := strings.TrimSpace(strings.Replace(spl[3], `"`, "", -1))
+	image := strings.TrimSpace(strings.ReplaceAll(spl[3], `"`, ""))
 
 	if filepath.Ext(image) == "" {
 		image += ".png"
@@ -351,7 +358,7 @@ func (storyboard *Storyboard) StartThread() {
 		return
 	}
 
-	go func() {
+	goroutines.RunOS(func() {
 		lastTime := qpc.GetMilliTimeF()
 
 		for storyboard.shouldRun {
@@ -363,7 +370,7 @@ func (storyboard *Storyboard) StartThread() {
 
 			storyboard.limiter.Sync()
 		}
-	}()
+	})
 
 	storyboard.shouldRun = true
 }

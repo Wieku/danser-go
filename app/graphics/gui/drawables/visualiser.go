@@ -26,7 +26,7 @@ type Visualiser struct {
 }
 
 func NewVisualiser(startDistance float64, barLength float64, position vector.Vector2d) *Visualiser {
-	visualiser := &Visualiser{jumpSize: 5, bars: 200, updateDelay: 50, decayValue: 0.0024, barLength: barLength, Position: position, startDistance: startDistance}
+	visualiser := &Visualiser{jumpSize: 5, bars: 200, updateDelay: 50, decayValue: 0.0024, barLength: barLength, Position: position, startDistance: startDistance, lastTime: math.NaN()}
 	visualiser.fft = make([]float64, visualiser.bars)
 	return visualiser
 }
@@ -40,6 +40,10 @@ func (vis *Visualiser) SetTrack(track bass.ITrack) {
 }
 
 func (vis *Visualiser) Update(time float64) {
+	if math.IsNaN(vis.lastTime) {
+		vis.lastTime = time
+	}
+
 	delta := time - vis.lastTime
 
 	vis.counter += delta
@@ -66,7 +70,7 @@ func (vis *Visualiser) Update(time float64) {
 
 		decay = 0
 		vis.jumpCounter = (vis.jumpCounter + vis.jumpSize) % vis.bars
-		vis.counter -= vis.updateDelay
+		vis.counter = math.Mod(vis.counter, vis.updateDelay)
 	}
 
 	for i := 0; i < vis.bars; i++ {

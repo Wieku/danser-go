@@ -20,17 +20,19 @@ const (
 	KatuAddition
 	GekiAddition
 	PositionalMiss
-	Additions = MuAddition | KatuAddition | GekiAddition
-	Hit50m    = Hit50 | MuAddition
-	Hit100m   = Hit100 | MuAddition
-	Hit300m   = Hit300 | MuAddition
-	Hit100k   = Hit100 | KatuAddition
-	Hit300k   = Hit300 | KatuAddition
-	Hit300g   = Hit300 | GekiAddition
-	BaseHits  = Hit50 | Hit100 | Hit300
-	BaseHitsM = BaseHits | Miss
-	HitValues = Hit50 | Hit100 | Hit300 | GekiAddition | KatuAddition
-	RawHits   = SliderStart | SliderPoint | SliderRepeat | SliderEnd | SpinnerSpin | SpinnerPoints | SpinnerBonus
+	Additions   = MuAddition | KatuAddition | GekiAddition
+	Hit50m      = Hit50 | MuAddition
+	Hit100m     = Hit100 | MuAddition
+	Hit300m     = Hit300 | MuAddition
+	Hit100k     = Hit100 | KatuAddition
+	Hit300k     = Hit300 | KatuAddition
+	Hit300g     = Hit300 | GekiAddition
+	BaseHits    = Hit50 | Hit100 | Hit300
+	BaseHitsM   = BaseHits | Miss
+	HitValues   = Hit50 | Hit100 | Hit300 | GekiAddition | KatuAddition
+	SliderHits  = SliderStart | SliderPoint | SliderRepeat | SliderEnd
+	SpinnerHits = SpinnerSpin | SpinnerPoints | SpinnerBonus
+	RawHits     = SliderHits | SpinnerHits
 )
 
 func (r HitResult) ScoreValue() int64 {
