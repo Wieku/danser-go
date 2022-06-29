@@ -112,7 +112,7 @@ func combine() {
 		"-i", filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "video."+settings.Recording.Container),
 		"-i", filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "audio."+settings.Recording.Container),
 		"-c:v", "copy",
-		"-c:a", "copy",
+		"-c:a", "copy", "-strict", "-2",
 	}
 
 	if settings.Recording.Container == "mp4" {

@@ -58,7 +58,7 @@ func startAudio(audioFPS float64) {
 		options = append(options, "-af", audioFilters)
 	}
 
-	options = append(options, "-c:a", settings.Recording.AudioCodec)
+	options = append(options, "-c:a", settings.Recording.AudioCodec, "-strict", "-2")
 
 	encOptions := strings.TrimSpace(settings.Recording.AudioOptions)
 	if encOptions != "" {
