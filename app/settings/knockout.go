@@ -26,25 +26,25 @@ type knockout struct {
 	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit"`
 
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
-	GraceEndTime float64 `string:"true" min:"-10" max:"1000000"`
+	GraceEndTime float64 `string:"true" min:"-10" max:"1000000" showif:"Mode=0"`
 
 	// In Mode = XReplays it will show combo break bubble if combo was bigger than BubbleMinimumCombo
-	BubbleMinimumCombo int `string:"true" min:"1" max:"1000000"`
+	BubbleMinimumCombo int `label:"Minimum combo to show break bubble" string:"true" min:"1" max:"1000000" showif:"Mode=2"`
 
 	// Exclude plays which contain one of the mods set here
-	ExcludeMods string `tooltip:"Applicable only to classic knockout"`
+	ExcludeMods string `label:"Excluded mods (legacy)" tooltip:"Applicable only to classic knockout"`
 
 	// Hide specific mods from being displayed in overlay (like NF)
 	HideMods string
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
-	MaxPlayers int `string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
+	MaxPlayers int `label:"Max players loaded (legacy)" string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
 
-	// Min players shown (excluding danser) on a map.
-	MinPlayers int
+	// Min players shown on a map.
+	MinPlayers int `label:"Minimum alive players" string:"true" min:"0" max:"100" showif:"Mode=0,1,4"`
 
 	// Whether knocked out players should appear on map end
-	RevivePlayersAtEnd bool
+	RevivePlayersAtEnd bool `showif:"Mode=0,1,4"`
 
 	// Whether scores should be sorted in real time
 	LiveSort bool
@@ -63,7 +63,7 @@ type knockout struct {
 
 	// Self explanatory
 	AddDanser  bool
-	DanserName string
+	DanserName string `label:"Danser's name" tooltip:"It's also used in danser replay mode"`
 }
 
 type KnockoutMode int
