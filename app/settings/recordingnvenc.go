@@ -109,10 +109,7 @@ func nvencCommon2(preset string, additional string) (ret []string, err error) {
 
 	ret = append(ret, "-preset", preset)
 
-	if encOptions := strings.TrimSpace(additional); encOptions != "" {
-		split := strings.Split(encOptions, " ")
-		ret = append(ret, split...)
-	}
+	ret = parseCustomOptions(ret, additional)
 
 	return
 }

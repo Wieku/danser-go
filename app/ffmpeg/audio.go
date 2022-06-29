@@ -60,10 +60,11 @@ func startAudio(audioFPS float64) {
 
 	options = append(options, "-c:a", settings.Recording.AudioCodec, "-strict", "-2")
 
-	encOptions := strings.TrimSpace(settings.Recording.AudioOptions)
-	if encOptions != "" {
-		split := strings.Split(encOptions, " ")
-		options = append(options, split...)
+	encOptions, err := settings.Recording.GetAudioOptions().GenerateFFmpegArgs()
+	if err != nil {
+		panic(fmt.Sprintf("encoder \"%s\": %s", settings.Recording.AudioCodec, err))
+	} else if encOptions != nil {
+		options = append(options, encOptions...)
 	}
 
 	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "audio."+settings.Recording.Container))
@@ -71,8 +72,6 @@ func startAudio(audioFPS float64) {
 	log.Println("Running ffmpeg with options:", options)
 
 	cmdAudio = exec.Command(ffmpegExec, options...)
-
-	var err error
 
 	if runtime.GOOS == "windows" {
 		audioPipe, err = cmdAudio.StdinPipe()
