@@ -135,6 +135,7 @@ type KnockoutOverlay struct {
 
 	breakMode bool
 	fade      *animation.Glider
+
 	alivePlayers int
 }
 
@@ -306,11 +307,9 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, time int64,
 	}
 
 	comboBreak := comboResult == osu.Reset
-	if ((settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0)) &&
-		overlay.alivePlayers >= settings.Knockout.MinPlayers {
-
+	if (settings.Knockout.Mode == settings.SSOrQuit && (acceptableHits || comboBreak)) || (comboBreak && number != 0) {
 		if !player.hasBroken {
-			if settings.Knockout.Mode == settings.XReplays {
+			if settings.Knockout.Mode == settings.XReplays || overlay.alivePlayers <= settings.Knockout.MinPlayers {
 				if player.sCombo >= int64(settings.Knockout.BubbleMinimumCombo) {
 					overlay.deathBubbles = append(overlay.deathBubbles, newBubble(position, overlay.normalTime, overlay.names[cursor], player.sCombo, resultClean, comboResult))
 					log.Println(overlay.names[cursor], "has broken! Combo:", player.sCombo)
