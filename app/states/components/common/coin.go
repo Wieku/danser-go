@@ -38,7 +38,7 @@ func NewDanserCoin() *DanserCoin {
 		panic(err)
 	}
 
-	LogoT := texture.LoadTextureSingle(pixmap.RGBA(), 4)
+	LogoT := texture.LoadTextureSingle(pixmap.RGBA(), 6)
 
 	pixmap.Dispose()
 
