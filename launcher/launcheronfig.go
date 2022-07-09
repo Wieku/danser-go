@@ -21,6 +21,7 @@ var launcherConfig = &launcherConf{
 	SortMapsBy:       Title,
 	SortAscending:    true,
 	LoadLatestReplay: false,
+	SkipMapUpdate:    false,
 }
 
 type launcherConf struct {
@@ -32,6 +33,7 @@ type launcherConf struct {
 	SortMapsBy       SortBy
 	SortAscending    bool
 	LoadLatestReplay bool
+	SkipMapUpdate    bool
 }
 
 func loadLauncherConfig() {

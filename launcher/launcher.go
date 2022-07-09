@@ -388,7 +388,7 @@ func (l *launcher) loadBeatmaps() {
 	} else {
 		bSplash := "Loading maps...\nThis may take a while...\n\n"
 
-		beatmaps := database.LoadBeatmaps(false, func(stage database.ImportStage, processed, target int) {
+		beatmaps := database.LoadBeatmaps(launcherConfig.SkipMapUpdate, func(stage database.ImportStage, processed, target int) {
 			switch stage {
 			case database.Discovery:
 				l.splashText = bSplash + "Searching for .osu files...\n\n"
