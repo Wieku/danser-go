@@ -295,27 +295,40 @@ func drawLauncherConfig() {
 
 		imgui.TableNextColumn()
 
-		posLocal := imgui.CursorPos()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Show exported videos/images\nin explorer")
-
-		posLocal1 := imgui.CursorPos()
-
-		imgui.TableNextColumn()
-
-		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocal.Y+posLocal1.Y-imgui.FrameHeightWithSpacing())/2))
-
-		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
-
-		imgui.TableNextColumn()
-
 		imgui.AlignTextToFramePadding()
 		imgui.Text("Load latest replay on startup")
 
 		imgui.TableNextColumn()
 
 		imgui.Checkbox("##LoadLatestReplay", &launcherConfig.LoadLatestReplay)
+
+		imgui.TableNextColumn()
+
+		posLocalSMU := imgui.CursorPos()
+
+		imgui.AlignTextToFramePadding()
+		imgui.Text("Speed up startup on slow HDDs.\nWon't detect deleted/updated\nmaps!")
+
+		posLocalSMU1 := imgui.CursorPos()
+
+		imgui.TableNextColumn()
+
+		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocalSMU.Y+posLocalSMU1.Y-imgui.FrameHeightWithSpacing())/2))
+		imgui.Checkbox("##SkipMapUpdate", &launcherConfig.SkipMapUpdate)
+
+		imgui.TableNextColumn()
+
+		posLocalSFA := imgui.CursorPos()
+
+		imgui.AlignTextToFramePadding()
+		imgui.Text("Show exported videos/images\nin explorer")
+
+		posLocalSFA1 := imgui.CursorPos()
+
+		imgui.TableNextColumn()
+
+		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocalSFA.Y+posLocalSFA1.Y-imgui.FrameHeightWithSpacing())/2))
+		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
 
 		imgui.TableNextColumn()
 

@@ -17,7 +17,7 @@ type Renderable interface {
 func commonParse(data []string, extraIndex int) *HitObject {
 	x, _ := strconv.ParseFloat(data[0], 32)
 	y, _ := strconv.ParseFloat(data[1], 32)
-	time, _ := strconv.ParseInt(data[2], 10, 64)
+	time, _ := strconv.ParseFloat(data[2], 64)
 	objType, _ := strconv.ParseInt(data[3], 10, 64)
 
 	startPos := vector.NewVec2f(float32(x), float32(y))
@@ -25,8 +25,8 @@ func commonParse(data []string, extraIndex int) *HitObject {
 	hitObject := &HitObject{
 		StartPosRaw: startPos,
 		EndPosRaw:   startPos,
-		StartTime:   float64(time),
-		EndTime:     float64(time),
+		StartTime:   time,
+		EndTime:     time,
 		HitObjectID: -1,
 		NewCombo:    (objType & 4) == 4,
 		ColorOffset: (objType >> 4) & 7,

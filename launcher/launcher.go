@@ -309,7 +309,7 @@ func (l *launcher) startGLFW() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.Samples, 0)
+	glfw.WindowHint(glfw.Samples, 4)
 
 	settings.Graphics.Fullscreen = false
 	settings.Graphics.WindowWidth = 800
@@ -388,7 +388,7 @@ func (l *launcher) loadBeatmaps() {
 	} else {
 		bSplash := "Loading maps...\nThis may take a while...\n\n"
 
-		beatmaps := database.LoadBeatmaps(false, func(stage database.ImportStage, processed, target int) {
+		beatmaps := database.LoadBeatmaps(launcherConfig.SkipMapUpdate, func(stage database.ImportStage, processed, target int) {
 			switch stage {
 			case database.Discovery:
 				l.splashText = bSplash + "Searching for .osu files...\n\n"
