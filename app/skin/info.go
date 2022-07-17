@@ -141,6 +141,15 @@ func ParseFloat(text, errType string) float64 {
 	return value
 }
 
+func ParseBool(text, errType string) bool {
+	value, err := strconv.Atoi(text)
+	if err != nil {
+		panic(fmt.Sprintf("Error while parsing %s: %s", errType, text))
+	}
+
+	return value != 0
+}
+
 func ParseColor(text, errType string) color.Color {
 	clr := color.NewL(1)
 
@@ -214,19 +223,19 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 		case "AnimationFramerate":
 			info.AnimationFramerate = ParseFloat(tokenized[1], tokenized[0])
 		case "SpinnerFadePlayfield":
-			info.SpinnerFadePlayfield = tokenized[1] == "1"
+			info.SpinnerFadePlayfield = ParseBool(tokenized[1], tokenized[0])
 		case "SpinnerNoBlink":
-			info.SpinnerNoBlink = tokenized[1] == "1"
+			info.SpinnerNoBlink = ParseBool(tokenized[1], tokenized[0])
 		case "SpinnerFrequencyModulate":
-			info.SpinnerFrequencyModulate = tokenized[1] == "1"
+			info.SpinnerFrequencyModulate = ParseBool(tokenized[1], tokenized[0])
 		case "LayeredHitSounds":
-			info.LayeredHitSounds = tokenized[1] == "1"
+			info.LayeredHitSounds = ParseBool(tokenized[1], tokenized[0])
 		case "CursorCentre":
-			info.CursorCentre = tokenized[1] == "1"
+			info.CursorCentre = ParseBool(tokenized[1], tokenized[0])
 		case "CursorExpand":
-			info.CursorExpand = tokenized[1] == "1"
+			info.CursorExpand = ParseBool(tokenized[1], tokenized[0])
 		case "CursorRotate":
-			info.CursorRotate = tokenized[1] == "1"
+			info.CursorRotate = ParseBool(tokenized[1], tokenized[0])
 		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
 			index, _ := strconv.ParseInt(strings.TrimPrefix(tokenized[0], "Combo"), 10, 64)
 			colorsI = append(colorsI, colorI{
@@ -234,11 +243,11 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 				color: ParseColor(tokenized[1], tokenized[0]),
 			})
 		case "DefaultSkinFollowpointBehavior":
-			info.DefaultSkinFollowpointBehavior = tokenized[1] == "1"
+			info.DefaultSkinFollowpointBehavior = ParseBool(tokenized[1], tokenized[0])
 		case "AllowSliderBallTint":
-			info.SliderBallTint = tokenized[1] == "1"
+			info.SliderBallTint = ParseBool(tokenized[1], tokenized[0])
 		case "SliderBallFlip":
-			info.SliderBallFlip = tokenized[1] == "1"
+			info.SliderBallFlip = ParseBool(tokenized[1], tokenized[0])
 		case "SliderBorder":
 			info.SliderBorder = ParseColor(tokenized[1], tokenized[0])
 		case "SliderTrackOverride":
@@ -258,7 +267,7 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 		case "HitCircleOverlap":
 			info.HitCircleOverlap = ParseFloat(tokenized[1], tokenized[0])
 		case "HitCircleOverlayAboveNumber", "HitCircleOverlayAboveNumer":
-			info.HitCircleOverlayAboveNumber = tokenized[1] == "1"
+			info.HitCircleOverlayAboveNumber = ParseBool(tokenized[1], tokenized[0])
 		case "ScorePrefix":
 			info.ScorePrefix = tokenized[1]
 		case "ScoreOverlap":
