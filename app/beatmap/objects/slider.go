@@ -168,6 +168,10 @@ func NewSlider(data []string) *Slider {
 	return slider
 }
 
+func (slider *Slider) GetLength() float32 {
+	return slider.multiCurve.GetLength()
+}
+
 func (slider *Slider) GetHalf() vector.Vector2f {
 	return slider.multiCurve.PointAt(0.5).Add(slider.StackOffset)
 }
