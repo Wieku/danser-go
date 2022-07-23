@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"strings"
 )
 
 const sixtyTime = 1000.0 / 60
@@ -61,4 +62,40 @@ func (mover *basicMover) GetStartTime() float64 {
 
 func (mover *basicMover) GetEndTime() float64 {
 	return mover.endTime
+}
+
+func GetMoverByName(name string) MultiPointMover {
+	ctor, _ := GetMoverCtorByName(name)
+
+	return ctor()
+}
+
+func GetMoverCtorByName(name string) (moverCtor func() MultiPointMover, finalName string) {
+	finalName = strings.ToLower(name)
+
+	switch finalName {
+	case "spline":
+		moverCtor = NewSplineMover
+	case "bezier":
+		moverCtor = NewBezierMover
+	case "circular":
+		moverCtor = NewHalfCircleMover
+	case "linear":
+		moverCtor = NewLinearMover
+	case "axis":
+		moverCtor = NewAxisMover
+	case "exgon":
+		moverCtor = NewExGonMover
+	case "aggressive":
+		moverCtor = NewAggressiveMover
+	case "momentum":
+		moverCtor = NewMomentumMover
+	case "pippi":
+		moverCtor = NewPippiMover
+	default:
+		moverCtor = NewAngleOffsetMover
+		finalName = "flower"
+	}
+
+	return
 }

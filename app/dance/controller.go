@@ -47,35 +47,11 @@ func (controller *GenericController) InitCursors() {
 			mover = strings.ToLower(settings.CursorDance.Movers[i%len(settings.CursorDance.Movers)].Mover)
 		}
 
-		var moverCtor func() movers.MultiPointMover
+		moverCtor, mName := movers.GetMoverCtorByName(mover)
 
-		switch mover {
-		case "spline":
-			moverCtor = movers.NewSplineMover
-		case "bezier":
-			moverCtor = movers.NewBezierMover
-		case "circular":
-			moverCtor = movers.NewHalfCircleMover
-		case "linear":
-			moverCtor = movers.NewLinearMover
-		case "axis":
-			moverCtor = movers.NewAxisMover
-		case "exgon":
-			moverCtor = movers.NewExGonMover
-		case "aggressive":
-			moverCtor = movers.NewAggressiveMover
-		case "momentum":
-			moverCtor = movers.NewMomentumMover
-		case "pippi":
-			moverCtor = movers.NewPippiMover
-		default:
-			moverCtor = movers.NewAngleOffsetMover
-			mover = "flower"
-		}
+		controller.schedulers[i] = schedulers.NewGenericScheduler(moverCtor, i, counter[mName])
 
-		controller.schedulers[i] = schedulers.NewGenericScheduler(moverCtor, i, counter[mover])
-
-		counter[mover]++
+		counter[mName]++
 	}
 
 	type Queue struct {
