@@ -221,10 +221,6 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	scale := sprite.scale.Abs()
 
 	if sprite.cutX > 0.0 {
-		if math.Abs(sprite.origin.X-sprite.cutOrigin.X) > 0 {
-			position.X -= sprite.origin.X * float64(region.Width) * scale.X * sprite.cutX
-		}
-
 		ratio := float32(1 - sprite.cutX)
 		middle := float32(sprite.cutOrigin.X)/2*math32.Abs(region.U2-region.U1) + (region.U1+region.U2)/2
 
@@ -234,10 +230,6 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	}
 
 	if sprite.cutY > 0.0 {
-		if math.Abs(sprite.origin.Y-sprite.cutOrigin.Y) > 0 {
-			position.Y -= sprite.origin.Y * float64(region.Height) * scale.Y * sprite.cutY
-		}
-
 		ratio := float32(1 - sprite.cutY)
 		middle := float32(sprite.cutOrigin.Y)/2*math32.Abs(region.V2-region.V1) + (region.V1+region.V2)/2
 
