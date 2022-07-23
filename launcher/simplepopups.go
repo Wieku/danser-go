@@ -113,7 +113,7 @@ func drawRecordMenu(bld *builder) {
 
 		imgui.SetNextItemWidth(-1)
 
-		imgui.InputText("##oname", &bld.outputName)
+		imgui.InputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
 
 		if bld.currentPMode == Screenshot {
 			imgui.TableNextColumn()

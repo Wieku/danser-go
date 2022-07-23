@@ -61,6 +61,21 @@ func checkForUpdates(pingUpToDate bool) {
 	}
 }
 
+func imguiPathFilter(data imgui.InputTextCallbackData) int32 {
+	if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
+		run := data.EventChar()
+
+		switch run {
+		case '\\':
+			data.SetEventChar('/')
+		case '<', '>', '|', '?', '*', ':', '"':
+			data.SetEventChar(0)
+		}
+	}
+
+	return 0
+}
+
 func vec2(x, y float32) imgui.Vec2 {
 	return imgui.Vec2{
 		X: x,

@@ -1351,20 +1351,7 @@ func (l *launcher) drawConfigPanel() {
 
 				imgui.SetNextItemWidth(imgui.TextLineHeight() * 10)
 
-				if imgui.InputTextV("##nclonename", &l.newCloneName /*imgui.InputTextFlagsCallbackAlways|*/, imgui.InputTextFlagsCallbackCharFilter, func(data imgui.InputTextCallbackData) int32 {
-					if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
-						run := data.EventChar()
-
-						switch run {
-						case '\\':
-							data.SetEventChar('/')
-						case '<', '>', '|', '?', '*', ':', '"':
-							data.SetEventChar(0)
-						}
-					}
-
-					return 0
-				}) {
+				if imgui.InputTextV("##nclonename", &l.newCloneName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter) {
 					l.newCloneName = strings.TrimSpace(l.newCloneName)
 				}
 
