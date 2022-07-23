@@ -53,9 +53,6 @@ func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 	graph.rightSprite.SetColor(color.NewL(0.2))
 	graph.rightSprite.SetCutOrigin(vector.CentreRight)
 
-	graph.leftSprite.SetScale(768 / settings.Graphics.GetHeightF())
-	graph.rightSprite.SetScale(768 / settings.Graphics.GetHeightF())
-
 	return graph
 }
 
@@ -104,7 +101,7 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 		graph.fbo.Dispose()
 	}
 
-	graph.fbo = buffer.NewFrameMultisample(int(w), int(h), 8)
+	graph.fbo = buffer.NewFrameMultisample(int(math.Round(w)), int(math.Round(h)), 8)
 
 	graph.fbo.Bind()
 	graph.fbo.ClearColor(1, 1, 1, 0)
@@ -147,8 +144,9 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 
 	region := graph.fbo.Texture().GetRegion()
 
-	//region.Width = graph.size.X32()
-	//region.Height = graph.size.Y32()
+	// Reestablish scaling using final FBO sizes because 768/screenHeight was causing 1px gaps in some scenarios
+	graph.leftSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
+	graph.rightSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
 
 	graph.leftSprite.Texture = &region
 	graph.rightSprite.Texture = &region
