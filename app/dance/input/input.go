@@ -2,6 +2,7 @@ package input
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/framework/math/mutils"
 )
@@ -18,10 +19,12 @@ type NaturalInputProcessor struct {
 	previousEnd    float64
 	releaseLeftAt  float64
 	releaseRightAt float64
+	mover          movers.MultiPointMover
 }
 
-func NewNaturalInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor) *NaturalInputProcessor {
+func NewNaturalInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor, mover movers.MultiPointMover) *NaturalInputProcessor {
 	processor := new(NaturalInputProcessor)
+	processor.mover = mover
 	processor.cursor = cursor
 	processor.queue = make([]objects.IHitObject, len(objs))
 	processor.releaseLeftAt = -10000000
@@ -36,18 +39,22 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 	if len(processor.queue) > 0 {
 		for i := 0; i < len(processor.queue); i++ {
 			g := processor.queue[i]
-			if g.GetStartTime() > time {
+
+			gStartTime := processor.mover.GetObjectsStartTime(g)
+			gEndTime := processor.mover.GetObjectsEndTime(g)
+
+			if gStartTime > time {
 				break
 			}
 
-			if processor.lastTime < g.GetStartTime() && time >= g.GetStartTime() {
-				startTime := g.GetStartTime()
-				endTime := g.GetEndTime()
+			if processor.lastTime < gStartTime && time >= gStartTime {
+				startTime := gStartTime
+				endTime := gEndTime
 
 				releaseAt := endTime + 50.0
 
 				if i+1 < len(processor.queue) {
-					nTime := processor.queue[mutils.Min(i+2, len(processor.queue)-1)].GetStartTime()
+					nTime := processor.mover.GetObjectsStartTime(processor.queue[mutils.Min(i+2, len(processor.queue)-1)])
 
 					releaseAt = mutils.ClampF(nTime-2, endTime+1, releaseAt)
 				}

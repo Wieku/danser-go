@@ -34,7 +34,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	scheduler.queue = objs
 
 	if initKeys {
-		scheduler.input = input.NewNaturalInputProcessor(objs, cursor)
+		scheduler.input = input.NewNaturalInputProcessor(objs, cursor, scheduler.mover)
 	}
 
 	scheduler.mover.Reset(diff, scheduler.id)
@@ -101,25 +101,28 @@ func (scheduler *GenericScheduler) Update(time float64) {
 		for i := 0; i < len(scheduler.queue); i++ {
 			g := scheduler.queue[i]
 
-			if g.GetStartTime() > time {
+			gStartTime := scheduler.mover.GetObjectsStartTime(g)
+			gEndTime := scheduler.mover.GetObjectsEndTime(g)
+
+			if gStartTime > time {
 				break
 			}
 
-			lastEndTime = math.Max(lastEndTime, g.GetEndTime())
+			lastEndTime = math.Max(lastEndTime, gEndTime)
 
-			if scheduler.lastTime <= g.GetStartTime() || time <= g.GetEndTime() {
-				if scheduler.lastTime <= g.GetStartTime() { // brief movement lock for ExGon mover
+			if scheduler.lastTime <= gStartTime || time <= gEndTime {
+				if scheduler.lastTime <= gStartTime { // brief movement lock for ExGon mover
 					useMover = false
 				}
 
 				scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
 			}
 
-			if time > g.GetEndTime() {
+			if time > gEndTime {
 				upperLimit := len(scheduler.queue)
 
 				for j := i; j < len(scheduler.queue); j++ {
-					if scheduler.queue[j].GetEndTime() >= lastEndTime {
+					if scheduler.mover.GetObjectsEndTime(scheduler.queue[j]) >= lastEndTime {
 						break
 					}
 
