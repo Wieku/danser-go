@@ -34,6 +34,7 @@ type launcherConf struct {
 	SortAscending    bool
 	LoadLatestReplay bool
 	SkipMapUpdate    bool
+	LastKnockoutPath string
 }
 
 func loadLauncherConfig() {

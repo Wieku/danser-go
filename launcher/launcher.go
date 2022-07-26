@@ -180,6 +180,9 @@ type launcher struct {
 	prevMap *beatmap.BeatMap
 
 	configSearch string
+
+	lastReplayDir   string
+	lastKnockoutDir string
 }
 
 func StartLauncher() {
@@ -871,8 +874,18 @@ func (l *launcher) newKnockout() {
 	imgui.PushFont(Font32)
 
 	if imgui.ButtonV("Select replays", bSize) {
-		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay files").SetStartDir(env.DataDir()).LoadMultiple()
+		kPath := getAbsPath(launcherConfig.LastKnockoutPath)
+
+		_, err := os.Lstat(kPath)
+		if err != nil {
+			kPath = env.DataDir()
+		}
+
+		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay files").SetStartDir(kPath).LoadMultiple()
 		if err == nil {
+			launcherConfig.LastKnockoutPath = getRelativeOrABSPath(filepath.Dir(p[0]))
+			saveLauncherConfig()
+
 			var errorCollection string
 			var replays []*knockoutReplay
 
@@ -1510,19 +1523,6 @@ func (l *launcher) setConfig(s string) {
 		*launcherConfig.Profile = l.bld.config
 		saveLauncherConfig()
 	}
-}
-
-// covers cases:
-// one of them is an abs path to data dir
-// has path separator suffixed
-// one of them has backwards slashes
-func compareDirs(str1, str2 string) bool {
-	abPath := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
-
-	str1D := strings.TrimSuffix(strings.ReplaceAll(str1, "\\", "/"), "/")
-	str2D := strings.TrimSuffix(strings.ReplaceAll(str2, "\\", "/"), "/")
-
-	return strings.TrimPrefix(str1D, abPath) == strings.TrimPrefix(str2D, abPath)
 }
 
 func (l *launcher) startDanser() {
