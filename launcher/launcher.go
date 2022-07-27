@@ -453,7 +453,9 @@ func (l *launcher) loadBeatmaps() {
 		}
 	})
 
-	if len(os.Args) > 1 { //won't work in combined mode
+	if len(os.Args) > 2 { //won't work in combined mode
+		l.trySelectReplaysFromPaths(os.Args[1:])
+	} else if len(os.Args) > 1 {
 		l.trySelectReplayFromPath(os.Args[1])
 	} else if launcherConfig.LoadLatestReplay {
 		l.loadLatestReplay()
@@ -864,6 +866,67 @@ func (l *launcher) trySelectReplayFromPath(p string) {
 	l.trySelectReplay(replay)
 }
 
+func (l *launcher) trySelectReplaysFromPaths(p []string) {
+	var errorCollection string
+	var replays []*knockoutReplay
+
+	for _, rPath := range p {
+		replay, err := l.loadReplay(rPath)
+
+		if err != nil {
+			if errorCollection != "" {
+				errorCollection += "\n"
+			}
+
+			errorCollection += fmt.Sprintf("%s:\n\t%s", filepath.Base(rPath), err)
+		} else {
+			replays = append(replays, replay)
+		}
+	}
+
+	if errorCollection != "" {
+		showMessage(mError, "There were errors opening replays:\n%s", errorCollection)
+	}
+
+	if replays != nil && len(replays) > 0 {
+		found := false
+
+		for _, replay := range replays {
+			for _, bMap := range l.beatmaps {
+				if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+					l.bld.currentMode = NewKnockout
+					l.bld.setMap(bMap)
+
+					found = true
+					break
+				}
+			}
+
+			if found {
+				break
+			}
+		}
+
+		if !found {
+			showMessage(mError, "Replays use an unknown map. Please download the map beforehand.")
+		} else {
+			var finalReplays []*knockoutReplay
+
+			for _, replay := range replays {
+				if strings.ToLower(l.bld.currentMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+					finalReplays = append(finalReplays, replay)
+				}
+			}
+
+			slices.SortFunc(finalReplays, func(a, b *knockoutReplay) bool {
+				return a.parsedReplay.Score > b.parsedReplay.Score
+			})
+
+			l.bld.knockoutReplays = finalReplays
+		}
+	}
+}
+
 func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 	for _, bMap := range l.beatmaps {
 		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
@@ -897,64 +960,7 @@ func (l *launcher) newKnockout() {
 			launcherConfig.LastKnockoutPath = getRelativeOrABSPath(filepath.Dir(p[0]))
 			saveLauncherConfig()
 
-			var errorCollection string
-			var replays []*knockoutReplay
-
-			for _, rPath := range p {
-				replay, err := l.loadReplay(rPath)
-
-				if err != nil {
-					if errorCollection != "" {
-						errorCollection += "\n"
-					}
-
-					errorCollection += fmt.Sprintf("%s:\n\t%s", filepath.Base(rPath), err)
-				} else {
-					replays = append(replays, replay)
-				}
-			}
-
-			if errorCollection != "" {
-				showMessage(mError, "There were errors opening replays:\n%s", errorCollection)
-			}
-
-			if replays != nil && len(replays) > 0 {
-				found := false
-
-				for _, replay := range replays {
-					for _, bMap := range l.beatmaps {
-						if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-							l.bld.currentMode = NewKnockout
-							l.bld.setMap(bMap)
-
-							found = true
-							break
-						}
-					}
-
-					if found {
-						break
-					}
-				}
-
-				if !found {
-					showMessage(mError, "Replays use an unknown map. Please download the map beforehand.")
-				} else {
-					var finalReplays []*knockoutReplay
-
-					for _, replay := range replays {
-						if strings.ToLower(l.bld.currentMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-							finalReplays = append(finalReplays, replay)
-						}
-					}
-
-					slices.SortFunc(finalReplays, func(a, b *knockoutReplay) bool {
-						return a.parsedReplay.Score > b.parsedReplay.Score
-					})
-
-					l.bld.knockoutReplays = finalReplays
-				}
-			}
+			l.trySelectReplaysFromPaths(p)
 		}
 	}
 
