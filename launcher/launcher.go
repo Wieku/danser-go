@@ -456,43 +456,54 @@ func (l *launcher) loadBeatmaps() {
 	if len(os.Args) > 1 { //won't work in combined mode
 		l.trySelectReplayFromPath(os.Args[1])
 	} else if launcherConfig.LoadLatestReplay {
-		type lastModPath struct {
-			tStamp time.Time
-			path   string
-		}
+		l.loadLatestReplay()
+	}
 
-		var list []*lastModPath
+	l.mapsLoaded = true
+}
 
-		filepath.Walk(l.currentConfig.General.GetReplaysDir(), func(path string, info fs.FileInfo, err error) error {
-			if info.IsDir() && path != l.currentConfig.General.GetReplaysDir() {
-				return filepath.SkipDir
-			}
+func (l *launcher) loadLatestReplay() {
+	replaysDir := l.currentConfig.General.GetReplaysDir()
 
-			if !info.IsDir() && strings.HasSuffix(path, ".osr") {
+	type lastModPath struct {
+		tStamp time.Time
+		name   string
+	}
+
+	var list []*lastModPath
+
+	entries, err := os.ReadDir(replaysDir)
+	if err != nil {
+		return
+	}
+
+	for _, d := range entries {
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".osr") {
+			if info, err1 := d.Info(); err1 == nil {
 				list = append(list, &lastModPath{
 					tStamp: info.ModTime(),
-					path:   path,
+					name:   d.Name(),
 				})
-			}
-
-			return nil
-		})
-
-		slices.SortFunc(list, func(a, b *lastModPath) bool {
-			return a.tStamp.After(b.tStamp)
-		})
-
-		// Load the newest that can be used
-		for _, lMP := range list {
-			r, err := l.loadReplay(lMP.path)
-			if err == nil {
-				l.trySelectReplay(r)
-				break
 			}
 		}
 	}
 
-	l.mapsLoaded = true
+	if list == nil {
+		return
+	}
+
+	slices.SortFunc(list, func(a, b *lastModPath) bool {
+		return a.tStamp.After(b.tStamp)
+	})
+
+	// Load the newest that can be used
+	for _, lMP := range list {
+		r, err := l.loadReplay(filepath.Join(replaysDir, lMP.name))
+		if err == nil {
+			l.trySelectReplay(r)
+			break
+		}
+	}
 }
 
 func extensionCheck() {
