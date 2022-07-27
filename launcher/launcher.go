@@ -428,12 +428,11 @@ func (l *launcher) loadBeatmaps() {
 	}
 
 	l.win.SetDropCallback(func(w *glfw.Window, names []string) {
-		if !strings.HasSuffix(names[0], ".osr") {
-			showMessage(mError, "It's not a replay file!")
-			return
+		if len(names) > 1 {
+			l.trySelectReplaysFromPaths(names)
+		} else {
+			l.trySelectReplayFromPath(names[0])
 		}
-
-		l.trySelectReplayFromPath(names[0])
 	})
 
 	l.win.SetCloseCallback(func(w *glfw.Window) {
@@ -1000,6 +999,10 @@ func (l *launcher) newKnockout() {
 }
 
 func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
+	if !strings.HasSuffix(p, ".osr") {
+		return nil, fmt.Errorf("it's not a replay file")
+	}
+
 	rData, err := os.ReadFile(p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %s", err)
