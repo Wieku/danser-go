@@ -456,7 +456,10 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 			resultsTime := settings.Gameplay.ResultsScreenTime * 1000
 
 			overlay.resultsFade.AddEventS(s, s+500, 0, 1)
-			overlay.resultsFade.AddEventS(s+resultsTime+500, s+resultsTime+1000, 1, 0)
+
+			if !settings.PLAY {
+				overlay.resultsFade.AddEventS(s+resultsTime+500, s+resultsTime+1000, 1, 0)
+			}
 		}
 
 		if settings.RECORD {
