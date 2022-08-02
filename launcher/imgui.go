@@ -425,11 +425,14 @@ var lastTime float64
 func Begin() {
 	x, y := input.Win.GetCursorPos()
 
-	ImIO.AddMousePosEvent(imgui.Vec2{X: float32(x), Y: float32(y)})
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
+	_, h1 := glfw.GetCurrentContext().GetFramebufferSize()
+
+	scaling := float32(h1) / float32(h)
+
+	ImIO.AddMousePosEvent(imgui.Vec2{X: float32(x) / scaling, Y: float32(y) / scaling})
 	ImIO.AddMouseButtonEvent(0, input.Win.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
 	ImIO.AddMouseButtonEvent(1, input.Win.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
-
-	w, h := input.Win.GetFramebufferSize()
 
 	ImIO.SetDisplaySize(imgui.Vec2{X: float32(w), Y: float32(h)})
 
@@ -455,7 +458,7 @@ func DrawImgui() {
 
 	rShader.Bind()
 
-	w, h := input.Win.GetFramebufferSize()
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
 
 	rShader.SetUniform("proj", mgl32.Ortho(0, float32(w), float32(h), 0, -1, 1))
 
@@ -470,6 +473,10 @@ func DrawImgui() {
 	blend.Push()
 	blend.Enable()
 	blend.SetFunction(blend.SrcAlpha, blend.OneMinusSrcAlpha)
+
+	_, h1 := glfw.GetCurrentContext().GetFramebufferSize()
+
+	scaling := float32(h1) / float32(h)
 
 	for _, list := range drawData.CommandLists() {
 		vertexBuffer, vertexBufferSize := list.VertexBuffer()
@@ -505,8 +512,9 @@ func DrawImgui() {
 			if cmd.HasUserCallback() {
 				cmd.CallUserCallback(list)
 			} else {
-				clipRect := cmd.ClipRect()
-				viewport.PushScissorPos(int(clipRect.X), int(settings.Graphics.GetHeight())-int(clipRect.W), int(clipRect.Z-clipRect.X), int(clipRect.W-clipRect.Y))
+				clipRect := cmd.ClipRect().Times(scaling)
+
+				viewport.PushScissorPos(int(clipRect.X), int(float32(h1)-clipRect.W), int(clipRect.Z-clipRect.X), int(clipRect.W-clipRect.Y))
 
 				ibo.DrawPart(cmd.IndexOffset(), cmd.ElementCount())
 

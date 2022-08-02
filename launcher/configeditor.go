@@ -1100,7 +1100,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 
 	contentAvail := imgui.ContentRegionAvail().X
 
-	if imgui.BeginTableV("lbl"+jsonPath, cCount, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX, vec2(contentAvail, 0), contentAvail) {
+	if imgui.BeginTableV("lbl"+jsonPath, cCount, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, vec2(contentAvail, 0), contentAvail) {
 		if !long {
 			imgui.TableSetupColumnV("lbl1"+jsonPath, imgui.TableColumnFlagsWidthFixed, contentAvail-width, uint(0))
 			imgui.TableSetupColumnV("lbl2"+jsonPath, imgui.TableColumnFlagsWidthFixed, width, uint(1))

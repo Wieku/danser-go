@@ -44,6 +44,7 @@ import (
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -312,6 +313,7 @@ func (l *launcher) startGLFW() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ScaleToMonitor, glfw.True)
 	glfw.WindowHint(glfw.Samples, 4)
 
 	settings.Graphics.Fullscreen = false
@@ -530,6 +532,9 @@ func extensionCheck() {
 }
 
 func (l *launcher) Draw() {
+	w, h := l.win.GetFramebufferSize()
+	viewport.Push(w, h)
+
 	if l.bg.HasBackground() {
 		gl.ClearColor(0, 0, 0, 1.0)
 	} else {
@@ -539,8 +544,7 @@ func (l *launcher) Draw() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.Enable(gl.SCISSOR_TEST)
 
-	w, h := int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
-	gl.Viewport(0, 0, int32(w), int32(h))
+	w, h = int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
 
 	settings.Graphics.Fullscreen = false
 	settings.Graphics.WindowWidth = int64(w)
@@ -603,6 +607,8 @@ func (l *launcher) Draw() {
 	l.batch.End()
 
 	l.drawImgui()
+
+	viewport.Pop()
 }
 
 func (l *launcher) drawImgui() {
