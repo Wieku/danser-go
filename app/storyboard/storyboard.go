@@ -133,7 +133,11 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 					spl := strings.Split(line, ",")
 
 					startTime, _ := strconv.ParseFloat(spl[1], 64)
-					volume, _ := strconv.ParseFloat(spl[4], 64)
+
+					volume := 100.0
+					if len(spl) > 4 {
+						volume, _ = strconv.ParseFloat(spl[4], 64)
+					}
 
 					sample := strings.TrimSpace(strings.ReplaceAll(spl[3], `"`, ""))
 
