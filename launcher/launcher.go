@@ -1019,6 +1019,10 @@ func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 		return nil, fmt.Errorf("failed to parse replay: %s", err)
 	}
 
+	if replay.PlayMode != 0 {
+		return nil, errors.New("only osu!standard mode is supported")
+	}
+
 	if replay.ReplayData == nil || len(replay.ReplayData) < 2 {
 		return nil, errors.New("replay is missing input data")
 	}
