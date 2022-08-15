@@ -1,6 +1,7 @@
 package launcher
 
 import (
+	"fmt"
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/utils"
@@ -158,6 +159,25 @@ func drawRecordMenu(bld *builder) {
 }
 
 func drawReplayManager(bld *builder) {
+	imgui.PushFont(Font20)
+	countEnabled := 0
+	for _, replay := range bld.knockoutReplays {
+		if replay.included {
+			countEnabled++
+		}
+	}
+
+	numText := "No replays"
+	if countEnabled == 1 {
+		numText = "1 replay"
+	} else if countEnabled > 1 {
+		numText = fmt.Sprintf("%d replays", countEnabled)
+	}
+
+	imgui.Text(numText + " selected")
+
+	imgui.PopFont()
+
 	if imgui.BeginTableV("replay table", 9, imgui.TableFlagsBorders|imgui.TableFlagsScrollY, vec2(-1, imgui.ContentRegionAvail().Y), -1) {
 		imgui.TableSetupScrollFreeze(0, 1)
 
