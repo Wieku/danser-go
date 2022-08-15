@@ -928,6 +928,7 @@ func (l *launcher) trySelectReplaysFromPaths(p []string) {
 			})
 
 			l.bld.knockoutReplays = finalReplays
+			l.bld.includeSwitch = true
 		}
 	}
 }

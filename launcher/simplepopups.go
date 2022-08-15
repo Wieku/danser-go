@@ -173,14 +173,28 @@ func drawReplayManager(bld *builder) {
 
 		imgui.TableHeadersRow()
 
+		imgui.TableSetColumnIndex(0)
+
 		imgui.PushFont(Font20)
+
+		if imgui.Checkbox("##mass replay disable", &bld.includeSwitch) {
+			for _, replay := range bld.knockoutReplays {
+				replay.included = bld.includeSwitch
+			}
+		}
+
+		imgui.TableNextRow()
+
+		changed := false
 
 		for i, replay := range bld.knockoutReplays {
 			pReplay := replay.parsedReplay
 
 			imgui.TableNextColumn()
 
-			imgui.Checkbox("##Use"+strconv.Itoa(i), &replay.included)
+			if imgui.Checkbox("##Use"+strconv.Itoa(i), &replay.included) {
+				changed = true
+			}
 
 			imgui.TableNextColumn()
 
@@ -213,6 +227,22 @@ func drawReplayManager(bld *builder) {
 			imgui.TableNextColumn()
 
 			imgui.Text(utils.Humanize(pReplay.MaxCombo))
+		}
+
+		if changed {
+			countIncluded := 0
+
+			for _, replay := range bld.knockoutReplays {
+				if replay.included {
+					countIncluded++
+				}
+			}
+
+			if countIncluded == 0 {
+				bld.includeSwitch = false
+			} else if countIncluded == len(bld.knockoutReplays) {
+				bld.includeSwitch = true
+			}
 		}
 
 		imgui.PopFont()

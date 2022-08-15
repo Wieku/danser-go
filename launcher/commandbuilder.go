@@ -59,6 +59,8 @@ type builder struct {
 	config string
 
 	knockoutReplays []*knockoutReplay
+
+	includeSwitch bool
 }
 
 func newBuilder() *builder {
