@@ -231,7 +231,7 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	HUDFont                 string `file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf"`
+	HUDFont                 string `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts"`
 	ShowResultsScreen       bool
 	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs"`
 	ResultsUseLocalTimeZone bool    `label:"Show PC's time zone instead of UTC"`
@@ -337,8 +337,8 @@ type hitCounter struct {
 
 type scoreBoard struct {
 	*hudElementOffset
-	ModsOnly       bool
-	AlignRight     bool
+	ModsOnly       bool `label:"Show mod leaderboard"`
+	AlignRight     bool `label:"Align to the right" label:"Simulates the second team of osu! multiplayer"`
 	HideOthers     bool
 	ShowAvatars    bool
 	ExplosionScale float64 `min:"0.1" max:"2" scale:"100" format:"%.0f%%"`
@@ -370,6 +370,6 @@ type strainGraph struct {
 }
 
 type underlay struct {
-	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png"`
-	AboveHpBar bool
+	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png" tooltip:"PNG file that will be used as HUD background (similar to custom HP bar backgrounds). It's scaled automatically to fit the screen vertically"`
+	AboveHpBar bool   `label:"Show underlay above HP bar" tooltip:"Use this if HP bar background is large"`
 }
