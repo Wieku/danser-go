@@ -136,28 +136,40 @@ func (config *Config) migrateCursorDance() {
 	config.CursorDance.DoSpinnersTogether = config.Dance.DoSpinnersTogether
 	config.CursorDance.TAGSliderDance = config.Dance.TAGSliderDance
 
-	config.CursorDance.MoverSettings.Bezier = []*bezier{
-		config.Dance.Bezier,
+	if config.Dance.Bezier != nil {
+		config.CursorDance.MoverSettings.Bezier = []*bezier{
+			config.Dance.Bezier,
+		}
 	}
 
-	config.CursorDance.MoverSettings.Flower = []*flower{
-		config.Dance.Flower,
+	if config.Dance.Flower != nil {
+		config.CursorDance.MoverSettings.Flower = []*flower{
+			config.Dance.Flower,
+		}
 	}
 
-	config.CursorDance.MoverSettings.HalfCircle = []*circular{
-		config.Dance.HalfCircle,
+	if config.Dance.HalfCircle != nil {
+		config.CursorDance.MoverSettings.HalfCircle = []*circular{
+			config.Dance.HalfCircle,
+		}
 	}
 
-	config.CursorDance.MoverSettings.Spline = []*spline{
-		config.Dance.Spline,
+	if config.Dance.Spline != nil {
+		config.CursorDance.MoverSettings.Spline = []*spline{
+			config.Dance.Spline,
+		}
 	}
 
-	config.CursorDance.MoverSettings.Momentum = []*momentum{
-		config.Dance.Momentum,
+	if config.Dance.Momentum != nil {
+		config.CursorDance.MoverSettings.Momentum = []*momentum{
+			config.Dance.Momentum,
+		}
 	}
 
-	config.CursorDance.MoverSettings.ExGon = []*exgon{
-		config.Dance.ExGon,
+	if config.Dance.ExGon != nil {
+		config.CursorDance.MoverSettings.ExGon = []*exgon{
+			config.Dance.ExGon,
+		}
 	}
 
 	config.Dance = nil
