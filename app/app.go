@@ -447,9 +447,16 @@ func run() {
 		glVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VERSION))))
 		glslVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.SHADING_LANGUAGE_VERSION))))
 
-		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/buffer.IsIntel for more info
-		if strings.Contains(strings.ToLower(glVendor), "intel") {
+		lVendor := strings.ToLower(glVendor)
+
+		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/hacks.IsIntel for more info
+		if strings.Contains(lVendor, "intel") {
 			hacks.IsIntel = true
+		}
+
+		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/hacks.IsOldAMD for more info
+		if (strings.Contains(lVendor, "amd") || strings.Contains(lVendor, "ati")) && strings.Contains(glVersion, "15.201.") {
+			hacks.IsOldAMD = true
 		}
 
 		var extensions string

@@ -52,15 +52,7 @@ func (texture *TextureMultiLayer) NewLayer() {
 }
 
 func (texture *TextureMultiLayer) SetData(x, y, width, height, layer int, data []uint8) {
-	if len(data) != width*height*texture.store.format.Size() {
-		panic("Wrong number of pixels given!")
-	}
-
-	gl.TextureSubImage3D(texture.store.id, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
-
-	if texture.store.mipmaps > 1 && !texture.manualMipmaps {
-		gl.GenerateTextureMipmap(texture.store.id)
-	}
+	texture.store.SetData(x, y, width, height, layer, data, !texture.manualMipmaps)
 }
 
 func (texture *TextureMultiLayer) GenerateMipmaps() {

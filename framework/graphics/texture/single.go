@@ -2,7 +2,6 @@ package texture
 
 import (
 	"github.com/faiface/mainthread"
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"image"
 	"runtime"
 )
@@ -33,15 +32,7 @@ func LoadTextureSingle(img *image.RGBA, mipmaps int) *TextureSingle {
 }
 
 func (texture *TextureSingle) SetData(x, y, width, height int, data []uint8) {
-	if len(data) != width*height*texture.store.format.Size() {
-		panic("Wrong number of pixels given!")
-	}
-
-	gl.TextureSubImage3D(texture.store.id, 0, int32(x), int32(y), 0, int32(width), int32(height), 1, texture.store.format.Format(), texture.store.format.Type(), gl.Ptr(data))
-
-	if texture.store.mipmaps > 1 {
-		gl.GenerateTextureMipmap(texture.store.id)
-	}
+	texture.store.SetData(x, y, width, height, 0, data, true)
 }
 
 func (texture *TextureSingle) GetID() uint32 {
