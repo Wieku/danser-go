@@ -13,7 +13,7 @@ import (
 
 // SetupContext sets glfw hints about OpenGL version
 func SetupContext() {
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
@@ -90,8 +90,6 @@ func extensionCheck(additionalExtensions []string) error {
 	extensions := []string{
 		"GL_ARB_clear_texture",
 		"GL_ARB_direct_state_access",
-		"GL_ARB_texture_storage",
-		"GL_ARB_vertex_attrib_binding",
 		"GL_ARB_buffer_storage",
 	}
 
