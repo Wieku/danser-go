@@ -308,10 +308,8 @@ func (l *launcher) startGLFW() {
 
 	l.currentConfig = c
 
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	platform.SetupContext()
+
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ScaleToMonitor, glfw.True)
 	glfw.WindowHint(glfw.Samples, 4)
@@ -347,9 +345,10 @@ func (l *launcher) startGLFW() {
 
 	log.Println("GLFW initialized!")
 
-	gl.Init()
-
-	extensionCheck()
+	err = platform.GLInit(false)
+	if err != nil {
+		panic("Failed to initialize OpenGL: " + err.Error())
+	}
 
 	glfw.SwapInterval(1)
 
