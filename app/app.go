@@ -33,6 +33,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/blend"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/font"
+	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
@@ -448,7 +449,7 @@ func run() {
 
 		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/buffer.IsIntel for more info
 		if strings.Contains(strings.ToLower(glVendor), "intel") {
-			buffer.IsIntel = true
+			hacks.IsIntel = true
 		}
 
 		var extensions string

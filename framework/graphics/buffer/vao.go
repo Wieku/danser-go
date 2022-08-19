@@ -5,6 +5,7 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
+	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -215,7 +216,7 @@ func (vao *VertexArrayObject) DrawPart(offset, length int) {
 
 		gl.DrawArrays(gl.TRIANGLES, int32(offset), int32(length))
 
-		if IsIntel {
+		if hacks.IsIntel {
 			gl.Flush()
 		}
 	}
@@ -233,7 +234,7 @@ func (vao *VertexArrayObject) DrawPartInstanced(offset, length, baseInstance, in
 
 		gl.DrawArraysInstancedBaseInstance(gl.TRIANGLES, int32(offset), int32(length), int32(instanceCount), uint32(baseInstance))
 
-		if IsIntel {
+		if hacks.IsIntel {
 			gl.Flush()
 		}
 	}
