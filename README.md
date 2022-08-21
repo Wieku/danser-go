@@ -132,9 +132,11 @@ Afterwards type:
 Running without arguments (as opposed in [Running Danser](#running-danser)) will give you the launcher, though you can't
 use drag&drop on the executable to preload a replay. If that ability is desired, build danser using dist scripts.
 
-## Credits
 
-Software created by Sebastian Krajewski ([@Wieku](https://github.com/ppy))
-and [contributors](https://github.com/Wieku/danser-go/graphs/contributors)
+## Credits and License
 
-Full credits can be found [here](CREDITS.md).
+Software created by Sebastian Krajewski ([@Wieku](https://github.com/Wieku)) and [contributors](https://github.com/Wieku/danser-go/graphs/contributors)
+
+Unless stated otherwise, source files are distributed under GNU General Public License v3.0
+
+Full credits and licenses of 3rd party assets can be found [here](CREDITS.md).
