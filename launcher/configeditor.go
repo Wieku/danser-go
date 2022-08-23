@@ -1110,6 +1110,12 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 
 		imgui.TableNextColumn()
 
+		tooltip, hasTooltip := d.Tag.Lookup("tooltip")
+
+		if hasTooltip {
+			label = "(!) " + label
+		}
+
 		imgui.BeginGroup()
 		imgui.AlignTextToFramePadding()
 		imgui.Text(label)
@@ -1119,8 +1125,6 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 			_, hidePath := d.Tag.Lookup("hidePath")
 
 			showPath := !hidePath && launcherConfig.ShowJSONPaths
-
-			tooltip, hasTooltip := d.Tag.Lookup("tooltip")
 
 			if showPath || hasTooltip {
 				imgui.BeginTooltip()
