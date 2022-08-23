@@ -194,7 +194,7 @@ type motionblur struct {
 
 type blendWeights struct {
 	UseManualWeights bool
-	ManualWeights    string
+	ManualWeights    string  `showif:"UseManualWeights=true"`
 	AutoWeightsID    int     `combo:"0|Flat,1|Linear,2|InQuad,3|OutQuad,4|InOutQuad,5|InCubic,6|OutCubic,7|InOutCubic,8|InQuart,9|OutQuart,10|InOutQuart,11|InQuint,12|OutQuint,13|InOutQuint,14|InSine,15|OutSine,16|InOutSine,17|InExpo,18|OutExpo,19|InOutExpo,20|InCirc,21|OutCirc,22|InOutCirc,23|InBack,24|OutBack,25|InOutBack,26|Gauss,27|GaussSymmetric,28|PyramidSymmetric,29|SemiCircle"`
 	GaussWeightsMult float64 `string:"true" min:"0" max:"10"`
 }
