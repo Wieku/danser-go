@@ -474,7 +474,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 						tRow := func(text string, text2 string, args ...any) {
 							textColumn(text)
-							textColumn(fmt.Sprintf(text2, args))
+							textColumn(fmt.Sprintf(text2, args...))
 						}
 
 						tRow("Stars: ", sR)
