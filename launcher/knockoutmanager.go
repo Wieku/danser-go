@@ -108,37 +108,21 @@ func (km *knockoutManagerPopup) drawManager() {
 				changed = i
 			}
 
-			imgui.TableNextColumn()
+			textColumn(pReplay.Username)
 
-			imgui.Text(pReplay.Username)
+			textColumn(utils.Humanize(pReplay.Score))
 
-			imgui.TableNextColumn()
+			textColumn(difficulty.Modifier(pReplay.Mods).String())
 
-			imgui.Text(utils.Humanize(pReplay.Score))
+			textColumn(utils.Humanize(pReplay.Count300))
 
-			imgui.TableNextColumn()
+			textColumn(utils.Humanize(pReplay.Count100))
 
-			imgui.Text(difficulty.Modifier(pReplay.Mods).String())
+			textColumn(utils.Humanize(pReplay.Count50))
 
-			imgui.TableNextColumn()
+			textColumn(utils.Humanize(pReplay.CountMiss))
 
-			imgui.Text(utils.Humanize(pReplay.Count300))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.Count100))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.Count50))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.CountMiss))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.MaxCombo))
+			textColumn(utils.Humanize(pReplay.MaxCombo))
 		}
 
 		if changed > -1 {

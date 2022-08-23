@@ -64,6 +64,11 @@ func checkForUpdates(pingUpToDate bool) {
 	}
 }
 
+func textColumn(text string) {
+	imgui.TableNextColumn()
+	imgui.Text(text)
+}
+
 func imguiPathFilter(data imgui.InputTextCallbackData) int32 {
 	if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
 		run := data.EventChar()
