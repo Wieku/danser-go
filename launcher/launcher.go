@@ -1414,7 +1414,7 @@ func (l *launcher) drawConfigPanel() {
 					imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
 				}
 
-				if imgui.Button("Save##newclone") {
+				if imgui.Button("Save##newclone") || (!e && (imgui.IsKeyPressed(imgui.KeyEnter) || imgui.IsKeyPressed(imgui.KeyKeypadEnter))) {
 					_, err := os.Stat(filepath.Join(env.ConfigDir(), l.newCloneName+".json"))
 					if err == nil {
 						showMessage(mError, "Config with that name already exists!\nPlease pick a different name")
