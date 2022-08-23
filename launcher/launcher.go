@@ -223,7 +223,8 @@ func StartLauncher() {
 	settings.Playfield.Background.Triangles.Enabled = true
 	settings.Playfield.Background.Triangles.DrawOverBlur = true
 	settings.Playfield.Background.Blur.Enabled = false
-	settings.Playfield.Background.Parallax.Enabled = false
+	settings.Playfield.Background.Parallax.Enabled = true
+	settings.Playfield.Background.Parallax.Amount = 0.02
 
 	assets.Init(build.Stream == "Dev")
 
@@ -562,7 +563,10 @@ func (l *launcher) Draw() {
 
 	settings.Playfield.Background.Triangles.Speed = l.triangleSpeed.GetValue()
 
-	l.bg.Update(t, 0, 0)
+	pX := (float64(imgui.MousePos().X) * 2 / settings.Graphics.GetWidthF()) - 1
+	pY := (float64(imgui.MousePos().Y) * 2 / settings.Graphics.GetHeightF()) - 1
+
+	l.bg.Update(t, -pX, pY)
 
 	l.batch.SetCamera(mgl32.Ortho(-float32(w)/2, float32(w)/2, float32(h)/2, -float32(h)/2, -1, 1))
 
