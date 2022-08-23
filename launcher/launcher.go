@@ -184,6 +184,8 @@ type launcher struct {
 
 	lastReplayDir   string
 	lastKnockoutDir string
+
+	knockoutManager *knockoutManagerPopup
 }
 
 func StartLauncher() {
@@ -927,7 +929,7 @@ func (l *launcher) trySelectReplaysFromPaths(p []string) {
 			})
 
 			l.bld.knockoutReplays = finalReplays
-			l.bld.includeSwitch = true
+			l.knockoutManager = newKnockoutManagerPopup(l.bld)
 		}
 	}
 }
@@ -990,10 +992,8 @@ func (l *launcher) newKnockout() {
 
 		imgui.SameLine()
 
-		if imgui.Button("Manage##knockout") {
-			l.openPopup(newPopupF("Manage replays", popBig, func() {
-				drawReplayManager(l.bld)
-			}))
+		if imgui.Button("Manage##knockout") && l.knockoutManager != nil {
+			l.openPopup(l.knockoutManager)
 		}
 	} else {
 		imgui.Text("No replays selected")
