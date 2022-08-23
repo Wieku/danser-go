@@ -5,6 +5,7 @@ import (
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"strconv"
 )
 
@@ -14,6 +15,10 @@ type knockoutManagerPopup struct {
 	bld *builder
 
 	includeSwitch bool
+
+	lastSelected int
+
+	countEnabled int
 }
 
 func newKnockoutManagerPopup(bld *builder) *knockoutManagerPopup {
@@ -21,27 +26,42 @@ func newKnockoutManagerPopup(bld *builder) *knockoutManagerPopup {
 		popup:         newPopup("Replay manager", popBig),
 		bld:           bld,
 		includeSwitch: true,
+		lastSelected:  -1,
 	}
 
 	rm.internalDraw = rm.drawManager
 
+	rm.refreshCount()
+
 	return rm
+}
+
+func (km *knockoutManagerPopup) refreshCount() {
+	countIncluded := 0
+
+	for _, replay := range km.bld.knockoutReplays {
+		if replay.included {
+			countIncluded++
+		}
+	}
+
+	if countIncluded == 0 {
+		km.includeSwitch = false
+	} else if countIncluded == len(km.bld.knockoutReplays) {
+		km.includeSwitch = true
+	}
+
+	km.countEnabled = countIncluded
 }
 
 func (km *knockoutManagerPopup) drawManager() {
 	imgui.PushFont(Font20)
-	countEnabled := 0
-	for _, replay := range km.bld.knockoutReplays {
-		if replay.included {
-			countEnabled++
-		}
-	}
 
 	numText := "No replays"
-	if countEnabled == 1 {
+	if km.countEnabled == 1 {
 		numText = "1 replay"
-	} else if countEnabled > 1 {
-		numText = fmt.Sprintf("%d replays", countEnabled)
+	} else if km.countEnabled > 1 {
+		numText = fmt.Sprintf("%d replays", km.countEnabled)
 	}
 
 	imgui.Text(numText + " selected")
@@ -71,11 +91,13 @@ func (km *knockoutManagerPopup) drawManager() {
 			for _, replay := range km.bld.knockoutReplays {
 				replay.included = km.includeSwitch
 			}
+
+			km.refreshCount()
 		}
 
 		imgui.TableNextRow()
 
-		changed := false
+		changed := -1
 
 		for i, replay := range km.bld.knockoutReplays {
 			pReplay := replay.parsedReplay
@@ -83,7 +105,7 @@ func (km *knockoutManagerPopup) drawManager() {
 			imgui.TableNextColumn()
 
 			if imgui.Checkbox("##Use"+strconv.Itoa(i), &replay.included) {
-				changed = true
+				changed = i
 			}
 
 			imgui.TableNextColumn()
@@ -119,20 +141,21 @@ func (km *knockoutManagerPopup) drawManager() {
 			imgui.Text(utils.Humanize(pReplay.MaxCombo))
 		}
 
-		if changed {
-			countIncluded := 0
+		if changed > -1 {
+			if km.lastSelected > -1 && (imgui.IsKeyDown(imgui.KeyLeftShift) || imgui.IsKeyDown(imgui.KeyRightShift)) {
+				value := km.bld.knockoutReplays[changed].included
 
-			for _, replay := range km.bld.knockoutReplays {
-				if replay.included {
-					countIncluded++
+				lower := mutils.Min(km.lastSelected, changed)
+				higher := mutils.Max(km.lastSelected, changed)
+
+				for i := lower; i <= higher; i++ {
+					km.bld.knockoutReplays[i].included = value
 				}
 			}
 
-			if countIncluded == 0 {
-				km.includeSwitch = false
-			} else if countIncluded == len(km.bld.knockoutReplays) {
-				km.includeSwitch = true
-			}
+			km.lastSelected = changed
+
+			km.refreshCount()
 		}
 
 		imgui.PopFont()
