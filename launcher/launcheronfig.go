@@ -22,6 +22,7 @@ var launcherConfig = &launcherConf{
 	SortAscending:    true,
 	LoadLatestReplay: false,
 	SkipMapUpdate:    false,
+	ShowJSONPaths:    false,
 }
 
 type launcherConf struct {
@@ -34,6 +35,7 @@ type launcherConf struct {
 	SortAscending    bool
 	LoadLatestReplay bool
 	SkipMapUpdate    bool
+	ShowJSONPaths    bool
 	LastKnockoutPath string
 }
 

@@ -214,67 +214,45 @@ func drawAbout(dTex texture.Texture) {
 func drawLauncherConfig() {
 	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(imgui.CurrentStyle().CellPadding().X, 10))
 
-	if imgui.BeginTableV("lconfigtable", 2, 0, vec2(-1, 0), -1) {
-		imgui.TableSetupColumnV("1lconfigtable", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-		imgui.TableSetupColumnV("2lconfigtable", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+	checkboxOption := func(text string, value *bool) {
+		if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
+			imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+			imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
-		imgui.TableNextColumn()
+			imgui.TableNextColumn()
 
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Check for updates on startup")
+			pos1 := imgui.CursorPos()
 
-		imgui.TableNextColumn()
+			imgui.AlignTextToFramePadding()
 
-		imgui.Checkbox("##CheckForUpdates", &launcherConfig.CheckForUpdates)
+			imgui.PushTextWrapPos()
 
-		imgui.TableNextColumn()
+			imgui.Text(text)
 
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Load latest replay on startup")
+			imgui.PopTextWrapPos()
 
-		imgui.TableNextColumn()
+			pos2 := imgui.CursorPos()
 
-		imgui.Checkbox("##LoadLatestReplay", &launcherConfig.LoadLatestReplay)
+			imgui.TableNextColumn()
 
-		imgui.TableNextColumn()
+			imgui.SetCursorPos(vec2(imgui.CursorPosX(), (pos1.Y+pos2.Y-imgui.FrameHeightWithSpacing())/2))
+			imgui.Checkbox("##ck"+text, value)
 
-		posLocalSMU := imgui.CursorPos()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Speed up startup on slow HDDs.\nWon't detect deleted/updated\nmaps!")
-
-		posLocalSMU1 := imgui.CursorPos()
-
-		imgui.TableNextColumn()
-
-		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocalSMU.Y+posLocalSMU1.Y-imgui.FrameHeightWithSpacing())/2))
-		imgui.Checkbox("##SkipMapUpdate", &launcherConfig.SkipMapUpdate)
-
-		imgui.TableNextColumn()
-
-		posLocalSFA := imgui.CursorPos()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Show exported videos/images\nin explorer")
-
-		posLocalSFA1 := imgui.CursorPos()
-
-		imgui.TableNextColumn()
-
-		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocalSFA.Y+posLocalSFA1.Y-imgui.FrameHeightWithSpacing())/2))
-		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
-
-		imgui.TableNextColumn()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Preview selected maps")
-
-		imgui.TableNextColumn()
-
-		imgui.Checkbox("##PreviewSelected", &launcherConfig.PreviewSelected)
-
-		imgui.EndTable()
+			imgui.EndTable()
+		}
 	}
+
+	checkboxOption("Check for updates on startup", &launcherConfig.CheckForUpdates)
+
+	checkboxOption("Load latest replay on startup", &launcherConfig.LoadLatestReplay)
+
+	checkboxOption("Speed up startup on slow HDDs.\nWon't detect deleted/updated\nmaps!", &launcherConfig.SkipMapUpdate)
+
+	checkboxOption("Show JSON paths in config editor", &launcherConfig.ShowJSONPaths)
+
+	checkboxOption("Show exported videos/images\nin explorer", &launcherConfig.ShowFileAfter)
+
+	checkboxOption("Preview selected maps", &launcherConfig.PreviewSelected)
 
 	imgui.AlignTextToFramePadding()
 	imgui.Text("Preview volume")

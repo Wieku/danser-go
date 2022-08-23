@@ -1116,28 +1116,35 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 		imgui.EndGroup()
 
 		if imgui.IsItemHovered() {
-			imgui.BeginTooltip()
+			_, hidePath := d.Tag.Lookup("hidePath")
 
-			_, hPath := d.Tag.Lookup("hidePath")
+			showPath := !hidePath && launcherConfig.ShowJSONPaths
 
-			tTip := ""
-			if !hPath {
-				tTip = strings.ReplaceAll(jsonPath, "#", "")
-			}
+			tooltip, hasTooltip := d.Tag.Lookup("tooltip")
 
-			if t, ok := d.Tag.Lookup("tooltip"); ok {
-				if !hPath {
-					tTip += "\n\n"
+			if showPath || hasTooltip {
+				imgui.BeginTooltip()
+
+				tTip := ""
+				if showPath {
+					tTip = strings.ReplaceAll(jsonPath, "#", "")
 				}
-				tTip += t
+
+				if hasTooltip {
+					if showPath {
+						tTip += "\n\n"
+					}
+
+					tTip += tooltip
+				}
+
+				imgui.PushTextWrapPosV(400)
+
+				imgui.Text(tTip)
+
+				imgui.PopTextWrapPos()
+				imgui.EndTooltip()
 			}
-
-			imgui.PushTextWrapPosV(400)
-
-			imgui.Text(tTip)
-
-			imgui.PopTextWrapPos()
-			imgui.EndTooltip()
 		}
 
 		imgui.TableNextColumn()
