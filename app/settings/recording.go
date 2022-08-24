@@ -130,7 +130,7 @@ type recording struct {
 	//AudioOptions        string             `label:"Audio Encoder Options"`
 	AudioFilters   string `label:"FFmpeg Audio Filters"`
 	OutputDir      string `path:"Select video output directory"`
-	Container      string `combo:"mp4,mkv,webm"`
+	Container      string `combo:"mp4,mkv"`
 	ShowFFmpegLogs bool
 	MotionBlur     *motionblur
 
