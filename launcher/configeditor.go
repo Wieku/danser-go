@@ -346,15 +346,7 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	}
 }
 
-func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bool, afterTitle, content func()) {
-	if editor.searchCache[sPath] == 0 {
-		return
-	}
-
-	if !first {
-		imgui.Dummy(vec2(0, padY/2))
-	}
-
+func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content func()) {
 	pos := imgui.CursorScreenPos()
 
 	imgui.Dummy(vec2(3, 0))
@@ -382,20 +374,16 @@ func (editor *settingsEditor) subSectionTempl(sPath, name string, first, last bo
 	pos1.X = pos.X
 
 	imgui.WindowDrawList().AddLine(pos, pos1, imgui.PackedColorFromVec4(vec4(1.0, 1.0, 1.0, 1.0)))
-
-	if !last {
-		imgui.Dummy(vec2(0, padY/2))
-	}
 }
 
-func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
-	editor.subSectionTempl(sPath, name, first, last, func() {}, func() {
+func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
+	editor.subSectionTempl(name, func() {}, func() {
 		editor.traverseChildren(jsonPath, sPath, u, d)
 	})
 }
 
-func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField, first, last bool) {
-	editor.subSectionTempl(sPath, name, first, last, func() {
+func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
+	editor.subSectionTempl(name, func() {
 		imgui.SameLine()
 		imgui.Dummy(vec2(2, 0))
 		imgui.SameLine()
@@ -498,7 +486,11 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	skipMap := make(map[string]uint8)
 	consumed := make(map[string]uint8)
 
-	for i, index := 0, 0; i < count; i++ {
+	notFirst := false
+	wasRendered := false
+	wasSection := false
+
+	for i := 0; i < count; i++ {
 		field := typ.Field(i)
 		dF := def.Field(i)
 
@@ -528,57 +520,81 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 			}
 		}
 
-		if index > 0 {
+		if wasRendered {
+			notFirst = true
+
 			imgui.Dummy(vec2(0, 2))
 		}
 
+		wasRendered = true
+
 		switch field.Type().Kind() {
-		case reflect.String:
-			if _, ok := dF.Tag.Lookup("vector"); ok {
-				lName, ok1 := dF.Tag.Lookup("left")
-				rName, ok2 := dF.Tag.Lookup("right")
-				if !ok1 || !ok2 {
-					break
-				}
-
-				l := typ.FieldByName(lName)
-				ld, _ := def.FieldByName(lName)
-
-				r := typ.FieldByName(rName)
-				rd, _ := def.FieldByName(rName)
-
-				jsonPathL := jsonPath + "." + lName
-				jsonPathR := jsonPath + "." + rName
-
-				editor.buildVector(jsonPathL, jsonPathR, dF, l, ld, r, rd)
-			} else {
-				editor.buildString(jsonPath1, field, dF)
+		case reflect.String, reflect.Float64, reflect.Int64, reflect.Int, reflect.Int32, reflect.Bool, reflect.Slice, reflect.Ptr:
+			if wasSection {
+				imgui.Dummy(vec2(0, padY/2))
 			}
-		case reflect.Float64:
-			editor.buildFloat(jsonPath1, field, dF)
-		case reflect.Int64, reflect.Int, reflect.Int32:
-			editor.buildInt(jsonPath1, field, dF)
-		case reflect.Bool:
-			editor.buildBool(jsonPath1, field, dF)
-		case reflect.Slice:
-			editor.buildArray(jsonPath1, sPath2, label, field, dF, index == 0, index == count-1)
-		case reflect.Ptr:
-			if field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
-				editor.buildColor(jsonPath1, field, dF, true)
-			} else if !field.IsNil() {
-				if dF.Anonymous {
-					editor.traverseChildren(jsonPath, sPath2, field, dF)
-				} else if field.CanInterface() {
-					editor.buildSubSection(jsonPath1, sPath2, label, field, dF, index == 0, index == count-1)
+
+			isSection := false
+
+			switch field.Type().Kind() {
+			case reflect.String:
+				if _, ok := dF.Tag.Lookup("vector"); ok {
+					lName, ok1 := dF.Tag.Lookup("left")
+					rName, ok2 := dF.Tag.Lookup("right")
+					if !ok1 || !ok2 {
+						break
+					}
+
+					l := typ.FieldByName(lName)
+					ld, _ := def.FieldByName(lName)
+
+					r := typ.FieldByName(rName)
+					rd, _ := def.FieldByName(rName)
+
+					jsonPathL := jsonPath + "." + lName
+					jsonPathR := jsonPath + "." + rName
+
+					editor.buildVector(jsonPathL, jsonPathR, dF, l, ld, r, rd)
 				} else {
-					index--
+					editor.buildString(jsonPath1, field, dF)
+				}
+			case reflect.Float64:
+				editor.buildFloat(jsonPath1, field, dF)
+			case reflect.Int64, reflect.Int, reflect.Int32:
+				editor.buildInt(jsonPath1, field, dF)
+			case reflect.Bool:
+				editor.buildBool(jsonPath1, field, dF)
+			case reflect.Slice:
+				if notFirst {
+					imgui.Dummy(vec2(0, padY/2))
+				}
+
+				editor.buildArray(jsonPath1, sPath2, label, field, dF)
+				isSection = true
+			case reflect.Ptr:
+				if field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
+					editor.buildColor(jsonPath1, field, dF, true)
+				} else if !field.IsNil() {
+					if dF.Anonymous {
+						editor.traverseChildren(jsonPath, sPath2, field, dF)
+					} else if field.CanInterface() {
+						if notFirst {
+							imgui.Dummy(vec2(0, padY/2))
+						}
+
+						editor.buildSubSection(jsonPath1, sPath2, label, field, dF)
+						isSection = true
+					} else {
+						isSection = wasSection
+						wasRendered = false
+					}
 				}
 			}
-		default:
-			index--
-		}
 
-		index++
+			wasSection = isSection
+		default:
+			wasRendered = false
+		}
 	}
 }
 
