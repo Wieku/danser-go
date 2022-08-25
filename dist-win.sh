@@ -63,11 +63,11 @@ go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=
 
 $resgen <<< $resDanser
 
-gcc --verbose -O3 -o danser.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
+$CC <<< --verbose -O3 -o danser.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
 
 $resgen <<< $resLauncher
 
-gcc --verbose -O3 -D LAUNCHER -o danser-launcher.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
+$CC <<< --verbose -O3 -D LAUNCHER -o danser-launcher.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
 
 go run tools/pack/pack.go danser-$exec-win.zip danser-core.dll danser.exe danser-launcher.exe bass.dll bass_fx.dll bassmix.dll libyuv.dll assets.dpak
 
