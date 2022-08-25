@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        shell: msys2 {0}
+        shell: bash
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v3
@@ -61,6 +61,7 @@ jobs:
 
       - name: Build danser
         run: |
+          chmod +x dist-linux.sh
           ./dist-linux.sh ${{ github.event.inputs.version }}
           
           if [ ! -f "danser-${{ github.event.inputs.version }}-linux.zip" ]; then
