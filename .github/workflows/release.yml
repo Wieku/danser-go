@@ -26,6 +26,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: '1.18.5'
+          cache: true
 
       - name: Build danser
         run: |
@@ -58,6 +59,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: '1.18.5'
+          cache: true
 
       - name: Build danser
         run: |
@@ -95,7 +97,6 @@ jobs:
         run: |
           set -xe
           shopt -s nullglob
-          RELDATE="$(date +'%Y-%m-%d %H:%M')"
           NAME=${{ github.event.inputs.version }}
           TAGNAME=${{ github.event.inputs.version }}
           hub release create --draft $(for a in artifacts/*.{zip,tar.xz}; do echo -a $a; done) -m "$NAME" -t "master" "$TAGNAME"
