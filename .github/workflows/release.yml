@@ -1,0 +1,102 @@
+name: Create a draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Danser version'
+        type: string
+        required: true
+
+jobs:
+  build_windows:
+    name: Building windows version
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+
+      - name: Install winlibs
+        uses: bwoodsend/setup-winlibs-action@v1
+
+      - name: Install golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18.5'
+
+      - name: Build danser
+        run: |
+          ./dist-win.sh ${{ github.event.inputs.version }}
+          
+          if [ ! -f "danser-${{ github.event.inputs.version }}-win.zip" ]; then
+            echo "Danser failed to build"
+            exit 1
+          fi
+        id: build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !failure() && steps.build.conclusion != 'failure' }}
+        with:
+          name: danser
+          path: danser-${{ github.event.inputs.version }}-win.zip
+
+  build_linux:
+    name: Building linux version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+
+      - name: Install needed packages
+        run: sudo apt-get install xorg-dev libgl1-mesa-dev libgtk-3-dev
+
+      - name: Install golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18.5'
+
+      - name: Build danser
+        run: |
+          ./dist-linux.sh ${{ github.event.inputs.version }}
+          
+          if [ ! -f "danser-${{ github.event.inputs.version }}-linux.zip" ]; then
+            echo "Danser failed to build"
+            exit 1
+          fi
+        id: build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !failure() && steps.build.conclusion != 'failure' }}
+        with:
+          name: danser
+          path: danser-${{ github.event.inputs.version }}-linux.zip
+
+  publish_release:
+    name: Publish draft release
+    if: ${{ !cancelled() && needs.build_windows.result == 'success' && needs.build_linux.result == 'success' }}
+    needs: [build_windows, build_linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: danser
+          path: artifacts
+      - name: Create release
+        id: create_release
+        run: |
+          set -xe
+          shopt -s nullglob
+          RELDATE="$(date +'%Y-%m-%d %H:%M')"
+          NAME=${{ github.event.inputs.version }}
+          TAGNAME=${{ github.event.inputs.version }}
+          hub release create --draft $(for a in artifacts/*.{zip,tar.xz}; do echo -a $a; done) -m "$NAME" -t "master" "$TAGNAME"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
