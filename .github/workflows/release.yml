@@ -35,7 +35,7 @@ jobs:
 
       - name: Build danser
         run: |
-          version=${{ github.event.inputs.version }}
+          version="${{ github.event.inputs.version }}"
 
           ./dist-win.sh $version
 
@@ -70,7 +70,7 @@ jobs:
 
       - name: Build danser
         run: |
-          version=${{ github.event.inputs.version }}
+          version="${{ github.event.inputs.version }}"
           
           chmod +x dist-linux.sh
           ./dist-linux.sh $version
