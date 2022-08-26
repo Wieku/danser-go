@@ -4,6 +4,8 @@ export GOARCH=amd64
 export CGO_ENABLED=1
 export CC=gcc
 export CXX=g++
+export BUILD_DIR=./dist/build-linux
+export TARGET_DIR=./dist/artifacts
 
 exec=$1
 build=$1
@@ -13,16 +15,26 @@ then
   build+='-snapshot'$2
 fi
 
-go run tools/assets/assets.go ./
+mkdir -p $BUILD_DIR
 
-go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o danser-core.so -v -x
+go run tools/assets/assets.go ./ $BUILD_DIR/
 
-mv danser-core.so libdanser-core.so
+go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o $BUILD_DIR/danser-core.so -v -x
 
-gcc -no-pie --verbose -O3 -o danser -I. cmain/main_danser.c -Wl,-rpath,. -L. -ldanser-core
+mv $BUILD_DIR/danser-core.so $BUILD_DIR/libdanser-core.so
 
-gcc -no-pie --verbose -O3 -D LAUNCHER -o danser-launcher -I. cmain/main_danser.c -Wl,-rpath,. -L. -ldanser-core
+gcc -no-pie --verbose -O3 -o $BUILD_DIR/danser -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,. -L$BUILD_DIR/ -ldanser-core
 
-go run tools/pack/pack.go danser-$exec-linux.zip libdanser-core.so danser danser-launcher libbass.so libbass_fx.so libbassmix.so libyuv.so assets.dpak
+gcc -no-pie --verbose -O3 -D LAUNCHER -o $BUILD_DIR/danser-launcher -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,. -L$BUILD_DIR/ -ldanser-core
 
-rm -f danser danser-launcher libdanser-core.so danser-core.h assets.dpak
+rm $BUILD_DIR/danser-core.h
+
+cp {libbass.so,libbass_fx.so,libbassmix.so,libyuv.so} $BUILD_DIR/
+
+go run tools/ffmpeg/ffmpeg.go $BUILD_DIR/
+
+mkdir -p $TARGET_DIR
+
+go run tools/pack2/pack.go $TARGET_DIR/danser-$exec-linux.zip $BUILD_DIR/
+
+rm -rf $BUILD_DIR
