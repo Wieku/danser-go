@@ -11,6 +11,7 @@ func initPlayfield() *playfield {
 		ShiftY:                       0,
 		ShiftX:                       0,
 		ScaleStoryboardWithPlayfield: false,
+		MoveStoryboardWithPlayfield:  false,
 		LeadInTime:                   5,
 		LeadInHold:                   2,
 		FadeOutTime:                  5,
@@ -75,10 +76,11 @@ type playfield struct {
 	DrawCursors                  bool
 	Scale                        float64 `label:"Playfield scale" min:"0.1" max:"2"`   //1, scale the playfield (1 means that 384 will be rescaled to 900 on FullHD monitor)
 	OsuShift                     bool    `label:"Position the playfield like in osu!"` //false, offset the playfield like in osu! | Overrides ShiftY
-	playfieldShift               string  `vector:"true" label:"Playfield shift" left:"ShiftX" right:"ShiftY"`
+	playfieldShift               string  `vector:"true" label:"Playfield shift" left:"ShiftX" right:"ShiftY" showif:"OsuShift=false"`
 	ShiftX                       float64 `min:"-512" max:"512"` //offset the playfield by X osu!pixels
 	ShiftY                       float64 `min:"-512" max:"512"` //offset the playfield by Y osu!pixels
 	ScaleStoryboardWithPlayfield bool
+	MoveStoryboardWithPlayfield  bool    `tooltip:"Even if selected, \"Position the playfield like in osu!\" option won't affect the storyboard"`
 	LeadInTime                   float64 `max:"10" format:"%.1fs"` //5
 	LeadInHold                   float64 `max:"10" format:"%.1fs"` //2
 	FadeOutTime                  float64 `max:"10" format:"%.1fs"` //5

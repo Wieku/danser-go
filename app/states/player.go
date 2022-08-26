@@ -192,7 +192,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.background.SetBeatmap(beatMap, true, true)
 
 	player.mainCamera = camera2.NewCamera()
-	player.mainCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, settings.Playfield.OsuShift)
+	player.mainCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, true, settings.Playfield.OsuShift)
 	player.mainCamera.Update()
 
 	player.bgCamera = camera2.NewCamera()
@@ -202,7 +202,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		sbScale = settings.Playfield.Scale
 	}
 
-	player.bgCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), sbScale, false)
+	player.bgCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), sbScale, !settings.Playfield.OsuShift && settings.Playfield.MoveStoryboardWithPlayfield, false)
 	player.bgCamera.Update()
 
 	player.ScaledHeight = 1080.0
