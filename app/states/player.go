@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/input"
+	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/app/states/components/containers"
@@ -32,6 +33,7 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
+	"math/rand"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -64,9 +66,10 @@ type Player struct {
 	profiler    *frame.Counter
 	profilerU   *frame.Counter
 
-	mainCamera *camera2.Camera
-	bgCamera   *camera2.Camera
-	uiCamera   *camera2.Camera
+	mainCamera   *camera2.Camera
+	objectCamera *camera2.Camera
+	bgCamera     *camera2.Camera
+	uiCamera     *camera2.Camera
 
 	dimGlider       *animation.Glider
 	blurGlider      *animation.Glider
@@ -84,9 +87,10 @@ type Player struct {
 
 	hudGlider *animation.Glider
 
-	volumeGlider *animation.Glider
-	speedGlider  *animation.Glider
-	pitchGlider  *animation.Glider
+	volumeGlider    *animation.Glider
+	speedGlider     *animation.Glider
+	pitchGlider     *animation.Glider
+	frequencyGlider *animation.Glider
 
 	startPoint  float64
 	startPointE float64
@@ -108,6 +112,16 @@ type Player struct {
 	ScaledHeight float64
 
 	nightcore *common.NightcoreProcessor
+
+	realTime         float64
+	objectsAlphaFail *animation.Glider
+	failOX           *animation.Glider
+	failOY           *animation.Glider
+	failRotation     *animation.Glider
+
+	failing bool
+	failAt  float64
+	failed  bool
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -195,6 +209,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mainCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, true, settings.Playfield.OsuShift)
 	player.mainCamera.Update()
 
+	player.objectCamera = camera2.NewCamera()
+	player.objectCamera.SetOsuViewport(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), settings.Playfield.Scale, true, settings.Playfield.OsuShift)
+	player.objectCamera.Update()
+
 	player.bgCamera = camera2.NewCamera()
 
 	sbScale := 1.0
@@ -252,6 +270,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.volumeGlider = animation.NewGlider(1)
 	player.speedGlider = animation.NewGlider(settings.SPEED)
 	player.pitchGlider = animation.NewGlider(settings.PITCH)
+	player.frequencyGlider = animation.NewGlider(1)
 
 	player.hudGlider = animation.NewGlider(0)
 	player.hudGlider.SetEasing(easing.OutQuad)
@@ -267,9 +286,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.epiGlider = animation.NewGlider(0)
 	player.objectsAlpha = animation.NewGlider(1)
 
-	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && player.controller.GetCursors()[0].IsPlayer && !player.controller.GetCursors()[0].IsAutoplay {
-		player.cursorGlider.SetValue(1.0)
-	}
+	player.objectsAlphaFail = animation.NewGlider(1)
+	player.failOX = animation.NewGlider(0)
+	player.failOY = animation.NewGlider(0)
+	player.failRotation = animation.NewGlider(0)
+
+	player.trySetupFail()
 
 	preempt := math.Min(1800, beatMap.Diff.Preempt)
 
@@ -520,6 +542,50 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	return player
 }
 
+func (player *Player) trySetupFail() {
+	if sO, ok := player.overlay.(*overlays.ScoreOverlay); ok {
+		var ruleset *osu.OsuRuleSet
+
+		if rC, ok1 := player.controller.(*dance.ReplayController); ok1 {
+			ruleset = rC.GetRuleset()
+		} else if rP, ok2 := player.controller.(*dance.PlayerController); ok2 {
+			ruleset = rP.GetRuleset()
+		}
+
+		if ruleset != nil {
+			ruleset.SetFailListener(func(cursor *graphics.Cursor) {
+				log.Println("Player failed!")
+
+				sO.Fail(true)
+
+				player.frequencyGlider.AddEvent(player.realTime, player.realTime+2400, 0.0)
+				player.objectsAlphaFail.AddEvent(player.realTime, player.realTime+2400, 0.0)
+
+				player.failOX.AddEvent(player.realTime, player.realTime+2400, camera2.OsuWidth*(rand.Float64()-0.5)/2)
+				player.failOY.AddEvent(player.realTime, player.realTime+2400, -camera2.OsuHeight*(1+rand.Float64()*0.2))
+
+				rotBase := rand.Float64()
+
+				player.failRotation.AddEvent(player.realTime, player.realTime+2400, math.Copysign((math.Abs(rotBase)*0.5+0.5)/6*math.Pi, rotBase))
+
+				player.failing = true
+				player.failAt = player.realTime + 2400
+
+				player.dimGlider.Reset()
+				player.blurGlider.Reset()
+				player.hudGlider.Reset()
+				player.fxGlider.Reset()
+				player.cursorGlider.Reset()
+				player.objectsAlpha.Reset()
+			})
+		}
+
+		if player.controller.GetCursors()[0].IsPlayer && !player.controller.GetCursors()[0].IsAutoplay {
+			player.cursorGlider.SetValue(1.0)
+		}
+	}
+}
+
 func (player *Player) Update(delta float64) bool {
 	speed := 1.0
 
@@ -554,6 +620,8 @@ func (player *Player) GetTimeOffset() float64 {
 }
 
 func (player *Player) updateMain(delta float64) {
+	player.realTime += delta
+
 	if player.rawPositionF >= player.startPoint && !player.start {
 		player.musicPlayer.Play()
 
@@ -574,9 +642,29 @@ func (player *Player) updateMain(delta float64) {
 
 	player.speedGlider.Update(player.progressMsF)
 	player.pitchGlider.Update(player.progressMsF)
+	player.frequencyGlider.Update(player.realTime)
+
+	player.objectsAlphaFail.Update(player.realTime)
+	player.failOX.Update(player.realTime)
+	player.failOY.Update(player.realTime)
+	player.failRotation.Update(player.realTime)
+
+	player.objectCamera.SetOrigin(vector.NewVec2d(player.failOX.GetValue(), player.failOY.GetValue()))
+	player.objectCamera.SetRotation(player.failRotation.GetValue())
+	player.objectCamera.Update()
+
+	if player.failing && player.realTime >= player.failAt {
+		if !player.failed {
+			player.musicPlayer.Pause()
+			player.MapEnd = player.progressMsF
+		}
+
+		player.failed = true
+	}
 
 	player.musicPlayer.SetTempo(player.speedGlider.GetValue())
 	player.musicPlayer.SetPitch(player.pitchGlider.GetValue())
+	player.musicPlayer.SetRelativeFrequency(player.frequencyGlider.GetValue())
 
 	if player.progressMsF >= player.startPointE {
 		if _, ok := player.controller.(*dance.GenericController); ok {
@@ -679,7 +767,8 @@ func (player *Player) Draw(float64) {
 	player.profiler.PutSample(timMs)
 	player.lastTime = tim
 
-	cameras := player.mainCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+	objectCameras := player.objectCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
+	cursorCameras := player.mainCamera.GenRotated(settings.DIVIDES, -2*math.Pi/float64(settings.DIVIDES))
 
 	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
@@ -697,7 +786,7 @@ func (player *Player) Draw(float64) {
 	cursorColors := settings.Cursor.GetColors(settings.DIVIDES, len(player.controller.GetCursors()), player.Scl, player.cursorGlider.GetValue())
 
 	if player.overlay != nil {
-		player.drawOverlayPart(player.overlay.DrawBackground, cursorColors, cameras[0])
+		player.drawOverlayPart(player.overlay.DrawBackground, cursorColors, cursorCameras[0], 1)
 	}
 
 	player.drawEpilepsyWarning()
@@ -728,19 +817,19 @@ func (player *Player) Draw(float64) {
 	}
 
 	if player.overlay != nil {
-		player.drawOverlayPart(player.overlay.DrawBeforeObjects, cursorColors, cameras[0])
+		player.drawOverlayPart(player.overlay.DrawBeforeObjects, cursorColors, objectCameras[0], player.objectsAlphaFail.GetValue())
 	}
 
-	player.objectContainer.Draw(player.batch, cameras, player.progressMsF, float32(player.Scl), float32(player.objectsAlpha.GetValue()))
+	player.objectContainer.Draw(player.batch, player.mainCamera.GetProjectionView(), objectCameras, player.progressMsF, float32(player.Scl), float32(player.objectsAlpha.GetValue()*player.objectsAlphaFail.GetValue()))
 
 	if player.overlay != nil {
-		player.drawOverlayPart(player.overlay.DrawNormal, cursorColors, cameras[0])
+		player.drawOverlayPart(player.overlay.DrawNormal, cursorColors, objectCameras[0], 1)
 	}
 
 	player.background.DrawOverlay(player.progressMsF, player.batch, bgAlpha, player.bgCamera.GetProjectionView())
 
 	if player.overlay != nil && player.overlay.ShouldDrawHUDBeforeCursor() {
-		player.drawOverlayPart(player.overlay.DrawHUD, cursorColors, player.uiCamera.GetProjectionView())
+		player.drawOverlayPart(player.overlay.DrawHUD, cursorColors, player.uiCamera.GetProjectionView(), 1)
 	}
 
 	if settings.Playfield.DrawCursors {
@@ -753,7 +842,7 @@ func (player *Player) Draw(float64) {
 		graphics.BeginCursorRender()
 
 		for j := 0; j < settings.DIVIDES; j++ {
-			player.batch.SetCamera(cameras[j])
+			player.batch.SetCamera(cursorCameras[j])
 
 			for i, g := range player.controller.GetCursors() {
 				if player.overlay != nil && player.overlay.IsBroken(g) {
@@ -780,7 +869,7 @@ func (player *Player) Draw(float64) {
 	player.batch.SetAdditive(false)
 
 	if player.overlay != nil && !player.overlay.ShouldDrawHUDBeforeCursor() {
-		player.drawOverlayPart(player.overlay.DrawHUD, cursorColors, player.uiCamera.GetProjectionView())
+		player.drawOverlayPart(player.overlay.DrawHUD, cursorColors, player.uiCamera.GetProjectionView(), 1)
 	}
 
 	if bloomEnabled {
@@ -827,14 +916,14 @@ func (player *Player) drawCoin() {
 	player.batch.End()
 }
 
-func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.Color, float64), cursorColors []color2.Color, camera mgl32.Mat4) {
+func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.Color, float64), cursorColors []color2.Color, camera mgl32.Mat4, alpha float64) {
 	player.batch.Begin()
 	player.batch.ResetTransform()
 	player.batch.SetColor(1, 1, 1, 1)
 
 	player.batch.SetCamera(camera)
 
-	drawFunc(player.batch, cursorColors, player.hudGlider.GetValue())
+	drawFunc(player.batch, cursorColors, player.hudGlider.GetValue()*alpha)
 
 	player.batch.End()
 	player.batch.ResetTransform()
