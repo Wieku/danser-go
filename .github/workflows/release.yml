@@ -43,7 +43,7 @@ jobs:
         if: ${{ !failure() && steps.build.conclusion != 'failure' }}
         with:
           name: danser
-          path: danser-${{ github.event.inputs.version }}-win.zip
+          path: dist/artifacts/danser-${{ github.event.inputs.version }}-win.zip
 
   build_linux:
     name: Building linux version
@@ -77,7 +77,7 @@ jobs:
         if: ${{ !failure() && steps.build.conclusion != 'failure' }}
         with:
           name: danser
-          path: danser-${{ github.event.inputs.version }}-linux.zip
+          path: dist/artifacts/danser-${{ github.event.inputs.version }}-linux.zip
 
   publish_release:
     name: Publish draft release
