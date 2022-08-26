@@ -106,8 +106,12 @@ jobs:
         run: |
           set -xe
           shopt -s nullglob
-          NAME=${{ github.event.inputs.version }}
-          TAGNAME=${{ github.event.inputs.version }}
+
+          version="${{ github.event.inputs.version }}"
+
+          NAME="${version// / snapshot }"
+          TAGNAME="${version// /-s}"
+
           hub release create --draft $(for a in artifacts/*.{zip,tar.xz}; do echo -a $a; done) -m "$NAME" -t "master" "$TAGNAME"
         env:
           GITHUB_TOKEN: ${{ github.token }}
