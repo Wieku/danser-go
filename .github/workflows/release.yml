@@ -1,4 +1,4 @@
-name: Create a draft release
+name: Build danser
 
 on:
   workflow_dispatch:
@@ -7,6 +7,11 @@ on:
         description: 'Danser version'
         type: string
         required: true
+      draft:
+        description: 'Create draft release'
+        type: boolean
+        required: false
+        default: true
 
 jobs:
   build_windows:
@@ -30,9 +35,11 @@ jobs:
 
       - name: Build danser
         run: |
-          ./dist-win.sh ${{ github.event.inputs.version }}
-          
-          if [ ! -f "danser-${{ github.event.inputs.version }}-win.zip" ]; then
+          version=${{ github.event.inputs.version }}
+
+          ./dist-win.sh $version
+
+          if [ ! -f "dist/artifacts/danser-${version// /-s}-win.zip" ]; then
             echo "Danser failed to build"
             exit 1
           fi
@@ -43,7 +50,7 @@ jobs:
         if: ${{ !failure() && steps.build.conclusion != 'failure' }}
         with:
           name: danser
-          path: dist/artifacts/danser-${{ github.event.inputs.version }}-win.zip
+          path: dist/artifacts/*
 
   build_linux:
     name: Building linux version
@@ -63,10 +70,12 @@ jobs:
 
       - name: Build danser
         run: |
-          chmod +x dist-linux.sh
-          ./dist-linux.sh ${{ github.event.inputs.version }}
+          version=${{ github.event.inputs.version }}
           
-          if [ ! -f "danser-${{ github.event.inputs.version }}-linux.zip" ]; then
+          chmod +x dist-linux.sh
+          ./dist-linux.sh $version
+          
+          if [ ! -f "dist/artifacts/danser-${version// /-s}-linux.zip" ]; then
             echo "Danser failed to build"
             exit 1
           fi
@@ -77,11 +86,11 @@ jobs:
         if: ${{ !failure() && steps.build.conclusion != 'failure' }}
         with:
           name: danser
-          path: dist/artifacts/danser-${{ github.event.inputs.version }}-linux.zip
+          path: dist/artifacts/*
 
   publish_release:
     name: Publish draft release
-    if: ${{ !cancelled() && needs.build_windows.result == 'success' && needs.build_linux.result == 'success' }}
+    if: ${{ !cancelled() && needs.build_windows.result == 'success' && needs.build_linux.result == 'success' && github.event.inputs.draft }}
     needs: [build_windows, build_linux]
     runs-on: ubuntu-latest
     steps:
