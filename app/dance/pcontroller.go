@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform"
 	"log"
 	"strings"
 	"time"
@@ -34,8 +35,8 @@ type PlayerController struct {
 	previousPos     vector.Vector2f
 	position        vector.Vector2f
 
-	rawInput         bool
-	inside           bool
+	rawInput bool
+	inside   bool
 
 	quickRestart     bool
 	quickRestartTime float64
@@ -83,7 +84,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		return
 	}
 
-	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.LeftKey) {
+	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.LeftKey) {
 		if action == glfw.Press {
 			controller.cursors[0].LeftKey = true
 		} else if action == glfw.Release {
@@ -91,7 +92,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		}
 	}
 
-	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.RightKey) {
+	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.RightKey) {
 		if action == glfw.Press {
 			controller.cursors[0].RightKey = true
 		} else if action == glfw.Release {
@@ -99,7 +100,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		}
 	}
 
-	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.RestartKey) {
+	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.RestartKey) {
 		if action == glfw.Press {
 			controller.quickRestartTime = controller.lastTime
 			controller.quickRestart = true
@@ -108,7 +109,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		}
 	}
 
-	if strings.EqualFold(glfw.GetKeyName(key, scancode), settings.Input.SmokeKey) {
+	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.SmokeKey) {
 		if action == glfw.Press {
 			controller.cursors[0].SmokeKey = true
 		} else if action == glfw.Release {
@@ -147,7 +148,7 @@ func (controller *PlayerController) Update(time float64, delta float64) {
 			controller.relaxController.Update(time)
 		}
 
-		if controller.quickRestart && time - controller.quickRestartTime > 500 {
+		if controller.quickRestart && time-controller.quickRestartTime > 500 {
 			controller.quickRestart = false
 
 			utils.QuickRestart()
@@ -206,7 +207,7 @@ func (controller *PlayerController) updateRaw(mousePos vector.Vector2f) {
 
 	if controller.inside &&
 		(controller.position.X < 0 || controller.position.X64() > settings.Graphics.GetWidthF() ||
-		controller.position.Y < 0 || controller.position.Y64() > settings.Graphics.GetHeightF() || !hovered) {
+			controller.position.Y < 0 || controller.position.Y64() > settings.Graphics.GetHeightF() || !hovered) {
 		controller.setRawStatus(false)
 	} else if input2.Focused && hovered && !controller.inside {
 		controller.setRawStatus(true)
