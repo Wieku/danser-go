@@ -3,6 +3,7 @@ package states
 import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
@@ -554,6 +555,10 @@ func (player *Player) trySetupFail() {
 
 		if ruleset != nil {
 			ruleset.SetFailListener(func(cursor *graphics.Cursor) {
+				if !settings.RECORD {
+					audio.PlayFailSound()
+				}
+
 				log.Println("Player failed!")
 
 				sO.Fail(true)

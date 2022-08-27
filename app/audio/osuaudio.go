@@ -270,3 +270,10 @@ func LoadBeatmapSamples(dir string) {
 func LoadSample(name string) *bass.Sample {
 	return skin.GetSample(name)
 }
+
+func PlayFailSound() {
+	sample := LoadSample("failsound")
+	if sample != nil {
+		sample.Play()
+	}
+}
