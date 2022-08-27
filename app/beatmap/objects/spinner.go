@@ -127,7 +127,10 @@ func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 		spinner.middle.ResetValuesToTransforms()
 	} else {
 		spinner.background = sprite.NewSpriteSingle(skin.GetTexture("spinner-background"), 0.0, vector.NewVec2d(spinner.ScaledWidth/2, 46.5+350.4), vector.Centre)
-		spinner.metre = sprite.NewSpriteSingle(skin.GetTexture("spinner-metre"), 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5), vector.TopLeft) //nolint:misspell
+
+		sMetre := skin.GetTexture("spinner-metre")
+
+		spinner.metre = sprite.NewSpriteSingle(sMetre, 2.0, vector.NewVec2d(spinner.ScaledWidth/2-512, 47.5+float64(sMetre.Height)), vector.BottomLeft) //nolint:misspell
 		spinner.metre.SetCutOrigin(vector.BottomCentre)
 
 		spinner.middle2 = sprite.NewSpriteSingle(skin.GetTexture("spinner-circle"), 1.0, spinner.StartPosRaw.Copy64(), vector.Centre)
