@@ -186,6 +186,8 @@ type launcher struct {
 	lastKnockoutDir string
 
 	knockoutManager *knockoutManagerPopup
+
+	currentEditor *settingsEditor
 }
 
 func StartLauncher() {
@@ -379,6 +381,12 @@ func (l *launcher) startGLFW() {
 
 		if launcherConfig.CheckForUpdates {
 			checkForUpdates(false)
+		}
+	})
+
+	input.RegisterListener(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if l.currentEditor != nil {
+			l.currentEditor.updateKey(w, key, scancode, action, mods)
 		}
 	})
 }
@@ -618,6 +626,8 @@ func (l *launcher) Draw() {
 
 func (l *launcher) drawImgui() {
 	Begin()
+
+	resetPopupHierarchyInfo()
 
 	lock := l.danserRunning
 
@@ -1370,9 +1380,9 @@ func (l *launcher) drawConfigPanel() {
 		imgui.TableNextColumn()
 
 		if imgui.ButtonV("Edit", vec2(-1, 0)) {
-			sEditor := newSettingsEditor(l.currentConfig)
+			l.currentEditor = newSettingsEditor(l.currentConfig)
 
-			sEditor.setCloseListener(func() {
+			l.currentEditor.setCloseListener(func() {
 				settings.SaveCredentials(false)
 				l.currentConfig.Save("", false)
 
@@ -1381,7 +1391,7 @@ func (l *launcher) drawConfigPanel() {
 				}
 			})
 
-			l.openPopup(sEditor)
+			l.openPopup(l.currentEditor)
 		}
 
 		imgui.EndTable()

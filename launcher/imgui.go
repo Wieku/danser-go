@@ -157,6 +157,8 @@ func SetupImgui(win *glfw.Window) {
 	})
 
 	input.Win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		input.CallListeners(w, key, scancode, action, mods)
+
 		if action != glfw.Press && action != glfw.Release {
 			return
 		}

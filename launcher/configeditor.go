@@ -2,6 +2,7 @@ package launcher
 
 import (
 	"fmt"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/settings"
@@ -9,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/platform"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -39,6 +41,10 @@ type settingsEditor struct {
 	lastActive  string
 	pwShowHide  map[string]bool
 	comboSearch map[string]string
+
+	keyChange       string
+	keyChangeVal    reflect.Value
+	keyChangeOpened bool
 }
 
 func newSettingsEditor(config *settings.Config) *settingsEditor {
@@ -58,6 +64,18 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 	editor.search()
 
 	return editor
+}
+
+func (editor *settingsEditor) updateKey(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
+	if editor.opened && editor.keyChange != "" && action == glfw.Press {
+		keyText := platform.GetKeyName(key, scancode)
+
+		if keyText != "" {
+			editor.keyChangeVal.SetString(keyText)
+			editor.keyChangeOpened = false
+			editor.keyChange = ""
+		}
+	}
 }
 
 func (editor *settingsEditor) drawEditor() {
@@ -672,7 +690,7 @@ func (editor *settingsEditor) getLabel(d reflect.StructField) string {
 }
 
 func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d reflect.StructField) {
-	editor.drawComponent(jsonPath, editor.getLabel(d), false, true, d, func() {
+	editor.drawComponent(jsonPath, editor.getLabel(d), false, true, -1, d, func() {
 		base := f.Bool()
 
 		if imgui.Checkbox(jsonPath, &base) {
@@ -683,7 +701,7 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 }
 
 func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
-	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, d, func() {
+	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, -1, d, func() {
 		contentAvail := imgui.ContentRegionAvail().X
 
 		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(contentAvail, 0), contentAvail) {
@@ -756,7 +774,14 @@ func (editor *settingsEditor) buildIntBox(jsonPath string, f reflect.Value, d re
 }
 
 func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d reflect.StructField) {
-	editor.drawComponent(jsonPath, editor.getLabel(d), d.Tag.Get("long") != "", false, d, func() {
+	cWidth := float32(-1)
+	_, okKey := d.Tag.Lookup("key")
+
+	if okKey {
+		cWidth = 120
+	}
+
+	editor.drawComponent(jsonPath, editor.getLabel(d), d.Tag.Get("long") != "", false, cWidth, d, func() {
 		imgui.SetNextItemWidth(-1)
 
 		base := f.String()
@@ -767,7 +792,32 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 		cFunc, okCS := d.Tag.Lookup("comboSrc")
 		_, okPW := d.Tag.Lookup("password")
 
-		if okP || okF {
+		if okKey {
+			if imgui.ButtonV(base+"##"+jsonPath, vec2(-1, 0)) {
+				editor.keyChangeVal = f
+				editor.keyChange = jsonPath
+				editor.keyChangeOpened = true
+			}
+
+			if editor.keyChange == jsonPath {
+				popupSmall("KeyChange"+jsonPath, &editor.keyChangeOpened, true, func() {
+					width := imgui.CalcTextSize("Click outside this box to cancel", false, 0).X + 30
+
+					centerTable("KeyChange1"+jsonPath, width, func() {
+						imgui.Text("Press any key...")
+					})
+
+					centerTable("KeyChange2"+jsonPath, width, func() {
+						imgui.Text("Click outside this box to cancel")
+					})
+				})
+
+				if !editor.keyChangeOpened {
+					editor.keyChange = ""
+				}
+			}
+
+		} else if okP || okF {
 			if imgui.BeginTableV("tbr"+jsonPath, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 				imgui.TableSetupColumnV("tbr1"+jsonPath, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
 				imgui.TableSetupColumnV("tbr2"+jsonPath, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
@@ -971,7 +1021,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 	_, okS := d.Tag.Lookup("string")
 	cSpec, okC := d.Tag.Lookup("combo")
 
-	editor.drawComponent(jsonPath, editor.getLabel(d), !okS && !okC, false, d, func() {
+	editor.drawComponent(jsonPath, editor.getLabel(d), !okS && !okC, false, -1, d, func() {
 		imgui.SetNextItemWidth(-1)
 
 		format := firstOf(d.Tag.Get("format"), "%d")
@@ -1039,7 +1089,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 }
 
 func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d reflect.StructField) {
-	editor.drawComponent(jsonPath, editor.getLabel(d), d.Tag.Get("string") == "", false, d, func() {
+	editor.drawComponent(jsonPath, editor.getLabel(d), d.Tag.Get("string") == "", false, -1, d, func() {
 		imgui.SetNextItemWidth(-1)
 
 		if d.Tag.Get("string") != "" {
@@ -1097,16 +1147,20 @@ func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d ref
 	}
 
 	if withLabel {
-		editor.drawComponent(jsonPath, editor.getLabel(d), false, false, d, dComp)
+		editor.drawComponent(jsonPath, editor.getLabel(d), false, false, -1, d, dComp)
 	} else {
 		dComp()
 	}
 }
 
-func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkbox bool, d reflect.StructField, draw func()) {
+func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkbox bool, customWidth float32, d reflect.StructField, draw func()) {
 	width := imgui.FontSize() + imgui.CurrentStyle().FramePadding().X*2 - 1 // + imgui.CurrentStyle().ItemSpacing().X
 	if !checkbox {
-		width = 240 + imgui.CalcTextSize("x", false, 0).X + imgui.CurrentStyle().FramePadding().X*4
+		if customWidth > 0 {
+			width = customWidth
+		} else {
+			width = 240 + imgui.CalcTextSize("x", false, 0).X + imgui.CurrentStyle().FramePadding().X*4
+		}
 	}
 
 	cCount := 1

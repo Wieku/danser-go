@@ -3,6 +3,7 @@ package launcher
 import (
 	"fmt"
 	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"golang.org/x/exp/constraints"
@@ -83,10 +84,16 @@ func (p *popup) setCloseListener(closeListener func()) {
 	p.closeListener = closeListener
 }
 
-func popupSmall(name string, opened *bool, dynamicSize bool, content func()) {
-	wSize := imgui.WindowSize()
+var openedAbove bool
 
-	sX := wSize.X / 2
+func resetPopupHierarchyInfo() {
+	openedAbove = false
+}
+
+func popupSmall(name string, opened *bool, dynamicSize bool, content func()) {
+	width := float32(settings.Graphics.WindowWidth)
+
+	sX := width / 2
 	if dynamicSize {
 		sX = 0
 	}
@@ -100,7 +107,7 @@ func popupWide(name string, opened *bool, content func()) {
 }
 
 func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
-	wSize := imgui.WindowSize()
+	wSizeX, wSizeY := float32(settings.Graphics.WindowWidth), float32(settings.Graphics.WindowHeight)
 
 	if *opened {
 		if !imgui.IsPopupOpen("##" + name) {
@@ -110,8 +117,8 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 		imgui.SetNextWindowSize(size)
 
 		imgui.SetNextWindowPosV(imgui.Vec2{
-			X: wSize.X / 2,
-			Y: wSize.Y / 2,
+			X: wSizeX / 2,
+			Y: wSizeY / 2,
 		}, imgui.ConditionAppearing, imgui.Vec2{
 			X: 0.5,
 			Y: 0.5,
@@ -120,11 +127,13 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 		if imgui.BeginPopupModalV("##"+name, opened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
 			content()
 
-			hovered := imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows | imgui.HoveredFlagsAllowWhenBlockedByActiveItem | imgui.HoveredFlagsAllowWhenBlockedByPopup)
+			hovered := imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) || openedAbove
 
 			if ((imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !hovered) || imgui.IsKeyPressed(imgui.KeyEscape) {
 				*opened = false
 			}
+
+			openedAbove = true
 
 			imgui.EndPopup()
 		}

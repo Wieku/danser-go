@@ -4,6 +4,7 @@ import "C"
 import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"strconv"
+	"strings"
 )
 
 func GetKeyName(key glfw.Key, scancode int) string {
@@ -84,7 +85,7 @@ func GetKeyName(key glfw.Key, scancode int) string {
 		case glfw.KeySpace:
 			return "SPACE"
 		default:
-			return glfw.GetKeyName(key, scancode)
+			return strings.ToUpper(glfw.GetKeyName(key, scancode))
 		}
 	}
 }
