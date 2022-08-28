@@ -18,6 +18,7 @@ type Metadata struct {
 	FPS      float64
 	Duration float64
 	PixFmt   string
+	IsMOV    bool // We need that info to determine if we can apply "ignore_editlist" parameter
 }
 
 type probeOutput struct {
@@ -35,7 +36,8 @@ type stream struct {
 }
 
 type format struct {
-	Duration string `json:"duration"`
+	FormatName string `json:"format_name"`
+	Duration   string `json:"duration"`
 }
 
 func LoadMetadata(path string) *Metadata {
@@ -50,31 +52,9 @@ func LoadMetadata(path string) *Metadata {
 		return nil
 	}
 
-	output, err := exec.Command(
-		probeExec,
-		"-i", path,
-		"-select_streams", "v:0",
-		"-show_entries", "stream",
-		"-show_entries", "format",
-		"-of", "json",
-		"-loglevel", "quiet",
-	).Output()
+	mData := getProbeOutput(probeExec, path, false)
 
-	if err != nil {
-		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
-			log.Println(fmt.Sprintf("ffmpeg was installed incorrectly! Please make sure needed libraries (libs/*.so or bin/*.dll) are installed as well. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg. Error: %s", err))
-		} else {
-			log.Println(fmt.Sprintf("ffprobe: Failed to get media info. Error: %s", err))
-		}
-
-		return nil
-	}
-
-	mData := new(probeOutput)
-
-	err = json.Unmarshal(output, mData)
-	if err != nil {
-		log.Println("Failed to parse video metadata:", err)
+	if mData == nil {
 		return nil
 	}
 
@@ -99,7 +79,51 @@ func LoadMetadata(path string) *Metadata {
 		FPS:      math.Min(aFPS, rFPS),
 		Duration: parseRate(mData.Streams[0].Duration),
 		PixFmt:   mData.Streams[0].PixFmt,
+		IsMOV:    strings.Contains(mData.Format.FormatName, "mov"),
 	}
+}
+
+func getProbeOutput(probeExec, path string, mov bool) *probeOutput {
+	var args []string
+
+	if mov {
+		args = append(args, "-ignore_editlist", "1")
+	}
+
+	args = append(args, "-i", path,
+		"-select_streams", "v:0",
+		"-show_entries", "stream",
+		"-show_entries", "format",
+		"-of", "json",
+		"-loglevel", "quiet",
+	)
+
+	output, err := exec.Command(probeExec, args...).Output()
+
+	if err != nil {
+		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
+			log.Println(fmt.Sprintf("ffmpeg was installed incorrectly! Please make sure needed libraries (libs/*.so or bin/*.dll) are installed as well. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg. Error: %s", err))
+		} else {
+			log.Println(fmt.Sprintf("ffprobe: Failed to get media info. Error: %s", err))
+		}
+
+		return nil
+	}
+
+	mData := new(probeOutput)
+
+	err = json.Unmarshal(output, mData)
+	if err != nil {
+		log.Println("Failed to parse video metadata:", err)
+		return nil
+	}
+
+	// Run a second pass if mov/mp4 is detected
+	if !mov && strings.Contains(mData.Format.FormatName, "mov") {
+		return getProbeOutput(probeExec, path, true)
+	}
+
+	return mData
 }
 
 func parseRate(rate string) float64 {
