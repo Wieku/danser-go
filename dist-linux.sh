@@ -23,9 +23,9 @@ go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=
 
 mv $BUILD_DIR/danser-core.so $BUILD_DIR/libdanser-core.so
 
-gcc -no-pie --verbose -O3 -o $BUILD_DIR/danser -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,. -L$BUILD_DIR/ -ldanser-core
+gcc -no-pie --verbose -O3 -o $BUILD_DIR/danser-cli -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,. -L$BUILD_DIR/ -ldanser-core
 
-gcc -no-pie --verbose -O3 -D LAUNCHER -o $BUILD_DIR/danser-launcher -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,. -L$BUILD_DIR/ -ldanser-core
+gcc -no-pie --verbose -O3 -D LAUNCHER -o $BUILD_DIR/danser -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,. -L$BUILD_DIR/ -ldanser-core
 
 rm $BUILD_DIR/danser-core.h
 

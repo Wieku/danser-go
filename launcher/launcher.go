@@ -1579,7 +1579,7 @@ func (l *launcher) startDanser() {
 	dExec := os.Args[0]
 
 	if build.Stream == "Release" {
-		dExec = filepath.Join(env.LibDir(), "danser")
+		dExec = filepath.Join(env.LibDir(), build.DanserExec)
 	}
 
 	l.danserCmd = exec.Command(dExec, l.bld.getArguments()...)
