@@ -758,7 +758,7 @@ func checkForUpdates() {
 		log.Println("You're using the newest version of danser.")
 	case utils.Snapshot:
 		log.Println("You're using a snapshot version of danser.")
-		log.Println("For newer version of snapshots please visit an official danser discord server at:", url)
+		log.Println("For newer version of snapshots please visit the official danser discord server at:", url)
 	case utils.UpdateAvailable:
 		log.Println("You're using an older version of danser.")
 		log.Println("You can download a newer version here:", url)
