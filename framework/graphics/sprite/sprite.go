@@ -68,54 +68,37 @@ func (sprite *Sprite) Update(time float64) {
 
 func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) { //nolint:gocyclo
 	switch transform.GetType() {
-	case animation.Fade, animation.Scale, animation.Rotate, animation.MoveX, animation.MoveY:
-		value := transform.GetSingle(time)
+	case animation.Fade:
+		sprite.color.A = float32(transform.GetSingle(time))
+	case animation.Scale:
+		s := transform.GetSingle(time)
 
-		switch transform.GetType() {
-		case animation.Fade:
-			sprite.color.A = float32(value)
-		case animation.Scale:
-			sprite.scale.X = value
-			sprite.scale.Y = value
-		case animation.Rotate:
-			sprite.rotation = value
-		case animation.MoveX:
-			sprite.position.X = value
-		case animation.MoveY:
-			sprite.position.Y = value
-		}
-	case animation.Move, animation.ScaleVector:
-		x, y := transform.GetDouble(time)
-
-		switch transform.GetType() {
-		case animation.Move:
-			sprite.position.X = x
-			sprite.position.Y = y
-		case animation.ScaleVector:
-			sprite.scale.X = x
-			sprite.scale.Y = y
-		}
-	case animation.Additive, animation.HorizontalFlip, animation.VerticalFlip:
-		value := transform.GetBoolean(time)
-
-		switch transform.GetType() {
-		case animation.Additive:
-			sprite.additive = value
-		case animation.HorizontalFlip:
-			sprite.flipX = value
-		case animation.VerticalFlip:
-			sprite.flipY = value
-		}
-	case animation.Color3, animation.Color4:
+		sprite.scale.X = s
+		sprite.scale.Y = s
+	case animation.Rotate:
+		sprite.rotation = transform.GetSingle(time)
+	case animation.MoveX:
+		sprite.position.X = transform.GetSingle(time)
+	case animation.MoveY:
+		sprite.position.Y = transform.GetSingle(time)
+	case animation.Move:
+		sprite.position.X, sprite.position.Y = transform.GetDouble(time)
+	case animation.ScaleVector:
+		sprite.scale.X, sprite.scale.Y = transform.GetDouble(time)
+	case animation.Additive:
+		sprite.additive = transform.GetBoolean(time)
+	case animation.HorizontalFlip:
+		sprite.flipX = transform.GetBoolean(time)
+	case animation.VerticalFlip:
+		sprite.flipY = transform.GetBoolean(time)
+	case animation.Color3:
 		color := transform.GetColor(time)
 
 		sprite.color.R = color.R
 		sprite.color.G = color.G
 		sprite.color.B = color.B
-
-		if transform.GetType() == animation.Color4 {
-			sprite.color.A = color.A
-		}
+	case animation.Color4:
+		sprite.color = transform.GetColor(time)
 	}
 }
 
