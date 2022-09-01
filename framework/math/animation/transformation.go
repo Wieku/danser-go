@@ -48,6 +48,11 @@ type Transformation struct {
 	endValues          [4]float64
 	easing             func(float64) float64
 	startTime, endTime float64
+
+	repetitions int
+	loopDelay   float64
+
+	id int64
 }
 
 func NewBooleanTransform(transformationType TransformationType, startTime, endTime float64) *Transformation {
@@ -180,4 +185,30 @@ func (t *Transformation) Clone(startTime, endTime float64) *Transformation {
 		startTime:          startTime,
 		endTime:            endTime,
 	}
+}
+
+func (t *Transformation) SetLoop(runs int, delay float64) {
+	t.repetitions = mutils.Max(0, runs-1)
+	t.loopDelay = delay
+}
+
+func (t *Transformation) IsLoop() bool {
+	return t.repetitions > 0
+}
+
+func (t *Transformation) UpdateLoop() {
+	if t.repetitions > 0 {
+
+		t.startTime += t.loopDelay
+		t.endTime += t.loopDelay
+		t.repetitions--
+	}
+}
+
+func (t *Transformation) SetID(id int64) {
+	t.id = id
+}
+
+func (t *Transformation) GetID() int64 {
+	return t.id
 }

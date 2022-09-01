@@ -6,9 +6,10 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"golang.org/x/exp/slices"
 	"math"
-	"sort"
 )
 
 type Sprite struct {
@@ -34,6 +35,8 @@ type Sprite struct {
 	cutX      float64
 	cutY      float64
 	cutOrigin vector.Vector2d
+
+	nextTransformID int64
 }
 
 func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
@@ -50,6 +53,8 @@ func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.
 }
 
 func (sprite *Sprite) Update(time float64) {
+	wasLoop := false
+
 	for i := 0; i < len(sprite.transforms); i++ {
 		transform := sprite.transforms[i]
 		if time < transform.GetStartTime() {
@@ -59,10 +64,19 @@ func (sprite *Sprite) Update(time float64) {
 		sprite.updateTransform(transform, time)
 
 		if time >= transform.GetEndTime() {
-			copy(sprite.transforms[i:], sprite.transforms[i+1:])
-			sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
-			i--
+			if transform.IsLoop() {
+				transform.UpdateLoop()
+				wasLoop = true
+			} else {
+				copy(sprite.transforms[i:], sprite.transforms[i+1:])
+				sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
+				i--
+			}
 		}
+	}
+
+	if wasLoop {
+		sprite.SortTransformations()
 	}
 }
 
@@ -103,28 +117,35 @@ func (sprite *Sprite) updateTransform(transform *animation.Transformation, time 
 }
 
 func (sprite *Sprite) AddTransform(transformation *animation.Transformation) {
-	sprite.transforms = append(sprite.transforms, transformation)
-
+	sprite.AddTransformUnordered(transformation)
 	sprite.SortTransformations()
 }
 
 func (sprite *Sprite) AddTransforms(transformations []*animation.Transformation) {
-	sprite.transforms = append(sprite.transforms, transformations...)
-
+	sprite.AddTransformsUnordered(transformations)
 	sprite.SortTransformations()
 }
 
 func (sprite *Sprite) AddTransformUnordered(transformation *animation.Transformation) {
+	transformation.SetID(sprite.nextTransformID)
+	sprite.nextTransformID++
+
 	sprite.transforms = append(sprite.transforms, transformation)
 }
 
 func (sprite *Sprite) AddTransformsUnordered(transformations []*animation.Transformation) {
-	sprite.transforms = append(sprite.transforms, transformations...)
+	for _, t := range transformations {
+		t.SetID(sprite.nextTransformID)
+		sprite.nextTransformID++
+
+		sprite.transforms = append(sprite.transforms, t)
+	}
 }
 
 func (sprite *Sprite) SortTransformations() {
-	sort.SliceStable(sprite.transforms, func(i, j int) bool {
-		return sprite.transforms[i].GetStartTime() < sprite.transforms[j].GetStartTime()
+	slices.SortFunc(sprite.transforms, func(a, b *animation.Transformation) bool {
+		r := mutils.Compare(a.GetStartTime(), b.GetStartTime())
+		return r == -1 || (r == 0 && a.GetID() < b.GetID())
 	})
 }
 
