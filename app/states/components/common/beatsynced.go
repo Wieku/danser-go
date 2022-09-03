@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
 
@@ -36,7 +37,7 @@ type BeatSynced struct {
 
 func NewBeatSynced() *BeatSynced {
 	return &BeatSynced{
-		Sprite:   &sprite.Sprite{},
+		Sprite:   sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(0, 0), vector.Centre),
 		lastTime: math.NaN(),
 		Divisor:  1,
 	}

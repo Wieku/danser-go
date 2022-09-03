@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"golang.org/x/exp/slices"
 	"math"
+	"sort"
 )
 
 type Sprite struct {
@@ -53,8 +54,6 @@ func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.
 }
 
 func (sprite *Sprite) Update(time float64) {
-	wasLoop := false
-
 	for i := 0; i < len(sprite.transforms); i++ {
 		transform := sprite.transforms[i]
 		if time < transform.GetStartTime() {
@@ -66,17 +65,26 @@ func (sprite *Sprite) Update(time float64) {
 		if time >= transform.GetEndTime() {
 			if transform.IsLoop() {
 				transform.UpdateLoop()
-				wasLoop = true
+
+				n := sort.Search(len(sprite.transforms)-i-1, func(f int) bool {
+					b := sprite.transforms[f+i+1]
+
+					r := mutils.Compare(transform.GetStartTime(), b.GetStartTime())
+					return r == -1 || (r == 0 && transform.GetID() < b.GetID())
+				})
+
+				if n != 0 {
+					copy(sprite.transforms[i:], sprite.transforms[i+1:n+i+1])
+					sprite.transforms[n+i] = transform
+
+					i--
+				}
 			} else {
 				copy(sprite.transforms[i:], sprite.transforms[i+1:])
 				sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
 				i--
 			}
 		}
-	}
-
-	if wasLoop {
-		sprite.SortTransformations()
 	}
 }
 
