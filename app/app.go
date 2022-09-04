@@ -656,14 +656,16 @@ func mainLoopNormal() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if action == glfw.Press {
 				switch key {
-				case glfw.KeyF2:
-					scheduleScreenshot = true
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
 					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
+				default:
+					if platform.GetKeyName(key, scancode) == settings.Input.ScreenshotKey {
+						scheduleScreenshot = true
+					}
 				}
 			}
 
