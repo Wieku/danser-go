@@ -119,13 +119,13 @@ func SetupImgui(win *glfw.Window) {
 	img0 := ImIO.Fonts().TextureDataAlpha8()
 	img1 := ImIO.Fonts().TextureDataRGBA32()
 
-	tex = texture.NewTextureSingleFormat(img1.Width, img1.Height, texture.RGBA, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
+	tex = texture.NewTextureSingleFormat(img0.Width, img0.Height, texture.Red, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
 
-	size := img1.Width * img1.Height * 4
+	size := img0.Width * img0.Height
 
-	pixels := (*[1 << 30]uint8)(img1.Pixels)[:size:size] // cast from unsafe pointer to uint8 slice
+	pixels := (*[1 << 30]uint8)(img0.Pixels)[:size:size] // cast from unsafe pointer to uint8 slice
 
-	tex.SetData(0, 0, img1.Width, img1.Height, pixels)
+	tex.SetData(0, 0, img0.Width, img0.Height, pixels)
 
 	C.free(img0.Pixels) //Reduce some memory, seems that imgui doesn't explode
 	C.free(img1.Pixels) //Reduce some memory, seems that imgui doesn't explode
@@ -466,6 +466,7 @@ func DrawImgui() {
 
 	tex.Bind(0)
 	rShader.SetUniform("tex", 0)
+	rShader.SetUniform("texRGBA", 0)
 
 	lastBound := imgui.TextureID(0)
 
@@ -503,8 +504,10 @@ func DrawImgui() {
 			cId := cmd.TextureID()
 			if cId != lastBound {
 				if cId == 0 {
+					rShader.SetUniform("texRGBA", 0)
 					tex.Bind(0)
 				} else {
+					rShader.SetUniform("texRGBA", 1)
 					gl.BindTextureUnit(0, uint32(cId))
 				}
 
