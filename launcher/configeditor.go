@@ -1202,6 +1202,20 @@ func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d ref
 }
 
 func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkbox bool, customWidth float32, d reflect.StructField, draw func()) {
+	liveEdit := true
+
+	if l, ok := d.Tag.Lookup("liveedit"); ok && l == "false" {
+		liveEdit = false
+	}
+
+	dRunLock := !liveEdit && editor.danserRunning
+
+	if dRunLock {
+		imgui.BeginGroup()
+		imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+		imgui.PushStyleColor(imgui.StyleColorText, vec4(0.8, 0.8, 0.8, 1))
+	}
+
 	width := imgui.FontSize() + imgui.CurrentStyle().FramePadding().X*2 - 1 // + imgui.CurrentStyle().ItemSpacing().X
 	if !checkbox {
 		if customWidth > 0 {
@@ -1274,6 +1288,18 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 		draw()
 
 		imgui.EndTable()
+	}
+
+	if dRunLock {
+		imgui.PopStyleColor()
+		imgui.PopItemFlag()
+		imgui.EndGroup()
+
+		if imgui.IsItemHovered() {
+			imgui.BeginTooltip()
+			imgui.Text("This option can't be edited while danser is running.")
+			imgui.EndTooltip()
+		}
 	}
 }
 
