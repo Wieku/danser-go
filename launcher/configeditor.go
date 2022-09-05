@@ -45,6 +45,9 @@ type settingsEditor struct {
 	keyChange       string
 	keyChangeVal    reflect.Value
 	keyChangeOpened bool
+	danserRunning   bool
+
+	saveListener func()
 }
 
 func newSettingsEditor(config *settings.Config) *settingsEditor {
@@ -78,92 +81,135 @@ func (editor *settingsEditor) updateKey(_ *glfw.Window, key glfw.Key, scancode i
 	}
 }
 
+func (editor *settingsEditor) setDanserRunning(running bool) {
+	editor.danserRunning = running
+}
+
+func (editor *settingsEditor) setSaveListener(saveListener func()) {
+	editor.saveListener = saveListener
+}
+
 func (editor *settingsEditor) drawEditor() {
+	imgui.PushItemFlag(imgui.ItemFlagsDisabled, false)
+
 	settings.General.OsuSkinsDir = editor.combined.General.OsuSkinsDir
 
 	imgui.PushStyleColor(imgui.StyleColorWindowBg, vec4(0, 0, 0, .9))
 	imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(.2, .2, .2, 1))
 
-	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(2, 0))
+	currentRunning := editor.danserRunning
 
-	if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, vec2(-1, -1), -1) {
-		imgui.PopStyleVar()
+	imgui.PushFont(Font20)
 
-		imgui.TableSetupColumnV("Edit main table 1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("Edit main table 2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+	height := imgui.ContentRegionAvail().Y
+	if currentRunning {
+		height -= imgui.FrameHeightWithSpacing() + imgui.CurrentStyle().ItemSpacing().Y
+	}
 
-		imgui.TableNextColumn()
+	imgui.PopFont()
 
-		imgui.PushStyleColor(imgui.StyleColorChildBg, vec4(0, 0, 0, .5))
+	if imgui.BeginChildV("##EditorUp", vec2(-1, height), false, 0) {
+		imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(2, 0))
+		if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, vec2(-1, -1), -1) {
+			imgui.PopStyleVar()
 
-		imgui.PushFont(FontAw)
-		{
+			imgui.TableSetupColumnV("Edit main table 1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+			imgui.TableSetupColumnV("Edit main table 2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
 
-			imgui.PushStyleVarFloat(imgui.StyleVarScrollbarSize, 9)
+			imgui.TableNextColumn()
 
-			if imgui.BeginChildV("##Editor navigation", vec2(imgui.FontSize()*1.5+9, -1), false, imgui.WindowFlagsAlwaysVerticalScrollbar) {
-				editor.scrollTo = ""
+			imgui.PushStyleColor(imgui.StyleColorChildBg, vec4(0, 0, 0, .5))
 
-				imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
-				imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-				imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, vzero())
+			imgui.PushFont(FontAw)
+			{
 
-				editor.buildNavigationFor(editor.combined)
+				imgui.PushStyleVarFloat(imgui.StyleVarScrollbarSize, 9)
+
+				if imgui.BeginChildV("##Editor navigation", vec2(imgui.FontSize()*1.5+9, -1), false, imgui.WindowFlagsAlwaysVerticalScrollbar) {
+					editor.scrollTo = ""
+
+					imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
+					imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
+					imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, vzero())
+
+					editor.buildNavigationFor(editor.combined)
+
+					imgui.PopStyleVar()
+					imgui.PopStyleVar()
+					imgui.PopStyleVar()
+				}
 
 				imgui.PopStyleVar()
+
+				imgui.EndChild()
+			}
+			imgui.PopFont()
+
+			imgui.PopStyleColor()
+
+			imgui.TableNextColumn()
+
+			imgui.PushFont(Font32)
+			{
+				imgui.SetNextItemWidth(-1)
+
+				if searchBox("##Editor search", &editor.searchString) {
+					editor.search()
+				}
+
+				if !editor.blockSearch && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+					imgui.SetKeyboardFocusHereV(-1)
+				}
+			}
+			imgui.PopFont()
+
+			imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, vec2(5, 0))
+
+			if imgui.BeginChildV("##Editor main", vec2(-1, -1), false, imgui.WindowFlagsAlwaysUseWindowPadding) {
 				imgui.PopStyleVar()
+
+				editor.blockSearch = false
+
+				imgui.PushFont(Font20)
+
+				editor.drawSettings()
+
+				imgui.PopFont()
+			} else {
 				imgui.PopStyleVar()
 			}
-
-			imgui.PopStyleVar()
 
 			imgui.EndChild()
-		}
-		imgui.PopFont()
 
-		imgui.PopStyleColor()
-
-		imgui.TableNextColumn()
-
-		imgui.PushFont(Font32)
-		{
-			imgui.SetNextItemWidth(-1)
-
-			if searchBox("##Editor search", &editor.searchString) {
-				editor.search()
-			}
-
-			if !editor.blockSearch && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
-				imgui.SetKeyboardFocusHereV(-1)
-			}
-		}
-		imgui.PopFont()
-
-		imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, vec2(5, 0))
-
-		if imgui.BeginChildV("##Editor main", vec2(-1, -1), false, imgui.WindowFlagsAlwaysUseWindowPadding) {
-			imgui.PopStyleVar()
-
-			editor.blockSearch = false
-
-			imgui.PushFont(Font20)
-
-			editor.drawSettings()
-
-			imgui.PopFont()
+			imgui.EndTable()
 		} else {
 			imgui.PopStyleVar()
 		}
-
-		imgui.EndChild()
-
-		imgui.EndTable()
-	} else {
-		imgui.PopStyleVar()
 	}
 
+	imgui.EndChild()
+
+	imgui.PushFont(Font20)
+
+	if currentRunning {
+		centerTable("tabdanser is running", -1, func() {
+			imgui.AlignTextToFramePadding()
+			imgui.Text("Danser is running! Changing some settings may cause a crash!")
+			imgui.SameLine()
+			if imgui.Button("Apply##drunning") {
+				if editor.saveListener != nil {
+					editor.saveListener()
+				}
+			}
+		})
+	}
+
+	imgui.PopFont()
+
 	imgui.PopStyleColor()
 	imgui.PopStyleColor()
+
+	imgui.PopItemFlag()
 }
 
 func (editor *settingsEditor) search() {

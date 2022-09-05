@@ -1219,6 +1219,10 @@ func (l *launcher) drawLowerPanel() {
 }
 
 func (l *launcher) drawConfigPanel() {
+	if l.currentEditor != nil {
+		l.currentEditor.setDanserRunning(l.danserRunning && l.bld.currentPMode == Watch)
+	}
+
 	w := imgui.WindowContentRegionMax().X
 
 	imgui.SetCursorPos(vec2(imgui.WindowContentRegionMax().X-float32(w)/2.5, 20))
@@ -1357,19 +1361,18 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
+		dRun := l.danserRunning && l.bld.currentPMode == Watch
+
+		if dRun {
+			imgui.PushItemFlag(imgui.ItemFlagsDisabled, false)
+		}
+
 		if imgui.ButtonV("Edit", vec2(-1, 0)) {
-			l.currentEditor = newSettingsEditor(l.currentConfig)
+			l.openCurrentSettingsEditor()
+		}
 
-			l.currentEditor.setCloseListener(func() {
-				settings.SaveCredentials(false)
-				l.currentConfig.Save("", false)
-
-				if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
-					showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
-				}
-			})
-
-			l.openPopup(l.currentEditor)
+		if dRun {
+			imgui.PopItemFlag()
 		}
 
 		imgui.EndTable()
@@ -1434,6 +1437,25 @@ func (l *launcher) drawConfigPanel() {
 			}
 		})
 	}
+}
+
+func (l *launcher) openCurrentSettingsEditor() {
+	saveFunc := func() {
+		settings.SaveCredentials(false)
+		l.currentConfig.Save("", false)
+
+		if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
+			showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
+		}
+	}
+
+	l.currentEditor = newSettingsEditor(l.currentConfig)
+
+	l.currentEditor.setDanserRunning(l.danserRunning)
+	l.currentEditor.setCloseListener(saveFunc)
+	l.currentEditor.setSaveListener(saveFunc)
+
+	l.openPopup(l.currentEditor)
 }
 
 func (l *launcher) tryCreateDefaultConfig() {
