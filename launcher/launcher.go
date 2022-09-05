@@ -1622,6 +1622,15 @@ func (l *launcher) startDanser() {
 		for sc.Scan() {
 			line := sc.Text()
 
+			if strings.Contains(line, "Launcher: Open settings") {
+				if l.currentEditor == nil || !l.currentEditor.opened {
+					l.openCurrentSettingsEditor()
+				}
+
+				l.win.Restore()
+				l.win.Focus()
+			}
+
 			if strings.Contains(line, "panic:") {
 				panicMessage = line[strings.Index(line, "panic:"):]
 				panicWait.Done()

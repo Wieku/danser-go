@@ -662,6 +662,10 @@ func mainLoopNormal() {
 					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
+				case glfw.KeyO:
+					if mods == glfw.ModControl {
+						log.Println("Launcher: Open settings")
+					}
 				default:
 					if platform.GetKeyName(key, scancode) == settings.Input.ScreenshotKey {
 						scheduleScreenshot = true
