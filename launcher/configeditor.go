@@ -194,13 +194,15 @@ func (editor *settingsEditor) drawEditor() {
 	if currentRunning {
 		centerTable("tabdanser is running", -1, func() {
 			imgui.AlignTextToFramePadding()
-			imgui.Text("Danser is running! Changing some settings may cause a crash!")
+			imgui.Text("Danser is running! Click")
 			imgui.SameLine()
 			if imgui.Button("Apply##drunning") {
 				if editor.saveListener != nil {
 					editor.saveListener()
 				}
 			}
+			imgui.SameLine()
+			imgui.Text("to see changes.")
 		})
 	}
 
