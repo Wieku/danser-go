@@ -131,8 +131,8 @@ type snaking struct {
 	In                 bool `liveedit:"false"`
 	Out                bool
 	OutFadeInstant     bool    `label:"Fade out the slider instantly" showif:"Out=true"`
-	DurationMultiplier float64 `scale:"100" format:"%.0f%%" label:"In duration multiplier" showif:"In=true" tooltip:"How much of slider's duration should be added to snake in time"`
-	FadeMultiplier     float64 `scale:"100" format:"%.0f%%" label:"In fade multiplier" showif:"In=true" tooltip:"How close to slider's start time snake in should end"`
+	DurationMultiplier float64 `scale:"100" format:"%.0f%%" label:"In duration multiplier" showif:"In=true" tooltip:"How much of slider's duration should be added to snake in time" liveedit:"false"`
+	FadeMultiplier     float64 `scale:"100" format:"%.0f%%" label:"In fade multiplier" showif:"In=true" tooltip:"How close to slider's start time snake in should end" liveedit:"false"`
 }
 
 type objectcolors struct {
