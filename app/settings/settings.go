@@ -21,24 +21,24 @@ type Config struct {
 	srcPath string
 	srcData []byte
 
-	General     *general     `icon:"\uF0AD"` // wrench
-	Graphics    *graphics    `icon:"\uE163"` // display
-	Audio       *audio       `icon:"\uF028"` // volume-high
-	Input       *input       `icon:"\uF11C"` // keyboard
-	Gameplay    *gameplay    `icon:"\uF192"` // circle-dot
-	Skin        *skin        `icon:"\uF1FC"` // paintbrush
-	Cursor      *cursor      `icon:"\uF245"` // arrow-pointer
-	Objects     *objects     `icon:"\uF1E0"` // share-nodes
-	Playfield   *playfield   `icon:"\uF43C"` // chess-board
+	General     *general     `icon:"\uF0AD"`                   // wrench
+	Graphics    *graphics    `icon:"\uE163"  liveedit:"false"` // display
+	Audio       *audio       `icon:"\uF028"`                   // volume-high
+	Input       *input       `icon:"\uF11C"`                   // keyboard
+	Gameplay    *gameplay    `icon:"\uF192"`                   // circle-dot
+	Skin        *skin        `icon:"\uF1FC"`                   // paintbrush
+	Cursor      *cursor      `icon:"\uF245"`                   // arrow-pointer
+	Objects     *objects     `icon:"\uF1E0"`                   // share-nodes
+	Playfield   *playfield   `icon:"\uF43C"`                   // chess-board
+	CursorDance *cursorDance `icon:"\uE599"`                   // worm
+	Knockout    *knockout    `icon:"\uF0CB"`                   // list-ol
+	Recording   *recording   `icon:"\uF03D"`                   // video
 	Dance       *danceOld    `json:",omitempty" icon:"\uF5B7"`
-	CursorDance *cursorDance `icon:"\uE599"` // worm
-	Knockout    *knockout    `icon:"\uF0CB"` // list-ol
-	Recording   *recording   `icon:"\uF03D"` // video
 }
 
 type CombinedConfig struct {
 	Credentials *credentials `icon:"\uF084" label:"Credentials (Global)"` // key
-	General     *general     `icon:"\uF0AD"`                              // wrench
+	General     *general     `icon:"\uF0AD" liveedit:"false"`             // wrench
 	Graphics    *graphics    `icon:"\uE163"`                              // display
 	Audio       *audio       `icon:"\uF028"`                              // volume-high
 	Input       *input       `icon:"\uF11C"`                              // keyboard

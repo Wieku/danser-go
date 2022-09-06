@@ -373,7 +373,7 @@ func (editor *settingsEditor) drawSettings() {
 			if drawNew {
 				iSc1 := imgui.CursorPos().Y
 
-				editor.buildMainSection("##"+dF.Name, "Main."+lbl, lbl, field)
+				editor.buildMainSection("##"+dF.Name, "Main."+lbl, lbl, field, dF)
 
 				iSc2 := imgui.CursorPos().Y
 
@@ -391,7 +391,9 @@ func (editor *settingsEditor) drawSettings() {
 	}
 }
 
-func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u reflect.Value) {
+func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
+	dRunLock := editor.tryLockLive(d)
+
 	posLocal := imgui.CursorPos()
 
 	imgui.PushFont(Font48)
@@ -407,6 +409,10 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	scrY := imgui.ScrollY()
 	if scrY >= posLocal.Y-padY*2 && scrY <= posLocal1.Y {
 		editor.active = name
+	}
+
+	if dRunLock {
+		editor.unlockLive(true)
 	}
 }
 
@@ -441,9 +447,15 @@ func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content f
 }
 
 func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
+	dRunLock := editor.tryLockLive(d)
+
 	editor.subSectionTempl(name, func() {}, func() {
 		editor.traverseChildren(jsonPath, sPath, u, d)
 	})
+
+	if dRunLock {
+		editor.unlockLive(true)
+	}
 }
 
 func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
@@ -1202,19 +1214,7 @@ func (editor *settingsEditor) buildColor(jsonPath string, f reflect.Value, d ref
 }
 
 func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkbox bool, customWidth float32, d reflect.StructField, draw func()) {
-	liveEdit := true
-
-	if l, ok := d.Tag.Lookup("liveedit"); ok && l == "false" {
-		liveEdit = false
-	}
-
-	dRunLock := !liveEdit && editor.danserRunning
-
-	if dRunLock {
-		imgui.BeginGroup()
-		imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
-		imgui.PushStyleColor(imgui.StyleColorText, vec4(0.8, 0.8, 0.8, 1))
-	}
+	dRunLock := editor.tryLockLive(d)
 
 	width := imgui.FontSize() + imgui.CurrentStyle().FramePadding().X*2 - 1 // + imgui.CurrentStyle().ItemSpacing().X
 	if !checkbox {
@@ -1291,15 +1291,43 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 	}
 
 	if dRunLock {
-		imgui.PopStyleColor()
-		imgui.PopItemFlag()
-		imgui.EndGroup()
+		editor.unlockLive(false)
+	}
+}
 
-		if imgui.IsItemHovered() {
-			imgui.BeginTooltip()
+func (editor *settingsEditor) tryLockLive(d reflect.StructField) bool {
+	liveEdit := true
+
+	if l, ok := d.Tag.Lookup("liveedit"); ok && l == "false" {
+		liveEdit = false
+	}
+
+	dRunLock := !liveEdit && editor.danserRunning
+
+	if dRunLock {
+		imgui.BeginGroup()
+		imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+		imgui.PushStyleColor(imgui.StyleColorText, vec4(0.6, 0.6, 0.6, 1))
+	}
+
+	return dRunLock
+}
+
+func (editor *settingsEditor) unlockLive(plural bool) {
+	imgui.PopStyleColor()
+	imgui.PopItemFlag()
+	imgui.EndGroup()
+
+	if imgui.IsItemHovered() {
+		imgui.BeginTooltip()
+
+		if plural {
+			imgui.Text("These options can't be edited while danser is running.")
+		} else {
 			imgui.Text("This option can't be edited while danser is running.")
-			imgui.EndTooltip()
 		}
+
+		imgui.EndTooltip()
 	}
 }
 
