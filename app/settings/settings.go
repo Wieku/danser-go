@@ -79,6 +79,7 @@ func LoadConfig(file *os.File) (*Config, error) {
 	}
 
 	config.migrateCursorDance()
+	config.migrateHitCounterColors()
 
 	if config.General.OsuReplaysDir == "" { // Set the replay directory if it hasn't been loaded
 		config.General.OsuReplaysDir = filepath.Join(filepath.Dir(config.General.OsuSongsDir), "Replays")
@@ -173,6 +174,37 @@ func (config *Config) migrateCursorDance() {
 	}
 
 	config.Dance = nil
+}
+
+func (config *Config) migrateHitCounterColors() {
+	if config.Gameplay.HitCounter.Color == nil {
+		return
+	}
+
+	idx := 0
+
+	ln := len(config.Gameplay.HitCounter.Color)
+
+	if config.Gameplay.HitCounter.Show300 {
+		config.Gameplay.HitCounter.Color300 = config.Gameplay.HitCounter.Color[idx%ln]
+		idx++
+	}
+
+	config.Gameplay.HitCounter.Color100 = config.Gameplay.HitCounter.Color[idx%ln]
+	idx++
+
+	config.Gameplay.HitCounter.Color50 = config.Gameplay.HitCounter.Color[idx%ln]
+	idx++
+
+	config.Gameplay.HitCounter.ColorMiss = config.Gameplay.HitCounter.Color[idx%ln]
+	idx++
+
+	if config.Gameplay.HitCounter.ShowSliderBreaks {
+		config.Gameplay.HitCounter.ColorSB = config.Gameplay.HitCounter.Color[idx%ln]
+		idx++
+	}
+
+	config.Gameplay.HitCounter.Color = nil
 }
 
 func (config *Config) attachToGlobals() {

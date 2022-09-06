@@ -110,14 +110,31 @@ func initGameplay() *gameplay {
 				XPosition: 5,
 				YPosition: 190,
 			},
-			Color: []*HSV{
-				{
-					Hue:        0,
-					Saturation: 0,
-					Value:      1,
-				},
+			Color300: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
 			},
-
+			Color100: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			Color50: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			ColorMiss: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			ColorSB: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
 			Spacing:          48,
 			FontScale:        1,
 			Align:            "Left",
@@ -325,7 +342,12 @@ type ppCounter struct {
 
 type hitCounter struct {
 	*hudElementPosition
-	Color            []*HSV  `new:"InitHSV" label:"Color list"`
+	Color            []*HSV  `json:",omitempty" new:"InitHSV" label:"Color list" skip:"true"`
+	Color300         *HSV    `label:"Color of 300s"`
+	Color100         *HSV    `label:"Color of 100s"`
+	Color50          *HSV    `label:"Color of 50s"`
+	ColorMiss        *HSV    `label:"Color of misses"`
+	ColorSB          *HSV    `label:"Color of slider breaks"`
 	Spacing          float64 `string:"true" min:"0" max:"1366"`
 	FontScale        float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
 	Align            string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
