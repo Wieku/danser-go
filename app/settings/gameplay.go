@@ -231,15 +231,15 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	HUDFont                 string `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts"`
+	HUDFont                 string `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts" liveedit:"false"`
 	ShowResultsScreen       bool
 	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs"`
 	ResultsUseLocalTimeZone bool    `label:"Show PC's time zone instead of UTC"`
 	ShowWarningArrows       bool
 	ShowHitLighting         bool
 	FlashlightDim           float64
-	PlayUsername            string
-	UseLazerPP              bool
+	PlayUsername            string `liveedit:"false"`
+	UseLazerPP              bool   `liveedit:"false"`
 }
 
 type boundaries struct {
@@ -370,6 +370,6 @@ type strainGraph struct {
 }
 
 type underlay struct {
-	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png" tooltip:"PNG file that will be used as HUD background (similar to custom HP bar backgrounds). It's scaled automatically to fit the screen vertically"`
+	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png" tooltip:"PNG file that will be used as HUD background (similar to custom HP bar backgrounds). It's scaled automatically to fit the screen vertically" liveedit:"false"`
 	AboveHpBar bool   `label:"Show underlay above HP bar" tooltip:"Use this if HP bar background is large"`
 }

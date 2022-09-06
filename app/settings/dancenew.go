@@ -72,10 +72,10 @@ func (d *defaultsFactory) InitSpinner() *spinner {
 type cursorDance struct {
 	Movers             []*mover   `new:"InitMover"`
 	Spinners           []*spinner `new:"InitSpinner"`
-	ComboTag           bool
-	Battle             bool
-	DoSpinnersTogether bool
-	TAGSliderDance     bool `label:"TAG slider dance"`
+	ComboTag           bool       `liveedit:"false"`
+	Battle             bool       `liveedit:"false"`
+	DoSpinnersTogether bool       `liveedit:"false"`
+	TAGSliderDance     bool       `label:"TAG slider dance" liveedit:"false"`
 	MoverSettings      *moverSettings
 }
 
