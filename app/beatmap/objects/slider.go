@@ -88,6 +88,8 @@ type Slider struct {
 	EndTimeLazer     float64
 	ScorePointsLazer []TickPoint
 	spanDuration     float64
+
+	updatedAtLeastOnce bool
 }
 
 func NewSlider(data []string) *Slider {
@@ -460,18 +462,6 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.sliderSnakeTail = animation.NewGlider(0)
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
-	fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
-	durationMultiplier := mutils.ClampF(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
-
-	slSnInS := slider.StartTime - diff.Preempt
-	slSnInE := slider.StartTime - diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
-
-	if settings.Objects.Sliders.Snaking.In {
-		slider.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
-	} else {
-		slider.sliderSnakeTail.SetValue(1)
-	}
-
 	slider.fade = animation.NewGlider(0)
 	slider.fade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-diff.TimeFadeIn), 1)
 
@@ -480,10 +470,6 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	if diff.CheckModActive(difficulty.Hidden) {
 		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+diff.TimeFadeIn, slider.EndTime, 0, easing.OutQuad)
-	} else if settings.Objects.Sliders.Snaking.Out && settings.Objects.Sliders.Snaking.OutFadeInstant {
-		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime, 0)
-	} else {
-		slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 	}
 
 	slider.fade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
@@ -552,26 +538,6 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	}
 
 	for i, p := range slider.TickPoints {
-		a := (p.Time-slider.StartTime)/2 + slider.StartTime - diff.Preempt*2/3
-
-		fs := (p.Time - slider.StartTime) / slider.partLen
-
-		if fs < 1.0 {
-			a = math.Max(fs*(slSnInE-slSnInS)+slSnInS, a)
-		}
-
-		endTime := math.Min(a+150, p.Time-36)
-
-		p.scale.AddEventS(a, endTime, 0.5, 1.2)
-		p.scale.AddEventSEase(endTime, endTime+150, 1.2, 1.0, easing.OutQuad)
-		p.fade.AddEventS(a, endTime, 0.0, 1.0)
-
-		if diff.CheckModActive(difficulty.Hidden) {
-			p.fade.AddEventS(math.Max(endTime, p.Time-1000), p.Time, 1.0, 0.0)
-		} else {
-			p.fade.AddEventS(p.Time, p.Time, 1.0, 0.0)
-		}
-
 		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff.Mods)
 
 		slider.TickPoints[i] = p
@@ -591,6 +557,12 @@ func (slider *Slider) IsRetarded() bool {
 }
 
 func (slider *Slider) Update(time float64) bool {
+	if !slider.updatedAtLeastOnce {
+		slider.initSnakeIn()
+
+		slider.updatedAtLeastOnce = true
+	}
+
 	if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
 		for i := int64(0); i <= slider.RepeatCount; i++ {
 			edgeTime := slider.StartTime + math.Floor(float64(i)*slider.partLen)
@@ -752,6 +724,54 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 				slider.sliderSnakeTail.AddEvent(eTime, slider.EndTime, 0)
 			}
 		}
+	}
+
+	if !slider.diff.CheckModActive(difficulty.Hidden) {
+		if settings.Objects.Sliders.Snaking.Out && settings.Objects.Sliders.Snaking.OutFadeInstant {
+			slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime, 0)
+		} else {
+			slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
+		}
+	}
+}
+
+func (slider *Slider) initSnakeIn() {
+	fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+	durationMultiplier := mutils.ClampF(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+
+	slSnInS := slider.StartTime - slider.diff.Preempt
+	slSnInE := slider.StartTime - slider.diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
+
+	if settings.Objects.Sliders.Snaking.In {
+		slider.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
+	} else {
+		slider.sliderSnakeTail.SetValue(1)
+	}
+
+	for i, p := range slider.TickPoints {
+		a := (p.Time-slider.StartTime)/2 + slider.StartTime - slider.diff.Preempt*2/3
+
+		fs := (p.Time - slider.StartTime) / slider.partLen
+
+		if fs < 1.0 {
+			a = math.Max(fs*(slSnInE-slSnInS)+slSnInS, a)
+		}
+
+		endTime := math.Min(a+150, p.Time-36)
+
+		p.scale.AddEventS(a, endTime, 0.5, 1.2)
+		p.scale.AddEventSEase(endTime, endTime+150, 1.2, 1.0, easing.OutQuad)
+		p.fade.AddEventS(a, endTime, 0.0, 1.0)
+
+		if slider.diff.CheckModActive(difficulty.Hidden) {
+			p.fade.AddEventS(math.Max(endTime, p.Time-1000), p.Time, 1.0, 0.0)
+		} else {
+			p.fade.AddEventS(p.Time, p.Time, 1.0, 0.0)
+		}
+
+		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff.Mods)
+
+		slider.TickPoints[i] = p
 	}
 }
 
