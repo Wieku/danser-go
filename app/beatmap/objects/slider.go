@@ -749,19 +749,28 @@ func (slider *Slider) initSnakeIn() {
 	}
 
 	for i, p := range slider.TickPoints {
+		var startTime, endTime float64
+
 		a := (p.Time-slider.StartTime)/2 + slider.StartTime - slider.diff.Preempt*2/3
 
-		fs := (p.Time - slider.StartTime) / slider.partLen
+		repeatProgress := (p.Time - slider.StartTime) / slider.partLen
 
-		if fs < 1.0 {
-			a = math.Max(fs*(slSnInE-slSnInS)+slSnInS, a)
+		if repeatProgress < 1.0 {
+			normalStart := (p.Time-slider.StartTime)/2 + slider.StartTime - slider.diff.Preempt*2/3
+
+			startTime = math.Max(repeatProgress*(slSnInE-slSnInS)+slSnInS, normalStart)
+
+			endTime = math.Min(a+150, p.Time-36)
+		} else {
+			rStart := slider.StartTime + slider.partLen*math.Floor(repeatProgress)
+
+			endTime = rStart + (p.Time-rStart)/2
+			startTime = endTime - 200
 		}
 
-		endTime := math.Min(a+150, p.Time-36)
-
-		p.scale.AddEventS(a, endTime, 0.5, 1.2)
+		p.scale.AddEventS(startTime, endTime, 0.5, 1.2)
 		p.scale.AddEventSEase(endTime, endTime+150, 1.2, 1.0, easing.OutQuad)
-		p.fade.AddEventS(a, endTime, 0.0, 1.0)
+		p.fade.AddEventS(startTime, endTime, 0.0, 1.0)
 
 		if slider.diff.CheckModActive(difficulty.Hidden) {
 			p.fade.AddEventS(math.Max(endTime, p.Time-1000), p.Time, 1.0, 0.0)
