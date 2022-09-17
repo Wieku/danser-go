@@ -737,13 +737,15 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 }
 
 func (slider *Slider) initSnakeIn() {
-	fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
-	durationMultiplier := mutils.ClampF(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
-
 	slSnInS := slider.StartTime - slider.diff.Preempt
-	slSnInE := slider.StartTime - slider.diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
+	slSnInE := slider.StartTime - slider.diff.Preempt*2/3
 
 	if settings.Objects.Sliders.Snaking.In {
+		fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
+		durationMultiplier := mutils.ClampF(settings.Objects.Sliders.Snaking.DurationMultiplier, 0.0, 1.0)
+
+		slSnInE = slider.StartTime - slider.diff.Preempt*2/3*fadeMultiplier + slider.partLen*durationMultiplier
+
 		slider.sliderSnakeTail.AddEvent(slSnInS, slSnInE, 1)
 	} else {
 		slider.sliderSnakeTail.SetValue(1)
