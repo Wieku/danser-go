@@ -25,9 +25,9 @@ func (c *SquareMover) Init(start, _ float64, id int) {
 }
 
 func (c *SquareMover) GetPositionAt(time float64) vector.Vector2f {
-	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
+	spS := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)]
 
-	mat := mgl32.Rotate3DZ(float32(time-c.start) / 2000 * 2 * math32.Pi).Mul3(mgl32.Scale2D(float32(radius), float32(radius)))
+	mat := mgl32.Rotate3DZ(float32(time-c.start) / 2000 * 2 * math32.Pi).Mul3(mgl32.Scale2D(float32(spS.Radius), float32(spS.Radius)))
 
 	startIndex := (int64(math.Max(0, time-c.start)) / 10) % 4
 
@@ -43,5 +43,5 @@ func (c *SquareMover) GetPositionAt(time float64) vector.Vector2f {
 
 	t := float32(int64(time-c.start)%10) / 10
 
-	return vector.NewVec2f((pt2.X()-pt1.X())*t+pt1.X(), (pt2.Y()-pt1.Y())*t+pt1.Y()).Add(center)
+	return vector.NewVec2f((pt2.X()-pt1.X())*t+pt1.X(), (pt2.Y()-pt1.Y())*t+pt1.Y()).Add(center.AddS(float32(spS.CenterOffsetX), float32(spS.CenterOffsetY)))
 }

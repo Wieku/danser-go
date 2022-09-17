@@ -36,12 +36,12 @@ func (c *CubeMover) Init(start, _ float64, id int) {
 }
 
 func (c *CubeMover) GetPositionAt(time float64) vector.Vector2f {
-	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
+	spS := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)]
 
 	radY := math32.Sin(float32(time-c.start)/9000*2*math32.Pi) * 3.0 / 18 * math32.Pi
 	radX := math32.Sin(float32(time-c.start)/5000*2*math32.Pi) * 3.0 / 18 * math32.Pi
 
-	scale := (1.0 + math32.Sin(float32(time-c.start)/4500*2*math32.Pi)*0.3) * float32(radius)
+	scale := (1.0 + math32.Sin(float32(time-c.start)/4500*2*math32.Pi)*0.3) * float32(spS.Radius)
 
 	mat := mgl32.HomogRotate3DY(radY).Mul4(mgl32.HomogRotate3DX(radX)).Mul4(mgl32.Scale3D(scale, scale, scale))
 
@@ -66,5 +66,5 @@ func (c *CubeMover) GetPositionAt(time float64) vector.Vector2f {
 	pt[0] *= 1 + pt[2]/scale/10
 	pt[1] *= 1 + pt[2]/scale/10
 
-	return vector.NewVec2f(pt.X(), pt.Y()).Add(center)
+	return vector.NewVec2f(pt.X(), pt.Y()).Add(center.AddS(float32(spS.CenterOffsetX), float32(spS.CenterOffsetY)))
 }
