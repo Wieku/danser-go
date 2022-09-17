@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"log"
 	"math"
 	"sort"
 	"strconv"
@@ -751,8 +752,6 @@ func (slider *Slider) initSnakeIn() {
 	for i, p := range slider.TickPoints {
 		var startTime, endTime float64
 
-		a := (p.Time-slider.StartTime)/2 + slider.StartTime - slider.diff.Preempt*2/3
-
 		repeatProgress := (p.Time - slider.StartTime) / slider.partLen
 
 		if repeatProgress < 1.0 {
@@ -760,7 +759,10 @@ func (slider *Slider) initSnakeIn() {
 
 			startTime = math.Max(repeatProgress*(slSnInE-slSnInS)+slSnInS, normalStart)
 
-			endTime = math.Min(a+150, p.Time-36)
+			endTime = math.Min(startTime+150, p.Time-36)
+
+			log.Println(normalStart, startTime, endTime)
+
 		} else {
 			rStart := slider.StartTime + slider.partLen*math.Floor(repeatProgress)
 
