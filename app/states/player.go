@@ -474,7 +474,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.profilerU = frame.NewCounter()
 
-	player.baseLimit = 2000
+	player.baseLimit = 1000
 
 	player.updateLimiter = frame.NewLimiter(player.baseLimit)
 
