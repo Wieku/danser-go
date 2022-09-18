@@ -83,6 +83,8 @@ var screenshotTime float64
 
 var preciseProgress bool
 
+var monitorHz int
+
 func run() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -341,6 +343,8 @@ func run() {
 
 		monitor := glfw.GetPrimaryMonitor()
 		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
+
+		monitorHz = monitor.GetVideoMode().RefreshRate
 
 		if newSettings {
 			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
@@ -702,7 +706,13 @@ func mainLoopNormal() {
 			win.SwapBuffers()
 
 			if !settings.Graphics.VSync {
-				limiter.FPS = int(settings.Graphics.FPSCap)
+				fCap := int(settings.Graphics.FPSCap)
+
+				if fCap < 0 {
+					fCap = -fCap*monitorHz
+				}
+
+				limiter.FPS = fCap
 				limiter.Sync()
 			}
 
