@@ -702,6 +702,7 @@ func mainLoopNormal() {
 			win.SwapBuffers()
 
 			if !settings.Graphics.VSync {
+				limiter.FPS = int(settings.Graphics.FPSCap)
 				limiter.Sync()
 			}
 
