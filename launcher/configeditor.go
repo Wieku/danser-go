@@ -1094,7 +1094,14 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 
 			lb := fmt.Sprintf(format, base)
 
+			hasCustom := false
+
 			for _, s := range strings.Split(cSpec, ",") {
+				if s == "custom" {
+					hasCustom = true
+					continue
+				}
+
 				splt := strings.Split(s, "|")
 				c, _ := strconv.Atoi(splt[0])
 
@@ -1119,6 +1126,32 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 					if selectableFocus(l+jsonPath, l == lb, justOpened) {
 						f.SetInt(int64(values[i]))
 						editor.search()
+					}
+				}
+
+				if hasCustom {
+					min := parseIntOr(d.Tag.Get("min"), 0)
+					max := parseIntOr(d.Tag.Get("max"), 100)
+
+					if base >= int32(min) {
+						pad := vec2(imgui.CurrentStyle().FramePadding().X, imgui.CurrentStyle().ItemSpacing().Y*0.5)
+						scPos := imgui.CursorScreenPos().Minus(pad)
+
+						imgui.WindowDrawList().AddRectFilled(scPos, scPos.Plus(vec2(imgui.ContentRegionAvail().X, imgui.FrameHeight()).Plus(pad.Times(2))), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorHeader)))
+					} else {
+						base = 0
+					}
+
+					imgui.AlignTextToFramePadding()
+					imgui.Text("Custom:")
+
+					imgui.SameLine()
+
+					imgui.SetNextItemWidth(imgui.ContentRegionAvail().X)
+
+					if imgui.InputIntV(jsonPath, &base, 1, 1, 0) {
+						base = mutils.Clamp(base, int32(min), int32(max))
+						f.SetInt(int64(base))
 					}
 				}
 
