@@ -66,7 +66,7 @@ func (camera *Camera) SetViewport(width, height int, yDown bool) {
 	camera.viewDirty = true
 }
 
-func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bool) {
+func (camera *Camera) SetOsuViewport(width, height int, scale float64, shift, osuOffset bool) {
 	baseScale := float64(height) / OsuHeight
 	if OsuWidth/OsuHeight > float64(width)/float64(height) {
 		baseScale = float64(width) / OsuWidth
@@ -74,14 +74,19 @@ func (camera *Camera) SetOsuViewport(width, height int, scale float64, offset bo
 
 	scl := baseScale * 0.8 * scale
 
-	shift := settings.Playfield.ShiftY
-	if offset {
-		shift = 8
+	shiftX := 0.0
+	shiftY := 0.0
+
+	if osuOffset {
+		shiftY = 8
+	} else if shift {
+		shiftY = settings.Playfield.ShiftY
+		shiftX = settings.Playfield.ShiftX
 	}
 
 	camera.SetViewport(width, height, true)
 	camera.originV = vector.NewVec2d(OsuWidth/2, OsuHeight/2).Scl(-1)
-	camera.positionV = vector.NewVec2d(settings.Playfield.ShiftX, shift).Scl(scl)
+	camera.positionV = vector.NewVec2d(shiftX, shiftY).Scl(scl)
 	camera.scaleV = vector.NewVec2d(scl, scl)
 	camera.Update()
 

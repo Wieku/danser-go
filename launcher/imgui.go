@@ -119,13 +119,13 @@ func SetupImgui(win *glfw.Window) {
 	img0 := ImIO.Fonts().TextureDataAlpha8()
 	img1 := ImIO.Fonts().TextureDataRGBA32()
 
-	tex = texture.NewTextureSingleFormat(img1.Width, img1.Height, texture.RGBA, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
+	tex = texture.NewTextureSingleFormat(img0.Width, img0.Height, texture.Red, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
 
-	size := img1.Width * img1.Height * 4
+	size := img0.Width * img0.Height
 
-	pixels := (*[1 << 30]uint8)(img1.Pixels)[:size:size] // cast from unsafe pointer to uint8 slice
+	pixels := (*[1 << 30]uint8)(img0.Pixels)[:size:size] // cast from unsafe pointer to uint8 slice
 
-	tex.SetData(0, 0, img1.Width, img1.Height, pixels)
+	tex.SetData(0, 0, img0.Width, img0.Height, pixels)
 
 	C.free(img0.Pixels) //Reduce some memory, seems that imgui doesn't explode
 	C.free(img1.Pixels) //Reduce some memory, seems that imgui doesn't explode
@@ -157,6 +157,8 @@ func SetupImgui(win *glfw.Window) {
 	})
 
 	input.Win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		input.CallListeners(w, key, scancode, action, mods)
+
 		if action != glfw.Press && action != glfw.Release {
 			return
 		}
@@ -425,11 +427,14 @@ var lastTime float64
 func Begin() {
 	x, y := input.Win.GetCursorPos()
 
-	ImIO.AddMousePosEvent(imgui.Vec2{X: float32(x), Y: float32(y)})
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
+	_, h1 := glfw.GetCurrentContext().GetFramebufferSize()
+
+	scaling := float32(h1) / float32(h)
+
+	ImIO.AddMousePosEvent(imgui.Vec2{X: float32(x) / scaling, Y: float32(y) / scaling})
 	ImIO.AddMouseButtonEvent(0, input.Win.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
 	ImIO.AddMouseButtonEvent(1, input.Win.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
-
-	w, h := input.Win.GetFramebufferSize()
 
 	ImIO.SetDisplaySize(imgui.Vec2{X: float32(w), Y: float32(h)})
 
@@ -455,12 +460,13 @@ func DrawImgui() {
 
 	rShader.Bind()
 
-	w, h := input.Win.GetFramebufferSize()
+	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
 
 	rShader.SetUniform("proj", mgl32.Ortho(0, float32(w), float32(h), 0, -1, 1))
 
 	tex.Bind(0)
 	rShader.SetUniform("tex", 0)
+	rShader.SetUniform("texRGBA", 0)
 
 	lastBound := imgui.TextureID(0)
 
@@ -470,6 +476,10 @@ func DrawImgui() {
 	blend.Push()
 	blend.Enable()
 	blend.SetFunction(blend.SrcAlpha, blend.OneMinusSrcAlpha)
+
+	_, h1 := glfw.GetCurrentContext().GetFramebufferSize()
+
+	scaling := float32(h1) / float32(h)
 
 	for _, list := range drawData.CommandLists() {
 		vertexBuffer, vertexBufferSize := list.VertexBuffer()
@@ -494,8 +504,10 @@ func DrawImgui() {
 			cId := cmd.TextureID()
 			if cId != lastBound {
 				if cId == 0 {
+					rShader.SetUniform("texRGBA", 0)
 					tex.Bind(0)
 				} else {
+					rShader.SetUniform("texRGBA", 1)
 					gl.BindTextureUnit(0, uint32(cId))
 				}
 
@@ -505,8 +517,9 @@ func DrawImgui() {
 			if cmd.HasUserCallback() {
 				cmd.CallUserCallback(list)
 			} else {
-				clipRect := cmd.ClipRect()
-				viewport.PushScissorPos(int(clipRect.X), int(settings.Graphics.GetHeight())-int(clipRect.W), int(clipRect.Z-clipRect.X), int(clipRect.W-clipRect.Y))
+				clipRect := cmd.ClipRect().Times(scaling)
+
+				viewport.PushScissorPos(int(clipRect.X), int(float32(h1)-clipRect.W), int(clipRect.Z-clipRect.X), int(clipRect.W-clipRect.Y))
 
 				ibo.DrawPart(cmd.IndexOffset(), cmd.ElementCount())
 

@@ -100,9 +100,9 @@ type objects struct {
 	DrawApproachCircles bool //true
 	DrawComboNumbers    bool
 	DrawFollowPoints    bool
-	LoadSpinners        bool
+	LoadSpinners        bool `liveedit:"false"`
 	ScaleToTheBeat      bool //true, objects size is changing with music peak amplitude
-	StackEnabled        bool `label:"Enable stack leniency"` //true, stack leniency
+	StackEnabled        bool `label:"Enable stack leniency" liveedit:"false"` //true, stack leniency
 	Sliders             *sliders
 	Colors              *objectcolors
 }
@@ -113,7 +113,7 @@ type sliders struct {
 	DrawSliderFollowCircle bool
 	DrawScorePoints        bool //true
 	SliderMerge            bool
-	SliderDistortions      bool    //true, osu!stable slider distortions on aspire maps
+	SliderDistortions      bool    `liveedit:"false"` //true, osu!stable slider distortions on aspire maps
 	BorderWidth            float64 `max:"9"`
 	Quality                *quality
 	Snaking                *snaking

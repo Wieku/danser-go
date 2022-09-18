@@ -128,6 +128,7 @@ type ScoreOverlay struct {
 	strainGraph *play.StrainGraph
 
 	underlay *sprite.Sprite
+	failed   bool
 }
 
 func loadFonts() {
@@ -444,7 +445,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 
 	if overlay.panel != nil {
 		overlay.panel.Update(time)
-	} else if settings.Gameplay.ShowResultsScreen && !overlay.created && overlay.audioTime >= overlay.beatmapEnd {
+	} else if !overlay.failed && settings.Gameplay.ShowResultsScreen && !overlay.created && overlay.audioTime >= overlay.beatmapEnd {
 		overlay.created = true
 		cTime := overlay.normalTime
 
@@ -456,7 +457,10 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 			resultsTime := settings.Gameplay.ResultsScreenTime * 1000
 
 			overlay.resultsFade.AddEventS(s, s+500, 0, 1)
-			overlay.resultsFade.AddEventS(s+resultsTime+500, s+resultsTime+1000, 1, 0)
+
+			if !settings.PLAY {
+				overlay.resultsFade.AddEventS(s+resultsTime+500, s+resultsTime+1000, 1, 0)
+			}
 		}
 
 		if settings.RECORD {
@@ -496,7 +500,10 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 	overlay.ppDisplay.Update(time)
 	overlay.hitCounts.Update(time)
 
-	currentStates := [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
+	var currentStates [4]bool
+	if !overlay.failed {
+		currentStates = [4]bool{overlay.cursor.LeftKey, overlay.cursor.RightKey, overlay.cursor.LeftMouse && !overlay.cursor.LeftKey, overlay.cursor.RightMouse && !overlay.cursor.RightKey}
+	}
 
 	for i, state := range currentStates {
 		color := color2.Color{R: 1.0, G: 222.0 / 255, B: 0, A: 0}
@@ -538,6 +545,10 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 }
 
 func (overlay *ScoreOverlay) updateBreaks(time float64) {
+	if overlay.failed {
+		return
+	}
+
 	inBreak := false
 
 	for _, b := range overlay.ruleset.GetBeatMap().Pauses {
@@ -644,7 +655,7 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		batch.ResetTransform()
 	}
 
-	if settings.Gameplay.ShowWarningArrows {
+	if !overlay.failed && settings.Gameplay.ShowWarningArrows {
 		overlay.arrows.Draw(overlay.audioTime, batch)
 	}
 
@@ -1000,4 +1011,8 @@ func (overlay *ScoreOverlay) SetBeatmapEnd(end float64) {
 
 func (overlay *ScoreOverlay) ShouldDrawHUDBeforeCursor() bool {
 	return true
+}
+
+func (overlay *ScoreOverlay) Fail(fail bool) {
+	overlay.failed = fail
 }

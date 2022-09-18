@@ -45,16 +45,13 @@ func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
 	}
 
-	graph.leftSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.BottomRight)
+	graph.leftSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopLeft)
 	graph.leftSprite.SetColor(color.NewIRGB(231, 141, 235))
 	graph.leftSprite.SetCutOrigin(vector.CentreLeft)
 
-	graph.rightSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.BottomRight)
+	graph.rightSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopRight)
 	graph.rightSprite.SetColor(color.NewL(0.2))
 	graph.rightSprite.SetCutOrigin(vector.CentreRight)
-
-	graph.leftSprite.SetScale(768 / settings.Graphics.GetHeightF())
-	graph.rightSprite.SetScale(768 / settings.Graphics.GetHeightF())
 
 	return graph
 }
@@ -104,7 +101,7 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 		graph.fbo.Dispose()
 	}
 
-	graph.fbo = buffer.NewFrameMultisample(int(w), int(h), 8)
+	graph.fbo = buffer.NewFrameMultisample(int(math.Round(w)), int(math.Round(h)), 8)
 
 	graph.fbo.Bind()
 	graph.fbo.ClearColor(1, 1, 1, 0)
@@ -147,6 +144,10 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 
 	region := graph.fbo.Texture().GetRegion()
 
+	// Reestablish scaling using final FBO sizes because 768/screenHeight was causing 1px gaps in some scenarios
+	graph.leftSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
+	graph.rightSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
+
 	graph.leftSprite.Texture = &region
 	graph.rightSprite.Texture = &region
 }
@@ -168,14 +169,14 @@ func (graph *StrainGraph) Draw(batch *batch.QuadBatch, alpha float64) {
 
 	batch.SetColor(1, 1, 1, sgAlpha)
 
-	origin := vector.ParseOrigin(conf.Align)
-	pos := vector.NewVec2d(conf.XPosition, conf.YPosition)
+	origin := vector.ParseOrigin(conf.Align).AddS(1, 1).Scl(0.5)
+	basePos := vector.NewVec2d(conf.XPosition, conf.YPosition)
 
-	graph.leftSprite.SetPosition(pos)
-	graph.rightSprite.SetPosition(pos)
+	pos1 := basePos.Sub(origin.Mult(graph.size))
+	pos2 := pos1.AddS(graph.size.X, 0)
 
-	graph.leftSprite.SetOrigin(origin)
-	graph.rightSprite.SetOrigin(origin)
+	graph.leftSprite.SetPosition(pos1)
+	graph.rightSprite.SetPosition(pos2)
 
 	graph.leftSprite.SetColor(color.NewHSV(float32(conf.FgColor.Hue), float32(conf.FgColor.Saturation), float32(conf.FgColor.Value)))
 	graph.rightSprite.SetColor(color.NewHSV(float32(conf.BgColor.Hue), float32(conf.BgColor.Saturation), float32(conf.BgColor.Value)))

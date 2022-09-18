@@ -21,35 +21,35 @@ type Config struct {
 	srcPath string
 	srcData []byte
 
-	General     *general     `icon:"\uF0AD"` // wrench
-	Graphics    *graphics    `icon:"\uE163"` // display
-	Audio       *audio       `icon:"\uF028"` // volume-high
-	Input       *input       `icon:"\uF11C"` // keyboard
-	Gameplay    *gameplay    `icon:"\uF192"` // circle-dot
-	Skin        *skin        `icon:"\uF1FC"` // paintbrush
-	Cursor      *cursor      `icon:"\uF245"` // arrow-pointer
-	Objects     *objects     `icon:"\uF1E0"` // share-nodes
-	Playfield   *playfield   `icon:"\uF43C"` // chess-board
+	General     *general     `icon:"\uF0AD"`                   // wrench
+	Graphics    *graphics    `icon:"\uE163"  liveedit:"false"` // display
+	Audio       *audio       `icon:"\uF028"`                   // volume-high
+	Input       *input       `icon:"\uF11C"`                   // keyboard
+	Gameplay    *gameplay    `icon:"\uF192"`                   // circle-dot
+	Skin        *skin        `icon:"\uF1FC"`                   // paintbrush
+	Cursor      *cursor      `icon:"\uF245"`                   // arrow-pointer
+	Objects     *objects     `icon:"\uF1E0"`                   // share-nodes
+	Playfield   *playfield   `icon:"\uF43C"`                   // chess-board
+	CursorDance *cursorDance `icon:"\uE599"`                   // worm
+	Knockout    *knockout    `icon:"\uF0CB"`                   // list-ol
+	Recording   *recording   `icon:"\uF03D"`                   // video
 	Dance       *danceOld    `json:",omitempty" icon:"\uF5B7"`
-	CursorDance *cursorDance `icon:"\uE599"` // worm
-	Knockout    *knockout    `icon:"\uF0CB"` // list-ol
-	Recording   *recording   `icon:"\uF03D"` // video
 }
 
 type CombinedConfig struct {
-	Credentials *credentials `icon:"\uF084" label:"Credentials (Global)"` // key
-	General     *general     `icon:"\uF0AD"`                              // wrench
-	Graphics    *graphics    `icon:"\uE163"`                              // display
-	Audio       *audio       `icon:"\uF028"`                              // volume-high
-	Input       *input       `icon:"\uF11C"`                              // keyboard
-	Gameplay    *gameplay    `icon:"\uF192"`                              // circle-dot
-	Skin        *skin        `icon:"\uF1FC"`                              // paintbrush
-	Cursor      *cursor      `icon:"\uF245"`                              // arrow-pointer
-	Objects     *objects     `icon:"\uF1E0"`                              // share-nodes
-	Playfield   *playfield   `icon:"\uF43C"`                              // chess-board
-	CursorDance *cursorDance `icon:"\uE599"`                              // worm
-	Knockout    *knockout    `icon:"\uF0CB"`                              // list-ol
-	Recording   *recording   `icon:"\uF03D"`                              // video
+	Credentials *credentials `icon:"\uF084" label:"Credentials (Global)" liveedit:"false"` // key
+	General     *general     `icon:"\uF0AD" liveedit:"false"`                              // wrench
+	Graphics    *graphics    `icon:"\uE163"`                                               // display
+	Audio       *audio       `icon:"\uF028"`                                               // volume-high
+	Input       *input       `icon:"\uF11C"`                                               // keyboard
+	Gameplay    *gameplay    `icon:"\uF192"`                                               // circle-dot
+	Skin        *skin        `icon:"\uF1FC"`                                               // paintbrush
+	Cursor      *cursor      `icon:"\uF245"`                                               // arrow-pointer
+	Objects     *objects     `icon:"\uF1E0"`                                               // share-nodes
+	Playfield   *playfield   `icon:"\uF43C"`                                               // chess-board
+	CursorDance *cursorDance `icon:"\uE599"`                                               // worm
+	Knockout    *knockout    `icon:"\uF0CB"`                                               // list-ol
+	Recording   *recording   `icon:"\uF03D"`                                               // video
 }
 
 func LoadConfig(file *os.File) (*Config, error) {
@@ -79,6 +79,7 @@ func LoadConfig(file *os.File) (*Config, error) {
 	}
 
 	config.migrateCursorDance()
+	config.migrateHitCounterColors()
 
 	if config.General.OsuReplaysDir == "" { // Set the replay directory if it hasn't been loaded
 		config.General.OsuReplaysDir = filepath.Join(filepath.Dir(config.General.OsuSongsDir), "Replays")
@@ -136,31 +137,74 @@ func (config *Config) migrateCursorDance() {
 	config.CursorDance.DoSpinnersTogether = config.Dance.DoSpinnersTogether
 	config.CursorDance.TAGSliderDance = config.Dance.TAGSliderDance
 
-	config.CursorDance.MoverSettings.Bezier = []*bezier{
-		config.Dance.Bezier,
+	if config.Dance.Bezier != nil {
+		config.CursorDance.MoverSettings.Bezier = []*bezier{
+			config.Dance.Bezier,
+		}
 	}
 
-	config.CursorDance.MoverSettings.Flower = []*flower{
-		config.Dance.Flower,
+	if config.Dance.Flower != nil {
+		config.CursorDance.MoverSettings.Flower = []*flower{
+			config.Dance.Flower,
+		}
 	}
 
-	config.CursorDance.MoverSettings.HalfCircle = []*circular{
-		config.Dance.HalfCircle,
+	if config.Dance.HalfCircle != nil {
+		config.CursorDance.MoverSettings.HalfCircle = []*circular{
+			config.Dance.HalfCircle,
+		}
 	}
 
-	config.CursorDance.MoverSettings.Spline = []*spline{
-		config.Dance.Spline,
+	if config.Dance.Spline != nil {
+		config.CursorDance.MoverSettings.Spline = []*spline{
+			config.Dance.Spline,
+		}
 	}
 
-	config.CursorDance.MoverSettings.Momentum = []*momentum{
-		config.Dance.Momentum,
+	if config.Dance.Momentum != nil {
+		config.CursorDance.MoverSettings.Momentum = []*momentum{
+			config.Dance.Momentum,
+		}
 	}
 
-	config.CursorDance.MoverSettings.ExGon = []*exgon{
-		config.Dance.ExGon,
+	if config.Dance.ExGon != nil {
+		config.CursorDance.MoverSettings.ExGon = []*exgon{
+			config.Dance.ExGon,
+		}
 	}
 
 	config.Dance = nil
+}
+
+func (config *Config) migrateHitCounterColors() {
+	if config.Gameplay.HitCounter.Color == nil {
+		return
+	}
+
+	idx := 0
+
+	ln := len(config.Gameplay.HitCounter.Color)
+
+	if config.Gameplay.HitCounter.Show300 {
+		config.Gameplay.HitCounter.Color300 = config.Gameplay.HitCounter.Color[idx%ln]
+		idx++
+	}
+
+	config.Gameplay.HitCounter.Color100 = config.Gameplay.HitCounter.Color[idx%ln]
+	idx++
+
+	config.Gameplay.HitCounter.Color50 = config.Gameplay.HitCounter.Color[idx%ln]
+	idx++
+
+	config.Gameplay.HitCounter.ColorMiss = config.Gameplay.HitCounter.Color[idx%ln]
+	idx++
+
+	if config.Gameplay.HitCounter.ShowSliderBreaks {
+		config.Gameplay.HitCounter.ColorSB = config.Gameplay.HitCounter.Color[idx%ln]
+		idx++
+	}
+
+	config.Gameplay.HitCounter.Color = nil
 }
 
 func (config *Config) attachToGlobals() {

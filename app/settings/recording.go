@@ -109,9 +109,9 @@ type recording struct {
 	resolution          string             `vector:"true" left:"FrameWidth" right:"FrameHeight"`
 	FrameWidth          int                `min:"1" max:"30720"`
 	FrameHeight         int                `min:"1" max:"17280"`
-	FPS                 int                `string:"true" min:"1" max:"10727"`
-	EncodingFPSCap      int                `string:"true" min:"0" max:"10727" label:"Max Encoding FPS (Speed)"`
-	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC),libvpx-vp9|VP9"`
+	FPS                 int                `label:"FPS (PLEASE READ TOOLTIP)" string:"true" min:"1" max:"10727" tooltip:"IMPORTANT: If you plan to have a \"high fps\" video, use Motion Blur below instead of setting FPS to absurd numbers. Setting the value too high will result in a broken video!"`
+	EncodingFPSCap      int                `string:"true" min:"0" max:"10727" label:"Max Encoding FPS (Speed)" tooltip:"Limits the speed at which danser renders the video. If FPS is set to 60 and this option to 30, then it means 2 minute map will take at least 4 minutes to render"`
+	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC)" tooltip:"Even if AMD cards have their own hardware encoder, you will still get better results with software encoders"`
 	X264Settings        *x264Settings      `json:"libx264" label:"Software x264 (AVC) Settings" showif:"Encoder=libx264"`
 	X265Settings        *x265Settings      `json:"libx265" label:"Software x265 (HEVC) Settings" showif:"Encoder=libx265"`
 	H264NvencSettings   *h264NvencSettings `json:"h264_nvenc" label:"NVIDIA NVENC H.264 (AVC) Settings" showif:"Encoder=h264_nvenc"`
@@ -130,7 +130,7 @@ type recording struct {
 	//AudioOptions        string             `label:"Audio Encoder Options"`
 	AudioFilters   string `label:"FFmpeg Audio Filters"`
 	OutputDir      string `path:"Select video output directory"`
-	Container      string `combo:"mp4,mkv,webm"`
+	Container      string `combo:"mp4,mkv"`
 	ShowFFmpegLogs bool
 	MotionBlur     *motionblur
 
@@ -188,13 +188,13 @@ func (g *recording) GetOutputDir() string {
 type motionblur struct {
 	Enabled              bool
 	OversampleMultiplier int `string:"true" min:"1" max:"512"`
-	BlendFrames          int `string:"true" min:"1" max:"512"`
+	BlendFrames          int `string:"true" min:"1" max:"512" tooltip:"How many frames should be blended together.\nValue 1.5x bigger than Oversample multiplier is recommended"`
 	BlendWeights         *blendWeights
 }
 
 type blendWeights struct {
 	UseManualWeights bool
-	ManualWeights    string
+	ManualWeights    string  `showif:"UseManualWeights=true"`
 	AutoWeightsID    int     `combo:"0|Flat,1|Linear,2|InQuad,3|OutQuad,4|InOutQuad,5|InCubic,6|OutCubic,7|InOutCubic,8|InQuart,9|OutQuart,10|InOutQuart,11|InQuint,12|OutQuint,13|InOutQuint,14|InSine,15|OutSine,16|InOutSine,17|InExpo,18|OutExpo,19|InOutExpo,20|InCirc,21|OutCirc,22|InOutCirc,23|InBack,24|OutBack,25|InOutBack,26|Gauss,27|GaussSymmetric,28|PyramidSymmetric,29|SemiCircle"`
 	GaussWeightsMult float64 `string:"true" min:"0" max:"10"`
 }

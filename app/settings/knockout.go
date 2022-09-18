@@ -23,7 +23,7 @@ func initKnockout() *knockout {
 
 type knockout struct {
 	// Knockout mode. More info below
-	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit"`
+	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit" liveedit:"false"`
 
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
 	GraceEndTime float64 `string:"true" min:"-10" max:"1000000" showif:"Mode=0"`
@@ -32,10 +32,10 @@ type knockout struct {
 	BubbleMinimumCombo int `label:"Minimum combo to show break bubble" string:"true" min:"1" max:"1000000" showif:"Mode=2"`
 
 	// Exclude plays which contain one of the mods set here
-	ExcludeMods string `label:"Excluded mods (legacy)" tooltip:"Applicable only to classic knockout"`
+	ExcludeMods string `label:"Excluded mods (legacy)" tooltip:"Applicable only to classic knockout" liveedit:"false"`
 
 	// Hide specific mods from being displayed in overlay (like NF)
-	HideMods string
+	HideMods string `liveedit:"false"`
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
 	MaxPlayers int `label:"Max players loaded (legacy)" string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
@@ -62,8 +62,8 @@ type knockout struct {
 	MaxCursorSize float64 `min:"1" max:"20"`
 
 	// Self explanatory
-	AddDanser  bool
-	DanserName string `label:"Danser's name" tooltip:"It's also used in danser replay mode"`
+	AddDanser  bool   `liveedit:"false"`
+	DanserName string `label:"Danser's name" tooltip:"It's also used in danser replay mode" liveedit:"false"`
 }
 
 type KnockoutMode int

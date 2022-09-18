@@ -7,55 +7,105 @@ import (
 	"time"
 )
 
+// Full credits: LWJGL Team
+// Ported from Java
+// Original source: https://github.com/LWJGL/lwjgl/blob/master/src/java/org/lwjgl/opengl/Sync.java
+
+const (
+	nanosInSecond   = 1e9
+	dampenThreshold = 10e6 // 10ms
+	dampenFactor    = 0.9  // don't change: 0.9f is exactly right!
+)
+
 type Limiter struct {
-	FPS               int
-	variableYieldTime int64
-	lastTime          int64
+	FPS         int
+	nextFrame   int64
+	initialised bool
+
+	sleepDurations *runningAvg
+	yieldDurations *runningAvg
 }
 
 func NewLimiter(fps int) *Limiter {
-	return &Limiter{fps, 0, 0}
+	return &Limiter{
+		FPS:            fps,
+		sleepDurations: newRunningAvg(10),
+		yieldDurations: newRunningAvg(10),
+	}
 }
 
-/**
- * An accurate sync method that adapts automatically
- * to the system it runs on to provide reliable results.
- *
- * @author kappa (On the LWJGL Forums)
- */
 func (limiter *Limiter) Sync() {
 	if limiter.FPS <= 0 {
 		return
 	}
 
-	sleepTime := int64(1000000000) / int64(limiter.FPS) // nanoseconds to sleep this frame
-	// yieldTime + remainder micro & nano seconds if smaller than sleepTime
-	yieldTime := mutils.Min(sleepTime, limiter.variableYieldTime+sleepTime%int64(1000*1000))
-	overSleep := int64(0) // time the sync goes over by
+	if !limiter.initialised {
+		limiter.initialised = true
 
-	for {
-		t := qpc.GetNanoTime() - limiter.lastTime
+		limiter.sleepDurations.init(1000 * 1000)
+		limiter.yieldDurations.init(int64(-float64(qpc.GetNanoTime()-qpc.GetNanoTime()) * 1.333))
 
-		if t < sleepTime-yieldTime {
-			time.Sleep(time.Millisecond)
-		} else if t < sleepTime {
-			// burn the last few CPU cycles to ensure accuracy
-			runtime.Gosched()
-		} else {
-			overSleep = t - sleepTime
-			break // exit while loop
+		limiter.nextFrame = qpc.GetNanoTime()
+	}
+
+	for t0, t1 := qpc.GetNanoTime(), int64(0); (limiter.nextFrame - t0) > limiter.sleepDurations.avg(); t0 = t1 {
+		time.Sleep(time.Millisecond)
+
+		t1 = qpc.GetNanoTime()
+
+		limiter.sleepDurations.add(t1 - t0)
+	}
+
+	limiter.sleepDurations.dampenForLowResTicker()
+
+	for t0, t1 := qpc.GetNanoTime(), int64(0); (limiter.nextFrame - t0) > limiter.yieldDurations.avg(); t0 = t1 {
+		runtime.Gosched()
+
+		t1 = qpc.GetNanoTime()
+
+		limiter.yieldDurations.add(t1 - t0)
+	}
+
+	limiter.nextFrame = mutils.Max(limiter.nextFrame+nanosInSecond/int64(limiter.FPS), qpc.GetNanoTime())
+}
+
+type runningAvg struct {
+	slots  []int64
+	offset int
+}
+
+func newRunningAvg(slotCount int) *runningAvg {
+	return &runningAvg{
+		slots:  make([]int64, slotCount),
+		offset: 0,
+	}
+}
+
+func (ra *runningAvg) init(value int64) {
+	for i := 0; i < len(ra.slots); i++ {
+		ra.slots[i] = value
+	}
+}
+
+func (ra *runningAvg) add(value int64) {
+	ra.slots[ra.offset] = value
+	ra.offset = (ra.offset + 1) % len(ra.slots)
+}
+
+func (ra *runningAvg) avg() int64 {
+	var sum int64
+
+	for i := 0; i < len(ra.slots); i++ {
+		sum += ra.slots[i]
+	}
+
+	return sum / int64(len(ra.slots))
+}
+
+func (ra *runningAvg) dampenForLowResTicker() {
+	if ra.avg() > dampenThreshold {
+		for i := 0; i < len(ra.slots); i++ {
+			ra.slots[i] = int64(float64(ra.slots[i]) * dampenFactor)
 		}
 	}
-
-	limiter.lastTime = qpc.GetNanoTime() - mutils.Min(overSleep, sleepTime)
-
-	// auto tune the time sync should yield
-	if overSleep > limiter.variableYieldTime {
-		// increase by 200 microseconds (1/5 a ms)
-		limiter.variableYieldTime = mutils.Min(limiter.variableYieldTime+200*1000, sleepTime)
-	} else if overSleep < limiter.variableYieldTime-200*1000 {
-		// decrease by 2 microseconds
-		limiter.variableYieldTime = mutils.Max(limiter.variableYieldTime-2*1000, 0)
-	}
-
 }

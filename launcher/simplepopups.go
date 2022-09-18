@@ -2,8 +2,6 @@ package launcher
 
 import (
 	"github.com/inkyblackness/imgui-go/v4"
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -113,7 +111,7 @@ func drawRecordMenu(bld *builder) {
 
 		imgui.SetNextItemWidth(-1)
 
-		imgui.InputText("##oname", &bld.outputName)
+		imgui.InputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
 
 		if bld.currentPMode == Screenshot {
 			imgui.TableNextColumn()
@@ -152,70 +150,6 @@ func drawRecordMenu(bld *builder) {
 				imgui.EndTable()
 			}
 		}
-
-		imgui.EndTable()
-	}
-}
-
-func drawReplayManager(bld *builder) {
-	if imgui.BeginTableV("replay table", 9, imgui.TableFlagsBorders|imgui.TableFlagsScrollY, vec2(-1, imgui.ContentRegionAvail().Y), -1) {
-		imgui.TableSetupScrollFreeze(0, 1)
-
-		imgui.TableSetupColumnV("", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(0))
-		imgui.TableSetupColumnV("Name", imgui.TableColumnFlagsWidthStretch|imgui.TableColumnFlagsNoSort, 0, uint(1))
-		imgui.TableSetupColumnV("Score", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(2))
-		imgui.TableSetupColumnV("Mods", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(3))
-		imgui.TableSetupColumnV("300", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(4))
-		imgui.TableSetupColumnV("100", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(5))
-		imgui.TableSetupColumnV("50", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(6))
-		imgui.TableSetupColumnV("Miss", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(7))
-		imgui.TableSetupColumnV("Combo", imgui.TableColumnFlagsWidthFixed|imgui.TableColumnFlagsNoSort, 0, uint(8))
-
-		imgui.TableHeadersRow()
-
-		imgui.PushFont(Font20)
-
-		for i, replay := range bld.knockoutReplays {
-			pReplay := replay.parsedReplay
-
-			imgui.TableNextColumn()
-
-			imgui.Checkbox("##Use"+strconv.Itoa(i), &replay.included)
-
-			imgui.TableNextColumn()
-
-			imgui.Text(pReplay.Username)
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.Score))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(difficulty.Modifier(pReplay.Mods).String())
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.Count300))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.Count100))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.Count50))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.CountMiss))
-
-			imgui.TableNextColumn()
-
-			imgui.Text(utils.Humanize(pReplay.MaxCombo))
-		}
-
-		imgui.PopFont()
 
 		imgui.EndTable()
 	}
@@ -280,67 +214,45 @@ func drawAbout(dTex texture.Texture) {
 func drawLauncherConfig() {
 	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(imgui.CurrentStyle().CellPadding().X, 10))
 
-	if imgui.BeginTableV("lconfigtable", 2, 0, vec2(-1, 0), -1) {
-		imgui.TableSetupColumnV("1lconfigtable", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-		imgui.TableSetupColumnV("2lconfigtable", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+	checkboxOption := func(text string, value *bool) {
+		if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
+			imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
+			imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
 
-		imgui.TableNextColumn()
+			imgui.TableNextColumn()
 
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Check for updates on startup")
+			pos1 := imgui.CursorPos()
 
-		imgui.TableNextColumn()
+			imgui.AlignTextToFramePadding()
 
-		imgui.Checkbox("##CheckForUpdates", &launcherConfig.CheckForUpdates)
+			imgui.PushTextWrapPos()
 
-		imgui.TableNextColumn()
+			imgui.Text(text)
 
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Load latest replay on startup")
+			imgui.PopTextWrapPos()
 
-		imgui.TableNextColumn()
+			pos2 := imgui.CursorPos()
 
-		imgui.Checkbox("##LoadLatestReplay", &launcherConfig.LoadLatestReplay)
+			imgui.TableNextColumn()
 
-		imgui.TableNextColumn()
+			imgui.SetCursorPos(vec2(imgui.CursorPosX(), (pos1.Y+pos2.Y-imgui.FrameHeightWithSpacing())/2))
+			imgui.Checkbox("##ck"+text, value)
 
-		posLocalSMU := imgui.CursorPos()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Speed up startup on slow HDDs.\nWon't detect deleted/updated\nmaps!")
-
-		posLocalSMU1 := imgui.CursorPos()
-
-		imgui.TableNextColumn()
-
-		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocalSMU.Y+posLocalSMU1.Y-imgui.FrameHeightWithSpacing())/2))
-		imgui.Checkbox("##SkipMapUpdate", &launcherConfig.SkipMapUpdate)
-
-		imgui.TableNextColumn()
-
-		posLocalSFA := imgui.CursorPos()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Show exported videos/images\nin explorer")
-
-		posLocalSFA1 := imgui.CursorPos()
-
-		imgui.TableNextColumn()
-
-		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocalSFA.Y+posLocalSFA1.Y-imgui.FrameHeightWithSpacing())/2))
-		imgui.Checkbox("##ShowFileAfter", &launcherConfig.ShowFileAfter)
-
-		imgui.TableNextColumn()
-
-		imgui.AlignTextToFramePadding()
-		imgui.Text("Preview selected maps")
-
-		imgui.TableNextColumn()
-
-		imgui.Checkbox("##PreviewSelected", &launcherConfig.PreviewSelected)
-
-		imgui.EndTable()
+			imgui.EndTable()
+		}
 	}
+
+	checkboxOption("Check for updates on startup", &launcherConfig.CheckForUpdates)
+
+	checkboxOption("Load latest replay on startup", &launcherConfig.LoadLatestReplay)
+
+	checkboxOption("Speed up startup on slow HDDs.\nWon't detect deleted/updated\nmaps!", &launcherConfig.SkipMapUpdate)
+
+	checkboxOption("Show JSON paths in config editor", &launcherConfig.ShowJSONPaths)
+
+	checkboxOption("Show exported videos/images\nin explorer", &launcherConfig.ShowFileAfter)
+
+	checkboxOption("Preview selected maps", &launcherConfig.PreviewSelected)
 
 	imgui.AlignTextToFramePadding()
 	imgui.Text("Preview volume")

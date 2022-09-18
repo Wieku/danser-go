@@ -378,7 +378,7 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 	}
 
 	for _, obj := range beatMap.HitObjects {
-		obj.SetTiming(beatMap.Timings, diffCalcOnly)
+		obj.SetTiming(beatMap.Timings, beatMap.Version, diffCalcOnly)
 	}
 
 	calculateStackLeniency(beatMap)

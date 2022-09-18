@@ -428,9 +428,9 @@ func (controller *ReplayController) updateMain(nTime float64) {
 			}
 
 			if int64(nTime) != c.lastTime {
-				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime), false)
 				controller.ruleset.UpdateClickFor(controller.cursors[i], int64(nTime))
 				controller.ruleset.UpdateNormalFor(controller.cursors[i], int64(nTime), false)
+				controller.ruleset.UpdatePostFor(controller.cursors[i], int64(nTime), false)
 			}
 
 			c.lastTime = int64(nTime)

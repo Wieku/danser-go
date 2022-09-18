@@ -173,7 +173,7 @@ func (container *HitObjectContainer) preProcessQueue(time float64) {
 	}
 }
 
-func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
+func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl32.Mat4, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
 	divides := len(cameras)
 
 	container.preProcessQueue(time)
@@ -213,7 +213,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, cameras []mgl3
 
 		for i := len(container.renderables) - 1; i >= 0; i-- {
 			if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
-				s.DrawBodyBase(time, cameras[0])
+				s.DrawBodyBase(time, baseCamera)
 			}
 		}
 

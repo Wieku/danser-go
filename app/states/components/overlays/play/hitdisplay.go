@@ -77,68 +77,66 @@ func (sprite *HitDisplay) Update(_ float64) {
 }
 
 func (sprite *HitDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
-	if !settings.Gameplay.HitCounter.Show || settings.Gameplay.HitCounter.Opacity*alpha < 0.01 {
+	hCS := settings.Gameplay.HitCounter
+
+	if !hCS.Show || hCS.Opacity*alpha < 0.01 {
 		return
 	}
 
 	batch.ResetTransform()
 
-	alpha *= settings.Gameplay.HitCounter.Opacity
-	scale := settings.Gameplay.HitCounter.Scale
-	hSpacing := settings.Gameplay.HitCounter.Spacing * scale
+	alpha *= hCS.Opacity
+	scale := hCS.Scale
+	hSpacing := hCS.Spacing * scale
 	vSpacing := 0.0
 
-	if settings.Gameplay.HitCounter.Vertical {
+	if hCS.Vertical {
 		vSpacing = hSpacing
 		hSpacing = 0
 	}
 
-	fontScale := scale * settings.Gameplay.HitCounter.FontScale
+	fontScale := scale * hCS.FontScale
 
-	align := vector.ParseOrigin(settings.Gameplay.HitCounter.Align).AddS(1, 1).Scl(0.5)
+	align := vector.ParseOrigin(hCS.Align).AddS(1, 1).Scl(0.5)
 
 	bC := 3.0
 
-	if settings.Gameplay.HitCounter.Show300 {
+	if hCS.Show300 {
 		bC += 1.0
 	}
 
-	if settings.Gameplay.HitCounter.ShowSliderBreaks {
+	if hCS.ShowSliderBreaks {
 		bC += 1.0
 	}
 
-	valueAlign := vector.ParseOrigin(settings.Gameplay.HitCounter.ValueAlign)
+	valueAlign := vector.ParseOrigin(hCS.ValueAlign)
 
-	baseX := settings.Gameplay.HitCounter.XPosition - align.X*hSpacing*(bC-1)
-	baseY := settings.Gameplay.HitCounter.YPosition - align.Y*vSpacing*(bC-1)
+	baseX := hCS.XPosition - align.X*hSpacing*(bC-1)
+	baseY := hCS.YPosition - align.Y*vSpacing*(bC-1)
 
-	offsetI := 0
+	if hCS.Show300 {
+		sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, hCS.Color300, float32(alpha), sprite.hit300Text)
 
-	if settings.Gameplay.HitCounter.Show300 {
-		sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, 0, float32(alpha), sprite.hit300Text)
-
-		offsetI = 1
 		baseX += hSpacing
 		baseY += vSpacing
 	}
 
-	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, offsetI, float32(alpha), sprite.hit100Text)
-	sprite.drawShadowed(batch, baseX+hSpacing, baseY+vSpacing, valueAlign, fontScale, offsetI+1, float32(alpha), sprite.hit50Text)
-	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY+vSpacing*2, valueAlign, fontScale, offsetI+2, float32(alpha), sprite.hitMissText)
+	sprite.drawShadowed(batch, baseX, baseY, valueAlign, fontScale, hCS.Color100, float32(alpha), sprite.hit100Text)
+	sprite.drawShadowed(batch, baseX+hSpacing, baseY+vSpacing, valueAlign, fontScale, hCS.Color50, float32(alpha), sprite.hit50Text)
+	sprite.drawShadowed(batch, baseX+hSpacing*2, baseY+vSpacing*2, valueAlign, fontScale, hCS.ColorMiss, float32(alpha), sprite.hitMissText)
 
-	if settings.Gameplay.HitCounter.ShowSliderBreaks {
-		sprite.drawShadowed(batch, baseX+hSpacing*3, baseY+vSpacing*3, valueAlign, fontScale, offsetI+3, float32(alpha), sprite.sliderBreaksText)
+	if hCS.ShowSliderBreaks {
+		sprite.drawShadowed(batch, baseX+hSpacing*3, baseY+vSpacing*3, valueAlign, fontScale, hCS.ColorSB, float32(alpha), sprite.sliderBreaksText)
 	}
 
 	batch.ResetTransform()
 }
 
-func (sprite *HitDisplay) drawShadowed(batch *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, cI int, alpha float32, text string) {
-	cS := settings.Gameplay.HitCounter.Color[cI%len(settings.Gameplay.HitCounter.Color)]
-	color := color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), alpha)
+func (sprite *HitDisplay) drawShadowed(batch *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, color *settings.HSV, alpha float32, text string) {
+	rgba := color2.NewHSVA(float32(color.Hue), float32(color.Saturation), float32(color.Value), alpha)
 
-	batch.SetColor(0, 0, 0, float64(color.A)*0.8)
+	batch.SetColor(0, 0, 0, float64(rgba.A)*0.8)
 	sprite.fnt.DrawOrigin(batch, x+size, y+size, origin, 20*size, true, text)
-	batch.SetColorM(color)
+	batch.SetColorM(rgba)
 	sprite.fnt.DrawOrigin(batch, x, y, origin, 20*size, true, text)
 }

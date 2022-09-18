@@ -21,6 +21,6 @@ func (c *CircleMover) Init(start, _ float64, id int) {
 }
 
 func (c *CircleMover) GetPositionAt(time float64) vector.Vector2f {
-	radius := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)].Radius
-	return vector.NewVec2fRad(rpms*float32(time-c.start)*2*math32.Pi, float32(radius)).Add(center)
+	spS := settings.CursorDance.Spinners[c.id%len(settings.CursorDance.Spinners)]
+	return vector.NewVec2fRad(rpms*float32(time-c.start)*2*math32.Pi, float32(spS.Radius)).Add(center.AddS(float32(spS.CenterOffsetX), float32(spS.CenterOffsetY)))
 }

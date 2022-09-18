@@ -51,7 +51,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-	"unsafe"
 )
 
 const (
@@ -84,6 +83,8 @@ var screenshotTime float64
 
 var preciseProgress bool
 
+var monitorHz int
+
 func run() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -109,16 +110,16 @@ func run() {
 		creator := flag.String("creator", "", creatorDesc)
 		flag.StringVar(creator, "c", "", creatorDesc+shorthand)
 
-		settingsVersion := flag.String("settings", "", "Specify settings version, -settings=abc means that settings/abc.json will be loaded")
+		settingsVersion := flag.String("settings", "", "Specify settings version, -settings=b/abc means that settings/b/abc.json will be loaded. \"Credentials\"")
 		cursors := flag.Int("cursors", 1, "How many repeated cursors should be visible, recommended 2 for mirror, 8 for mandala")
 		tag := flag.Int("tag", 1, "How many cursors should be \"playing\" specific map. 2 means that 1st cursor clicks the 1st object, 2nd clicks 2nd object, 1st clicks 3rd and so on")
 
-		knockout := flag.Bool("knockout", false, "Use knockout feature")
-		knockout2 := flag.String("knockout2", "", "Use knockout feature, but using compatible replays provided in a JSON list")
+		knockout := flag.Bool("knockout", false, "Use (classic) knockout feature. Replays are sourced from \"replays/{a}\" where {a} is an md5 hash of .osu file. Danser automatically organizes replay files put directly in \"replays\", using maps' md5s provided by the replay files.")
+		knockout2 := flag.String("knockout2", "", "Use (new) knockout feature, JSON list of paths to compatible replay files has to be provided. \"Knockout.ExcludeMods\" and \"Knockout.MaxPlayers\" options are ignored, they have to be filtered beforehand.")
 
 		speed := flag.Float64("speed", 1.0, "Specify music's speed, set to 1.5 to have DoubleTime mod experience")
 		pitch := flag.Float64("pitch", 1.0, "Specify music's pitch, set to 1.5 with -speed=1.5 to have Nightcore mod experience")
-		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting")
+		debug := flag.Bool("debug", false, "Show info about map and rendering engine, overrides Graphics.ShowFPS setting. Ignored in record/screenshot modes.")
 
 		gldebug := flag.Bool("gldebug", false, "Turns on OpenGL debug logging, may reduce performance heavily")
 
@@ -134,14 +135,14 @@ func run() {
 		out := flag.String("out", "", "If -ss flag is used, sets the name of screenshot, extension is PNG. If not, it overrides -record flag, specifies the name of recorded video file, extension is managed by settings")
 		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
 
-		mods := flag.String("mods", "", "Specify beatmap/play mods. If NC/DT/HT is selected, overrides -speed and -pitch flags")
+		mods := flag.String("mods", "", "Specify beatmap/play mods")
 
 		replay := flag.String("replay", "", replayDesc)
 		flag.StringVar(replay, "r", "", replayDesc+shorthand)
 
 		skin := flag.String("skin", "", "Replace Skin.CurrentSkin setting temporarily")
 
-		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and import new beatmaps if there are any. Useful for slow drives.")
+		noDbCheck := flag.Bool("nodbcheck", false, "Don't validate the database and only import new beatmap sets if there are any. Useful for slow drives.")
 		noUpdCheck := flag.Bool("noupdatecheck", strings.HasPrefix(env.LibDir(), "/usr/lib/"), "Don't check for updates. Speeds up startup if older version of danser is needed for various reasons. Has no effect if danser is running as a linux package")
 
 		ar := flag.Float64("ar", math.NaN(), "Modify map's AR, only in cursordance/play modes")
@@ -334,16 +335,16 @@ func run() {
 			panic("Failed to initialize GLFW: " + err.Error())
 		}
 
-		glfw.WindowHint(glfw.ContextVersionMajor, 3)
-		glfw.WindowHint(glfw.ContextVersionMinor, 3)
-		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+		platform.SetupContext()
+
 		glfw.WindowHint(glfw.Resizable, glfw.False)
 		glfw.WindowHint(glfw.Samples, 0)
 		glfw.WindowHint(glfw.Visible, glfw.False)
 
 		monitor := glfw.GetPrimaryMonitor()
 		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
+
+		monitorHz = monitor.GetVideoMode().RefreshRate
 
 		if newSettings {
 			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
@@ -437,51 +438,9 @@ func run() {
 
 		log.Println("GLFW initialized!")
 
-		gl.Init()
-
-		extensionCheck()
-
-		glVendor := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VENDOR))))
-		glRenderer := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.RENDERER))))
-		glVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.VERSION))))
-		glslVersion := C.GoString((*C.char)(unsafe.Pointer(gl.GetString(gl.SHADING_LANGUAGE_VERSION))))
-
-		// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/buffer.IsIntel for more info
-		if strings.Contains(strings.ToLower(glVendor), "intel") {
-			buffer.IsIntel = true
-		}
-
-		var extensions string
-
-		var numExtensions int32
-		gl.GetIntegerv(gl.NUM_EXTENSIONS, &numExtensions)
-
-		for i := int32(0); i < numExtensions; i++ {
-			extensions += C.GoString((*C.char)(unsafe.Pointer(gl.GetStringi(gl.EXTENSIONS, uint32(i)))))
-			extensions += " "
-		}
-
-		log.Println("GL Vendor:    ", glVendor)
-		log.Println("GL Renderer:  ", glRenderer)
-		log.Println("GL Version:   ", glVersion)
-		log.Println("GLSL Version: ", glslVersion)
-		log.Println("GL Extensions:", extensions)
-		log.Println("OpenGL initialized!")
-
-		if *gldebug {
-			gl.Enable(gl.DEBUG_OUTPUT)
-			gl.DebugMessageCallback(func(
-				source uint32,
-				gltype uint32,
-				id uint32,
-				severity uint32,
-				length int32,
-				message string,
-				userParam unsafe.Pointer) {
-				log.Println("GL:", message)
-			}, gl.Ptr(nil))
-
-			gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DONT_CARE, 0, nil, true)
+		err = platform.GLInit(*gldebug)
+		if err != nil {
+			panic("Failed to initialize OpenGL: " + err.Error())
 		}
 
 		if !settings.RECORD {
@@ -701,14 +660,20 @@ func mainLoopNormal() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if action == glfw.Press {
 				switch key {
-				case glfw.KeyF2:
-					scheduleScreenshot = true
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
 					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
+				case glfw.KeyO:
+					if mods == glfw.ModControl {
+						log.Println("Launcher: Open settings")
+					}
+				default:
+					if platform.GetKeyName(key, scancode) == settings.Input.ScreenshotKey {
+						scheduleScreenshot = true
+					}
 				}
 			}
 
@@ -741,6 +706,13 @@ func mainLoopNormal() {
 			win.SwapBuffers()
 
 			if !settings.Graphics.VSync {
+				fCap := int(settings.Graphics.FPSCap)
+
+				if fCap < 0 {
+					fCap = -fCap*monitorHz
+				}
+
+				limiter.FPS = fCap
 				limiter.Sync()
 			}
 
@@ -748,28 +720,6 @@ func mainLoopNormal() {
 	}
 
 	settings.CloseWatcher()
-}
-
-func extensionCheck() {
-	extensions := []string{
-		"GL_ARB_clear_texture",
-		"GL_ARB_direct_state_access",
-		"GL_ARB_texture_storage",
-		"GL_ARB_vertex_attrib_binding",
-		"GL_ARB_buffer_storage",
-	}
-
-	var notSupported []string
-
-	for _, ext := range extensions {
-		if !glfw.ExtensionSupported(ext) {
-			notSupported = append(notSupported, ext)
-		}
-	}
-
-	if len(notSupported) > 0 {
-		panic(fmt.Sprintf("Your GPU does not support one or more required OpenGL extensions: %s. Please update your graphics drivers or upgrade your GPU", notSupported))
-	}
 }
 
 func pushFrame() {
@@ -825,7 +775,7 @@ func checkForUpdates() {
 		log.Println("You're using the newest version of danser.")
 	case utils.Snapshot:
 		log.Println("You're using a snapshot version of danser.")
-		log.Println("For newer version of snapshots please visit an official danser discord server at:", url)
+		log.Println("For newer version of snapshots please visit the official danser discord server at:", url)
 	case utils.UpdateAvailable:
 		log.Println("You're using an older version of danser.")
 		log.Println("You can download a newer version here:", url)

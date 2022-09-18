@@ -55,12 +55,12 @@ func (loop *LoopProcessor) Unwind() []*animation.Transformation {
 
 	iterationTime := endTime - startTime
 
-	for i := int64(0); i < loop.repeats; i++ {
-		partStart := float64(loop.start) + float64(i)*iterationTime
+	for _, t := range loop.transforms {
+		t2 := t.Clone(float64(loop.start)+t.GetStartTime(), float64(loop.start)+t.GetEndTime())
 
-		for _, t := range loop.transforms {
-			transforms = append(transforms, t.Clone(partStart+t.GetStartTime(), partStart+t.GetEndTime()))
-		}
+		t2.SetLoop(int(loop.repeats), iterationTime)
+
+		transforms = append(transforms, t2)
 	}
 
 	return transforms

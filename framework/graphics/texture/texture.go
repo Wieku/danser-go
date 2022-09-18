@@ -2,6 +2,7 @@ package texture
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/graphics/hacks"
 )
 
 type Filter int32
@@ -72,6 +73,28 @@ func newStore(layerNum, width, height int, format Format, mipmaps int) *textureS
 	}
 
 	return store
+}
+
+func (store *textureStore) SetData(x, y, width, height, layer int, data []uint8, generateMipmaps bool) {
+	if len(data) != width*height*store.format.Size() {
+		panic("Wrong number of pixels given!")
+	}
+
+	amdHack := store.binding == 0 && hacks.IsOldAMD
+
+	if amdHack {
+		gl.BindTextureUnit(11, store.id)
+	}
+
+	gl.TextureSubImage3D(store.id, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, store.format.Format(), store.format.Type(), gl.Ptr(data))
+
+	if amdHack {
+		gl.BindTextureUnit(uint32(store.binding), store.id)
+	}
+
+	if store.mipmaps > 1 && generateMipmaps {
+		gl.GenerateTextureMipmap(store.id)
+	}
 }
 
 func (store *textureStore) Bind(loc uint) {

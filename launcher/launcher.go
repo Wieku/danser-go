@@ -44,6 +44,7 @@ import (
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -180,6 +181,13 @@ type launcher struct {
 	prevMap *beatmap.BeatMap
 
 	configSearch string
+
+	lastReplayDir   string
+	lastKnockoutDir string
+
+	knockoutManager *knockoutManagerPopup
+
+	currentEditor *settingsEditor
 }
 
 func StartLauncher() {
@@ -217,7 +225,8 @@ func StartLauncher() {
 	settings.Playfield.Background.Triangles.Enabled = true
 	settings.Playfield.Background.Triangles.DrawOverBlur = true
 	settings.Playfield.Background.Blur.Enabled = false
-	settings.Playfield.Background.Parallax.Enabled = false
+	settings.Playfield.Background.Parallax.Enabled = true
+	settings.Playfield.Background.Parallax.Amount = 0.02
 
 	assets.Init(build.Stream == "Dev")
 
@@ -304,11 +313,10 @@ func (l *launcher) startGLFW() {
 
 	l.currentConfig = c
 
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	platform.SetupContext()
+
 	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ScaleToMonitor, glfw.True)
 	glfw.WindowHint(glfw.Samples, 4)
 
 	settings.Graphics.Fullscreen = false
@@ -342,9 +350,10 @@ func (l *launcher) startGLFW() {
 
 	log.Println("GLFW initialized!")
 
-	gl.Init()
-
-	extensionCheck()
+	err = platform.GLInit(false)
+	if err != nil {
+		panic("Failed to initialize OpenGL: " + err.Error())
+	}
 
 	glfw.SwapInterval(1)
 
@@ -372,6 +381,12 @@ func (l *launcher) startGLFW() {
 
 		if launcherConfig.CheckForUpdates {
 			checkForUpdates(false)
+		}
+	})
+
+	input.RegisterListener(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if l.currentEditor != nil {
+			l.currentEditor.updateKey(w, key, scancode, action, mods)
 		}
 	})
 }
@@ -425,12 +440,11 @@ func (l *launcher) loadBeatmaps() {
 	}
 
 	l.win.SetDropCallback(func(w *glfw.Window, names []string) {
-		if !strings.HasSuffix(names[0], ".osr") {
-			showMessage(mError, "It's not a replay file!")
-			return
+		if len(names) > 1 {
+			l.trySelectReplaysFromPaths(names)
+		} else {
+			l.trySelectReplayFromPath(names[0])
 		}
-
-		l.trySelectReplayFromPath(names[0])
 	})
 
 	l.win.SetCloseCallback(func(w *glfw.Window) {
@@ -450,71 +464,65 @@ func (l *launcher) loadBeatmaps() {
 		}
 	})
 
-	if len(os.Args) > 1 { //won't work in combined mode
+	if len(os.Args) > 2 { //won't work in combined mode
+		l.trySelectReplaysFromPaths(os.Args[1:])
+	} else if len(os.Args) > 1 {
 		l.trySelectReplayFromPath(os.Args[1])
 	} else if launcherConfig.LoadLatestReplay {
-		type lastModPath struct {
-			tStamp time.Time
-			path   string
-		}
-
-		var list []*lastModPath
-
-		filepath.Walk(l.currentConfig.General.GetReplaysDir(), func(path string, info fs.FileInfo, err error) error {
-			if info.IsDir() && path != l.currentConfig.General.GetReplaysDir() {
-				return filepath.SkipDir
-			}
-
-			if !info.IsDir() && strings.HasSuffix(path, ".osr") {
-				list = append(list, &lastModPath{
-					tStamp: info.ModTime(),
-					path:   path,
-				})
-			}
-
-			return nil
-		})
-
-		slices.SortFunc(list, func(a, b *lastModPath) bool {
-			return a.tStamp.After(b.tStamp)
-		})
-
-		// Load the newest that can be used
-		for _, lMP := range list {
-			r, err := l.loadReplay(lMP.path)
-			if err == nil {
-				l.trySelectReplay(r)
-				break
-			}
-		}
+		l.loadLatestReplay()
 	}
 
 	l.mapsLoaded = true
 }
 
-func extensionCheck() {
-	extensions := []string{
-		"GL_ARB_clear_texture",
-		"GL_ARB_direct_state_access",
-		"GL_ARB_texture_storage",
-		"GL_ARB_vertex_attrib_binding",
-		"GL_ARB_buffer_storage",
+func (l *launcher) loadLatestReplay() {
+	replaysDir := l.currentConfig.General.GetReplaysDir()
+
+	type lastModPath struct {
+		tStamp time.Time
+		name   string
 	}
 
-	var notSupported []string
+	var list []*lastModPath
 
-	for _, ext := range extensions {
-		if !glfw.ExtensionSupported(ext) {
-			notSupported = append(notSupported, ext)
+	entries, err := os.ReadDir(replaysDir)
+	if err != nil {
+		return
+	}
+
+	for _, d := range entries {
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".osr") {
+			if info, err1 := d.Info(); err1 == nil {
+				list = append(list, &lastModPath{
+					tStamp: info.ModTime(),
+					name:   d.Name(),
+				})
+			}
 		}
 	}
 
-	if len(notSupported) > 0 {
-		panic(fmt.Sprintf("Your GPU does not support one or more required OpenGL extensions: %s. Please update your graphics drivers or upgrade your GPU", notSupported))
+	if list == nil {
+		return
+	}
+
+	slices.SortFunc(list, func(a, b *lastModPath) bool {
+		return a.tStamp.After(b.tStamp)
+	})
+
+	// Load the newest that can be used
+	for _, lMP := range list {
+		r, err := l.loadReplay(filepath.Join(replaysDir, lMP.name))
+		if err == nil {
+			l.trySelectReplay(r)
+			break
+		}
 	}
 }
 
 func (l *launcher) Draw() {
+	w, h := l.win.GetFramebufferSize()
+	viewport.Push(w, h)
+
 	if l.bg.HasBackground() {
 		gl.ClearColor(0, 0, 0, 1.0)
 	} else {
@@ -524,8 +532,7 @@ func (l *launcher) Draw() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.Enable(gl.SCISSOR_TEST)
 
-	w, h := int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
-	gl.Viewport(0, 0, int32(w), int32(h))
+	w, h = int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
 
 	settings.Graphics.Fullscreen = false
 	settings.Graphics.WindowWidth = int64(w)
@@ -542,7 +549,10 @@ func (l *launcher) Draw() {
 
 	settings.Playfield.Background.Triangles.Speed = l.triangleSpeed.GetValue()
 
-	l.bg.Update(t, 0, 0)
+	pX := (float64(imgui.MousePos().X) * 2 / settings.Graphics.GetWidthF()) - 1
+	pY := (float64(imgui.MousePos().Y) * 2 / settings.Graphics.GetHeightF()) - 1
+
+	l.bg.Update(t, -pX, pY)
 
 	l.batch.SetCamera(mgl32.Ortho(-float32(w)/2, float32(w)/2, float32(h)/2, -float32(h)/2, -1, 1))
 
@@ -588,10 +598,14 @@ func (l *launcher) Draw() {
 	l.batch.End()
 
 	l.drawImgui()
+
+	viewport.Pop()
 }
 
 func (l *launcher) drawImgui() {
 	Begin()
+
+	resetPopupHierarchyInfo()
 
 	lock := l.danserRunning
 
@@ -850,6 +864,68 @@ func (l *launcher) trySelectReplayFromPath(p string) {
 	l.trySelectReplay(replay)
 }
 
+func (l *launcher) trySelectReplaysFromPaths(p []string) {
+	var errorCollection string
+	var replays []*knockoutReplay
+
+	for _, rPath := range p {
+		replay, err := l.loadReplay(rPath)
+
+		if err != nil {
+			if errorCollection != "" {
+				errorCollection += "\n"
+			}
+
+			errorCollection += fmt.Sprintf("%s:\n\t%s", filepath.Base(rPath), err)
+		} else {
+			replays = append(replays, replay)
+		}
+	}
+
+	if errorCollection != "" {
+		showMessage(mError, "There were errors opening replays:\n%s", errorCollection)
+	}
+
+	if replays != nil && len(replays) > 0 {
+		found := false
+
+		for _, replay := range replays {
+			for _, bMap := range l.beatmaps {
+				if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+					l.bld.currentMode = NewKnockout
+					l.bld.setMap(bMap)
+
+					found = true
+					break
+				}
+			}
+
+			if found {
+				break
+			}
+		}
+
+		if !found {
+			showMessage(mError, "Replays use an unknown map. Please download the map beforehand.")
+		} else {
+			var finalReplays []*knockoutReplay
+
+			for _, replay := range replays {
+				if strings.ToLower(l.bld.currentMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
+					finalReplays = append(finalReplays, replay)
+				}
+			}
+
+			slices.SortFunc(finalReplays, func(a, b *knockoutReplay) bool {
+				return a.parsedReplay.Score > b.parsedReplay.Score
+			})
+
+			l.bld.knockoutReplays = finalReplays
+			l.knockoutManager = newKnockoutManagerPopup(l.bld)
+		}
+	}
+}
+
 func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 	for _, bMap := range l.beatmaps {
 		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
@@ -871,66 +947,19 @@ func (l *launcher) newKnockout() {
 	imgui.PushFont(Font32)
 
 	if imgui.ButtonV("Select replays", bSize) {
-		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay files").SetStartDir(env.DataDir()).LoadMultiple()
+		kPath := getAbsPath(launcherConfig.LastKnockoutPath)
+
+		_, err := os.Lstat(kPath)
+		if err != nil {
+			kPath = env.DataDir()
+		}
+
+		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay files").SetStartDir(kPath).LoadMultiple()
 		if err == nil {
-			var errorCollection string
-			var replays []*knockoutReplay
+			launcherConfig.LastKnockoutPath = getRelativeOrABSPath(filepath.Dir(p[0]))
+			saveLauncherConfig()
 
-			for _, rPath := range p {
-				replay, err := l.loadReplay(rPath)
-
-				if err != nil {
-					if errorCollection != "" {
-						errorCollection += "\n"
-					}
-
-					errorCollection += fmt.Sprintf("%s:\n\t%s", filepath.Base(rPath), err)
-				} else {
-					replays = append(replays, replay)
-				}
-			}
-
-			if errorCollection != "" {
-				showMessage(mError, "There were errors opening replays:\n%s", errorCollection)
-			}
-
-			if replays != nil && len(replays) > 0 {
-				found := false
-
-				for _, replay := range replays {
-					for _, bMap := range l.beatmaps {
-						if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-							l.bld.currentMode = NewKnockout
-							l.bld.setMap(bMap)
-
-							found = true
-							break
-						}
-					}
-
-					if found {
-						break
-					}
-				}
-
-				if !found {
-					showMessage(mError, "Replays use an unknown map. Please download the map beforehand.")
-				} else {
-					var finalReplays []*knockoutReplay
-
-					for _, replay := range replays {
-						if strings.ToLower(l.bld.currentMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-							finalReplays = append(finalReplays, replay)
-						}
-					}
-
-					slices.SortFunc(finalReplays, func(a, b *knockoutReplay) bool {
-						return a.parsedReplay.Score > b.parsedReplay.Score
-					})
-
-					l.bld.knockoutReplays = finalReplays
-				}
-			}
+			l.trySelectReplaysFromPaths(p)
 		}
 	}
 
@@ -955,10 +984,8 @@ func (l *launcher) newKnockout() {
 
 		imgui.SameLine()
 
-		if imgui.Button("Manage##knockout") {
-			l.openPopup(newPopupF("Manage replays", popBig, func() {
-				drawReplayManager(l.bld)
-			}))
+		if imgui.Button("Manage##knockout") && l.knockoutManager != nil {
+			l.openPopup(l.knockoutManager)
 		}
 	} else {
 		imgui.Text("No replays selected")
@@ -970,6 +997,10 @@ func (l *launcher) newKnockout() {
 }
 
 func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
+	if !strings.HasSuffix(p, ".osr") {
+		return nil, fmt.Errorf("it's not a replay file")
+	}
+
 	rData, err := os.ReadFile(p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %s", err)
@@ -978,6 +1009,10 @@ func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 	replay, err := rplpa.ParseReplay(rData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse replay: %s", err)
+	}
+
+	if replay.PlayMode != 0 {
+		return nil, errors.New("only osu!standard mode is supported")
 	}
 
 	if replay.ReplayData == nil || len(replay.ReplayData) < 2 {
@@ -1184,6 +1219,10 @@ func (l *launcher) drawLowerPanel() {
 }
 
 func (l *launcher) drawConfigPanel() {
+	if l.currentEditor != nil {
+		l.currentEditor.setDanserRunning(l.danserRunning && l.bld.currentPMode == Watch)
+	}
+
 	w := imgui.WindowContentRegionMax().X
 
 	imgui.SetCursorPos(vec2(imgui.WindowContentRegionMax().X-float32(w)/2.5, 20))
@@ -1322,19 +1361,18 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
+		dRun := l.danserRunning && l.bld.currentPMode == Watch
+
+		if dRun {
+			imgui.PushItemFlag(imgui.ItemFlagsDisabled, false)
+		}
+
 		if imgui.ButtonV("Edit", vec2(-1, 0)) {
-			sEditor := newSettingsEditor(l.currentConfig)
+			l.openCurrentSettingsEditor()
+		}
 
-			sEditor.setCloseListener(func() {
-				settings.SaveCredentials(false)
-				l.currentConfig.Save("", false)
-
-				if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
-					showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
-				}
-			})
-
-			l.openPopup(sEditor)
+		if dRun {
+			imgui.PopItemFlag()
 		}
 
 		imgui.EndTable()
@@ -1351,20 +1389,7 @@ func (l *launcher) drawConfigPanel() {
 
 				imgui.SetNextItemWidth(imgui.TextLineHeight() * 10)
 
-				if imgui.InputTextV("##nclonename", &l.newCloneName /*imgui.InputTextFlagsCallbackAlways|*/, imgui.InputTextFlagsCallbackCharFilter, func(data imgui.InputTextCallbackData) int32 {
-					if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
-						run := data.EventChar()
-
-						switch run {
-						case '\\':
-							data.SetEventChar('/')
-						case '<', '>', '|', '?', '*', ':', '"':
-							data.SetEventChar(0)
-						}
-					}
-
-					return 0
-				}) {
+				if imgui.InputTextV("##nclonename", &l.newCloneName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter) {
 					l.newCloneName = strings.TrimSpace(l.newCloneName)
 				}
 
@@ -1384,7 +1409,7 @@ func (l *launcher) drawConfigPanel() {
 					imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
 				}
 
-				if imgui.Button("Save##newclone") {
+				if imgui.Button("Save##newclone") || (!e && (imgui.IsKeyPressed(imgui.KeyEnter) || imgui.IsKeyPressed(imgui.KeyKeypadEnter))) {
 					_, err := os.Stat(filepath.Join(env.ConfigDir(), l.newCloneName+".json"))
 					if err == nil {
 						showMessage(mError, "Config with that name already exists!\nPlease pick a different name")
@@ -1412,6 +1437,25 @@ func (l *launcher) drawConfigPanel() {
 			}
 		})
 	}
+}
+
+func (l *launcher) openCurrentSettingsEditor() {
+	saveFunc := func() {
+		settings.SaveCredentials(false)
+		l.currentConfig.Save("", false)
+
+		if !compareDirs(l.currentConfig.General.OsuSongsDir, settings.General.OsuSongsDir) {
+			showMessage(mInfo, "This config has different osu! Songs directory.\nRestart the launcher to see updated maps")
+		}
+	}
+
+	l.currentEditor = newSettingsEditor(l.currentConfig)
+
+	l.currentEditor.setDanserRunning(l.danserRunning)
+	l.currentEditor.setCloseListener(saveFunc)
+	l.currentEditor.setSaveListener(saveFunc)
+
+	l.openPopup(l.currentEditor)
 }
 
 func (l *launcher) tryCreateDefaultConfig() {
@@ -1525,19 +1569,6 @@ func (l *launcher) setConfig(s string) {
 	}
 }
 
-// covers cases:
-// one of them is an abs path to data dir
-// has path separator suffixed
-// one of them has backwards slashes
-func compareDirs(str1, str2 string) bool {
-	abPath := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
-
-	str1D := strings.TrimSuffix(strings.ReplaceAll(str1, "\\", "/"), "/")
-	str2D := strings.TrimSuffix(strings.ReplaceAll(str2, "\\", "/"), "/")
-
-	return strings.TrimPrefix(str1D, abPath) == strings.TrimPrefix(str2D, abPath)
-}
-
 func (l *launcher) startDanser() {
 	l.recordProgress = 0
 	l.recordStatus = ""
@@ -1548,7 +1579,7 @@ func (l *launcher) startDanser() {
 	dExec := os.Args[0]
 
 	if build.Stream == "Release" {
-		dExec = filepath.Join(env.LibDir(), "danser")
+		dExec = filepath.Join(env.LibDir(), build.DanserExec)
 	}
 
 	l.danserCmd = exec.Command(dExec, l.bld.getArguments()...)
@@ -1590,6 +1621,15 @@ func (l *launcher) startDanser() {
 
 		for sc.Scan() {
 			line := sc.Text()
+
+			if strings.Contains(line, "Launcher: Open settings") {
+				if l.currentEditor == nil || !l.currentEditor.opened {
+					l.openCurrentSettingsEditor()
+				}
+
+				l.win.Restore()
+				l.win.Focus()
+			}
 
 			if strings.Contains(line, "panic:") {
 				panicMessage = line[strings.Index(line, "panic:"):]

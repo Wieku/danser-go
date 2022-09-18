@@ -6,7 +6,9 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"golang.org/x/exp/slices"
 	"math"
 	"sort"
 )
@@ -34,6 +36,8 @@ type Sprite struct {
 	cutX      float64
 	cutY      float64
 	cutOrigin vector.Vector2d
+
+	nextTransformID int64
 }
 
 func NewSpriteSingle(tex *texture.TextureRegion, depth float64, position vector.Vector2d, origin vector.Vector2d) *Sprite {
@@ -59,89 +63,97 @@ func (sprite *Sprite) Update(time float64) {
 		sprite.updateTransform(transform, time)
 
 		if time >= transform.GetEndTime() {
-			copy(sprite.transforms[i:], sprite.transforms[i+1:])
-			sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
-			i--
+			if transform.IsLoop() {
+				transform.UpdateLoop()
+
+				n := sort.Search(len(sprite.transforms)-i-1, func(f int) bool {
+					b := sprite.transforms[f+i+1]
+
+					r := mutils.Compare(transform.GetStartTime(), b.GetStartTime())
+					return r == -1 || (r == 0 && transform.GetID() < b.GetID())
+				})
+
+				if n != 0 {
+					copy(sprite.transforms[i:], sprite.transforms[i+1:n+i+1])
+					sprite.transforms[n+i] = transform
+
+					i--
+				}
+			} else {
+				copy(sprite.transforms[i:], sprite.transforms[i+1:])
+				sprite.transforms = sprite.transforms[:len(sprite.transforms)-1]
+				i--
+			}
 		}
 	}
 }
 
 func (sprite *Sprite) updateTransform(transform *animation.Transformation, time float64) { //nolint:gocyclo
 	switch transform.GetType() {
-	case animation.Fade, animation.Scale, animation.Rotate, animation.MoveX, animation.MoveY:
-		value := transform.GetSingle(time)
+	case animation.Fade:
+		sprite.color.A = float32(transform.GetSingle(time))
+	case animation.Scale:
+		s := transform.GetSingle(time)
 
-		switch transform.GetType() {
-		case animation.Fade:
-			sprite.color.A = float32(value)
-		case animation.Scale:
-			sprite.scale.X = value
-			sprite.scale.Y = value
-		case animation.Rotate:
-			sprite.rotation = value
-		case animation.MoveX:
-			sprite.position.X = value
-		case animation.MoveY:
-			sprite.position.Y = value
-		}
-	case animation.Move, animation.ScaleVector:
-		x, y := transform.GetDouble(time)
-
-		switch transform.GetType() {
-		case animation.Move:
-			sprite.position.X = x
-			sprite.position.Y = y
-		case animation.ScaleVector:
-			sprite.scale.X = x
-			sprite.scale.Y = y
-		}
-	case animation.Additive, animation.HorizontalFlip, animation.VerticalFlip:
-		value := transform.GetBoolean(time)
-
-		switch transform.GetType() {
-		case animation.Additive:
-			sprite.additive = value
-		case animation.HorizontalFlip:
-			sprite.flipX = value
-		case animation.VerticalFlip:
-			sprite.flipY = value
-		}
-	case animation.Color3, animation.Color4:
+		sprite.scale.X = s
+		sprite.scale.Y = s
+	case animation.Rotate:
+		sprite.rotation = transform.GetSingle(time)
+	case animation.MoveX:
+		sprite.position.X = transform.GetSingle(time)
+	case animation.MoveY:
+		sprite.position.Y = transform.GetSingle(time)
+	case animation.Move:
+		sprite.position.X, sprite.position.Y = transform.GetDouble(time)
+	case animation.ScaleVector:
+		sprite.scale.X, sprite.scale.Y = transform.GetDouble(time)
+	case animation.Additive:
+		sprite.additive = transform.GetBoolean(time)
+	case animation.HorizontalFlip:
+		sprite.flipX = transform.GetBoolean(time)
+	case animation.VerticalFlip:
+		sprite.flipY = transform.GetBoolean(time)
+	case animation.Color3:
 		color := transform.GetColor(time)
 
 		sprite.color.R = color.R
 		sprite.color.G = color.G
 		sprite.color.B = color.B
-
-		if transform.GetType() == animation.Color4 {
-			sprite.color.A = color.A
-		}
+	case animation.Color4:
+		sprite.color = transform.GetColor(time)
 	}
 }
 
 func (sprite *Sprite) AddTransform(transformation *animation.Transformation) {
-	sprite.transforms = append(sprite.transforms, transformation)
-
+	sprite.AddTransformUnordered(transformation)
 	sprite.SortTransformations()
 }
 
 func (sprite *Sprite) AddTransforms(transformations []*animation.Transformation) {
-	sprite.transforms = append(sprite.transforms, transformations...)
-
+	sprite.AddTransformsUnordered(transformations)
 	sprite.SortTransformations()
 }
 
 func (sprite *Sprite) AddTransformUnordered(transformation *animation.Transformation) {
+	transformation.SetID(sprite.nextTransformID)
+	sprite.nextTransformID++
+
 	sprite.transforms = append(sprite.transforms, transformation)
 }
 
 func (sprite *Sprite) AddTransformsUnordered(transformations []*animation.Transformation) {
-	sprite.transforms = append(sprite.transforms, transformations...)
+	for _, t := range transformations {
+		t.SetID(sprite.nextTransformID)
+		sprite.nextTransformID++
+
+		sprite.transforms = append(sprite.transforms, t)
+	}
 }
 
 func (sprite *Sprite) SortTransformations() {
-	sort.SliceStable(sprite.transforms, func(i, j int) bool {
-		return sprite.transforms[i].GetStartTime() < sprite.transforms[j].GetStartTime()
+	slices.SortFunc(sprite.transforms, func(a, b *animation.Transformation) bool {
+		r := mutils.Compare(a.GetStartTime(), b.GetStartTime())
+		return r == -1 || (r == 0 && a.GetID() < b.GetID())
 	})
 }
 
@@ -221,10 +233,6 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	scale := sprite.scale.Abs()
 
 	if sprite.cutX > 0.0 {
-		if math.Abs(sprite.origin.X-sprite.cutOrigin.X) > 0 {
-			position.X -= sprite.origin.X * float64(region.Width) * scale.X * sprite.cutX
-		}
-
 		ratio := float32(1 - sprite.cutX)
 		middle := float32(sprite.cutOrigin.X)/2*math32.Abs(region.U2-region.U1) + (region.U1+region.U2)/2
 
@@ -234,10 +242,6 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	}
 
 	if sprite.cutY > 0.0 {
-		if math.Abs(sprite.origin.Y-sprite.cutOrigin.Y) > 0 {
-			position.Y -= sprite.origin.Y * float64(region.Height) * scale.Y * sprite.cutY
-		}
-
 		ratio := float32(1 - sprite.cutY)
 		middle := float32(sprite.cutOrigin.Y)/2*math32.Abs(region.V2-region.V1) + (region.V1+region.V2)/2
 

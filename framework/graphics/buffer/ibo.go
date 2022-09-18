@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
@@ -62,7 +63,7 @@ func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 
 	gl.DrawElements(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset*2))
 
-	if IsIntel {
+	if hacks.IsIntel {
 		gl.Flush()
 	}
 }
@@ -75,7 +76,7 @@ func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, in
 
 	gl.DrawElementsInstancedBaseInstance(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset), int32(instanceCount), uint32(baseInstance))
 
-	if IsIntel {
+	if hacks.IsIntel {
 		gl.Flush()
 	}
 }

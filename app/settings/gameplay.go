@@ -110,14 +110,31 @@ func initGameplay() *gameplay {
 				XPosition: 5,
 				YPosition: 190,
 			},
-			Color: []*HSV{
-				{
-					Hue:        0,
-					Saturation: 0,
-					Value:      1,
-				},
+			Color300: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
 			},
-
+			Color100: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			Color50: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			ColorMiss: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
+			ColorSB: &HSV{
+				Hue:        0,
+				Saturation: 0,
+				Value:      1,
+			},
 			Spacing:          48,
 			FontScale:        1,
 			Align:            "Left",
@@ -231,15 +248,15 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	HUDFont                 string `file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf"`
-	ShowResultsScreen       bool
-	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs"`
+	HUDFont                 string  `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts" liveedit:"false"`
+	ShowResultsScreen       bool    `liveedit:"false"`
+	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs" liveedit:"false"`
 	ResultsUseLocalTimeZone bool    `label:"Show PC's time zone instead of UTC"`
 	ShowWarningArrows       bool
 	ShowHitLighting         bool
 	FlashlightDim           float64
-	PlayUsername            string
-	UseLazerPP              bool
+	PlayUsername            string `liveedit:"false"`
+	UseLazerPP              bool   `liveedit:"false"`
 }
 
 type boundaries struct {
@@ -325,7 +342,12 @@ type ppCounter struct {
 
 type hitCounter struct {
 	*hudElementPosition
-	Color            []*HSV  `new:"InitHSV" label:"Color list"`
+	Color            []*HSV  `json:",omitempty" new:"InitHSV" label:"Color list" skip:"true"`
+	Color300         *HSV    `label:"Color of 300s"`
+	Color100         *HSV    `label:"Color of 100s"`
+	Color50          *HSV    `label:"Color of 50s"`
+	ColorMiss        *HSV    `label:"Color of misses"`
+	ColorSB          *HSV    `label:"Color of slider breaks"`
 	Spacing          float64 `string:"true" min:"0" max:"1366"`
 	FontScale        float64 `min:"0.1" max:"5" scale:"100" format:"%.0f%%"`
 	Align            string  `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
@@ -337,8 +359,8 @@ type hitCounter struct {
 
 type scoreBoard struct {
 	*hudElementOffset
-	ModsOnly       bool
-	AlignRight     bool
+	ModsOnly       bool `label:"Show mod leaderboard"`
+	AlignRight     bool `label:"Align to the right" label:"Simulates the second team of osu! multiplayer"`
 	HideOthers     bool
 	ShowAvatars    bool
 	ExplosionScale float64 `min:"0.1" max:"2" scale:"100" format:"%.0f%%"`
@@ -370,6 +392,6 @@ type strainGraph struct {
 }
 
 type underlay struct {
-	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png"`
-	AboveHpBar bool
+	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png" tooltip:"PNG file that will be used as HUD background (similar to custom HP bar backgrounds). It's scaled automatically to fit the screen vertically" liveedit:"false"`
+	AboveHpBar bool   `label:"Show underlay above HP bar" tooltip:"Use this if HP bar background is large"`
 }

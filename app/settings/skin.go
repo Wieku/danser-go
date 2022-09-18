@@ -27,8 +27,8 @@ func initSkin() *skin {
 }
 
 type skin struct {
-	CurrentSkin       string `combo:"true" comboSrc:"SkinOptions" search:"true"`
-	FallbackSkin      string `combo:"true" comboSrc:"SkinOptions" search:"true"`
+	CurrentSkin       string `combo:"true" comboSrc:"SkinOptions" search:"true" liveedit:"false"`
+	FallbackSkin      string `combo:"true" comboSrc:"SkinOptions" search:"true" liveedit:"false"`
 	UseColorsFromSkin bool
 	UseBeatmapColors  bool
 

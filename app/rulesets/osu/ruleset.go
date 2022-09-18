@@ -112,6 +112,7 @@ type subSet struct {
 	recoveries int
 	failed     bool
 	sdpfFail   bool
+	forceFail  bool
 }
 
 type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
@@ -375,7 +376,7 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 		}
 	}
 
-	if len(set.processed) > 0 {
+	if len(set.processed) > 0 && !set.cursors[cursor].failed {
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
@@ -638,12 +639,12 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	subSet := set.cursors[player.cursor]
 
-	if player.diff.CheckModActive(difficulty.NoFail | difficulty.Relax | difficulty.Relax2) {
+	if !subSet.forceFail && player.diff.CheckModActive(difficulty.NoFail | difficulty.Relax | difficulty.Relax2) {
 		return
 	}
 
 	// EZ mod gives 2 additional lives
-	if subSet.recoveries > 0 && !subSet.sdpfFail {
+	if subSet.recoveries > 0 && !subSet.sdpfFail && !subSet.forceFail {
 		subSet.hp.Increase(160, false)
 		subSet.recoveries--
 
@@ -662,7 +663,7 @@ func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
 	subSet := set.cursors[cursor]
 
 	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())+subSet.player.diff.Hit50+20 {
-		subSet.sdpfFail = true
+		subSet.forceFail = true
 		subSet.hp.Increase(-10000, true)
 	}
 }

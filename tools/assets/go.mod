@@ -1,3 +1,3 @@
 module github.com/wieku/danser-go/tools/assets
 
-go 1.15
+go 1.18

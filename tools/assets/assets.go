@@ -17,6 +17,13 @@ func main() {
 	path, _ := filepath.Abs(os.Args[1])
 	path += string(filepath.Separator)
 
+	destPath := path
+
+	if len(os.Args) > 2 {
+		destPath, _ = filepath.Abs(os.Args[2])
+		destPath += string(filepath.Separator)
+	}
+
 	buf := new(bytes.Buffer)
 
 	writer := zip.NewWriter(buf)
@@ -58,9 +65,9 @@ func main() {
 
 	copy(data, ro2d)
 
-	log.Println("Saving to:", filepath.Join(path, "assets.dpak"))
+	log.Println("Saving to:", filepath.Join(destPath, "assets.dpak"))
 
-	err := ioutil.WriteFile(filepath.Join(path, "assets.dpak"), data, 0644)
+	err := ioutil.WriteFile(filepath.Join(destPath, "assets.dpak"), data, 0644)
 	if err != nil {
 		panic(err)
 	}

@@ -6,6 +6,8 @@ export CC=x86_64-w64-mingw32-gcc
 export CXX=x86_64-w64-mingw32-g++
 export CGO_LDFLAGS="-static-libstdc++ -static-libgcc -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic"
 export WINDRESFLAGS="-F pe-x86-64"
+export BUILD_DIR=./dist/build-win
+export TARGET_DIR=./dist/artifacts
 
 exec=$1
 build=$1
@@ -49,7 +51,9 @@ END
 2 ICON assets/textures/favicon.ico
 '
 
-resgen='windres -l 0 '$WINDRESFLAGS' -o danser.syso'
+mkdir -p $BUILD_DIR
+
+resgen='windres -l 0 '$WINDRESFLAGS' -o '$BUILD_DIR'/danser.syso'
 
 resCore=$preRC'-core.dll'$postRC
 resDanser=$preRC''$postRC
@@ -57,18 +61,30 @@ resLauncher=$preRC' launcher'$postRC
 
 $resgen <<< $resCore
 
-go run tools/assets/assets.go ./
+go run tools/assets/assets.go ./ $BUILD_DIR/
 
-go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o danser-core.dll -v -x
+cp $BUILD_DIR/danser.syso danser.syso
+
+go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o $BUILD_DIR/danser-core.dll -v -x
+
+rm -f danser.syso
 
 $resgen <<< $resDanser
 
-gcc --verbose -O3 -o danser.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
+$CC <<< --verbose -O3 -o $BUILD_DIR/danser-cli.exe -I. cmain/main_danser.c -I$BUILD_DIR/ -L$BUILD_DIR/ -ldanser-core $BUILD_DIR/danser.syso -municode
 
 $resgen <<< $resLauncher
 
-gcc --verbose -O3 -D LAUNCHER -o danser-launcher.exe -I. cmain/main_danser.c -L. -ldanser-core danser.syso -municode
+$CC <<< --verbose -O3 -D LAUNCHER -o $BUILD_DIR/danser.exe -I. cmain/main_danser.c -I$BUILD_DIR/ -L$BUILD_DIR/ -ldanser-core $BUILD_DIR/danser.syso -municode
 
-go run tools/pack/pack.go danser-$exec-win.zip danser-core.dll danser.exe danser-launcher.exe bass.dll bass_fx.dll bassmix.dll libyuv.dll assets.dpak
+cp {bass.dll,bass_fx.dll,bassmix.dll,libyuv.dll} $BUILD_DIR/
 
-rm -f danser.exe danser-launcher.exe danser-core.dll danser-core.h assets.dpak danser.syso
+rm $BUILD_DIR/{danser.syso,danser-core.h}
+
+go run tools/ffmpeg/ffmpeg.go $BUILD_DIR/
+
+mkdir -p $TARGET_DIR
+
+go run tools/pack2/pack.go $TARGET_DIR/danser-$exec-win.zip $BUILD_DIR/
+
+rm -rf $BUILD_DIR

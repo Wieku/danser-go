@@ -87,6 +87,10 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 
 	var args []string
 
+	if dec.Metadata.IsMOV {
+		args = append(args, "-ignore_editlist", "1")
+	}
+
 	if millis != 0 {
 		args = append(args,
 			"-ss", fmt.Sprintf("%d.%d", millis/1000, millis%1000),

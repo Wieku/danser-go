@@ -9,6 +9,8 @@ var VERSION = "dev"
 
 var Stream = "Dev"
 
+var DanserExec = "danser-cli"
+
 func init() {
 	if VERSION == "dev" {
 		if bI, ok := debug.ReadBuildInfo(); ok {

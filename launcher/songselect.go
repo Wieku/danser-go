@@ -473,11 +473,8 @@ func (m *songSelectPopup) drawSongSelect() {
 						imgui.TableSetupColumnV("btooltip4", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("9.9", false, 0).X, uint(1))
 
 						tRow := func(text string, text2 string, args ...any) {
-							imgui.TableNextColumn()
-							imgui.Text(text)
-
-							imgui.TableNextColumn()
-							imgui.Textf(text2, args...)
+							textColumn(text)
+							textColumn(fmt.Sprintf(text2, args...))
 						}
 
 						tRow("Stars: ", sR)

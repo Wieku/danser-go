@@ -5,7 +5,10 @@ import (
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/platform"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -51,7 +54,7 @@ func checkForUpdates(pingUpToDate bool) {
 	case utils.Failed:
 		showMessage(mError, "Can't get version from GitHub:", err)
 	case utils.Snapshot:
-		if showMessage(mQuestion, "You're using a snapshot version of danser.\nFor newer version of snapshots please visit an official danser discord server at: %s\n\nDo you want to go there?", url) {
+		if showMessage(mQuestion, "You're using a snapshot version of danser.\nFor newer version of snapshots please visit the official danser discord server at: %s\n\nDo you want to go there?", url) {
 			platform.OpenURL(url)
 		}
 	case utils.UpdateAvailable:
@@ -59,6 +62,26 @@ func checkForUpdates(pingUpToDate bool) {
 			platform.OpenURL(url)
 		}
 	}
+}
+
+func textColumn(text string) {
+	imgui.TableNextColumn()
+	imgui.Text(text)
+}
+
+func imguiPathFilter(data imgui.InputTextCallbackData) int32 {
+	if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
+		run := data.EventChar()
+
+		switch run {
+		case '\\':
+			data.SetEventChar('/')
+		case '<', '>', '|', '?', '*', ':', '"':
+			data.SetEventChar(0)
+		}
+	}
+
+	return 0
 }
 
 func vec2(x, y float32) imgui.Vec2 {
@@ -79,4 +102,33 @@ func vec4(x, y, z, w float32) imgui.Vec4 {
 
 func vzero() imgui.Vec2 {
 	return vec2(0, 0)
+}
+
+// covers cases:
+// one of them is an abs path to data dir
+// has path separator suffixed
+// one of them has backwards slashes
+func compareDirs(str1, str2 string) bool {
+	abPath := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
+
+	str1D := strings.TrimSuffix(strings.ReplaceAll(str1, "\\", "/"), "/")
+	str2D := strings.TrimSuffix(strings.ReplaceAll(str2, "\\", "/"), "/")
+
+	return strings.TrimPrefix(str1D, abPath) == strings.TrimPrefix(str2D, abPath)
+}
+
+func getAbsPath(path string) string {
+	if strings.TrimSpace(path) != "" && filepath.IsAbs(path) {
+		return path
+	}
+
+	return filepath.Join(env.DataDir(), path)
+}
+
+func getRelativeOrABSPath(path string) string {
+	slashPath := strings.TrimSuffix(strings.ReplaceAll(path, "\\", "/"), "/")
+
+	slashBase := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
+
+	return strings.ReplaceAll(strings.TrimPrefix(slashPath, slashBase), "/", string(os.PathSeparator))
 }

@@ -58,8 +58,11 @@ func (d *defaultsFactory) InitMover() *mover {
 }
 
 type spinner struct {
-	Mover  string  `combo:"heart,triangle,square,cube,circle"`
-	Radius float64 `max:"200" format:"%.0fo!px"`
+	Mover         string  `combo:"heart,triangle,square,cube,circle"`
+	centerOffset  string  `vector:"true" left:"CenterOffsetX" right:"CenterOffsetY"`
+	CenterOffsetX float64 `min:"-1000" max:"1000"`
+	CenterOffsetY float64 `min:"-1000" max:"1000"`
+	Radius        float64 `max:"200" format:"%.0fo!px"`
 }
 
 func (d *defaultsFactory) InitSpinner() *spinner {
@@ -72,10 +75,10 @@ func (d *defaultsFactory) InitSpinner() *spinner {
 type cursorDance struct {
 	Movers             []*mover   `new:"InitMover"`
 	Spinners           []*spinner `new:"InitSpinner"`
-	ComboTag           bool
-	Battle             bool
-	DoSpinnersTogether bool
-	TAGSliderDance     bool `label:"TAG slider dance"`
+	ComboTag           bool       `liveedit:"false"`
+	Battle             bool       `liveedit:"false"`
+	DoSpinnersTogether bool       `liveedit:"false"`
+	TAGSliderDance     bool       `label:"TAG slider dance" liveedit:"false"`
 	MoverSettings      *moverSettings
 }
 
