@@ -8,7 +8,7 @@ import (
 
 type IHitObject interface {
 	Update(time float64) bool
-	SetTiming(timings *Timings, diffCalcOnly bool) //diffCalcOnly skips stables' path generation which is quite memory consuming
+	SetTiming(timings *Timings, beatmapVersion int, diffCalcOnly bool) //diffCalcOnly skips stables' path generation which is quite memory consuming
 	UpdateStacking()
 	SetDifficulty(difficulty *difficulty.Difficulty)
 
@@ -94,7 +94,7 @@ type HitObject struct {
 
 func (hitObject *HitObject) Update(_ float64) bool { return true }
 
-func (hitObject *HitObject) SetTiming(_ *Timings, _ bool) {}
+func (hitObject *HitObject) SetTiming(_ *Timings, _ int, _ bool) {}
 
 func (hitObject *HitObject) UpdateStacking() {}
 

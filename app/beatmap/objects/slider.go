@@ -281,7 +281,7 @@ func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd b
 	return circle
 }
 
-func (slider *Slider) SetTiming(timings *Timings, diffCalcOnly bool) {
+func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOnly bool) {
 	slider.Timings = timings
 	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
@@ -300,7 +300,11 @@ func (slider *Slider) SetTiming(timings *Timings, diffCalcOnly bool) {
 	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
 
 	minDistanceFromEnd := velocity * 0.01
+
 	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	if beatmapVersion < 8 {
+		tickDistance = slider.Timings.GetScoringDistance()
+	}
 
 	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
 		tickDistance = slider.pixelLength
@@ -524,7 +528,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circle.StackOffset = slider.StackOffset
 		circle.StackOffsetHR = slider.StackOffsetHR
 		circle.StackOffsetEZ = slider.StackOffsetEZ
-		circle.SetTiming(slider.Timings, false)
+		circle.SetTiming(slider.Timings, 14, false)
 		circle.SetDifficulty(diff)
 
 		slider.endCircles = append(slider.endCircles, circle)
