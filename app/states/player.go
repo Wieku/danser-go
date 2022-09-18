@@ -696,7 +696,7 @@ func (player *Player) updateMain(delta float64) {
 			if player.nightcore != nil {
 				player.nightcore.Update(player.progressMsF)
 			}
-		} else {
+		} else if settings.Gameplay.ShowResultsScreen {
 			if player.overlay != nil {
 				player.overlay.DisableAudioSubmission(true)
 			}
