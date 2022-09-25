@@ -35,7 +35,9 @@ func NewLimiter(fps int) *Limiter {
 }
 
 func (limiter *Limiter) Sync() {
-	if limiter.FPS <= 0 {
+	fps := limiter.FPS
+
+	if fps <= 0 {
 		return
 	}
 
@@ -66,7 +68,7 @@ func (limiter *Limiter) Sync() {
 		limiter.yieldDurations.add(t1 - t0)
 	}
 
-	limiter.nextFrame = mutils.Max(limiter.nextFrame+nanosInSecond/int64(limiter.FPS), qpc.GetNanoTime())
+	limiter.nextFrame = mutils.Max(limiter.nextFrame+nanosInSecond/int64(fps), qpc.GetNanoTime())
 }
 
 type runningAvg struct {
