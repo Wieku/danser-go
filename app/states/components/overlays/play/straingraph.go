@@ -2,6 +2,7 @@ package play
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
@@ -21,6 +22,7 @@ import (
 type StrainGraph struct {
 	shapeRenderer *shape.Renderer
 	strains       performance.StrainPeaks
+	baseLine      float64
 	maxStrain     float32
 	time          float64
 
@@ -43,6 +45,12 @@ func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 		startTime:     ruleset.GetBeatMap().HitObjects[mutils.Min(1, len(ruleset.GetBeatMap().HitObjects)-1)].GetStartTime(),
 		endTime:       ruleset.GetBeatMap().HitObjects[len(ruleset.GetBeatMap().HitObjects)-1].GetStartTime(),
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
+	}
+
+	// Those magic numbers are derived from sr formula with all difficulty values being 0 (e.g. at breaks)
+	graph.baseLine = 0.1401973407499798
+	if ruleset.GetBeatMap().Diff.CheckModActive(difficulty.Flashlight) {
+		graph.baseLine = 0.14386309174146011
 	}
 
 	graph.leftSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopLeft)
@@ -69,7 +77,7 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 	// It's also scaled with width of the strain graph so wider one shows more detailed graph
 	sectSize := mutils.Max(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
 
-	toM := []vector.Vector2f{vector.NewVec2f(0, 0)}
+	var toM []vector.Vector2f
 
 	for i := 0; i < len(graph.strains.Total); i += sectSize {
 		maxI := mutils.Min(len(graph.strains.Total), i+sectSize)
@@ -77,14 +85,12 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 		max := 0.0
 
 		for j := i; j < maxI; j++ {
-			max = math.Max(max, graph.strains.Total[j])
+			max = math.Max(max, graph.strains.Total[j]-graph.baseLine)
 		}
 
 		graph.maxStrain = math32.Max(graph.maxStrain, float32(max))
-		toM = append(toM, vector.NewVec2f(float32(i/sectSize)+0.5, float32(max)))
+		toM = append(toM, vector.NewVec2f(float32(i/sectSize), float32(max)))
 	}
-
-	toM = append(toM, vector.NewVec2f(float32(len(toM)-1), 0))
 
 	return curves.NewMonotoneCubic(toM)
 }
