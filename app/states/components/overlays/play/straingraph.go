@@ -35,7 +35,11 @@ type StrainGraph struct {
 
 	screenWidth float64
 
-	size vector.Vector2d
+	size          vector.Vector2d
+	drawOutline   bool
+	outlineWidth  float64
+	innerOpacity  float64
+	innerDarkness float64
 }
 
 func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
@@ -96,48 +100,77 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 }
 
 func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
-	batch.Flush()
+	const step float32 = 0.5
 
-	graph.size = vector.NewVec2d(settings.Gameplay.StrainGraph.Width, settings.Gameplay.StrainGraph.Height)
+	upscale := settings.Graphics.GetHeightF() / 768
 
-	w := graph.size.X * settings.Graphics.GetHeightF() / 768
-	h := graph.size.Y * settings.Graphics.GetHeightF() / 768
+	conf := settings.Gameplay.StrainGraph
+
+	graph.size = vector.NewVec2d(conf.Width, conf.Height)
+	graph.drawOutline = conf.Outline.Show
+	graph.outlineWidth = conf.Outline.Width
+	graph.innerOpacity = conf.Outline.InnerOpacity
+	graph.innerDarkness = conf.Outline.InnerDarkness
+
+	oWidth := float32(graph.outlineWidth * upscale)
+	yOffset := float32(2 * upscale)
 
 	if graph.fbo != nil {
 		graph.fbo.Dispose()
 	}
 
-	graph.fbo = buffer.NewFrameMultisample(int(math.Round(w)), int(math.Round(h)), 8)
+	fboWidth := float32(math.Round(graph.size.X * upscale))
+	fboHeight := float32(math.Round(graph.size.Y * upscale))
+
+	graph.fbo = buffer.NewFrameMultisample(int(fboWidth), int(fboHeight), 8)
 
 	graph.fbo.Bind()
-	graph.fbo.ClearColor(1, 1, 1, 0)
+	graph.fbo.ClearColor(0, 0, 0, 0)
 
-	graph.shapeRenderer.SetCamera(mgl32.Ortho2D(0, float32(graph.fbo.GetWidth()), float32(graph.fbo.GetHeight()), 0))
+	graph.shapeRenderer.SetCamera(mgl32.Ortho2D(0, fboWidth, fboHeight, 0))
 
-	viewport.Push(graph.fbo.GetWidth(), graph.fbo.GetHeight())
+	viewport.Push(int(fboWidth), int(fboHeight))
 
 	graph.shapeRenderer.Begin()
-	graph.shapeRenderer.SetColor(1, 1, 1, 1)
 
-	lWidth := float32(graph.fbo.GetWidth())
-	lHeight := float32(graph.fbo.GetHeight()) - 1
+	if graph.drawOutline {
+		graph.shapeRenderer.SetColor(1-graph.innerDarkness, 1-graph.innerDarkness, 1-graph.innerDarkness, graph.innerOpacity)
+
+		fboHeight -= oWidth / 2
+		yOffset = mutils.Max(yOffset, oWidth/2)
+	} else {
+		graph.shapeRenderer.SetColor(1, 1, 1, 1)
+	}
 
 	spline := graph.generateCurve()
 
-	lV := math32.Max(spline.PointAt(0).X, 0)
+	strainScale := (fboHeight - yOffset) / graph.maxStrain
 
-	step := float32(0.5)
+	pY1 := math32.Max(spline.PointAt(0).X, 0)*strainScale + yOffset
 
-	for i := step; i <= lWidth; i += step {
-		v := math32.Max(spline.PointAt(i/lWidth).Y, 0)
-
-		pX := i
-		pY1 := lV / graph.maxStrain * lHeight
-		pY2 := v / graph.maxStrain * lHeight
-
-		lV = v
+	for pX := step; pX <= fboWidth; pX += step {
+		pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
 
 		graph.shapeRenderer.DrawQuad(pX-step, 0, pX-step, pY1, pX, pY2, pX, 0)
+
+		pY1 = pY2
+	}
+
+	if graph.drawOutline {
+		graph.shapeRenderer.SetColor(1, 1, 1, 1)
+
+		pY1 = math32.Max(spline.PointAt(0).X, 0)*strainScale + yOffset
+
+		graph.shapeRenderer.DrawCircle(vector.NewVec2f(0, pY1), oWidth/2)
+
+		for pX := step; pX <= fboWidth; pX += step {
+			pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
+
+			graph.shapeRenderer.DrawLine(pX-step, pY1, pX, pY2, oWidth)
+			graph.shapeRenderer.DrawCircle(vector.NewVec2f(pX, pY2), oWidth/2)
+
+			pY1 = pY2
+		}
 	}
 
 	graph.shapeRenderer.End()
@@ -167,7 +200,10 @@ func (graph *StrainGraph) Draw(batch *batch.QuadBatch, alpha float64) {
 		return
 	}
 
-	if graph.fbo == nil || graph.size.X != conf.Width || graph.size.Y != conf.Height {
+	if graph.fbo == nil || graph.size.X != conf.Width || graph.size.Y != conf.Height ||
+		graph.drawOutline != conf.Outline.Show || graph.outlineWidth != conf.Outline.Width ||
+		graph.innerDarkness != conf.Outline.InnerDarkness || graph.innerOpacity != conf.Outline.InnerOpacity {
+		batch.Flush()
 		graph.drawFBO(batch)
 	}
 
