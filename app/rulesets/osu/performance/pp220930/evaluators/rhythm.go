@@ -17,8 +17,6 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 		return 0
 	}
 
-	greatWindow := 2 * current.Diff.Hit300U / current.Diff.Speed
-
 	previousIslandSize := 0
 	rhythmComplexitySum := 0.0
 	islandSize := 1
@@ -49,7 +47,7 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 			lastDelta := lastObj.StrainTime
 			currRatio := 1.0 + 6.0*math.Min(0.5, math.Pow(math.Sin(math.Pi/(math.Min(prevDelta, currDelta)/math.Max(prevDelta, currDelta))), 2)) // fancy function to calculate rhythmbonuses.
 
-			windowPenalty := math.Min(1, math.Max(0, math.Abs(prevDelta-currDelta)-greatWindow*0.3)/(greatWindow*0.3))
+			windowPenalty := math.Min(1, math.Max(0, math.Abs(prevDelta-currDelta)-currObj.GreatWindow*0.3)/(currObj.GreatWindow*0.3))
 
 			windowPenalty = math.Min(1, windowPenalty)
 

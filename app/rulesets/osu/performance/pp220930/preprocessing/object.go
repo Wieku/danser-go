@@ -47,6 +47,8 @@ type DifficultyObject struct {
 	TravelTime float64
 
 	StrainTime float64
+
+	GreatWindow float64
 }
 
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty, listOfDiffs *[]*DifficultyObject, index int) *DifficultyObject {
@@ -61,6 +63,7 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 		StartTime:      hitObject.GetStartTime() / d.Speed,
 		EndTime:        hitObject.GetEndTime() / d.Speed,
 		Angle:          math.NaN(),
+		GreatWindow:    2 * d.Hit300U / d.Speed,
 	}
 
 	obj.StrainTime = math.Max(obj.DeltaTime, MinDeltaTime)
