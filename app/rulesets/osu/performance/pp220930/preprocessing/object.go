@@ -18,7 +18,7 @@ const (
 type DifficultyObject struct {
 	// That's stupid but oh well
 	listOfDiffs *[]*DifficultyObject
-	index       int
+	Index       int
 
 	Diff *difficulty.Difficulty
 
@@ -52,7 +52,7 @@ type DifficultyObject struct {
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty, listOfDiffs *[]*DifficultyObject, index int) *DifficultyObject {
 	obj := &DifficultyObject{
 		listOfDiffs:    listOfDiffs,
-		index:          index,
+		Index:          index,
 		Diff:           d,
 		BaseObject:     hitObject,
 		lastObject:     lastObject,
@@ -92,7 +92,7 @@ func (o *DifficultyObject) OpacityAt(time float64) float64 {
 }
 
 func (o *DifficultyObject) Previous(backwardsIndex int) *DifficultyObject {
-	index := o.index - (backwardsIndex + 1)
+	index := o.Index - (backwardsIndex + 1)
 
 	if index < 0 {
 		return nil
@@ -102,7 +102,7 @@ func (o *DifficultyObject) Previous(backwardsIndex int) *DifficultyObject {
 }
 
 func (o *DifficultyObject) Next(forwardsIndex int) *DifficultyObject {
-	index := o.index + (forwardsIndex + 1)
+	index := o.Index + (forwardsIndex + 1)
 
 	if index >= len(*o.listOfDiffs) {
 		return nil
