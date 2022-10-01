@@ -217,6 +217,31 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 			}
 		}
 
+		//tEnabled := false
+		//
+		//for j := 0; j < divides; j++ {
+		//	ind := j - 1
+		//	if ind < 0 {
+		//		ind = divides - 1
+		//	}
+		//
+		//	for i := len(container.renderables) - 1; i >= 0; i-- {
+		//		if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
+		//			if !tEnabled {
+		//				tEnabled = true
+		//
+		//				sliderrenderer.BeginRendererMerge()
+		//			}
+		//
+		//			s.DrawBodyUnder(cameras[j], scale)
+		//		}
+		//	}
+		//}
+		//
+		//if tEnabled {
+		//	sliderrenderer.EndRendererMerge()
+		//}
+
 		if settings.Objects.Sliders.SliderMerge {
 			enabled := false
 

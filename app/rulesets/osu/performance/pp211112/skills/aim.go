@@ -3,7 +3,7 @@ package skills
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/preprocessing"
+	preprocessing2 "github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112/preprocessing"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
@@ -31,7 +31,7 @@ func NewAimSkill(d *difficulty.Difficulty, withSliders, experimental bool) *AimS
 	return skill
 }
 
-func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) float64 {
+func (skill *AimSkill) aimStrainValue(current *preprocessing2.DifficultyObject) float64 {
 	if _, ok := current.BaseObject.(*objects.Spinner); ok || len(skill.Previous) <= 1 {
 		return 0
 	}
@@ -47,7 +47,7 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	currVelocity := osuCurrObj.JumpDistance / osuCurrObj.StrainTime
 
 	// But if the last object is a slider, then we extend the travel velocity through the slider into the current object.
-	if _, ok := osuLastObj.BaseObject.(*preprocessing.LazySlider); ok && skill.withSliders {
+	if _, ok := osuLastObj.BaseObject.(*preprocessing2.LazySlider); ok && skill.withSliders {
 		movementVelocity := osuCurrObj.MovementDistance / osuCurrObj.MovementTime // calculate the movement velocity from slider end to current object
 		travelVelocity := osuCurrObj.TravelDistance / osuCurrObj.TravelTime       // calculate the slider velocity from slider head to slider end.
 
@@ -57,7 +57,7 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	// As above, do the same for the previous hitobject.
 	prevVelocity := osuLastObj.JumpDistance / osuLastObj.StrainTime
 
-	if _, ok := osuLastLastObj.BaseObject.(*preprocessing.LazySlider); ok && skill.withSliders {
+	if _, ok := osuLastLastObj.BaseObject.(*preprocessing2.LazySlider); ok && skill.withSliders {
 		movementVelocity := osuLastObj.MovementDistance / osuLastObj.MovementTime
 		travelVelocity := osuLastObj.TravelDistance / osuLastObj.TravelTime
 

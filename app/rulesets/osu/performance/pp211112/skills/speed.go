@@ -3,7 +3,7 @@ package skills
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/preprocessing"
+	preprocessing2 "github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112/preprocessing"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
@@ -39,7 +39,7 @@ func NewSpeedSkill(d *difficulty.Difficulty, experimental bool) *SpeedSkill {
 	return skill
 }
 
-func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) float64 {
+func (s *SpeedSkill) speedStrainValue(current *preprocessing2.DifficultyObject) float64 {
 	if _, ok := current.BaseObject.(*objects.Spinner); ok {
 		return 0
 	}
@@ -75,7 +75,7 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) f
 	return (speedBonus + speedBonus*math.Pow(distance/singleSpacingThreshold, 3.5)) / strainTime
 }
 
-func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) float64 {
+func (s *SpeedSkill) speedStrainBonus(current *preprocessing2.DifficultyObject) float64 {
 	if _, ok := current.BaseObject.(*objects.Spinner); ok {
 		s.CurrentRhythm = 0
 		return 0
@@ -117,11 +117,11 @@ func (s *SpeedSkill) speedStrainBonus(current *preprocessing.DifficultyObject) f
 						islandSize++ // island is still progressing, count size.
 					}
 				} else {
-					if _, ok := currObj.BaseObject.(*preprocessing.LazySlider); ok { // bpm change is into slider, this is easy acc window
+					if _, ok := currObj.BaseObject.(*preprocessing2.LazySlider); ok { // bpm change is into slider, this is easy acc window
 						effectiveRatio *= 0.125
 					}
 
-					if _, ok := prevObj.BaseObject.(*preprocessing.LazySlider); ok { // bpm change was from a slider, this is easier typically than circle -> circle
+					if _, ok := prevObj.BaseObject.(*preprocessing2.LazySlider); ok { // bpm change was from a slider, this is easier typically than circle -> circle
 						effectiveRatio *= 0.25
 					}
 

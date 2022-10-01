@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -21,7 +21,7 @@ import (
 
 type StrainGraph struct {
 	shapeRenderer *shape.Renderer
-	strains       performance.StrainPeaks
+	strains       pp211112.StrainPeaks
 	baseLine      float64
 	maxStrain     float32
 	time          float64
@@ -45,7 +45,7 @@ type StrainGraph struct {
 func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
-		strains:       performance.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff, settings.Gameplay.UseLazerPP),
+		strains:       pp211112.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff, settings.Gameplay.UseLazerPP),
 		startTime:     ruleset.GetBeatMap().HitObjects[mutils.Min(1, len(ruleset.GetBeatMap().HitObjects)-1)].GetStartTime(),
 		endTime:       ruleset.GetBeatMap().HitObjects[len(ruleset.GetBeatMap().HitObjects)-1].GetStartTime(),
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),

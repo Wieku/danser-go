@@ -7,7 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -91,8 +91,8 @@ type Score struct {
 	CountKatu    uint
 	Count50      uint
 	CountMiss    uint
-	CountSB      uint
-	PP           performance.PPv2Results
+	CountSB uint
+	PP      pp211112.PPv2Results
 }
 
 type subSet struct {
@@ -107,7 +107,7 @@ type subSet struct {
 
 	numObjects uint
 
-	ppv2 *performance.PPv2
+	ppv2 *pp211112.PPv2
 
 	recoveries int
 	failed     bool
@@ -115,7 +115,7 @@ type subSet struct {
 	forceFail  bool
 }
 
-type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults performance.PPv2Results, score int64)
+type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults pp211112.PPv2Results, score int64)
 
 type endListener func(time int64, number int64)
 
@@ -127,7 +127,7 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	oppDiffs map[difficulty.Modifier][]performance.Attributes
+	oppDiffs map[difficulty.Modifier][]pp211112.Attributes
 
 	queue        []HitObject
 	processed    []HitObject
@@ -143,7 +143,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]performance.Attributes)
+	ruleset.oppDiffs = make(map[difficulty.Modifier][]pp211112.Attributes)
 
 	if settings.Gameplay.UseLazerPP {
 		log.Println("Using pp calc version 2022-01-23:")
@@ -176,7 +176,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diffPlayers = append(diffPlayers, player)
 
 		if ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] == nil {
-			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = performance.CalculateStep(ruleset.beatMap.HitObjects, diff, ruleset.experimentalPP)
+			ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask] = pp211112.CalculateStep(ruleset.beatMap.HitObjects, diff, ruleset.experimentalPP)
 
 			star := ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask][len(ruleset.oppDiffs[mods[i]&difficulty.DifficultyAdjustMask])-1]
 
@@ -190,7 +190,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 			log.Println("\tTotal:", star.Total)
 
-			pp := &performance.PPv2{}
+			pp := &pp211112.PPv2{}
 			pp.PPv2x(star, -1, -1, 0, 0, 0, diff, false)
 
 			log.Println("SS PP:")
@@ -239,7 +239,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			score: &Score{
 				Accuracy: 100,
 			},
-			ppv2:           &performance.PPv2{},
+			ppv2:           &pp211112.PPv2{},
 			hp:             hp,
 			recoveries:     recoveries,
 			scoreProcessor: sc,

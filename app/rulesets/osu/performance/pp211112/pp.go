@@ -1,4 +1,4 @@
-package performance
+package pp211112
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
