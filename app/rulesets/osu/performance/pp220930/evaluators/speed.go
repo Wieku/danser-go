@@ -25,8 +25,6 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 	strainTime := current.StrainTime
 	doubletapness := 1.0
 
-
-
 	if osuNextObj != nil {
 		currDeltaTime := math.Max(1, osuCurrObj.DeltaTime)
 		nextDeltaTime := math.Max(1, osuNextObj.DeltaTime)
