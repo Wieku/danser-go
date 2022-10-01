@@ -101,7 +101,7 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 	)
 
 	if basePerformance > 0.00001 {
-		total = math.Cbrt(1.12) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
+		total = math.Cbrt(PerformanceBaseMultiplier) * 0.027 * (math.Cbrt(100000/math.Pow(2, 1/1.1)*basePerformance) + 4)
 	}
 
 	attr.Total = total
