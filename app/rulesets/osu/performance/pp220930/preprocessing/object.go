@@ -116,7 +116,8 @@ func (o *DifficultyObject) Next(forwardsIndex int) *DifficultyObject {
 
 func (o *DifficultyObject) setDistances() {
 	if currentSlider, ok := o.BaseObject.(*LazySlider); ok {
-		o.TravelDistance = float64(currentSlider.LazyTravelDistance * float32(math.Pow(1+float64(currentSlider.RepeatCount)/2.5, 1.0/2.5)))
+		// danser's RepeatCount considers first span, that's why we have to subtract 1 here
+		o.TravelDistance = float64(currentSlider.LazyTravelDistance * float32(math.Pow(1+float64(currentSlider.RepeatCount-1)/2.5, 1.0/2.5)))
 		o.TravelTime = math.Max(currentSlider.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
 	}
 

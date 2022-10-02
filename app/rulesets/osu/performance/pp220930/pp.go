@@ -1,4 +1,4 @@
-package performance
+package pp220930
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -150,7 +150,7 @@ func (pp *PPv2) computeAimValue() float64 {
 		approachRateFactor = 0.05 * (8.0 - pp.diff.ARReal)
 	}
 
-	if !pp.diff.CheckModActive(difficulty.Relax) {
+	if pp.diff.CheckModActive(difficulty.Relax) {
 		approachRateFactor = 0.0
 	}
 

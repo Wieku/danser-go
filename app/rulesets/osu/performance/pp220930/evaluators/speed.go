@@ -22,7 +22,7 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 	osuPrevObj := current.Previous(0)
 	osuNextObj := current.Next(0)
 
-	strainTime := current.StrainTime
+	strainTime := osuCurrObj.StrainTime
 	doubletapness := 1.0
 
 	if osuNextObj != nil {
@@ -30,7 +30,7 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 		nextDeltaTime := math.Max(1, osuNextObj.DeltaTime)
 		deltaDifference := math.Abs(nextDeltaTime - currDeltaTime)
 		speedRatio := currDeltaTime / math.Max(currDeltaTime, deltaDifference)
-		windowRatio := math.Pow(math.Min(1, currDeltaTime/osuNextObj.GreatWindow), 2)
+		windowRatio := math.Pow(math.Min(1, currDeltaTime/osuCurrObj.GreatWindow), 2)
 		doubletapness = math.Pow(speedRatio, 1-windowRatio)
 	}
 

@@ -85,8 +85,12 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 		sliderBonus *= pixelTravelDistance
 
 		// Nerf sliders with repeats, as less memorisation is required.
-		if osuSlider.RepeatCount > 0 {
-			sliderBonus /= float64(osuSlider.RepeatCount + 1)
+		// danser's RepeatCount considers first span
+		// if osuSlider.RepeatCount > 0 {
+		//     sliderBonus /= float64(osuSlider.RepeatCount + 1)
+		// }
+		if osuSlider.RepeatCount > 1 {
+			sliderBonus /= float64(osuSlider.RepeatCount)
 		}
 	}
 

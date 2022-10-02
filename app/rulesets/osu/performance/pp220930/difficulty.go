@@ -1,11 +1,11 @@
-package performance
+package pp220930
 
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/preprocessing"
-	skills2 "github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/skills"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/skills"
 	"log"
 	"math"
 )
@@ -13,7 +13,7 @@ import (
 const (
 	// StarScalingFactor is a global stars multiplier
 	StarScalingFactor float64 = 0.0675
-	CurrentVersion    int     = 20220930
+	CurrentVersion    int     = 20220920
 )
 
 type Attributes struct {
@@ -81,10 +81,6 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 
 	var total float64
 
-	if diff.CheckModActive(difficulty.Relax) {
-		speedRating = 0.0
-	}
-
 	baseAimPerformance := ppBase(aimRating)
 	baseSpeedPerformance := ppBase(speedRating)
 	baseFlashlightPerformance := 0.0
@@ -114,7 +110,7 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 }
 
 // Retrieves skill values and converts to Attributes
-func getStars(aim *skills2.AimSkill, aimNoSliders *skills2.AimSkill, speed *skills2.SpeedSkill, flashlight *skills2.Flashlight, diff *difficulty.Difficulty, attr Attributes) Attributes {
+func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, attr Attributes) Attributes {
 	attr = getStarsFromRawValues(
 		aim.DifficultyValue(),
 		aimNoSliders.DifficultyValue(),
@@ -147,10 +143,10 @@ func addObjectToAttribs(o objects.IHitObject, attr *Attributes) {
 func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Attributes {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills2.NewAimSkill(diff, true)
-	aimNoSlidersSkill := skills2.NewAimSkill(diff, false)
-	speedSkill := skills2.NewSpeedSkill(diff)
-	flashlightSkill := skills2.NewFlashlightSkill(diff)
+	aimSkill := skills.NewAimSkill(diff, true)
+	aimNoSlidersSkill := skills.NewAimSkill(diff, false)
+	speedSkill := skills.NewSpeedSkill(diff)
+	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	attr := Attributes{}
 
@@ -179,10 +175,10 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills2.NewAimSkill(diff, true)
-	aimNoSlidersSkill := skills2.NewAimSkill(diff, false)
-	speedSkill := skills2.NewSpeedSkill(diff)
-	flashlightSkill := skills2.NewFlashlightSkill(diff)
+	aimSkill := skills.NewAimSkill(diff, true)
+	aimNoSlidersSkill := skills.NewAimSkill(diff, false)
+	speedSkill := skills.NewSpeedSkill(diff)
+	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	stars := make([]Attributes, 1, len(objects))
 
@@ -220,9 +216,9 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) StrainPeaks {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills2.NewAimSkill(diff, true)
-	speedSkill := skills2.NewSpeedSkill(diff)
-	flashlightSkill := skills2.NewFlashlightSkill(diff)
+	aimSkill := skills.NewAimSkill(diff, true)
+	speedSkill := skills.NewSpeedSkill(diff)
+	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)

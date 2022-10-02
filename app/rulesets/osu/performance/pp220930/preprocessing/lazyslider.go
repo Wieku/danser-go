@@ -4,7 +4,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 const (
@@ -85,6 +84,4 @@ func (slider *LazySlider) calculateEndPosition() {
 			slider.LazyEndPosition = currCursorPosition
 		}
 	}
-
-	slider.LazyTravelDistance *= float32(math.Pow(1+float64(slider.RepeatCount-1)/2.5, 1.0/2.5)) // Bonus for repeat sliders until a better per nested object strain system can be achieved.
 }

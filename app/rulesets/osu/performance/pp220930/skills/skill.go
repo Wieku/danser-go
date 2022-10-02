@@ -56,7 +56,7 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 		skill.currentSectionEnd = math.Ceil(current.StartTime/skill.SectionLength) * skill.SectionLength
 	}
 
-	for current.StrainTime > skill.currentSectionEnd {
+	for current.StartTime > skill.currentSectionEnd {
 		skill.saveCurrentPeak()
 		skill.startNewSectionFrom(skill.currentSectionEnd, current)
 		skill.currentSectionEnd += skill.SectionLength

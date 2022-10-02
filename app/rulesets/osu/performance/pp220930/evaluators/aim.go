@@ -84,8 +84,8 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 
 	if math.Max(prevVelocity, currVelocity) != 0 {
 		// We want to use the average velocity over the whole object when awarding differences, not the individual jump and slider path velocities.
-		prevVelocity = (osuLastObj.LazyJumpDistance + osuLastObj.TravelDistance) / osuLastObj.StrainTime
-		currVelocity = (osuCurrObj.LazyJumpDistance + osuCurrObj.TravelDistance) / osuCurrObj.StrainTime
+		prevVelocity = (osuLastObj.LazyJumpDistance + osuLastLastObj.TravelDistance) / osuLastObj.StrainTime
+		currVelocity = (osuCurrObj.LazyJumpDistance + osuLastObj.TravelDistance) / osuCurrObj.StrainTime
 
 		// Scale with ratio of difference compared to 0.5 * max dist.
 		distRatio := math.Pow(math.Sin(math.Pi/2*math.Abs(prevVelocity-currVelocity)/math.Max(prevVelocity, currVelocity)), 2)
