@@ -8,7 +8,7 @@ import (
 	"github.com/karrick/godirwalk"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
@@ -412,7 +412,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	var toCalculate []*beatmap.BeatMap
 
 	for _, b := range maps {
-		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < pp211112.CurrentVersion) {
+		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < pp220930.CurrentVersion) {
 			toCalculate = append(toCalculate, b)
 		}
 	}
@@ -430,7 +430,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	goroutines.Run(func() {
 		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
 			defer func() {
-				bMap.StarsVersion = pp211112.CurrentVersion
+				bMap.StarsVersion = pp220930.CurrentVersion
 				bMap.Clear() //Clear objects and timing to avoid OOM
 
 				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
@@ -446,7 +446,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")
 				bMap.Stars = 0
 			} else {
-				attr := pp211112.CalculateSingle(bMap.HitObjects, bMap.Diff, false)
+				attr := pp220930.CalculateSingle(bMap.HitObjects, bMap.Diff)
 				bMap.Stars = attr.Total
 			}
 
