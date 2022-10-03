@@ -38,7 +38,7 @@ const (
 	Daycore
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
-	DifficultyAdjustMask = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
+	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
 	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Flashlight | Relax | TouchDevice
 )
 
@@ -46,16 +46,16 @@ const (
 func GetDiffMaskedMods(mods Modifier) Modifier {
 	//Probably redundant
 	if mods.Active(Nightcore) {
-		mods = (mods&(^Nightcore)) | DoubleTime
+		mods = (mods & (^Nightcore)) | DoubleTime
 	}
 
 	if mods.Active(Daycore) {
-		mods = (mods&(^Daycore)) | HalfTime
+		mods = (mods & (^Daycore)) | HalfTime
 	}
 
 	base := difficultyAdjustMaskNew & mods
 
-	if mods&(Hidden|Flashlight) == (Hidden|Flashlight) {
+	if mods&(Hidden|Flashlight) == (Hidden | Flashlight) {
 		base |= Hidden
 	}
 
