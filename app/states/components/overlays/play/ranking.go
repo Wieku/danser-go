@@ -295,10 +295,12 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	fnt2.Draw(batch, 5, 30+22+22, 22, panel.playedBy)
 
 	if settings.Gameplay.PPCounter.ShowInResults {
+		fnt3 := font.GetFont("HUDFont")
+
 		batch.SetColor(0, 0, 0, alpha*0.5)
-		fnt2.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, vector.Centre, 61, false, panel.pp)
+		fnt3.DrawOrigin(batch, panel.ScaledWidth-204, 576+62, vector.Centre, 61, false, panel.pp)
 		batch.SetColor(1, 1, 1, alpha)
-		fnt2.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, vector.Centre, 61, false, panel.pp)
+		fnt3.DrawOrigin(batch, panel.ScaledWidth-205, 576+61, vector.Centre, 61, false, panel.pp)
 	}
 
 	if panel.shapeRenderer == nil {
