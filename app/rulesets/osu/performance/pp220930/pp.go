@@ -1,9 +1,13 @@
-package performance
+package pp220930
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
+)
+
+const (
+	PerformanceBaseMultiplier float64 = 1.14
 )
 
 /* ------------------------------------------------------------- */
@@ -41,7 +45,7 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty, experimental bool) PPv2 {
+func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
 	attribs.MaxCombo = mutils.Max(1, attribs.MaxCombo)
 
 	if combo < 0 {
@@ -52,12 +56,9 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 		n300 = attribs.ObjectCount - n100 - n50 - nmiss
 	}
 
-	totalhits := n300 + n100 + n50 + nmiss
-
 	pp.attribs = attribs
-	pp.experimental = experimental
 	pp.diff = diff
-	pp.totalHits = totalhits
+	pp.totalHits = n300 + n100 + n50 + nmiss
 	pp.scoreMaxCombo = combo
 	pp.countGreat = n300
 	pp.countOk = n100
@@ -67,13 +68,13 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 
 	// accuracy
 
-	if totalhits == 0 {
+	if pp.totalHits == 0 {
 		pp.accuracy = 0.0
 	} else {
 		acc := (float64(n50)*50 +
 			float64(n100)*100 +
 			float64(n300)*300) /
-			(float64(totalhits) * 300)
+			(float64(pp.totalHits) * 300)
 
 		pp.accuracy = mutils.ClampF(acc, 0, 1)
 	}
@@ -86,19 +87,26 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 
 	// total pp
 
-	finalMultiplier := 1.12
+	multiplier := PerformanceBaseMultiplier
 
 	if diff.Mods.Active(difficulty.NoFail) {
-		finalMultiplier *= math.Max(0.90, 1.0-0.02*pp.effectiveMissCount)
+		multiplier *= math.Max(0.90, 1.0-0.02*pp.effectiveMissCount)
 	}
 
-	if totalhits > 0 && diff.Mods.Active(difficulty.SpunOut) {
-		finalMultiplier *= 1.0 - math.Pow(float64(attribs.Spinners)/float64(totalhits), 0.85)
+	if diff.Mods.Active(difficulty.SpunOut) && pp.totalHits > 0 {
+		multiplier *= 1.0 - math.Pow(float64(attribs.Spinners)/float64(pp.totalHits), 0.85)
 	}
 
 	if diff.Mods.Active(difficulty.Relax) {
-		pp.effectiveMissCount = math.Min(pp.effectiveMissCount+float64(pp.countOk+pp.countMeh), float64(pp.totalHits))
-		finalMultiplier *= 0.6
+		okMultiplier := 1.0
+		mehMultiplier := 1.0
+
+		if diff.ODReal > 0.0 {
+			okMultiplier = math.Max(0.0, 1-math.Pow(diff.ODReal/13.33, 1.8))
+			mehMultiplier = math.Max(0.0, 1-math.Pow(diff.ODReal/13.33, 5))
+		}
+
+		pp.effectiveMissCount = math.Min(pp.effectiveMissCount+float64(pp.countOk)*okMultiplier+float64(pp.countMeh)*mehMultiplier, float64(pp.totalHits))
 	}
 
 	pp.Results.Aim = pp.computeAimValue()
@@ -111,19 +119,13 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 			math.Pow(pp.Results.Speed, 1.1)+
 			math.Pow(pp.Results.Acc, 1.1)+
 			math.Pow(pp.Results.Flashlight, 1.1),
-		1.0/1.1) * finalMultiplier
+		1.0/1.1) * multiplier
 
 	return *pp
 }
 
 func (pp *PPv2) computeAimValue() float64 {
-	rawAim := pp.attribs.Aim
-
-	if pp.diff.Mods.Active(difficulty.TouchDevice) {
-		rawAim = math.Pow(rawAim, 0.8)
-	}
-
-	aimValue := ppBase(rawAim)
+	aimValue := ppBase(pp.attribs.Aim)
 
 	// Longer maps are worth more
 	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
@@ -135,23 +137,21 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		if pp.experimental {
-			aimValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.AimDifficultStrainCount)
-		} else {
-			aimValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), pp.effectiveMissCount)
-		}
+		aimValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), pp.effectiveMissCount)
 	}
 
 	// Combo scaling
-	if pp.attribs.MaxCombo > 0 && !pp.experimental {
-		aimValue *= pp.getComboScalingFactor()
-	}
+	aimValue *= pp.getComboScalingFactor()
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
 		approachRateFactor = 0.3 * (pp.diff.ARReal - 10.33)
 	} else if pp.diff.ARReal < 8.0 {
-		approachRateFactor = 0.1 * (8.0 - pp.diff.ARReal)
+		approachRateFactor = 0.05 * (8.0 - pp.diff.ARReal)
+	}
+
+	if pp.diff.CheckModActive(difficulty.Relax) {
+		approachRateFactor = 0.0
 	}
 
 	aimValue *= 1.0 + approachRateFactor*lengthBonus
@@ -178,6 +178,10 @@ func (pp *PPv2) computeAimValue() float64 {
 }
 
 func (pp *PPv2) computeSpeedValue() float64 {
+	if pp.diff.CheckModActive(difficulty.Relax) {
+		return 0
+	}
+
 	speedValue := ppBase(pp.attribs.Speed)
 
 	// Longer maps are worth more
@@ -190,17 +194,11 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		if pp.experimental {
-			speedValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.SpeedDifficultStrainCount)
-		} else {
-			speedValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
-		}
+		speedValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
 	}
 
 	// Combo scaling
-	if pp.attribs.MaxCombo > 0 && !pp.experimental {
-		speedValue *= pp.getComboScalingFactor()
-	}
+	speedValue *= pp.getComboScalingFactor()
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
@@ -213,16 +211,22 @@ func (pp *PPv2) computeSpeedValue() float64 {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
-	// Scale the speed value with accuracy and OD
-	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow(pp.accuracy, (14.5-math.Max(pp.diff.ODReal, 8))/2)
-	// Scale the speed value with # of 50s to punish doubletapping.
-
-	mehMult := 0.0
-	if float64(pp.countMeh) >= float64(pp.totalHits)/500 {
-		mehMult = float64(pp.countMeh) - float64(pp.totalHits)/500.0
+	relevantAccuracy := 0.0
+	if pp.attribs.SpeedNoteCount != 0 {
+		relevantTotalDiff := float64(pp.totalHits) - pp.attribs.SpeedNoteCount
+		relevantCountGreat := math.Max(0, float64(pp.countGreat)-relevantTotalDiff)
+		relevantCountOk := math.Max(0, float64(pp.countOk)-math.Max(0, relevantTotalDiff-float64(pp.countGreat)))
+		relevantCountMeh := math.Max(0, float64(pp.countMeh)-math.Max(0, relevantTotalDiff-float64(pp.countGreat)-float64(pp.countOk)))
+		relevantAccuracy = (relevantCountGreat*6.0 + relevantCountOk*2.0 + relevantCountMeh) / (pp.attribs.SpeedNoteCount * 6.0)
 	}
 
-	speedValue *= math.Pow(0.98, mehMult)
+	// Scale the speed value with accuracy and OD
+	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.accuracy+relevantAccuracy)/2.0, (14.5-math.Max(pp.diff.ODReal, 8))/2)
+
+	// Scale the speed value with # of 50s to punish doubletapping.
+	if float64(pp.countMeh) >= float64(pp.totalHits)/500 {
+		speedValue *= math.Pow(0.99, float64(pp.countMeh)-float64(pp.totalHits)/500.0)
+	}
 
 	return speedValue
 }
@@ -267,18 +271,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 		return 0
 	}
 
-	rawFlashlight := pp.attribs.Flashlight
-
-	if pp.diff.CheckModActive(difficulty.TouchDevice) {
-		rawFlashlight = math.Pow(rawFlashlight, 0.8)
-	}
-
-	flashlightValue := math.Pow(rawFlashlight, 2.0) * 25.0
-
-	// Add an additional bonus for HDFL.
-	if pp.diff.CheckModActive(difficulty.Hidden) {
-		flashlightValue *= 1.3
-	}
+	flashlightValue := math.Pow(pp.attribs.Flashlight, 2.0) * 25.0
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
@@ -286,9 +279,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	}
 
 	// Combo scaling.
-	if pp.attribs.MaxCombo > 0 {
-		flashlightValue *= pp.getComboScalingFactor()
-	}
+	flashlightValue *= pp.getComboScalingFactor()
 
 	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
 	scale := 0.7 + 0.1*math.Min(1.0, float64(pp.totalHits)/200.0)
@@ -317,14 +308,10 @@ func (pp *PPv2) calculateEffectiveMissCount() float64 {
 		}
 	}
 
-	// we're clamping misscount because since its derived from combo it can be higher than total hits and that breaks some calculations
-	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.totalHits))
+	// Clamp miss count to maximum amount of possible breaks
+	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.countOk+pp.countMeh+pp.countMiss))
 
-	if pp.experimental {
-		return math.Max(float64(pp.countMiss), comboBasedMissCount)
-	} else {
-		return math.Max(float64(pp.countMiss), math.Floor(comboBasedMissCount))
-	}
+	return math.Max(float64(pp.countMiss), comboBasedMissCount)
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {

@@ -36,8 +36,31 @@ const (
 	ScoreV2
 	LastMod
 	Daycore
-	DifficultyAdjustMask = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
+
+	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
+	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
+	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Flashlight | Relax | TouchDevice
 )
+
+// GetDiffMaskedMods should be used instead of DifficultyAdjustMask. In 220930 deployment, HDFL is a separate mod difficulty wise
+func GetDiffMaskedMods(mods Modifier) Modifier {
+	//Probably redundant
+	if mods.Active(Nightcore) {
+		mods = (mods & (^Nightcore)) | DoubleTime
+	}
+
+	if mods.Active(Daycore) {
+		mods = (mods & (^Daycore)) | HalfTime
+	}
+
+	base := difficultyAdjustMaskNew & mods
+
+	if mods&(Hidden|Flashlight) == (Hidden | Flashlight) {
+		base |= Hidden
+	}
+
+	return base
+}
 
 var modsString = [...]string{
 	"NF",

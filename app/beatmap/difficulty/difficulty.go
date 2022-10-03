@@ -137,7 +137,11 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore))).GetScoreMultiplier()
 
 	if diff.Speed > 1 {
-		baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
+		if diff.Mods.Active(ScoreV2) {
+			baseMultiplier *= 1 + (0.40 * (diff.Speed - 1))
+		} else {
+			baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
+		}
 	} else if diff.Speed < 1 {
 		if diff.Speed >= 0.75 {
 			baseMultiplier *= 0.3 + 0.7*(1-(1-diff.Speed)/0.25)

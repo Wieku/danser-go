@@ -2,8 +2,9 @@ package play
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -20,7 +21,8 @@ import (
 
 type StrainGraph struct {
 	shapeRenderer *shape.Renderer
-	strains       performance.StrainPeaks
+	strains       pp220930.StrainPeaks
+	baseLine      float64
 	maxStrain     float32
 	time          float64
 
@@ -33,16 +35,26 @@ type StrainGraph struct {
 
 	screenWidth float64
 
-	size vector.Vector2d
+	size          vector.Vector2d
+	drawOutline   bool
+	outlineWidth  float64
+	innerOpacity  float64
+	innerDarkness float64
 }
 
 func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
-		strains:       performance.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff, settings.Gameplay.UseLazerPP),
+		strains:       pp220930.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff),
 		startTime:     ruleset.GetBeatMap().HitObjects[mutils.Min(1, len(ruleset.GetBeatMap().HitObjects)-1)].GetStartTime(),
 		endTime:       ruleset.GetBeatMap().HitObjects[len(ruleset.GetBeatMap().HitObjects)-1].GetStartTime(),
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
+	}
+
+	// Those magic numbers are derived from sr formula with all difficulty values being 0 (e.g. at breaks)
+	graph.baseLine = 0.1401973407499798
+	if ruleset.GetBeatMap().Diff.CheckModActive(difficulty.Flashlight) {
+		graph.baseLine = 0.14386309174146011
 	}
 
 	graph.leftSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopLeft)
@@ -69,7 +81,7 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 	// It's also scaled with width of the strain graph so wider one shows more detailed graph
 	sectSize := mutils.Max(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
 
-	toM := []vector.Vector2f{vector.NewVec2f(0, 0)}
+	var toM []vector.Vector2f
 
 	for i := 0; i < len(graph.strains.Total); i += sectSize {
 		maxI := mutils.Min(len(graph.strains.Total), i+sectSize)
@@ -77,61 +89,88 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 		max := 0.0
 
 		for j := i; j < maxI; j++ {
-			max = math.Max(max, graph.strains.Total[j])
+			max = math.Max(max, graph.strains.Total[j]-graph.baseLine)
 		}
 
 		graph.maxStrain = math32.Max(graph.maxStrain, float32(max))
-		toM = append(toM, vector.NewVec2f(float32(i/sectSize)+0.5, float32(max)))
+		toM = append(toM, vector.NewVec2f(float32(i/sectSize), float32(max)))
 	}
-
-	toM = append(toM, vector.NewVec2f(float32(len(toM)-1), 0))
 
 	return curves.NewMonotoneCubic(toM)
 }
 
 func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
-	batch.Flush()
+	const step float32 = 0.5
 
-	graph.size = vector.NewVec2d(settings.Gameplay.StrainGraph.Width, settings.Gameplay.StrainGraph.Height)
+	upscale := settings.Graphics.GetHeightF() / 768
 
-	w := graph.size.X * settings.Graphics.GetHeightF() / 768
-	h := graph.size.Y * settings.Graphics.GetHeightF() / 768
+	conf := settings.Gameplay.StrainGraph
+
+	graph.size = vector.NewVec2d(conf.Width, conf.Height)
+	graph.drawOutline = conf.Outline.Show
+	graph.outlineWidth = conf.Outline.Width
+	graph.innerOpacity = conf.Outline.InnerOpacity
+	graph.innerDarkness = conf.Outline.InnerDarkness
+
+	oWidth := float32(graph.outlineWidth * upscale)
+	yOffset := float32(2 * upscale)
 
 	if graph.fbo != nil {
 		graph.fbo.Dispose()
 	}
 
-	graph.fbo = buffer.NewFrameMultisample(int(math.Round(w)), int(math.Round(h)), 8)
+	fboWidth := float32(math.Round(graph.size.X * upscale))
+	fboHeight := float32(math.Round(graph.size.Y * upscale))
+
+	graph.fbo = buffer.NewFrameMultisample(int(fboWidth), int(fboHeight), 8)
 
 	graph.fbo.Bind()
-	graph.fbo.ClearColor(1, 1, 1, 0)
+	graph.fbo.ClearColor(0, 0, 0, 0)
 
-	graph.shapeRenderer.SetCamera(mgl32.Ortho2D(0, float32(graph.fbo.GetWidth()), float32(graph.fbo.GetHeight()), 0))
+	graph.shapeRenderer.SetCamera(mgl32.Ortho2D(0, fboWidth, fboHeight, 0))
 
-	viewport.Push(graph.fbo.GetWidth(), graph.fbo.GetHeight())
+	viewport.Push(int(fboWidth), int(fboHeight))
 
 	graph.shapeRenderer.Begin()
-	graph.shapeRenderer.SetColor(1, 1, 1, 1)
 
-	lWidth := float32(graph.fbo.GetWidth())
-	lHeight := float32(graph.fbo.GetHeight()) - 1
+	if graph.drawOutline {
+		graph.shapeRenderer.SetColor(1-graph.innerDarkness, 1-graph.innerDarkness, 1-graph.innerDarkness, graph.innerOpacity)
+
+		fboHeight -= oWidth / 2
+		yOffset = mutils.Max(yOffset, oWidth/2)
+	} else {
+		graph.shapeRenderer.SetColor(1, 1, 1, 1)
+	}
 
 	spline := graph.generateCurve()
 
-	lV := math32.Max(spline.PointAt(0).X, 0)
+	strainScale := (fboHeight - yOffset) / graph.maxStrain
 
-	step := float32(0.5)
+	pY1 := math32.Max(spline.PointAt(0).X, 0)*strainScale + yOffset
 
-	for i := step; i <= lWidth; i += step {
-		v := math32.Max(spline.PointAt(i/lWidth).Y, 0)
-
-		pX := i
-		pY1 := lV / graph.maxStrain * lHeight
-		pY2 := v / graph.maxStrain * lHeight
-
-		lV = v
+	for pX := step; pX <= fboWidth; pX += step {
+		pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
 
 		graph.shapeRenderer.DrawQuad(pX-step, 0, pX-step, pY1, pX, pY2, pX, 0)
+
+		pY1 = pY2
+	}
+
+	if graph.drawOutline {
+		graph.shapeRenderer.SetColor(1, 1, 1, 1)
+
+		pY1 = math32.Max(spline.PointAt(0).X, 0)*strainScale + yOffset
+
+		graph.shapeRenderer.DrawCircle(vector.NewVec2f(0, pY1), oWidth/2)
+
+		for pX := step; pX <= fboWidth; pX += step {
+			pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
+
+			graph.shapeRenderer.DrawLine(pX-step, pY1, pX, pY2, oWidth)
+			graph.shapeRenderer.DrawCircle(vector.NewVec2f(pX, pY2), oWidth/2)
+
+			pY1 = pY2
+		}
 	}
 
 	graph.shapeRenderer.End()
@@ -161,7 +200,10 @@ func (graph *StrainGraph) Draw(batch *batch.QuadBatch, alpha float64) {
 		return
 	}
 
-	if graph.fbo == nil || graph.size.X != conf.Width || graph.size.Y != conf.Height {
+	if graph.fbo == nil || graph.size.X != conf.Width || graph.size.Y != conf.Height ||
+		graph.drawOutline != conf.Outline.Show || graph.outlineWidth != conf.Outline.Width ||
+		graph.innerDarkness != conf.Outline.InnerDarkness || graph.innerOpacity != conf.Outline.InnerOpacity {
+		batch.Flush()
 		graph.drawFBO(batch)
 	}
 

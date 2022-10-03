@@ -161,6 +161,12 @@ func initGameplay() *gameplay {
 				Saturation: 0.4,
 				Value:      0.92,
 			},
+			Outline: &outline{
+				Show:          false,
+				Width:         2,
+				InnerDarkness: 0.5,
+				InnerOpacity:  0.5,
+			},
 		},
 		KeyOverlay: &hudElementOffset{
 			hudElement: &hudElement{
@@ -256,7 +262,7 @@ type gameplay struct {
 	ShowHitLighting         bool
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
-	UseLazerPP              bool   `liveedit:"false"`
+	UseLazerPP              bool   `liveedit:"false" skip:"true"`
 }
 
 type boundaries struct {
@@ -389,6 +395,15 @@ type strainGraph struct {
 
 	BgColor *HSV `label:"Background color" short:"true"`
 	FgColor *HSV `label:"Foreground color" short:"true"`
+
+	Outline *outline
+}
+
+type outline struct {
+	Show          bool
+	Width         float64 `min:"1" max:"5"`
+	InnerDarkness float64 `scale:"100.0" format:"%.0f%%" tooltip:"Darkness of filled shape, only applicable when DrawOutline is enabled"`
+	InnerOpacity  float64 `scale:"100.0" format:"%.0f%%" tooltip:"Opacity of filled shape, only applicable when DrawOutline is enabled"`
 }
 
 type underlay struct {

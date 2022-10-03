@@ -81,12 +81,12 @@ func (s *scoreV2Processor) AddResult(result HitResult, comboResult ComboResult) 
 	}
 
 	if s.maxHits > 0 {
-		acc := 1.0
+		acc := float32(1.0)
 		if s.hits > 0 {
-			acc = (float64(s.hitMap[Hit50]) + float64(s.hitMap[Hit100])*2 + float64(s.hitMap[Hit300])*6) / (float64(s.hits) * 6)
+			acc = float32(s.hitMap[Hit50]*50+s.hitMap[Hit100]*100+s.hitMap[Hit300]*300) / float32(s.hits*300)
 		}
 
-		s.score = int64((s.comboPart/s.comboPartMax*700000 + math.Pow(acc, 10)*float64(s.hits)/float64(s.maxHits)*300000 + s.bonus) * s.modMultiplier)
+		s.score = int64(math.Round((s.comboPart/s.comboPartMax*700000 + math.Pow(float64(acc), 10)*(float64(s.hits)/float64(s.maxHits))*300000 + s.bonus) * s.modMultiplier))
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/karrick/godirwalk"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
@@ -331,6 +331,12 @@ func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
 
 	goroutines.Run(func() {
 		util.BalanceChan(workers, mapsToImport, receive, func(candidate mapLocation) *beatmap.BeatMap {
+			defer func() {
+				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
+					log.Println("DatabaseManager: Failed to load \"", candidate.dir+"/"+candidate.file, "\":", err)
+				}
+			}()
+
 			partialPath := filepath.Join(candidate.dir, candidate.file)
 			mapPath := filepath.Join(songsDir, partialPath)
 
@@ -407,12 +413,12 @@ func trySendStatus(listener ImportListener, stage ImportStage, progress, target 
 }
 
 func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, target int)) {
-	const workers = 1 // For now sing only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
+	const workers = 1 // For now using only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
 
 	var toCalculate []*beatmap.BeatMap
 
 	for _, b := range maps {
-		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < performance.CurrentVersion) {
+		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < pp220930.CurrentVersion) {
 			toCalculate = append(toCalculate, b)
 		}
 	}
@@ -428,9 +434,11 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	receive := make(chan *beatmap.BeatMap, workers)
 
 	goroutines.Run(func() {
-		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
+		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) (ret *beatmap.BeatMap) {
+			ret = bMap // HACK: still return the beatmap even if execution panics: https://golangbyexample.com/return-value-function-panic-recover-go/
+
 			defer func() {
-				bMap.StarsVersion = performance.CurrentVersion
+				bMap.StarsVersion = pp220930.CurrentVersion
 				bMap.Clear() //Clear objects and timing to avoid OOM
 
 				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
@@ -446,7 +454,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")
 				bMap.Stars = 0
 			} else {
-				attr := performance.CalculateSingle(bMap.HitObjects, bMap.Diff, false)
+				attr := pp220930.CalculateSingle(bMap.HitObjects, bMap.Diff)
 				bMap.Stars = attr.Total
 			}
 
