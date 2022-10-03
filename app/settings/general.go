@@ -2,9 +2,11 @@ package settings
 
 import (
 	"github.com/wieku/danser-go/framework/env"
+	"golang.org/x/sys/windows/registry"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 var General = initGeneral()
@@ -12,7 +14,7 @@ var General = initGeneral()
 func initGeneral() *general {
 	osuBaseDir := ""
 	if runtime.GOOS == "windows" {
-		osuBaseDir = filepath.Join(os.Getenv("localappdata"), "osu!")
+		osuBaseDir = getWindowsOsuInstallation()
 	} else {
 		dir, _ := os.UserHomeDir()
 		osuBaseDir = filepath.Join(dir, ".osu")
@@ -26,6 +28,35 @@ func initGeneral() *general {
 		UnpackOszFiles:    true,
 		VerboseImportLogs: false,
 	}
+}
+
+func getWindowsOsuInstallation() (path string) {
+	path = filepath.Join(os.Getenv("localappdata"), "osu!")
+
+	key, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Classes\osu!\shell\open\command`, registry.QUERY_VALUE)
+	if err != nil {
+		return
+	}
+
+	defer key.Close()
+
+	s, _, err := key.GetStringValue("")
+	if err != nil {
+		return
+	}
+
+	// Extracting exe path from (example): "D:\osu!\osu!.exe" "%1"
+	if i := strings.IndexRune(s, '"'); i > -1 {
+		s = s[i+1:]
+
+		if i = strings.IndexRune(s, '"'); i > -1 {
+			s = s[:i]
+		}
+	}
+
+	path = filepath.Dir(s)
+
+	return
 }
 
 type general struct {
