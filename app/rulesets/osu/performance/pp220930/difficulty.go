@@ -166,7 +166,7 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) 
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
 func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Attributes {
-	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
+	modString := difficulty.GetDiffMaskedMods(diff.Mods).String()
 	if modString == "" {
 		modString = "NM"
 	}
