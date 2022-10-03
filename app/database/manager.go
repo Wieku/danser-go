@@ -407,7 +407,7 @@ func trySendStatus(listener ImportListener, stage ImportStage, progress, target 
 }
 
 func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, target int)) {
-	const workers = 1 // For now sing only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
+	const workers = 1 // For now using only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
 
 	var toCalculate []*beatmap.BeatMap
 
@@ -428,7 +428,9 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	receive := make(chan *beatmap.BeatMap, workers)
 
 	goroutines.Run(func() {
-		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) *beatmap.BeatMap {
+		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) (ret *beatmap.BeatMap) {
+			ret = bMap // HACK: still return the beatmap even if execution panics: https://golangbyexample.com/return-value-function-panic-recover-go/
+
 			defer func() {
 				bMap.StarsVersion = pp220930.CurrentVersion
 				bMap.Clear() //Clear objects and timing to avoid OOM
