@@ -331,6 +331,12 @@ func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
 
 	goroutines.Run(func() {
 		util.BalanceChan(workers, mapsToImport, receive, func(candidate mapLocation) *beatmap.BeatMap {
+			defer func() {
+				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
+					log.Println("DatabaseManager: Failed to load \"", candidate.dir+"/"+candidate.file, "\":", err)
+				}
+			}()
+
 			partialPath := filepath.Join(candidate.dir, candidate.file)
 			mapPath := filepath.Join(songsDir, partialPath)
 
