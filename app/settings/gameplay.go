@@ -262,7 +262,7 @@ type gameplay struct {
 	ShowHitLighting         bool
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
-	UseLazerPP              bool   `liveedit:"false"`
+	UseLazerPP              bool   `liveedit:"false" skip:"true"`
 }
 
 type boundaries struct {
