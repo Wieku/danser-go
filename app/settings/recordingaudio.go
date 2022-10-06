@@ -12,7 +12,7 @@ type aacSettings struct {
 }
 
 func (s *aacSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret = append(ret, "-b:v", s.Bitrate)
+	ret = append(ret, "-b:a", s.Bitrate)
 
 	ret = parseCustomOptions(ret, s.AdditionalOptions)
 
