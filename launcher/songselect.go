@@ -106,21 +106,28 @@ type songSelectPopup struct {
 
 func newSongSelectPopup(bld *builder, beatmaps []*beatmap.BeatMap) *songSelectPopup {
 	mP := &songSelectPopup{
-		popup:    newPopup("Song select", popBig),
-		bld:      bld,
-		beatmaps: make([]*mapWithName, 0),
-		volume:   animation.NewGlider(0),
+		popup:  newPopup("Song select", popBig),
+		bld:    bld,
+		volume: animation.NewGlider(0),
 	}
 
 	mP.internalDraw = mP.drawSongSelect
 
-	for _, bMap := range beatmaps {
-		mP.beatmaps = append(mP.beatmaps, newMapWithName(bMap))
-	}
-
-	mP.search()
+	mP.setBeatmaps(beatmaps)
 
 	return mP
+}
+
+func (m *songSelectPopup) setBeatmaps(beatmaps []*beatmap.BeatMap) {
+	beatmaps2 := make([]*mapWithName, 0)
+
+	for _, bMap := range beatmaps {
+		beatmaps2 = append(beatmaps2, newMapWithName(bMap))
+	}
+
+	m.beatmaps = beatmaps2
+	m.search()
+	m.focusTheMap = true
 }
 
 func (m *songSelectPopup) update() {
