@@ -1449,7 +1449,9 @@ func (l *launcher) openCurrentSettingsEditor() {
 		}
 	}
 
-	l.currentEditor = newSettingsEditor(l.currentConfig)
+	if l.currentEditor == nil || l.currentEditor.current != l.currentConfig {
+		l.currentEditor = newSettingsEditor(l.currentConfig)
+	}
 
 	l.currentEditor.setDanserRunning(l.danserRunning)
 	l.currentEditor.setCloseListener(saveFunc)
@@ -1734,5 +1736,6 @@ func (l *launcher) danserCleanup(success bool) {
 }
 
 func (l *launcher) openPopup(p iPopup) {
+	p.open()
 	l.popupStack = append(l.popupStack, p)
 }
