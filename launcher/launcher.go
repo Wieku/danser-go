@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/faiface/mainthread"
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -187,7 +188,9 @@ type launcher struct {
 
 	knockoutManager *knockoutManagerPopup
 
-	currentEditor *settingsEditor
+	currentEditor     *settingsEditor
+	beatmapDirUpdated bool
+	showBeatmapAlert  float64
 }
 
 func StartLauncher() {
@@ -259,6 +262,7 @@ func StartLauncher() {
 	})
 
 	// Save configs on exit
+	closeWatcher()
 	saveLauncherConfig()
 	if launcher.currentConfig != nil {
 		launcher.currentConfig.Save("", false)
@@ -379,6 +383,43 @@ func (l *launcher) startGLFW() {
 	goroutines.RunOS(func() {
 		l.loadBeatmaps()
 
+		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
+			if l.danserRunning {
+				return
+			}
+			
+			if len(names) > 1 {
+				l.trySelectReplaysFromPaths(names)
+			} else {
+				l.trySelectReplayFromPath(names[0])
+			}
+		})
+
+		l.win.SetCloseCallback(func(w *glfw.Window) {
+			if l.danserCmd != nil {
+				l.win.SetShouldClose(false)
+
+				goroutines.Run(func() {
+					if showMessage(mQuestion, "Recording is in progress, do you want to exit?") {
+						if l.danserCmd != nil {
+							l.danserCmd.Process.Kill()
+							l.danserCleanup(false)
+						}
+
+						l.win.SetShouldClose(true)
+					}
+				})
+			}
+		})
+
+		if len(os.Args) > 2 { //won't work in combined mode
+			l.trySelectReplaysFromPaths(os.Args[1:])
+		} else if len(os.Args) > 1 {
+			l.trySelectReplayFromPath(os.Args[1])
+		} else if launcherConfig.LoadLatestReplay {
+			l.loadLatestReplay()
+		}
+
 		if launcherConfig.CheckForUpdates {
 			checkForUpdates(false)
 		}
@@ -392,6 +433,9 @@ func (l *launcher) startGLFW() {
 }
 
 func (l *launcher) loadBeatmaps() {
+	closeWatcher()
+	database.Close()
+
 	l.splashText = "Loading maps...\nThis may take a while..."
 
 	l.beatmaps = make([]*beatmap.BeatMap, 0)
@@ -439,38 +483,10 @@ func (l *launcher) loadBeatmaps() {
 		//database.Close()
 	}
 
-	l.win.SetDropCallback(func(w *glfw.Window, names []string) {
-		if len(names) > 1 {
-			l.trySelectReplaysFromPaths(names)
-		} else {
-			l.trySelectReplayFromPath(names[0])
-		}
+	setupWatcher(settings.General.GetSongsDir(), func(event fsnotify.Event) {
+		l.showBeatmapAlert = qpc.GetMilliTimeF() + 3000 //Wait for the last map to load on osu side
+		l.beatmapDirUpdated = true
 	})
-
-	l.win.SetCloseCallback(func(w *glfw.Window) {
-		if l.danserCmd != nil {
-			l.win.SetShouldClose(false)
-
-			goroutines.Run(func() {
-				if showMessage(mQuestion, "Recording is in progress, do you want to exit?") {
-					if l.danserCmd != nil {
-						l.danserCmd.Process.Kill()
-						l.danserCleanup(false)
-					}
-
-					l.win.SetShouldClose(true)
-				}
-			})
-		}
-	})
-
-	if len(os.Args) > 2 { //won't work in combined mode
-		l.trySelectReplaysFromPaths(os.Args[1:])
-	} else if len(os.Args) > 1 {
-		l.trySelectReplayFromPath(os.Args[1])
-	} else if launcherConfig.LoadLatestReplay {
-		l.loadLatestReplay()
-	}
 
 	l.mapsLoaded = true
 }
@@ -713,6 +729,37 @@ func (l *launcher) drawMain() {
 		l.showProgressBar = false
 		l.recordStatus = ""
 		l.recordProgress = 0
+	}
+
+	if !l.danserRunning && l.beatmapDirUpdated && qpc.GetMilliTimeF() >= l.showBeatmapAlert {
+		mapText := "Do you want to refresh the database?"
+		if launcherConfig.SkipMapUpdate {
+			mapText = "Do you want to load new beatmap sets?"
+		}
+
+		reload := showMessage(mQuestion, "Changes in osu!'s Song directory have been detected.\n\n"+mapText)
+
+		l.beatmapDirUpdated = false
+
+		if reload {
+			goroutines.RunOS(func() {
+				l.mapsLoaded = false
+				l.loadBeatmaps()
+
+				if l.bld.currentMap != nil {
+					for _, b := range l.beatmaps {
+						if b.MD5 == l.bld.currentMap.MD5 {
+							l.bld.currentMap = b
+							break
+						}
+					}
+				}
+
+				if l.selectWindow != nil {
+					l.selectWindow.setBeatmaps(l.beatmaps)
+				}
+			})
+		}
 	}
 }
 
