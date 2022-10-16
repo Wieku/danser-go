@@ -822,5 +822,7 @@ func Close() {
 		if err != nil {
 			log.Println("Failed to close database:", err)
 		}
+
+		dbFile = nil
 	}
 }
