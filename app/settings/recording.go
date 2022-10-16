@@ -187,7 +187,7 @@ func (g *recording) GetOutputDir() string {
 
 type motionblur struct {
 	Enabled              bool
-	OversampleMultiplier int `string:"true" min:"1" max:"512"`
+	OversampleMultiplier int `string:"true" min:"1" max:"512" tooltip:"Multiplier for FPS. FPS=60 and Oversample=16 means original footage has 960fps before blending to 60fps"`
 	BlendFrames          int `string:"true" min:"1" max:"512" tooltip:"How many frames should be blended together.\nValue 1.5x bigger than Oversample multiplier is recommended"`
 	BlendWeights         *blendWeights
 }
@@ -195,8 +195,8 @@ type motionblur struct {
 type blendWeights struct {
 	UseManualWeights bool
 	ManualWeights    string  `showif:"UseManualWeights=true"`
-	AutoWeightsID    int     `combo:"0|Flat,1|Linear,2|InQuad,3|OutQuad,4|InOutQuad,5|InCubic,6|OutCubic,7|InOutCubic,8|InQuart,9|OutQuart,10|InOutQuart,11|InQuint,12|OutQuint,13|InOutQuint,14|InSine,15|OutSine,16|InOutSine,17|InExpo,18|OutExpo,19|InOutExpo,20|InCirc,21|OutCirc,22|InOutCirc,23|InBack,24|OutBack,25|InOutBack,26|Gauss,27|GaussSymmetric,28|PyramidSymmetric,29|SemiCircle"`
-	GaussWeightsMult float64 `string:"true" min:"0" max:"10"`
+	AutoWeightsID    int     `showif:"UseManualWeights=false" label:"Blending function" combo:"0|Flat,1|Linear,2|InQuad,3|OutQuad,4|InOutQuad,5|InCubic,6|OutCubic,7|InOutCubic,8|InQuart,9|OutQuart,10|InOutQuart,11|InQuint,12|OutQuint,13|InOutQuint,14|InSine,15|OutSine,16|InOutSine,17|InExpo,18|OutExpo,19|InOutExpo,20|InCirc,21|OutCirc,22|InOutCirc,23|InBack,24|OutBack,25|InOutBack,26|Gauss,27|GaussSymmetric,28|PyramidSymmetric,29|SemiCircle"`
+	GaussWeightsMult float64 `showif:"UseManualWeights=false" string:"true" min:"0" max:"10" label:"Gauss weights multiplier"`
 }
 
 type EncoderOptions interface {
