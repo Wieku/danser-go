@@ -22,6 +22,11 @@ import (
 	"strings"
 )
 
+const (
+	maxPathLength = 100_000_000 // Sanity limits, XNOR reaches 10M pixel length so 100M should be enough
+	maxRepeats    = 10_000      // Same limit as osu!
+)
+
 type PathLine struct {
 	Time1 int64
 	Time2 int64
@@ -102,18 +107,24 @@ func NewSlider(data []string) *Slider {
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
 	slider.RepeatCount, _ = strconv.ParseInt(data[6], 10, 64)
 
-	// Sanity limits, XNOR reaches 10M pixel length so 100M should be enough
-	slider.pixelLength = math.Min(slider.pixelLength, 100_000_000)
-	slider.RepeatCount = mutils.Min(slider.RepeatCount, 10_000) // The same limit as in Lazer
+	slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
+	slider.RepeatCount = mutils.Min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
 
 	list := strings.Split(data[5], "|")
 	points := []vector.Vector2f{slider.StartPosRaw}
+
+	var totalControlDistance float32
 
 	for i := 1; i < len(list); i++ {
 		list2 := strings.Split(list[i], ":")
 		x, _ := strconv.ParseFloat(list2[0], 32)
 		y, _ := strconv.ParseFloat(list2[1], 32)
 		points = append(points, vector.NewVec2f(float32(x), float32(y)))
+		totalControlDistance += points[i].Dst(points[i-1])
+	}
+
+	if totalControlDistance >= 2*maxPathLength { // Skip sliders which are too computationally expensive
+		return nil
 	}
 
 	slider.multiCurve = curves.NewMultiCurveT(list[0], points, slider.pixelLength)

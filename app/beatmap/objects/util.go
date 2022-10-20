@@ -16,7 +16,9 @@ func CreateObject(data []string) IHitObject {
 			return NewSpinner(data)
 		}
 	} else if (objType & SLIDER) > 0 {
-		return NewSlider(data)
+		if sl := NewSlider(data); sl != nil {
+			return sl
+		}
 	}
 
 	return nil
