@@ -54,7 +54,19 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 				releaseAt := endTime + 50.0
 
 				if i+1 < len(processor.queue) {
-					nTime := processor.mover.GetObjectsStartTime(processor.queue[mutils.Min(i+2, len(processor.queue)-1)])
+					iOff := i + 2
+
+					// Prolong the click if slider tick is the next object
+					if cC, ok := processor.queue[i+1].(*objects.Circle); ok && cC.SliderPoint && !cC.SliderPointStart {
+						endTime = cC.GetEndTime()
+						releaseAt = endTime + 50.0
+
+						processor.queue = append(processor.queue[:i+1], processor.queue[i+2:]...)
+
+						iOff--
+					}
+
+					nTime := processor.mover.GetObjectsStartTime(processor.queue[mutils.Min(iOff, len(processor.queue)-1)])
 
 					releaseAt = mutils.ClampF(nTime-2, endTime+1, releaseAt)
 				}
