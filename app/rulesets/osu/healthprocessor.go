@@ -268,6 +268,10 @@ func (hp *HealthProcessor) ReducePassive(amount int64) {
 		scale = 0.25
 	}
 
+	if hp.diff.CheckModActive(difficulty.HalfTime) {
+		scale *= 0.75
+	}
+
 	hp.Increase(-hp.PassiveDrain*float64(amount)*scale, false)
 }
 
