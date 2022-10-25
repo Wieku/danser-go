@@ -70,7 +70,8 @@ func (controller *GenericController) InitCursors() {
 	}
 
 	// Convert sliders to pseudo-circles for tag cursors
-	if !settings.CursorDance.ComboTag && !settings.CursorDance.Battle && settings.CursorDance.TAGSliderDance && settings.TAG > 1 {
+	if !settings.CursorDance.ComboTag && !settings.CursorDance.Battle &&
+		settings.CursorDance.TAGSliderDance && settings.TAG > 1 {
 		for i := 0; i < len(queue); i++ {
 			queue = schedulers.PreprocessQueue(i, queue, true)
 		}
@@ -79,11 +80,26 @@ func (controller *GenericController) InitCursors() {
 	// Resolving 2B conflicts
 	for i := 0; i < len(queue); i++ {
 		if s, ok := queue[i].(*objects.Slider); ok {
-			for j := i + 1; j < len(queue); j++ {
-				o := queue[j]
-				if (o.GetStartTime() >= s.GetStartTime() && o.GetStartTime() <= s.GetEndTime()) || (o.GetEndTime() >= s.GetStartTime() && o.GetEndTime() <= s.GetEndTime()) {
+			found := false
+
+			// We need to loop backwards to look for overlapping spinners (p) that are separated by circles:
+			// --ppppppppppppppppp------
+			// ----------c--c-----------
+			// ---------------ssssssss--
+			// Looking just by i-1 (like i+1 in forward detection) wouldn't detect that scenario because objects
+			// are not sorted by end times
+			for j := i - 1; j >= 0; j-- {
+				if o := queue[i-1]; o.GetEndTime() >= s.GetStartTime() {
 					queue = schedulers.PreprocessQueue(i, queue, true)
+					found = true
 					break
+				}
+			}
+
+			// If no conflict was detected in the past then look one object ahead, no looping is needed in this scenario
+			if !found && i+1 < len(queue) {
+				if o := queue[i+1]; o.GetStartTime() <= s.GetEndTime() {
+					queue = schedulers.PreprocessQueue(i, queue, true)
 				}
 			}
 		}
