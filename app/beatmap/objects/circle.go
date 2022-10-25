@@ -45,6 +45,9 @@ type Circle struct {
 	SliderPoint      bool
 	SliderPointStart bool
 	SliderPointEnd   bool
+
+	// DoubleClick is used in cursordances when 2 nearby circles are merged to one
+	DoubleClick bool
 }
 
 func NewCircle(data []string) *Circle {
