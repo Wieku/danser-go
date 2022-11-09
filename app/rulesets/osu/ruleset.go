@@ -391,15 +391,19 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64, proc
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
-			s, isSlider := g.(*Slider)
+			if !cursor.IsAutoplay && !cursor.IsPlayer {
+				// TODO: recreate stable's hitobject "unloading" for replays
 
-			if isSlider {
-				if wasSliderAlready {
-					continue
-				}
+				s, isSlider := g.(*Slider)
 
-				if !s.IsHit(player) {
-					wasSliderAlready = true
+				if isSlider {
+					if wasSliderAlready {
+						continue
+					}
+
+					if !s.IsHit(player) {
+						wasSliderAlready = true
+					}
 				}
 			}
 
