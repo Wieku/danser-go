@@ -58,6 +58,15 @@ func (c Color) Mix(c1 Color, t float32) Color {
 	)
 }
 
+func (c Color) Mul(c1 Color) Color {
+	return NewRGBA(
+		c.R*c1.R,
+		c.G*c1.G,
+		c.B*c1.B,
+		c.A*c1.A,
+	)
+}
+
 func (c Color) Shift(h, s, v float32) Color {
 	h1, s1, v1 := RGBToHSV(c.R, c.G, c.B)
 
