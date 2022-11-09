@@ -71,9 +71,9 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 
 func (editor *settingsEditor) updateKey(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
 	if editor.opened && editor.keyChange != "" && action == glfw.Press {
-		keyText := platform.GetKeyName(key, scancode)
+		keyText, ok := platform.GetKeyName(key, scancode)
 
-		if keyText != "" {
+		if ok && keyText != "" {
 			editor.keyChangeVal.SetString(keyText)
 			editor.keyChangeOpened = false
 			editor.keyChange = ""

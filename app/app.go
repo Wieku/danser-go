@@ -671,7 +671,7 @@ func mainLoopNormal() {
 						log.Println("Launcher: Open settings")
 					}
 				default:
-					if platform.GetKeyName(key, scancode) == settings.Input.ScreenshotKey {
+					if kName, ok := platform.GetKeyName(key, scancode); ok && kName == settings.Input.ScreenshotKey {
 						scheduleScreenshot = true
 					}
 				}
