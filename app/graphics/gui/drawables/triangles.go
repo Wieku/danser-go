@@ -39,6 +39,8 @@ type Triangles struct {
 
 	density float64
 	scale   float64
+
+	defaultColor color2.Color
 }
 
 func NewTriangles(colors []color2.Color) *Triangles {
@@ -48,6 +50,7 @@ func NewTriangles(colors []color2.Color) *Triangles {
 	visualiser.manager = sprite.NewManager()
 	visualiser.scale = 1.0
 	visualiser.density = 1.0
+	visualiser.defaultColor = color2.NewL(1)
 
 	return visualiser
 }
@@ -72,7 +75,7 @@ func (vis *Triangles) AddTriangle(onscreen bool) {
 	}
 
 	if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
-		triangle.SetColor(color2.NewL(triangle.shade))
+		triangle.SetColor(color2.NewL(triangle.shade).Mul(vis.defaultColor))
 	} else {
 		triangle.SetColor(vis.colorPalette[triangle.cIndex%len(vis.colorPalette)])
 	}
@@ -96,7 +99,7 @@ func (vis *Triangles) SetColors(colors []color2.Color) {
 		t := triangles[i].(*Triangle)
 
 		if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
-			t.SetColor(color2.NewL(t.shade))
+			t.SetColor(color2.NewL(t.shade).Mul(vis.defaultColor))
 		} else {
 			t.SetColor(vis.colorPalette[t.cIndex%len(vis.colorPalette)])
 		}
@@ -167,4 +170,9 @@ func (vis *Triangles) SetDensity(density float64) {
 
 func (vis *Triangles) SetScale(scale float64) {
 	vis.scale = scale
+}
+
+func (vis *Triangles) SetDefaultColor(col color2.Color) {
+	vis.defaultColor = col
+	vis.SetColors(vis.colorPalette)
 }
