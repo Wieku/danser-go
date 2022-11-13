@@ -46,7 +46,8 @@ func GLInit(debugLogs bool, additionalExtensions ...string) error {
 	}
 
 	// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/hacks.IsOldAMD for more info
-	if (strings.Contains(lVendor, "amd") || strings.Contains(lVendor, "ati")) && strings.Contains(glVersion, "15.201.") {
+	if (strings.Contains(lVendor, "amd") || strings.Contains(lVendor, "ati")) &&
+		(strings.Contains(glVersion, "15.201.") || strings.Contains(glVersion, "15.200.")) {
 		hacks.IsOldAMD = true
 	}
 
