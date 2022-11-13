@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
+	"sort"
 	"strings"
 )
 
@@ -101,6 +102,38 @@ func (controller *GenericController) InitCursors() {
 				if o := queue[i+1]; o.GetStartTime() <= s.GetEndTime() {
 					queue = schedulers.PreprocessQueue(i, queue, true)
 				}
+			}
+		}
+	}
+
+	// Second 2B pass for spinners
+	for i := 0; i < len(queue); i++ {
+		if s, ok := queue[i].(*objects.Spinner); ok {
+			var subSpinners []objects.IHitObject
+
+			startTime := s.GetStartTime()
+
+			for j := i + 1; j < len(queue); j++ {
+				o := queue[j]
+
+				if o.GetStartTime() >= s.GetEndTime() {
+					break
+				}
+
+				if endTime := o.GetStartTime() - 30; endTime > startTime {
+					subSpinners = append(subSpinners, objects.NewDummySpinner(startTime, endTime))
+				}
+
+				startTime = o.GetEndTime() + 30
+			}
+
+			if subSpinners != nil && len(subSpinners) > 0 {
+				if s.GetEndTime() > startTime {
+					subSpinners = append(subSpinners, objects.NewDummySpinner(startTime, s.GetEndTime()))
+				}
+
+				queue = append(queue[:i], append(subSpinners, queue[i+1:]...)...)
+				sort.SliceStable(queue, func(i, j int) bool { return queue[i].GetStartTime() < queue[j].GetStartTime() })
 			}
 		}
 	}
