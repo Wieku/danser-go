@@ -86,7 +86,7 @@ func (body *Body) setupPoints(curve *curves.MultiCurve, hardRock bool) {
 			body.bottomRight.Y = math32.Max(body.bottomRight.Y, point.Y)
 
 			multiplier := float32(1.0)
-			if settings.Objects.Sliders.SliderDistortions {
+			if settings.Objects.Sliders.Distortions.Enabled {
 				multiplier = 3.0 //larger allowable area, we want to see distorted sliders "fully"
 			}
 
@@ -201,12 +201,27 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 	scaleX := 1.0
 	scaleY := 1.0
 
-	if settings.Objects.Sliders.SliderDistortions {
+	distortions := settings.Objects.Sliders.Distortions
+
+	if distortions.Enabled {
+		distortionBase := [2]int32{int32(distortions.ViewportSize), int32(distortions.ViewportSize)}
+
+		if distortionBase[0] <= 0 {
+			gl.GetIntegerv(gl.MAX_VIEWPORT_DIMS, &distortionBase[0])
+		}
+
 		tLS := baseProjView.Mul4x1(mgl32.Vec4{body.topLeft.X, body.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 		bRS := baseProjView.Mul4x1(mgl32.Vec4{body.bottomRight.X, body.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 
-		wS := float32(32768 / (settings.Graphics.GetWidthF()))
-		hS := float32(32768 / (settings.Graphics.GetHeightF()))
+		screenSizeX, screenSizeY := settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()
+
+		if distortions.UseCustomResolution {
+			screenSizeX = float64(distortions.CustomResolutionX)
+			screenSizeY = float64(distortions.CustomResolutionY)
+		}
+
+		wS := float32(float64(distortionBase[0]) / screenSizeX)
+		hS := float32(float64(distortionBase[1]) / screenSizeY)
 
 		if -tLS.X()+bRS.X() > wS {
 			scaleX = float64(wS / (-tLS.X() + bRS.X()))
