@@ -676,22 +676,28 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	}
 }
 
-func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHide map[string]uint8, parent reflect.Value, currentSField reflect.StructField) bool {
+func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, hidden map[string]uint8, parent reflect.Value, currentSField reflect.StructField) bool {
 	if _, ok := currentSField.Tag.Lookup("vector"); ok {
 		lName, ok1 := currentSField.Tag.Lookup("left")
 		rName, ok2 := currentSField.Tag.Lookup("right")
 		if ok1 && ok2 {
-			forceHide[lName] = 1
-			forceHide[rName] = 1
+			hidden[lName] = 1
+			hidden[rName] = 1
 		}
 	}
 
-	if forceHide[currentSField.Name] > 0 {
+	if hidden[currentSField.Name] > 0 {
 		return true
 	}
 
 	if s, ok := currentSField.Tag.Lookup("showif"); ok {
 		s1 := strings.Split(s, "=")
+
+		// Show only if dependant field is not hidden
+		if hidden[s1[0]] == 1 {
+			hidden[currentSField.Name] = 1
+			return true
+		}
 
 		if s1[1] != "!" {
 			fld := parent.FieldByName(s1[0])
@@ -699,7 +705,7 @@ func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHid
 			cF := fld.String()
 			if fld.CanInt() {
 				cF = strconv.Itoa(int(fld.Int()))
-			} else if fld.Type().String() == "bool" {
+			} else if fld.Kind() == reflect.Bool {
 				cF = "false"
 				if fld.Bool() {
 					cF = "true"
@@ -722,6 +728,7 @@ func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHid
 			}
 
 			if !found {
+				hidden[currentSField.Name] = 1
 				return true
 			}
 
