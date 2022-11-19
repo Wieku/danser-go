@@ -134,7 +134,7 @@ func (body *Body) DrawBase(head, tail float64, baseProjView mgl32.Mat4) {
 	body.ensureFBO(baseProjView)
 
 	// Don't render to nonexistent framebuffer
-	if body.framebuffer == nil {
+	if body.framebuffer == nil || body.disposed {
 		return
 	}
 
@@ -203,6 +203,9 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	distortions := settings.Objects.Sliders.Distortions
 
+	tsX := float32(-1)
+	tsY := float32(1)
+
 	if distortions.Enabled {
 		distortionBase := [2]int32{int32(distortions.ViewportSize), int32(distortions.ViewportSize)}
 
@@ -210,8 +213,10 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 			gl.GetIntegerv(gl.MAX_VIEWPORT_DIMS, &distortionBase[0])
 		}
 
-		tLS := baseProjView.Mul4x1(mgl32.Vec4{body.topLeft.X, body.topLeft.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
-		bRS := baseProjView.Mul4x1(mgl32.Vec4{body.bottomRight.X, body.bottomRight.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+		r2 := body.radius * 1.15
+
+		tLS := baseProjView.Mul4x1(mgl32.Vec4{body.topLeft.X - r2, body.topLeft.Y - r2, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
+		bRS := baseProjView.Mul4x1(mgl32.Vec4{body.bottomRight.X + r2, math32.Floor(body.bottomRight.Y + r2), 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 
 		screenSizeX, screenSizeY := settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()
 
@@ -227,13 +232,18 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 			scaleX = float64(wS / (-tLS.X() + bRS.X()))
 		}
 
-		if bRS.Y() < -hS {
-			scaleY = float64(-hS / bRS.Y())
+		ts2 := math32.Min(tLS.Y(), 1.0)
+
+		if bRS.Y()-ts2 < -hS {
+			scaleY = float64(-hS / (bRS.Y() - ts2))
 		}
+
+		tsX = math32.Max(tLS.X(), 0)*2 - 1
+		tsY = ts2*2 - 1
 	}
 
-	tS := invProjView.Mul4x1(mgl32.Vec4{-1, 1, 0.0, 1.0})
-	body.distortionMatrix = mgl32.Translate3D(tS.X()*float32(scaleX), tS.Y()*float32(scaleY), 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(-tS.X(), -tS.Y(), 0))
+	tS := invProjView.Mul4x1(mgl32.Vec4{tsX, tsY, 0.0, 1.0})
+	body.distortionMatrix = mgl32.Translate3D(tS.X(), tS.Y(), 0).Mul4(mgl32.Scale3D(float32(scaleX), float32(scaleY), 1)).Mul4(mgl32.Translate3D(-tS.X(), -tS.Y(), 0))
 
 	multiplierX := float32(1.0)
 	multiplierY := float32(1.0)
@@ -259,10 +269,6 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	topLeftScreenE.X = math32.Max(tLW.X(), body.topLeft.X-body.radius*float32(settings.Audio.BeatScale))
 	topLeftScreenE.Y = math32.Max(tLW.Y(), body.topLeft.Y-body.radius*float32(settings.Audio.BeatScale))
-
-	// make upper left part of fbo bigger to fit distorted sliders
-	topLeftScreenE.X = (topLeftScreenE.X-tLW.X())*float32(scaleX) + tLW.X()
-	topLeftScreenE.Y = (topLeftScreenE.Y-tLW.Y())*float32(scaleY) + tLW.Y()
 
 	bottomRightScreenE.X = math32.Min(bRW.X(), body.bottomRight.X+body.radius*float32(settings.Audio.BeatScale))
 	bottomRightScreenE.Y = math32.Min(bRW.Y(), body.bottomRight.Y+body.radius*float32(settings.Audio.BeatScale))
