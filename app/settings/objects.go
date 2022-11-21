@@ -16,17 +16,13 @@ func initObjects() *objects {
 			DrawSliderFollowCircle: true,
 			DrawScorePoints:        true,
 			SliderMerge:            false,
+			BorderWidth:            1.0,
 			Distortions: &distortions{
 				Enabled:             true,
 				ViewportSize:        0,
 				UseCustomResolution: false,
 				CustomResolutionX:   1920,
 				CustomResolutionY:   1080,
-			},
-			BorderWidth: 1.0,
-			Quality: &quality{
-				CircleLevelOfDetail: 50,
-				PathLevelOfDetail:   50,
 			},
 			Snaking: &snaking{
 				In:                 true,
@@ -119,9 +115,8 @@ type sliders struct {
 	DrawSliderFollowCircle bool
 	DrawScorePoints        bool //true
 	SliderMerge            bool
-	Distortions            *distortions `liveedit:"false"`
 	BorderWidth            float64      `max:"9"`
-	Quality                *quality
+	Distortions            *distortions `liveedit:"false"`
 	Snaking                *snaking
 }
 
@@ -132,14 +127,6 @@ type distortions struct {
 	customResolution    string `showif:"UseCustomResolution=true" vector:"true" left:"CustomResolutionX" right:"CustomResolutionY"`
 	CustomResolutionX   int    `min:"1" max:"30720"`
 	CustomResolutionY   int    `min:"1" max:"17280"`
-}
-
-type quality struct {
-	// Quality of slider unit circle, 50 means that circle will have 50 sides
-	CircleLevelOfDetail int64 //30, number of triangles in a circle
-
-	//Quality of slider path, 50 means that unit circle will be placed every 2 osu!pixels (100/PathLevelOfDetail)
-	PathLevelOfDetail int64 //50, int(pixelLength*(PathLOD/100)) => number of slider path points
 }
 
 type snaking struct {
