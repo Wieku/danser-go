@@ -107,7 +107,7 @@ func NewSlider(data []string) *Slider {
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
 	slider.RepeatCount, _ = strconv.ParseInt(data[6], 10, 64)
 
-	slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
+	//slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
 	slider.RepeatCount = mutils.Min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
 
 	list := strings.Split(data[5], "|")
@@ -123,9 +123,9 @@ func NewSlider(data []string) *Slider {
 		totalControlDistance += points[i].Dst(points[i-1])
 	}
 
-	if totalControlDistance >= 2*maxPathLength { // Skip sliders which are too computationally expensive
-		return nil
-	}
+	//if totalControlDistance >= 2*maxPathLength { // Skip sliders which are too computationally expensive
+	//	return nil
+	//}
 
 	slider.multiCurve = curves.NewMultiCurveT(list[0], points, slider.pixelLength)
 
@@ -1079,6 +1079,10 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	}
 
 	return false
+}
+
+func (slider *Slider) Finalize() {
+	slider.body.Dispose()
 }
 
 func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {
