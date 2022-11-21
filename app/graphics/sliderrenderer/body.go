@@ -54,7 +54,6 @@ type Body struct {
 
 	topLeft     vector.Vector2f
 	bottomRight vector.Vector2f
-	points      []vector.Vector2f
 
 	radius float32
 
