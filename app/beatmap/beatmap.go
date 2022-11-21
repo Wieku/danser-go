@@ -4,6 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"golang.org/x/exp/slices"
 	"math"
 	"strconv"
 	"strings"
@@ -53,6 +54,7 @@ type BeatMap struct {
 	HitObjects []objects.IHitObject
 	Pauses     []*Pause
 	Queue      []objects.IHitObject
+	processed  []objects.IHitObject
 	Version    int
 
 	ARSpecified bool
@@ -75,6 +77,7 @@ func NewBeatMap() *BeatMap {
 
 func (beatMap *BeatMap) Reset() {
 	beatMap.Queue = beatMap.GetObjectsCopy()
+	beatMap.processed = make([]objects.IHitObject, 0)
 	beatMap.Timings.Reset()
 
 	for _, o := range beatMap.HitObjects {
@@ -90,22 +93,43 @@ func (beatMap *BeatMap) Clear() {
 func (beatMap *BeatMap) Update(time float64) {
 	beatMap.Timings.Update(time)
 
+	toRemove := 0
+
 	for i := 0; i < len(beatMap.Queue); i++ {
 		g := beatMap.Queue[i]
 		if g.GetStartTime()-beatMap.Diff.Preempt > time {
 			break
 		}
 
+		toRemove++
+	}
+
+	if toRemove > 0 {
+		beatMap.processed = append(beatMap.processed, beatMap.Queue[:toRemove]...)
+
+		slices.SortFunc(beatMap.processed, func(a, b objects.IHitObject) bool {
+			return a.GetEndTime() < b.GetEndTime()
+		})
+
+		beatMap.Queue = beatMap.Queue[toRemove:]
+	}
+
+	toRemove2 := 0
+
+	for i := 0; i < len(beatMap.processed); i++ {
+		g := beatMap.processed[i]
+
 		g.Update(time)
 
 		if time >= g.GetEndTime()+difficulty.HitFadeOut+float64(beatMap.Diff.Hit50) {
-			if i < len(beatMap.Queue)-1 {
-				beatMap.Queue = append(beatMap.Queue[:i], beatMap.Queue[i+1:]...)
-			} else if i < len(beatMap.Queue) {
-				beatMap.Queue = beatMap.Queue[:i]
-			}
-			i--
+			g.Finalize()
+
+			toRemove2++
 		}
+	}
+
+	if toRemove2 > 0 {
+		beatMap.processed = beatMap.processed[toRemove:]
 	}
 }
 

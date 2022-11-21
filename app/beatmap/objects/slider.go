@@ -1067,18 +1067,7 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
-	if time >= slider.EndTime && slider.fade.GetValue() <= 0.001 {
-		if slider.body != nil {
-			//HACKHACKHACK: for some reason disposing FBOs with VSync causes 30ms frame skips...
-			if !settings.Graphics.VSync {
-				slider.body.Dispose()
-			}
-		}
-
-		return true
-	}
-
-	return false
+	return time >= slider.EndTime && slider.fade.GetValue() <= 0.001
 }
 
 func (slider *Slider) Finalize() {
