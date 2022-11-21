@@ -84,7 +84,7 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 	var currentSprite string
 	var commands []string
 
-	variables := make(map[string]string)
+	variables := make([][2]string, 0)
 	hasVideo := false
 	hasAudio := false
 
@@ -121,11 +121,12 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 				}
 			case "256", "Variables":
 				split := strings.Split(line, "=")
-				variables[split[0]] = split[1]
+
+				variables = append(variables, [2]string{split[0], split[1]})
 			case "32", "Events":
 				if strings.ContainsRune(line, '$') {
-					for k, v := range variables {
-						line = strings.Replace(line, k, v, -1)
+					for _, v := range variables {
+						line = strings.Replace(line, v[0], v[1], -1)
 					}
 				}
 
