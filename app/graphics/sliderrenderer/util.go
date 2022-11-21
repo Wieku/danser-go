@@ -5,27 +5,45 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
-func createUnitCircle(segments int) []float32 {
-	points := make([]vector.Vector2f, segments+1)
+func createUnitCircle(segments int) ([]float32, []uint16) {
+	points := make([]float32, (segments+1)*3)
+	indices := make([]uint16, segments*3)
 
-	for i := 0; i <= segments; i++ {
-		points[i] = vector.NewVec2fRad(float32(i)/float32(segments)*2*math32.Pi, 1)
+	for i := 0; i < segments; i++ {
+		p := vector.NewVec2fRad(float32(i)/float32(segments)*2*math32.Pi, 1)
+
+		j := i * 3
+
+		points[j+3], points[j+4], points[j+5] = p.X, p.Y, 1.0
+
+		indices[j], indices[j+1], indices[j+2] = 0, uint16(i+1), uint16(i+2)
+
+		if i == segments-1 { // loop
+			indices[j+2] = 1
+		}
 	}
 
-	unitCircle := make([]float32, 9*segments)
+	return points, indices
+}
 
-	base := 0
-	for j := 1; j < len(points); j++ {
-		p1, p2 := points[j-1], points[j]
+func createUnitLine() ([]float32, []uint16) {
+	vertices := make([]float32, 3*6)
+	indices := make([]uint16, 12)
 
-		unitCircle[base], unitCircle[base+1], unitCircle[base+2] = p1.X, p1.Y, 1.0
+	vertices[0], vertices[1], vertices[2] = 0, 1, 1
+	vertices[3], vertices[4], vertices[5] = 1, 1, 1
 
-		base += 3
+	vertices[6], vertices[7], vertices[8] = 0, 0, 0
+	vertices[9], vertices[10], vertices[11] = 1, 0, 0
 
-		unitCircle[base], unitCircle[base+1], unitCircle[base+2] = p2.X, p2.Y, 1.0
+	vertices[12], vertices[13], vertices[14] = 0, -1, 1
+	vertices[15], vertices[16], vertices[17] = 1, -1, 1
 
-		base += 6
-	}
+	indices[0], indices[1], indices[2] = 2, 0, 1
+	indices[3], indices[4], indices[5] = 1, 3, 2
 
-	return unitCircle
+	indices[6], indices[7], indices[8] = 4, 2, 3
+	indices[9], indices[10], indices[11] = 3, 5, 4
+
+	return vertices, indices
 }
