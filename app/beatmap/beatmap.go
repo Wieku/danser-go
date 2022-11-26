@@ -142,7 +142,7 @@ func (beatMap *BeatMap) GetObjectsCopy() []objects.IHitObject {
 
 func (beatMap *BeatMap) ParsePoint(point string) {
 	line := strings.Split(point, ",")
-	pointTime, _ := strconv.ParseInt(line[0], 10, 64)
+	pointTime, _ := strconv.ParseFloat(line[0], 64)
 	bpm, _ := strconv.ParseFloat(line[1], 64)
 
 	if !math.IsNaN(bpm) && bpm >= 0 {
@@ -190,7 +190,7 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 		omitFirstBarLine = (ki & 8) > 0
 	}
 
-	beatMap.Timings.AddPoint(float64(pointTime), bpm, sampleSet, sampleIndex, sampleVolume, signature, inherited, kiai, omitFirstBarLine)
+	beatMap.Timings.AddPoint(pointTime, bpm, sampleSet, sampleIndex, sampleVolume, signature, inherited, kiai, omitFirstBarLine)
 }
 
 func (beatMap *BeatMap) FinalizePoints() {
