@@ -41,7 +41,7 @@ type TickPoint struct {
 	IsReverse bool
 }
 
-var easeBezier = curves.NewMultiCurve("B", []vector.Vector2f{{X: 0, Y: 0}, {X: 0.1, Y: 1}, {X: 0.5, Y: 0.5}, {X: 1, Y: 1}})
+var easeBezier = curves.NewMultiCurve([]curves.CurveDef{{CurveType: curves.CBezier, Points: []vector.Vector2f{{X: 0, Y: 0}, {X: 0.1, Y: 1}, {X: 0.5, Y: 0.5}, {X: 1, Y: 1}}}})
 
 var snakeEase = easing.Easing(func(f float64) float64 {
 	return float64(easeBezier.PointAt(float32(f)).Y)
@@ -110,24 +110,10 @@ func NewSlider(data []string) *Slider {
 	//slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
 	slider.RepeatCount = mutils.Min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
 
-	list := strings.Split(data[5], "|")
-	points := []vector.Vector2f{slider.StartPosRaw}
-
-	var totalControlDistance float32
-
-	for i := 1; i < len(list); i++ {
-		list2 := strings.Split(list[i], ":")
-		x, _ := strconv.ParseFloat(list2[0], 32)
-		y, _ := strconv.ParseFloat(list2[1], 32)
-		points = append(points, vector.NewVec2f(float32(x), float32(y)))
-		totalControlDistance += points[i].Dst(points[i-1])
+	slider.multiCurve = slider.parseCurve(data[5])
+	if slider.multiCurve == nil {
+		return nil
 	}
-
-	//if totalControlDistance >= 2*maxPathLength { // Skip sliders which are too computationally expensive
-	//	return nil
-	//}
-
-	slider.multiCurve = curves.NewMultiCurveT(list[0], points, slider.pixelLength)
 
 	slider.EndTime = slider.StartTime
 	slider.EndPosRaw = slider.multiCurve.PointAt(1.0)
@@ -179,6 +165,79 @@ func NewSlider(data []string) *Slider {
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
 	return slider
+}
+
+func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
+	list := strings.Split(curveData, "|")
+
+	var defs []curves.CurveDef
+
+	cDef := curves.CurveDef{
+		CurveType: tryGetType(list[0]),
+		Points:    []vector.Vector2f{slider.StartPosRaw},
+	}
+
+	nextType := curves.CType(-1)
+
+	for i := 1; i < len(list); i++ {
+		currType := tryGetType(list[i])
+		if currType == -1 {
+			list2 := strings.Split(list[i], ":")
+			x, _ := strconv.ParseFloat(list2[0], 32)
+			y, _ := strconv.ParseFloat(list2[1], 32)
+
+			vec := vector.NewVec2f(float32(x), float32(y))
+
+			cDef.Points = append(cDef.Points, vec)
+
+			if nextType > -1 {
+				defs = append(defs, cDef)
+
+				cDef = curves.CurveDef{
+					CurveType: nextType,
+					Points:    []vector.Vector2f{vec},
+				}
+			}
+		}
+
+		nextType = currType
+	}
+
+	if len(cDef.Points) > 1 { // Lazer's multi-type slider has 1 point line
+		defs = append(defs, cDef)
+	}
+
+	// validation
+	for _, def := range defs {
+		if def.CurveType == curves.CBezier {
+			var controlDistance float32
+
+			for i := 1; i < len(def.Points); i++ {
+				controlDistance += def.Points[i].Dst(def.Points[i-1])
+			}
+
+			if controlDistance >= 2*maxPathLength { // Skip sliders which are too computationally expensive
+				return nil
+			}
+		}
+	}
+
+	return curves.NewMultiCurveT(defs, slider.pixelLength)
+}
+
+func tryGetType(str string) curves.CType {
+	switch str {
+	case "P":
+		return curves.CCirArc
+	case "L":
+		return curves.CLine
+	case "B":
+		return curves.CBezier
+	case "C":
+		return curves.CCatmull
+	default: // It's a point
+		return -1
+	}
 }
 
 func (slider *Slider) GetLength() float32 {

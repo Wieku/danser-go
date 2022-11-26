@@ -64,7 +64,7 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 		points = append(points, mover.modifyPos(mover.endTime, end.GetType() == objects.SPINNER, endPos))
 	}
 
-	mover.curve = curves.NewMultiCurve("L", points)
+	mover.curve = curves.NewMultiCurve([]curves.CurveDef{{CurveType: curves.CLine, Points: points}})
 
 	return 2
 }

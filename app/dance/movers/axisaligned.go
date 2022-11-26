@@ -36,7 +36,7 @@ func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 		midP = vector.NewVec2f(endPos.X, startPos.Y)
 	}
 
-	mover.curve = curves.NewMultiCurve("L", []vector.Vector2f{startPos, midP, endPos})
+	mover.curve = curves.NewMultiCurve([]curves.CurveDef{{CurveType: curves.CLine, Points: []vector.Vector2f{startPos, midP, endPos}}})
 
 	return 2
 }
