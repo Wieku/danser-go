@@ -726,6 +726,7 @@ func (l *launcher) drawMain() {
 	imgui.PopFont()
 
 	if imgui.IsMouseClicked(0) && !l.danserRunning {
+		platform.StopProgress(l.win)
 		l.showProgressBar = false
 		l.recordStatus = ""
 		l.recordProgress = 0
@@ -1688,6 +1689,8 @@ func (l *launcher) startDanser() {
 			if strings.Contains(line, "Starting encoding!") {
 				l.encodeInProgress = true
 				l.encodeStart = time.Now()
+
+				platform.StartProgress(l.win)
 			}
 
 			if strings.Contains(line, "Finishing rendering") {
@@ -1729,6 +1732,7 @@ func (l *launcher) startDanser() {
 				at, _ := strconv.Atoi(spl[:len(spl)-1])
 
 				l.recordProgress = float32(at) / 100
+				platform.SetProgress(l.win, at, 100)
 			}
 		}
 
@@ -1777,6 +1781,7 @@ func (l *launcher) danserCleanup(success bool) {
 	l.danserCmd = nil
 
 	if !success {
+		platform.StopProgress(l.win)
 		l.recordStatus = ""
 		l.showProgressBar = false
 	}
