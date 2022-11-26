@@ -43,6 +43,7 @@ import (
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
@@ -387,8 +388,10 @@ func (l *launcher) startGLFW() {
 			if l.danserRunning {
 				return
 			}
-			
-			if len(names) > 1 {
+
+			if strings.HasSuffix(names[0], ".osz") {
+				l.loadOSZs(names)
+			} else if len(names) > 1 {
 				l.trySelectReplaysFromPaths(names)
 			} else {
 				l.trySelectReplayFromPath(names[0])
@@ -483,10 +486,7 @@ func (l *launcher) loadBeatmaps() {
 		//database.Close()
 	}
 
-	setupWatcher(settings.General.GetSongsDir(), func(event fsnotify.Event) {
-		l.showBeatmapAlert = qpc.GetMilliTimeF() + 3000 //Wait for the last map to load on osu side
-		l.beatmapDirUpdated = true
-	})
+	l.setupWatcher()
 
 	l.mapsLoaded = true
 }
@@ -743,23 +743,7 @@ func (l *launcher) drawMain() {
 		l.beatmapDirUpdated = false
 
 		if reload {
-			goroutines.RunOS(func() {
-				l.mapsLoaded = false
-				l.loadBeatmaps()
-
-				if l.bld.currentMap != nil {
-					for _, b := range l.beatmaps {
-						if b.MD5 == l.bld.currentMap.MD5 {
-							l.bld.currentMap = b
-							break
-						}
-					}
-				}
-
-				if l.selectWindow != nil {
-					l.selectWindow.setBeatmaps(l.beatmaps)
-				}
-			})
+			l.reloadMaps(nil)
 		}
 	}
 }
@@ -1790,4 +1774,72 @@ func (l *launcher) danserCleanup(success bool) {
 func (l *launcher) openPopup(p iPopup) {
 	p.open()
 	l.popupStack = append(l.popupStack, p)
+}
+
+func (l *launcher) loadOSZs(names []string) {
+	closeWatcher()
+	l.beatmapDirUpdated = false
+
+	reload := false
+
+	for _, name := range names {
+		if strings.HasSuffix(name, ".osz") {
+			fileName := filepath.Base(name)
+
+			err := files.MoveFile(name, filepath.Join(settings.General.GetSongsDir(), fileName))
+			if err != nil {
+				showMessage(mError, "Failed to move \"%s\" to Songs folder: %s", name, err)
+			} else {
+				reload = true
+			}
+		}
+	}
+
+	if reload {
+		l.reloadMaps(func() {
+			if l.selectWindow == nil {
+				l.selectWindow = newSongSelectPopup(l.bld, l.beatmaps)
+			}
+
+			if l.bld.knockoutReplays == nil && l.bld.currentReplay == nil {
+				l.selectWindow.selectNewest()
+			}
+		})
+	} else {
+		l.setupWatcher()
+	}
+}
+
+func (l *launcher) reloadMaps(after func()) {
+	goroutines.RunOS(func() {
+		l.mapsLoaded = false
+		l.loadBeatmaps()
+
+		// Add to main thread scheduler to avoid race conditions
+		mainthread.CallNonBlock(func() {
+			if l.bld.currentMap != nil {
+				for _, b := range l.beatmaps {
+					if b.MD5 == l.bld.currentMap.MD5 {
+						l.bld.currentMap = b
+						break
+					}
+				}
+			}
+
+			if l.selectWindow != nil {
+				l.selectWindow.setBeatmaps(l.beatmaps)
+			}
+
+			if after != nil {
+				after()
+			}
+		})
+	})
+}
+
+func (l *launcher) setupWatcher() {
+	setupWatcher(settings.General.GetSongsDir(), func(event fsnotify.Event) {
+		l.showBeatmapAlert = qpc.GetMilliTimeF() + 3000 //Wait for the last map to load on osu side
+		l.beatmapDirUpdated = true
+	})
 }
