@@ -678,7 +678,8 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
 	subSet := set.cursors[cursor]
 
-	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())+subSet.player.diff.Hit50+20 {
+	// Let's believe in hp system. 1ms just in case for slider calculation inconsistencies
+	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())-1 /*+subSet.player.diff.Hit50+20*/ {
 		subSet.forceFail = true
 		subSet.hp.Increase(-10000, true)
 	}
