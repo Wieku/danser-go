@@ -594,29 +594,49 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 }
 
 func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficultyPlayer) ClickAction {
-	if _, ok := object.(*Circle); ok {
-		index := -1
+	if !player.cursor.IsAutoplay && !player.cursor.IsPlayer {
+		if _, ok := object.(*Circle); ok {
+			index := -1
 
-		for i, g := range set.processed {
-			if g == object {
-				index = i
-			}
-		}
-
-		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
-			return Ignored //don't shake the stacks
-		}
-	}
-
-	for _, g := range set.processed {
-		if !g.IsHit(player) {
-			if g.GetNumber() != object.GetNumber() {
-				if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
-					return Shake
+			for i, g := range set.processed {
+				if g == object {
+					index = i
 				}
-			} else {
-				break
 			}
+
+			if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
+				return Ignored //don't shake the stacks
+			}
+		}
+
+		for _, g := range set.processed {
+			if !g.IsHit(player) {
+				if g.GetNumber() != object.GetNumber() {
+					if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
+						return Shake
+					}
+				} else {
+					break
+				}
+			}
+		}
+	} else {
+		cObj := set.beatMap.HitObjects[object.GetNumber()]
+
+		var lastObj HitObject
+		var lastBObj objects.IHitObject
+
+		for _, g := range set.processed {
+			fObj := set.beatMap.HitObjects[g.GetNumber()]
+
+			if fObj.GetType() == objects.CIRCLE && fObj.GetStartTime() < cObj.GetStartTime() {
+				lastObj = g
+				lastBObj = fObj
+			}
+		}
+
+		if lastBObj != nil && (!lastObj.IsHit(player) && float64(time) < lastBObj.GetStartTime()) {
+			return Shake
 		}
 	}
 
