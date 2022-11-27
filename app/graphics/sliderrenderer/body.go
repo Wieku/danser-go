@@ -284,8 +284,19 @@ func (body *Body) DrawBase(headProgress, tailProgress float64, baseProjView mgl3
 		return
 	}
 
-	headLength := float32(math.Ceil(mutils.ClampF(headProgress, 0.0, 1.0) * float64(body.totalLength)))
-	tailLength := float32(math.Floor(mutils.ClampF(tailProgress, 0.0, 1.0) * float64(body.totalLength)))
+	headLength := mutils.ClampF(float32(headProgress), 0.0, 1.0) * body.totalLength
+	tailLength := mutils.ClampF(float32(tailProgress), 0.0, 1.0) * body.totalLength
+
+	if !settings.RECORD {
+		// In watch mode re-render on changes bigger than 1 o!px in any direction to conserve FPS a bit
+		// As a result very slow sliders may look choppy but whatever
+
+		headLength = math32.Min(math32.Ceil(headLength), body.totalLength) // Make sure snake-out doesn't go outside the path
+
+		if tailLength != body.totalLength { // Don't clamp at snake-in end to have the spot-on position
+			tailLength = math32.Floor(tailLength)
+		}
+	}
 
 	if headLength > tailLength {
 		headLength, tailLength = tailLength, headLength
