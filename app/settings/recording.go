@@ -102,7 +102,7 @@ func initRecording() *recording {
 }
 
 type recording struct {
-	resolution          string             `vector:"true" left:"FrameWidth" right:"FrameHeight"`
+	resolution          string             `vector:"true" combo:"640x360|360p,854x480|480p,1280x720|720p (HD),1920x1080|1080p (FullHD),2560x1440|1440p (WQHD),3840x2160|2160p (4K),custom" left:"FrameWidth" right:"FrameHeight"`
 	FrameWidth          int                `min:"1" max:"30720"`
 	FrameHeight         int                `min:"1" max:"17280"`
 	FPS                 int                `label:"FPS (PLEASE READ TOOLTIP)" string:"true" min:"1" max:"10727" tooltip:"IMPORTANT: If you plan to have a \"high fps\" video, use Motion Blur below instead of setting FPS to absurd numbers. Setting the value too high will result in a broken video!"`

@@ -768,7 +768,7 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 }
 
 func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
-	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, -1, d, func() {
+	drawBox := func() {
 		contentAvail := imgui.ContentRegionAvail().X
 
 		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(contentAvail, 0), contentAvail) {
@@ -802,6 +802,82 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 
 			imgui.EndTable()
 		}
+	}
+
+	cSpec, okC := d.Tag.Lookup("combo")
+
+	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, -1, d, func() {
+		imgui.SetNextItemWidth(-1)
+
+		if okC {
+			baseL := l.Int()
+			baseR := r.Int()
+
+			var values [][2]int
+			var labels []string
+
+			lb := fmt.Sprintf("%dx%d", baseL, baseR)
+
+			hasCustom := false
+			normalFound := false
+
+			for _, s := range strings.Split(cSpec, ",") {
+				if s == "custom" {
+					hasCustom = true
+					continue
+				}
+
+				splt := strings.Split(s, "|")
+				splt2 := strings.Split(splt[0], "x")
+
+				cL, _ := strconv.Atoi(splt2[0])
+				cR, _ := strconv.Atoi(splt2[1])
+
+				optionLabel := fmt.Sprintf("%dx%d", cL, cR)
+				if len(splt) > 1 {
+					optionLabel = splt[1]
+				}
+
+				values = append(values, [2]int{cL, cR})
+				labels = append(labels, optionLabel)
+
+				if int(baseL) == cL && int(baseR) == cR {
+					lb = optionLabel
+					normalFound = true
+				}
+			}
+
+			jsonPath := jsonPath1 + ":" + jsonPath2
+
+			if imgui.BeginCombo("##combo"+jsonPath, lb) {
+				justOpened := imgui.IsWindowAppearing()
+				editor.blockSearch = true
+
+				for i, lbl := range labels {
+					if selectableFocus(lbl+jsonPath, lbl == lb, justOpened) {
+						l.SetInt(int64(values[i][0]))
+						r.SetInt(int64(values[i][1]))
+						editor.search()
+					}
+				}
+
+				if hasCustom {
+					if !normalFound {
+						pad := vec2(imgui.CurrentStyle().FramePadding().X, imgui.CurrentStyle().ItemSpacing().Y*0.5)
+						scPos := imgui.CursorScreenPos().Minus(pad)
+
+						imgui.WindowDrawList().AddRectFilled(scPos, scPos.Plus(vec2(imgui.ContentRegionAvail().X, imgui.FrameHeight()).Plus(pad.Times(2))), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorHeader)))
+					}
+
+					drawBox()
+				}
+
+				imgui.EndCombo()
+			}
+		} else {
+			drawBox()
+		}
+
 	})
 }
 
