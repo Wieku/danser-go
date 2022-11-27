@@ -968,7 +968,7 @@ func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
 		e.Arm(isHit, time)
 	}
 
-	if isHit {
+	if isHit && (index == 0 || index == slider.RepeatCount || !slider.IsRetarded()) {
 		slider.PlayEdgeSample(index)
 	}
 }
