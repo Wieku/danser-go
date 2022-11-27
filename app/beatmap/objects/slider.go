@@ -22,6 +22,11 @@ import (
 	"strings"
 )
 
+const (
+	maxPathLength = 100_000_000 // Sanity limits, XNOR reaches 10M pixel length so 100M should be enough
+	maxRepeats    = 10_000      // Same limit as osu!
+)
+
 type PathLine struct {
 	Time1 int64
 	Time2 int64
@@ -34,9 +39,10 @@ type TickPoint struct {
 	fade      *animation.Glider
 	scale     *animation.Glider
 	IsReverse bool
+	EdgeIndex int
 }
 
-var easeBezier = curves.NewMultiCurve("B", []vector.Vector2f{{X: 0, Y: 0}, {X: 0.1, Y: 1}, {X: 0.5, Y: 0.5}, {X: 1, Y: 1}})
+var easeBezier = curves.NewMultiCurve([]curves.CurveDef{{CurveType: curves.CBezier, Points: []vector.Vector2f{{X: 0, Y: 0}, {X: 0.1, Y: 1}, {X: 0.5, Y: 0.5}, {X: 1, Y: 1}}}})
 
 var snakeEase = easing.Easing(func(f float64) float64 {
 	return float64(easeBezier.PointAt(float32(f)).Y)
@@ -51,7 +57,7 @@ type Slider struct {
 	TPoint      TimingPoint
 	pixelLength float64
 	partLen     float64
-	RepeatCount int64
+	RepeatCount int
 
 	sampleSets   []int
 	additionSets []int
@@ -90,6 +96,8 @@ type Slider struct {
 	spanDuration     float64
 
 	updatedAtLeastOnce bool
+
+	lastScorePoint int
 }
 
 func NewSlider(data []string) *Slider {
@@ -100,23 +108,15 @@ func NewSlider(data []string) *Slider {
 	slider.PositionDelegate = slider.PositionAt
 
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
-	slider.RepeatCount, _ = strconv.ParseInt(data[6], 10, 64)
+	slider.RepeatCount, _ = strconv.Atoi(data[6])
 
-	// Sanity limits, XNOR reaches 10M pixel length so 100M should be enough
-	slider.pixelLength = math.Min(slider.pixelLength, 100_000_000)
-	slider.RepeatCount = mutils.Min(slider.RepeatCount, 10_000) // The same limit as in Lazer
+	slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
+	slider.RepeatCount = mutils.Min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
 
-	list := strings.Split(data[5], "|")
-	points := []vector.Vector2f{slider.StartPosRaw}
-
-	for i := 1; i < len(list); i++ {
-		list2 := strings.Split(list[i], ":")
-		x, _ := strconv.ParseFloat(list2[0], 32)
-		y, _ := strconv.ParseFloat(list2[1], 32)
-		points = append(points, vector.NewVec2f(float32(x), float32(y)))
+	slider.multiCurve = slider.parseCurve(data[5])
+	if slider.multiCurve == nil {
+		return nil
 	}
-
-	slider.multiCurve = curves.NewMultiCurveT(list[0], points, slider.pixelLength)
 
 	slider.EndTime = slider.StartTime
 	slider.EndPosRaw = slider.multiCurve.PointAt(1.0)
@@ -168,6 +168,79 @@ func NewSlider(data []string) *Slider {
 	slider.sliderSnakeHead = animation.NewGlider(0)
 
 	return slider
+}
+
+func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
+	list := strings.Split(curveData, "|")
+
+	var defs []curves.CurveDef
+
+	cDef := curves.CurveDef{
+		CurveType: tryGetType(list[0]),
+		Points:    []vector.Vector2f{slider.StartPosRaw},
+	}
+
+	nextType := curves.CType(-1)
+
+	for i := 1; i < len(list); i++ {
+		currType := tryGetType(list[i])
+		if currType == -1 {
+			list2 := strings.Split(list[i], ":")
+			x, _ := strconv.ParseFloat(list2[0], 32)
+			y, _ := strconv.ParseFloat(list2[1], 32)
+
+			vec := vector.NewVec2f(float32(x), float32(y))
+
+			cDef.Points = append(cDef.Points, vec)
+
+			if nextType > -1 {
+				defs = append(defs, cDef)
+
+				cDef = curves.CurveDef{
+					CurveType: nextType,
+					Points:    []vector.Vector2f{vec},
+				}
+			}
+		}
+
+		nextType = currType
+	}
+
+	if len(cDef.Points) > 1 || len(defs) == 0 { // Lazer's multi-type slider has 1 point line
+		defs = append(defs, cDef)
+	}
+
+	// validation
+	for _, def := range defs {
+		if def.CurveType == curves.CBezier {
+			var controlDistance float32
+
+			for i := 1; i < len(def.Points); i++ {
+				controlDistance += def.Points[i].Dst(def.Points[i-1])
+			}
+
+			if controlDistance >= 2*maxPathLength { // Skip sliders which are too computationally expensive
+				return nil
+			}
+		}
+	}
+
+	return curves.NewMultiCurveT(defs, slider.pixelLength)
+}
+
+func tryGetType(str string) curves.CType {
+	switch str {
+	case "P":
+		return curves.CCirArc
+	case "L":
+		return curves.CLine
+	case "B":
+		return curves.CBezier
+	case "C":
+		return curves.CCatmull
+	default: // It's a point
+		return -1
+	}
 }
 
 func (slider *Slider) GetLength() float32 {
@@ -361,7 +434,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	scoringDistance := 0.0
 
 	// Stable-like score point processing, ugly AF.
-	for i := int64(0); i < slider.RepeatCount; i++ {
+	for i := 0; i < slider.RepeatCount; i++ {
 		distanceToEnd := float64(slider.multiCurve.GetLength())
 		skipTick := nanTimingPoint // NaN SV acts like 1.0x SV, but doesn't spawn slider ticks
 
@@ -409,7 +482,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 
 				scoreTime := slider.StartTime + math.Floor(float64(float32(scoringLengthTotal)*1000)/velocity)
 
-				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false}
+				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false, -1}
 				slider.TickPoints = append(slider.TickPoints, point)
 				slider.ScorePoints = append(slider.ScorePoints, point)
 			}
@@ -418,7 +491,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 		scoringLengthTotal += scoringDistance
 
 		scoreTime := slider.StartTime + math.Floor((float64(float32(scoringLengthTotal))/velocity)*1000)
-		point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), nil, nil, true}
+		point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), nil, nil, true, i + 1}
 
 		slider.TickReverse = append(slider.TickReverse, point)
 		slider.ScorePoints = append(slider.ScorePoints, point)
@@ -509,7 +582,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.follower = sprite.NewAnimation(followerFrames, 1000.0/float64(len(followerFrames)), true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 	slider.follower.SetAlpha(0.0)
 
-	for i := int64(1); i <= slider.RepeatCount; i++ {
+	for i := 1; i <= slider.RepeatCount; i++ {
 		circleTime := slider.StartTime + math.Floor(slider.partLen*float64(i))
 
 		appearTime := slider.StartTime - math.Floor(slider.diff.Preempt)
@@ -568,36 +641,31 @@ func (slider *Slider) Update(time float64) bool {
 	}
 
 	if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-		for i := int64(0); i <= slider.RepeatCount; i++ {
-			edgeTime := slider.StartTime + math.Floor(float64(i)*slider.partLen)
+		if slider.lastTime < slider.StartTime && time >= slider.StartTime {
+			slider.HitEdge(0, time, true)
+			slider.InitSlide(slider.StartTime)
+		}
 
-			if slider.lastTime < edgeTime && time >= edgeTime {
-				slider.HitEdge(int(i), time, true)
+		if slider.lastTime < slider.EndTime && time >= slider.EndTime {
+			slider.HitEdge(slider.RepeatCount, time, true)
+		}
+	}
 
-				if i == 0 {
-					slider.InitSlide(slider.StartTime)
+	if slider.isSliding {
+		for i := slider.lastScorePoint; i < len(slider.ScorePoints)-1; i++ {
+			p := slider.ScorePoints[i]
+
+			if time < p.Time {
+				break
+			} else if slider.lastTime < p.Time {
+				if p.IsReverse {
+					slider.HitEdge(p.EdgeIndex, time, true)
+				} else {
+					slider.PlayTick()
 				}
 			}
-		}
 
-		for _, p := range slider.TickPoints {
-			if slider.lastTime < p.Time && time >= p.Time {
-				slider.PlayTick()
-			}
-		}
-	} else if slider.isSliding {
-		for i := int64(1); i < slider.RepeatCount; i++ {
-			edgeTime := slider.StartTime + math.Floor(float64(i)*slider.partLen)
-
-			if slider.lastTime < edgeTime && time >= edgeTime {
-				slider.HitEdge(int(i), time, true)
-			}
-		}
-
-		for _, p := range slider.TickPoints {
-			if slider.lastTime < p.Time && time >= p.Time {
-				slider.PlayTick()
-			}
+			slider.lastScorePoint = i + 1
 		}
 	}
 
@@ -799,11 +867,11 @@ func (slider *Slider) InitSlide(time float64) {
 
 	fadeInEnd := math.Min(startTime+180, slider.EndTime)
 
-	slider.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(startTime+60, slider.EndTime), 0, 1))
-	slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, fadeInEnd, 0.5, 1))
+	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(startTime+60, slider.EndTime), 0, 1))
+	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, fadeInEnd, 0.5, 1))
 
-	slider.follower.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, slider.EndTime, slider.EndTime+200, 1, 0))
-	slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, slider.EndTime, slider.EndTime+200, 1, 0.8))
+	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.InQuad, slider.EndTime, slider.EndTime+200, 1, 0))
+	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.OutQuad, slider.EndTime, slider.EndTime+200, 1, 0.8))
 
 	fadeBase := 200.0
 
@@ -830,8 +898,10 @@ func (slider *Slider) InitSlide(time float64) {
 			startTime = fadeInEnd
 		}
 
-		slider.follower.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, math.Min(slider.EndTime, endTime), startValue, endValue))
+		slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, math.Min(slider.EndTime, endTime), startValue, endValue))
 	}
+
+	slider.follower.SortTransformations()
 
 	slider.isSliding = true
 }
@@ -898,7 +968,7 @@ func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
 		e.Arm(isHit, time)
 	}
 
-	if isHit {
+	if isHit && (index == 0 || index == slider.RepeatCount || !slider.IsRetarded()) {
 		slider.PlayEdgeSample(index)
 	}
 }
@@ -1056,18 +1126,11 @@ func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBa
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
 
-	if time >= slider.EndTime && slider.fade.GetValue() <= 0.001 {
-		if slider.body != nil {
-			//HACKHACKHACK: for some reason disposing FBOs with VSync causes 30ms frame skips...
-			if !settings.Graphics.VSync {
-				slider.body.Dispose()
-			}
-		}
+	return time >= slider.EndTime && slider.fade.GetValue() <= 0.001
+}
 
-		return true
-	}
-
-	return false
+func (slider *Slider) Finalize() {
+	slider.body.Dispose()
 }
 
 func (slider *Slider) drawBall(time float64, batch *batch.QuadBatch, color color2.Color, alpha float64, useBallTexture bool) {

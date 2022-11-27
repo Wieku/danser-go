@@ -80,11 +80,12 @@ func (controller *PlayerController) InitCursors() {
 }
 
 func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
-	if key == glfw.KeyUnknown {
+	kName, ok := platform.GetKeyName(key, scancode)
+	if !ok {
 		return
 	}
 
-	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.LeftKey) {
+	if strings.EqualFold(kName, settings.Input.LeftKey) {
 		if action == glfw.Press {
 			controller.cursors[0].LeftKey = true
 		} else if action == glfw.Release {
@@ -92,7 +93,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		}
 	}
 
-	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.RightKey) {
+	if strings.EqualFold(kName, settings.Input.RightKey) {
 		if action == glfw.Press {
 			controller.cursors[0].RightKey = true
 		} else if action == glfw.Release {
@@ -100,7 +101,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		}
 	}
 
-	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.RestartKey) {
+	if strings.EqualFold(kName, settings.Input.RestartKey) {
 		if action == glfw.Press {
 			controller.quickRestartTime = controller.lastTime
 			controller.quickRestart = true
@@ -109,7 +110,7 @@ func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scanc
 		}
 	}
 
-	if strings.EqualFold(platform.GetKeyName(key, scancode), settings.Input.SmokeKey) {
+	if strings.EqualFold(kName, settings.Input.SmokeKey) {
 		if action == glfw.Press {
 			controller.cursors[0].SmokeKey = true
 		} else if action == glfw.Release {

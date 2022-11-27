@@ -230,7 +230,8 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 
 	region := *sprite.Texture
 	position := sprite.position
-	scale := sprite.scale.Abs()
+	flipX := sprite.flipX != (sprite.scale.X < 0) // XOR, flip again if scale is negative
+	flipY := sprite.flipY != (sprite.scale.Y < 0) // XOR, flip again if scale is negative
 
 	if sprite.cutX > 0.0 {
 		ratio := float32(1 - sprite.cutX)
@@ -250,7 +251,7 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 		region.V2 = (region.V2-middle)*ratio + middle
 	}
 
-	batch.DrawStObject(position, sprite.origin, scale, sprite.flipX, sprite.flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
+	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs(), flipX, flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
 }
 
 func (sprite *Sprite) GetOrigin() vector.Vector2d {

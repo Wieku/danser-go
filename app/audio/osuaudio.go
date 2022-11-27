@@ -68,14 +68,16 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 		additionSet = sampleSet
 	}
 
+	volume = mutils.Max(volume, 0.08)
+
 	// Play normal
 	if skin.GetInfo().LayeredHitSounds || hitsound&1 > 0 || hitsound == 0 {
-		playSample(sampleSet, 0, index, volume, objNum, xPos)
+		playSample(sampleSet, 0, index, volume*0.8, objNum, xPos)
 	}
 
 	// Play whistle
 	if hitsound&2 > 0 {
-		playSample(additionSet, 1, index, volume, objNum, xPos)
+		playSample(additionSet, 1, index, volume*0.85, objNum, xPos)
 	}
 
 	// Play finish
@@ -85,7 +87,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 
 	// Play clap
 	if hitsound&8 > 0 {
-		playSample(additionSet, 3, index, volume, objNum, xPos)
+		playSample(additionSet, 3, index, volume*0.85, objNum, xPos)
 	}
 }
 

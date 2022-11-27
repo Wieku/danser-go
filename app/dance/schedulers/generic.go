@@ -33,10 +33,6 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	scheduler.cursor = cursor
 	scheduler.queue = objs
 
-	if initKeys {
-		scheduler.input = input.NewNaturalInputProcessor(objs, cursor, scheduler.mover)
-	}
-
 	scheduler.mover.Reset(diff, scheduler.id)
 
 	config := settings.CursorDance.Movers[scheduler.index%len(settings.CursorDance.Movers)]
@@ -53,35 +49,46 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 		}
 	}
 
-	// Skip (pseudo)circles if they are too close together
-	for i := 0; i < len(scheduler.queue); i++ {
-		if _, ok := scheduler.queue[i].(*objects.Circle); !ok {
-			continue
-		}
+	// Convert two overlapping circles (slider starts too if slider danced) to one double-tap circle
+	for i := 0; i < len(scheduler.queue)-1; i++ {
+		current, pOk := scheduler.queue[i].(*objects.Circle)
+		next, cOk := scheduler.queue[i+1].(*objects.Circle)
 
-		remove := false
+		if pOk && cOk && (!current.SliderPoint || current.SliderPointStart) && (!next.SliderPoint || next.SliderPointStart) {
+			dst := current.GetStackedEndPositionMod(diff.Mods).Dst(next.GetStackedStartPositionMod(diff.Mods))
 
-		if i > 0 {
-			p := scheduler.queue[i-1]
-			c := scheduler.queue[i]
+			if dst <= float32(diff.CircleRadius*1.995) && next.GetStartTime()-current.GetEndTime() <= 3 { // Sacrificing a bit of UR for better looks
+				sTime := (next.GetStartTime() + current.GetEndTime()) / 2
 
-			if p.GetStackedEndPositionMod(diff.Mods).Dst(c.GetStackedStartPositionMod(diff.Mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
-				remove = true
+				dC := objects.DummyCircle(current.GetStackedEndPositionMod(diff.Mods).Add(next.GetStackedStartPositionMod(diff.Mods)).Scl(0.5), sTime)
+				dC.DoubleClick = true
+
+				scheduler.queue[i] = dC
+
+				scheduler.queue = append(scheduler.queue[:i+1], scheduler.queue[i+2:]...)
 			}
 		}
+	}
 
-		if i < len(scheduler.queue)-1 {
-			p := scheduler.queue[i]
-			c := scheduler.queue[i+1]
+	// Spread overlapping circles timing-wise
+	for i := 0; i < len(scheduler.queue)-1; i++ {
+		current := scheduler.queue[i]
 
-			if p.GetStackedEndPositionMod(diff.Mods).Dst(c.GetStackedStartPositionMod(diff.Mods)) <= 3 && c.GetStartTime()-p.GetEndTime() <= 3 {
-				remove = true
+		for j := i + 1; j < len(scheduler.queue); j++ {
+			o := scheduler.queue[j]
+
+			if current.GetEndTime() < o.GetStartTime() {
+				break
+			}
+
+			if c, cOk := o.(*objects.Circle); cOk && (!c.SliderPoint || c.SliderPointStart) {
+				scheduler.queue[j] = objects.DummyCircle(c.GetStackedStartPositionMod(diff.Mods), c.GetStartTime()+1)
 			}
 		}
+	}
 
-		if remove { //we don't do "i--" here because we don't want to remove too much
-			scheduler.queue = append(scheduler.queue[:i], scheduler.queue[i+1:]...)
-		}
+	if initKeys {
+		scheduler.input = input.NewNaturalInputProcessor(objs, cursor, scheduler.mover)
 	}
 
 	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), -500)}, scheduler.queue...)

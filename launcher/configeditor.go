@@ -71,9 +71,9 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 
 func (editor *settingsEditor) updateKey(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
 	if editor.opened && editor.keyChange != "" && action == glfw.Press {
-		keyText := platform.GetKeyName(key, scancode)
+		keyText, ok := platform.GetKeyName(key, scancode)
 
-		if keyText != "" {
+		if ok && keyText != "" {
 			editor.keyChangeVal.SetString(keyText)
 			editor.keyChangeOpened = false
 			editor.keyChange = ""
@@ -676,22 +676,28 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	}
 }
 
-func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHide map[string]uint8, parent reflect.Value, currentSField reflect.StructField) bool {
+func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, hidden map[string]uint8, parent reflect.Value, currentSField reflect.StructField) bool {
 	if _, ok := currentSField.Tag.Lookup("vector"); ok {
 		lName, ok1 := currentSField.Tag.Lookup("left")
 		rName, ok2 := currentSField.Tag.Lookup("right")
 		if ok1 && ok2 {
-			forceHide[lName] = 1
-			forceHide[rName] = 1
+			hidden[lName] = 1
+			hidden[rName] = 1
 		}
 	}
 
-	if forceHide[currentSField.Name] > 0 {
+	if hidden[currentSField.Name] > 0 {
 		return true
 	}
 
 	if s, ok := currentSField.Tag.Lookup("showif"); ok {
 		s1 := strings.Split(s, "=")
+
+		// Show only if dependant field is not hidden
+		if hidden[s1[0]] == 1 {
+			hidden[currentSField.Name] = 1
+			return true
+		}
 
 		if s1[1] != "!" {
 			fld := parent.FieldByName(s1[0])
@@ -699,7 +705,7 @@ func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHid
 			cF := fld.String()
 			if fld.CanInt() {
 				cF = strconv.Itoa(int(fld.Int()))
-			} else if fld.Type().String() == "bool" {
+			} else if fld.Kind() == reflect.Bool {
 				cF = "false"
 				if fld.Bool() {
 					cF = "true"
@@ -722,6 +728,7 @@ func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, forceHid
 			}
 
 			if !found {
+				hidden[currentSField.Name] = 1
 				return true
 			}
 
@@ -761,7 +768,7 @@ func (editor *settingsEditor) buildBool(jsonPath string, f reflect.Value, d refl
 }
 
 func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect.StructField, l reflect.Value, ld reflect.StructField, r reflect.Value, rd reflect.StructField) {
-	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, -1, d, func() {
+	drawBox := func() {
 		contentAvail := imgui.ContentRegionAvail().X
 
 		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(contentAvail, 0), contentAvail) {
@@ -795,6 +802,82 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 
 			imgui.EndTable()
 		}
+	}
+
+	cSpec, okC := d.Tag.Lookup("combo")
+
+	editor.drawComponent(jsonPath1+"\n"+jsonPath2, editor.getLabel(d), false, false, -1, d, func() {
+		imgui.SetNextItemWidth(-1)
+
+		if okC {
+			baseL := l.Int()
+			baseR := r.Int()
+
+			var values [][2]int
+			var labels []string
+
+			lb := fmt.Sprintf("%dx%d", baseL, baseR)
+
+			hasCustom := false
+			normalFound := false
+
+			for _, s := range strings.Split(cSpec, ",") {
+				if s == "custom" {
+					hasCustom = true
+					continue
+				}
+
+				splt := strings.Split(s, "|")
+				splt2 := strings.Split(splt[0], "x")
+
+				cL, _ := strconv.Atoi(splt2[0])
+				cR, _ := strconv.Atoi(splt2[1])
+
+				optionLabel := fmt.Sprintf("%dx%d", cL, cR)
+				if len(splt) > 1 {
+					optionLabel = splt[1]
+				}
+
+				values = append(values, [2]int{cL, cR})
+				labels = append(labels, optionLabel)
+
+				if int(baseL) == cL && int(baseR) == cR {
+					lb = optionLabel
+					normalFound = true
+				}
+			}
+
+			jsonPath := jsonPath1 + ":" + jsonPath2
+
+			if imgui.BeginCombo("##combo"+jsonPath, lb) {
+				justOpened := imgui.IsWindowAppearing()
+				editor.blockSearch = true
+
+				for i, lbl := range labels {
+					if selectableFocus(lbl+jsonPath, lbl == lb, justOpened) {
+						l.SetInt(int64(values[i][0]))
+						r.SetInt(int64(values[i][1]))
+						editor.search()
+					}
+				}
+
+				if hasCustom {
+					if !normalFound {
+						pad := vec2(imgui.CurrentStyle().FramePadding().X, imgui.CurrentStyle().ItemSpacing().Y*0.5)
+						scPos := imgui.CursorScreenPos().Minus(pad)
+
+						imgui.WindowDrawList().AddRectFilled(scPos, scPos.Plus(vec2(imgui.ContentRegionAvail().X, imgui.FrameHeight()).Plus(pad.Times(2))), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorHeader)))
+					}
+
+					drawBox()
+				}
+
+				imgui.EndCombo()
+			}
+		} else {
+			drawBox()
+		}
+
 	})
 }
 

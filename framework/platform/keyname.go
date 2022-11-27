@@ -7,85 +7,89 @@ import (
 	"strings"
 )
 
-func GetKeyName(key glfw.Key, scancode int) string {
-	if key >= glfw.KeyF1 && key <= glfw.KeyF25 {
-		return "F" + strconv.Itoa(int(key-glfw.KeyF1)+1)
+func GetKeyName(key glfw.Key, scancode int) (name string, found bool) {
+	if key < 0 {
+		return "", false
+	} else if key >= glfw.KeyF1 && key <= glfw.KeyF25 {
+		name = "F" + strconv.Itoa(int(key-glfw.KeyF1)+1)
 	} else if key >= glfw.KeyKP0 && key <= glfw.KeyKP9 {
-		return "NUMPAD" + strconv.Itoa(int(key-glfw.KeyKP0))
+		name = "NUMPAD" + strconv.Itoa(int(key-glfw.KeyKP0))
 	} else {
 		switch key {
 		case glfw.KeyKPDecimal:
-			return "NUMPADDECIMAL"
+			name = "NUMPADDECIMAL"
 		case glfw.KeyKPDivide:
-			return "NUMPADDIVIDE"
+			name = "NUMPADDIVIDE"
 		case glfw.KeyKPMultiply:
-			return "NUMPADMULTIPLY"
+			name = "NUMPADMULTIPLY"
 		case glfw.KeyKPSubtract:
-			return "NUMPADSUBTRACT"
+			name = "NUMPADSUBTRACT"
 		case glfw.KeyKPAdd:
-			return "NUMPADADD"
+			name = "NUMPADADD"
 		case glfw.KeyKPEnter:
-			return "NUMPADENTER"
+			name = "NUMPADENTER"
 		case glfw.KeyKPEqual:
-			return "NUMPADEQUAL"
+			name = "NUMPADEQUAL"
 		case glfw.KeyEscape:
-			return "ESCAPE"
+			name = "ESCAPE"
 		case glfw.KeyEnter:
-			return "ENTER"
+			name = "ENTER"
 		case glfw.KeyTab:
-			return "TAB"
+			name = "TAB"
 		case glfw.KeyBackspace:
-			return "BACKSPACE"
+			name = "BACKSPACE"
 		case glfw.KeyInsert:
-			return "INSERT"
+			name = "INSERT"
 		case glfw.KeyDelete:
-			return "DELETE"
+			name = "DELETE"
 		case glfw.KeyRight:
-			return "RIGHT"
+			name = "RIGHT"
 		case glfw.KeyLeft:
-			return "LEFT"
+			name = "LEFT"
 		case glfw.KeyDown:
-			return "DOWN"
+			name = "DOWN"
 		case glfw.KeyUp:
-			return "UP"
+			name = "UP"
 		case glfw.KeyPageUp:
-			return "PAGEUP"
+			name = "PAGEUP"
 		case glfw.KeyPageDown:
-			return "PAGEDOWN"
+			name = "PAGEDOWN"
 		case glfw.KeyHome:
-			return "HOME"
+			name = "HOME"
 		case glfw.KeyEnd:
-			return "END"
+			name = "END"
 		case glfw.KeyCapsLock:
-			return "CAPS"
+			name = "CAPS"
 		case glfw.KeyScrollLock:
-			return "SCROLLLOCK"
+			name = "SCROLLLOCK"
 		case glfw.KeyNumLock:
-			return "NUMLOCK"
+			name = "NUMLOCK"
 		case glfw.KeyPrintScreen:
-			return "PRINTSCREEN"
+			name = "PRINTSCREEN"
 		case glfw.KeyPause:
-			return "PAUSE"
+			name = "PAUSE"
 		case glfw.KeyLeftShift:
-			return "LSHIFT"
+			name = "LSHIFT"
 		case glfw.KeyLeftControl:
-			return "LCTRL"
+			name = "LCTRL"
 		case glfw.KeyLeftAlt:
-			return "LALT"
+			name = "LALT"
 		case glfw.KeyLeftSuper:
-			return "LSUPER"
+			name = "LSUPER"
 		case glfw.KeyRightShift:
-			return "RSHIFT"
+			name = "RSHIFT"
 		case glfw.KeyRightControl:
-			return "RCTRL"
+			name = "RCTRL"
 		case glfw.KeyRightAlt:
-			return "RALT"
+			name = "RALT"
 		case glfw.KeyRightSuper:
-			return "RSUPER"
+			name = "RSUPER"
 		case glfw.KeySpace:
-			return "SPACE"
+			name = "SPACE"
 		default:
-			return strings.ToUpper(glfw.GetKeyName(key, scancode))
+			name = strings.ToUpper(glfw.GetKeyName(key, scancode))
 		}
 	}
+
+	return name, true
 }

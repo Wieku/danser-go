@@ -82,6 +82,16 @@ func NewSpinner(data []string) *Spinner {
 	return spinner
 }
 
+func NewDummySpinner(startTime, endTime float64) *Spinner {
+	return &Spinner{
+		HitObject: &HitObject{
+			StartTime:   startTime,
+			EndTime:     endTime,
+			HitObjectID: -1,
+		},
+	}
+}
+
 func (spinner *Spinner) GetPosition() vector.Vector2f {
 	return spinner.pos
 }

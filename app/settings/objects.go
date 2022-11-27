@@ -16,11 +16,13 @@ func initObjects() *objects {
 			DrawSliderFollowCircle: true,
 			DrawScorePoints:        true,
 			SliderMerge:            false,
-			SliderDistortions:      true,
 			BorderWidth:            1.0,
-			Quality: &quality{
-				CircleLevelOfDetail: 50,
-				PathLevelOfDetail:   50,
+			Distortions: &distortions{
+				Enabled:             true,
+				ViewportSize:        0,
+				UseCustomResolution: false,
+				CustomResolutionX:   1920,
+				CustomResolutionY:   1080,
 			},
 			Snaking: &snaking{
 				In:                 true,
@@ -30,7 +32,7 @@ func initObjects() *objects {
 				FadeMultiplier:     0,
 			},
 		},
-		Colors: &objectcolors{
+		Colors: &objectColors{
 			MandalaTexturesTrigger: 5,
 			MandalaTexturesAlpha:   0.3,
 			Color: &color{
@@ -104,7 +106,7 @@ type objects struct {
 	ScaleToTheBeat      bool //true, objects size is changing with music peak amplitude
 	StackEnabled        bool `label:"Enable stack leniency" liveedit:"false"` //true, stack leniency
 	Sliders             *sliders
-	Colors              *objectcolors
+	Colors              *objectColors
 }
 
 type sliders struct {
@@ -113,18 +115,18 @@ type sliders struct {
 	DrawSliderFollowCircle bool
 	DrawScorePoints        bool //true
 	SliderMerge            bool
-	SliderDistortions      bool    `liveedit:"false"` //true, osu!stable slider distortions on aspire maps
-	BorderWidth            float64 `max:"9"`
-	Quality                *quality
+	BorderWidth            float64      `max:"9"`
+	Distortions            *distortions `liveedit:"false"`
 	Snaking                *snaking
 }
 
-type quality struct {
-	// Quality of slider unit circle, 50 means that circle will have 50 sides
-	CircleLevelOfDetail int64 //30, number of triangles in a circle
-
-	//Quality of slider path, 50 means that unit circle will be placed every 2 osu!pixels (100/PathLevelOfDetail)
-	PathLevelOfDetail int64 //50, int(pixelLength*(PathLOD/100)) => number of slider path points
+type distortions struct {
+	Enabled             bool
+	ViewportSize        int    `showif:"Enabled=true" combo:"0|Use GPU's Viewport Size,8192|8192 (very low end GPUs),16384|16384 (lower/mid end GPUs),32768|32768 (higher end GPUs)" tooltip:"Some maps are made on lower end GPUs so sliders may not look correct on better graphic cards. Set it to 16384 in that case."`
+	UseCustomResolution bool   `showif:"Enabled=true" tooltip:"Some sliders are made to specific screen size (most probably 1920x1080). Use this if you plan to render/watch at a different resolution."`
+	customResolution    string `showif:"UseCustomResolution=true" vector:"true" left:"CustomResolutionX" right:"CustomResolutionY"`
+	CustomResolutionX   int    `min:"1" max:"30720"`
+	CustomResolutionY   int    `min:"1" max:"17280"`
 }
 
 type snaking struct {
@@ -135,7 +137,7 @@ type snaking struct {
 	FadeMultiplier     float64 `scale:"100" format:"%.0f%%" label:"In fade multiplier" showif:"In=true" tooltip:"How close to slider's start time snake in should end"`
 }
 
-type objectcolors struct {
+type objectColors struct {
 	MandalaTexturesTrigger int     `label:"Use Mandala textures at x mirrors" string:"true"`      //5, minimum value of cursors needed to use more translucent texture
 	MandalaTexturesAlpha   float64 `label:"Mandala textures opacity" scale:"100" format:"%.0f%%"` //0.3
 	Color                  *color

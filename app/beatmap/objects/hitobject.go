@@ -47,6 +47,8 @@ type IHitObject interface {
 	GetType() Type
 
 	DisableAudioSubmission(value bool)
+
+	Finalize()
 }
 
 type ILongObject interface {
@@ -270,3 +272,5 @@ func ModifyPosition(hitObject *HitObject, basePosition vector.Vector2f, modifier
 
 	return basePosition.Add(hitObject.StackOffset)
 }
+
+func (hitObject *HitObject) Finalize() {}

@@ -387,3 +387,7 @@ func (bg *Background) getColors(image *texture.Pixmap) []color2.Color {
 func (bg *Background) HasBackground() bool {
 	return bg.background != nil
 }
+
+func (bg *Background) SetDefaultColor(col color2.Color) {
+	bg.triangles.SetDefaultColor(col)
+}

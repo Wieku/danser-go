@@ -80,6 +80,7 @@ func LoadConfig(file *os.File) (*Config, error) {
 
 	config.migrateCursorDance()
 	config.migrateHitCounterColors()
+	config.migrateBlendWeights()
 
 	if config.General.OsuReplaysDir == "" { // Set the replay directory if it hasn't been loaded
 		config.General.OsuReplaysDir = filepath.Join(filepath.Dir(config.General.OsuSongsDir), "Replays")
@@ -205,6 +206,17 @@ func (config *Config) migrateHitCounterColors() {
 	}
 
 	config.Gameplay.HitCounter.Color = nil
+}
+
+func (config *Config) migrateBlendWeights() {
+	if config.Recording.MotionBlur.BlendWeights == nil {
+		return
+	}
+
+	config.Recording.MotionBlur.BlendFunctionID = config.Recording.MotionBlur.BlendWeights.AutoWeightsID
+	config.Recording.MotionBlur.GaussWeightsMult = config.Recording.MotionBlur.BlendWeights.GaussWeightsMult
+
+	config.Recording.MotionBlur.BlendWeights = nil
 }
 
 func (config *Config) attachToGlobals() {

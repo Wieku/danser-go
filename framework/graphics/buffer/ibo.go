@@ -16,11 +16,16 @@ type IndexBufferObject struct {
 	bound    bool
 	disposed bool
 	attached bool
+
+	xtype uint32
+	xsize int
 }
 
 func NewIndexBufferObject(maxIndices int) *IndexBufferObject {
 	ibo := new(IndexBufferObject)
 	ibo.capacity = maxIndices
+	ibo.xtype = gl.UNSIGNED_SHORT
+	ibo.xsize = 2
 
 	gl.CreateBuffers(1, &ibo.handle)
 
@@ -31,10 +36,26 @@ func NewIndexBufferObject(maxIndices int) *IndexBufferObject {
 	return ibo
 }
 
+func NewIndexBufferObjectInt(maxIndices int) *IndexBufferObject {
+	ibo := new(IndexBufferObject)
+	ibo.capacity = maxIndices
+	ibo.xtype = gl.UNSIGNED_INT
+	ibo.xsize = 4
+
+	gl.CreateBuffers(1, &ibo.handle)
+
+	gl.NamedBufferData(ibo.handle, maxIndices*4, gl.Ptr(nil), gl.DYNAMIC_DRAW)
+
+	runtime.SetFinalizer(ibo, (*IndexBufferObject).Dispose)
+
+	return ibo
+}
+
 func (ibo *IndexBufferObject) Capacity() int {
 	return ibo.capacity
 }
 
+// reflect.TypeOf(s).Elem().Size()
 func (ibo *IndexBufferObject) SetData(offset int, data []uint16) {
 	if len(data) == 0 {
 		return
@@ -45,6 +66,18 @@ func (ibo *IndexBufferObject) SetData(offset int, data []uint16) {
 	}
 
 	gl.NamedBufferSubData(ibo.handle, offset, len(data)*2, gl.Ptr(data))
+}
+
+func (ibo *IndexBufferObject) SetDataI(offset int, data []uint32) {
+	if len(data) == 0 {
+		return
+	}
+
+	if offset+len(data) > ibo.capacity {
+		panic(fmt.Sprintf("Data exceeds IBO's capacity. Data length: %d, offset: %d, capacity: %d", len(data), offset, ibo.capacity))
+	}
+
+	gl.NamedBufferSubData(ibo.handle, offset, len(data)*4, gl.Ptr(data))
 }
 
 func (ibo *IndexBufferObject) Draw() {
@@ -61,7 +94,7 @@ func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 	statistic.Add(statistic.VerticesDrawn, int64(length))
 	statistic.Increment(statistic.DrawCalls)
 
-	gl.DrawElements(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset*2))
+	gl.DrawElements(gl.TRIANGLES, int32(length), ibo.xtype, gl.PtrOffset(offset*ibo.xsize))
 
 	if hacks.IsIntel {
 		gl.Flush()
@@ -74,7 +107,7 @@ func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, in
 	statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
 	statistic.Increment(statistic.DrawCalls)
 
-	gl.DrawElementsInstancedBaseInstance(gl.TRIANGLES, int32(length), gl.UNSIGNED_SHORT, gl.PtrOffset(offset), int32(instanceCount), uint32(baseInstance))
+	gl.DrawElementsInstancedBaseInstance(gl.TRIANGLES, int32(length), ibo.xtype, gl.PtrOffset(offset*ibo.xsize), int32(instanceCount), uint32(baseInstance))
 
 	if hacks.IsIntel {
 		gl.Flush()

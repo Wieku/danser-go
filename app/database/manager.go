@@ -15,6 +15,7 @@ import (
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/util"
+	"golang.org/x/exp/slices"
 	"io"
 	"log"
 	"os"
@@ -152,11 +153,12 @@ func Init() error {
 }
 
 func LoadBeatmaps(skipDatabaseCheck bool, importListener ImportListener) []*beatmap.BeatMap {
+	var unpackedMaps []string
 	if settings.General.UnpackOszFiles {
-		unpackMaps()
+		unpackedMaps = unpackMaps()
 	}
 
-	importMaps(skipDatabaseCheck, importListener)
+	importMaps(skipDatabaseCheck, unpackedMaps, importListener)
 
 	log.Println("DatabaseManager: Loading beatmaps from database...")
 
@@ -175,7 +177,7 @@ func LoadBeatmaps(skipDatabaseCheck bool, importListener ImportListener) []*beat
 	return stdMaps
 }
 
-func unpackMaps() {
+func unpackMaps() (dirs []string) {
 	_ = godirwalk.Walk(songsDir, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 			if de.IsDir() && osPathname != songsDir {
@@ -183,12 +185,16 @@ func unpackMaps() {
 			}
 
 			if strings.HasSuffix(de.Name(), ".osz") {
-				destination := filepath.Join(filepath.Dir(osPathname), strings.TrimSuffix(de.Name(), ".osz"))
+				dirName := strings.TrimSuffix(de.Name(), ".osz")
+
+				destination := filepath.Join(filepath.Dir(osPathname), dirName)
 
 				log.Println("DatabaseManager: Unpacking", osPathname, "->", destination)
 
 				utils.Unzip(osPathname, destination)
 				os.Remove(osPathname)
+
+				dirs = append(dirs, dirName)
 			}
 
 			return nil
@@ -196,6 +202,8 @@ func unpackMaps() {
 		Unsorted:            true,
 		FollowSymbolicLinks: true,
 	})
+
+	return
 }
 
 type ImportListener func(stage ImportStage, progress, target int)
@@ -210,7 +218,7 @@ const (
 	Finished
 )
 
-func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
+func importMaps(skipDatabaseCheck bool, mustCheckDirs []string, importListener ImportListener) {
 	const workers = 4
 
 	cachedFolders, mapsInDB := getLastModified()
@@ -232,7 +240,9 @@ func importMaps(skipDatabaseCheck bool, importListener ImportListener) {
 			}
 
 			if skipDatabaseCheck && de.IsDir() {
-				if _, ok := cachedFolders[filepath.Base(osPathname)]; ok {
+				dirName := filepath.Base(osPathname)
+
+				if _, ok := cachedFolders[dirName]; ok && (mustCheckDirs == nil || !slices.Contains(mustCheckDirs, dirName)) {
 					return godirwalk.SkipThis
 				}
 			}
@@ -822,5 +832,7 @@ func Close() {
 		if err != nil {
 			log.Println("Failed to close database:", err)
 		}
+
+		dbFile = nil
 	}
 }

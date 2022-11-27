@@ -106,21 +106,28 @@ type songSelectPopup struct {
 
 func newSongSelectPopup(bld *builder, beatmaps []*beatmap.BeatMap) *songSelectPopup {
 	mP := &songSelectPopup{
-		popup:    newPopup("Song select", popBig),
-		bld:      bld,
-		beatmaps: make([]*mapWithName, 0),
-		volume:   animation.NewGlider(0),
+		popup:  newPopup("Song select", popBig),
+		bld:    bld,
+		volume: animation.NewGlider(0),
 	}
 
 	mP.internalDraw = mP.drawSongSelect
 
-	for _, bMap := range beatmaps {
-		mP.beatmaps = append(mP.beatmaps, newMapWithName(bMap))
-	}
-
-	mP.search()
+	mP.setBeatmaps(beatmaps)
 
 	return mP
+}
+
+func (m *songSelectPopup) setBeatmaps(beatmaps []*beatmap.BeatMap) {
+	beatmaps2 := make([]*mapWithName, 0)
+
+	for _, bMap := range beatmaps {
+		beatmaps2 = append(beatmaps2, newMapWithName(bMap))
+	}
+
+	m.beatmaps = beatmaps2
+	m.search()
+	m.focusTheMap = true
 }
 
 func (m *songSelectPopup) update() {
@@ -247,6 +254,8 @@ func (m *songSelectPopup) drawSongSelect() {
 		}
 	}
 
+	focusMap := m.focusTheMap
+
 	imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(5, 0))
 
 	if imgui.BeginTableV("bsetstab", 1, imgui.TableFlagsRowBg|imgui.TableFlagsPadOuterX|imgui.TableFlagsBordersH, vec2(-1, 0), -1) {
@@ -257,7 +266,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 			imgui.TableNextColumn()
 
-			if m.focusTheMap && m.sizeCalculated > 1 {
+			if focusMap && m.sizeCalculated > 1 {
 				if m.bld.currentMap != nil && m.bld.currentMap.Dir == b.bMaps[0].Dir {
 					imgui.SetScrollY(b.bounds.X)
 				}
@@ -410,99 +419,7 @@ func (m *songSelectPopup) drawSongSelect() {
 				}
 
 				if imgui.IsItemHovered() && ImIO.MousePosition().X <= sPos.X+tSiz.X {
-					imgui.PushFont(Font24)
-
-					const tgAsp = float32(4.0 / 3)
-
-					imgui.BeginTooltip()
-
-					cPos := imgui.CursorPos()
-
-					thumbPath := filepath.Join(settings.General.GetSongsDir(), bMap.Dir, bMap.Bg)
-
-					if m.lastThumbPath != thumbPath {
-						if m.thumbTex != nil {
-							m.thumbTex.Dispose()
-							m.thumbTex = nil
-						}
-
-						pX, err := texture.NewPixmapFileString(thumbPath)
-						if err == nil {
-							m.thumbTex = texture.LoadTextureSingle(pX.RGBA(), 4)
-
-							pX.Dispose()
-						}
-
-						m.lastThumbPath = thumbPath
-						m.drawTex = false
-					}
-
-					if m.thumbTex != nil {
-						uvTL := vec2(0, 0)
-						uvBR := vec2(1, 1)
-
-						asp := float32(m.thumbTex.GetWidth()) / float32(m.thumbTex.GetHeight())
-
-						if asp > tgAsp {
-							uvTL.X = (1 - tgAsp/asp) / 2
-							uvBR.X = 1 - uvTL.X
-						} else {
-							uvTL.Y = (1 - asp/tgAsp) / 2
-							uvBR.Y = 1 - uvTL.X
-						}
-
-						imgui.ImageV(imgui.TextureID(m.thumbTex.GetID()), vec2(200*tgAsp, 200), uvTL, uvBR, imgui.Vec4{X: 1, Y: 1, Z: 1, W: 0.3}, imgui.Vec4{})
-					}
-
-					imgui.SetCursorPos(cPos)
-
-					sR := "N/A"
-					if bMap.Stars >= 0 {
-						sR = mutils.FormatWOZeros(bMap.Stars, 2)
-					}
-
-					bpm := fmt.Sprintf("%.0f", bMap.MinBPM)
-					if math.Abs(bMap.MinBPM-bMap.MaxBPM) > 0.01 {
-						bpm = fmt.Sprintf("%.0f - %.0f", bMap.MinBPM, bMap.MaxBPM)
-					}
-
-					if imgui.BeginTableV("btooltip", 4, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoClip, vec2(200.0*tgAsp, 0), -1) {
-						imgui.TableSetupColumnV("btooltip1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-						imgui.TableSetupColumnV("btooltip2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
-						imgui.TableSetupColumnV("btooltip3", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-						imgui.TableSetupColumnV("btooltip4", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("9.9", false, 0).X, uint(1))
-
-						tRow := func(text string, text2 string, args ...any) {
-							textColumn(text)
-							textColumn(fmt.Sprintf(text2, args...))
-						}
-
-						tRow("Stars: ", sR)
-						tRow("", "")
-
-						tRow("Objects: ", "%d", bMap.Circles+bMap.Sliders+bMap.Spinners)
-						tRow("AR: ", mutils.FormatWOZeros(bMap.Diff.GetAR(), 2))
-
-						tRow("Circles: ", "%d", bMap.Circles)
-						tRow("OD: ", mutils.FormatWOZeros(bMap.Diff.GetOD(), 2))
-
-						tRow("Sliders: ", "%d", bMap.Sliders)
-						tRow("CS: ", mutils.FormatWOZeros(bMap.Diff.GetCS(), 2))
-
-						tRow("Spinners: ", "%d", bMap.Spinners)
-						tRow("HP: ", mutils.FormatWOZeros(bMap.Diff.GetHP(), 2))
-
-						tRow("BPM: ", bpm)
-						tRow("", "")
-
-						tRow("Length: ", util.FormatSeconds(bMap.Length/1000))
-						tRow("", "")
-
-						imgui.EndTable()
-					}
-
-					imgui.PopFont()
-					imgui.EndTooltip()
+					m.showMapTooltip(bMap)
 				}
 			}
 
@@ -519,7 +436,7 @@ func (m *songSelectPopup) drawSongSelect() {
 			b.bounds = vec2(c1, c2)
 		}
 
-		if m.sizeCalculated > 1 {
+		if m.sizeCalculated > 1 && focusMap {
 			m.focusTheMap = false
 		}
 
@@ -533,6 +450,102 @@ func (m *songSelectPopup) drawSongSelect() {
 	imgui.EndChild()
 
 	imgui.WindowDrawList().AddLine(csPos, csPos.Plus(vec2(imgui.ContentRegionAvail().X, 0)), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
+}
+
+func (m *songSelectPopup) showMapTooltip(bMap *beatmap.BeatMap) {
+	imgui.PushFont(Font24)
+
+	const tgAsp = float32(4.0 / 3)
+
+	imgui.BeginTooltip()
+
+	cPos := imgui.CursorPos()
+
+	thumbPath := filepath.Join(settings.General.GetSongsDir(), bMap.Dir, bMap.Bg)
+
+	if m.lastThumbPath != thumbPath {
+		if m.thumbTex != nil {
+			m.thumbTex.Dispose()
+			m.thumbTex = nil
+		}
+
+		pX, err := texture.NewPixmapFileString(thumbPath)
+		if err == nil {
+			m.thumbTex = texture.LoadTextureSingle(pX.RGBA(), 4)
+
+			pX.Dispose()
+		}
+
+		m.lastThumbPath = thumbPath
+		m.drawTex = false
+	}
+
+	if m.thumbTex != nil {
+		uvTL := vec2(0, 0)
+		uvBR := vec2(1, 1)
+
+		asp := float32(m.thumbTex.GetWidth()) / float32(m.thumbTex.GetHeight())
+
+		if asp > tgAsp {
+			uvTL.X = (1 - tgAsp/asp) / 2
+			uvBR.X = 1 - uvTL.X
+		} else {
+			uvTL.Y = (1 - asp/tgAsp) / 2
+			uvBR.Y = 1 - uvTL.X
+		}
+
+		imgui.ImageV(imgui.TextureID(m.thumbTex.GetID()), vec2(200*tgAsp, 200), uvTL, uvBR, imgui.Vec4{X: 1, Y: 1, Z: 1, W: 0.3}, imgui.Vec4{})
+	}
+
+	imgui.SetCursorPos(cPos)
+
+	sR := "N/A"
+	if bMap.Stars >= 0 {
+		sR = mutils.FormatWOZeros(bMap.Stars, 2)
+	}
+
+	bpm := fmt.Sprintf("%.0f", bMap.MinBPM)
+	if math.Abs(bMap.MinBPM-bMap.MaxBPM) > 0.01 {
+		bpm = fmt.Sprintf("%.0f - %.0f", bMap.MinBPM, bMap.MaxBPM)
+	}
+
+	if imgui.BeginTableV("btooltip", 4, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoClip, vec2(200.0*tgAsp, 0), -1) {
+		imgui.TableSetupColumnV("btooltip1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+		imgui.TableSetupColumnV("btooltip2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+		imgui.TableSetupColumnV("btooltip3", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
+		imgui.TableSetupColumnV("btooltip4", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("9.9", false, 0).X, uint(1))
+
+		tRow := func(text string, text2 string, args ...any) {
+			textColumn(text)
+			textColumn(fmt.Sprintf(text2, args...))
+		}
+
+		tRow("Stars: ", sR)
+		tRow("", "")
+
+		tRow("Objects: ", "%d", bMap.Circles+bMap.Sliders+bMap.Spinners)
+		tRow("AR: ", mutils.FormatWOZeros(bMap.Diff.GetAR(), 2))
+
+		tRow("Circles: ", "%d", bMap.Circles)
+		tRow("OD: ", mutils.FormatWOZeros(bMap.Diff.GetOD(), 2))
+
+		tRow("Sliders: ", "%d", bMap.Sliders)
+		tRow("CS: ", mutils.FormatWOZeros(bMap.Diff.GetCS(), 2))
+
+		tRow("Spinners: ", "%d", bMap.Spinners)
+		tRow("HP: ", mutils.FormatWOZeros(bMap.Diff.GetHP(), 2))
+
+		tRow("BPM: ", bpm)
+		tRow("", "")
+
+		tRow("Length: ", util.FormatSeconds(bMap.Length/1000))
+		tRow("", "")
+
+		imgui.EndTable()
+	}
+
+	imgui.PopFont()
+	imgui.EndTooltip()
 }
 
 func (m *songSelectPopup) selectRandom() {
@@ -550,6 +563,32 @@ func (m *songSelectPopup) selectRandom() {
 	if launcherConfig.PreviewSelected {
 		m.stopPreview()
 		m.startPreview(bMap)
+	}
+}
+
+func (m *songSelectPopup) selectNewest() {
+	if len(m.beatmaps) == 0 {
+		return
+	}
+
+	lastTimeStamp := m.beatmaps[0].bMap.TimeAdded
+	selectMap := m.beatmaps[0].bMap
+
+	for _, bMap := range m.beatmaps {
+		tStamp := mutils.Max(bMap.bMap.TimeAdded, bMap.bMap.LastModified)
+
+		if tStamp > lastTimeStamp {
+			lastTimeStamp = tStamp
+			selectMap = bMap.bMap
+		}
+	}
+
+	m.bld.setMap(selectMap)
+	m.focusTheMap = true
+
+	if launcherConfig.PreviewSelected {
+		m.stopPreview()
+		m.startPreview(selectMap)
 	}
 }
 

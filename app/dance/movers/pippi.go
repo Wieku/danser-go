@@ -23,6 +23,9 @@ func NewPippiMover() MultiPointMover {
 func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 	start, end := objs[0], objs[1]
 
+	startC, cOk := start.(*objects.Circle)
+	endC, eOk := end.(*objects.Circle)
+
 	mover.startTime = math.Max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	mover.endTime = end.GetStartTime()
 
@@ -33,16 +36,35 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 
 	points := make([]vector.Vector2f, 0, int(math.Ceil(timeDifference/sixtyTime)))
 
-	points = append(points, mover.modifyPos(start.GetEndTime(), start.GetType() == objects.SPINNER, startPos))
+	if cOk && startC.DoubleClick {
+		points = append(points, startPos)
+	} else {
+		points = append(points, mover.modifyPos(start.GetEndTime(), start.GetType() == objects.SPINNER, startPos))
+	}
 
 	for t := sixtyTime; t < timeDifference; t += sixtyTime {
 		f := t / timeDifference
-		points = append(points, mover.modifyPos(mover.startTime+t, false, startPos.Lerp(endPos, float32(f))))
+
+		basePos := mover.modifyPos(mover.startTime+t, false, startPos.Lerp(endPos, float32(f)))
+
+		if cOk && startC.DoubleClick {
+			basePos = startPos.Lerp(basePos, float32(f))
+		}
+
+		if eOk && endC.DoubleClick {
+			basePos = basePos.Lerp(endPos, float32(f))
+		}
+
+		points = append(points, basePos)
 	}
 
-	points = append(points, mover.modifyPos(mover.endTime, end.GetType() == objects.SPINNER, endPos))
+	if eOk && endC.DoubleClick {
+		points = append(points, endPos)
+	} else {
+		points = append(points, mover.modifyPos(mover.endTime, end.GetType() == objects.SPINNER, endPos))
+	}
 
-	mover.curve = curves.NewMultiCurve("L", points)
+	mover.curve = curves.NewMultiCurve([]curves.CurveDef{{CurveType: curves.CLine, Points: points}})
 
 	return 2
 }
@@ -53,6 +75,11 @@ func (mover *PippiMover) Update(time float64) vector.Vector2f {
 }
 
 func (mover *PippiMover) GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f {
+	c, ok := object.(*objects.Circle)
+	if ok && c.DoubleClick {
+		return c.GetStackedStartPositionMod(mover.diff.Mods)
+	}
+
 	return mover.modifyPos(time, object.GetType() == objects.SPINNER, mover.basicMover.GetObjectsPosition(time, object))
 }
 

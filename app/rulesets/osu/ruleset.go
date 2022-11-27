@@ -391,15 +391,19 @@ func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64, proc
 		for i := 0; i < len(set.processed); i++ {
 			g := set.processed[i]
 
-			s, isSlider := g.(*Slider)
+			if !cursor.IsAutoplay && !cursor.IsPlayer {
+				// TODO: recreate stable's hitobject "unloading" for replays
 
-			if isSlider {
-				if wasSliderAlready {
-					continue
-				}
+				s, isSlider := g.(*Slider)
 
-				if !s.IsHit(player) {
-					wasSliderAlready = true
+				if isSlider {
+					if wasSliderAlready {
+						continue
+					}
+
+					if !s.IsHit(player) {
+						wasSliderAlready = true
+					}
 				}
 			}
 
@@ -590,29 +594,49 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 }
 
 func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficultyPlayer) ClickAction {
-	if _, ok := object.(*Circle); ok {
-		index := -1
+	if !player.cursor.IsAutoplay && !player.cursor.IsPlayer {
+		if _, ok := object.(*Circle); ok {
+			index := -1
 
-		for i, g := range set.processed {
-			if g == object {
-				index = i
-			}
-		}
-
-		if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
-			return Ignored //don't shake the stacks
-		}
-	}
-
-	for _, g := range set.processed {
-		if !g.IsHit(player) {
-			if g.GetNumber() != object.GetNumber() {
-				if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
-					return Shake
+			for i, g := range set.processed {
+				if g == object {
+					index = i
 				}
-			} else {
-				break
 			}
+
+			if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
+				return Ignored //don't shake the stacks
+			}
+		}
+
+		for _, g := range set.processed {
+			if !g.IsHit(player) {
+				if g.GetNumber() != object.GetNumber() {
+					if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
+						return Shake
+					}
+				} else {
+					break
+				}
+			}
+		}
+	} else {
+		cObj := set.beatMap.HitObjects[object.GetNumber()]
+
+		var lastObj HitObject
+		var lastBObj objects.IHitObject
+
+		for _, g := range set.processed {
+			fObj := set.beatMap.HitObjects[g.GetNumber()]
+
+			if fObj.GetType() == objects.CIRCLE && fObj.GetStartTime() < cObj.GetStartTime() {
+				lastObj = g
+				lastBObj = fObj
+			}
+		}
+
+		if lastBObj != nil && (!lastObj.IsHit(player) && float64(time) < lastBObj.GetStartTime()) {
+			return Shake
 		}
 	}
 
@@ -654,7 +678,8 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
 	subSet := set.cursors[cursor]
 
-	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())+subSet.player.diff.Hit50+20 {
+	// Let's believe in hp system. 1ms just in case for slider calculation inconsistencies
+	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())-1 /*+subSet.player.diff.Hit50+20*/ {
 		subSet.forceFail = true
 		subSet.hp.Increase(-10000, true)
 	}

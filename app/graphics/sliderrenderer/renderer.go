@@ -17,7 +17,9 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 )
 
-var sliderShader *shader.RShader
+var capShader *shader.RShader
+var lineShader *shader.RShader
+
 var colorShader *shader.RShader
 
 var colorVAO *buffer.VertexArrayObject
@@ -28,14 +30,21 @@ var fboSprite *sprite.Sprite
 var batch *batch2.QuadBatch
 
 func InitRenderer() {
-
-	passSource, err := assets.GetString("assets/shaders/sliderpass.vsh")
+	capsSource, err := assets.GetString("assets/shaders/slidercaps.vsh")
 
 	if err != nil {
 		panic(err)
 	}
 
-	sliderShader = shader.NewRShader(shader.NewSource(passSource, shader.Vertex))
+	capShader = shader.NewRShader(shader.NewSource(capsSource, shader.Vertex))
+
+	linesSource, err := assets.GetString("assets/shaders/sliderlines.vsh")
+
+	if err != nil {
+		panic(err)
+	}
+
+	lineShader = shader.NewRShader(shader.NewSource(linesSource, shader.Vertex))
 
 	colorVSource, err := assets.GetString("assets/shaders/slidercolor.vsh")
 
@@ -81,7 +90,7 @@ func InitRenderer() {
 }
 
 func BeginRenderer() {
-	if sliderShader == nil {
+	if capShader == nil {
 		InitRenderer()
 	}
 

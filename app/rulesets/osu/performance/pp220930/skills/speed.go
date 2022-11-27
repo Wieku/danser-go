@@ -69,6 +69,10 @@ func (s *SpeedSkill) RelevantNoteCount() (sum float64) {
 		}
 	}
 
+	if maxStrain == 0 {
+		return
+	}
+
 	for _, strain := range s.objectStrains {
 		sum += 1.0 / (1.0 + math.Exp(-(strain/maxStrain*12.0 - 6.0)))
 	}

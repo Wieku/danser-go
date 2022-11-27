@@ -6,6 +6,20 @@ import (
 	"sort"
 )
 
+type CType int
+
+const (
+	CLine = CType(iota)
+	CBezier
+	CCirArc
+	CCatmull
+)
+
+type CurveDef struct {
+	CurveType CType
+	Points    []vector.Vector2f
+}
+
 const minPartWidth = 0.0001
 
 type MultiCurve struct {
@@ -15,18 +29,27 @@ type MultiCurve struct {
 	firstPoint vector.Vector2f
 }
 
-func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
+func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 	lines := make([]Linear, 0)
 
-	switch typ {
-	case "P":
-		lines = processPerfect(points)
-	case "L":
-		lines = processLinear(points)
-	case "B":
-		lines = processBezier(points)
-	case "C":
-		lines = processCatmull(points)
+	for _, def := range curveDefs {
+		var cLines []Linear
+
+		switch def.CurveType {
+		case CCirArc:
+			cLines = processPerfect(def.Points)
+		case CLine:
+			cLines = processLinear(def.Points)
+		case CBezier:
+			cLines = processBezier(def.Points)
+		case CCatmull:
+			cLines = processCatmull(def.Points)
+		}
+
+		nLines := make([]Linear, len(lines)+len(cLines))
+		copy(nLines, lines)
+		copy(nLines[len(lines):], cLines)
+		lines = nLines
 	}
 
 	length := float32(0.0)
@@ -35,7 +58,7 @@ func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
 		length += l.GetLength()
 	}
 
-	firstPoint := points[0]
+	firstPoint := curveDefs[0].Points[0]
 
 	sections := make([]float32, len(lines)+1)
 	sections[0] = 0.0
@@ -49,8 +72,8 @@ func NewMultiCurve(typ string, points []vector.Vector2f) *MultiCurve {
 	return &MultiCurve{sections, lines, length, firstPoint}
 }
 
-func NewMultiCurveT(typ string, points []vector.Vector2f, desiredLength float64) *MultiCurve {
-	mCurve := NewMultiCurve(typ, points)
+func NewMultiCurveT(curveDefs []CurveDef, desiredLength float64) *MultiCurve {
+	mCurve := NewMultiCurve(curveDefs)
 
 	if mCurve.length > 0 {
 		diff := float64(mCurve.length) - desiredLength
