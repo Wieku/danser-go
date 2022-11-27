@@ -58,7 +58,7 @@ func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 		length += l.GetLength()
 	}
 
-	firstPoint := lines[0].Point1
+	firstPoint := curveDefs[0].Points[0]
 
 	sections := make([]float32, len(lines)+1)
 	sections[0] = 0.0

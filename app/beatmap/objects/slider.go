@@ -203,7 +203,7 @@ func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
 		nextType = currType
 	}
 
-	if len(cDef.Points) > 1 { // Lazer's multi-type slider has 1 point line
+	if len(cDef.Points) > 1 || len(defs) == 0 { // Lazer's multi-type slider has 1 point line
 		defs = append(defs, cDef)
 	}
 
