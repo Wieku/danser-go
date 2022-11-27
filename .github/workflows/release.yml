@@ -60,7 +60,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install needed packages
-        run: sudo apt-get install xorg-dev libgl1-mesa-dev libgtk-3-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install xorg-dev libgl1-mesa-dev libgtk-3-dev
 
       - name: Install golang
         uses: actions/setup-go@v3
