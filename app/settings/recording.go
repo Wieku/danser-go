@@ -95,7 +95,7 @@ func initRecording() *recording {
 			Enabled:              false,
 			OversampleMultiplier: 3,
 			BlendFrames:          5,
-			BlendFunctionID:      1,
+			BlendFunctionID:      27,
 			GaussWeightsMult:     1.5,
 		},
 	}
