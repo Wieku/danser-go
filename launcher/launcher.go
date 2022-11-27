@@ -78,7 +78,6 @@ const (
 	DanserReplay
 	Replay
 	Knockout
-	NewKnockout
 	Play
 )
 
@@ -91,8 +90,6 @@ func (m Mode) String() string {
 	case Replay:
 		return "Watch a replay"
 	case Knockout:
-		return "Watch knockout (classic)"
-	case NewKnockout:
 		return "Watch knockout"
 	case Play:
 		return "Play osu!standard"
@@ -101,7 +98,7 @@ func (m Mode) String() string {
 	return ""
 }
 
-var modes = []Mode{CursorDance, DanserReplay, Replay, Knockout, NewKnockout, Play}
+var modes = []Mode{CursorDance, DanserReplay, Replay, Knockout, Play}
 
 type PMode int
 
@@ -690,7 +687,7 @@ func (l *launcher) drawMain() {
 						l.bld.currentReplay = nil
 					}
 
-					if m != NewKnockout {
+					if m != Knockout {
 						l.bld.knockoutReplays = nil
 					}
 
@@ -781,7 +778,7 @@ func (l *launcher) drawControls() {
 	switch l.bld.currentMode {
 	case Replay:
 		l.selectReplay()
-	case NewKnockout:
+	case Knockout:
 		l.newKnockout()
 	default:
 		l.showSelect()
@@ -924,7 +921,7 @@ func (l *launcher) trySelectReplaysFromPaths(p []string) {
 		for _, replay := range replays {
 			for _, bMap := range l.beatmaps {
 				if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-					l.bld.currentMode = NewKnockout
+					l.bld.currentMode = Knockout
 					l.bld.setMap(bMap)
 
 					found = true
@@ -1190,7 +1187,7 @@ func (l *launcher) drawLowerPanel() {
 
 			s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) ||
 				(l.bld.currentMode != Replay && l.bld.currentMap == nil) ||
-				(l.bld.currentMode == NewKnockout && l.bld.numKnockoutReplays() == 0)
+				(l.bld.currentMode == Knockout && l.bld.numKnockoutReplays() == 0)
 
 			if !dRun {
 				if s {

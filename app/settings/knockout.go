@@ -32,13 +32,13 @@ type knockout struct {
 	BubbleMinimumCombo int `label:"Minimum combo to show break bubble" string:"true" min:"1" max:"1000000" showif:"Mode=2"`
 
 	// Exclude plays which contain one of the mods set here
-	ExcludeMods string `label:"Excluded mods (legacy)" tooltip:"Applicable only to classic knockout" liveedit:"false"`
+	ExcludeMods string `skip:"true" label:"Excluded mods (legacy)" tooltip:"Applicable only to classic knockout" liveedit:"false"`
 
 	// Hide specific mods from being displayed in overlay (like NF)
 	HideMods string `liveedit:"false"`
 
 	// Max players shown (excluding danser) on a map. Caps at 50.
-	MaxPlayers int `label:"Max players loaded (legacy)" string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
+	MaxPlayers int `skip:"true" label:"Max players loaded (legacy)" string:"true" min:"0" max:"100" tooltip:"Applicable only to classic knockout"`
 
 	// Min players shown on a map.
 	MinPlayers int `label:"Minimum alive players" string:"true" min:"0" max:"100" showif:"Mode=0,1,4"`

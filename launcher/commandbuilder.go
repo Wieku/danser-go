@@ -149,8 +149,6 @@ func (b *builder) getArguments() (args []string) {
 		if b.currentMode == Play {
 			args = append(args, "-play")
 		} else if b.currentMode == Knockout {
-			args = append(args, "-knockout")
-		} else if b.currentMode == NewKnockout {
 			var list []string
 
 			for _, r := range b.knockoutReplays {
