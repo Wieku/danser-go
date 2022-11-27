@@ -71,13 +71,13 @@ rm -f danser.syso
 
 $resgen <<< $resDanser
 
+cp {bass.dll,bass_fx.dll,bassmix.dll,libyuv.dll} $BUILD_DIR/
+
 $CC <<< --verbose -O3 -o $BUILD_DIR/danser-cli.exe -I. cmain/main_danser.c -I$BUILD_DIR/ -L$BUILD_DIR/ -ldanser-core $BUILD_DIR/danser.syso -municode
 
 $resgen <<< $resLauncher
 
 $CC <<< --verbose -O3 -D LAUNCHER -o $BUILD_DIR/danser.exe -I. cmain/main_danser.c -I$BUILD_DIR/ -L$BUILD_DIR/ -ldanser-core $BUILD_DIR/danser.syso -municode
-
-cp {bass.dll,bass_fx.dll,bassmix.dll,libyuv.dll} $BUILD_DIR/
 
 rm $BUILD_DIR/{danser.syso,danser-core.h}
 
