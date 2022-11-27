@@ -1,12 +1,9 @@
 package ffmpeg
 
 import (
-	"fmt"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"math"
-	"strconv"
-	"strings"
 )
 
 var easings = []easing.Easing{
@@ -45,28 +42,15 @@ var easings = []easing.Easing{
 func calculateWeights(bFrames int) []float32 {
 	var weights []float32
 
-	if settings.Recording.MotionBlur.BlendWeights.UseManualWeights {
-		weightsSplit := strings.Split(settings.Recording.MotionBlur.BlendWeights.ManualWeights, " ")
+	id := settings.Recording.MotionBlur.BlendFunctionID
+	if id < 0 || id >= len(easings) {
+		id = 0
+	}
 
-		for _, s := range weightsSplit {
-			v, err := strconv.ParseFloat(s, 32)
-			if err != nil {
-				panic(fmt.Sprintf("Failed to parse weight: %s", s))
-			}
-
-			weights = append(weights, float32(v))
-		}
-	} else {
-		id := settings.Recording.MotionBlur.BlendWeights.AutoWeightsID
-		if id < 0 || id >= len(easings) {
-			id = 0
-		}
-
-		easeFunc := easings[id]
-		for i := 0; i < bFrames; i++ {
-			w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*100
-			weights = append(weights, float32(w))
-		}
+	easeFunc := easings[id]
+	for i := 0; i < bFrames; i++ {
+		w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*100
+		weights = append(weights, float32(w))
 	}
 
 	return weights
@@ -85,11 +69,11 @@ func inOutBack(t float64) float64 {
 }
 
 func gauss(t float64) float64 {
-	return math.Exp(-math.Pow(settings.Recording.MotionBlur.BlendWeights.GaussWeightsMult*(t-1), 2))
+	return math.Exp(-math.Pow(settings.Recording.MotionBlur.GaussWeightsMult*(t-1), 2))
 }
 
 func gaussSymmetric(t float64) float64 {
-	return math.Exp(-math.Pow(settings.Recording.MotionBlur.BlendWeights.GaussWeightsMult*(t*2-1), 2))
+	return math.Exp(-math.Pow(settings.Recording.MotionBlur.GaussWeightsMult*(t*2-1), 2))
 }
 
 func pyramidSymmetric(t float64) float64 {
