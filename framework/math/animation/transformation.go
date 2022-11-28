@@ -172,6 +172,10 @@ func (t *Transformation) GetEndTime() float64 {
 	return t.endTime
 }
 
+func (t *Transformation) GetTotalEndTime() float64 {
+	return t.endTime + float64(t.repetitions)*t.loopDelay
+}
+
 func (t *Transformation) GetType() TransformationType {
 	return t.transformationType
 }

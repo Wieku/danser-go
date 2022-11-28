@@ -182,7 +182,7 @@ func (sprite *Sprite) AdjustTimesToTransformations() {
 
 	for _, t := range sprite.transforms {
 		startTime = math.Min(startTime, t.GetStartTime())
-		endTime = math.Max(endTime, t.GetEndTime())
+		endTime = math.Max(endTime, t.GetTotalEndTime())
 	}
 
 	sprite.startTime = startTime
