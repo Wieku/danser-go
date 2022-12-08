@@ -6,7 +6,7 @@ package platform
 #cgo LDFLAGS: -lole32
 #include <stdint.h>
 #include <shobjidl.h>
-#include "iconprogress.h"
+#include "winstuff.h"
 */
 import "C"
 import (
