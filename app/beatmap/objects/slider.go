@@ -180,18 +180,26 @@ func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
 	var defs []curves.CurveDef
 
 	cDef := curves.CurveDef{
-		CurveType: tryGetType(list[0]),
+		CurveType: curves.CType(-1),
 		Points:    []vector.Vector2f{slider.StartPosRaw},
 	}
 
 	nextType := curves.CType(-1)
 
-	for i := 1; i < len(list); i++ {
-		currType := tryGetType(list[i])
-		if currType == -1 {
-			list2 := strings.Split(list[i], ":")
-			x, _ := strconv.ParseFloat(list2[0], 32)
-			y, _ := strconv.ParseFloat(list2[1], 32)
+	for i := 0; i < len(list); i++ {
+		split := strings.Split(list[i], ":")
+
+		if len(split) == 1 {
+			if tType := tryGetType(split[0]); tType > -1 {
+				if cDef.CurveType == -1 {
+					cDef.CurveType = tType
+				} else {
+					nextType = tType
+				}
+			}
+		} else {
+			x, _ := strconv.ParseFloat(split[0], 32)
+			y, _ := strconv.ParseFloat(split[1], 32)
 
 			vec := vector.NewVec2f(float32(x), float32(y))
 
@@ -204,13 +212,17 @@ func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
 					CurveType: nextType,
 					Points:    []vector.Vector2f{vec},
 				}
+
+				nextType = -1
 			}
 		}
-
-		nextType = currType
 	}
 
 	if len(cDef.Points) > 1 || len(defs) == 0 { // Lazer's multi-type slider has 1 point line
+		if cDef.CurveType == -1 { // osu! uses catmull if there's no curve type
+			cDef.CurveType = curves.CCatmull
+		}
+
 		defs = append(defs, cDef)
 	}
 
