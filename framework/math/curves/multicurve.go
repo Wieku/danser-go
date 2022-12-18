@@ -75,7 +75,7 @@ func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 func NewMultiCurveT(curveDefs []CurveDef, desiredLength float64) *MultiCurve {
 	mCurve := NewMultiCurve(curveDefs)
 
-	if mCurve.length > 0 {
+	if mCurve.length > 0 && desiredLength != 0 {
 		diff := float64(mCurve.length) - desiredLength
 
 		for len(mCurve.lines) > 0 {

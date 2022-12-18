@@ -118,6 +118,10 @@ func NewSlider(data []string) *Slider {
 		return nil
 	}
 
+	if slider.pixelLength == 0 {
+		slider.pixelLength = float64(slider.multiCurve.GetLength())
+	}
+
 	slider.EndTime = slider.StartTime
 	slider.EndPosRaw = slider.multiCurve.PointAt(1.0)
 	slider.Pos = slider.StartPosRaw
