@@ -236,6 +236,7 @@ func initGameplay() *gameplay {
 		ShowHitLighting:         false,
 		FlashlightDim:           1,
 		PlayUsername:            "Guest",
+		IgnoreFailsInReplays:    false,
 		UseLazerPP:              false,
 	}
 }
@@ -262,7 +263,8 @@ type gameplay struct {
 	ShowHitLighting         bool
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
-	UseLazerPP              bool   `liveedit:"false" skip:"true"`
+	IgnoreFailsInReplays    bool
+	UseLazerPP              bool `liveedit:"false" skip:"true"`
 }
 
 type boundaries struct {

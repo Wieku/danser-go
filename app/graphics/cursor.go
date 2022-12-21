@@ -71,6 +71,7 @@ type Cursor struct {
 	IsReplayFrame bool // TODO: temporary hacky solution for spinners
 	IsPlayer      bool
 	IsAutoplay    bool
+	IsReplay      bool
 
 	OldSpinnerScoring bool
 
