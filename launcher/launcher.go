@@ -36,6 +36,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -49,6 +50,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
@@ -56,7 +58,6 @@ import (
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
 	"golang.org/x/exp/slices"
-	"image"
 	"io"
 	"io/fs"
 	"log"
@@ -189,6 +190,12 @@ type launcher struct {
 	currentEditor     *settingsEditor
 	beatmapDirUpdated bool
 	showBeatmapAlert  float64
+
+	winter        bool
+	christmas     bool
+	recordSnowPos vector.Vector2f
+
+	snow *drawables.Snow
 }
 
 func StartLauncher() {
@@ -205,9 +212,13 @@ func StartLauncher() {
 
 	goroutines.SetCrashHandler(closeHandler)
 
+	cTime := time.Now()
+
 	launcher := &launcher{
 		bld:        newBuilder(),
 		popupStack: make([]iPopup, 0),
+		winter:     (cTime.Month() == 12 && cTime.Day() >= 6) || (cTime.Month() < 3),
+		christmas:  cTime.Month() == 12 && cTime.Day() >= 6,
 	}
 
 	file, err := os.Create(filepath.Join(env.DataDir(), "launcher.log"))
@@ -333,20 +344,11 @@ func (l *launcher) startGLFW() {
 
 	input.Win = l.win
 
-	icon, eee := assets.GetPixmap("assets/textures/dansercoin.png")
-	if eee != nil {
-		log.Println(eee)
+	if l.christmas {
+		platform.LoadIcons(l.win, "dansercoin", "-s")
+	} else {
+		platform.LoadIcons(l.win, "dansercoin", "")
 	}
-	icon2, _ := assets.GetPixmap("assets/textures/dansercoin48.png")
-	icon3, _ := assets.GetPixmap("assets/textures/dansercoin24.png")
-	icon4, _ := assets.GetPixmap("assets/textures/dansercoin16.png")
-
-	l.win.SetIcon([]image.Image{icon.NRGBA(), icon2.NRGBA(), icon3.NRGBA(), icon4.NRGBA()})
-
-	icon.Dispose()
-	icon2.Dispose()
-	icon3.Dispose()
-	icon4.Dispose()
 
 	l.win.MakeContextCurrent()
 
@@ -363,6 +365,10 @@ func (l *launcher) startGLFW() {
 
 	graphics.LoadTextures()
 
+	if l.winter {
+		graphics.LoadWinterTextures()
+	}
+
 	bass.Init(false)
 
 	l.triangleSpeed = animation.NewGlider(1)
@@ -374,7 +380,19 @@ func (l *launcher) startGLFW() {
 
 	settings.Playfield.Background.Triangles.Enabled = true
 
-	l.coin = common.NewDanserCoin()
+	if l.winter {
+		imgui.PushStyleColor(imgui.StyleColorBorder, vec4(0.76, 0.9, 1, 1))
+
+		settings.Playfield.Background.Triangles.Enabled = false
+
+		l.snow = drawables.NewSnow()
+	}
+
+	if l.christmas {
+		l.coin = common.NewDanserCoinSanta()
+	} else {
+		l.coin = common.NewDanserCoin()
+	}
 
 	l.coin.DrawVisualiser(true)
 
@@ -582,7 +600,35 @@ func (l *launcher) Draw() {
 
 	l.batch.Begin()
 
+	if l.winter {
+		l.snow.Update(t)
+		l.snow.Draw(t, l.batch)
+	}
+
 	if l.mapsLoaded {
+		if l.winter {
+			bSnow := *graphics.Snow[0]
+
+			if l.showProgressBar {
+				bSnow = *graphics.Snow[5]
+			}
+
+			l.batch.DrawStObject(vector.NewVec2d(0, settings.Graphics.GetHeightF()), vector.BottomLeft, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, bSnow)
+
+			//record button
+			l.batch.DrawStObject(l.recordSnowPos.Copy64().AddS(0, 2), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[2])
+
+			//danse button
+			l.batch.DrawStObject(vector.NewVec2d(624, 448), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[1])
+
+			l.batch.DrawStObject(vector.NewVec2d(115, 240), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[4])
+
+			if l.bld.currentMode != Replay {
+				l.batch.DrawStObject(vector.NewVec2d(314, 240), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[3])
+			}
+
+		}
+
 		if l.bld.currentMap != nil && l.prevMap != l.bld.currentMap {
 			l.bg.SetBeatmap(l.bld.currentMap, false, false)
 
@@ -601,7 +647,13 @@ func (l *launcher) Draw() {
 		}
 
 		l.coin.SetPosition(vector.NewVec2d(468+155.5, 180+85))
-		l.coin.SetScale(float64(h) / 4)
+
+		if l.christmas {
+			l.coin.SetScale(float64(h) / 5)
+		} else {
+			l.coin.SetScale(float64(h) / 4)
+		}
+
 		l.coin.SetRotation(0.1)
 
 		l.coin.Update(t)
@@ -1110,6 +1162,8 @@ func (l *launcher) drawLowerPanel() {
 		imgui.SetCursorPos(vec2(20, h-spacing))
 
 		imgui.SetNextItemWidth((imgui.WindowWidth() - 40) / 4)
+
+		l.recordSnowPos = vector.NewVec2f(20+(imgui.WindowWidth()-40)/4/2, h-spacing-2)
 
 		if imgui.BeginCombo("##Watch mode", l.bld.currentPMode.String()) {
 			for _, m := range pModes {

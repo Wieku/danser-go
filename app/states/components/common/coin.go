@@ -21,10 +21,20 @@ type DanserCoin struct {
 	vis        *drawables.Visualiser
 
 	drawVisualiser bool
+	sclM           float64
 }
 
 func NewDanserCoin() *DanserCoin {
+	return newDanserCoin("coinbig.png", 1)
+}
+
+func NewDanserCoinSanta() *DanserCoin {
+	return newDanserCoin("coinbig-santa.png", 1.5625)
+}
+
+func newDanserCoin(txName string, sclM float64) *DanserCoin {
 	coin := new(DanserCoin)
+	coin.sclM = sclM
 
 	coin.BeatSynced = NewBeatSynced()
 
@@ -33,7 +43,7 @@ func NewDanserCoin() *DanserCoin {
 
 	coin.vis = drawables.NewVisualiser(1.0, 400.0, vector.NewVec2d(0, 0))
 
-	pixmap, err := assets.GetPixmap("assets/textures/coinbig.png")
+	pixmap, err := assets.GetPixmap("assets/textures/" + txName)
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +75,7 @@ func (coin *DanserCoin) Update(time float64) {
 
 	scl := (1.0 / float64(coin.coinBottom.Texture.Width)) * 1.05
 
-	nScl := coin.GetScale().Scl(scl * 2)
+	nScl := coin.GetScale().Scl(scl * 2 * coin.sclM)
 
 	bScl := nScl.Scl(innerCircleScale)
 

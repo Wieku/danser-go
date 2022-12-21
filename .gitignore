@@ -3,6 +3,7 @@
 /replays/
 /videos/
 /settings/
+/ffmpeg/
 settings.json
 settings-*
 *.db
