@@ -317,7 +317,12 @@ func GetSourceFromTexture(rg *texture.TextureRegion) Source {
 
 func checkAtlas() {
 	if atlas == nil {
-		atlas = texture.NewTextureAtlas(2048, 0)
+		mipmaps := 0
+		if settings.RECORD {
+			mipmaps = 4
+		}
+
+		atlas = texture.NewTextureAtlas(2048, mipmaps)
 		atlas.Bind(27)
 	}
 }
@@ -377,7 +382,12 @@ func loadTexture(name string, source Source) *texture.TextureRegion {
 
 			// If texture is too big load it separately
 			if rg == nil {
-				tx := texture.NewTextureSingle(image.Width, image.Height, 0)
+				mipmaps := 0
+				if settings.RECORD {
+					mipmaps = 4
+				}
+
+				tx := texture.NewTextureSingle(image.Width, image.Height, mipmaps)
 				tx.SetData(0, 0, image.Width, image.Height, image.Data)
 
 				reg := tx.GetRegion()

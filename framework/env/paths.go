@@ -1,7 +1,6 @@
 package env
 
 import (
-	"github.com/wieku/danser-go/framework/platform"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +13,7 @@ var libDir string
 var initialized bool
 
 func Init(pkgName string) {
-	execPath := platform.GetExecDir()
+	execPath := GetExecDir()
 
 	execPathLower := strings.ToLower(execPath)
 
@@ -78,4 +77,21 @@ func LibDir() string {
 	}
 
 	return libDir
+}
+
+func GetExecPath() string {
+	exec, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+
+	if exec, err = filepath.EvalSymlinks(exec); err != nil {
+		panic(err)
+	}
+
+	return exec
+}
+
+func GetExecDir() string {
+	return filepath.Dir(GetExecPath())
 }

@@ -655,6 +655,10 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	subSet := set.cursors[player.cursor]
 
+	if player.cursor.IsReplay && settings.Gameplay.IgnoreFailsInReplays {
+		return
+	}
+
 	if !subSet.forceFail && player.diff.CheckModActive(difficulty.NoFail|difficulty.Relax|difficulty.Relax2) {
 		return
 	}

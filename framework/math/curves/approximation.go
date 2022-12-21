@@ -13,11 +13,19 @@ func ApproximateCircularArc(pt1, pt2, pt3 vector.Vector2f, detail float32) []Lin
 
 	segments := int(float64(arc.r) * arc.totalAngle * float64(detail))
 
-	lines := make([]Linear, segments)
+	lines := make([]Linear, 0)
 
-	for i := 0; i < segments; i++ {
-		lines[i] = NewLinear(arc.PointAt(float32(i)/float32(segments)), arc.PointAt(float32(i+1)/float32(segments)))
+	p := pt1
+
+	for i := 1; i < segments; i++ {
+		vector3 := arc.PointAt(float32(i) / float32(segments))
+
+		lines = append(lines, NewLinear(p, vector3))
+
+		p = vector3
 	}
+
+	lines = append(lines, NewLinear(p, pt3))
 
 	return lines
 }

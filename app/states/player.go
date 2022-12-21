@@ -827,7 +827,13 @@ func (player *Player) Draw(float64) {
 	if bloomEnabled {
 		player.bloomEffect.SetThreshold(settings.Playfield.Bloom.Threshold)
 		player.bloomEffect.SetBlur(settings.Playfield.Bloom.Blur)
-		player.bloomEffect.SetPower(settings.Playfield.Bloom.Power + settings.Playfield.Bloom.BloomBeatAddition*(player.Scl-1.0)/(settings.Audio.BeatScale*0.4))
+
+		bPower := settings.Playfield.Bloom.Power
+		if settings.Playfield.Bloom.BloomToTheBeat {
+			bPower += settings.Playfield.Bloom.BloomBeatAddition * (player.Scl - 1.0) / (settings.Audio.BeatScale * 0.4)
+		}
+
+		player.bloomEffect.SetPower(bPower)
 		player.bloomEffect.Begin()
 	}
 

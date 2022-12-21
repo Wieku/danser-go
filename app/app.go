@@ -41,7 +41,6 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
-	"image"
 	"io"
 	"io/ioutil"
 	"log"
@@ -419,20 +418,11 @@ func run() {
 		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
 		input.Win = win
 
-		icon, eee := assets.GetPixmap("assets/textures/dansercoin.png")
-		if eee != nil {
-			log.Println(eee)
+		if cTime := time.Now(); cTime.Month() == 12 && cTime.Day() >= 6 {
+			platform.LoadIcons(win, "dansercoin", "-s")
+		} else {
+			platform.LoadIcons(win, "dansercoin", "")
 		}
-		icon2, _ := assets.GetPixmap("assets/textures/dansercoin48.png")
-		icon3, _ := assets.GetPixmap("assets/textures/dansercoin24.png")
-		icon4, _ := assets.GetPixmap("assets/textures/dansercoin16.png")
-
-		win.SetIcon([]image.Image{icon.NRGBA(), icon2.NRGBA(), icon3.NRGBA(), icon4.NRGBA()})
-
-		icon.Dispose()
-		icon2.Dispose()
-		icon3.Dispose()
-		icon4.Dispose()
 
 		win.MakeContextCurrent()
 
@@ -709,7 +699,7 @@ func mainLoopNormal() {
 				fCap := int(settings.Graphics.FPSCap)
 
 				if fCap < 0 {
-					fCap = -fCap*monitorHz
+					fCap = -fCap * monitorHz
 				}
 
 				limiter.FPS = fCap
