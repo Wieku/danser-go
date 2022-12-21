@@ -16,7 +16,7 @@ func ShowFileInManager(path string) {
 
 	switch runtime.GOOS {
 	case "linux":
-		err = exec.Command("busctl", "--user", "org.freedesktop.FileManager1", "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1", "ShowItems", "ass", "1", "file://"+path, "").Start()
+		_, err = exec.Command("busctl", "call", "--user", "org.freedesktop.FileManager1", "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1", "ShowItems", "ass", "1", "file://"+path, "").Output()
 
 		if err != nil {
 			log.Println("Failed to run busctl: ", err)
