@@ -110,6 +110,10 @@ func NewSlider(data []string) *Slider {
 	slider.pixelLength, _ = strconv.ParseFloat(data[7], 64)
 	slider.RepeatCount, _ = strconv.Atoi(data[6])
 
+	if slider.pixelLength*float64(slider.RepeatCount) > maxPathLength*10 {
+		return nil
+	}
+
 	slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
 	slider.RepeatCount = mutils.Min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
 
