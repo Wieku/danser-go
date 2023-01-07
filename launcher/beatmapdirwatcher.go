@@ -4,6 +4,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"log"
+	"os"
 	"path/filepath"
 )
 
@@ -11,6 +12,13 @@ var watcher *fsnotify.Watcher
 
 func setupWatcher(file string, callback func(event fsnotify.Event)) {
 	var err error
+
+	abs, _ := filepath.Abs(file)
+
+	_, err1 := os.Lstat(abs)
+	if err1 != nil { // Beatmap dir not found, abort
+		return
+	}
 
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
@@ -38,8 +46,6 @@ func setupWatcher(file string, callback func(event fsnotify.Event)) {
 			}
 		}
 	})
-
-	abs, _ := filepath.Abs(file)
 
 	err = watcher.Add(abs)
 	if err != nil {
