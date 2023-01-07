@@ -93,8 +93,8 @@ func initRecording() *recording {
 		ShowFFmpegLogs: true,
 		MotionBlur: &motionblur{
 			Enabled:              false,
-			OversampleMultiplier: 3,
-			BlendFrames:          5,
+			OversampleMultiplier: 16,
+			BlendFrames:          24,
 			BlendFunctionID:      27,
 			GaussWeightsMult:     1.5,
 		},
