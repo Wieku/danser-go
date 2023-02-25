@@ -31,7 +31,7 @@ require (
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/wieku/rplpa v0.0.0-20210919131836-bff7a920f6e1
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
-	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654
+	golang.org/x/sys v0.1.0
 	golang.org/x/text v0.3.6
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
