@@ -1772,6 +1772,7 @@ func (l *launcher) startDanser() {
 		}
 
 		l.recordProgress = 100
+		platform.SetProgress(l.win, 100, 100)
 		l.recordStatus = "Done in " + util.FormatSeconds(int(time.Since(l.encodeStart).Seconds()))
 		l.recordStatusSpeed = ""
 		l.recordStatusETA = ""
