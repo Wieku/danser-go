@@ -1,6 +1,9 @@
 package graphics
 
 import (
+	"math"
+	"sync"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
@@ -17,8 +20,6 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
-	"sync"
 )
 
 const scaling = 0.625
@@ -44,10 +45,11 @@ func initOsuShader() {
 }
 
 type osuRenderer struct {
-	Position vector.Vector2f
-	LastPos  vector.Vector2f
-	VaoPos   vector.Vector2f
-	RendPos  vector.Vector2f
+	Position      vector.Vector2f
+	LastPos       vector.Vector2f
+	VaoPos        vector.Vector2f
+	RendPos       vector.Vector2f
+	renderLastPos vector.Vector2f
 
 	Points  []vector.Vector2f
 	PointsC []float64
@@ -110,7 +112,7 @@ func newOsuRenderer() *osuRenderer {
 
 	vao.Attach(osuShader)
 
-	cursor := &osuRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3), firstTime: true}
+	cursor := &osuRenderer{LastPos: vector.NewVec2f(100, 100), Position: vector.NewVec2f(100, 100), vao: vao, mutex: &sync.Mutex{}, RendPos: vector.NewVec2f(100, 100), renderLastPos: vector.NewVec2f(100, 100), vertices: make([]float32, points*3), firstTime: true}
 	cursor.vecSize = 3
 
 	cursor.trail = skin.GetTexture("cursortrail")
@@ -320,12 +322,42 @@ func (cursor *osuRenderer) DrawM(scale, expand float64, batch *batch.QuadBatch, 
 	} else {
 		cursor.cursor.SetRotation(0)
 	}
-
-	cursor.cursor.Draw(cursor.currentTime, batch)
+	if settings.Cursor.SmoothCursor {
+		cursor.drawSmoothCursor(batch, position)
+	} else {
+		cursor.cursor.Draw(cursor.currentTime, batch)
+	}
 
 	batch.SetScale(scale, scale)
 
 	cursor.middle.Draw(cursor.currentTime, batch)
 
 	batch.End()
+}
+
+func (cursor *osuRenderer) drawSmoothCursor(batch *batch.QuadBatch, position vector.Vector2f) {
+
+	// calculate the movement of the cursor
+	delta := cursor.Position.Sub(cursor.renderLastPos)
+
+	if delta.Len() > 3 {
+		cursor.cursor.SetAlpha(3 * 1 / delta.Len())
+	} else {
+		cursor.cursor.SetAlpha(1)
+	}
+
+	// linear interpolation
+	for i := 0; i < settings.Cursor.CursorAmount; i++ {
+		// normalized t to get the progression of interpolation
+		var t float32 = float32(i) / float32(settings.Cursor.CursorAmount)
+		// set interpolated position
+		// we are moving the batch instead of the cursor but that doesn't matter
+		batch.SetTranslation(position.Scl(t).Add(cursor.renderLastPos.Scl(1 - t)).Copy64())
+
+		cursor.cursor.Draw(cursor.currentTime, batch)
+
+	}
+
+	// update lastpos
+	cursor.renderLastPos = cursor.Position
 }

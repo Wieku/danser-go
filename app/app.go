@@ -5,6 +5,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"math"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -41,15 +51,6 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
-	"io"
-	"io/ioutil"
-	"log"
-	"math"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"time"
 )
 
 const (
@@ -81,6 +82,7 @@ var screenshotMode bool
 var screenshotTime float64
 
 var preciseProgress bool
+var gamePaused bool
 
 var monitorHz int
 
@@ -175,6 +177,8 @@ func run() {
 				*record = true
 			}
 		}
+
+		gamePaused = false
 
 		recordMode = *record
 		screenshotMode = !math.IsNaN(*ss)
@@ -656,6 +660,8 @@ func mainLoopNormal() {
 					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
+				case glfw.KeySpace:
+					gamePaused = !gamePaused
 				case glfw.KeyO:
 					if mods == glfw.ModControl {
 						log.Println("Launcher: Open settings")
@@ -672,6 +678,16 @@ func mainLoopNormal() {
 	})
 
 	for !win.ShouldClose() {
+		// if the game is paused, don't bother rendering the screen
+		// glfw.PollEvents() needs to be called to check for input if the game is unpaused
+		// also the music will keep playing (running on another thread I think)
+		if gamePaused {
+			mainthread.Call(func() {
+				glfw.PollEvents()
+			})
+			continue
+		}
+
 		mainthread.Call(func() {
 			if lastVSync != settings.Graphics.VSync {
 				if settings.Graphics.VSync {
@@ -684,7 +700,6 @@ func mainLoopNormal() {
 			}
 
 			glfw.PollEvents()
-
 			pushFrame()
 
 			if scheduleScreenshot {
