@@ -906,7 +906,12 @@ func (l *launcher) selectReplay() {
 	imgui.PushFont(Font32)
 
 	if imgui.ButtonV("Select replay", bSize) {
-		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(l.currentConfig.General.GetReplaysDir()).Load()
+		dir := l.currentConfig.General.GetReplaysDir()
+		if _, err := os.Lstat(dir); err != nil {
+			dir = env.DataDir()
+		}
+
+		p, err := dialog.File().Filter("osu! replay file (*.osr)", "osr").Title("Select replay file").SetStartDir(dir).Load()
 		if err == nil {
 			l.trySelectReplayFromPath(p)
 		}
@@ -1030,8 +1035,7 @@ func (l *launcher) newKnockout() {
 	if imgui.ButtonV("Select replays", bSize) {
 		kPath := getAbsPath(launcherConfig.LastKnockoutPath)
 
-		_, err := os.Lstat(kPath)
-		if err != nil {
+		if _, err := os.Lstat(kPath); err != nil {
 			kPath = env.DataDir()
 		}
 
