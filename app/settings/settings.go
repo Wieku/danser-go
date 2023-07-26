@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -67,14 +66,7 @@ func LoadConfig(file *os.File) (*Config, error) {
 	config.srcPath = file.Name()
 	config.srcData = data
 
-	str := string(data)
-
-	// I hope it won't backfire, replacing \ or \\\\\\\ with \\ so JSON can parse it as \
-
-	str = regexp.MustCompile(`\\+`).ReplaceAllString(str, `\`)
-	str = strings.ReplaceAll(str, `\`, `\\`)
-
-	if err = json.Unmarshal([]byte(str), config); err != nil {
+	if err = json.Unmarshal(data, config); err != nil {
 		return nil, fmt.Errorf("SettingsManager: Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err)
 	}
 
