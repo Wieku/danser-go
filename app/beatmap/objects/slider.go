@@ -190,7 +190,7 @@ func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
 
 	nextType := curves.CType(-1)
 
-	for i := 0; i < len(list); i++ {
+	for i, j := 0, 0; i < len(list); i++ {
 		split := strings.Split(list[i], ":")
 
 		if len(split) == 1 {
@@ -207,7 +207,11 @@ func (slider *Slider) parseCurve(curveData string) *curves.MultiCurve {
 
 			vec := vector.NewVec2f(float32(x), float32(y))
 
-			cDef.Points = append(cDef.Points, vec)
+			if j > 0 || vec != slider.StartPosRaw { // skip the first point if it's the same as start position.
+				cDef.Points = append(cDef.Points, vec)
+			}
+
+			j++
 
 			if nextType > -1 {
 				defs = append(defs, cDef)
