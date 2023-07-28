@@ -592,10 +592,6 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 
 	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 
-	if settings.Objects.Sliders.Snaking.Out {
-		slider.ball.SetAlpha(0)
-	}
-
 	if len(slider.scorePath) > 0 {
 		angle := slider.scorePath[0].Line.GetStartAngle()
 		slider.ball.SetVFlip(angle > -math32.Pi/2 && angle < math32.Pi/2)
@@ -659,7 +655,7 @@ func (slider *Slider) IsRetarded() bool {
 
 func (slider *Slider) Update(time float64) bool {
 	if !slider.updatedAtLeastOnce {
-		slider.initSnakeIn()
+		slider.initSnake()
 
 		slider.updatedAtLeastOnce = true
 	}
@@ -783,11 +779,9 @@ func (slider *Slider) Update(time float64) bool {
 func (slider *Slider) ArmStart(clicked bool, time float64) {
 	slider.startCircle.Arm(clicked, time)
 
-	if settings.Objects.Sliders.Snaking.Out {
-		slider.ball.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, slider.StartTime, slider.StartTime, 0, 1))
-		slider.ball.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, slider.EndTime, slider.EndTime, 1, 0))
-		slider.ball.ResetValuesToTransforms()
+	slider.ball.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, slider.StartTime, slider.StartTime, 1, 1))
 
+	if settings.Objects.Sliders.Snaking.Out {
 		if time < math.Floor(slider.EndTime-slider.partLen) {
 			if slider.RepeatCount%2 == 1 {
 				slider.sliderSnakeHead.AddEvent(slider.EndTime-slider.partLen, slider.EndTime, 1)
@@ -831,9 +825,13 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 	}
 }
 
-func (slider *Slider) initSnakeIn() {
+func (slider *Slider) initSnake() {
 	slSnInS := slider.StartTime - slider.diff.Preempt
 	slSnInE := slider.StartTime - slider.diff.Preempt*2/3
+
+	if settings.Objects.Sliders.Snaking.Out {
+		slider.ball.SetAlpha(0)
+	}
 
 	if settings.Objects.Sliders.Snaking.In {
 		fadeMultiplier := 1.0 - mutils.ClampF(settings.Objects.Sliders.Snaking.FadeMultiplier, 0.0, 1.0)
