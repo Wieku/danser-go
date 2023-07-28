@@ -79,9 +79,9 @@ func createPBO(format pixconv.PixFmt) *PBO {
 	}
 
 	gl.CreateBuffers(1, &pbo.handle)
-	gl.NamedBufferStorage(pbo.handle, glSize, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
+	gl.NamedBufferStorage(pbo.handle, glSize, gl.Ptr(nil), gl.MAP_PERSISTENT_BIT|gl.MAP_COHERENT_BIT|gl.MAP_READ_BIT)
 
-	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_READ_BIT)
+	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_COHERENT_BIT|gl.MAP_READ_BIT)
 
 	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[:glSize:glSize]
 
@@ -350,7 +350,7 @@ func MakeFrame() {
 
 	pbo := <-freePBOPool // Wait for free PBO
 
-	gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
+	//gl.MemoryBarrier(gl.PIXEL_BUFFER_BARRIER_BIT)
 
 	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, pbo.handle)
 
