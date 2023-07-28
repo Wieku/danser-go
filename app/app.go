@@ -5,13 +5,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -781,35 +777,6 @@ func checkForUpdates() {
 	}
 }
 
-func printPlatformInfo() {
-	const unknown = "Unknown"
-
-	osName, cpuName, ramAmount := unknown, unknown, unknown
-
-	hStat, err := host.Info()
-	if err == nil {
-		osName = hStat.Platform + " " + hStat.PlatformVersion
-	}
-
-	cStats, err := cpu.Info()
-	if err == nil && len(cStats) > 0 {
-		cpuName = fmt.Sprintf("%s, %d cores", strings.TrimSpace(cStats[0].ModelName), cStats[0].Cores)
-	}
-
-	mStat, err := mem.VirtualMemory()
-	if err == nil {
-		ramAmount = humanize.IBytes(mStat.Total)
-	}
-
-	log.Println("-------------------------------------------------------------------")
-	log.Println("danser-go version:", build.VERSION)
-	log.Println("Ran using:", os.Args)
-	log.Println("OS: ", osName)
-	log.Println("CPU:", cpuName)
-	log.Println("RAM:", ramAmount)
-	log.Println("-------------------------------------------------------------------")
-}
-
 func Run() {
 	defer func() {
 		var err any
@@ -833,7 +800,7 @@ func Run() {
 
 	log.SetOutput(file)
 
-	printPlatformInfo()
+	platform.PrintPlatformInfo()
 
 	log.SetOutput(io.MultiWriter(os.Stdout, file))
 

@@ -226,9 +226,11 @@ func StartLauncher() {
 		panic(err)
 	}
 
-	log.SetOutput(io.MultiWriter(os.Stdout, file))
+	log.SetOutput(file)
 
-	log.Println("danser-go version:", build.VERSION)
+	platform.PrintPlatformInfo()
+
+	log.SetOutput(io.MultiWriter(os.Stdout, file))
 
 	loadLauncherConfig()
 
