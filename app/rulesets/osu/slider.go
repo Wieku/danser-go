@@ -314,6 +314,14 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 	}
 
 	if (time >= int64(slider.hitSlider.GetEndTime()) || (processSliderEndsAhead && int64(slider.hitSlider.GetEndTime())-time == 1)) && !state.isHit {
+		if !state.isStartHit {
+			if len(slider.players) == 1 {
+				slider.hitSlider.ArmStart(false, float64(time))
+			}
+
+			state.isStartHit = true
+		}
+
 		if state.startResult != Miss {
 			state.scored++
 		}
