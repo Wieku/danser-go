@@ -7,10 +7,28 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/env"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
+
+func StartLogging(logName string) {
+	log.Println(build.ProgramName,"version:", build.VERSION)
+
+	file, err := os.Create(filepath.Join(env.DataDir(), logName+".log"))
+	if err != nil {
+		panic(err)
+	}
+
+	log.SetOutput(file)
+
+	PrintPlatformInfo()
+
+	log.SetOutput(io.MultiWriter(os.Stdout, file))
+}
 
 func PrintPlatformInfo() {
 	osName, cpuName, ramAmount := "Unknown", "Unknown", "Unknown"

@@ -221,16 +221,7 @@ func StartLauncher() {
 		christmas:  cTime.Month() == 12 && cTime.Day() >= 6,
 	}
 
-	file, err := os.Create(filepath.Join(env.DataDir(), "launcher.log"))
-	if err != nil {
-		panic(err)
-	}
-
-	log.SetOutput(file)
-
-	platform.PrintPlatformInfo()
-
-	log.SetOutput(io.MultiWriter(os.Stdout, file))
+	platform.StartLogging("launcher")
 
 	loadLauncherConfig()
 

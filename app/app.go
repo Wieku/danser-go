@@ -37,12 +37,10 @@ import (
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
-	"io"
 	"io/ioutil"
 	"log"
 	"math"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -791,18 +789,7 @@ func Run() {
 
 	goroutines.SetCrashHandler(closeHandler)
 
-	log.Println("danser-go version:", build.VERSION)
-
-	file, err := os.Create(filepath.Join(env.DataDir(), "danser.log"))
-	if err != nil {
-		panic(err)
-	}
-
-	log.SetOutput(file)
-
-	platform.PrintPlatformInfo()
-
-	log.SetOutput(io.MultiWriter(os.Stdout, file))
+	platform.StartLogging("danser")
 
 	platform.DisableQuickEdit()
 
