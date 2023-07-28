@@ -1618,13 +1618,14 @@ func (l *launcher) createConfigList() {
 			stPath := strings.ReplaceAll(strings.TrimPrefix(strings.TrimSuffix(path, ".json"), env.ConfigDir()+string(os.PathSeparator)), "\\", "/")
 
 			if stPath != "credentials" && stPath != "default" && stPath != "launcher" {
-				log.Println("Config:", stPath)
 				l.configList = append(l.configList, stPath)
 			}
 		}
 
 		return nil
 	})
+
+	log.Println("Available configs:", strings.Join(l.configList, ", "))
 
 	sort.Strings(l.configList)
 
