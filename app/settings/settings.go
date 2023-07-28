@@ -2,8 +2,10 @@ package settings
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/itchio/lzma"
 	"github.com/wieku/danser-go/framework/files"
 	"io"
 	"log"
@@ -269,4 +271,20 @@ func (config *Config) Save(path string, forceSave bool) {
 
 		config.srcPath = path
 	}
+}
+
+func (config *Config) GetCompressedString() string {
+	data, err := json.MarshalIndent(config, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+
+	buf := new(bytes.Buffer)
+
+	writer := lzma.NewWriterLevel(buf, 9)
+
+	_, _ = writer.Write(data)
+	_ = writer.Close()
+
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }

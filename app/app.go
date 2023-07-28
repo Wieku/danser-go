@@ -253,6 +253,8 @@ func run() {
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
+		log.Println("Current config:", settings.GetCompressedString())
+
 		if !newSettings && len(os.Args) == 1 {
 			platform.OpenURL("https://youtu.be/dQw4w9WgXcQ")
 			closeAfterSettingsLoad = true
@@ -334,6 +336,10 @@ func run() {
 			panic("Failed to initialize GLFW: " + err.Error())
 		}
 
+		if !closeAfterSettingsLoad {
+			log.Println("GLFW Initialized!")
+		}
+
 		platform.SetupContext()
 
 		glfw.WindowHint(glfw.Resizable, glfw.False)
@@ -393,6 +399,8 @@ func run() {
 			settings.SKIP = false
 		}
 
+		log.Println("Creating window...")
+
 		if settings.Graphics.Fullscreen {
 			glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
 			glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
@@ -426,7 +434,7 @@ func run() {
 
 		win.MakeContextCurrent()
 
-		log.Println("GLFW initialized!")
+		log.Println("Window created!")
 
 		err = platform.GLInit(*gldebug)
 		if err != nil {
