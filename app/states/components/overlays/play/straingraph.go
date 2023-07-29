@@ -2,8 +2,8 @@ package play
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -42,18 +42,18 @@ type StrainGraph struct {
 	innerDarkness float64
 }
 
-func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
+func NewStrainGraph(beatMap *beatmap.BeatMap) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
-		strains:       pp220930.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff),
-		startTime:     ruleset.GetBeatMap().HitObjects[mutils.Min(1, len(ruleset.GetBeatMap().HitObjects)-1)].GetStartTime(),
-		endTime:       ruleset.GetBeatMap().HitObjects[len(ruleset.GetBeatMap().HitObjects)-1].GetStartTime(),
+		strains:       pp220930.CalculateStrainPeaks(beatMap.HitObjects, beatMap.Diff),
+		startTime:     beatMap.HitObjects[mutils.Min(1, len(beatMap.HitObjects)-1)].GetStartTime(),
+		endTime:       beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime(),
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
 	}
 
 	// Those magic numbers are derived from sr formula with all difficulty values being 0 (e.g. at breaks)
 	graph.baseLine = 0.1401973407499798
-	if ruleset.GetBeatMap().Diff.CheckModActive(difficulty.Flashlight) {
+	if beatMap.Diff.CheckModActive(difficulty.Flashlight) {
 		graph.baseLine = 0.14386309174146011
 	}
 

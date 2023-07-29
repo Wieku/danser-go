@@ -186,7 +186,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
 
-	overlay.strainGraph = play.NewStrainGraph(ruleset)
+	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap())
 
 	overlay.resultsFade = animation.NewGlider(0)
 
