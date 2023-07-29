@@ -68,9 +68,9 @@ type ISprite interface {
 
 	SetVFlip(on bool)
 
-	SetCutX(cutX float64)
+	SetCutX(left, right float64)
 
-	SetCutY(cutY float64)
+	SetCutY(top, bottom float64)
 
 	SetCutOrigin(origin vector.Vector2d)
 

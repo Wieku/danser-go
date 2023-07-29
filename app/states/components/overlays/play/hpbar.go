@@ -113,7 +113,7 @@ func (hpBar *HpBar) Update(time float64) {
 
 	hpBar.kiIcon.SetPosition(vector.NewVec2d(hpBar.hpBasePosition.X, hpBar.kiPosY).AddS(float64(hpBar.healthBar.Texture.Width)*hpBar.displayHp, hpBar.hpSlide.GetValue()).Scl(settings.Gameplay.HpBar.Scale))
 
-	hpBar.healthBar.SetCutX(1.0 - hpBar.displayHp)
+	hpBar.healthBar.SetCutX(0, 1.0-hpBar.displayHp)
 
 	hpBar.healthBar.Update(time)
 	hpBar.kiIcon.Update(time)

@@ -71,8 +71,8 @@ func NewStrainGraph(ruleset *osu.OsuRuleSet) *StrainGraph {
 func (graph *StrainGraph) Update(time float64) {
 	graph.time = time
 	graph.progress = mutils.ClampF((time-graph.startTime)/(graph.endTime-graph.startTime), 0, 1)
-	graph.leftSprite.SetCutX(1 - graph.progress)
-	graph.rightSprite.SetCutX(graph.progress)
+	graph.leftSprite.SetCutX(0, 1-graph.progress)
+	graph.rightSprite.SetCutX(graph.progress, 0)
 }
 
 func (graph *StrainGraph) generateCurve() curves.Curve {

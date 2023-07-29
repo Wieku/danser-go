@@ -374,7 +374,7 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 			bars++
 		}
 
-		spinner.metre.SetCutY(1.0 - float64(bars)/10)
+		spinner.metre.SetCutY(1.0-float64(bars)/10, 0)
 	}
 }
 
