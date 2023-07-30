@@ -196,6 +196,8 @@ type launcher struct {
 	recordSnowPos vector.Vector2f
 
 	snow *drawables.Snow
+
+	timeMenu *timePopup
 }
 
 func StartLauncher() {
@@ -874,18 +876,18 @@ func (l *launcher) drawControls() {
 		imgui.TableNextColumn()
 
 		if imgui.ButtonV("Time/Offset", vec2(-1, imgui.TextLineHeight()*2)) {
-			timePopup := newPopupF("Set times", popMedium, func() {
-				drawTimeMenu(l.bld)
-			})
+			if l.timeMenu == nil {
+				l.timeMenu = newTimePopup(l.bld)
 
-			timePopup.setCloseListener(func() {
-				if l.bld.currentMap != nil && l.bld.currentMap.LocalOffset != int(l.bld.offset.value) {
-					l.bld.currentMap.LocalOffset = int(l.bld.offset.value)
-					database.UpdateLocalOffset(l.bld.currentMap)
-				}
-			})
+				l.timeMenu.setCloseListener(func() {
+					if l.bld.currentMap != nil && l.bld.currentMap.LocalOffset != int(l.bld.offset.value) {
+						l.bld.currentMap.LocalOffset = int(l.bld.offset.value)
+						database.UpdateLocalOffset(l.bld.currentMap)
+					}
+				})
+			}
 
-			l.openPopup(timePopup)
+			l.openPopup(l.timeMenu)
 		}
 
 		imgui.EndTable()
