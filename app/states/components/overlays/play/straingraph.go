@@ -24,14 +24,28 @@ type StrainGraph struct {
 	strains       pp220930.StrainPeaks
 	baseLine      float64
 	maxStrain     float32
-	time          float64
 
-	startTime   float64
-	endTime     float64
-	progress    float64
-	fbo         *buffer.Framebuffer
-	leftSprite  *sprite.Sprite
-	rightSprite *sprite.Sprite
+	countFromZero bool
+	countTrueEnd  bool
+
+	startTime float64
+	endTime   float64
+
+	trueStartTime float64
+	trueEndTime   float64
+
+	strainStartTime float64
+	strainEndTime   float64
+	strainLength    float64
+
+	startProgress float64
+	endProgress   float64
+
+	fbo *buffer.Framebuffer
+
+	leftSprite   *sprite.Sprite
+	centerSprite *sprite.Sprite
+	rightSprite  *sprite.Sprite
 
 	screenWidth float64
 
@@ -42,13 +56,32 @@ type StrainGraph struct {
 	innerDarkness float64
 }
 
-func NewStrainGraph(beatMap *beatmap.BeatMap) *StrainGraph {
+func NewStrainGraph(beatMap *beatmap.BeatMap, countFromZero, countTrueEnd bool) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
 		strains:       pp220930.CalculateStrainPeaks(beatMap.HitObjects, beatMap.Diff),
-		startTime:     beatMap.HitObjects[mutils.Min(1, len(beatMap.HitObjects)-1)].GetStartTime(),
-		endTime:       beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime(),
+
+		trueStartTime: beatMap.HitObjects[mutils.Min(0, len(beatMap.HitObjects)-1)].GetStartTime(),
+		trueEndTime:   beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime(),
+
+		strainStartTime: beatMap.HitObjects[mutils.Min(1, len(beatMap.HitObjects)-1)].GetStartTime(),
+		strainEndTime:   beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime(),
+
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
+		countFromZero: countFromZero,
+		countTrueEnd:  countTrueEnd,
+	}
+
+	graph.strainLength = graph.strainEndTime - graph.strainStartTime
+
+	graph.startTime = graph.trueStartTime
+	if countFromZero {
+		graph.startTime = mutils.Min(graph.startTime, 0)
+	}
+
+	graph.endTime = graph.strainEndTime
+	if countTrueEnd {
+		graph.endTime = graph.trueEndTime
 	}
 
 	// Those magic numbers are derived from sr formula with all difficulty values being 0 (e.g. at breaks)
@@ -58,45 +91,69 @@ func NewStrainGraph(beatMap *beatmap.BeatMap) *StrainGraph {
 	}
 
 	graph.leftSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopLeft)
-	graph.leftSprite.SetColor(color.NewIRGB(231, 141, 235))
 	graph.leftSprite.SetCutOrigin(vector.CentreLeft)
 
+	graph.centerSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopLeft)
+	graph.centerSprite.SetCutOrigin(vector.CentreLeft)
+
 	graph.rightSprite = sprite.NewSpriteSingle(nil, 0, vector.NewVec2d(graph.screenWidth, 728), vector.TopRight)
-	graph.rightSprite.SetColor(color.NewL(0.2))
 	graph.rightSprite.SetCutOrigin(vector.CentreRight)
 
 	return graph
 }
 
-func (graph *StrainGraph) Update(time float64) {
-	graph.time = time
-	graph.progress = mutils.ClampF((time-graph.startTime)/(graph.endTime-graph.startTime), 0, 1)
-	graph.leftSprite.SetCutX(0, 1-graph.progress)
-	graph.rightSprite.SetCutX(graph.progress, 0)
+func (graph *StrainGraph) SetTimes(start, end float64) {
+	graph.startProgress = mutils.ClampF((start-graph.startTime)/math.Max(graph.endTime-graph.startTime, 1), 0, 1)
+	graph.endProgress = mutils.ClampF((end-graph.startTime)/math.Max(graph.endTime-graph.startTime, 1), 0, 1)
+
+	graph.leftSprite.SetCutX(0, 1-graph.startProgress)
+
+	graph.centerSprite.SetCutOrigin(vector.CentreLeft.AddS(graph.startProgress*2, 0))
+	graph.centerSprite.SetCutX(1, 1-(graph.endProgress-graph.startProgress)/(1-graph.startProgress))
+
+	graph.rightSprite.SetCutX(graph.endProgress, 0)
 }
 
 func (graph *StrainGraph) generateCurve() curves.Curve {
+	if len(graph.strains.Total) == 0 {
+		graph.maxStrain = 1
+		return curves.NewLinear(vector.NewVec2f(0, 0), vector.NewVec2f(1, 0))
+	}
+
 	// Number of strain sections to merge
 	// For example for a 5-minute map we will get 10 sections, so 4s because one section is 400ms
 	// It's also scaled with width of the strain graph so wider one shows more detailed graph
 	sectSize := mutils.Max(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
 
-	var toM []vector.Vector2f
+	var points []vector.Vector2f
 
-	for i := 0; i < len(graph.strains.Total); i += sectSize {
-		maxI := mutils.Min(len(graph.strains.Total), i+sectSize)
-
-		max := 0.0
-
-		for j := i; j < maxI; j++ {
-			max = math.Max(max, graph.strains.Total[j]-graph.baseLine)
-		}
-
-		graph.maxStrain = math32.Max(graph.maxStrain, float32(max))
-		toM = append(toM, vector.NewVec2f(float32(i/sectSize), float32(max)))
+	if graph.countFromZero && graph.trueStartTime > 0 { // Don't add intro if map starts before music
+		points = append(points, vector.NewVec2f(0, 0), vector.NewVec2f(float32(math.Max(0, graph.trueStartTime-400)), 0))
 	}
 
-	return curves.NewMonotoneCubic(toM)
+	points = append(points, vector.NewVec2f(float32(graph.trueStartTime-0.001), float32(graph.strains.Total[0]-graph.baseLine))) //slight nudge to the left in case it's a 1 object map
+
+	sections := (len(graph.strains.Total) - 1) / sectSize
+
+	for i := 0; i <= sections; i++ {
+		bI := i * sectSize
+
+		maxI := mutils.Min(len(graph.strains.Total), bI+sectSize)
+
+		var lMaxStrain float32
+		for ; bI < maxI; bI++ {
+			lMaxStrain = math32.Max(lMaxStrain, float32(graph.strains.Total[bI]-graph.baseLine))
+		}
+
+		graph.maxStrain = math32.Max(graph.maxStrain, lMaxStrain)
+		points = append(points, vector.NewVec2f(float32(graph.strainStartTime+(float64(i)/float64(mutils.Max(1, sections)))*graph.strainLength), lMaxStrain))
+	}
+
+	if graph.countTrueEnd && graph.trueEndTime > graph.strainEndTime {
+		points = append(points, vector.NewVec2f(float32(graph.trueEndTime), float32(graph.strains.Total[len(graph.strains.Total)-1]-graph.baseLine)))
+	}
+
+	return curves.NewMonotoneCubic(points)
 }
 
 func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
@@ -146,7 +203,7 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 
 	strainScale := (fboHeight - yOffset) / graph.maxStrain
 
-	pY1 := math32.Max(spline.PointAt(0).X, 0)*strainScale + yOffset
+	pY1 := math32.Max(spline.PointAt(0).Y, 0)*strainScale + yOffset
 
 	for pX := step; pX <= fboWidth; pX += step {
 		pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
@@ -159,7 +216,7 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 	if graph.drawOutline {
 		graph.shapeRenderer.SetColor(1, 1, 1, 1)
 
-		pY1 = math32.Max(spline.PointAt(0).X, 0)*strainScale + yOffset
+		pY1 = math32.Max(spline.PointAt(0).Y, 0)*strainScale + yOffset
 
 		graph.shapeRenderer.DrawCircle(vector.NewVec2f(0, pY1), oWidth/2)
 
@@ -185,9 +242,11 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 
 	// Reestablish scaling using final FBO sizes because 768/screenHeight was causing 1px gaps in some scenarios
 	graph.leftSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
+	graph.centerSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
 	graph.rightSprite.SetScaleV(vector.NewVec2d(graph.size.X/float64(region.Width), graph.size.Y/float64(region.Height)))
 
 	graph.leftSprite.Texture = &region
+	graph.centerSprite.Texture = &region
 	graph.rightSprite.Texture = &region
 }
 
@@ -215,14 +274,22 @@ func (graph *StrainGraph) Draw(batch *batch.QuadBatch, alpha float64) {
 	basePos := vector.NewVec2d(conf.XPosition, conf.YPosition)
 
 	pos1 := basePos.Sub(origin.Mult(graph.size))
-	pos2 := pos1.AddS(graph.size.X, 0)
+	pos2 := pos1.AddS(graph.startProgress*graph.size.X, 0)
+	pos3 := pos1.AddS(graph.size.X, 0)
 
 	graph.leftSprite.SetPosition(pos1)
-	graph.rightSprite.SetPosition(pos2)
+	graph.centerSprite.SetPosition(pos2)
+	graph.rightSprite.SetPosition(pos3)
 
-	graph.leftSprite.SetColor(color.NewHSV(float32(conf.FgColor.Hue), float32(conf.FgColor.Saturation), float32(conf.FgColor.Value)))
-	graph.rightSprite.SetColor(color.NewHSV(float32(conf.BgColor.Hue), float32(conf.BgColor.Saturation), float32(conf.BgColor.Value)))
+	bgParsed := color.NewHSV(float32(conf.BgColor.Hue), float32(conf.BgColor.Saturation), float32(conf.BgColor.Value))
+	fgParsed := color.NewHSV(float32(conf.FgColor.Hue), float32(conf.FgColor.Saturation), float32(conf.FgColor.Value))
+
+	graph.leftSprite.SetColor(bgParsed)
+	graph.centerSprite.SetColor(fgParsed)
+	graph.rightSprite.SetColor(bgParsed)
+
 	graph.leftSprite.Draw(0, batch)
+	graph.centerSprite.Draw(0, batch)
 	graph.rightSprite.Draw(0, batch)
 
 	batch.ResetTransform()

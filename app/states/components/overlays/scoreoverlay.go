@@ -186,7 +186,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
 
-	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap())
+	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap(), false, true)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -434,7 +434,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.rankBack.Update(overlay.audioTime)
 	overlay.rankFront.Update(overlay.audioTime)
 	overlay.arrows.Update(overlay.audioTime)
-	overlay.strainGraph.Update(overlay.audioTime)
+	overlay.strainGraph.SetTimes(0, overlay.audioTime)
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
