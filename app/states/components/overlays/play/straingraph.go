@@ -56,10 +56,10 @@ type StrainGraph struct {
 	innerDarkness float64
 }
 
-func NewStrainGraph(beatMap *beatmap.BeatMap, countFromZero, countTrueEnd bool) *StrainGraph {
+func NewStrainGraph(beatMap *beatmap.BeatMap, peaks pp220930.StrainPeaks, countFromZero, countTrueEnd bool) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
-		strains:       pp220930.CalculateStrainPeaks(beatMap.HitObjects, beatMap.Diff),
+		strains:       peaks,
 
 		trueStartTime: beatMap.HitObjects[mutils.Min(0, len(beatMap.HitObjects)-1)].GetStartTime(),
 		trueEndTime:   beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime(),
@@ -159,6 +159,11 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 	const step float32 = 0.5
 
+	splinePoint := func(spline curves.Curve, x float32) float32 {
+		y := math32.Max(spline.PointAt(x).Y, 0) / graph.maxStrain
+		return y * y
+	}
+
 	upscale := settings.Graphics.GetHeightF() / 768
 
 	conf := settings.Gameplay.StrainGraph
@@ -201,12 +206,12 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 
 	spline := graph.generateCurve()
 
-	strainScale := (fboHeight - yOffset) / graph.maxStrain
+	strainScale := fboHeight - yOffset
 
-	pY1 := math32.Max(spline.PointAt(0).Y, 0)*strainScale + yOffset
+	pY1 := splinePoint(spline, 0)*strainScale + yOffset
 
 	for pX := step; pX <= fboWidth; pX += step {
-		pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
+		pY2 := splinePoint(spline, pX/fboWidth)*strainScale + yOffset
 
 		graph.shapeRenderer.DrawQuad(pX-step, 0, pX-step, pY1, pX, pY2, pX, 0)
 
@@ -216,12 +221,12 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 	if graph.drawOutline {
 		graph.shapeRenderer.SetColor(1, 1, 1, 1)
 
-		pY1 = math32.Max(spline.PointAt(0).Y, 0)*strainScale + yOffset
+		pY1 = splinePoint(spline, 0)*strainScale + yOffset
 
 		graph.shapeRenderer.DrawCircle(vector.NewVec2f(0, pY1), oWidth/2)
 
 		for pX := step; pX <= fboWidth; pX += step {
-			pY2 := math32.Max(spline.PointAt(pX/fboWidth).Y, 0)*strainScale + yOffset
+			pY2 := splinePoint(spline, pX/fboWidth)*strainScale + yOffset
 
 			graph.shapeRenderer.DrawLine(pX-step, pY1, pX, pY2, oWidth)
 			graph.shapeRenderer.DrawCircle(vector.NewVec2f(pX, pY2), oWidth/2)
