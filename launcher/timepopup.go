@@ -13,7 +13,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/util"
-	"time"
 )
 
 type timePopup struct {
@@ -112,8 +111,6 @@ func (m *timePopup) drawStrainGraph() {
 
 			beatmap.ParseTimingPointsAndPauses(m.timeCMap)
 			beatmap.ParseObjects(m.timeCMap, true, false)
-
-			time.Sleep(2 * time.Second)
 
 			m.peaks = pp220930.CalculateStrainPeaks(m.timeCMap.HitObjects, m.timeCMap.Diff)
 
