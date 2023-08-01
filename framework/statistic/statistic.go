@@ -1,11 +1,14 @@
 package statistic
 
-var counters = make(map[StatisticType]int64)
-var pastCounters = make(map[StatisticType]int64)
+var counters = make([]int64, size)
+var pastCounters = make([]int64, size)
 
 func Reset() {
-	pastCounters = counters
-	counters = make(map[StatisticType]int64)
+	pastCounters, counters = counters, pastCounters
+
+	for i := StatisticType(0); i < size; i++ {
+		counters[i] = 0
+	}
 }
 
 func Increment(typ StatisticType) {
