@@ -3,9 +3,9 @@ package platform
 import (
 	"fmt"
 	"github.com/dustin/go-humanize"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/env"
 	"io"
@@ -16,7 +16,7 @@ import (
 )
 
 func StartLogging(logName string) {
-	log.Println(build.ProgramName,"version:", build.VERSION)
+	log.Println(build.ProgramName, "version:", build.VERSION)
 
 	file, err := os.Create(filepath.Join(env.DataDir(), logName+".log"))
 	if err != nil {
