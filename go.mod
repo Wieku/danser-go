@@ -1,6 +1,6 @@
 module github.com/wieku/danser-go
 
-go 1.19
+go 1.20
 
 require (
 	github.com/EdlinOrg/prominentcolor v1.0.0
