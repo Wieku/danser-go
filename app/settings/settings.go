@@ -281,7 +281,7 @@ func (config *Config) GetCompressedString() string {
 
 	buf := new(bytes.Buffer)
 
-	writer := lzma.NewWriterLevel(buf, 9)
+	writer := lzma.NewWriter(buf)
 
 	_, _ = writer.Write(data)
 	_ = writer.Close()
