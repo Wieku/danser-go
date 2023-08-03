@@ -33,16 +33,17 @@ func setupWatcher(file string, callback func(event fsnotify.Event)) {
 					return
 				}
 
+				log.Println("DirWatcher: New Event:", event.String())
+
 				if callback != nil {
 					callback(event)
 				}
-				//log.Println("SettingsManager: Detected", file, "modification, reloading...", event.String())
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
 
-				log.Println("error:", err)
+				log.Println("DirWatcher: Error:", err)
 			}
 		}
 	})
