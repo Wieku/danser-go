@@ -23,16 +23,6 @@ func Lerp[T constraints.Integer | constraints.Float, V constraints.Float](min, m
 	return min + T(V(max-min)*t)
 }
 
-func Compare[T constraints.Integer | constraints.Float](a, b T) int {
-	if a < b {
-		return -1
-	} else if a > b {
-		return 1
-	}
-
-	return 0
-}
-
 func Signum[T constraints.Float](a T) T {
 	if a == 0 {
 		return 0

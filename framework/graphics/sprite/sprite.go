@@ -7,7 +7,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 	"slices"
@@ -70,7 +69,7 @@ func (sprite *Sprite) Update(time float64) {
 				n := sort.Search(len(sprite.transforms)-i-1, func(f int) bool {
 					b := sprite.transforms[f+i+1]
 
-					r := mutils.Compare(transform.GetStartTime(), b.GetStartTime())
+					r := cmp.Compare(transform.GetStartTime(), b.GetStartTime())
 					return r == -1 || (r == 0 && transform.GetID() < b.GetID())
 				})
 

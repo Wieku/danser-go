@@ -700,12 +700,12 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 			res = compareStrings(b1.Creator, b2.Creator)
 		case DateAdded:
 			if compareStrings(b1.Dir, b2.Dir) != 0 || mutils.Abs(b1.LastModified/1000-b2.LastModified/1000) > 10 {
-				res = mutils.Compare(b1.LastModified/1000, b2.LastModified/1000)
+				res = cmp.Compare(b1.LastModified/1000, b2.LastModified/1000)
 			} else {
 				res = 0
 			}
 		case Difficulty:
-			res = mutils.Compare(b1.Stars, b2.Stars)
+			res = cmp.Compare(b1.Stars, b2.Stars)
 		}
 
 		if !launcherConfig.SortAscending {
