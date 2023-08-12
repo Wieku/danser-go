@@ -2,7 +2,7 @@ package settings
 
 import (
 	"fmt"
-	"golang.org/x/exp/slices"
+	"slices"
 	"strconv"
 	"strings"
 )

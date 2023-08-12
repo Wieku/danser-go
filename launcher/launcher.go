@@ -2,6 +2,7 @@ package launcher
 
 import (
 	"bufio"
+	"cmp"
 	"errors"
 	"fmt"
 	"github.com/faiface/mainthread"
@@ -34,13 +35,13 @@ import (
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
-	"golang.org/x/exp/slices"
 	"io"
 	"io/fs"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -453,8 +454,8 @@ func (l *launcher) loadBeatmaps() {
 			}
 		})
 
-		slices.SortFunc(beatmaps, func(a, b *beatmap.BeatMap) bool {
-			return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+		slices.SortFunc(beatmaps, func(a, b *beatmap.BeatMap) int {
+			return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 		})
 
 		bSplash = "Calculating Star Rating...\nThis may take a while...\n\n\n"
@@ -508,8 +509,8 @@ func (l *launcher) loadLatestReplay() {
 		return
 	}
 
-	slices.SortFunc(list, func(a, b *lastModPath) bool {
-		return a.tStamp.After(b.tStamp)
+	slices.SortFunc(list, func(a, b *lastModPath) int {
+		return -a.tStamp.Compare(b.tStamp)
 	})
 
 	// Load the newest that can be used
@@ -974,8 +975,8 @@ func (l *launcher) trySelectReplaysFromPaths(p []string) {
 				}
 			}
 
-			slices.SortFunc(finalReplays, func(a, b *knockoutReplay) bool {
-				return a.parsedReplay.Score > b.parsedReplay.Score
+			slices.SortFunc(finalReplays, func(a, b *knockoutReplay) int {
+				return -cmp.Compare(a.parsedReplay.Score, b.parsedReplay.Score)
 			})
 
 			l.bld.knockoutReplays = finalReplays

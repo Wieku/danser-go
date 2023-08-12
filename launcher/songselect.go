@@ -1,6 +1,7 @@
 package launcher
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/beatmap"
@@ -12,10 +13,10 @@ import (
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
-	"golang.org/x/exp/slices"
 	"math"
 	"math/rand"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -687,7 +688,7 @@ func compareStrings(l, r string) int {
 }
 
 func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
-	slices.SortStableFunc(bMaps, func(b1, b2 *beatmap.BeatMap) bool {
+	slices.SortStableFunc(bMaps, func(b1, b2 *beatmap.BeatMap) int {
 		var res int
 
 		switch sortBy {
@@ -712,7 +713,7 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 		}
 
 		if res != 0 {
-			return res < 0
+			return res
 		}
 
 		res = compareStrings(b1.Dir, b2.Dir)
@@ -722,9 +723,9 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 		}
 
 		if res != 0 {
-			return res < 0
+			return res
 		}
 
-		return mutils.Compare(b1.Stars, b2.Stars) < 1 // Don't flip grouped difficulties
+		return cmp.Compare(b1.Stars, b2.Stars) // Don't flip grouped difficulties
 	})
 }

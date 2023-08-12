@@ -1,6 +1,7 @@
 package sprite
 
 import (
+	"cmp"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
@@ -8,8 +9,8 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"golang.org/x/exp/slices"
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -151,9 +152,14 @@ func (sprite *Sprite) AddTransformsUnordered(transformations []*animation.Transf
 }
 
 func (sprite *Sprite) SortTransformations() {
-	slices.SortFunc(sprite.transforms, func(a, b *animation.Transformation) bool {
-		r := mutils.Compare(a.GetStartTime(), b.GetStartTime())
-		return r == -1 || (r == 0 && a.GetID() < b.GetID())
+	slices.SortFunc(sprite.transforms, func(a, b *animation.Transformation) int {
+		r := cmp.Compare(a.GetStartTime(), b.GetStartTime())
+
+		if r != 0 {
+			return r
+		}
+
+		return cmp.Compare(a.GetID(), b.GetID())
 	})
 }
 
