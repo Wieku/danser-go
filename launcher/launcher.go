@@ -1,27 +1,5 @@
 package launcher
 
-/*
-#ifdef _WIN32
-
-#include <windows.h>
-#include <winuser.h>
-
-void beep_custom() {
-	MessageBeep(0x00000000L);
-}
-void beep_error() {
-	MessageBeep(0x00000030L);
-}
-
-#else
-
-void beep_custom() {}
-
-void beep_error() {}
-
-#endif
-*/
-import "C"
 import (
 	"bufio"
 	"errors"
@@ -1799,7 +1777,7 @@ func (l *launcher) startDanser() {
 				platform.ShowFileInManager(resultFile)
 			}
 
-			C.beep_custom()
+			platform.Beep(platform.Ok)
 		}
 
 		rFile.Close()
