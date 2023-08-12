@@ -51,7 +51,7 @@ func (spline *Spline) PointAt(t float32) vector.Vector2f {
 		return withoutFirst[i] >= desiredWidth
 	})
 
-	index = mutils.Min(index, len(spline.path)-1)
+	index = min(index, len(spline.path)-1)
 
 	if spline.sections[index+1]-spline.sections[index] == 0 {
 		return spline.path[index].PointAt(0)

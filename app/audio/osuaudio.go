@@ -68,7 +68,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 		additionSet = sampleSet
 	}
 
-	volume = mutils.Max(volume, 0.08)
+	volume = max(volume, 0.08)
 
 	// Play normal
 	if skin.GetInfo().LayeredHitSounds || hitsound&1 > 0 || hitsound == 0 {

@@ -56,7 +56,7 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 		Angle:          math.NaN(),
 	}
 
-	obj.StrainTime = math.Max(obj.DeltaTime, MinDeltaTime)
+	obj.StrainTime = max(obj.DeltaTime, MinDeltaTime)
 
 	obj.setDistances(experimental)
 
@@ -75,7 +75,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 
 	if o.diff.CircleRadiusU < CircleSizeBuffThreshold {
 		scalingFactor *= 1.0 +
-			math32.Min(CircleSizeBuffThreshold-float32(o.diff.CircleRadiusU), 5.0)/50.0
+			min(CircleSizeBuffThreshold-float32(o.diff.CircleRadiusU), 5.0)/50.0
 	}
 
 	lastCursorPosition := getEndCursorPosition(o.lastObject, o.diff)
@@ -83,8 +83,8 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 
 	if lastSlider, ok := o.lastObject.(*LazySlider); ok {
 		o.TravelDistance = float64(lastSlider.LazyTravelDistance)
-		o.TravelTime = math.Max(lastSlider.LazyTravelTime/o.diff.Speed, MinDeltaTime)
-		o.MovementTime = math.Max(o.StrainTime-o.TravelTime, MinDeltaTime)
+		o.TravelTime = max(lastSlider.LazyTravelTime/o.diff.Speed, MinDeltaTime)
+		o.MovementTime = max(o.StrainTime-o.TravelTime, MinDeltaTime)
 
 		// Jump distance from the slider tail to the next object, as opposed to the lazy position of JumpDistance.
 		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.diff.Mods).Dst(o.BaseObject.GetStackedStartPositionMod(o.diff.Mods)) * scalingFactor
@@ -94,7 +94,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 		// In such cases, a leniency is applied by also considering the jump distance from the tail of the slider, and taking the minimum jump distance.
 		// Additional distance is removed based on position of jump relative to slider follow circle radius.
 		// JumpDistance is the leniency distance beyond the assumed_slider_radius. tailJumpDistance is maximum_slider_radius since the full distance of radial leniency is still possible.
-		o.MovementDistance = math.Max(0, math.Min(o.JumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
+		o.MovementDistance = max(0, min(o.JumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
 	} else {
 		o.MovementTime = o.StrainTime
 		o.MovementDistance = o.JumpDistance

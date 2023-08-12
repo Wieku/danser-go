@@ -285,14 +285,14 @@ func (renderer *Renderer) DrawCircleProgressS(position vector.Vector2f, radius f
 	x := position.X
 	y := position.Y
 
-	cx := math32.Cos(-math32.Pi/2) * radius + x
-	cy := math32.Sin(-math32.Pi/2) * radius + y
+	cx := math32.Cos(-math32.Pi/2)*radius + x
+	cy := math32.Sin(-math32.Pi/2)*radius + y
 
 	for r := float32(0.0); r < targetRadians; r += partRadians {
-		rads := math32.Min(targetRadians, r+partRadians)*direction - math32.Pi/2
+		rads := min(targetRadians, r+partRadians)*direction - math32.Pi/2
 
-		cx1 := math32.Cos(rads) * radius + x
-		cy1 := math32.Sin(rads) * radius + y
+		cx1 := math32.Cos(rads)*radius + x
+		cy1 := math32.Sin(rads)*radius + y
 
 		renderer.DrawTriangle(x, y, cx, cy, cx1, cy1)
 

@@ -91,7 +91,7 @@ func (bs *BeatSynced) Update(time float64) {
 		bs.beatProgress = 1
 	}
 
-	delta := math.Max(0, time-bs.lastTime)
+	delta := max(0, time-bs.lastTime)
 
 	ratio60 := delta / 16.6666666666667
 

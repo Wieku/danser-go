@@ -29,7 +29,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -1324,7 +1323,7 @@ func (l *launcher) drawConfigPanel() {
 
 		if imgui.BeginComboV("##config", l.bld.config, imgui.ComboFlagsHeightLarge) {
 			for _, s := range l.configList {
-				mWidth = mutils.Max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
+				mWidth = max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
 			}
 
 			imgui.SetNextItemWidth(mWidth)
@@ -1356,7 +1355,7 @@ func (l *launcher) drawConfigPanel() {
 			}
 
 			if len(searchResults) > 0 {
-				sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
+				sHeight := float32(min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
 				if imgui.BeginListBoxV("##blistbox", vec2(mWidth, sHeight)) {
 					focusScroll = focusScroll || imgui.IsWindowAppearing()

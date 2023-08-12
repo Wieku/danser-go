@@ -55,11 +55,11 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 
 			// We want to nerf objects that can be easily seen within the Flashlight circle radius.
 			if i == 0 {
-				smallDistNerf = math.Min(1.0, jumpDistance/75.0)
+				smallDistNerf = min(1.0, jumpDistance/75.0)
 			}
 
 			// We also want to nerf stacks so that only the first object of the stack is accounted for.
-			stackNerf := math.Min(1.0, (previous.JumpDistance/scalingFactor)/25.0)
+			stackNerf := min(1.0, (previous.JumpDistance/scalingFactor)/25.0)
 
 			if s.Experimental {
 				result += stackNerf * scalingFactor * jumpDistance / cumulativeStrainTime

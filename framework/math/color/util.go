@@ -54,9 +54,9 @@ func RGBToHSV(r, g, b float32) (h, s, v float32) {
 	g = mutils.ClampF(g, 0, 1)
 	b = mutils.ClampF(b, 0, 1)
 
-	min := math32.Min(math32.Min(r, g), b)
-	v = math32.Max(math32.Max(r, g), b)
-	c := v - min
+	minV := min(min(r, g), b)
+	v = max(max(r, g), b)
+	c := v - minV
 
 	s = 0.0
 	if v != 0.0 {
@@ -65,7 +65,7 @@ func RGBToHSV(r, g, b float32) (h, s, v float32) {
 
 	h = 0.0
 
-	if min != v {
+	if minV != v {
 		if v == r {
 			h = math32.Mod((g-b)/c, 6.0)
 		}

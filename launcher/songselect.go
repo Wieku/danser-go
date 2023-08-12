@@ -575,7 +575,7 @@ func (m *songSelectPopup) selectNewest() {
 	selectMap := m.beatmaps[0].bMap
 
 	for _, bMap := range m.beatmaps {
-		tStamp := mutils.Max(bMap.bMap.TimeAdded, bMap.bMap.LastModified)
+		tStamp := max(bMap.bMap.TimeAdded, bMap.bMap.LastModified)
 
 		if tStamp > lastTimeStamp {
 			lastTimeStamp = tStamp
@@ -665,7 +665,7 @@ func (m *songSelectPopup) open() {
 func compareStrings(l, r string) int {
 	lRa := []rune(l)
 	rRa := []rune(r)
-	lenM := mutils.Min(len(lRa), len(rRa))
+	lenM := min(len(lRa), len(rRa))
 
 	for i := 0; i < lenM; i++ {
 		cL := unicode.ToLower(lRa[i])

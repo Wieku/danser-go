@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 var cubeVertices = []mgl32.Vec4{
@@ -45,7 +44,7 @@ func (c *CubeMover) GetPositionAt(time float64) vector.Vector2f {
 
 	mat := mgl32.HomogRotate3DY(radY).Mul4(mgl32.HomogRotate3DX(radX)).Mul4(mgl32.Scale3D(scale, scale, scale))
 
-	startIndex := (int64(math.Max(0, time-c.start)) / 4) % int64(len(cubeIndices))
+	startIndex := (int64(max(0, time-c.start)) / 4) % int64(len(cubeIndices))
 
 	i1 := cubeIndices[startIndex]
 

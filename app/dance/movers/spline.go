@@ -7,7 +7,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 const (
@@ -54,9 +53,9 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			}
 
 			points = append(points, cEnd, wPoint)
-			timing = append(timing, math.Max(o.GetStartTime(), o.GetEndTime()))
+			timing = append(timing, max(o.GetStartTime(), o.GetEndTime()))
 
-			mover.startTime = math.Max(o.GetStartTime(), o.GetEndTime())
+			mover.startTime = max(o.GetStartTime(), o.GetEndTime())
 
 			continue
 		}

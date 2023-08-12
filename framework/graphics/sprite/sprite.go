@@ -181,8 +181,8 @@ func (sprite *Sprite) AdjustTimesToTransformations() {
 	endTime := -math.MaxFloat64
 
 	for _, t := range sprite.transforms {
-		startTime = math.Min(startTime, t.GetStartTime())
-		endTime = math.Max(endTime, t.GetTotalEndTime())
+		startTime = min(startTime, t.GetStartTime())
+		endTime = max(endTime, t.GetTotalEndTime())
 	}
 
 	sprite.startTime = startTime

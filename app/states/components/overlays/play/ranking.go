@@ -14,7 +14,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
@@ -354,7 +353,7 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	sHeight := 12.0*float32(len(panel.stats)) + 10
 
 	for _, s := range panel.stats {
-		sWidth = math32.Max(sWidth, float32(fnt2.GetWidth(12, s)+10))
+		sWidth = max(sWidth, float32(fnt2.GetWidth(12, s)+10))
 	}
 
 	sY -= sHeight / 2

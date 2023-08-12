@@ -30,7 +30,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
@@ -540,7 +539,7 @@ func mainLoopRecord() {
 
 	ffmpeg.StartFFmpeg(int(fps), w, h, audioFPS, output)
 
-	updateFPS := math.Max(fps, 1000)
+	updateFPS := max(fps, 1000)
 	updateDelta := 1000 / updateFPS
 	fpsDelta := 1000 / fps
 	audioDelta := 1000.0 / audioFPS
@@ -655,7 +654,7 @@ func mainLoopNormal() {
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
-					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
+					settings.DIVIDES = max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
 				case glfw.KeyO:

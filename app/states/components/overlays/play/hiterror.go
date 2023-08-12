@@ -143,7 +143,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 		}
 	}
 
-	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+math.Max(0, settings.Gameplay.HitErrorMeter.PointFadeOutTime*1000), baseFade, 0.0))
+	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time+max(0, settings.Gameplay.HitErrorMeter.PointFadeOutTime*1000), baseFade, 0.0))
 	middle.AdjustTimesToTransformations()
 
 	meter.errorDisplay.Add(middle)
@@ -187,8 +187,8 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 
 	urBase /= float64(len(meter.errors))
 
-	meter.avgNeg = averageN / math.Max(float64(countN), 1)
-	meter.avgPos = averageP / math.Max(float64(countP), 1)
+	meter.avgNeg = averageN / max(float64(countN), 1)
+	meter.avgPos = averageP / max(float64(countP), 1)
 	meter.unstableRate = math.Sqrt(urBase) * 10
 
 	meter.urGlider.SetValue(meter.GetUnstableRateConverted(), settings.Gameplay.HitErrorMeter.StaticUnstableRate)

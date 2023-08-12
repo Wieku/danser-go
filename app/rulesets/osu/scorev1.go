@@ -32,7 +32,7 @@ func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 }
 
 func (s *scoreV1Processor) AddResult(result HitResult, comboResult ComboResult) {
-	combo := mutils.Max(s.combo-1, 0)
+	combo := max(s.combo-1, 0)
 
 	if result != SliderMiss && result != Miss {
 		increase := result.ScoreValue()

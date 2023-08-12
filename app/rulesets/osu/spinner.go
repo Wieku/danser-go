@@ -52,12 +52,12 @@ func (spinner *Spinner) Init(ruleSet *OsuRuleSet, object objects.IHitObject, pla
 
 	for _, player := range spinner.players {
 		spinner.state[player] = new(spinnerstate)
-		spinner.fadeStartRelative = math.Min(spinner.fadeStartRelative, player.diff.Preempt)
+		spinner.fadeStartRelative = min(spinner.fadeStartRelative, player.diff.Preempt)
 		spinner.state[player].requirement = int64(float64(spinnerTime) / 1000 * player.diff.SpinnerRatio)
 		spinner.state[player].frameVariance = FrameTime
 	}
 
-	spinner.maxAcceleration = 0.00008 + math.Max(0, (5000-float64(spinnerTime))/1000/2000)
+	spinner.maxAcceleration = 0.00008 + max(0, (5000-float64(spinnerTime))/1000/2000)
 }
 
 func (spinner *Spinner) UpdateClickFor(*difficultyPlayer, int64) bool {
@@ -139,17 +139,17 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 					accel /= 4
 				}
 
-				state.currentVelocity += math.Min(state.theoreticalVelocity-state.currentVelocity, accel)
+				state.currentVelocity += min(state.theoreticalVelocity-state.currentVelocity, accel)
 			} else {
 				accel := -maxAccelThisFrame
 				if state.currentVelocity > 0 && player.diff.CheckModActive(difficulty.Relax) {
 					accel /= 4
 				}
 
-				state.currentVelocity += math.Max(state.theoreticalVelocity-state.currentVelocity, accel)
+				state.currentVelocity += max(state.theoreticalVelocity-state.currentVelocity, accel)
 			}
 
-			state.currentVelocity = math.Max(-0.05, math.Min(state.currentVelocity, 0.05))
+			state.currentVelocity = max(-0.05, min(state.currentVelocity, 0.05))
 
 			if len(spinner.players) == 1 {
 				if state.currentVelocity == 0 {

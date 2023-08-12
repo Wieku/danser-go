@@ -221,7 +221,7 @@ func ParseBeatMap(beatMap *BeatMap) error {
 				}
 				timeI, _ := strconv.Atoi(time)
 
-				beatMap.Length = mutils.Max(beatMap.Length, timeI)
+				beatMap.Length = max(beatMap.Length, timeI)
 			}
 		}
 	}

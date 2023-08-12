@@ -10,7 +10,6 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -476,7 +475,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.numObjects++
 	}
 
-	subSet.score.Combo = mutils.Max(uint(subSet.scoreProcessor.GetCombo()), subSet.score.Combo)
+	subSet.score.Combo = max(uint(subSet.scoreProcessor.GetCombo()), subSet.score.Combo)
 
 	if subSet.numObjects == 0 {
 		subSet.score.Accuracy = 100
@@ -508,7 +507,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 		subSet.score.Grade = D
 	}
 
-	index := mutils.Max(1, subSet.numObjects) - 1
+	index := max(1, subSet.numObjects) - 1
 
 	diff := set.oppDiffs[difficulty.GetDiffMaskedMods(subSet.player.diff.Mods)][index]
 

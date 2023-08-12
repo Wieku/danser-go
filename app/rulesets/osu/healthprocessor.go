@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/mutils"
-	"math"
 )
 
 const (
@@ -118,7 +117,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 
 			lastTime = int64(o.GetEndTime())
 
-			lowestHp = math.Min(lowestHp, hp.Health)
+			lowestHp = min(lowestHp, hp.Health)
 
 			if hp.Health <= lowestHpEver {
 				fail = true
@@ -252,7 +251,7 @@ func (hp *HealthProcessor) AddResult(result HitResult) {
 }
 
 func (hp *HealthProcessor) Increase(amount float64, fromHitObject bool) {
-	hp.HealthUncapped = math.Max(0.0, hp.HealthUncapped+amount)
+	hp.HealthUncapped = max(0.0, hp.HealthUncapped+amount)
 	hp.Health = mutils.ClampF(hp.Health+amount, 0.0, MaxHp)
 
 	if hp.playing && hp.Health <= 0 && fromHitObject {

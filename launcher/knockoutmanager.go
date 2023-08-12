@@ -5,7 +5,6 @@ import (
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"strconv"
 )
 
@@ -129,8 +128,8 @@ func (km *knockoutManagerPopup) drawManager() {
 			if km.lastSelected > -1 && (imgui.IsKeyDown(imgui.KeyLeftShift) || imgui.IsKeyDown(imgui.KeyRightShift)) {
 				value := km.bld.knockoutReplays[changed].included
 
-				lower := mutils.Min(km.lastSelected, changed)
-				higher := mutils.Max(km.lastSelected, changed)
+				lower := min(km.lastSelected, changed)
+				higher := max(km.lastSelected, changed)
 
 				for i := lower; i <= higher; i++ {
 					km.bld.knockoutReplays[i].included = value

@@ -114,8 +114,8 @@ func NewSlider(data []string) *Slider {
 		return nil
 	}
 
-	slider.pixelLength = math.Min(slider.pixelLength, maxPathLength)
-	slider.RepeatCount = mutils.Min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
+	slider.pixelLength = min(slider.pixelLength, maxPathLength)
+	slider.RepeatCount = min(slider.RepeatCount, maxRepeats) // The same limit as in Lazer
 
 	slider.multiCurve = slider.parseCurve(data[5])
 	if slider.multiCurve == nil {
@@ -146,7 +146,7 @@ func NewSlider(data []string) *Slider {
 	if len(data) > 8 {
 		subData := strings.Split(data[8], "|")
 
-		n := mutils.Min(len(subData), len(slider.samples))
+		n := min(len(subData), len(slider.samples))
 
 		for i := 0; i < n; i++ {
 			sample, _ := strconv.Atoi(subData[i])
@@ -157,7 +157,7 @@ func NewSlider(data []string) *Slider {
 	if len(data) > 9 {
 		subData := strings.Split(data[9], "|")
 
-		n := mutils.Min(len(subData), len(slider.sampleSets))
+		n := min(len(subData), len(slider.sampleSets))
 
 		for i := 0; i < n; i++ {
 			extras := strings.Split(subData[i], ":")
@@ -276,19 +276,19 @@ func (slider *Slider) GetHalf() vector.Vector2f {
 }
 
 func (slider *Slider) GetStartAngle() float32 {
-	return slider.GetStackedStartPosition().AngleRV(slider.GetStackedPositionAt(slider.StartTime + math.Min(10, slider.partLen))) //temporary solution
+	return slider.GetStackedStartPosition().AngleRV(slider.GetStackedPositionAt(slider.StartTime + min(10, slider.partLen))) //temporary solution
 }
 
 func (slider *Slider) GetStartAngleMod(modifier difficulty.Modifier) float32 {
-	return slider.GetStackedStartPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.StartTime+math.Min(10, slider.partLen), modifier)) //temporary solution
+	return slider.GetStackedStartPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.StartTime+min(10, slider.partLen), modifier)) //temporary solution
 }
 
 func (slider *Slider) GetEndAngle() float32 {
-	return slider.GetStackedEndPosition().AngleRV(slider.GetStackedPositionAt(slider.EndTime - math.Min(10, slider.partLen))) //temporary solution
+	return slider.GetStackedEndPosition().AngleRV(slider.GetStackedPositionAt(slider.EndTime - min(10, slider.partLen))) //temporary solution
 }
 
 func (slider *Slider) GetEndAngleMod(modifier difficulty.Modifier) float32 {
-	return slider.GetStackedEndPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.EndTime-math.Min(10, slider.partLen), modifier)) //temporary solution
+	return slider.GetStackedEndPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.EndTime-min(10, slider.partLen), modifier)) //temporary solution
 }
 
 func (slider *Slider) GetPartLen() float32 {
@@ -359,7 +359,7 @@ func (slider *Slider) GetAsDummyCircles() []IHitObject {
 	for i, p := range slider.ScorePoints {
 		time := p.Time
 		if i == len(slider.ScorePoints)-1 && settings.KNOCKOUT {
-			time = math.Floor(math.Max(slider.StartTime+(slider.EndTime-slider.StartTime)/2, slider.EndTime-36))
+			time = math.Floor(max(slider.StartTime+(slider.EndTime-slider.StartTime)/2, slider.EndTime-36))
 		}
 
 		circles = append(circles, slider.createDummyCircle(time, false, i == len(slider.ScorePoints)-1))
@@ -441,7 +441,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 			})
 		} else {
 			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
-				Time: math.Max(slider.StartTime+(slider.EndTimeLazer-slider.StartTime)/2, slider.EndTimeLazer-36),
+				Time: max(slider.StartTime+(slider.EndTimeLazer-slider.StartTime)/2, slider.EndTimeLazer-36),
 			})
 		}
 	}
@@ -588,7 +588,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.edges = append(slider.edges, slider.startCircle)
 
 	sixty := 1000.0 / 60
-	frameDelay := math.Max(150/slider.Timings.GetVelocity(slider.TPoint)*sixty, sixty)
+	frameDelay := max(150/slider.Timings.GetVelocity(slider.TPoint)*sixty, sixty)
 
 	slider.ball = sprite.NewAnimation(skin.GetFrames("sliderb", false), frameDelay, true, 0.0, vector.NewVec2d(0, 0), vector.Centre)
 
@@ -606,7 +606,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		circleTime := slider.StartTime + math.Floor(slider.partLen*float64(i))
 
 		appearTime := slider.StartTime - math.Floor(slider.diff.Preempt)
-		bounceStartTime := slider.StartTime - math.Min(math.Floor(slider.diff.Preempt), 15000)
+		bounceStartTime := slider.StartTime - min(math.Floor(slider.diff.Preempt), 15000)
 
 		if i > 1 {
 			appearTime = circleTime - math.Floor(slider.partLen*2)
@@ -803,7 +803,7 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 
 			first := time - partStart
 
-			dur := math.Min(first/2, remaining*0.66)
+			dur := min(first/2, remaining*0.66)
 			eTime := time + dur
 
 			if slider.RepeatCount%2 == 1 {
@@ -852,9 +852,9 @@ func (slider *Slider) initSnake() {
 		if repeatProgress < 1.0 {
 			normalStart := (p.Time-slider.StartTime)/2 + slider.StartTime - slider.diff.Preempt*2/3
 
-			startTime = math.Max(repeatProgress*(slSnInE-slSnInS)+slSnInS, normalStart)
+			startTime = max(repeatProgress*(slSnInE-slSnInS)+slSnInS, normalStart)
 
-			endTime = math.Min(startTime+150, p.Time-36)
+			endTime = min(startTime+150, p.Time-36)
 		} else {
 			rStart := slider.StartTime + slider.partLen*math.Floor(repeatProgress)
 
@@ -867,7 +867,7 @@ func (slider *Slider) initSnake() {
 		p.fade.AddEventS(startTime, endTime, 0.0, 1.0)
 
 		if slider.diff.CheckModActive(difficulty.Hidden) {
-			p.fade.AddEventS(math.Max(endTime, p.Time-1000), p.Time, 1.0, 0.0)
+			p.fade.AddEventS(max(endTime, p.Time-1000), p.Time, 1.0, 0.0)
 		} else {
 			p.fade.AddEventS(p.Time, p.Time, 1.0, 0.0)
 		}
@@ -887,9 +887,9 @@ func (slider *Slider) InitSlide(time float64) {
 
 	startTime := time
 
-	fadeInEnd := math.Min(startTime+180, slider.EndTime)
+	fadeInEnd := min(startTime+180, slider.EndTime)
 
-	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(startTime+60, slider.EndTime), 0, 1))
+	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, min(startTime+60, slider.EndTime), 0, 1))
 	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, fadeInEnd, 0.5, 1))
 
 	slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Fade, easing.InQuad, slider.EndTime, slider.EndTime+200, 1, 0))
@@ -899,7 +899,7 @@ func (slider *Slider) InitSlide(time float64) {
 
 	fadeTime := fadeBase
 	if len(slider.ScorePoints) >= 2 {
-		fadeTime = math.Min(fadeTime, slider.ScorePoints[1].Time-slider.ScorePoints[0].Time)
+		fadeTime = min(fadeTime, slider.ScorePoints[1].Time-slider.ScorePoints[0].Time)
 	}
 
 	endValue := 1.1 - (fadeTime/fadeBase)*0.1
@@ -920,7 +920,7 @@ func (slider *Slider) InitSlide(time float64) {
 			startTime = fadeInEnd
 		}
 
-		slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, math.Min(slider.EndTime, endTime), startValue, endValue))
+		slider.follower.AddTransformUnordered(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, min(slider.EndTime, endTime), startValue, endValue))
 	}
 
 	slider.follower.SortTransformations()

@@ -192,7 +192,7 @@ func (t *Transformation) Clone(startTime, endTime float64) *Transformation {
 }
 
 func (t *Transformation) SetLoop(runs int, delay float64) {
-	t.repetitions = mutils.Max(0, runs-1)
+	t.repetitions = max(0, runs-1)
 	t.loopDelay = delay
 }
 

@@ -4,7 +4,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"log"
 	"math"
 	"strconv"
@@ -94,7 +93,7 @@ func parseCommand(data []string) []*animation.Transformation {
 		checkError(err)
 	}
 
-	endTime = math.Max(endTime, startTime)
+	endTime = max(endTime, startTime)
 
 	var arguments int
 
@@ -147,7 +146,7 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	var transforms []*animation.Transformation
 
-	for i := 0; i < mutils.Max(1, numSections-1); i++ {
+	for i := 0; i < max(1, numSections-1); i++ {
 		start := startTime + float64(i)*sectionTime
 		end := startTime + float64(i+1)*sectionTime
 

@@ -147,8 +147,8 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 
 	if !math.IsNaN(bpm) && bpm >= 0 {
 		rBPM := 60000 / bpm
-		beatMap.MinBPM = math.Min(beatMap.MinBPM, rBPM)
-		beatMap.MaxBPM = math.Max(beatMap.MaxBPM, rBPM)
+		beatMap.MinBPM = min(beatMap.MinBPM, rBPM)
+		beatMap.MaxBPM = max(beatMap.MaxBPM, rBPM)
 	}
 
 	signature := 4

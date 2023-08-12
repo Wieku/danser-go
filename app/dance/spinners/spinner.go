@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 type DanceSpinner struct {
@@ -37,19 +36,19 @@ func NewSpinner(spinner *objects.Spinner, moverCtor func() SpinnerMover, id int)
 }
 
 func (spinner *DanceSpinner) GetStartAngle() float32 {
-	return spinner.GetStackedStartPosition().AngleRV(spinner.GetStackedPositionAt(spinner.StartTime + math.Min(10, spinner.GetDuration()))) //temporary solution
+	return spinner.GetStackedStartPosition().AngleRV(spinner.GetStackedPositionAt(spinner.StartTime + min(10, spinner.GetDuration()))) //temporary solution
 }
 
 func (spinner *DanceSpinner) GetStartAngleMod(modifier difficulty.Modifier) float32 {
-	return spinner.GetStackedStartPositionMod(modifier).AngleRV(spinner.GetStackedPositionAtMod(spinner.StartTime+math.Min(10, spinner.GetDuration()), modifier)) //temporary solution
+	return spinner.GetStackedStartPositionMod(modifier).AngleRV(spinner.GetStackedPositionAtMod(spinner.StartTime+min(10, spinner.GetDuration()), modifier)) //temporary solution
 }
 
 func (spinner *DanceSpinner) GetEndAngle() float32 {
-	return spinner.GetStackedEndPosition().AngleRV(spinner.GetStackedPositionAt(spinner.EndTime - math.Min(10, spinner.GetDuration()))) //temporary solution
+	return spinner.GetStackedEndPosition().AngleRV(spinner.GetStackedPositionAt(spinner.EndTime - min(10, spinner.GetDuration()))) //temporary solution
 }
 
 func (spinner *DanceSpinner) GetEndAngleMod(modifier difficulty.Modifier) float32 {
-	return spinner.GetStackedEndPositionMod(modifier).AngleRV(spinner.GetStackedPositionAtMod(spinner.EndTime-math.Min(10, spinner.GetDuration()), modifier)) //temporary solution
+	return spinner.GetStackedEndPositionMod(modifier).AngleRV(spinner.GetStackedPositionAtMod(spinner.EndTime-min(10, spinner.GetDuration()), modifier)) //temporary solution
 }
 
 func (spinner *DanceSpinner) GetPartLen() float32 {

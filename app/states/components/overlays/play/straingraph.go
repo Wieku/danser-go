@@ -13,7 +13,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/curves"
-	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -61,10 +60,10 @@ func NewStrainGraph(beatMap *beatmap.BeatMap, peaks pp220930.StrainPeaks, countF
 		shapeRenderer: shape.NewRenderer(),
 		strains:       peaks,
 
-		trueStartTime: beatMap.HitObjects[mutils.Min(0, len(beatMap.HitObjects)-1)].GetStartTime(),
+		trueStartTime: beatMap.HitObjects[min(0, len(beatMap.HitObjects)-1)].GetStartTime(),
 		trueEndTime:   beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime(),
 
-		strainStartTime: beatMap.HitObjects[mutils.Min(1, len(beatMap.HitObjects)-1)].GetStartTime(),
+		strainStartTime: beatMap.HitObjects[min(1, len(beatMap.HitObjects)-1)].GetStartTime(),
 		strainEndTime:   beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime(),
 
 		screenWidth:   768 * settings.Graphics.GetAspectRatio(),
@@ -76,7 +75,7 @@ func NewStrainGraph(beatMap *beatmap.BeatMap, peaks pp220930.StrainPeaks, countF
 
 	graph.startTime = graph.trueStartTime
 	if countFromZero {
-		graph.startTime = mutils.Min(graph.startTime, 0)
+		graph.startTime = min(graph.startTime, 0)
 	}
 
 	graph.endTime = graph.strainEndTime
@@ -103,8 +102,8 @@ func NewStrainGraph(beatMap *beatmap.BeatMap, peaks pp220930.StrainPeaks, countF
 }
 
 func (graph *StrainGraph) SetTimes(start, end float64) {
-	graph.startProgress = mutils.ClampF((start-graph.startTime)/math.Max(graph.endTime-graph.startTime, 1), 0, 1)
-	graph.endProgress = mutils.ClampF((end-graph.startTime)/math.Max(graph.endTime-graph.startTime, 1), 0, 1)
+	graph.startProgress = mutils.ClampF((start-graph.startTime)/max(graph.endTime-graph.startTime, 1), 0, 1)
+	graph.endProgress = mutils.ClampF((end-graph.startTime)/max(graph.endTime-graph.startTime, 1), 0, 1)
 
 	graph.leftSprite.SetCutX(0, 1-graph.startProgress)
 
@@ -123,12 +122,12 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 	// Number of strain sections to merge
 	// For example for a 5-minute map we will get 10 sections, so 4s because one section is 400ms
 	// It's also scaled with width of the strain graph so wider one shows more detailed graph
-	sectSize := mutils.Max(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
+	sectSize := max(int((graph.endTime-graph.startTime)/30000*(200/graph.size.X)), 1)
 
 	var points []vector.Vector2f
 
 	if graph.countFromZero && graph.trueStartTime > 0 { // Don't add intro if map starts before music
-		points = append(points, vector.NewVec2f(0, 0), vector.NewVec2f(float32(math.Max(0, graph.trueStartTime-400)), 0))
+		points = append(points, vector.NewVec2f(0, 0), vector.NewVec2f(float32(max(0, graph.trueStartTime-400)), 0))
 	}
 
 	points = append(points, vector.NewVec2f(float32(graph.trueStartTime-0.001), float32(graph.strains.Total[0]-graph.baseLine))) //slight nudge to the left in case it's a 1 object map
@@ -138,15 +137,15 @@ func (graph *StrainGraph) generateCurve() curves.Curve {
 	for i := 0; i <= sections; i++ {
 		bI := i * sectSize
 
-		maxI := mutils.Min(len(graph.strains.Total), bI+sectSize)
+		maxI := min(len(graph.strains.Total), bI+sectSize)
 
 		var lMaxStrain float32
 		for ; bI < maxI; bI++ {
-			lMaxStrain = math32.Max(lMaxStrain, float32(graph.strains.Total[bI]-graph.baseLine))
+			lMaxStrain = max(lMaxStrain, float32(graph.strains.Total[bI]-graph.baseLine))
 		}
 
-		graph.maxStrain = math32.Max(graph.maxStrain, lMaxStrain)
-		points = append(points, vector.NewVec2f(float32(graph.strainStartTime+(float64(i)/float64(mutils.Max(1, sections)))*graph.strainLength), lMaxStrain))
+		graph.maxStrain = max(graph.maxStrain, lMaxStrain)
+		points = append(points, vector.NewVec2f(float32(graph.strainStartTime+(float64(i)/float64(max(1, sections)))*graph.strainLength), lMaxStrain))
 	}
 
 	if graph.countTrueEnd && graph.trueEndTime > graph.strainEndTime {
@@ -160,7 +159,7 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 	const step float32 = 0.5
 
 	splinePoint := func(spline curves.Curve, x float32) float32 {
-		y := math32.Max(spline.PointAt(x).Y, 0) / graph.maxStrain
+		y := max(spline.PointAt(x).Y, 0) / graph.maxStrain
 		return y * y
 	}
 
@@ -199,7 +198,7 @@ func (graph *StrainGraph) drawFBO(batch *batch.QuadBatch) {
 		graph.shapeRenderer.SetColor(1-graph.innerDarkness, 1-graph.innerDarkness, 1-graph.innerDarkness, graph.innerOpacity)
 
 		fboHeight -= oWidth / 2
-		yOffset = mutils.Max(yOffset, oWidth/2)
+		yOffset = max(yOffset, oWidth/2)
 	} else {
 		graph.shapeRenderer.SetColor(1, 1, 1, 1)
 	}

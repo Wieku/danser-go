@@ -8,8 +8,8 @@ import (
 )
 
 // ClampF is Clamp but optimized for floats
-func ClampF[T constraints.Float](x, min, max T) T {
-	return T(math.Min(float64(max), math.Max(float64(min), float64(x))))
+func ClampF[T constraints.Float](v, minV, maxV T) T {
+	return min(maxV, max(minV, v))
 }
 
 func Abs[T constraints.Integer | constraints.Float](a T) T {
@@ -36,8 +36,8 @@ func Max[T constraints.Integer | constraints.Float](a, b T) T {
 	return b
 }
 
-func Clamp[T constraints.Integer | constraints.Float](x, min, max T) T {
-	return Min(max, Max(min, x))
+func Clamp[T constraints.Integer | constraints.Float](v, minV, maxV T) T {
+	return min(maxV, max(minV, v))
 }
 
 func Lerp[T constraints.Integer | constraints.Float, V constraints.Float](min, max T, t V) T {

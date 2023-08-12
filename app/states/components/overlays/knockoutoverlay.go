@@ -20,7 +20,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
@@ -373,9 +372,9 @@ func (overlay *KnockoutOverlay) Update(time float64) {
 		currentHp := overlay.controller.GetRuleset().GetHP(overlay.controller.GetCursors()[player.oldIndex])
 
 		if player.displayHp < currentHp {
-			player.displayHp = math.Min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4*delta/16.667)
+			player.displayHp = min(1.0, player.displayHp+math.Abs(currentHp-player.displayHp)/4*delta/16.667)
 		} else if player.displayHp > currentHp {
-			player.displayHp = math.Max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6*delta/16.667)
+			player.displayHp = max(0.0, player.displayHp-math.Abs(player.displayHp-currentHp)/6*delta/16.667)
 		}
 	}
 }
@@ -457,7 +456,7 @@ func (overlay *KnockoutOverlay) DrawNormal(batch *batch.QuadBatch, colors []colo
 
 	minSize := settings.Knockout.MinCursorSize
 	maxSize := settings.Knockout.MaxCursorSize
-	settings.Cursor.CursorSize = minSize + (maxSize-minSize)*math.Pow(1-math.Sin(float64(alive)/math.Max(51, float64(settings.PLAYERS))*math.Pi/2), 3)
+	settings.Cursor.CursorSize = minSize + (maxSize-minSize)*math.Pow(1-math.Sin(float64(alive)/max(51, float64(settings.PLAYERS))*math.Pi/2), 3)
 
 	batch.SetScale(1, 1)
 }
@@ -483,10 +482,10 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	for _, r := range replays {
 		cumulativeHeight += overlay.players[r.Name].height.GetValue()
 
-		highestCombo = mutils.Max(highestCombo, overlay.players[r.Name].sCombo)
-		highestPP = math.Max(highestPP, overlay.players[r.Name].pp)
-		highestACC = math.Max(highestACC, r.Accuracy)
-		highestScore = mutils.Max(highestScore, overlay.players[r.Name].score)
+		highestCombo = max(highestCombo, overlay.players[r.Name].sCombo)
+		highestPP = max(highestPP, overlay.players[r.Name].pp)
+		highestACC = max(highestACC, r.Accuracy)
+		highestScore = max(highestScore, overlay.players[r.Name].score)
 
 		pWidth := overlay.font.GetWidth(scl, r.Name)
 
@@ -494,7 +493,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 			pWidth += overlay.font.GetWidth(scl*0.8, "+"+r.Mods)
 		}
 
-		maxPlayerWidth = math.Max(maxPlayerWidth, pWidth)
+		maxPlayerWidth = max(maxPlayerWidth, pWidth)
 	}
 
 	//cL := strconv.FormatInt(highestCombo, 10)
@@ -510,7 +509,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 	xSlideLeft := (overlay.fade.GetValue() - 1.0) * maxLength
 	xSlideRight := (1.0 - overlay.fade.GetValue()) * (cS + overlay.font.GetWidthMonospaced(scl, fmt.Sprintf("%dx ", highestCombo)) + 0.5*scl)
 
-	rowPosY := math.Max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
+	rowPosY := max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
 	// Draw textures like keys, grade, hit values
 	for _, rep := range overlay.playersArray {
 		r := replays[rep.oldIndex]
@@ -602,7 +601,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 	batch.ResetTransform()
 
-	rowPosY = math.Max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
+	rowPosY = max((overlay.ScaledHeight-cumulativeHeight)/2, scl)
 	ascScl := overlay.font.GetAscent() * (scl / overlay.font.GetSize()) / 2
 
 	// Draw texts

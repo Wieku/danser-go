@@ -1,7 +1,6 @@
 package frame
 
 import (
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/qpc"
 	"runtime"
 	"time"
@@ -75,7 +74,7 @@ func (limiter *Limiter) Sync() {
 
 	limiter.yieldDurations.dampenForLowResTicker()
 
-	limiter.nextFrame = mutils.Max(limiter.nextFrame+nanosInSecond/int64(fps), qpc.GetNanoTime())
+	limiter.nextFrame = max(limiter.nextFrame+nanosInSecond/int64(fps), qpc.GetNanoTime())
 }
 
 type runningAvg struct {

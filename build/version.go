@@ -1,7 +1,6 @@
 package build
 
 import (
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"runtime/debug"
 )
 
@@ -27,6 +26,6 @@ func init() {
 	}
 
 	if VERSION == "dev" {
-		VERSION += "-" + CommitHash[:mutils.Min(7, len(CommitHash))]
+		VERSION += "-" + CommitHash[:min(7, len(CommitHash))]
 	}
 }

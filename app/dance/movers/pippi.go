@@ -26,7 +26,7 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 	startC, cOk := start.(*objects.Circle)
 	endC, eOk := end.(*objects.Circle)
 
-	mover.startTime = math.Max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
+	mover.startTime = max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	mover.endTime = end.GetStartTime()
 
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)

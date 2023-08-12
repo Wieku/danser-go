@@ -98,12 +98,12 @@ func (c Color) Shade2(amount float32) Color {
 }
 
 func (c Color) Darken(amount float32) Color {
-	scale := math32.Max(1.0, 1.0+amount)
+	scale := max(1.0, 1.0+amount)
 	return NewRGBA(c.R/scale, c.G/scale, c.B/scale, c.A)
 }
 
 func (c Color) Lighten(amount float32) Color {
-	scale := math32.Max(1.0, 1.0+amount)
+	scale := max(1.0, 1.0+amount)
 	return NewRGBA(c.R*scale, c.G*scale, c.B*scale, c.A)
 }
 
@@ -112,9 +112,9 @@ func (c Color) Lighten2(amount float32) Color {
 	scale := 1.0 + 0.5*amount
 
 	return NewRGBA(
-		math32.Min(1.0, c.R*scale+amount),
-		math32.Min(1.0, c.G*scale+amount),
-		math32.Min(1.0, c.B*scale+amount),
+		min(1.0, c.R*scale+amount),
+		min(1.0, c.G*scale+amount),
+		min(1.0, c.B*scale+amount),
 		c.A)
 }
 

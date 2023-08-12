@@ -3,7 +3,6 @@ package osu
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -70,7 +69,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	slider.fadeStartRelative = 100000
 
 	for _, player := range slider.players {
-		slider.fadeStartRelative = math.Min(slider.fadeStartRelative, player.diff.Preempt)
+		slider.fadeStartRelative = min(slider.fadeStartRelative, player.diff.Preempt)
 		slider.state[player] = new(sliderstate)
 		slider.state[player].startResult = Miss
 
@@ -86,7 +85,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 		}
 
 		if len(slider.state[player].points) > 0 {
-			slider.state[player].points[len(slider.state[player].points)-1].time = mutils.Max(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
+			slider.state[player].points[len(slider.state[player].points)-1].time = max(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
 			slider.state[player].points[len(slider.state[player].points)-1].scoreGiven = SliderEnd
 		}
 	}

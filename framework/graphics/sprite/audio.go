@@ -4,7 +4,6 @@ import (
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 type AudioSprite struct {
@@ -30,7 +29,7 @@ func NewAudioSprite(sample *bass.Sample, playAt, volume float64) *AudioSprite {
 	if sample != nil {
 		length := sample.GetLength() * 1000
 
-		aSprite.SetEndTime(playAt + math.Max(100, length)) //some leeway for short samples
+		aSprite.SetEndTime(playAt + max(100, length)) //some leeway for short samples
 	}
 
 	return aSprite

@@ -228,10 +228,10 @@ func (track *TrackBass) Update() {
 	for i, g := range track.fft {
 		h := math.Abs(float64(g))
 
-		toPeak = math.Max(toPeak, h)
+		toPeak = max(toPeak, h)
 
 		if i > 0 && i < 5 {
-			beatAv = math.Max(beatAv, float64(g))
+			beatAv = max(beatAv, float64(g))
 		}
 	}
 
