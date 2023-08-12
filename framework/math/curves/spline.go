@@ -44,7 +44,7 @@ func NewSplineW(curves []Curve, weights []float32) *Spline {
 }
 
 func (spline *Spline) PointAt(t float32) vector.Vector2f {
-	desiredWidth := spline.length * mutils.ClampF(t, 0.0, 1.0)
+	desiredWidth := spline.length * mutils.Clamp(t, 0.0, 1.0)
 
 	withoutFirst := spline.sections[1:]
 	index := sort.Search(len(withoutFirst), func(i int) bool {
@@ -77,7 +77,7 @@ func (spline *Spline) getCurveAt(t float32) Curve {
 		return Linear{}
 	}
 
-	desiredWidth := spline.length * mutils.ClampF(t, 0.0, 1.0)
+	desiredWidth := spline.length * mutils.Clamp(t, 0.0, 1.0)
 
 	withoutFirst := spline.sections[1:]
 	index := sort.Search(len(withoutFirst), func(i int) bool {

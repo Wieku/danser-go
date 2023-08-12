@@ -109,7 +109,7 @@ func drawRecordMenu(bld *builder) {
 					if err != nil {
 						valText = prevText
 					} else {
-						parsed = mutils.ClampF(parsed, 0, float64(bld.end.ogValue))
+						parsed = mutils.Clamp(parsed, 0, float64(bld.end.ogValue))
 						bld.ssTime = float32(parsed)
 					}
 				}

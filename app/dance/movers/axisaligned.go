@@ -42,6 +42,6 @@ func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover AxisMover) Update(time float64) vector.Vector2f {
-	t := mutils.ClampF((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(float32(easing.OutSine(t)))
 }

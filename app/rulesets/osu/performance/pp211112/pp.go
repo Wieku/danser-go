@@ -75,7 +75,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 			float64(n300)*300) /
 			(float64(totalhits) * 300)
 
-		pp.accuracy = mutils.ClampF(acc, 0, 1)
+		pp.accuracy = mutils.Clamp(acc, 0, 1)
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {
@@ -165,7 +165,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 {
-		estimateSliderEndsDropped := mutils.ClampF(float64(min(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		estimateSliderEndsDropped := mutils.Clamp(float64(min(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
 		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}

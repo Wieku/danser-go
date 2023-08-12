@@ -29,7 +29,7 @@ func (t TimingPoint) GetRatio() float64 {
 		return 1.0
 	}
 
-	return float64(float32(mutils.ClampF(-t.beatLength, 10, 1000)) / 100)
+	return float64(float32(mutils.Clamp(-t.beatLength, 10, 1000)) / 100)
 }
 
 func (t TimingPoint) GetBaseBeatLength() float64 {

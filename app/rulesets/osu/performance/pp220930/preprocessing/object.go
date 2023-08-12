@@ -86,12 +86,12 @@ func (o *DifficultyObject) OpacityAt(time float64) float64 {
 		fadeOutDuration := o.Diff.PreemptU * 0.3
 
 		return min(
-			mutils.ClampF((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0),
-			1.0-mutils.ClampF((time-fadeOutStartTime)/fadeOutDuration, 0.0, 1.0),
+			mutils.Clamp((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0),
+			1.0-mutils.Clamp((time-fadeOutStartTime)/fadeOutDuration, 0.0, 1.0),
 		)
 	}
 
-	return mutils.ClampF((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0)
+	return mutils.Clamp((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0)
 }
 
 func (o *DifficultyObject) Previous(backwardsIndex int) *DifficultyObject {

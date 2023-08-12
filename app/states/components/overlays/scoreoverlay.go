@@ -825,9 +825,9 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 
 	musicPos := overlay.audioTime
 
-	progress := mutils.ClampF((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	progress := mutils.Clamp((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
 	if musicPos < startTime {
-		progress = mutils.ClampF(-1.0+musicPos/startTime, -1.0, 0.0)
+		progress = mutils.Clamp(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
 	return progress

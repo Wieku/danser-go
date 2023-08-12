@@ -86,7 +86,7 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 
 						if obj != nil {
 							nTime := processor.mover.GetObjectsStartTime(obj)
-							releaseAt = mutils.ClampF(nTime-1, endTime+1, releaseAt)
+							releaseAt = mutils.Clamp(nTime-1, endTime+1, releaseAt)
 						}
 					}
 				}

@@ -95,7 +95,7 @@ func (track *TrackVirtual) GetPosition() float64 {
 
 	pos := track.previousPosition + (currentPos-track.startTime)*track.speed*track.rFreq
 
-	return mutils.ClampF(pos, 0, track.length+track.tail)
+	return mutils.Clamp(pos, 0, track.length+track.tail)
 }
 
 func (track *TrackVirtual) SetTempo(tempo float64) {

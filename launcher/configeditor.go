@@ -898,7 +898,7 @@ func (editor *settingsEditor) buildFloatBox(jsonPath string, f reflect.Value, d 
 		if err != nil {
 			valText = prevText
 		} else {
-			parsed = mutils.ClampF(parsed/scale, min, max)
+			parsed = mutils.Clamp(parsed/scale, min, max)
 			f.SetFloat(parsed)
 		}
 	}

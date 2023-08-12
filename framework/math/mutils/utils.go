@@ -7,11 +7,6 @@ import (
 	"strings"
 )
 
-// ClampF is Clamp but optimized for floats
-func ClampF[T constraints.Float](v, minV, maxV T) T {
-	return min(maxV, max(minV, v))
-}
-
 func Abs[T constraints.Integer | constraints.Float](a T) T {
 	if a < 0 {
 		return -a

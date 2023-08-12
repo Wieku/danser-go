@@ -64,7 +64,7 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing2.DifficultyObject) 
 
 	// Cap deltatime to the OD 300 hitwindow.
 	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
-	strainTime /= mutils.ClampF((strainTime/greatWindowFull)/0.93, 0.92, 1)
+	strainTime /= mutils.Clamp((strainTime/greatWindowFull)/0.93, 0.92, 1)
 
 	speedBonus := 1.0
 

@@ -36,7 +36,7 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 
 	// Cap deltatime to the OD 300 hitwindow.
 	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
-	strainTime /= mutils.ClampF((strainTime/osuCurrObj.GreatWindow)/0.93, 0.92, 1)
+	strainTime /= mutils.Clamp((strainTime/osuCurrObj.GreatWindow)/0.93, 0.92, 1)
 
 	// derive speedBonus for calculation
 	speedBonus := 1.0

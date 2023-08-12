@@ -283,12 +283,12 @@ func keySlideInt[T constraints.Integer](value *T, min, max T) (ret bool) {
 
 func keySlideFloat[T constraints.Float](value *T, min, max, step T) (ret bool) {
 	if imgui.IsKeyPressed(imgui.KeyLeftArrow) {
-		*value = mutils.ClampF(*value-step, min, max)
+		*value = mutils.Clamp(*value-step, min, max)
 		ret = true
 	}
 
 	if imgui.IsKeyPressed(imgui.KeyRightArrow) {
-		*value = mutils.ClampF(*value+step, min, max)
+		*value = mutils.Clamp(*value+step, min, max)
 		ret = true
 	}
 

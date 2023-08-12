@@ -128,7 +128,7 @@ func (glider *Glider) Update(time float64) {
 func (glider *Glider) updateCurrent(time float64) {
 	if time < glider.current.endTime && glider.current.startTime != glider.current.endTime {
 		e := glider.current
-		t := mutils.ClampF(0, 1, (time-e.startTime)/(e.endTime-e.startTime))
+		t := mutils.Clamp(0, 1, (time-e.startTime)/(e.endTime-e.startTime))
 		glider.value = glider.startValue + e.easeFunc(t)*(e.targetValue-glider.startValue)
 	} else {
 		glider.value = glider.current.targetValue

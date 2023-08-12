@@ -102,8 +102,8 @@ func NewStrainGraph(beatMap *beatmap.BeatMap, peaks pp220930.StrainPeaks, countF
 }
 
 func (graph *StrainGraph) SetTimes(start, end float64) {
-	graph.startProgress = mutils.ClampF((start-graph.startTime)/max(graph.endTime-graph.startTime, 1), 0, 1)
-	graph.endProgress = mutils.ClampF((end-graph.startTime)/max(graph.endTime-graph.startTime, 1), 0, 1)
+	graph.startProgress = mutils.Clamp((start-graph.startTime)/max(graph.endTime-graph.startTime, 1), 0, 1)
+	graph.endProgress = mutils.Clamp((end-graph.startTime)/max(graph.endTime-graph.startTime, 1), 0, 1)
 
 	graph.leftSprite.SetCutX(0, 1-graph.startProgress)
 

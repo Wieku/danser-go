@@ -746,7 +746,7 @@ func (player *Player) updateMain(delta float64) {
 func (player *Player) updateMusic(delta float64) {
 	player.musicPlayer.Update()
 
-	target := mutils.ClampF(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
+	target := mutils.Clamp(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
 
 	if settings.Audio.BeatUseTimingPoints {
 		player.Scl = 1 + player.coin.Beat*(settings.Audio.BeatScale-1.0)
@@ -787,7 +787,7 @@ func (player *Player) Draw(float64) {
 
 	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha = mutils.ClampF(bgAlpha*player.Scl, 0, 1)
+		bgAlpha = mutils.Clamp(bgAlpha*player.Scl, 0, 1)
 	}
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
