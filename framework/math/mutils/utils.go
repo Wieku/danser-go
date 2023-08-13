@@ -35,13 +35,17 @@ func Signum[T constraints.Float](a T) T {
 	return 1
 }
 
-func SanitizeAngle[T constraints.Float](a T) T {
-	a = T(math.Mod(float64(a), 2*math.Pi))
-	if a < 0 {
-		a += T(2 * math.Pi)
+func Sanitize[T constraints.Float](v, maxV T) T {
+	v = T(math.Mod(float64(v), float64(maxV)))
+	if v < 0 {
+		v += maxV
 	}
 
-	return a
+	return v
+}
+
+func SanitizeAngle[T constraints.Float](v T) T {
+	return Sanitize(v, T(2*math.Pi))
 }
 
 func SanitizeAngleArc[T constraints.Float](a T) T {
