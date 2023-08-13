@@ -1,6 +1,7 @@
 package launcher
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/beatmap"
@@ -12,10 +13,10 @@ import (
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
-	"golang.org/x/exp/slices"
 	"math"
 	"math/rand"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -575,7 +576,7 @@ func (m *songSelectPopup) selectNewest() {
 	selectMap := m.beatmaps[0].bMap
 
 	for _, bMap := range m.beatmaps {
-		tStamp := mutils.Max(bMap.bMap.TimeAdded, bMap.bMap.LastModified)
+		tStamp := max(bMap.bMap.TimeAdded, bMap.bMap.LastModified)
 
 		if tStamp > lastTimeStamp {
 			lastTimeStamp = tStamp
@@ -665,7 +666,7 @@ func (m *songSelectPopup) open() {
 func compareStrings(l, r string) int {
 	lRa := []rune(l)
 	rRa := []rune(r)
-	lenM := mutils.Min(len(lRa), len(rRa))
+	lenM := min(len(lRa), len(rRa))
 
 	for i := 0; i < lenM; i++ {
 		cL := unicode.ToLower(lRa[i])
@@ -687,7 +688,7 @@ func compareStrings(l, r string) int {
 }
 
 func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
-	slices.SortStableFunc(bMaps, func(b1, b2 *beatmap.BeatMap) bool {
+	slices.SortStableFunc(bMaps, func(b1, b2 *beatmap.BeatMap) int {
 		var res int
 
 		switch sortBy {
@@ -699,12 +700,12 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 			res = compareStrings(b1.Creator, b2.Creator)
 		case DateAdded:
 			if compareStrings(b1.Dir, b2.Dir) != 0 || mutils.Abs(b1.LastModified/1000-b2.LastModified/1000) > 10 {
-				res = mutils.Compare(b1.LastModified/1000, b2.LastModified/1000)
+				res = cmp.Compare(b1.LastModified/1000, b2.LastModified/1000)
 			} else {
 				res = 0
 			}
 		case Difficulty:
-			res = mutils.Compare(b1.Stars, b2.Stars)
+			res = cmp.Compare(b1.Stars, b2.Stars)
 		}
 
 		if !launcherConfig.SortAscending {
@@ -712,7 +713,7 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 		}
 
 		if res != 0 {
-			return res < 0
+			return res
 		}
 
 		res = compareStrings(b1.Dir, b2.Dir)
@@ -722,9 +723,9 @@ func sortMaps(bMaps []*beatmap.BeatMap, sortBy SortBy) {
 		}
 
 		if res != 0 {
-			return res < 0
+			return res
 		}
 
-		return mutils.Compare(b1.Stars, b2.Stars) < 1 // Don't flip grouped difficulties
+		return cmp.Compare(b1.Stars, b2.Stars) // Don't flip grouped difficulties
 	})
 }

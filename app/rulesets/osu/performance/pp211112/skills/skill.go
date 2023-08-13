@@ -102,7 +102,7 @@ func (skill *Skill) processInternal(current *preprocessing.DifficultyObject) {
 		tempStrain *= skill.StrainBonusOf(current)
 	}
 
-	skill.currentSectionPeak = math.Max(tempStrain, skill.currentSectionPeak)
+	skill.currentSectionPeak = max(tempStrain, skill.currentSectionPeak)
 }
 
 // Processes given DifficultyObject
@@ -139,10 +139,10 @@ func (skill *Skill) DifficultyValue() float64 {
 	strains := skill.GetCurrentStrainPeaks()
 	reverseSortFloat64s(strains)
 
-	numReduced := mutils.Min(len(strains), skill.ReducedSectionCount)
+	numReduced := min(len(strains), skill.ReducedSectionCount)
 
 	for i := 0; i < numReduced; i++ {
-		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.ClampF(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
+		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
 		strains[i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 
@@ -174,7 +174,7 @@ func (skill *Skill) CountDifficultStrains(clockRate float64) float64 {
 	var topStrain, realtimeCount float64
 
 	for _, v := range peaks {
-		topStrain = math.Max(topStrain, v)
+		topStrain = max(topStrain, v)
 	}
 
 	for _, v := range peaks {

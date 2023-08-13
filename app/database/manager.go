@@ -15,11 +15,11 @@ import (
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/util"
-	"golang.org/x/exp/slices"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -791,10 +791,10 @@ func loadBeatmapsFromDatabase() []*beatmap.BeatMap {
 			&beatMap.LocalOffset,
 		)
 
-		beatMap.Diff.SetCS(mutils.ClampF(cs, 0, 10))
-		beatMap.Diff.SetAR(mutils.ClampF(ar, 0, 10))
-		beatMap.Diff.SetHP(mutils.ClampF(hp, 0, 10))
-		beatMap.Diff.SetOD(mutils.ClampF(od, 0, 10))
+		beatMap.Diff.SetCS(mutils.Clamp(cs, 0, 10))
+		beatMap.Diff.SetAR(mutils.Clamp(ar, 0, 10))
+		beatMap.Diff.SetHP(mutils.Clamp(hp, 0, 10))
+		beatMap.Diff.SetOD(mutils.Clamp(od, 0, 10))
 
 		beatmaps = append(beatmaps, beatMap)
 	}

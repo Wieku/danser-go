@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/framework/files"
 	"log"
-	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -76,7 +75,7 @@ func LoadMetadata(path string) *Metadata {
 	return &Metadata{
 		Width:    mData.Streams[0].Width,
 		Height:   mData.Streams[0].Height,
-		FPS:      math.Min(aFPS, rFPS),
+		FPS:      min(aFPS, rFPS),
 		Duration: parseRate(mData.Streams[0].Duration),
 		PixFmt:   mData.Streams[0].PixFmt,
 		IsMOV:    strings.Contains(mData.Format.FormatName, "mov"),

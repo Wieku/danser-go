@@ -106,14 +106,14 @@ func (hpBar *HpBar) Update(time float64) {
 	delta60 := (time - hpBar.lastTime) / 16.667
 
 	if hpBar.displayHp < hpBar.currentHp {
-		hpBar.displayHp = math.Min(1.0, hpBar.displayHp+math.Abs(hpBar.currentHp-hpBar.displayHp)/4*delta60)
+		hpBar.displayHp = min(1.0, hpBar.displayHp+math.Abs(hpBar.currentHp-hpBar.displayHp)/4*delta60)
 	} else if hpBar.displayHp > hpBar.currentHp {
-		hpBar.displayHp = math.Max(0.0, hpBar.displayHp-math.Abs(hpBar.displayHp-hpBar.currentHp)/6*delta60)
+		hpBar.displayHp = max(0.0, hpBar.displayHp-math.Abs(hpBar.displayHp-hpBar.currentHp)/6*delta60)
 	}
 
 	hpBar.kiIcon.SetPosition(vector.NewVec2d(hpBar.hpBasePosition.X, hpBar.kiPosY).AddS(float64(hpBar.healthBar.Texture.Width)*hpBar.displayHp, hpBar.hpSlide.GetValue()).Scl(settings.Gameplay.HpBar.Scale))
 
-	hpBar.healthBar.SetCutX(1.0 - hpBar.displayHp)
+	hpBar.healthBar.SetCutX(0, 1.0-hpBar.displayHp)
 
 	hpBar.healthBar.Update(time)
 	hpBar.kiIcon.Update(time)

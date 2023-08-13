@@ -29,7 +29,7 @@ func (t TimingPoint) GetRatio() float64 {
 		return 1.0
 	}
 
-	return float64(float32(mutils.ClampF(-t.beatLength, 10, 1000)) / 100)
+	return float64(float32(mutils.Clamp(-t.beatLength, 10, 1000)) / 100)
 }
 
 func (t TimingPoint) GetBaseBeatLength() float64 {
@@ -121,7 +121,7 @@ func (tim *Timings) GetPointAt(time float64) TimingPoint {
 		return time < tim.points[i].Time
 	})
 
-	return tim.points[mutils.Max(0, index-1)]
+	return tim.points[max(0, index-1)]
 }
 
 func (tim *Timings) GetOriginalPointAt(time float64) TimingPoint {
@@ -131,7 +131,7 @@ func (tim *Timings) GetOriginalPointAt(time float64) TimingPoint {
 		return time < tim.originalPoints[i].Time
 	})
 
-	return tim.originalPoints[mutils.Max(0, index-1)]
+	return tim.originalPoints[max(0, index-1)]
 }
 
 func (tim *Timings) GetScoringDistance() float64 {

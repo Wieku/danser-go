@@ -5,7 +5,6 @@ import (
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 var indices = []mgl32.Vec3{{-1, -1, 0}, {1, -1, 0}, {1, 1, 0}, {-1, 1, 0}}
@@ -29,7 +28,7 @@ func (c *SquareMover) GetPositionAt(time float64) vector.Vector2f {
 
 	mat := mgl32.Rotate3DZ(float32(time-c.start) / 2000 * 2 * math32.Pi).Mul3(mgl32.Scale2D(float32(spS.Radius), float32(spS.Radius)))
 
-	startIndex := (int64(math.Max(0, time-c.start)) / 10) % 4
+	startIndex := (int64(max(0, time-c.start)) / 10) % 4
 
 	pt1 := indices[startIndex]
 

@@ -196,13 +196,13 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		circle.reverseArrow = sprite.NewSpriteSingle(skin.GetTexture("reversearrow"), 0, vector.NewVec2d(0, 0), vector.Centre)
 		circle.reverseArrow.SetAlpha(0)
 
-		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, startTime+150), 0.0, 1.0))
+		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, min(endTime, startTime+150), 0.0, 1.0))
 		circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 1.0, 0.0))
 
 		circle.sprites = append(circle.sprites, circle.reverseArrow)
 
 		for t := circle.bounceStartTime; t < endTime; t += 300 {
-			length := math.Min(300, endTime-t)
+			length := min(300, endTime-t)
 			circle.reverseArrow.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, t, t+length, 1.3, 1.0))
 
 			if skin.GetInfo().Version < 2 {
@@ -216,7 +216,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 		circle.sprites = append(circle.sprites, circle.approachCircle)
 
 		if !diff.CheckModActive(difficulty.Hidden) || circle.HitObjectID == 0 {
-			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, math.Min(endTime, endTime-diff.Preempt+diff.TimeFadeIn*2), 0.0, 0.9))
+			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, min(endTime, endTime-diff.Preempt+diff.TimeFadeIn*2), 0.0, 0.9))
 			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime, endTime, 0.0, 0.0))
 
 			circle.approachCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.Linear, startTime, endTime, 4.0, 1.0))

@@ -12,7 +12,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 const DefaultFlashlightSize = 168.0
@@ -81,7 +80,7 @@ func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
 
 func (fl *Flashlight) UpdatePosition(cursorPosition vector.Vector2f) {
 	oldPosition := fl.position
-	fl.position = cursorPosition.Sub(oldPosition).Scl(float32(easing.OutQuad(math.Min(fl.delta, 120) / 120))).Add(oldPosition)
+	fl.position = cursorPosition.Sub(oldPosition).Scl(float32(easing.OutQuad(min(fl.delta, 120) / 120))).Add(oldPosition)
 }
 
 func (fl *Flashlight) UpdateCombo(combo int64) {

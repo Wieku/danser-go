@@ -9,7 +9,6 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 	"math/rand"
 )
 
@@ -115,7 +114,7 @@ func (scheduler *GenericScheduler) Update(time float64) {
 				break
 			}
 
-			lastEndTime = math.Max(lastEndTime, gEndTime)
+			lastEndTime = max(lastEndTime, gEndTime)
 
 			if scheduler.lastTime <= gStartTime || time <= gEndTime {
 				if scheduler.lastTime <= gStartTime { // brief movement lock for ExGon mover

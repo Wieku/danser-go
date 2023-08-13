@@ -118,14 +118,14 @@ func (mCurve *MultiCurve) PointAt(t float32) vector.Vector2f {
 		return mCurve.firstPoint
 	}
 
-	desiredWidth := mCurve.length * mutils.ClampF(t, 0.0, 1.0)
+	desiredWidth := mCurve.length * mutils.Clamp(t, 0.0, 1.0)
 
 	withoutFirst := mCurve.sections[1:]
 	index := sort.Search(len(withoutFirst), func(i int) bool {
 		return withoutFirst[i] >= desiredWidth
 	})
 
-	index = mutils.Min(index, len(mCurve.lines)-1)
+	index = min(index, len(mCurve.lines)-1)
 
 	if mCurve.sections[index+1]-mCurve.sections[index] == 0 {
 		return mCurve.lines[index].Point1
@@ -151,14 +151,14 @@ func (mCurve *MultiCurve) getLineAt(t float32) Linear {
 		return Linear{}
 	}
 
-	desiredWidth := mCurve.length * mutils.ClampF(t, 0.0, 1.0)
+	desiredWidth := mCurve.length * mutils.Clamp(t, 0.0, 1.0)
 
 	withoutFirst := mCurve.sections[1:]
 	index := sort.Search(len(withoutFirst), func(i int) bool {
 		return withoutFirst[i] >= desiredWidth
 	})
 
-	index = mutils.Min(index, len(mCurve.lines)-1)
+	index = min(index, len(mCurve.lines)-1)
 
 	return mCurve.lines[index]
 }

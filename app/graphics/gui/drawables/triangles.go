@@ -8,7 +8,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 	"math/rand"
 )
 
@@ -123,7 +122,7 @@ func (vis *Triangles) Update(time float64) {
 		}
 	}
 
-	vis.velocity = math.Max(vis.velocity, math.Min(boost*12, 12))
+	vis.velocity = max(vis.velocity, min(boost*12, 12))
 
 	vis.velocity *= 1.0 - 0.05*delta/16
 

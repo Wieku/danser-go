@@ -26,7 +26,7 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 	startC, cOk := start.(*objects.Circle)
 	endC, eOk := end.(*objects.Circle)
 
-	mover.startTime = math.Max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
+	mover.startTime = max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	mover.endTime = end.GetStartTime()
 
 	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
@@ -70,7 +70,7 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *PippiMover) Update(time float64) vector.Vector2f {
-	t := mutils.ClampF((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.curve.PointAt(float32(easing.OutQuad(t)))
 }
 
@@ -90,7 +90,7 @@ func (mover *PippiMover) modifyPos(time float64, spinner bool, pos vector.Vector
 
 	radius := config.SpinnerRadius
 	if !spinner {
-		radius = mover.diff.CircleRadius * mutils.ClampF(config.RadiusMultiplier, 0, 1)
+		radius = mover.diff.CircleRadius * mutils.Clamp(config.RadiusMultiplier, 0, 1)
 	}
 
 	mVec := vector.NewVec2fRad(float32(rad), float32(radius))

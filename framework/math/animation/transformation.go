@@ -39,7 +39,7 @@ func timeClamp(start, end, time float64) float64 {
 		return 1.0
 	}
 
-	return mutils.ClampF((time-start)/(end-start), 0, 1)
+	return mutils.Clamp((time-start)/(end-start), 0, 1)
 }
 
 type Transformation struct {
@@ -192,7 +192,7 @@ func (t *Transformation) Clone(startTime, endTime float64) *Transformation {
 }
 
 func (t *Transformation) SetLoop(runs int, delay float64) {
-	t.repetitions = mutils.Max(0, runs-1)
+	t.repetitions = max(0, runs-1)
 	t.loopDelay = delay
 }
 

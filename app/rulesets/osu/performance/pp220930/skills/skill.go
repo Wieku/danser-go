@@ -62,7 +62,7 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 		skill.currentSectionEnd += skill.SectionLength
 	}
 
-	skill.currentSectionPeak = math.Max(skill.StrainValueOf(current), skill.currentSectionPeak)
+	skill.currentSectionPeak = max(skill.StrainValueOf(current), skill.currentSectionPeak)
 }
 
 func (skill *Skill) GetCurrentStrainPeaks() []float64 {
@@ -80,10 +80,10 @@ func (skill *Skill) DifficultyValue() float64 {
 	strains := skill.GetCurrentStrainPeaks()
 	reverseSortFloat64s(strains)
 
-	numReduced := mutils.Min(len(strains), skill.ReducedSectionCount)
+	numReduced := min(len(strains), skill.ReducedSectionCount)
 
 	for i := 0; i < numReduced; i++ {
-		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.ClampF(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
+		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
 		strains[i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 

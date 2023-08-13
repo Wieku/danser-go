@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"log"
+	"os"
 	"strings"
 	"unsafe"
 )
@@ -45,8 +46,14 @@ func GLInit(debugLogs bool, additionalExtensions ...string) error {
 		hacks.IsIntel = true
 	}
 
+	forceAMDHack := false
+
+	if enF, ok := os.LookupEnv("DANSER_FLAGS"); ok && strings.Contains(enF, "AMDHACK") {
+		forceAMDHack = true
+	}
+
 	// HACK HACK HACK: please see github.com/wieku/danser-go/framework/graphics/hacks.IsOldAMD for more info
-	if (strings.Contains(lVendor, "amd") || strings.Contains(lVendor, "ati")) &&
+	if forceAMDHack || (strings.Contains(lVendor, "amd") || strings.Contains(lVendor, "ati")) &&
 		(strings.Contains(glVersion, "15.201.") || strings.Contains(glVersion, "15.200.")) {
 		hacks.IsOldAMD = true
 	}

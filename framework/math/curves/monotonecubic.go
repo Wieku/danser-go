@@ -69,7 +69,7 @@ func NewMonotoneCubic(points []vector.Vector2f) *MonotoneCubic {
 }
 
 func (bz *MonotoneCubic) PointAt(t float32) vector.Vector2f {
-	x := bz.Points[0].X + bz.length*mutils.ClampF(t, 0.0, 1.0)
+	x := bz.Points[0].X + bz.length*mutils.Clamp(t, 0.0, 1.0)
 
 	i := sort.Search(len(bz.c3s), func(i int) bool {
 		return bz.Points[i].X >= x

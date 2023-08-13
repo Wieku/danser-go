@@ -110,12 +110,12 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 		entry.Sprite.SetCutOrigin(vector.CentreLeft)
 		entry.Sprite.SetOrigin(vector.CentreLeft)
 		batch.SetTranslation(vector.NewVec2d(-(230*0.625+offset)*scale, 0))
-		entry.Sprite.SetCutX(1.0 - (230+offset/0.625)/float64(entry.Sprite.Texture.Width))
+		entry.Sprite.SetCutX(0, 1.0-(230+offset/0.625)/float64(entry.Sprite.Texture.Width))
 	} else {
 		entry.Sprite.SetCutOrigin(vector.CentreRight)
 		entry.Sprite.SetOrigin(vector.CentreRight)
 		batch.SetTranslation(vector.NewVec2d((float64(entry.Sprite.Texture.Width-470)*0.625+offset)*scale, 0))
-		entry.Sprite.SetCutX(1.0 - (float64(entry.Sprite.Texture.Width-470)+offset/0.625)/float64(entry.Sprite.Texture.Width))
+		entry.Sprite.SetCutX(1.0-(float64(entry.Sprite.Texture.Width-470)+offset/0.625)/float64(entry.Sprite.Texture.Width), 0)
 	}
 
 	batch.SetColor(1, 1, 1, 0.6*alpha)

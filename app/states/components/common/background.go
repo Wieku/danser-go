@@ -151,8 +151,8 @@ func (bg *Background) Update(time float64, x, y float64) {
 		parallaxTarget = math.Abs(parallax.Amount)
 
 		if !math.IsNaN(x) && !math.IsNaN(y) {
-			pX = mutils.ClampF(x, -1, 1) * parallax.Amount
-			pY = mutils.ClampF(y, -1, 1) * parallax.Amount
+			pX = mutils.Clamp(x, -1, 1) * parallax.Amount
+			pY = mutils.Clamp(y, -1, 1) * parallax.Amount
 		}
 	}
 

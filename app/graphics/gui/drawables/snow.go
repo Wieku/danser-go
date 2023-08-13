@@ -71,7 +71,7 @@ func (vis *Snow) Update(time float64) {
 	delta := (time - vis.lastTime) / 16
 
 	mX, _ := input.Win.GetCursorPos()
-	mX = mutils.ClampF(mX, 0, settings.Graphics.GetWidthF())
+	mX = mutils.Clamp(mX, 0, settings.Graphics.GetWidthF())
 
 	vUpdate := 0.0
 

@@ -2,14 +2,15 @@ package settings
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/itchio/lzma"
 	"github.com/wieku/danser-go/framework/files"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -67,14 +68,7 @@ func LoadConfig(file *os.File) (*Config, error) {
 	config.srcPath = file.Name()
 	config.srcData = data
 
-	str := string(data)
-
-	// I hope it won't backfire, replacing \ or \\\\\\\ with \\ so JSON can parse it as \
-
-	str = regexp.MustCompile(`\\+`).ReplaceAllString(str, `\`)
-	str = strings.ReplaceAll(str, `\`, `\\`)
-
-	if err = json.Unmarshal([]byte(str), config); err != nil {
+	if err = json.Unmarshal(data, config); err != nil {
 		return nil, fmt.Errorf("SettingsManager: Failed to parse %s! Please re-check the file for mistakes. Error: %s", file.Name(), err)
 	}
 
@@ -277,4 +271,20 @@ func (config *Config) Save(path string, forceSave bool) {
 
 		config.srcPath = path
 	}
+}
+
+func (config *Config) GetCompressedString() string {
+	data, err := json.MarshalIndent(config, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+
+	buf := new(bytes.Buffer)
+
+	writer := lzma.NewWriter(buf)
+
+	_, _ = writer.Write(data)
+	_ = writer.Close()
+
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }

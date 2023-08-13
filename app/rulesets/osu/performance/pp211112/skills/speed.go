@@ -46,9 +46,9 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing2.DifficultyObject) 
 
 	var distance float64
 	if s.Experimental {
-		distance = math.Min(singleSpacingThreshold, current.TravelDistance+current.MovementDistance)
+		distance = min(singleSpacingThreshold, current.TravelDistance+current.MovementDistance)
 	} else {
-		distance = math.Min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
+		distance = min(singleSpacingThreshold, current.TravelDistance+current.JumpDistance)
 	}
 
 	strainTime := current.StrainTime
@@ -64,7 +64,7 @@ func (s *SpeedSkill) speedStrainValue(current *preprocessing2.DifficultyObject) 
 
 	// Cap deltatime to the OD 300 hitwindow.
 	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
-	strainTime /= mutils.ClampF((strainTime/greatWindowFull)/0.93, 0.92, 1)
+	strainTime /= mutils.Clamp((strainTime/greatWindowFull)/0.93, 0.92, 1)
 
 	speedBonus := 1.0
 
@@ -95,19 +95,19 @@ func (s *SpeedSkill) speedStrainBonus(current *preprocessing2.DifficultyObject) 
 		prevObj := s.GetPrevious(i)
 		lastObj := s.GetPrevious(i + 1)
 
-		currHistoricalDecay := math.Max(0, historyTimeMax-(current.StartTime-currObj.StartTime)) / historyTimeMax // scales note 0 to 1 from history to now
+		currHistoricalDecay := max(0, historyTimeMax-(current.StartTime-currObj.StartTime)) / historyTimeMax // scales note 0 to 1 from history to now
 
 		if currHistoricalDecay != 0 {
-			currHistoricalDecay = math.Min(float64(len(s.Previous)-i)/float64(len(s.Previous)), currHistoricalDecay) // either we're limited by time or limited by object count.
+			currHistoricalDecay = min(float64(len(s.Previous)-i)/float64(len(s.Previous)), currHistoricalDecay) // either we're limited by time or limited by object count.
 
 			currDelta := currObj.StrainTime
 			prevDelta := prevObj.StrainTime
 			lastDelta := lastObj.StrainTime
-			currRatio := 1.0 + 6.0*math.Min(0.5, math.Pow(math.Sin(math.Pi/(math.Min(prevDelta, currDelta)/math.Max(prevDelta, currDelta))), 2)) // fancy function to calculate rhythmbonuses.
+			currRatio := 1.0 + 6.0*min(0.5, math.Pow(math.Sin(math.Pi/(min(prevDelta, currDelta)/max(prevDelta, currDelta))), 2)) // fancy function to calculate rhythmbonuses.
 
-			windowPenalty := math.Min(1, math.Max(0, math.Abs(prevDelta-currDelta)-greatWindow*0.6)/(greatWindow*0.6))
+			windowPenalty := min(1, max(0, math.Abs(prevDelta-currDelta)-greatWindow*0.6)/(greatWindow*0.6))
 
-			windowPenalty = math.Min(1, windowPenalty)
+			windowPenalty = min(1, windowPenalty)
 
 			effectiveRatio := windowPenalty * currRatio
 

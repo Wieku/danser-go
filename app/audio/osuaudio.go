@@ -68,7 +68,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 		additionSet = sampleSet
 	}
 
-	volume = mutils.Max(volume, 0.08)
+	volume = max(volume, 0.08)
 
 	// Play normal
 	if skin.GetInfo().LayeredHitSounds || hitsound&1 > 0 || hitsound == 0 {
@@ -94,7 +94,7 @@ func PlaySample(sampleSet, additionSet, hitsound, index int, volume float64, obj
 func playSample(sampleSet int, hitsoundIndex, index int, volume float64, objNum int64, xPos float64) {
 	balance := 0.0
 	if settings.DIVIDES == 1 {
-		balance = mutils.ClampF((xPos-256)/512*settings.Audio.HitsoundPositionMultiplier, -1, 1)
+		balance = mutils.Clamp((xPos-256)/512*settings.Audio.HitsoundPositionMultiplier, -1, 1)
 	}
 
 	if settings.Audio.IgnoreBeatmapSampleVolume {

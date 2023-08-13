@@ -226,7 +226,7 @@ func (cursor *Cursor) smokeUpdate() {
 			cursor.firstSmokePosition = cursor.Position
 		}
 
-		distance := math32.Max(2*scaling, cursor.smokeTexture.Width*scaling/4)
+		distance := max(2*scaling, cursor.smokeTexture.Width*scaling/4)
 		points := cursor.Position.Dst(cursor.lastSmokePosition)
 
 		if int(points/distance) > 0 {

@@ -15,7 +15,7 @@ const (
 
 /* base pp value for stars, used internally by ppv2 */
 func ppBase(stars float64) float64 {
-	return math.Pow(5.0*math.Max(1.0, stars/0.0675)-4.0, 3.0) /
+	return math.Pow(5.0*max(1.0, stars/0.0675)-4.0, 3.0) /
 		100000.0
 }
 
@@ -46,7 +46,7 @@ type PPv2 struct {
 }
 
 func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
-	attribs.MaxCombo = mutils.Max(1, attribs.MaxCombo)
+	attribs.MaxCombo = max(1, attribs.MaxCombo)
 
 	if combo < 0 {
 		combo = attribs.MaxCombo
@@ -76,7 +76,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 			float64(n300)*300) /
 			(float64(pp.totalHits) * 300)
 
-		pp.accuracy = mutils.ClampF(acc, 0, 1)
+		pp.accuracy = mutils.Clamp(acc, 0, 1)
 	}
 
 	if diff.CheckModActive(difficulty.ScoreV2) {
@@ -90,7 +90,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 	multiplier := PerformanceBaseMultiplier
 
 	if diff.Mods.Active(difficulty.NoFail) {
-		multiplier *= math.Max(0.90, 1.0-0.02*pp.effectiveMissCount)
+		multiplier *= max(0.90, 1.0-0.02*pp.effectiveMissCount)
 	}
 
 	if diff.Mods.Active(difficulty.SpunOut) && pp.totalHits > 0 {
@@ -102,11 +102,11 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 		mehMultiplier := 1.0
 
 		if diff.ODReal > 0.0 {
-			okMultiplier = math.Max(0.0, 1-math.Pow(diff.ODReal/13.33, 1.8))
-			mehMultiplier = math.Max(0.0, 1-math.Pow(diff.ODReal/13.33, 5))
+			okMultiplier = max(0.0, 1-math.Pow(diff.ODReal/13.33, 1.8))
+			mehMultiplier = max(0.0, 1-math.Pow(diff.ODReal/13.33, 5))
 		}
 
-		pp.effectiveMissCount = math.Min(pp.effectiveMissCount+float64(pp.countOk)*okMultiplier+float64(pp.countMeh)*mehMultiplier, float64(pp.totalHits))
+		pp.effectiveMissCount = min(pp.effectiveMissCount+float64(pp.countOk)*okMultiplier+float64(pp.countMeh)*mehMultiplier, float64(pp.totalHits))
 	}
 
 	pp.Results.Aim = pp.computeAimValue()
@@ -128,7 +128,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	aimValue := ppBase(pp.attribs.Aim)
 
 	// Longer maps are worth more
-	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
+	lengthBonus := 0.95 + 0.4*min(1.0, float64(pp.totalHits)/2000.0)
 	if pp.totalHits > 2000 {
 		lengthBonus += math.Log10(float64(pp.totalHits)/2000.0) * 0.5
 	}
@@ -165,7 +165,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 {
-		estimateSliderEndsDropped := mutils.ClampF(float64(mutils.Min(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		estimateSliderEndsDropped := mutils.Clamp(float64(min(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
 		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}
@@ -185,7 +185,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	speedValue := ppBase(pp.attribs.Speed)
 
 	// Longer maps are worth more
-	lengthBonus := 0.95 + 0.4*math.Min(1.0, float64(pp.totalHits)/2000.0)
+	lengthBonus := 0.95 + 0.4*min(1.0, float64(pp.totalHits)/2000.0)
 	if pp.totalHits > 2000 {
 		lengthBonus += math.Log10(float64(pp.totalHits)/2000.0) * 0.5
 	}
@@ -214,14 +214,14 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	relevantAccuracy := 0.0
 	if pp.attribs.SpeedNoteCount != 0 {
 		relevantTotalDiff := float64(pp.totalHits) - pp.attribs.SpeedNoteCount
-		relevantCountGreat := math.Max(0, float64(pp.countGreat)-relevantTotalDiff)
-		relevantCountOk := math.Max(0, float64(pp.countOk)-math.Max(0, relevantTotalDiff-float64(pp.countGreat)))
-		relevantCountMeh := math.Max(0, float64(pp.countMeh)-math.Max(0, relevantTotalDiff-float64(pp.countGreat)-float64(pp.countOk)))
+		relevantCountGreat := max(0, float64(pp.countGreat)-relevantTotalDiff)
+		relevantCountOk := max(0, float64(pp.countOk)-max(0, relevantTotalDiff-float64(pp.countGreat)))
+		relevantCountMeh := max(0, float64(pp.countMeh)-max(0, relevantTotalDiff-float64(pp.countGreat)-float64(pp.countOk)))
 		relevantAccuracy = (relevantCountGreat*6.0 + relevantCountOk*2.0 + relevantCountMeh) / (pp.attribs.SpeedNoteCount * 6.0)
 	}
 
 	// Scale the speed value with accuracy and OD
-	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.accuracy+relevantAccuracy)/2.0, (14.5-math.Max(pp.diff.ODReal, 8))/2)
+	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.accuracy+relevantAccuracy)/2.0, (14.5-max(pp.diff.ODReal, 8))/2)
 
 	// Scale the speed value with # of 50s to punish doubletapping.
 	if float64(pp.countMeh) >= float64(pp.totalHits)/500 {
@@ -253,7 +253,7 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 	accuracyValue := math.Pow(1.52163, pp.diff.ODReal) * math.Pow(betterAccuracyPercentage, 24) * 2.83
 
 	// Bonus for many hitcircles - it's harder to keep good accuracy up for longer
-	accuracyValue *= math.Min(1.15, math.Pow(float64(pp.amountHitObjectsWithAccuracy)/1000.0, 0.3))
+	accuracyValue *= min(1.15, math.Pow(float64(pp.amountHitObjectsWithAccuracy)/1000.0, 0.3))
 
 	if pp.diff.Mods.Active(difficulty.Hidden) {
 		accuracyValue *= 1.08
@@ -282,9 +282,9 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	flashlightValue *= pp.getComboScalingFactor()
 
 	// Account for shorter maps having a higher ratio of 0 combo/100 combo flashlight radius.
-	scale := 0.7 + 0.1*math.Min(1.0, float64(pp.totalHits)/200.0)
+	scale := 0.7 + 0.1*min(1.0, float64(pp.totalHits)/200.0)
 	if pp.totalHits > 200 {
-		scale += 0.2 * math.Min(1.0, float64(pp.totalHits-200)/200.0)
+		scale += 0.2 * min(1.0, float64(pp.totalHits-200)/200.0)
 	}
 
 	flashlightValue *= scale
@@ -304,14 +304,14 @@ func (pp *PPv2) calculateEffectiveMissCount() float64 {
 	if pp.attribs.Sliders > 0 {
 		fullComboThreshold := float64(pp.attribs.MaxCombo) - 0.1*float64(pp.attribs.Sliders)
 		if float64(pp.scoreMaxCombo) < fullComboThreshold {
-			comboBasedMissCount = fullComboThreshold / math.Max(1.0, float64(pp.scoreMaxCombo))
+			comboBasedMissCount = fullComboThreshold / max(1.0, float64(pp.scoreMaxCombo))
 		}
 	}
 
 	// Clamp miss count to maximum amount of possible breaks
-	comboBasedMissCount = math.Min(comboBasedMissCount, float64(pp.countOk+pp.countMeh+pp.countMiss))
+	comboBasedMissCount = min(comboBasedMissCount, float64(pp.countOk+pp.countMeh+pp.countMiss))
 
-	return math.Max(float64(pp.countMiss), comboBasedMissCount)
+	return max(float64(pp.countMiss), comboBasedMissCount)
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
@@ -322,6 +322,6 @@ func (pp *PPv2) getComboScalingFactor() float64 {
 	if pp.attribs.MaxCombo <= 0 {
 		return 1.0
 	} else {
-		return math.Min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+		return min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
 	}
 }

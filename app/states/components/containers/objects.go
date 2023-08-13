@@ -78,7 +78,7 @@ func (container *HitObjectContainer) createFollowPoints() {
 		distance := vec.Len()
 		rotation := vec.AngleR()
 
-		for progress := math.Max(lineDist*1.5, distance-5_000); progress < distance-lineDist; progress += lineDist { // Limit the points to 5k osu!pixels from the next object
+		for progress := max(lineDist*1.5, distance-5_000); progress < distance-lineDist; progress += lineDist { // Limit the points to 5k osu!pixels from the next object
 			t := progress / distance
 
 			tStart := prevTime + t*duration - preEmpt
@@ -134,7 +134,7 @@ func (container *HitObjectContainer) Update(time float64) {
 func (container *HitObjectContainer) preProcessQueue(time float64) {
 	if len(container.objectQueue) > 0 {
 		for i := 0; i < len(container.objectQueue); i++ {
-			if p := container.objectQueue[i]; p.GetStartTime()-math.Max(15000, container.beatMap.Diff.Preempt) <= time {
+			if p := container.objectQueue[i]; p.GetStartTime()-max(15000, container.beatMap.Diff.Preempt) <= time {
 				if p := container.objectQueue[i]; p.GetStartTime()-math.Floor(container.beatMap.Diff.Preempt) <= time {
 					if _, ok := p.(*objects.Spinner); ok {
 						container.addProxy(&renderableProxy{

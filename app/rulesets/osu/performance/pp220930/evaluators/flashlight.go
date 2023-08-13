@@ -4,7 +4,6 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/preprocessing"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
@@ -31,7 +30,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 
 	angleRepeatCount := 0.0
 
-	for i := 0; i < mutils.Min(current.Index, 10); i++ {
+	for i := 0; i < min(current.Index, 10); i++ {
 		currentObj := current.Previous(i)
 
 		if _, ok := currentObj.BaseObject.(*objects.Spinner); !ok {
@@ -41,11 +40,11 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 
 			// We want to nerf objects that can be easily seen within the Flashlight circle radius.
 			if i == 0 {
-				smallDistNerf = math.Min(1.0, jumpDistance/75.0)
+				smallDistNerf = min(1.0, jumpDistance/75.0)
 			}
 
 			// We also want to nerf stacks so that only the first object of the stack is accounted for.
-			stackNerf := math.Min(1.0, (currentObj.LazyJumpDistance/scalingFactor)/25.0)
+			stackNerf := min(1.0, (currentObj.LazyJumpDistance/scalingFactor)/25.0)
 
 			opacityBonus := 1.0 + flMaxOpacityBonus*(1.0-current.OpacityAt(currentObj.BaseObject.GetStartTime()))
 
@@ -54,7 +53,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 			if !math.IsNaN(currentObj.Angle) && !math.IsNaN(current.Angle) {
 				// Objects further back in time should count less for the nerf.
 				if math.Abs(currentObj.Angle-current.Angle) < 0.02 {
-					angleRepeatCount += math.Max(1.0-0.1*float64(i), 0)
+					angleRepeatCount += max(1.0-0.1*float64(i), 0)
 				}
 			}
 		}
@@ -79,7 +78,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 		pixelTravelDistance := float64(osuSlider.LazyTravelDistance) / scalingFactor
 
 		// Reward sliders based on velocity.
-		sliderBonus = math.Pow(math.Max(0.0, pixelTravelDistance/current.TravelTime-flMinVelocity), 0.5)
+		sliderBonus = math.Pow(max(0.0, pixelTravelDistance/current.TravelTime-flMinVelocity), 0.5)
 
 		// Longer sliders require more memorisation.
 		sliderBonus *= pixelTravelDistance

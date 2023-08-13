@@ -40,12 +40,12 @@ func (mover *LinearMover) SetObjects(objs []objects.IHitObject) int {
 	mover.line = curves.NewLinear(startPos, endPos)
 
 	if mover.simple {
-		mover.startTime = math.Max(mover.startTime, mover.endTime-(mover.diff.Preempt-100*mover.diff.Speed))
+		mover.startTime = max(mover.startTime, mover.endTime-(mover.diff.Preempt-100*mover.diff.Speed))
 	} else {
 		config := settings.CursorDance.MoverSettings.Linear[mover.id%len(settings.CursorDance.MoverSettings.Linear)]
 
 		if config.WaitForPreempt {
-			mover.startTime = math.Max(mover.startTime, mover.endTime-(mover.diff.Preempt-config.ReactionTime*mover.diff.Speed))
+			mover.startTime = max(mover.startTime, mover.endTime-(mover.diff.Preempt-config.ReactionTime*mover.diff.Speed))
 		}
 	}
 
@@ -53,7 +53,7 @@ func (mover *LinearMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *LinearMover) Update(time float64) vector.Vector2f {
-	t := mutils.ClampF((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+	t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
 	return mover.line.PointAt(float32(easing.OutQuad(t)))
 }
 

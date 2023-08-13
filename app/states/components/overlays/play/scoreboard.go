@@ -11,10 +11,8 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
-	"math"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -98,7 +96,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 						return scores[i].Score.Score > scores[j].Score.Score
 					})
 
-					for i := 0; i < mutils.Min(len(scores), 50); i++ {
+					for i := 0; i < min(len(scores), 50); i++ {
 						s := scores[i]
 
 						entry := NewScoreboardEntry(s.Username, s.Score.Score, int64(s.MaxCombo), i+1, false)
@@ -184,7 +182,7 @@ func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
 
 				sprite2 := sprite.NewSpriteSingle(skin.GetTexture("scoreboard-explosion-2"), 0.5, playerPos, align)
 				sprite2.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, board.time, board.time+400, 1, 0))
-				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, math.Max(1, 16*settings.Gameplay.ScoreBoard.ExplosionScale), 1.2))
+				sprite2.AddTransform(animation.NewVectorTransform(animation.ScaleVector, easing.OutQuad, board.time, board.time+200, 1, 1, max(1, 16*settings.Gameplay.ScoreBoard.ExplosionScale), 1.2))
 				sprite2.ResetValuesToTransforms()
 				sprite2.AdjustTimesToTransformations()
 				sprite2.ShowForever(false)

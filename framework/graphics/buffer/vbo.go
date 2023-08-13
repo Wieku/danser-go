@@ -5,7 +5,6 @@ import (
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/history"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/statistic"
 	"runtime"
 )
@@ -61,7 +60,7 @@ func (vbo *VertexBufferObject) SetData(offset int, data []float32) {
 func (vbo *VertexBufferObject) Resize(newCapacity int) {
 	if vbo.data != nil {
 		data := make([]float32, newCapacity)
-		copy(data, vbo.data[:mutils.Min(vbo.capacity, newCapacity)])
+		copy(data, vbo.data[:min(vbo.capacity, newCapacity)])
 		vbo.data = data
 	}
 

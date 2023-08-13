@@ -28,11 +28,11 @@ func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	drainTime := float32((int64(beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) - int64(beatMap.HitObjects[0].GetStartTime()) - pauses) / 1000)
 
 	// HACK: we need to cast to float32 then to float64 to lose some precision but calculate them again as float64s to have matching results with osu!stable
-	s.scoreMultiplier = math.RoundToEven((float64(float32(beatMap.Diff.GetHP())) + float64(float32(beatMap.Diff.GetOD())) + float64(float32(beatMap.Diff.GetCS())) + float64(mutils.ClampF(float32(len(beatMap.HitObjects))/drainTime*8, 0, 16))) / 38 * 5)
+	s.scoreMultiplier = math.RoundToEven((float64(float32(beatMap.Diff.GetHP())) + float64(float32(beatMap.Diff.GetOD())) + float64(float32(beatMap.Diff.GetCS())) + float64(mutils.Clamp(float32(len(beatMap.HitObjects))/drainTime*8, 0, 16))) / 38 * 5)
 }
 
 func (s *scoreV1Processor) AddResult(result HitResult, comboResult ComboResult) {
-	combo := mutils.Max(s.combo-1, 0)
+	combo := max(s.combo-1, 0)
 
 	if result != SliderMiss && result != Miss {
 		increase := result.ScoreValue()

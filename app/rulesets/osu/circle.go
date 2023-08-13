@@ -32,7 +32,7 @@ func (circle *Circle) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	circle.fadeStartRelative = 1000000
 	for _, player := range circle.players {
 		circle.state[player] = new(objstate)
-		circle.fadeStartRelative = math.Min(circle.fadeStartRelative, player.diff.Preempt)
+		circle.fadeStartRelative = min(circle.fadeStartRelative, player.diff.Preempt)
 	}
 }
 

@@ -5,13 +5,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -34,19 +30,16 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/buffer"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
-	"io"
 	"io/ioutil"
 	"log"
 	"math"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -253,6 +246,8 @@ func run() {
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
+		log.Println("Current config:", settings.GetCompressedString())
+
 		if !newSettings && len(os.Args) == 1 {
 			platform.OpenURL("https://youtu.be/dQw4w9WgXcQ")
 			closeAfterSettingsLoad = true
@@ -334,6 +329,10 @@ func run() {
 			panic("Failed to initialize GLFW: " + err.Error())
 		}
 
+		if !closeAfterSettingsLoad {
+			log.Println("GLFW Initialized!")
+		}
+
 		platform.SetupContext()
 
 		glfw.WindowHint(glfw.Resizable, glfw.False)
@@ -393,6 +392,8 @@ func run() {
 			settings.SKIP = false
 		}
 
+		log.Println("Creating window...")
+
 		if settings.Graphics.Fullscreen {
 			glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
 			glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
@@ -426,7 +427,7 @@ func run() {
 
 		win.MakeContextCurrent()
 
-		log.Println("GLFW initialized!")
+		log.Println("Window created!")
 
 		err = platform.GLInit(*gldebug)
 		if err != nil {
@@ -538,7 +539,7 @@ func mainLoopRecord() {
 
 	ffmpeg.StartFFmpeg(int(fps), w, h, audioFPS, output)
 
-	updateFPS := math.Max(fps, 1000)
+	updateFPS := max(fps, 1000)
 	updateDelta := 1000 / updateFPS
 	fpsDelta := 1000 / fps
 	audioDelta := 1000.0 / audioFPS
@@ -653,7 +654,7 @@ func mainLoopNormal() {
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
-					settings.DIVIDES = mutils.Max(1, settings.DIVIDES-1)
+					settings.DIVIDES = max(1, settings.DIVIDES-1)
 				case glfw.KeyEqual:
 					settings.DIVIDES += 1
 				case glfw.KeyO:
@@ -773,35 +774,6 @@ func checkForUpdates() {
 	}
 }
 
-func printPlatformInfo() {
-	const unknown = "Unknown"
-
-	osName, cpuName, ramAmount := unknown, unknown, unknown
-
-	hStat, err := host.Info()
-	if err == nil {
-		osName = hStat.Platform + " " + hStat.PlatformVersion
-	}
-
-	cStats, err := cpu.Info()
-	if err == nil && len(cStats) > 0 {
-		cpuName = fmt.Sprintf("%s, %d cores", strings.TrimSpace(cStats[0].ModelName), cStats[0].Cores)
-	}
-
-	mStat, err := mem.VirtualMemory()
-	if err == nil {
-		ramAmount = humanize.IBytes(mStat.Total)
-	}
-
-	log.Println("-------------------------------------------------------------------")
-	log.Println("danser-go version:", build.VERSION)
-	log.Println("Ran using:", os.Args)
-	log.Println("OS: ", osName)
-	log.Println("CPU:", cpuName)
-	log.Println("RAM:", ramAmount)
-	log.Println("-------------------------------------------------------------------")
-}
-
 func Run() {
 	defer func() {
 		var err any
@@ -816,18 +788,7 @@ func Run() {
 
 	goroutines.SetCrashHandler(closeHandler)
 
-	log.Println("danser-go version:", build.VERSION)
-
-	file, err := os.Create(filepath.Join(env.DataDir(), "danser.log"))
-	if err != nil {
-		panic(err)
-	}
-
-	log.SetOutput(file)
-
-	printPlatformInfo()
-
-	log.SetOutput(io.MultiWriter(os.Stdout, file))
+	platform.StartLogging("danser")
 
 	platform.DisableQuickEdit()
 

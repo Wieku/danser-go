@@ -49,7 +49,7 @@ func (c Color) GetHue() float32 {
 }
 
 func (c Color) Mix(c1 Color, t float32) Color {
-	t = mutils.ClampF(t, 0.0, 1.0)
+	t = mutils.Clamp(t, 0.0, 1.0)
 	return NewRGBA(
 		c.R+(c1.R-c.R)*t,
 		c.G+(c1.G-c.G)*t,
@@ -75,8 +75,8 @@ func (c Color) Shift(h, s, v float32) Color {
 		hR += 360
 	}
 
-	sR := mutils.ClampF(s1+s, 0, 1)
-	vR := mutils.ClampF(v1+v, 0, 1)
+	sR := mutils.Clamp(s1+s, 0, 1)
+	vR := mutils.Clamp(v1+v, 0, 1)
 
 	return NewHSVA(hR, sR, vR, c.A)
 }
@@ -98,12 +98,12 @@ func (c Color) Shade2(amount float32) Color {
 }
 
 func (c Color) Darken(amount float32) Color {
-	scale := math32.Max(1.0, 1.0+amount)
+	scale := max(1.0, 1.0+amount)
 	return NewRGBA(c.R/scale, c.G/scale, c.B/scale, c.A)
 }
 
 func (c Color) Lighten(amount float32) Color {
-	scale := math32.Max(1.0, 1.0+amount)
+	scale := max(1.0, 1.0+amount)
 	return NewRGBA(c.R*scale, c.G*scale, c.B*scale, c.A)
 }
 
@@ -112,9 +112,9 @@ func (c Color) Lighten2(amount float32) Color {
 	scale := 1.0 + 0.5*amount
 
 	return NewRGBA(
-		math32.Min(1.0, c.R*scale+amount),
-		math32.Min(1.0, c.G*scale+amount),
-		math32.Min(1.0, c.B*scale+amount),
+		min(1.0, c.R*scale+amount),
+		min(1.0, c.G*scale+amount),
+		min(1.0, c.B*scale+amount),
 		c.A)
 }
 

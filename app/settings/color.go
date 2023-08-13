@@ -3,7 +3,7 @@ package settings
 import (
 	"github.com/wieku/danser-go/app/utils"
 	color2 "github.com/wieku/danser-go/framework/math/color"
-	"math"
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 type HSV struct {
@@ -33,10 +33,7 @@ func (cl *color) Update(delta float64) {
 	if cl.EnableRainbow {
 		cl.currentHue += cl.RainbowSpeed / 1000.0 * delta
 
-		cl.currentHue = math.Mod(cl.currentHue, 360)
-		if cl.currentHue < 0.0 {
-			cl.currentHue += 360.0
-		}
+		cl.currentHue = mutils.Sanitize(cl.currentHue, 360)
 	} else {
 		cl.currentHue = 0
 	}
@@ -48,10 +45,7 @@ func (cl *color) GetColors(divides int, beatScale, alpha float64) []color2.Color
 		flashOffset = cl.FlashAmplitude * (beatScale - 1.0) / (Audio.BeatScale - 1)
 	}
 
-	hue := math.Mod(cl.BaseColor.Hue+cl.currentHue+flashOffset, 360)
-	if hue < 0.0 {
-		hue += 360.0
-	}
+	hue := mutils.Sanitize(cl.BaseColor.Hue+cl.currentHue+flashOffset, 360)
 
 	offset := 360.0 / float64(divides)
 	if cl.EnableCustomHueOffset {

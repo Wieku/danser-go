@@ -33,7 +33,7 @@ func (section *lineSection) pointAtLen(length float32) vector.Vector2f {
 }
 
 func (section *lineSection) capLen(length float32) float32 {
-	return mutils.ClampF(length, 0, section.length)
+	return mutils.Clamp(length, 0, section.length)
 }
 
 type Body struct {
@@ -116,11 +116,11 @@ func (body *Body) setupLinesAndBounds(curve *curves.MultiCurve, hardRock bool) {
 			continue
 		}
 
-		body.topLeft.X = math32.Min(body.topLeft.X, math32.Min(line.Point1.X, line.Point2.X))
-		body.topLeft.Y = math32.Min(body.topLeft.Y, math32.Min(line.Point1.Y, line.Point2.Y))
+		body.topLeft.X = min(body.topLeft.X, min(line.Point1.X, line.Point2.X))
+		body.topLeft.Y = min(body.topLeft.Y, min(line.Point1.Y, line.Point2.Y))
 
-		body.bottomRight.X = math32.Max(body.bottomRight.X, math32.Max(line.Point1.X, line.Point2.X))
-		body.bottomRight.Y = math32.Max(body.bottomRight.Y, math32.Max(line.Point1.Y, line.Point2.Y))
+		body.bottomRight.X = max(body.bottomRight.X, max(line.Point1.X, line.Point2.X))
+		body.bottomRight.Y = max(body.bottomRight.Y, max(line.Point1.Y, line.Point2.Y))
 
 		body.sections = append(body.sections, &lineSection{
 			Linear:     line,
@@ -284,14 +284,14 @@ func (body *Body) DrawBase(headProgress, tailProgress float64, baseProjView mgl3
 		return
 	}
 
-	headLength := mutils.ClampF(float32(headProgress), 0.0, 1.0) * body.totalLength
-	tailLength := mutils.ClampF(float32(tailProgress), 0.0, 1.0) * body.totalLength
+	headLength := mutils.Clamp(float32(headProgress), 0.0, 1.0) * body.totalLength
+	tailLength := mutils.Clamp(float32(tailProgress), 0.0, 1.0) * body.totalLength
 
 	if !settings.RECORD {
 		// In watch mode re-render on changes bigger than 1 o!px in any direction to conserve FPS a bit
 		// As a result very slow sliders may look choppy but whatever
 
-		headLength = math32.Min(math32.Ceil(headLength), body.totalLength) // Make sure snake-out doesn't go outside the path
+		headLength = min(math32.Ceil(headLength), body.totalLength) // Make sure snake-out doesn't go outside the path
 
 		if tailLength != body.totalLength { // Don't clamp at snake-in end to have the spot-on position
 			tailLength = math32.Floor(tailLength)
@@ -452,11 +452,11 @@ func (body *Body) ensureFBO(baseProjView mgl32.Mat4) {
 
 	var topLeftWorld, bottomRightWorld vector.Vector2f
 
-	topLeftWorld.X = math32.Max(topLeftWorldRelative.X(), body.topLeft.X-body.radius*float32(settings.Audio.BeatScale))
-	topLeftWorld.Y = math32.Max(topLeftWorldRelative.Y(), body.topLeft.Y-body.radius*float32(settings.Audio.BeatScale))
+	topLeftWorld.X = max(topLeftWorldRelative.X(), body.topLeft.X-body.radius*float32(settings.Audio.BeatScale))
+	topLeftWorld.Y = max(topLeftWorldRelative.Y(), body.topLeft.Y-body.radius*float32(settings.Audio.BeatScale))
 
-	bottomRightWorld.X = math32.Min(bottomRightWorldRelative.X(), body.bottomRight.X+body.radius*float32(settings.Audio.BeatScale))
-	bottomRightWorld.Y = math32.Min(bottomRightWorldRelative.Y(), body.bottomRight.Y+body.radius*float32(settings.Audio.BeatScale))
+	bottomRightWorld.X = min(bottomRightWorldRelative.X(), body.bottomRight.X+body.radius*float32(settings.Audio.BeatScale))
+	bottomRightWorld.Y = min(bottomRightWorldRelative.Y(), body.bottomRight.Y+body.radius*float32(settings.Audio.BeatScale))
 
 	tLS := baseProjView.Mul4x1(mgl32.Vec4{topLeftWorld.X, topLeftWorld.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 	bRS := baseProjView.Mul4x1(mgl32.Vec4{bottomRightWorld.X, bottomRightWorld.Y, 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
@@ -500,8 +500,8 @@ func (body *Body) calculateDistortionMatrix(baseProjView, invProjView mgl32.Mat4
 		relativeTopLeft := baseProjView.Mul4x1(mgl32.Vec4{math32.Floor(body.topLeft.X - r2), math32.Floor(body.topLeft.Y - r2), 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 		relativeBottomRight := baseProjView.Mul4x1(mgl32.Vec4{math32.Floor(body.bottomRight.X + r2), math32.Floor(body.bottomRight.Y + r2), 0, 1}).Add(mgl32.Vec4{1, 1, 0, 0}).Mul(0.5)
 
-		leftCapped := math32.Max(relativeTopLeft.X(), 0)
-		topCapped := math32.Min(relativeTopLeft.Y(), 1.0)
+		leftCapped := max(relativeTopLeft.X(), 0)
+		topCapped := min(relativeTopLeft.Y(), 1.0)
 
 		scale := vector.NewVec2f(1, 1)
 

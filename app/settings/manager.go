@@ -132,6 +132,10 @@ func CloseWatcher() {
 	}
 }
 
+func GetCompressedString() string {
+	return currentConfig.GetCompressedString()
+}
+
 func Save() {
 	currentConfig.Save(filePath, false)
 }

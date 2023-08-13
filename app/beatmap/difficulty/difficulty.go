@@ -76,10 +76,10 @@ func (diff *Difficulty) calculate() {
 	hpDrain, cs, od, ar := diff.hp, diff.cs, diff.od, diff.ar
 
 	if diff.Mods&HardRock > 0 {
-		ar = math.Min(ar*1.4, 10)
-		cs = math.Min(cs*1.3, 10)
-		od = math.Min(od*1.4, 10)
-		hpDrain = math.Min(hpDrain*1.4, 10)
+		ar = min(ar*1.4, 10)
+		cs = min(cs*1.3, 10)
+		od = min(od*1.4, 10)
+		hpDrain = min(hpDrain*1.4, 10)
 	}
 
 	if diff.Mods&Easy > 0 {
@@ -97,7 +97,7 @@ func (diff *Difficulty) calculate() {
 	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
 	diff.Preempt = math.Floor(diff.PreemptU)
 
-	diff.TimeFadeIn = HitFadeIn * math.Min(1, diff.PreemptU/450)
+	diff.TimeFadeIn = HitFadeIn * min(1, diff.PreemptU/450)
 
 	diff.Hit50U = DifficultyRate(od, 200, 150, 100)
 	diff.Hit100U = DifficultyRate(od, 140, 100, 60)
@@ -146,7 +146,7 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 		if diff.Speed >= 0.75 {
 			baseMultiplier *= 0.3 + 0.7*(1-(1-diff.Speed)/0.25)
 		} else {
-			baseMultiplier *= math.Max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
+			baseMultiplier *= max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
 		}
 	}
 

@@ -1,15 +1,15 @@
 package sprite
 
 import (
+	"cmp"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"golang.org/x/exp/slices"
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -33,8 +33,8 @@ type Sprite struct {
 	color    color2.Color
 	additive bool
 
-	cutX      float64
-	cutY      float64
+	cutX      vector.Vector2d
+	cutY      vector.Vector2d
 	cutOrigin vector.Vector2d
 
 	nextTransformID int64
@@ -69,7 +69,7 @@ func (sprite *Sprite) Update(time float64) {
 				n := sort.Search(len(sprite.transforms)-i-1, func(f int) bool {
 					b := sprite.transforms[f+i+1]
 
-					r := mutils.Compare(transform.GetStartTime(), b.GetStartTime())
+					r := cmp.Compare(transform.GetStartTime(), b.GetStartTime())
 					return r == -1 || (r == 0 && transform.GetID() < b.GetID())
 				})
 
@@ -151,9 +151,14 @@ func (sprite *Sprite) AddTransformsUnordered(transformations []*animation.Transf
 }
 
 func (sprite *Sprite) SortTransformations() {
-	slices.SortFunc(sprite.transforms, func(a, b *animation.Transformation) bool {
-		r := mutils.Compare(a.GetStartTime(), b.GetStartTime())
-		return r == -1 || (r == 0 && a.GetID() < b.GetID())
+	slices.SortFunc(sprite.transforms, func(a, b *animation.Transformation) int {
+		r := cmp.Compare(a.GetStartTime(), b.GetStartTime())
+
+		if r != 0 {
+			return r
+		}
+
+		return cmp.Compare(a.GetID(), b.GetID())
 	})
 }
 
@@ -181,8 +186,8 @@ func (sprite *Sprite) AdjustTimesToTransformations() {
 	endTime := -math.MaxFloat64
 
 	for _, t := range sprite.transforms {
-		startTime = math.Min(startTime, t.GetStartTime())
-		endTime = math.Max(endTime, t.GetTotalEndTime())
+		startTime = min(startTime, t.GetStartTime())
+		endTime = max(endTime, t.GetTotalEndTime())
 	}
 
 	sprite.startTime = startTime
@@ -233,22 +238,32 @@ func (sprite *Sprite) Draw(time float64, batch *batch.QuadBatch) {
 	flipX := sprite.flipX != (sprite.scale.X < 0) // XOR, flip again if scale is negative
 	flipY := sprite.flipY != (sprite.scale.Y < 0) // XOR, flip again if scale is negative
 
-	if sprite.cutX > 0.0 {
-		ratio := float32(1 - sprite.cutX)
-		middle := float32(sprite.cutOrigin.X)/2*math32.Abs(region.U2-region.U1) + (region.U1+region.U2)/2
+	if sprite.cutX.X > 0.0 || sprite.cutX.Y > 0.0 {
+		ratioL := float32(1 - sprite.cutX.X)
+		ratioR := float32(1 - sprite.cutX.Y)
 
-		region.Width = region.Width * ratio
-		region.U1 = (region.U1-middle)*ratio + middle
-		region.U2 = (region.U2-middle)*ratio + middle
+		oldU := math32.Abs(region.U2 - region.U1)
+
+		middle := float32(sprite.cutOrigin.X)/2*oldU + (region.U1+region.U2)/2
+
+		//region.Width = region.Width * ratio
+		region.U1 = (region.U1-middle)*ratioL + middle
+		region.U2 = (region.U2-middle)*ratioR + middle
+		region.Width *= math32.Abs(region.U2-region.U1) / oldU
 	}
 
-	if sprite.cutY > 0.0 {
-		ratio := float32(1 - sprite.cutY)
-		middle := float32(sprite.cutOrigin.Y)/2*math32.Abs(region.V2-region.V1) + (region.V1+region.V2)/2
+	if sprite.cutY.X > 0.0 || sprite.cutY.Y > 0.0 {
+		ratioT := float32(1 - sprite.cutY.X)
+		ratioB := float32(1 - sprite.cutY.Y)
 
-		region.Height = region.Height * ratio
-		region.V1 = (region.V1-middle)*ratio + middle
-		region.V2 = (region.V2-middle)*ratio + middle
+		oldV := math32.Abs(region.V2 - region.V1)
+
+		middle := float32(sprite.cutOrigin.Y)/2*oldV + (region.V1+region.V2)/2
+
+		//region.Height = region.Height * ratio
+		region.V1 = (region.V1-middle)*ratioT + middle
+		region.V2 = (region.V2-middle)*ratioB + middle
+		region.Height *= math32.Abs(region.V2-region.V1) / oldV
 	}
 
 	batch.DrawStObject(position, sprite.origin, sprite.scale.Abs(), flipX, flipY, sprite.rotation, color2.NewRGBA(sprite.color.R, sprite.color.G, sprite.color.B, alpha), sprite.additive, region)
@@ -319,12 +334,14 @@ func (sprite *Sprite) SetVFlip(on bool) {
 	sprite.flipY = on
 }
 
-func (sprite *Sprite) SetCutX(cutX float64) {
-	sprite.cutX = cutX
+func (sprite *Sprite) SetCutX(left, right float64) {
+	sprite.cutX.X = left
+	sprite.cutX.Y = right
 }
 
-func (sprite *Sprite) SetCutY(cutY float64) {
-	sprite.cutY = cutY
+func (sprite *Sprite) SetCutY(top, bottom float64) {
+	sprite.cutY.X = top
+	sprite.cutY.Y = bottom
 }
 
 func (sprite *Sprite) SetCutOrigin(origin vector.Vector2d) {

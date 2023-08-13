@@ -11,4 +11,5 @@ const (
 	VerticesDrawn
 	VertexUpload
 	SpritesDrawn
+	size
 )

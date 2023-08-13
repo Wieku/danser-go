@@ -3,7 +3,6 @@ package evaluators
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/preprocessing"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
@@ -24,7 +23,7 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 
 	firstDeltaSwitch := false
 
-	historicalNoteCount := mutils.Min(current.Index, 32)
+	historicalNoteCount := min(current.Index, 32)
 
 	rhythmStart := 0
 
@@ -40,16 +39,16 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 		currHistoricalDecay := (historyTimeMax - (current.StartTime - currObj.StartTime)) / historyTimeMax // scales note 0 to 1 from history to now
 
 		if currHistoricalDecay != 0 {
-			currHistoricalDecay = math.Min(float64(historicalNoteCount-i)/float64(historicalNoteCount), currHistoricalDecay) // either we're limited by time or limited by object count.
+			currHistoricalDecay = min(float64(historicalNoteCount-i)/float64(historicalNoteCount), currHistoricalDecay) // either we're limited by time or limited by object count.
 
 			currDelta := currObj.StrainTime
 			prevDelta := prevObj.StrainTime
 			lastDelta := lastObj.StrainTime
-			currRatio := 1.0 + 6.0*math.Min(0.5, math.Pow(math.Sin(math.Pi/(math.Min(prevDelta, currDelta)/math.Max(prevDelta, currDelta))), 2)) // fancy function to calculate rhythmbonuses.
+			currRatio := 1.0 + 6.0*min(0.5, math.Pow(math.Sin(math.Pi/(min(prevDelta, currDelta)/max(prevDelta, currDelta))), 2)) // fancy function to calculate rhythmbonuses.
 
-			windowPenalty := math.Min(1, math.Max(0, math.Abs(prevDelta-currDelta)-currObj.GreatWindow*0.3)/(currObj.GreatWindow*0.3))
+			windowPenalty := min(1, max(0, math.Abs(prevDelta-currDelta)-currObj.GreatWindow*0.3)/(currObj.GreatWindow*0.3))
 
-			windowPenalty = math.Min(1, windowPenalty)
+			windowPenalty = min(1, windowPenalty)
 
 			effectiveRatio := windowPenalty * currRatio
 

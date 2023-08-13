@@ -6,36 +6,8 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/platform"
-	"github.com/wieku/danser-go/framework/util"
 	"strconv"
 )
-
-func drawTimeMenu(bld *builder) {
-	imgui.Checkbox("Skip map's beginning", &bld.skip)
-
-	start := &bld.start
-	end := &bld.end
-
-	sliderIntReset("Start time", start, 0, end.ogValue-1, util.FormatSeconds(int(start.value)))
-
-	if start.value >= end.value {
-		end.value = start.value + 1
-	}
-
-	iPos1 := imgui.CursorPosY()
-
-	sliderIntReset("End time", end, 1, end.ogValue, util.FormatSeconds(int(end.value)))
-
-	iPos2 := imgui.CursorPosY()
-
-	if start.value >= end.value {
-		start.value = end.value - 1
-	}
-
-	imgui.Dummy(vec2(0, iPos2-iPos1))
-
-	sliderIntReset("Audio offset", &bld.offset, -300, 300, "%dms")
-}
 
 func drawSpeedMenu(bld *builder) {
 	sliderFloatResetStep("Speed", &bld.speed, 0.1, 3, 0.05, "%.2f")
@@ -137,7 +109,7 @@ func drawRecordMenu(bld *builder) {
 					if err != nil {
 						valText = prevText
 					} else {
-						parsed = mutils.ClampF(parsed, 0, float64(bld.end.ogValue))
+						parsed = mutils.Clamp(parsed, 0, float64(bld.end.ogValue))
 						bld.ssTime = float32(parsed)
 					}
 				}

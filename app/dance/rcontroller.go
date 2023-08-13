@@ -19,8 +19,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
-	//"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/math32"
+
 	"github.com/wieku/danser-go/framework/math/vector"
 	"io/ioutil"
 	"log"
@@ -115,7 +114,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		})
 
 		if settings.KNOCKOUTREPLAYS == nil || len(settings.KNOCKOUTREPLAYS) == 0 { // limit only with classic knockout
-			candidates = candidates[:mutils.Min(len(candidates), settings.Knockout.MaxPlayers)]
+			candidates = candidates[:min(len(candidates), settings.Knockout.MaxPlayers)]
 		}
 	}
 
@@ -504,9 +503,9 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					if !isAutopilot {
 						localIndex := mutils.Clamp(c.replayIndex, 0, len(c.frames)-1)
 
-						progress := math32.Min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
+						progress := min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
 
-						prevIndex := mutils.Max(0, localIndex-1)
+						prevIndex := max(0, localIndex-1)
 
 						mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
 						mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY

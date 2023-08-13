@@ -185,7 +185,7 @@ func (spinner *Spinner) Update(time float64) bool {
 
 	if time >= spinner.StartTime && time <= spinner.EndTime {
 		if (!settings.PLAY && !settings.KNOCKOUT) || settings.PLAYERS > 1 {
-			rRPMS := rpms * mutils.ClampF(float32(time-spinner.StartTime)/500, 0.0, 1.0)
+			rRPMS := rpms * mutils.Clamp(float32(time-spinner.StartTime)/500, 0.0, 1.0)
 
 			spinner.rad = rRPMS * float32(time-spinner.StartTime) * 2 * math32.Pi
 
@@ -354,10 +354,10 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 	spinner.completion = completion
 
 	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
-		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*completion)))
+		bass.SetRate(spinner.loopSample, min(100000, 20000+(40000*completion)))
 	}
 
-	scale := 0.8 + math.Min(1.0, completion)*0.2
+	scale := 0.8 + min(1.0, completion)*0.2
 
 	if spinner.newStyle {
 		spinner.glow.SetScale(scale)
@@ -366,15 +366,15 @@ func (spinner *Spinner) UpdateCompletion(completion float64) {
 		spinner.middle2.SetScale(scale)
 		spinner.middle.SetScale(scale)
 
-		spinner.glow.SetAlpha(math32.Min(1.0, float32(completion)))
+		spinner.glow.SetAlpha(min(1.0, float32(completion)))
 	} else if spinner.metre != nil {
-		bars := int(math.Min(0.99, completion) * 10)
+		bars := int(min(0.99, completion) * 10)
 
 		if skin.GetInfo().SpinnerNoBlink || rand.Float64() < math.Mod(completion*10, 1) {
 			bars++
 		}
 
-		spinner.metre.SetCutY(1.0 - float64(bars)/10)
+		spinner.metre.SetCutY(1.0-float64(bars)/10, 0)
 	}
 }
 
@@ -393,7 +393,7 @@ func (spinner *Spinner) StartSpinSample() {
 	}
 
 	if skin.GetInfo().SpinnerFrequencyModulate && spinner.loopSample != nil {
-		bass.SetRate(spinner.loopSample, math.Min(100000, 20000+(40000*spinner.completion)))
+		bass.SetRate(spinner.loopSample, min(100000, 20000+(40000*spinner.completion)))
 	}
 }
 

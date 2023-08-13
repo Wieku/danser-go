@@ -118,7 +118,7 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 	middle.SetScaleV(vector.NewVec2d(dotSize, dotSize))
 	middle.SetRotation(math.Pi / 4)
 
-	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+math.Max(0, settings.Gameplay.AimErrorMeter.PointFadeOutTime*1000), 0.7, 0.0))
+	middle.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, time, time+max(0, settings.Gameplay.AimErrorMeter.PointFadeOutTime*1000), 0.7, 0.0))
 	middle.AdjustTimesToTransformations()
 
 	meter.errorDisplay.Add(middle)

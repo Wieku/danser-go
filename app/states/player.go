@@ -2,6 +2,7 @@ package states
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
@@ -163,10 +164,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
-	settings.START = math.Min(settings.START, (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime()-1)/1000) // cap start to start time of the last HitObject - 1ms
+	settings.START = min(settings.START, (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime()-1)/1000) // cap start to start time of the last HitObject - 1ms
 
 	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && (settings.PLAY || !settings.KNOCKOUT) {
-		scrub := math.Max(0, settings.START*1000)
+		scrub := max(0, settings.START*1000)
 		end := settings.END * 1000
 
 		removed := false
@@ -294,28 +295,28 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	player.trySetupFail()
 
-	preempt := math.Min(1800, beatMap.Diff.Preempt)
+	preempt := min(1800, beatMap.Diff.Preempt)
 
 	skipTime := 0.0
 	if settings.SKIP {
 		skipTime = beatMap.HitObjects[0].GetStartTime()
 	}
 
-	skipTime = math.Max(skipTime, settings.START*1000) - preempt
+	skipTime = max(skipTime, settings.START*1000) - preempt
 
-	beatmapStart := math.Max(beatMap.HitObjects[0].GetStartTime(), settings.START*1000) - preempt
+	beatmapStart := max(beatMap.HitObjects[0].GetStartTime(), settings.START*1000) - preempt
 	beatmapEnd := beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50)
 
 	if !math.IsInf(settings.END, 1) {
 		end := settings.END * 1000
-		beatmapEnd = math.Min(end, beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) + float64(beatMap.Diff.Hit50)
+		beatmapEnd = min(end, beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime()) + float64(beatMap.Diff.Hit50)
 	}
 
 	startOffset := 0.0
 
-	if math.Max(0, skipTime) > 0.01 {
+	if max(0, skipTime) > 0.01 {
 		startOffset = skipTime
-		player.startPoint = math.Max(0, startOffset)
+		player.startPoint = max(0, startOffset)
 
 		for _, o := range beatMap.HitObjects {
 			if o.GetStartTime() > player.startPoint {
@@ -419,16 +420,16 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.MapEnd += 100
 
 	// See https://github.com/Wieku/danser-go/issues/121
-	player.musicPlayer.AddSilence(math.Max(0, player.MapEnd/1000-player.musicPlayer.GetLength()))
+	player.musicPlayer.AddSilence(max(0, player.MapEnd/1000-player.musicPlayer.GetLength()))
 
 	if settings.Playfield.SeizureWarning.Enabled {
-		am := math.Max(1000, settings.Playfield.SeizureWarning.Duration*1000)
+		am := max(1000, settings.Playfield.SeizureWarning.Duration*1000)
 		startOffset -= am
 		player.epiGlider.AddEvent(startOffset, startOffset+500, 1.0)
 		player.epiGlider.AddEvent(startOffset+am-500, startOffset+am, 0.0)
 	}
 
-	startOffset -= math.Max(settings.Playfield.LeadInTime*1000, 1000)
+	startOffset -= max(settings.Playfield.LeadInTime*1000, 1000)
 
 	player.startOffset = startOffset
 	player.progressMsF = startOffset
@@ -463,7 +464,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.coin = common.NewDanserCoin()
 	player.coin.SetMap(beatMap, player.musicPlayer)
 
-	player.coin.SetScale(0.25 * math.Min(settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()))
+	player.coin.SetScale(0.25 * min(settings.Graphics.GetWidthF(), settings.Graphics.GetHeightF()))
 
 	player.profiler = frame.NewCounter()
 
@@ -746,7 +747,7 @@ func (player *Player) updateMain(delta float64) {
 func (player *Player) updateMusic(delta float64) {
 	player.musicPlayer.Update()
 
-	target := mutils.ClampF(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
+	target := mutils.Clamp(player.musicPlayer.GetBoost()*(settings.Audio.BeatScale-1.0)+1.0, 1.0, settings.Audio.BeatScale)
 
 	if settings.Audio.BeatUseTimingPoints {
 		player.Scl = 1 + player.coin.Beat*(settings.Audio.BeatScale-1.0)
@@ -787,7 +788,7 @@ func (player *Player) Draw(float64) {
 
 	bgAlpha := player.dimGlider.GetValue()
 	if settings.Playfield.Background.FlashToTheBeat {
-		bgAlpha = mutils.ClampF(bgAlpha*player.Scl, 0, 1)
+		bgAlpha = mutils.Clamp(bgAlpha*player.Scl, 0, 1)
 	}
 
 	player.background.Draw(player.progressMsF, player.batch, player.blurGlider.GetValue(), bgAlpha, player.bgCamera.GetProjectionView())
@@ -993,35 +994,49 @@ func (player *Player) drawDebug() {
 
 			var queue []tx
 
-			drawWithBackground := func(pos float64, text string) {
+			pos := 3.0
+
+			drawWithBackground := func(text string) {
 				width := player.font.GetWidthMonospaced(size, text)
 				player.batch.DrawStObject(vector.NewVec2d(0, (size+padDown)*pos), vector.CentreLeft, vector.NewVec2d(width, size+padDown), false, false, 0, color2.NewLA(0, 0.8), false, graphics.Pixel.GetRegion())
 
 				queue = append(queue, tx{pos, text})
+				pos++
 			}
 
-			drawWithBackground(3, fmt.Sprintf("VSync: %t", settings.Graphics.VSync))
-			drawWithBackground(4, fmt.Sprintf("Blur: %t", settings.Playfield.Background.Blur.Enabled))
-			drawWithBackground(5, fmt.Sprintf("Bloom: %t", settings.Playfield.Bloom.Enabled))
+			drawWithBackground(fmt.Sprintf("VSync: %t", settings.Graphics.VSync))
+			drawWithBackground(fmt.Sprintf("Blur: %t", settings.Playfield.Background.Blur.Enabled))
+			drawWithBackground(fmt.Sprintf("Bloom: %t", settings.Playfield.Bloom.Enabled))
 
 			msaa := "OFF"
 			if settings.Graphics.MSAA > 0 {
 				msaa = strconv.Itoa(int(settings.Graphics.MSAA)) + "x"
 			}
 
-			drawWithBackground(6, fmt.Sprintf("MSAA: %s", msaa))
+			drawWithBackground(fmt.Sprintf("MSAA: %s", msaa))
 
-			drawWithBackground(7, fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
-			drawWithBackground(8, fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
-			drawWithBackground(9, fmt.Sprintf("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds)))
-			drawWithBackground(10, fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
-			drawWithBackground(11, fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
-			drawWithBackground(12, fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
-			drawWithBackground(13, fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
+			drawWithBackground(fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
+			drawWithBackground(fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
+			drawWithBackground(fmt.Sprintf("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds)))
+			drawWithBackground(fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
+			drawWithBackground(fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
+			drawWithBackground(fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
+			drawWithBackground(fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
-				drawWithBackground(14, fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
+				drawWithBackground(fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
 			}
+
+			pos++
+			drawWithBackground("Memory:")
+
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+
+			drawWithBackground(fmt.Sprintf("Allocated: %s", humanize.Bytes(m.Alloc)))
+			drawWithBackground(fmt.Sprintf("System: %s", humanize.Bytes(m.Sys)))
+			drawWithBackground(fmt.Sprintf("GC Runs: %d", m.NumGC))
+			drawWithBackground(fmt.Sprintf("GC Time: %.3fms", float64(m.PauseTotalNs)/1000000))
 
 			player.batch.ResetTransform()
 
@@ -1062,7 +1077,7 @@ func (player *Player) drawDebug() {
 				sbFPS = fmt.Sprintf("%0.0ffps (%0.2fms)", fpsS, 1000/fpsS)
 			}
 
-			shift := strconv.Itoa(mutils.Max(len(drawFPS), mutils.Max(len(updateFPS), len(sbFPS))))
+			shift := strconv.Itoa(max(len(drawFPS), max(len(updateFPS), len(sbFPS))))
 
 			drawShadowed(true, 1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
 			drawShadowed(true, 0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))

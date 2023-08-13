@@ -186,7 +186,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
 
-	overlay.strainGraph = play.NewStrainGraph(ruleset)
+	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap(), pp220930.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff), false, true)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -261,7 +261,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.skipTo = overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime() - showAfterSkip
 
-	if !settings.SKIP && overlay.skipTo > 1200+math.Min(1800, overlay.ruleset.GetBeatMap().Diff.Preempt) {
+	if !settings.SKIP && overlay.skipTo > 1200+min(1800, overlay.ruleset.GetBeatMap().Diff.Preempt) {
 		skipFrames := skin.GetFrames("play-skip", true)
 		overlay.skip = sprite.NewAnimation(skipFrames, skin.GetInfo().GetFrameTime(len(skipFrames)), true, 0.0, vector.NewVec2d(overlay.ScaledWidth, overlay.ScaledHeight), vector.BottomRight)
 		overlay.skip.SetAlpha(0.0)
@@ -434,7 +434,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	overlay.rankBack.Update(overlay.audioTime)
 	overlay.rankFront.Update(overlay.audioTime)
 	overlay.arrows.Update(overlay.audioTime)
-	overlay.strainGraph.Update(overlay.audioTime)
+	overlay.strainGraph.SetTimes(0, overlay.audioTime)
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
@@ -528,7 +528,7 @@ func (overlay *ScoreOverlay) updateNormal(time float64) {
 		if overlay.keyStates[i] && !state {
 			key := overlay.keys[i]
 			key.ClearTransformationsOfType(animation.Scale)
-			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, math.Max(time, overlay.lastPresses[i]), time+100, key.GetScale().Y, 1.0))
+			key.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, max(time, overlay.lastPresses[i]), time+100, key.GetScale().Y, 1.0))
 
 			key.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, time, time+100, color, color2.Color{R: 1, G: 1, B: 1, A: 1}))
 		}
@@ -825,9 +825,9 @@ func (overlay *ScoreOverlay) getProgress() float64 {
 
 	musicPos := overlay.audioTime
 
-	progress := mutils.ClampF((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
+	progress := mutils.Clamp((musicPos-startTime)/(endTime-startTime), 0.0, 1.0)
 	if musicPos < startTime {
-		progress = mutils.ClampF(-1.0+musicPos/startTime, -1.0, 0.0)
+		progress = mutils.Clamp(-1.0+musicPos/startTime, -1.0, 0.0)
 	}
 
 	return progress
@@ -852,7 +852,7 @@ func (overlay *ScoreOverlay) showPassInfo() {
 
 	pass := overlay.ruleset.GetHP(overlay.cursor) >= 0.5
 
-	time := math.Min(overlay.currentBreak.GetEndTime()-2880, overlay.currentBreak.GetEndTime()-overlay.currentBreak.Length()/2)
+	time := min(overlay.currentBreak.GetEndTime()-2880, overlay.currentBreak.GetEndTime()-overlay.currentBreak.Length()/2)
 
 	if pass {
 		if !overlay.audioDisabled {
@@ -989,12 +989,12 @@ func (overlay *ScoreOverlay) initArrows() {
 	bMap := overlay.ruleset.GetBeatMap()
 
 	if bMap.HitObjects[0].GetStartTime() > 6000 {
-		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+mutils.Min(2, int(bMap.Diff.Preempt/blinkTime)))
+		addTransforms(bMap.HitObjects[0].GetStartTime()-bMap.Diff.Preempt-900, minBlinks+min(2, int(bMap.Diff.Preempt/blinkTime)))
 	}
 
 	for _, pause := range bMap.Pauses {
-		blinks := mutils.Min(minBlinks, int(pause.Length()/blinkTime))
-		extra := mutils.Min(2, int(bMap.Diff.Preempt/blinkTime))
+		blinks := min(minBlinks, int(pause.Length()/blinkTime))
+		extra := min(2, int(bMap.Diff.Preempt/blinkTime))
 		addTransforms(pause.EndTime-float64(blinks)*blinkTime, blinks+extra)
 	}
 }

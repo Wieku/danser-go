@@ -1,11 +1,12 @@
 package beatmap
 
 import (
+	"cmp"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"golang.org/x/exp/slices"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -107,8 +108,8 @@ func (beatMap *BeatMap) Update(time float64) {
 	if toRemove > 0 {
 		beatMap.processed = append(beatMap.processed, beatMap.Queue[:toRemove]...)
 
-		slices.SortFunc(beatMap.processed, func(a, b objects.IHitObject) bool {
-			return a.GetEndTime() < b.GetEndTime()
+		slices.SortFunc(beatMap.processed, func(a, b objects.IHitObject) int {
+			return cmp.Compare(a.GetEndTime(), b.GetEndTime())
 		})
 
 		beatMap.Queue = beatMap.Queue[toRemove:]
@@ -147,8 +148,8 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 
 	if !math.IsNaN(bpm) && bpm >= 0 {
 		rBPM := 60000 / bpm
-		beatMap.MinBPM = math.Min(beatMap.MinBPM, rBPM)
-		beatMap.MaxBPM = math.Max(beatMap.MaxBPM, rBPM)
+		beatMap.MinBPM = min(beatMap.MinBPM, rBPM)
+		beatMap.MaxBPM = max(beatMap.MaxBPM, rBPM)
 	}
 
 	signature := 4

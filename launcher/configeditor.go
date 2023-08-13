@@ -898,7 +898,7 @@ func (editor *settingsEditor) buildFloatBox(jsonPath string, f reflect.Value, d 
 		if err != nil {
 			valText = prevText
 		} else {
-			parsed = mutils.ClampF(parsed/scale, min, max)
+			parsed = mutils.Clamp(parsed/scale, min, max)
 			f.SetFloat(parsed)
 		}
 	}
@@ -1047,7 +1047,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					editor.blockSearch = true
 
 					for _, s := range labels {
-						mWidth = mutils.Max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
+						mWidth = max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
 					}
 
 					imgui.SetNextItemWidth(mWidth)
@@ -1080,7 +1080,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					}
 
 					if len(searchResults) > 0 {
-						sHeight := float32(mutils.Min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
+						sHeight := float32(min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
 						if imgui.BeginListBoxV("##listbox"+jsonPath, vec2(mWidth, sHeight)) {
 							focusScroll = focusScroll || imgui.IsWindowAppearing()

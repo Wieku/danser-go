@@ -66,7 +66,7 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 		GreatWindow:    2 * d.Hit300U / d.Speed,
 	}
 
-	obj.StrainTime = math.Max(obj.DeltaTime, MinDeltaTime)
+	obj.StrainTime = max(obj.DeltaTime, MinDeltaTime)
 
 	obj.setDistances()
 
@@ -85,13 +85,13 @@ func (o *DifficultyObject) OpacityAt(time float64) float64 {
 		fadeOutStartTime := o.BaseObject.GetStartTime() - o.Diff.PreemptU + o.Diff.TimeFadeIn
 		fadeOutDuration := o.Diff.PreemptU * 0.3
 
-		return math.Min(
-			mutils.ClampF((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0),
-			1.0-mutils.ClampF((time-fadeOutStartTime)/fadeOutDuration, 0.0, 1.0),
+		return min(
+			mutils.Clamp((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0),
+			1.0-mutils.Clamp((time-fadeOutStartTime)/fadeOutDuration, 0.0, 1.0),
 		)
 	}
 
-	return mutils.ClampF((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0)
+	return mutils.Clamp((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0)
 }
 
 func (o *DifficultyObject) Previous(backwardsIndex int) *DifficultyObject {
@@ -118,7 +118,7 @@ func (o *DifficultyObject) setDistances() {
 	if currentSlider, ok := o.BaseObject.(*LazySlider); ok {
 		// danser's RepeatCount considers first span, that's why we have to subtract 1 here
 		o.TravelDistance = float64(currentSlider.LazyTravelDistance * float32(math.Pow(1+float64(currentSlider.RepeatCount-1)/2.5, 1.0/2.5)))
-		o.TravelTime = math.Max(currentSlider.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
+		o.TravelTime = max(currentSlider.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
 	}
 
 	_, ok1 := o.BaseObject.(*objects.Spinner)
@@ -131,7 +131,7 @@ func (o *DifficultyObject) setDistances() {
 	scalingFactor := NormalizedRadius / float32(o.Diff.CircleRadiusU)
 
 	if o.Diff.CircleRadiusU < CircleSizeBuffThreshold {
-		smallCircleBonus := math32.Min(CircleSizeBuffThreshold-float32(o.Diff.CircleRadiusU), 5.0) / 50.0
+		smallCircleBonus := min(CircleSizeBuffThreshold-float32(o.Diff.CircleRadiusU), 5.0) / 50.0
 		scalingFactor *= 1.0 + smallCircleBonus
 	}
 
@@ -142,8 +142,8 @@ func (o *DifficultyObject) setDistances() {
 	o.MinimumJumpDistance = o.LazyJumpDistance
 
 	if lastSlider, ok := o.lastObject.(*LazySlider); ok {
-		lastTravelTime := math.Max(lastSlider.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
-		o.MinimumJumpTime = math.Max(o.StrainTime-lastTravelTime, MinDeltaTime)
+		lastTravelTime := max(lastSlider.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
+		o.MinimumJumpTime = max(o.StrainTime-lastTravelTime, MinDeltaTime)
 
 		//
 		// There are two types of slider-to-object patterns to consider in order to better approximate the real movement a player will take to jump between the hitobjects.
@@ -168,7 +168,7 @@ func (o *DifficultyObject) setDistances() {
 		//
 
 		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.Diff.Mods).Dst(o.BaseObject.GetStackedStartPositionMod(o.Diff.Mods)) * scalingFactor
-		o.MinimumJumpDistance = math.Max(0, math.Min(o.LazyJumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
+		o.MinimumJumpDistance = max(0, min(o.LazyJumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
 	}
 
 	if o.lastLastObject != nil {

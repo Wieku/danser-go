@@ -49,8 +49,8 @@ func (loop *LoopProcessor) Unwind() []*animation.Transformation {
 	endTime := -math.MaxFloat64
 
 	for _, t := range loop.transforms {
-		startTime = math.Min(startTime, t.GetStartTime())
-		endTime = math.Max(endTime, t.GetEndTime())
+		startTime = min(startTime, t.GetStartTime())
+		endTime = max(endTime, t.GetEndTime())
 	}
 
 	iterationTime := endTime - startTime
