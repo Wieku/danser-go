@@ -124,10 +124,17 @@ type Player struct {
 	failing bool
 	failAt  float64
 	failed  bool
+
+	mProfiler *frame.Counter
+	mStats1   *runtime.MemStats
+	mStats2   *runtime.MemStats
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
+	player.mProfiler = frame.NewCounter()
+	player.mStats1 = new(runtime.MemStats)
+	player.mStats2 = new(runtime.MemStats)
 
 	graphics.LoadTextures()
 
@@ -1030,13 +1037,20 @@ func (player *Player) drawDebug() {
 			pos++
 			drawWithBackground("Memory:")
 
-			var m runtime.MemStats
-			runtime.ReadMemStats(&m)
+			runtime.ReadMemStats(player.mStats2)
 
-			drawWithBackground(fmt.Sprintf("Allocated: %s", humanize.Bytes(m.Alloc)))
-			drawWithBackground(fmt.Sprintf("System: %s", humanize.Bytes(m.Sys)))
-			drawWithBackground(fmt.Sprintf("GC Runs: %d", m.NumGC))
-			drawWithBackground(fmt.Sprintf("GC Time: %.3fms", float64(m.PauseTotalNs)/1000000))
+			mDelta := float64(int64(player.mStats2.Alloc) - int64(player.mStats1.Alloc))
+			if mDelta > 0 {
+				player.mProfiler.PutSample(mDelta / 1000)
+			}
+
+			drawWithBackground(fmt.Sprintf("Allocated: %s", humanize.Bytes(player.mStats2.Alloc)))
+			drawWithBackground(fmt.Sprintf("Allocs/s: %s", humanize.Bytes(uint64(player.mProfiler.GetAverage()*player.profiler.GetFPS()*1000))))
+			drawWithBackground(fmt.Sprintf("System: %s", humanize.Bytes(player.mStats2.Sys)))
+			drawWithBackground(fmt.Sprintf("GC Runs: %d", player.mStats2.NumGC))
+			drawWithBackground(fmt.Sprintf("GC Time: %.3fms", float64(player.mStats2.PauseTotalNs)/1000000))
+
+			player.mStats1, player.mStats2 = player.mStats2, player.mStats1
 
 			player.batch.ResetTransform()
 
