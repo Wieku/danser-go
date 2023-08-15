@@ -162,6 +162,13 @@ func (tim *Timings) HasPoints() bool {
 	return len(tim.points) > 0
 }
 
+func (tim *Timings) Clear() {
+	tim.originalPoints = tim.originalPoints[:0]
+	tim.points = tim.points[:0]
+
+	tim.Current = tim.defaultTimingPoint
+}
+
 func (tim *Timings) Reset() {
 	tim.Current = tim.points[0]
 }
