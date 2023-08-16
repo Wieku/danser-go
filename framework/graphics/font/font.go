@@ -39,9 +39,23 @@ type Font struct {
 	Overlap     float64
 	ascent      float64
 	flip        bool
+	pixel       *texture.TextureRegion
+
+	drawBg   bool
+	bgBorder float64
+	bgColor  color2.Color
 }
 
-func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, size, rotation float64, text string, monospaced bool, color color2.Color) {
+func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, width, size, rotation float64, text string, monospaced bool, color color2.Color) {
+	rotation += renderer.GetRotation()
+
+	if font.drawBg && font.pixel != nil {
+		pos2 := vector.NewVec2d(-font.bgBorder, -font.bgBorder).Rotate(rotation).AddS(x, y)
+		vSize := vector.NewVec2d(width+2*font.bgBorder, size+2*font.bgBorder)
+
+		renderer.DrawStObject(pos2, vector.TopLeft, vSize, false, false, rotation, font.bgColor, false, *font.pixel)
+	}
+
 	scale := size / font.initialSize
 
 	scBase := scale * renderer.GetScale().Y * renderer.GetSubScale().Y
@@ -49,8 +63,6 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, size, rotation f
 	scl := vector.NewVec2d(scale, scale)
 
 	advance := 0.0
-
-	rotation += renderer.GetRotation()
 
 	cos := math.Cos(rotation)
 	sin := math.Sin(rotation)
@@ -143,6 +155,18 @@ func (font *Font) GetAscent() float64 {
 	return font.ascent
 }
 
+func (font *Font) DrawBg(v bool) {
+	font.drawBg = v
+}
+
+func (font *Font) SetBgBorderSize(size float64) {
+	font.bgBorder = size
+}
+
+func (font *Font) SetBgColor(color color2.Color) {
+	font.bgColor = color
+}
+
 func (font *Font) DrawOrigin(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size float64, monospaced bool, text string) {
 	font.DrawOriginRotation(renderer, x, y, origin, size, 0, monospaced, text)
 }
@@ -155,7 +179,7 @@ func (font *Font) DrawOriginRotationColor(renderer *batch.QuadBatch, x, y float6
 	width := font.getWidthInternal(size, text, monospaced)
 	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize*font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale()).Rotate(rotation)
 
-	font.drawInternal(renderer, x+align.X, y+align.Y, size, rotation, text, monospaced, color)
+	font.drawInternal(renderer, x+align.X, y+align.Y, width, size, rotation, text, monospaced, color)
 }
 
 func (font *Font) DrawOriginV(renderer *batch.QuadBatch, position vector.Vector2d, origin vector.Vector2d, size float64, monospaced bool, text string) {
