@@ -39,6 +39,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 const windowsOffset = 15
@@ -129,6 +130,7 @@ type Player struct {
 	mStats1   *runtime.MemStats
 	mStats2   *runtime.MemStats
 	mBuffer   []byte
+	memTicker *time.Ticker
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -962,6 +964,33 @@ func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.
 }
 
 func (player *Player) drawDebug() {
+	if settings.DEBUG && player.memTicker == nil {
+		player.memTicker = time.NewTicker(100 * time.Millisecond)
+
+		goroutines.RunOS(func() {
+			prevT := time.Now()
+			runtime.ReadMemStats(player.mStats2)
+
+			for t := range player.memTicker.C {
+				diff := t.Sub(prevT)
+				prevT = t
+
+				player.mStats1, player.mStats2 = player.mStats2, player.mStats1
+				runtime.ReadMemStats(player.mStats2)
+
+				mDelta := float64(int64(player.mStats2.Alloc)-int64(player.mStats1.Alloc)) * (1000 / float64(diff.Milliseconds()))
+				if mDelta > 0 {
+					player.mProfiler.PutSample(mDelta)
+				}
+
+				if !settings.DEBUG && player.memTicker != nil {
+					player.memTicker.Stop()
+					player.memTicker = nil
+				}
+			}
+		})
+	}
+
 	if settings.DEBUG || settings.Graphics.ShowFPS {
 		padDown := 4.0
 		size := 16.0
@@ -1039,22 +1068,13 @@ func (player *Player) drawDebug() {
 			pos++
 			drawWithBackground("Memory:")
 
-			runtime.ReadMemStats(player.mStats2)
-
-			mDelta := float64(int64(player.mStats2.Alloc) - int64(player.mStats1.Alloc))
-			if mDelta > 0 {
-				player.mProfiler.PutSample(mDelta / 1000)
-			}
-
 			drawWithBackground("Allocated: %s", humanize.Bytes(player.mStats2.Alloc))
-			drawWithBackground("Allocs/s: %s", humanize.Bytes(uint64(player.mProfiler.GetAverage()*player.profiler.GetFPS()*1000)))
+			drawWithBackground("Allocs/s: %s", humanize.Bytes(uint64(player.mProfiler.GetAverage())))
 			drawWithBackground("System: %s", humanize.Bytes(player.mStats2.Sys))
 			drawWithBackground("GC Runs: %d", player.mStats2.NumGC)
 			drawWithBackground("GC Time: %.3fms", float64(player.mStats2.PauseTotalNs)/1000000)
 
 			player.font.DrawBg(false)
-
-			player.mStats1, player.mStats2 = player.mStats2, player.mStats1
 
 			player.batch.ResetTransform()
 
