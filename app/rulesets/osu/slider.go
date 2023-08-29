@@ -292,7 +292,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 	state := slider.state[player]
 
 	if time > int64(slider.hitSlider.GetStartTime())+player.diff.Hit50 && !state.isStartHit {
-		if len(slider.players) == 1 {
+		if len(slider.players) == 1 && !state.isHit { //don't fade if slider already ended (and armed the start)
 			slider.hitSlider.ArmStart(false, float64(time))
 		}
 
@@ -313,12 +313,8 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 	}
 
 	if (time >= int64(slider.hitSlider.GetEndTime()) || (processSliderEndsAhead && int64(slider.hitSlider.GetEndTime())-time == 1)) && !state.isHit {
-		if !state.isStartHit {
-			if len(slider.players) == 1 {
-				slider.hitSlider.ArmStart(false, float64(time))
-			}
-
-			state.isStartHit = true
+		if len(slider.players) == 1 && !state.isStartHit {
+			slider.hitSlider.ArmStart(false, float64(time))
 		}
 
 		if state.startResult != Miss {
