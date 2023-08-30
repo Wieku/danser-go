@@ -118,7 +118,11 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 
 				if math.Abs(angleDiff) < math.Pi {
 					if player.diff.GetModifiedTime(state.frameVariance) > FrameTime*1.04 {
-						state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(timeDiff)
+						if timeDiff > 0 {
+							state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(timeDiff)
+						} else {
+							state.theoreticalVelocity = 0
+						}
 					} else {
 						state.theoreticalVelocity = angleDiff / FrameTime
 					}
