@@ -126,7 +126,10 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 				break
 			}
 
-			hp.Increase(-hp.PassiveDrain*(o.GetEndTime()-o.GetStartTime()), false)
+			decr := hp.PassiveDrain * (o.GetEndTime() - o.GetStartTime())
+			hpUnder := min(0, hp.Health-decr)
+
+			hp.Increase(-decr, false)
 
 			if s, ok := o.(*objects.Slider); ok {
 				for j := 0; j < len(s.TickReverse)+1; j++ {
@@ -141,6 +144,14 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 				for j := 0; j < requirement; j++ {
 					hp.AddResult(SpinnerSpin)
 				}
+			}
+
+			//noinspection GoBoolExpressions - false positive
+			if hpUnder < 0 && hp.Health+hpUnder <= lowestHpEver {
+				fail = true
+				hp.PassiveDrain *= 0.96
+
+				break
 			}
 
 			if i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo() {
