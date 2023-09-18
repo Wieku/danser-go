@@ -36,6 +36,15 @@ func LoadFont(reader io.Reader) *Font {
 	fnt.atlas = texture.NewTextureAtlas(1024, 5)
 	fnt.atlas.SetManualMipmapping(true)
 
+	buf := make([]byte, 25*4)
+	for i := range buf {
+		buf[i] = 0xff
+	}
+
+	fnt.pixel = fnt.atlas.AddTexture("pixel", 5, 5, buf)
+	fnt.pixel.Width = 1
+	fnt.pixel.Height = 1
+
 	fc, err := opentype.NewFace(ttf, &opentype.FaceOptions{Size: fnt.initialSize, DPI: 72, Hinting: font.HintingFull})
 	if err != nil {
 		panic("Error reading font: " + err.Error())

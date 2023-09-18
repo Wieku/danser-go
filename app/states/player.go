@@ -39,6 +39,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 const windowsOffset = 15
@@ -124,10 +125,20 @@ type Player struct {
 	failing bool
 	failAt  float64
 	failed  bool
+
+	mProfiler *frame.Counter
+	mStats1   *runtime.MemStats
+	mStats2   *runtime.MemStats
+	mBuffer   []byte
+	memTicker *time.Ticker
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player := new(Player)
+	player.mProfiler = frame.NewCounter()
+	player.mStats1 = new(runtime.MemStats)
+	player.mStats2 = new(runtime.MemStats)
+	player.mBuffer = make([]byte, 0, 256)
 
 	graphics.LoadTextures()
 
@@ -953,11 +964,38 @@ func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.
 }
 
 func (player *Player) drawDebug() {
+	if settings.DEBUG && player.memTicker == nil {
+		player.memTicker = time.NewTicker(100 * time.Millisecond)
+
+		goroutines.RunOS(func() {
+			prevT := time.Now()
+			runtime.ReadMemStats(player.mStats2)
+
+			for t := range player.memTicker.C {
+				diff := t.Sub(prevT)
+				prevT = t
+
+				player.mStats1, player.mStats2 = player.mStats2, player.mStats1
+				runtime.ReadMemStats(player.mStats2)
+
+				mDelta := float64(int64(player.mStats2.Alloc)-int64(player.mStats1.Alloc)) * (1000 / float64(diff.Milliseconds()))
+				if mDelta > 0 {
+					player.mProfiler.PutSample(mDelta)
+				}
+
+				if !settings.DEBUG && player.memTicker != nil {
+					player.memTicker.Stop()
+					player.memTicker = nil
+				}
+			}
+		})
+	}
+
 	if settings.DEBUG || settings.Graphics.ShowFPS {
 		padDown := 4.0
 		size := 16.0
 
-		drawShadowed := func(right bool, pos float64, text string) {
+		drawShadowed := func(right bool, pos float64, format string, a ...any) {
 			pX := 0.0
 			origin := vector.BottomLeft
 
@@ -968,11 +1006,14 @@ func (player *Player) drawDebug() {
 
 			pY := player.ScaledHeight - (size+padDown)*pos - padDown
 
+			player.mBuffer = player.mBuffer[:0]
+			player.mBuffer = fmt.Appendf(player.mBuffer, format, a...)
+
 			player.batch.SetColor(0, 0, 0, 1)
-			player.font.DrawOrigin(player.batch, pX+size*0.1, pY+size*0.1, origin, size, true, text)
+			player.font.DrawOrigin(player.batch, pX+size*0.1, pY+size*0.1, origin, size, true, string(player.mBuffer))
 
 			player.batch.SetColor(1, 1, 1, 1)
-			player.font.DrawOrigin(player.batch, pX, pY, origin, size, true, text)
+			player.font.DrawOrigin(player.batch, pX, pY, origin, size, true, string(player.mBuffer))
 		}
 
 		player.batch.Begin()
@@ -987,72 +1028,65 @@ func (player *Player) drawDebug() {
 			player.batch.SetColor(1, 1, 1, 1)
 			player.font.DrawOrigin(player.batch, 0, padDown, vector.TopLeft, size*1.5, false, player.mapFullName)
 
-			type tx struct {
-				pos  float64
-				text string
-			}
-
-			var queue []tx
-
 			pos := 3.0
 
-			drawWithBackground := func(text string) {
-				width := player.font.GetWidthMonospaced(size, text)
-				player.batch.DrawStObject(vector.NewVec2d(0, (size+padDown)*pos), vector.CentreLeft, vector.NewVec2d(width, size+padDown), false, false, 0, color2.NewLA(0, 0.8), false, graphics.Pixel.GetRegion())
+			player.font.DrawBg(true)
+			player.font.SetBgBorderSize(padDown / 2)
+			player.font.SetBgColor(color2.NewLA(0, 0.8))
 
-				queue = append(queue, tx{pos, text})
+			drawWithBackground := func(format string, a ...any) {
+				player.mBuffer = player.mBuffer[:0]
+				player.mBuffer = fmt.Appendf(player.mBuffer, format, a...)
+
+				player.font.DrawOrigin(player.batch, 0, (size+padDown)*pos, vector.CentreLeft, size, true, string(player.mBuffer))
 				pos++
 			}
 
-			drawWithBackground(fmt.Sprintf("VSync: %t", settings.Graphics.VSync))
-			drawWithBackground(fmt.Sprintf("Blur: %t", settings.Playfield.Background.Blur.Enabled))
-			drawWithBackground(fmt.Sprintf("Bloom: %t", settings.Playfield.Bloom.Enabled))
+			drawWithBackground("VSync: %t", settings.Graphics.VSync)
+			drawWithBackground("Blur: %t", settings.Playfield.Background.Blur.Enabled)
+			drawWithBackground("Bloom: %t", settings.Playfield.Bloom.Enabled)
 
 			msaa := "OFF"
 			if settings.Graphics.MSAA > 0 {
 				msaa = strconv.Itoa(int(settings.Graphics.MSAA)) + "x"
 			}
 
-			drawWithBackground(fmt.Sprintf("MSAA: %s", msaa))
+			drawWithBackground("MSAA: %s", msaa)
 
-			drawWithBackground(fmt.Sprintf("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds)))
-			drawWithBackground(fmt.Sprintf("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds)))
-			drawWithBackground(fmt.Sprintf("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds)))
-			drawWithBackground(fmt.Sprintf("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000))
-			drawWithBackground(fmt.Sprintf("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000))
-			drawWithBackground(fmt.Sprintf("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls)))
-			drawWithBackground(fmt.Sprintf("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn)))
+			drawWithBackground("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds))
+			drawWithBackground("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds))
+			drawWithBackground("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds))
+			drawWithBackground("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000)
+			drawWithBackground("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000)
+			drawWithBackground("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls))
+			drawWithBackground("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
-				drawWithBackground(fmt.Sprintf("SB sprites: %d", player.storyboardDrawn))
+				drawWithBackground("SB sprites: %d", player.storyboardDrawn)
 			}
 
 			pos++
 			drawWithBackground("Memory:")
 
-			var m runtime.MemStats
-			runtime.ReadMemStats(&m)
+			drawWithBackground("Allocated: %s", humanize.Bytes(player.mStats2.Alloc))
+			drawWithBackground("Allocs/s: %s", humanize.Bytes(uint64(player.mProfiler.GetAverage())))
+			drawWithBackground("System: %s", humanize.Bytes(player.mStats2.Sys))
+			drawWithBackground("GC Runs: %d", player.mStats2.NumGC)
+			drawWithBackground("GC Time: %.3fms", float64(player.mStats2.PauseTotalNs)/1000000)
 
-			drawWithBackground(fmt.Sprintf("Allocated: %s", humanize.Bytes(m.Alloc)))
-			drawWithBackground(fmt.Sprintf("System: %s", humanize.Bytes(m.Sys)))
-			drawWithBackground(fmt.Sprintf("GC Runs: %d", m.NumGC))
-			drawWithBackground(fmt.Sprintf("GC Time: %.3fms", float64(m.PauseTotalNs)/1000000))
+			player.font.DrawBg(false)
 
 			player.batch.ResetTransform()
-
-			for _, t := range queue {
-				player.font.DrawOrigin(player.batch, 0, (size+padDown)*t.pos, vector.CentreLeft, size, true, t.text)
-			}
 
 			currentTime := int(player.musicPlayer.GetPosition())
 			totalTime := int(player.musicPlayer.GetLength())
 			mapTime := int(player.bMap.HitObjects[len(player.bMap.HitObjects)-1].GetEndTime() / 1000)
 
-			drawShadowed(false, 2, fmt.Sprintf("%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60))
-			drawShadowed(false, 1, fmt.Sprintf("%d(*%d) hitobjects, %d total", player.objectContainer.GetNumProcessed(), settings.DIVIDES, len(player.bMap.HitObjects)))
+			drawShadowed(false, 2, "%02d:%02d / %02d:%02d (%02d:%02d)", currentTime/60, currentTime%60, totalTime/60, totalTime%60, mapTime/60, mapTime%60)
+			drawShadowed(false, 1, "%d(*%d) hitobjects, %d total", player.objectContainer.GetNumProcessed(), settings.DIVIDES, len(player.bMap.HitObjects))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
-				drawShadowed(false, 0, fmt.Sprintf("%d storyboard sprites, %d in queue (%d total)", player.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites()))
+				drawShadowed(false, 0, "%d storyboard sprites, %d in queue (%d total)", player.background.GetStoryboard().GetProcessedSprites(), storyboard.GetQueueSprites(), storyboard.GetTotalSprites())
 			} else {
 				drawShadowed(false, 0, "No storyboard")
 			}
@@ -1079,11 +1113,11 @@ func (player *Player) drawDebug() {
 
 			shift := strconv.Itoa(max(len(drawFPS), max(len(updateFPS), len(sbFPS))))
 
-			drawShadowed(true, 1+off, fmt.Sprintf("Draw: %"+shift+"s", drawFPS))
-			drawShadowed(true, 0+off, fmt.Sprintf("Update: %"+shift+"s", updateFPS))
+			drawShadowed(true, 1+off, "Draw: %"+shift+"s", drawFPS)
+			drawShadowed(true, 0+off, "Update: %"+shift+"s", updateFPS)
 
 			if sbThread {
-				drawShadowed(true, 0, fmt.Sprintf("Storyboard: %"+shift+"s", sbFPS))
+				drawShadowed(true, 0, "Storyboard: %"+shift+"s", sbFPS)
 			}
 		}
 

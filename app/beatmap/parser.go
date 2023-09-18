@@ -1,6 +1,7 @@
 package beatmap
 
 import (
+	"cmp"
 	"errors"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/settings"
@@ -10,7 +11,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -342,8 +343,8 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 		}
 	}
 
-	sort.SliceStable(beatMap.HitObjects, func(i, j int) bool {
-		return beatMap.HitObjects[i].GetStartTime() < beatMap.HitObjects[j].GetStartTime()
+	slices.SortStableFunc(beatMap.HitObjects, func(a, b objects.IHitObject) int {
+		return cmp.Compare(a.GetStartTime(), b.GetStartTime())
 	})
 
 	if parseColors {

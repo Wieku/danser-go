@@ -14,7 +14,7 @@ type spinnerstate struct {
 	rotationCount        int64
 	lastRotationCount    int64
 	scoringRotationCount int64
-	rotationCountF       float64
+	rotationCountF       float32
 	rotationCountFD      float64
 	frameVariance        float64
 	theoreticalVelocity  float64
@@ -80,6 +80,36 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 		numFinishedTotal++
 
 		if player.cursor.IsReplayFrame && time > int64(spinner.hitSpinner.GetStartTime()) && time < int64(spinner.hitSpinner.GetEndTime()) {
+			maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * timeDiff)
+
+			if player.diff.CheckModActive(difficulty.SpunOut) || player.diff.CheckModActive(difficulty.Relax2) {
+				state.currentVelocity = 0.03
+			} else if state.theoreticalVelocity > state.currentVelocity {
+				accel := maxAccelThisFrame
+				if state.currentVelocity < 0 && player.diff.CheckModActive(difficulty.Relax) {
+					accel /= 4
+				}
+
+				state.currentVelocity += min(state.theoreticalVelocity-state.currentVelocity, accel)
+			} else {
+				accel := -maxAccelThisFrame
+				if state.currentVelocity > 0 && player.diff.CheckModActive(difficulty.Relax) {
+					accel /= 4
+				}
+
+				state.currentVelocity += max(state.theoreticalVelocity-state.currentVelocity, accel)
+			}
+
+			state.currentVelocity = max(-0.05, min(state.currentVelocity, 0.05))
+
+			if len(spinner.players) == 1 {
+				if state.currentVelocity == 0 {
+					spinner.hitSpinner.PauseSpinSample()
+				} else {
+					spinner.hitSpinner.StartSpinSample()
+				}
+			}
+
 			decay1 := math.Pow(0.9, timeDiff/FrameTime)
 			state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(state.currentVelocity)*1000)/(math.Pi*2)*60
 
@@ -118,7 +148,11 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 
 				if math.Abs(angleDiff) < math.Pi {
 					if player.diff.GetModifiedTime(state.frameVariance) > FrameTime*1.04 {
-						state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(timeDiff)
+						if timeDiff > 0 {
+							state.theoreticalVelocity = angleDiff / player.diff.GetModifiedTime(timeDiff)
+						} else {
+							state.theoreticalVelocity = 0
+						}
 					} else {
 						state.theoreticalVelocity = angleDiff / FrameTime
 					}
@@ -129,45 +163,15 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 
 			state.lastAngle = mouseAngle
 
-			maxAccelThisFrame := player.diff.GetModifiedTime(spinner.maxAcceleration * timeDiff)
-
-			if player.diff.CheckModActive(difficulty.SpunOut) || player.diff.CheckModActive(difficulty.Relax2) {
-				state.currentVelocity = 0.03
-			} else if state.theoreticalVelocity > state.currentVelocity {
-				accel := maxAccelThisFrame
-				if state.currentVelocity < 0 && player.diff.CheckModActive(difficulty.Relax) {
-					accel /= 4
-				}
-
-				state.currentVelocity += min(state.theoreticalVelocity-state.currentVelocity, accel)
-			} else {
-				accel := -maxAccelThisFrame
-				if state.currentVelocity > 0 && player.diff.CheckModActive(difficulty.Relax) {
-					accel /= 4
-				}
-
-				state.currentVelocity += max(state.theoreticalVelocity-state.currentVelocity, accel)
-			}
-
-			state.currentVelocity = max(-0.05, min(state.currentVelocity, 0.05))
-
-			if len(spinner.players) == 1 {
-				if state.currentVelocity == 0 {
-					spinner.hitSpinner.PauseSpinSample()
-				} else {
-					spinner.hitSpinner.StartSpinSample()
-				}
-			}
-
 			rotationAddition := state.currentVelocity * timeDiff
 
 			state.rotationCountFD += rotationAddition
-			state.rotationCountF += math.Abs(rotationAddition / math.Pi)
+			state.rotationCountF += float32(math.Abs(float64(float32(rotationAddition)) / math.Pi))
 
 			if len(spinner.players) == 1 {
 				spinner.hitSpinner.SetRotation(player.diff.GetModifiedTime(state.rotationCountFD))
 				spinner.hitSpinner.SetRPM(state.rpm)
-				spinner.hitSpinner.UpdateCompletion(state.rotationCountF / float64(state.requirement))
+				spinner.hitSpinner.UpdateCompletion(float64(state.rotationCountF) / float64(state.requirement))
 			}
 
 			state.rotationCount = int64(state.rotationCountF)
