@@ -54,7 +54,7 @@ jobs:
 
   build_linux:
     name: Building linux version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v3
