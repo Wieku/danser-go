@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/EdlinOrg/prominentcolor"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
@@ -86,7 +85,7 @@ func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadDefault, loadStor
 
 		bg.triangles.SetColors(bg.getColors(image))
 
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			if bg.background != nil { // Dispose old background texture
 				bg.background.Dispose()
 				bg.background = nil

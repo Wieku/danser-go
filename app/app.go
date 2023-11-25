@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/audio"
@@ -85,7 +84,7 @@ func run() {
 		}
 	}()
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
 
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
@@ -533,7 +532,7 @@ func mainLoopRecord() {
 
 	var fbo *buffer.Framebuffer
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
@@ -568,7 +567,7 @@ func mainLoopRecord() {
 
 		deltaSumF += updateDelta
 		if deltaSumF >= fpsDelta {
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				fbo.Bind()
 
 				ffmpeg.PreFrame()
@@ -610,7 +609,7 @@ func mainLoopRecord() {
 		}
 	}
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		ffmpeg.StopFFmpeg()
 	})
 }
@@ -620,7 +619,7 @@ func mainLoopSS() {
 
 	var fbo *buffer.Framebuffer
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
@@ -629,7 +628,7 @@ func mainLoopSS() {
 	for !p.Update(1) {
 		if p.GetTime() >= screenshotTime*1000 {
 			log.Println("Scheduling screenshot")
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				fbo.Bind()
 
 				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
@@ -647,7 +646,7 @@ func mainLoopSS() {
 }
 
 func mainLoopNormal() {
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if action == glfw.Press {
 				switch key {
@@ -673,7 +672,7 @@ func mainLoopNormal() {
 	})
 
 	for !win.ShouldClose() {
-		mainthread.Call(func() {
+		goroutines.CallMain(func() {
 			if lastVSync != settings.Graphics.VSync {
 				if settings.Graphics.VSync {
 					glfw.SwapInterval(1)
@@ -793,8 +792,8 @@ func Run() {
 	platform.DisableQuickEdit()
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	mainthread.CallQueueCap = 100000
-	mainthread.Run(run)
+	goroutines.CallQueueCap = 100000
+	goroutines.RunMain(run)
 }
 
 func closeHandler(err any, stackTrace []string) {

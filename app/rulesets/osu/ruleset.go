@@ -452,7 +452,7 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	subSet.score.Score = subSet.scoreProcessor.GetScore()
 
-	if comboResult == Reset && result != Miss {
+	if comboResult == Reset && result != Miss { // skips missed slider "ends" as they don't reset combo
 		subSet.score.CountSB++
 	}
 

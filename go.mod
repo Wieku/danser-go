@@ -6,7 +6,6 @@ require (
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/dustin/go-humanize v1.0.0
-	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-gl/gl v0.0.0-20210813123233-e4099ee2221f
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b

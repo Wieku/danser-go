@@ -2,8 +2,8 @@ package buffer
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/statistic"
@@ -156,7 +156,7 @@ func (ibo *IndexBufferObject) Unbind() {
 
 func (ibo *IndexBufferObject) Dispose() {
 	if !ibo.disposed {
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			gl.DeleteBuffers(1, &ibo.handle)
 		})
 	}

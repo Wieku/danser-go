@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/input"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"os"
 	"os/exec"
 )
@@ -41,7 +41,7 @@ func QuickRestart() {
 	cmd.Stdout = os.Stdout
 	cmd.Start()
 
-	mainthread.CallNonBlock(func() {
+	goroutines.CallNonBlockMain(func() {
 		input.Win.SetShouldClose(true)
 	})
 }

@@ -2,9 +2,9 @@ package shader
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/math/color"
@@ -342,7 +342,7 @@ func (s *RShader) Unbind() {
 
 func (s *RShader) Dispose() {
 	if !s.disposed {
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			gl.DeleteProgram(s.handle)
 		})
 	}

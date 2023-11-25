@@ -1,7 +1,6 @@
 package dance
 
 import (
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -14,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
 	"log"
@@ -218,7 +218,7 @@ func (controller *PlayerController) updateRaw(mousePos vector.Vector2f) {
 }
 
 func (controller *PlayerController) setRawStatus(state bool) {
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		if state {
 			log.Println("InputManager: Switching to raw input mode")
 

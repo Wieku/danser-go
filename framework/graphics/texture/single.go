@@ -1,7 +1,7 @@
 package texture
 
 import (
-	"github.com/faiface/mainthread"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"image"
 	"runtime"
 )
@@ -68,7 +68,7 @@ func (texture *TextureSingle) GetLocation() uint {
 }
 
 func (texture *TextureSingle) Dispose() {
-	mainthread.CallNonBlock(func() {
+	goroutines.CallNonBlockMain(func() {
 		texture.store.Dispose()
 	})
 }

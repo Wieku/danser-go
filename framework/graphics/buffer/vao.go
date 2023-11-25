@@ -2,8 +2,8 @@ package buffer
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/history"
@@ -291,7 +291,7 @@ func (vao *VertexArrayObject) Dispose() {
 			holder.buffer.Dispose()
 		}
 
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			gl.DeleteVertexArrays(1, &vao.handle)
 		})
 	}

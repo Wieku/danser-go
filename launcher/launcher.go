@@ -5,7 +5,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -215,7 +214,7 @@ func StartLauncher() {
 
 	assets.Init(build.Stream == "Dev")
 
-	mainthread.Run(func() {
+	goroutines.RunMain(func() {
 		defer func() {
 			if err := recover(); err != nil {
 				stackTrace := goroutines.GetStackTrace(4)
@@ -223,10 +222,10 @@ func StartLauncher() {
 			}
 		}()
 
-		mainthread.Call(launcher.startGLFW)
+		goroutines.CallMain(launcher.startGLFW)
 
 		for !launcher.win.ShouldClose() {
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				if launcher.win.GetAttrib(glfw.Iconified) == glfw.False {
 					if launcher.win.GetAttrib(glfw.Focused) == glfw.False {
 						glfw.SwapInterval(2)
@@ -1764,7 +1763,7 @@ func (l *launcher) startDanser() {
 		if err != nil {
 			panicWait.Wait()
 
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				pMsg := panicMessage
 				if idx := strings.Index(pMsg, "Error:"); idx > -1 {
 					pMsg = pMsg[:idx-1] + "\n\n" + pMsg[idx+7:]
@@ -1846,7 +1845,7 @@ func (l *launcher) reloadMaps(after func()) {
 		l.loadBeatmaps()
 
 		// Add to main thread scheduler to avoid race conditions
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			if l.bld.currentMap != nil {
 				for _, b := range l.beatmaps {
 					if b.MD5 == l.bld.currentMap.MD5 {
