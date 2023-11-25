@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	color2 "github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -183,7 +183,7 @@ func (f *Framebuffer) GetID() uint32 {
 func (f *Framebuffer) Bind() {
 	history.Push(gl.FRAMEBUFFER_BINDING, f.handle)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.handle)
-	statistic.Increment(statistic.FBOBinds)
+	profiler.IncrementStat(profiler.FBOBinds)
 }
 
 // Unbind unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
@@ -206,7 +206,7 @@ func (f *Framebuffer) Unbind() {
 	}
 
 	if handle != 0 {
-		statistic.Increment(statistic.FBOBinds)
+		profiler.IncrementStat(profiler.FBOBinds)
 	}
 	gl.BindFramebuffer(gl.FRAMEBUFFER, handle)
 }

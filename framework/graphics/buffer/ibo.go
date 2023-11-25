@@ -6,7 +6,7 @@ import (
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/history"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"runtime"
 )
 
@@ -91,8 +91,8 @@ func (ibo *IndexBufferObject) DrawInstanced(baseInstance, instanceCount int) {
 func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 	ibo.check(offset, length)
 
-	statistic.Add(statistic.VerticesDrawn, int64(length))
-	statistic.Increment(statistic.DrawCalls)
+	profiler.AddStat(profiler.VerticesDrawn, int64(length))
+	profiler.IncrementStat(profiler.DrawCalls)
 
 	gl.DrawElements(gl.TRIANGLES, int32(length), ibo.xtype, gl.PtrOffset(offset*ibo.xsize))
 
@@ -104,8 +104,8 @@ func (ibo *IndexBufferObject) DrawPart(offset, length int) {
 func (ibo *IndexBufferObject) DrawPartInstanced(offset, length, baseInstance, instanceCount int) {
 	ibo.check(offset, length)
 
-	statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
-	statistic.Increment(statistic.DrawCalls)
+	profiler.AddStat(profiler.VerticesDrawn, int64(length*instanceCount))
+	profiler.IncrementStat(profiler.DrawCalls)
 
 	gl.DrawElementsInstancedBaseInstance(gl.TRIANGLES, int32(length), ibo.xtype, gl.PtrOffset(offset*ibo.xsize), int32(instanceCount), uint32(baseInstance))
 

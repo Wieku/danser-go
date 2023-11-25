@@ -11,7 +11,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"math"
 )
 
@@ -178,7 +178,7 @@ func (batch *QuadBatch) Flush() {
 
 	batch.vao.DrawInstanced(batch.chunkOffset/batch.vertexSize, batch.currentSize)
 
-	statistic.Add(statistic.SpritesDrawn, int64(batch.currentSize))
+	profiler.AddStat(profiler.SpritesDrawn, int64(batch.currentSize))
 
 	nextChunk := batch.vao.MapVBO("quads", batch.maxSprites*batch.vertexSize)
 

@@ -5,7 +5,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/history"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"runtime"
 )
 
@@ -117,7 +117,7 @@ func (vbo *VertexBufferObject) Bind() {
 
 	history.Push(gl.ARRAY_BUFFER_BINDING, vbo.handle)
 
-	statistic.Increment(statistic.VBOBinds)
+	profiler.IncrementStat(profiler.VBOBinds)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo.handle)
 }
@@ -132,7 +132,7 @@ func (vbo *VertexBufferObject) Unbind() {
 	handle := history.Pop(gl.ARRAY_BUFFER_BINDING)
 
 	if handle > 0 {
-		statistic.Increment(statistic.VBOBinds)
+		profiler.IncrementStat(profiler.VBOBinds)
 	}
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, handle)

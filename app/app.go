@@ -31,8 +31,8 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
 	"io/ioutil"
@@ -713,7 +713,7 @@ func mainLoopNormal() {
 }
 
 func pushFrame() {
-	statistic.Reset()
+	profiler.ResetStats()
 
 	gl.Enable(gl.SCISSOR_TEST)
 	gl.Disable(gl.DITHER)

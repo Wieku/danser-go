@@ -31,8 +31,8 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
 	"math/rand"
@@ -1053,13 +1053,13 @@ func (player *Player) drawDebug() {
 
 			drawWithBackground("MSAA: %s", msaa)
 
-			drawWithBackground("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds))
-			drawWithBackground("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds))
-			drawWithBackground("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds))
-			drawWithBackground("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000)
-			drawWithBackground("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000)
-			drawWithBackground("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls))
-			drawWithBackground("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn))
+			drawWithBackground("FBO Binds: %d", profiler.GetPreviousStat(profiler.FBOBinds))
+			drawWithBackground("VAO Binds: %d", profiler.GetPreviousStat(profiler.VAOBinds))
+			drawWithBackground("VBO Binds: %d", profiler.GetPreviousStat(profiler.VBOBinds))
+			drawWithBackground("Vertex Upload: %.2fk", float64(profiler.GetPreviousStat(profiler.VertexUpload))/1000)
+			drawWithBackground("Vertices Drawn: %.2fk", float64(profiler.GetPreviousStat(profiler.VerticesDrawn))/1000)
+			drawWithBackground("Draw Calls: %d", profiler.GetPreviousStat(profiler.DrawCalls))
+			drawWithBackground("Sprites Drawn: %d", profiler.GetPreviousStat(profiler.SpritesDrawn))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
 				drawWithBackground("SB sprites: %d", player.storyboardDrawn)
