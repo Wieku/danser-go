@@ -1,9 +1,10 @@
 package settings
 
 import (
-	"github.com/wieku/danser-go/framework/env"
 	"path/filepath"
 	"strings"
+
+	"github.com/wieku/danser-go/framework/env"
 )
 
 var Recording = initRecording()
@@ -63,6 +64,12 @@ func initRecording() *recording {
 		CustomSettings: &custom{
 			CustomOptions: "",
 		},
+		H264AMDSettings: &custom{
+			CustomOptions: "-quality 0 -rc 0",
+		},
+		HEVCAMDSettings: &custom{
+			CustomOptions: "-quality 0 -rc 0",
+		},
 		PixelFormat: "yuv420p",
 		Filters:     "",
 		AudioCodec:  "aac",
@@ -107,13 +114,15 @@ type recording struct {
 	FrameHeight         int                `min:"1" max:"17280"`
 	FPS                 int                `label:"FPS (PLEASE READ TOOLTIP)" string:"true" min:"1" max:"10727" tooltip:"IMPORTANT: If you plan to have a \"high fps\" video, use Motion Blur below instead of setting FPS to absurd numbers. Setting the value too high will result in a broken video!"`
 	EncodingFPSCap      int                `string:"true" min:"0" max:"10727" label:"Max Encoding FPS (Speed)" tooltip:"Limits the speed at which danser renders the video. If FPS is set to 60 and this option to 30, then it means 2 minute map will take at least 4 minutes to render"`
-	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC)" tooltip:"Hardware encoding with AMD GPUs is not supported because software encoding provides better performance and results"`
+	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC),h264_amf|AMD VCE (H.264),hevc_amf|AMD VCE (HEVC)" tooltip:"Hardware encoding with AMD GPUs is experimental in this build"`
 	X264Settings        *x264Settings      `json:"libx264" label:"Software x264 (AVC) Settings" showif:"Encoder=libx264"`
 	X265Settings        *x265Settings      `json:"libx265" label:"Software x265 (HEVC) Settings" showif:"Encoder=libx265"`
 	H264NvencSettings   *h264NvencSettings `json:"h264_nvenc" label:"NVIDIA NVENC H.264 (AVC) Settings" showif:"Encoder=h264_nvenc"`
 	HEVCNvencSettings   *hevcNvencSettings `json:"hevc_nvenc" label:"NVIDIA NVENC H.265 (HEVC) Settings" showif:"Encoder=hevc_nvenc"`
 	H264QSVSettings     *h264QSVSettings   `json:"h264_qsv" label:"Intel QuickSync H.264 (AVC) Settings" showif:"Encoder=h264_qsv"`
 	HEVCQSVSettings     *hevcQSVSettings   `json:"hevc_qsv" label:"Intel QuickSync H.265 (HEVC) Settings" showif:"Encoder=hevc_qsv"`
+	H264AMDSettings     *custom            `json:"h264_amf" label:"AMD VCE (H.264) Settings" showif:"Encoder=h264_amf"`
+	HEVCAMDSettings     *custom            `json:"hevc_amf" label:"AMD VCE (HEVC) Settings" showif:"Encoder=hevc_amf"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
 	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21" showif:"Encoder=!h264_qsv,!hevc_qsv"`
 	Filters             string             `label:"FFmpeg Video Filters"`
@@ -147,6 +156,10 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 		return g.H264QSVSettings
 	case "hevc_qsv":
 		return g.HEVCQSVSettings
+	case "h264_amf":
+		return g.H264AMDSettings
+	case "hevc_amf":
+		return g.HEVCAMDSettings
 	default:
 		return g.CustomSettings
 	}
