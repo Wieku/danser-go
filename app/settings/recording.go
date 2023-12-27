@@ -61,14 +61,18 @@ func initRecording() *recording {
 			Preset:            "slow",
 			AdditionalOptions: "",
 		},
+		H264AMDSettings: &vce264Settings{
+			RateControl: "qp",
+			Preset:      "balanced",
+			Bitrate:     "10M",
+		},
+		HEVCAMDSettings: &vce265Settings{
+			RateControl: "qp",
+			Preset:      "balanced",
+			Bitrate:     "10M",
+		},
 		CustomSettings: &custom{
 			CustomOptions: "",
-		},
-		H264AMDSettings: &custom{
-			CustomOptions: "-quality 0 -rc 0",
-		},
-		HEVCAMDSettings: &custom{
-			CustomOptions: "-quality 0 -rc 0",
 		},
 		PixelFormat: "yuv420p",
 		Filters:     "",
@@ -121,8 +125,8 @@ type recording struct {
 	HEVCNvencSettings   *hevcNvencSettings `json:"hevc_nvenc" label:"NVIDIA NVENC H.265 (HEVC) Settings" showif:"Encoder=hevc_nvenc"`
 	H264QSVSettings     *h264QSVSettings   `json:"h264_qsv" label:"Intel QuickSync H.264 (AVC) Settings" showif:"Encoder=h264_qsv"`
 	HEVCQSVSettings     *hevcQSVSettings   `json:"hevc_qsv" label:"Intel QuickSync H.265 (HEVC) Settings" showif:"Encoder=hevc_qsv"`
-	H264AMDSettings     *custom            `json:"h264_amf" label:"AMD VCE (H.264) Settings" showif:"Encoder=h264_amf"`
-	HEVCAMDSettings     *custom            `json:"hevc_amf" label:"AMD VCE (HEVC) Settings" showif:"Encoder=hevc_amf"`
+	H264AMDSettings     *vce264Settings    `json:"h264_amf" label:"AMD VCE (H.264) Settings" showif:"Encoder=h264_amf"`
+	HEVCAMDSettings     *vce265Settings    `json:"hevc_amf" label:"AMD VCE (HEVC) Settings" showif:"Encoder=hevc_amf"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
 	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21" showif:"Encoder=!h264_qsv,!hevc_qsv"`
 	Filters             string             `label:"FFmpeg Video Filters"`
