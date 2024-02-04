@@ -45,6 +45,12 @@ func initRecording() *recording {
 			Preset:            "p7",
 			AdditionalOptions: "",
 		},
+		AV1NvencSettings: &av1NvencSettings{
+			RateControl:       "cbr",
+			Bitrate:           "5M",
+			Preset:            "p7",
+			AdditionalOptions: "",
+		},
 		H264QSVSettings: &h264QSVSettings{
 			RateControl:       "icq",
 			Bitrate:           "10M",
@@ -107,11 +113,12 @@ type recording struct {
 	FrameHeight         int                `min:"1" max:"17280"`
 	FPS                 int                `label:"FPS (PLEASE READ TOOLTIP)" string:"true" min:"1" max:"10727" tooltip:"IMPORTANT: If you plan to have a \"high fps\" video, use Motion Blur below instead of setting FPS to absurd numbers. Setting the value too high will result in a broken video!"`
 	EncodingFPSCap      int                `string:"true" min:"0" max:"10727" label:"Max Encoding FPS (Speed)" tooltip:"Limits the speed at which danser renders the video. If FPS is set to 60 and this option to 30, then it means 2 minute map will take at least 4 minutes to render"`
-	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC)" tooltip:"Hardware encoding with AMD GPUs is not supported because software encoding provides better performance and results"`
+	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),av1_nvenc|NVIDIA NVENC AV1,h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC)" tooltip:"Hardware encoding with AMD GPUs is not supported because software encoding provides better performance and results"`
 	X264Settings        *x264Settings      `json:"libx264" label:"Software x264 (AVC) Settings" showif:"Encoder=libx264"`
 	X265Settings        *x265Settings      `json:"libx265" label:"Software x265 (HEVC) Settings" showif:"Encoder=libx265"`
 	H264NvencSettings   *h264NvencSettings `json:"h264_nvenc" label:"NVIDIA NVENC H.264 (AVC) Settings" showif:"Encoder=h264_nvenc"`
 	HEVCNvencSettings   *hevcNvencSettings `json:"hevc_nvenc" label:"NVIDIA NVENC H.265 (HEVC) Settings" showif:"Encoder=hevc_nvenc"`
+	AV1NvencSettings    *av1NvencSettings  `json:"av1_nvenc" label:"NVIDIA NVENC AV1 Settings" showif:"Encoder=av1_nvenc"`
 	H264QSVSettings     *h264QSVSettings   `json:"h264_qsv" label:"Intel QuickSync H.264 (AVC) Settings" showif:"Encoder=h264_qsv"`
 	HEVCQSVSettings     *hevcQSVSettings   `json:"hevc_qsv" label:"Intel QuickSync H.265 (HEVC) Settings" showif:"Encoder=hevc_qsv"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
@@ -143,6 +150,8 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 		return g.H264NvencSettings
 	case "hevc_nvenc":
 		return g.HEVCNvencSettings
+	case "av1_nvenc":
+		return g.AV1NvencSettings
 	case "h264_qsv":
 		return g.H264QSVSettings
 	case "hevc_qsv":
