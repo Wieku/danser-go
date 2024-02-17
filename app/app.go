@@ -671,6 +671,8 @@ func mainLoopNormal() {
 		})
 	})
 
+	profiler.StartGroup("App.mainLoopNormal", profiler.PRoot)
+
 	for !win.ShouldClose() {
 		goroutines.CallMain(func() {
 			if lastVSync != settings.Graphics.VSync {
@@ -683,7 +685,12 @@ func mainLoopNormal() {
 				lastVSync = settings.Graphics.VSync
 			}
 
+			profiler.StartGroup("stub", profiler.PSched)
+			profiler.EndGroup()
+
+			profiler.StartGroup("glfw.PollEvents", profiler.PInput)
 			glfw.PollEvents()
+			profiler.EndGroup()
 
 			pushFrame()
 
@@ -693,8 +700,13 @@ func mainLoopNormal() {
 				scheduleScreenshot = false
 			}
 
+			profiler.StartGroup("App.mainLoopNormal", profiler.PSwapBuffers)
+
 			win.SwapBuffers()
 
+			profiler.EndGroup()
+
+			profiler.StartGroup("App.mainLoopNormal", profiler.PSleep)
 			if !settings.Graphics.VSync {
 				fCap := int(settings.Graphics.FPSCap)
 
@@ -705,7 +717,12 @@ func mainLoopNormal() {
 				limiter.FPS = fCap
 				limiter.Sync()
 			}
+			profiler.EndGroup()
 
+			profiler.EndGroup()
+
+			profiler.Reset()
+			profiler.StartGroup("App.mainLoopNormal", profiler.PRoot)
 		})
 	}
 
@@ -713,6 +730,7 @@ func mainLoopNormal() {
 }
 
 func pushFrame() {
+	profiler.StartGroup("App.pushFrame", profiler.PDraw)
 	profiler.ResetStats()
 
 	gl.Enable(gl.SCISSOR_TEST)
@@ -753,6 +771,8 @@ func pushFrame() {
 
 	blend.ClearStack()
 	viewport.Pop()
+
+	profiler.EndGroup()
 }
 
 func checkForUpdates() {

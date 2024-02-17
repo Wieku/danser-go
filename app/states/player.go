@@ -769,7 +769,9 @@ func (player *Player) updateMusic(delta float64) {
 	}
 }
 
-func (player *Player) Draw(float64) {
+func (player *Player) DrawMain(float64) {
+	profiler.StartGroup("Player.DrawMain", profiler.PDraw)
+
 	if player.lastTime <= 0 {
 		player.lastTime = qpc.GetNanoTime()
 	}
@@ -909,7 +911,16 @@ func (player *Player) Draw(float64) {
 		player.bloomEffect.EndAndRender()
 	}
 
+	profiler.EndGroup()
+}
+
+func (player *Player) Draw(d float64) {
+	profiler.StartGroup("Player.Draw", profiler.PDraw)
+
+	player.DrawMain(d)
 	player.drawDebug()
+
+	profiler.EndGroup()
 }
 
 func (player *Player) drawEpilepsyWarning() {
@@ -964,6 +975,7 @@ func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.
 }
 
 func (player *Player) drawDebug() {
+	profiler.StartGroup("Player.DrawDebug", profiler.PDraw)
 	if settings.DEBUG && player.memTicker == nil {
 		player.memTicker = time.NewTicker(100 * time.Millisecond)
 
@@ -1123,6 +1135,8 @@ func (player *Player) drawDebug() {
 
 		player.batch.End()
 	}
+
+	profiler.EndGroup()
 }
 
 func (player *Player) Show() {}
