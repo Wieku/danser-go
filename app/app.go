@@ -671,60 +671,50 @@ func mainLoopNormal() {
 		})
 	})
 
-	profiler.StartGroup("App.mainLoopNormal", profiler.PRoot)
-
-	for !win.ShouldClose() {
-		goroutines.CallMain(func() {
-			if lastVSync != settings.Graphics.VSync {
-				if settings.Graphics.VSync {
-					glfw.SwapInterval(1)
-				} else {
-					glfw.SwapInterval(0)
-				}
-
-				lastVSync = settings.Graphics.VSync
+	goroutines.RunMainLoop(func() bool {
+		return !win.ShouldClose()
+	}, func() {
+		if lastVSync != settings.Graphics.VSync {
+			if settings.Graphics.VSync {
+				glfw.SwapInterval(1)
+			} else {
+				glfw.SwapInterval(0)
 			}
 
-			profiler.StartGroup("stub", profiler.PSched)
-			profiler.EndGroup()
+			lastVSync = settings.Graphics.VSync
+		}
 
-			profiler.StartGroup("glfw.PollEvents", profiler.PInput)
-			glfw.PollEvents()
-			profiler.EndGroup()
+		profiler.StartGroup("glfw.PollEvents", profiler.PInput)
+		glfw.PollEvents()
+		profiler.EndGroup()
 
-			pushFrame()
+		pushFrame()
 
-			if scheduleScreenshot {
-				w, h := win.GetFramebufferSize()
-				utils.MakeScreenshot(w, h, "", true)
-				scheduleScreenshot = false
+		if scheduleScreenshot {
+			w, h := win.GetFramebufferSize()
+			utils.MakeScreenshot(w, h, "", true)
+			scheduleScreenshot = false
+		}
+
+		profiler.StartGroup("App.mainLoopNormal", profiler.PSwapBuffers)
+
+		win.SwapBuffers()
+
+		profiler.EndGroup()
+
+		profiler.StartGroup("App.mainLoopNormal", profiler.PSleep)
+		if !settings.Graphics.VSync {
+			fCap := int(settings.Graphics.FPSCap)
+
+			if fCap < 0 {
+				fCap = -fCap * monitorHz
 			}
 
-			profiler.StartGroup("App.mainLoopNormal", profiler.PSwapBuffers)
-
-			win.SwapBuffers()
-
-			profiler.EndGroup()
-
-			profiler.StartGroup("App.mainLoopNormal", profiler.PSleep)
-			if !settings.Graphics.VSync {
-				fCap := int(settings.Graphics.FPSCap)
-
-				if fCap < 0 {
-					fCap = -fCap * monitorHz
-				}
-
-				limiter.FPS = fCap
-				limiter.Sync()
-			}
-			profiler.EndGroup()
-
-			profiler.EndGroup()
-
-			profiler.Reset()
-			profiler.StartGroup("App.mainLoopNormal", profiler.PRoot)
-		})
-	}
+			limiter.FPS = fCap
+			limiter.Sync()
+		}
+		profiler.EndGroup()
+	})
 
 	settings.CloseWatcher()
 }
@@ -805,14 +795,14 @@ func Run() {
 		closeHandler(err, stackTrace)
 	}()
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	goroutines.SetCrashHandler(closeHandler)
 
 	platform.StartLogging("danser")
 
 	platform.DisableQuickEdit()
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	goroutines.CallQueueCap = 100000
 	goroutines.RunMain(run)
 }
 
