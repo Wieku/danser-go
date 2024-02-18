@@ -650,6 +650,8 @@ func mainLoopNormal() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if action == glfw.Press {
 				switch key {
+				case glfw.KeyF11:
+					settings.DEBUG = !settings.DEBUG
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
