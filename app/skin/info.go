@@ -166,8 +166,8 @@ func ParseColor(text, errType string) color.Color {
 			clr.G = float32(ParseFloat(v, errType+".G")) / 255
 		case 2:
 			clr.B = float32(ParseFloat(v, errType+".B")) / 255
-		case 3:
-			clr.A = float32(ParseFloat(v, errType+".A")) / 255
+			//case 3:
+			//	clr.A = float32(ParseFloat(v, errType+".A")) / 255
 		}
 	}
 
