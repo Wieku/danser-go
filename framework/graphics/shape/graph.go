@@ -63,7 +63,7 @@ type label struct {
 type SteppingGraph struct {
 	shader     *shader.RShader
 	additive   bool
-	Projection mgl32.Mat4
+	projection mgl32.Mat4
 
 	width  int
 	height int
@@ -90,7 +90,7 @@ type SteppingGraph struct {
 func NewSteppingGraph(x, y, width, height, layers int, maxVal float32, unit string) *SteppingGraph {
 	graph := &SteppingGraph{
 		shader:       shader.NewRShader(shader.NewSource(gVert, shader.Vertex), shader.NewSource(gFrag, shader.Fragment)),
-		Projection:   mgl32.Ident4(),
+		projection:   mgl32.Ident4(),
 		pos:          vector.NewVec2f(float32(x), float32(y)),
 		width:        width,
 		height:       height,
@@ -178,7 +178,7 @@ func (graph *SteppingGraph) Draw() {
 	pX := graph.pos.X
 	pY := graph.pos.Y
 
-	graph.bgRenderer.SetCamera(graph.Projection)
+	graph.bgRenderer.SetCamera(graph.projection)
 	graph.bgRenderer.Begin()
 
 	graph.bgRenderer.SetColorM(color.NewLA(0.0, 0.7))
@@ -197,7 +197,7 @@ func (graph *SteppingGraph) Draw() {
 	graph.bgRenderer.End()
 
 	graph.shader.Bind()
-	graph.shader.SetUniform("proj", graph.Projection)
+	graph.shader.SetUniform("proj", graph.projection)
 	graph.shader.SetUniform("scale", float32(graph.height)/graph.maxVal)
 
 	graph.vao.Bind()
@@ -221,7 +221,7 @@ func (graph *SteppingGraph) Draw() {
 	graph.shader.Unbind()
 
 	graph.fontRenderer.Begin()
-	graph.fontRenderer.SetCamera(graph.Projection)
+	graph.fontRenderer.SetCamera(graph.projection)
 
 	graph.fontRenderer.SetColor(1, 1, 1, 1)
 
@@ -265,4 +265,8 @@ func (graph *SteppingGraph) Advance(data ...float64) {
 	graph.vao.SetData("steps", graph.idx*2*graph.layers, graph.buf)
 
 	graph.idx++
+}
+
+func (graph *SteppingGraph) SetCamera(camera mgl32.Mat4) {
+	graph.projection = camera
 }
