@@ -651,7 +651,14 @@ func mainLoopNormal() {
 			if action == glfw.Press {
 				switch key {
 				case glfw.KeyF11:
-					settings.DEBUG = !settings.DEBUG
+					switch mods {
+					case glfw.ModShift:
+						settings.PerfGraph = !settings.PerfGraph
+					case glfw.ModControl:
+						settings.CallGraph = !settings.CallGraph
+					default:
+						settings.DEBUG = !settings.DEBUG
+					}
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:

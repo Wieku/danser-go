@@ -3,6 +3,7 @@ package states
 import (
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
@@ -24,6 +25,7 @@ import (
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/graphics/font"
+	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -39,6 +41,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -131,6 +134,7 @@ type Player struct {
 	mStats2   *runtime.MemStats
 	mBuffer   []byte
 	memTicker *time.Ticker
+	ftGraph   *shape.SteppingGraph
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -139,6 +143,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mStats1 = new(runtime.MemStats)
 	player.mStats2 = new(runtime.MemStats)
 	player.mBuffer = make([]byte, 0, 256)
+
+	player.ftGraph = shape.NewSteppingGraph(1920-600-20, 1080-300-40, 600, 250, 6, 16.667, "ms")
+	player.ftGraph.SetLabel(0, "BG Tasks", color2.NewIA(0x00ff34ff))
+	player.ftGraph.SetLabel(1, "Input", color2.NewIA(0xffff00ff))
+	player.ftGraph.SetLabel(2, "Draw", color2.NewIA(0xbf6500ff))
+	player.ftGraph.SetLabel(3, "SwapBuffers", color2.NewIA(0xff0000ff))
+	player.ftGraph.SetLabel(4, "Sleep", color2.NewIA(0x5555bbff))
+	player.ftGraph.SetLabel(5, "Overhead", color2.NewIA(0xffffffff))
 
 	graphics.LoadTextures()
 
@@ -1003,7 +1015,13 @@ func (player *Player) drawDebug() {
 		})
 	}
 
-	if settings.DEBUG || settings.Graphics.ShowFPS {
+	var profRes *profiler.PNode
+
+	if settings.DEBUG || settings.PerfGraph {
+		profRes = profiler.GetLastProfileResult()
+	}
+
+	if settings.DEBUG || settings.Graphics.ShowFPS || settings.PerfGraph {
 		padDown := 4.0
 		size := 16.0
 
@@ -1086,6 +1104,11 @@ func (player *Player) drawDebug() {
 			drawWithBackground("GC Runs: %d", player.mStats2.NumGC)
 			drawWithBackground("GC Time: %.3fms", float64(player.mStats2.PauseTotalNs)/1000000)
 
+			if profRes != nil && settings.CallGraph {
+				pos++
+				player.traverseGraph(0, profRes, drawWithBackground)
+			}
+
 			player.font.DrawBg(false)
 
 			player.batch.ResetTransform()
@@ -1104,7 +1127,27 @@ func (player *Player) drawDebug() {
 			}
 		}
 
-		if settings.DEBUG || settings.Graphics.ShowFPS {
+		if settings.DEBUG || settings.Graphics.ShowFPS || settings.PerfGraph {
+			if settings.PerfGraph {
+				if profRes != nil && input.Win.GetKey(glfw.KeyLeftShift) != glfw.Press {
+					root := profRes.TimeTotal
+					sched := profRes.Nodes[0].TimeTotal
+					input := profRes.Nodes[1].TimeTotal
+					draw := profRes.Nodes[2].TimeTotal
+					swp := profRes.Nodes[3].TimeTotal
+					slp := profRes.Nodes[4].TimeTotal
+					root += -input - draw - swp - slp - sched
+
+					player.ftGraph.Advance(sched, input, draw, swp, slp, root)
+				}
+
+				player.batch.Flush()
+
+				player.ftGraph.SetCamera(player.uiCamera.GetProjectionView())
+				player.ftGraph.SetMaxValue(settings.Debug.PerfGraph.MaxRange)
+				player.ftGraph.Draw()
+			}
+
 			fpsC := player.profiler.GetFPS()
 			fpsU := player.profilerU.GetFPS()
 
@@ -1137,6 +1180,13 @@ func (player *Player) drawDebug() {
 	}
 
 	profiler.EndGroup()
+}
+
+func (player *Player) traverseGraph(ident int, node *profiler.PNode, draw func(format string, a ...any)) {
+	draw(strings.Repeat("  ", ident)+"%s: %.5fms", node.GetFullName(), node.TimeTotal)
+	for _, sNode := range node.Nodes {
+		player.traverseGraph(ident+1, sNode, draw)
+	}
 }
 
 func (player *Player) Show() {}

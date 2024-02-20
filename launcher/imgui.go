@@ -109,6 +109,7 @@ func SetupImgui(win *glfw.Window) {
 	awesomeBuilder.Add(0xF1E0, 0xF1E0) // share-nodes
 	awesomeBuilder.Add(0xF1FC, 0xF1FC) // paintbrush
 	awesomeBuilder.Add(0xF43C, 0xF43C) // chess-board
+	awesomeBuilder.Add(0xF188, 0xF188) // bug
 
 	//awesomeBuilder.Add(0x0020, 0xffff)
 
