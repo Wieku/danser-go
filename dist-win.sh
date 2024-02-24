@@ -65,7 +65,7 @@ go run tools/assets/assets.go ./ $BUILD_DIR/
 
 cp $BUILD_DIR/danser.syso danser.syso
 
-go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o $BUILD_DIR/danser-core.dll -v -x
+go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o $BUILD_DIR/danser-core.dll -v -x -tags "exclude_cimgui_glfw exclude_cimgui_sdli"
 
 rm -f danser.syso
 

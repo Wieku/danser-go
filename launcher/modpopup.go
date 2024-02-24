@@ -1,7 +1,7 @@
 package launcher
 
 import (
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 )
 
@@ -95,11 +95,11 @@ func (m *modPopup) modCheckbox(mod, incompat difficulty.Modifier) (ret bool) {
 	s := m.bld.mods.Active(mod)
 
 	if s {
-		cColor := imgui.CurrentStyle().Color(imgui.StyleColorCheckMark)
+		cColor := *imgui.StyleColorVec4(imgui.ColCheckMark)
 
-		imgui.PushStyleColor(imgui.StyleColorButton, vec4(cColor.X, cColor.Y, cColor.Z, 0.8))
-		imgui.PushStyleColor(imgui.StyleColorButtonActive, vec4(cColor.X*1.2, cColor.Y*1.2, cColor.Z*1.2, 0.8))
-		imgui.PushStyleColor(imgui.StyleColorButtonHovered, vec4(cColor.X*1.4, cColor.Y*1.4, cColor.Z*1.4, 0.8))
+		imgui.PushStyleColorVec4(imgui.ColButton, vec4(cColor.X, cColor.Y, cColor.Z, 0.8))
+		imgui.PushStyleColorVec4(imgui.ColButtonActive, vec4(cColor.X*1.2, cColor.Y*1.2, cColor.Z*1.2, 0.8))
+		imgui.PushStyleColorVec4(imgui.ColButtonHovered, vec4(cColor.X*1.4, cColor.Y*1.4, cColor.Z*1.4, 0.8))
 	}
 
 	fH := imgui.FrameHeight()

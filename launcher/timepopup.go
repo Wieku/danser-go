@@ -1,8 +1,8 @@
 package launcher
 
 import (
+	"github.com/AllenDang/cimgui-go"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
@@ -124,15 +124,15 @@ func (m *timePopup) drawStrainGraph() {
 	if m.graphStatus != "" {
 		pad := (float32(sHeight) - imgui.TextLineHeightWithSpacing()) / 2
 
-		imgui.SetCursorPos(imgui.CursorPos().Plus(vec2(0, pad)))
+		dummyExactY(pad)
 
 		centerTable("sgraphstatus", -1, func() {
 			imgui.Text(m.graphStatus)
 		})
 
-		imgui.SetCursorPos(imgui.CursorPos().Plus(vec2(0, pad)))
+		dummyExactY(pad)
 	} else {
-		imgui.SetCursorPos(imgui.CursorPos().Plus(vec2(imgui.CurrentStyle().ItemInnerSpacing().X/2, 0)))
+		imgui.SetCursorPos(imgui.CursorPos().Add(vec2(imgui.CurrentStyle().ItemInnerSpacing().X/2, 0)))
 
 		settings.Gameplay.StrainGraph.Width = (float64(sWidth) / settings.Graphics.GetWidthF()) * 768 * settings.Graphics.GetAspectRatio()
 		settings.Gameplay.StrainGraph.Height = (float64(sHeight) / settings.Graphics.GetHeightF()) * 768
@@ -174,6 +174,6 @@ func (m *timePopup) drawStrainGraph() {
 			viewport.Pop()
 		}
 
-		imgui.Image(imgui.TextureID(m.fbo.Texture().GetID()), vec2(float32(sWidth), float32(sHeight)))
+		imgui.Image(imgui.TextureID{Data: uintptr(m.fbo.Texture().GetID())}, vec2(float32(sWidth), float32(sHeight)))
 	}
 }
