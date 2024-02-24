@@ -196,7 +196,7 @@ func StartLauncher() {
 	launcher := &launcher{
 		bld:        newBuilder(),
 		popupStack: make([]iPopup, 0),
-		winter:     (cTime.Month() == 12 && cTime.Day() >= 6) || (cTime.Month() < 3),
+		winter:     (cTime.Month() == 12 && cTime.Day() >= 6) || (cTime.Month() < 2),
 		christmas:  cTime.Month() == 12 && cTime.Day() >= 6,
 	}
 
