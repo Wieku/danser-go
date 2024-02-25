@@ -3,7 +3,7 @@ module github.com/wieku/danser-go
 go 1.21
 
 require (
-	github.com/AllenDang/cimgui-go v0.0.0-20240224165900-e7421faa8e45
+	github.com/AllenDang/cimgui-go v0.0.0-20240225123420-d04298bbf6e9
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/dustin/go-humanize v1.0.0
