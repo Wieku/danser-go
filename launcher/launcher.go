@@ -175,6 +175,9 @@ type launcher struct {
 	snow *drawables.Snow
 
 	timeMenu *timePopup
+
+	cHold           map[string]*bool
+	configScrolling bool
 }
 
 func StartLauncher() {
@@ -198,6 +201,7 @@ func StartLauncher() {
 		popupStack: make([]iPopup, 0),
 		winter:     (cTime.Month() == 12 && cTime.Day() >= 6) || (cTime.Month() < 2),
 		christmas:  cTime.Month() == 12 && cTime.Day() >= 6,
+		cHold:      make(map[string]*bool),
 	}
 
 	platform.StartLogging("launcher")
@@ -1332,7 +1336,7 @@ func (l *launcher) drawConfigPanel() {
 
 			focusScroll := searchBox("##configSearch", &l.configSearch)
 
-			if !imgui.IsMouseClickedBool(0) && !imgui.IsMouseClickedBool(1) && !imgui.IsAnyItemActive() && !(imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()) {
+			if !imgui.IsMouseClickedBool(0) && !imgui.IsMouseClickedBool(1) && !imgui.IsAnyItemActive() && !l.configEditOpened && !l.configScrolling {
 				imgui.SetKeyboardFocusHereV(-1)
 			}
 
@@ -1360,6 +1364,7 @@ func (l *launcher) drawConfigPanel() {
 				sHeight := float32(min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
 				if imgui.BeginListBoxV("##blistbox", vec2(mWidth, sHeight)) {
+					l.configScrolling = handleDragScroll()
 					focusScroll = focusScroll || imgui.IsWindowAppearing()
 
 					for _, s := range searchResults {
@@ -1369,7 +1374,12 @@ func (l *launcher) drawConfigPanel() {
 							}
 						}
 
+						if _, ok := l.cHold[s]; !ok {
+							l.cHold[s] = new(bool)
+						}
+
 						if imgui.IsMouseClickedBool(1) && imgui.IsItemHovered() {
+							*l.cHold[s] = true
 							l.configEditOpened = true
 
 							imgui.SetNextWindowPosV(imgui.MousePos(), imgui.CondAlways, vzero())
@@ -1377,7 +1387,9 @@ func (l *launcher) drawConfigPanel() {
 							imgui.OpenPopupStr("##context" + s)
 						}
 
-						if imgui.BeginPopupModalV("##context"+s, &l.configEditOpened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
+						befHold := *l.cHold[s]
+
+						if imgui.BeginPopupModalV("##context"+s, l.cHold[s], imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
 							if s != "default" {
 								if imgui.SelectableBool("Rename") {
 									l.newCloneOpened = true
@@ -1401,10 +1413,15 @@ func (l *launcher) drawConfigPanel() {
 							}
 
 							if (imgui.IsMouseClickedBool(0) || imgui.IsMouseClickedBool(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
-								l.configEditOpened = false
+								*l.cHold[s] = false
+								//imgui.CloseCurrentPopup()
 							}
 
 							imgui.EndPopup()
+						}
+
+						if befHold && !*l.cHold[s] {
+							l.configEditOpened = false
 						}
 					}
 

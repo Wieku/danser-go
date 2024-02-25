@@ -103,6 +103,7 @@ type songSelectPopup struct {
 	focusTheMap         bool
 
 	comboOpened bool
+	scrolling   bool
 }
 
 func newSongSelectPopup(bld *builder, beatmaps []*beatmap.BeatMap) *songSelectPopup {
@@ -153,7 +154,7 @@ func (m *songSelectPopup) drawSongSelect() {
 		m.focusTheMap = true
 	}
 
-	if !m.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClickedBool(0) {
+	if !m.scrolling && !m.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClickedBool(0) {
 		imgui.SetKeyboardFocusHereV(-1)
 	}
 
@@ -225,6 +226,8 @@ func (m *songSelectPopup) drawSongSelect() {
 	csPos := imgui.CursorScreenPos()
 
 	imgui.BeginChildStr("##bsets")
+
+	m.scrolling = handleDragScroll()
 
 	if m.sizeCalculated > 1 { // we need at least 2 passes to have correct metrics
 		m.sizeCalculated = 2

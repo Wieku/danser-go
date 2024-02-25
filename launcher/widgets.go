@@ -19,6 +19,9 @@ const (
 	popBig
 )
 
+var sliderSledLastFrame = false
+var sliderSledThisFrame = false
+
 type iPopup interface {
 	draw()
 	shouldClose() bool
@@ -246,6 +249,8 @@ func sliderFloatStep(label string, val *float32, min, max, step float32, format 
 func sliderIntSlide(label string, value *int32, min, max int32, format string, flags imgui.SliderFlags) (ret bool) {
 	ret = imgui.SliderIntV(label, value, min, max, format, flags)
 
+	sliderSledThisFrame = sliderSledThisFrame || ret
+
 	if imgui.IsItemHovered() || imgui.IsItemActive() {
 		ret = ret || keySlideInt(value, min, max)
 	}
@@ -255,6 +260,8 @@ func sliderIntSlide(label string, value *int32, min, max int32, format string, f
 
 func sliderFloatSlide(label string, value *float32, min, max float32, format string, flags imgui.SliderFlags) (ret bool) {
 	ret = imgui.SliderFloatV(label, value, min, max, format, flags)
+
+	sliderSledThisFrame = sliderSledThisFrame || ret
 
 	if imgui.IsItemHovered() || imgui.IsItemActive() {
 		iDot := strings.Index(format, ".")

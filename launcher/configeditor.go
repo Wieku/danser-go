@@ -48,6 +48,8 @@ type settingsEditor struct {
 	danserRunning   bool
 
 	saveListener func()
+
+	scrollCache map[string]bool
 }
 
 func newSettingsEditor(config *settings.Config) *settingsEditor {
@@ -57,6 +59,7 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 		sectionCache: make(map[string]imgui.Vec2),
 		pwShowHide:   make(map[string]bool),
 		comboSearch:  make(map[string]string),
+		scrollCache:  make(map[string]bool),
 	}
 
 	editor.internalDraw = editor.drawEditor
@@ -110,6 +113,8 @@ func (editor *settingsEditor) drawEditor() {
 
 	imgui.PopFont()
 
+	navScrolling := false
+
 	if imgui.BeginChildStrV("##EditorUp", vec2(-1, height), imgui.ChildFlagsNone, 0) {
 		imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(2, 0))
 		if imgui.BeginTableV("Edit main table", 2, imgui.TableFlagsSizingStretchProp, vec2(-1, -1), -1) {
@@ -128,6 +133,7 @@ func (editor *settingsEditor) drawEditor() {
 				imgui.PushStyleVarFloat(imgui.StyleVarScrollbarSize, 9)
 
 				if imgui.BeginChildStrV("##Editor navigation", vec2(imgui.FontSize()*1.5+9, -1), imgui.ChildFlagsNone, imgui.WindowFlagsAlwaysVerticalScrollbar) {
+					navScrolling = handleDragScroll()
 					editor.scrollTo = ""
 
 					imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
@@ -159,7 +165,7 @@ func (editor *settingsEditor) drawEditor() {
 					editor.search()
 				}
 
-				if !editor.blockSearch && !imgui.IsAnyItemActive() && !imgui.IsMouseClickedBool(0) {
+				if !navScrolling && !editor.blockSearch && !imgui.IsAnyItemActive() && !imgui.IsMouseClickedBool(0) {
 					imgui.SetKeyboardFocusHereV(-1)
 				}
 			}
@@ -170,7 +176,7 @@ func (editor *settingsEditor) drawEditor() {
 			if imgui.BeginChildStrV("##Editor main", vec2(-1, -1), imgui.ChildFlagsNone, imgui.ChildFlagsAlwaysUseWindowPadding) {
 				imgui.PopStyleVar()
 
-				editor.blockSearch = false
+				editor.blockSearch = handleDragScroll()
 
 				imgui.PushFont(Font20)
 
@@ -851,6 +857,8 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 			jsonPath := jsonPath1 + ":" + jsonPath2
 
 			if imgui.BeginCombo("##combo"+jsonPath, lb) {
+				handleDragScroll()
+
 				justOpened := imgui.IsWindowAppearing()
 				editor.blockSearch = true
 
@@ -1060,7 +1068,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 
 					editor.comboSearch[jsonPath] = cSearch
 
-					if !imgui.IsMouseClickedBool(0) && !imgui.IsMouseClickedBool(1) && !imgui.IsAnyItemActive() && !(imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()) {
+					if !imgui.IsMouseClickedBool(0) && !imgui.IsMouseClickedBool(1) && !imgui.IsAnyItemActive() && !editor.scrollCache[jsonPath] {
 						imgui.SetKeyboardFocusHereV(-1)
 					}
 
@@ -1085,6 +1093,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 						sHeight := float32(min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
 						if imgui.BeginListBoxV("##listbox"+jsonPath, vec2(mWidth, sHeight)) {
+							editor.scrollCache[jsonPath] = handleDragScroll()
 							focusScroll = focusScroll || imgui.IsWindowAppearing()
 
 							for i, l := range searchResults {
@@ -1107,6 +1116,8 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				}
 			} else {
 				if imgui.BeginCombo(jsonPath, lb) {
+					handleDragScroll()
+
 					justOpened := imgui.IsWindowAppearing()
 
 					editor.blockSearch = true
@@ -1204,6 +1215,8 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 			}
 
 			if imgui.BeginCombo(jsonPath, lb) {
+				handleDragScroll()
+
 				justOpened := imgui.IsWindowAppearing()
 				editor.blockSearch = true
 

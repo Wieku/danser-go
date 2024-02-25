@@ -18,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"log"
 	"runtime"
 	"unsafe"
@@ -36,6 +37,16 @@ var Font24 *imgui.Font
 var Font32 *imgui.Font
 var Font48 *imgui.Font
 var FontAw *imgui.Font
+
+type sCache struct {
+	started bool
+	blocked bool
+	held    bool
+	mY      float32
+	cId     imgui.ID
+}
+
+var scrCache = sCache{} //make(map[imgui.ID]sCache)
 
 func SetupImgui(win *glfw.Window) {
 	log.Println("Imgui setup")
@@ -430,6 +441,9 @@ func updateKeyModifiers(mods glfw.ModifierKey) {
 var lastTime float64
 
 func Begin() {
+	sliderSledLastFrame = sliderSledThisFrame
+	sliderSledThisFrame = false
+
 	x, y := input.Win.GetCursorPos()
 
 	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
@@ -542,4 +556,41 @@ func DrawImgui() {
 	ibo.Unbind()
 	vao.Unbind()
 	rShader.Unbind()
+}
+
+func handleDragScroll() (ret bool) {
+	window := context.CurrentWindow()
+
+	wId := window.ID()
+
+	if imgui.IsMouseDownNil(imgui.MouseButtonLeft) && (scrCache.cId == 0 || scrCache.cId == wId) {
+		intRect := window.InternalRect()
+
+		if !scrCache.blocked &&
+			(scrCache.held || ((&intRect).InternalContainsVec2(ImIO.MousePos()) && imgui.IsWindowHoveredV(imgui.HoveredFlagsAllowWhenBlockedByActiveItem) && imgui.InternalActiveID() != imgui.InternalWindowScrollbarID(window, imgui.AxisY))) {
+			ret = true
+
+			if !scrCache.started { // capture the first hold position
+				scrCache.started = true
+				scrCache.mY = ImIO.MousePos().Y
+				scrCache.cId = wId
+			}
+
+			if sliderSledLastFrame { // prevent scrolling if slider changed value
+				scrCache.blocked = true
+			} else if math32.Abs(ImIO.MousePos().Y-scrCache.mY) > 5 { // start scrolling if mouse goes over the threshold
+				scrCache.held = true
+			}
+
+			if scrCache.held { // deactivate items clicked mouse might be over
+				imgui.InternalSetActiveID(0, window)
+			}
+
+			window.SetScroll(vec2(window.Scroll().X, window.Scroll().Y-ImIO.MouseDelta().Y))
+		}
+	} else if scrCache.cId == wId {
+		scrCache = sCache{}
+	}
+
+	return
 }
