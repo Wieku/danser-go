@@ -82,7 +82,7 @@ func qsvCommon(rateControl, bitrate string, quality int) (ret []string, err erro
 		ret = append(ret, "-b:v", bitrate, "-maxrate", bitrate)
 	case "icq":
 		if quality < 1 || quality > 51 {
-			return nil, fmt.Errorf("CQ parameter out of range [0-51]")
+			return nil, fmt.Errorf("Quality parameter out of range [0-51]")
 		}
 
 		ret = append(ret, "-global_quality", strconv.Itoa(quality))
