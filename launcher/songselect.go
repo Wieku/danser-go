@@ -3,7 +3,7 @@ package launcher
 import (
 	"cmp"
 	"fmt"
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
@@ -103,6 +103,7 @@ type songSelectPopup struct {
 	focusTheMap         bool
 
 	comboOpened bool
+	scrolling   bool
 }
 
 func newSongSelectPopup(bld *builder, beatmaps []*beatmap.BeatMap) *songSelectPopup {
@@ -153,7 +154,7 @@ func (m *songSelectPopup) drawSongSelect() {
 		m.focusTheMap = true
 	}
 
-	if !m.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+	if !m.scrolling && !m.comboOpened && !imgui.IsAnyItemActive() && !imgui.IsMouseClickedBool(0) {
 		imgui.SetKeyboardFocusHereV(-1)
 	}
 
@@ -162,8 +163,8 @@ func (m *songSelectPopup) drawSongSelect() {
 	imgui.PushFont(Font20)
 
 	if imgui.BeginTableV("sortrandom", 2, 0, vec2(-1, 0), -1) {
-		imgui.TableSetupColumnV("##sortrandom1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-		imgui.TableSetupColumnV("##sortrandom2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+		imgui.TableSetupColumnV("##sortrandom1", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("##sortrandom2", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
 
 		imgui.TableNextColumn()
 
@@ -180,7 +181,7 @@ func (m *songSelectPopup) drawSongSelect() {
 			m.comboOpened = true
 
 			for _, s := range sortMethods {
-				if imgui.SelectableV(s.String(), s == launcherConfig.SortMapsBy, 0, vzero()) && s != launcherConfig.SortMapsBy {
+				if imgui.SelectableBoolV(s.String(), s == launcherConfig.SortMapsBy, 0, vzero()) && s != launcherConfig.SortMapsBy {
 					launcherConfig.SortMapsBy = s
 					m.search()
 					m.focusTheMap = true
@@ -224,7 +225,9 @@ func (m *songSelectPopup) drawSongSelect() {
 
 	csPos := imgui.CursorScreenPos()
 
-	imgui.BeginChild("##bsets")
+	imgui.BeginChildStr("##bsets")
+
+	m.scrolling = handleDragScroll()
 
 	if m.sizeCalculated > 1 { // we need at least 2 passes to have correct metrics
 		m.sizeCalculated = 2
@@ -260,7 +263,7 @@ func (m *songSelectPopup) drawSongSelect() {
 	imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(5, 0))
 
 	if imgui.BeginTableV("bsetstab", 1, imgui.TableFlagsRowBg|imgui.TableFlagsPadOuterX|imgui.TableFlagsBordersH, vec2(-1, 0), -1) {
-		imgui.TableSetBgColor(imgui.TableBgTargetRowBg1, vec4(0.5, 0.5, 0.5, 1))
+		imgui.TableSetBgColor(imgui.TableBgTargetRowBg1, packColor(vec4(0.5, 0.5, 0.5, 1)))
 
 		for i := 0; i < len(m.searchResults); i++ {
 			b := m.searchResults[i]
@@ -269,12 +272,12 @@ func (m *songSelectPopup) drawSongSelect() {
 
 			if focusMap && m.sizeCalculated > 1 {
 				if m.bld.currentMap != nil && m.bld.currentMap.Dir == b.bMaps[0].Dir {
-					imgui.SetScrollY(b.bounds.X)
+					imgui.SetScrollYFloat(b.bounds.X)
 				}
 			}
 
 			if i < m.preIndex || i > m.postIndex {
-				imgui.SetCursorPos(vec2(imgui.CursorPos().X, b.bounds.Y))
+				dummyExactY(b.bounds.Y - b.bounds.X - 4)
 				continue
 			}
 
@@ -296,8 +299,8 @@ func (m *songSelectPopup) drawSongSelect() {
 			if imgui.BeginTableV("bsetstab"+rId, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 				imgui.PushFont(Font32)
 
-				imgui.TableSetupColumnV("##hhh"+rId, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-				imgui.TableSetupColumnV("##hhhg"+rId, imgui.TableColumnFlagsWidthFixed, imgui.FrameHeight()*2+imgui.CurrentStyle().ItemSpacing().X, uint(1))
+				imgui.TableSetupColumnV("##hhh"+rId, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+				imgui.TableSetupColumnV("##hhhg"+rId, imgui.TableColumnFlagsWidthFixed, imgui.FrameHeight()*2+imgui.CurrentStyle().ItemSpacing().X, imgui.ID(1))
 
 				imgui.TableNextColumn()
 
@@ -315,14 +318,14 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.PushFont(Font20)
 
 					imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
-					imgui.PushStyleColor(imgui.StyleColorButton, vec4(0, 0, 0, 1))
-					imgui.PushStyleColor(imgui.StyleColorButtonActive, vec4(0.2, 0.2, 0.2, 1))
-					imgui.PushStyleColor(imgui.StyleColorButtonHovered, vec4(0.4, 0.4, 0.4, 1))
+					imgui.PushStyleColorVec4(imgui.ColButton, vec4(0, 0, 0, 1))
+					imgui.PushStyleColorVec4(imgui.ColButtonActive, vec4(0.2, 0.2, 0.2, 1))
+					imgui.PushStyleColorVec4(imgui.ColButtonHovered, vec4(0.4, 0.4, 0.4, 1))
 
 					s := b.bMaps[0].SetID == 0
 
 					if s {
-						imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+						imgui.InternalPushItemFlag(imgui.ItemFlagsDisabled, true)
 					}
 
 					ImIO.SetFontGlobalScale(16.0 / 32)
@@ -349,7 +352,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					}
 
 					if s {
-						imgui.PopItemFlag()
+						imgui.InternalPopItemFlag()
 					}
 
 					imgui.SameLine()
@@ -404,11 +407,11 @@ func (m *songSelectPopup) drawSongSelect() {
 			for j, bMap := range b.bMaps {
 				fDiffName := ">   " + bMap.Difficulty
 
-				tSiz := imgui.CalcTextSize(fDiffName, false, 0)
+				tSiz := imgui.CalcTextSizeV(fDiffName, false, 0)
 
 				sPos := imgui.CursorScreenPos()
 
-				if imgui.SelectableV(fDiffName+"##"+rId+"s"+strconv.Itoa(j), bMap == m.bld.currentMap, 0, vzero()) {
+				if imgui.SelectableBoolV(fDiffName+"##"+rId+"s"+strconv.Itoa(j), bMap == m.bld.currentMap, 0, vzero()) {
 					m.bld.setMap(bMap)
 
 					if !isPreviewed && launcherConfig.PreviewSelected {
@@ -419,14 +422,15 @@ func (m *songSelectPopup) drawSongSelect() {
 					m.opened = false
 				}
 
-				if imgui.IsItemHovered() && ImIO.MousePosition().X <= sPos.X+tSiz.X {
+				if imgui.IsItemHovered() && ImIO.MousePos().X <= sPos.X+tSiz.X {
 					m.showMapTooltip(bMap)
 				}
 			}
 
 			imgui.PopFont()
 
-			imgui.SetCursorPos(imgui.CursorPos().Plus(vec2(imgui.ContentRegionAvail().X, 0))) //hack to get cell hovering to work
+			imgui.SetCursorPos(imgui.CursorPos().Add(vec2(imgui.ContentRegionAvail().X, 0))) //hack to get cell hovering to work
+			imgui.Dummy(vzero())
 
 			imgui.EndGroup()
 
@@ -450,7 +454,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 	imgui.EndChild()
 
-	imgui.WindowDrawList().AddLine(csPos, csPos.Plus(vec2(imgui.ContentRegionAvail().X, 0)), imgui.PackedColorFromVec4(imgui.CurrentStyle().Color(imgui.StyleColorSeparator)))
+	imgui.WindowDrawList().AddLine(csPos, csPos.Add(vec2(imgui.ContentRegionAvail().X, 0)), packColor(*imgui.StyleColorVec4(imgui.ColSeparator)))
 }
 
 func (m *songSelectPopup) showMapTooltip(bMap *beatmap.BeatMap) {
@@ -495,7 +499,7 @@ func (m *songSelectPopup) showMapTooltip(bMap *beatmap.BeatMap) {
 			uvBR.Y = 1 - uvTL.X
 		}
 
-		imgui.ImageV(imgui.TextureID(m.thumbTex.GetID()), vec2(200*tgAsp, 200), uvTL, uvBR, imgui.Vec4{X: 1, Y: 1, Z: 1, W: 0.3}, imgui.Vec4{})
+		imgui.ImageV(imgui.TextureID{Data: uintptr(m.thumbTex.GetID())}, vec2(200*tgAsp, 200), uvTL, uvBR, imgui.Vec4{X: 1, Y: 1, Z: 1, W: 0.3}, imgui.Vec4{})
 	}
 
 	imgui.SetCursorPos(cPos)
@@ -511,10 +515,10 @@ func (m *songSelectPopup) showMapTooltip(bMap *beatmap.BeatMap) {
 	}
 
 	if imgui.BeginTableV("btooltip", 4, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoClip, vec2(200.0*tgAsp, 0), -1) {
-		imgui.TableSetupColumnV("btooltip1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("btooltip2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
-		imgui.TableSetupColumnV("btooltip3", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("btooltip4", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("9.9", false, 0).X, uint(1))
+		imgui.TableSetupColumnV("btooltip1", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("btooltip2", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(1))
+		imgui.TableSetupColumnV("btooltip3", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(2))
+		imgui.TableSetupColumnV("btooltip4", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSizeV("9.9", false, 0).X, imgui.ID(3))
 
 		tRow := func(text string, text2 string, args ...any) {
 			textColumn(text)

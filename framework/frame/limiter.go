@@ -49,7 +49,7 @@ func (limiter *Limiter) Sync() {
 		limiter.initialised = true
 
 		limiter.sleepDurations.init(1000 * 1000)
-		limiter.yieldDurations.init(int64(-float64(qpc.GetNanoTime()-qpc.GetNanoTime()) * 1.333))
+		limiter.yieldDurations.init(12_000) //int64(-float64(qpc.GetNanoTime()-qpc.GetNanoTime()) * 1.333))
 
 		limiter.nextFrame = qpc.GetNanoTime()
 	}

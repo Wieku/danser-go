@@ -5,10 +5,10 @@ package launcher
 */
 import "C"
 import (
+	"github.com/AllenDang/cimgui-go"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
@@ -18,49 +18,60 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/shader"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
+	"github.com/wieku/danser-go/framework/math/math32"
 	"log"
+	"runtime"
+	"unsafe"
 )
 
 var context *imgui.Context
-var ImIO imgui.IO
+var ImIO *imgui.IO
 var tex *texture.TextureSingle
 var rShader *shader.RShader
 var vao *buffer.VertexArrayObject
 
 var ibo *buffer.IndexBufferObject
-var Font16 imgui.Font
-var Font20 imgui.Font
-var Font24 imgui.Font
-var Font32 imgui.Font
-var Font48 imgui.Font
-var FontAw imgui.Font
+var Font16 *imgui.Font
+var Font20 *imgui.Font
+var Font24 *imgui.Font
+var Font32 *imgui.Font
+var Font48 *imgui.Font
+var FontAw *imgui.Font
+
+type sCache struct {
+	started bool
+	blocked bool
+	held    bool
+	mY      float32
+	cId     imgui.ID
+}
+
+var scrCache = sCache{} //make(map[imgui.ID]sCache)
 
 func SetupImgui(win *glfw.Window) {
 	log.Println("Imgui setup")
 
-	context = imgui.CreateContext(nil)
+	context = imgui.CreateContext()
 
 	imgui.PushStyleVarFloat(imgui.StyleVarPopupRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarWindowRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarGrabRounding, 5)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 1)
-	imgui.PushStyleColor(imgui.StyleColorBorder, vec4(1, 1, 1, 1))
-	imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(0.1, 0.1, 0.1, 0.8))
-	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, vec4(0.2, 0.2, 0.2, 0.8))
-	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, vec4(0.4, 0.4, 0.4, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColBorder, vec4(1, 1, 1, 1))
+	imgui.PushStyleColorVec4(imgui.ColFrameBg, vec4(0.1, 0.1, 0.1, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColFrameBgActive, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColFrameBgHovered, vec4(0.4, 0.4, 0.4, 0.8))
 
-	imgui.PushStyleColor(imgui.StyleColorButton, vec4(0.1, 0.1, 0.1, 0.8))
-	imgui.PushStyleColor(imgui.StyleColorButtonActive, vec4(0.2, 0.2, 0.2, 0.8))
-	imgui.PushStyleColor(imgui.StyleColorButtonHovered, vec4(0.4, 0.4, 0.4, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColButton, vec4(0.1, 0.1, 0.1, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColButtonActive, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColButtonHovered, vec4(0.4, 0.4, 0.4, 0.8))
 
-	imgui.PushStyleColor(imgui.StyleColorTitleBg, vec4(0.2, 0.2, 0.2, 0.8))
-	imgui.PushStyleColor(imgui.StyleColorTitleBgActive, vec4(0.2, 0.2, 0.2, 0.8))
-	imgui.PushStyleColor(imgui.StyleColorTitleBgCollapsed, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColTitleBg, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColTitleBgActive, vec4(0.2, 0.2, 0.2, 0.8))
+	imgui.PushStyleColorVec4(imgui.ColTitleBgCollapsed, vec4(0.2, 0.2, 0.2, 0.8))
 
-	//imgui.PushStyleColor(imgui.StyleColorFrameBg)
-
-	context.SetCurrent()
+	imgui.SetCurrentContext(context)
 
 	ImIO = imgui.CurrentIO()
 
@@ -68,67 +79,72 @@ func SetupImgui(win *glfw.Window) {
 
 	//region texture
 
-	//ImIO.Fonts().AddFontDefault()
-
 	quicksandBytes, err := assets.GetBytes("assets/fonts/Quicksand-Bold.ttf")
 	if err != nil {
 		panic(err)
 	}
 
+	quicksandPtr := unsafe.Pointer(&quicksandBytes[0])
+
 	//TODO: switch from multiple fonts to own custom PushFont implementation that sets global scale for each font
-	Font16 = ImIO.Fonts().AddFontFromMemoryTTF(quicksandBytes, 16)
-	Font20 = ImIO.Fonts().AddFontFromMemoryTTF(quicksandBytes, 20)
-	Font24 = ImIO.Fonts().AddFontFromMemoryTTF(quicksandBytes, 24)
-	Font32 = ImIO.Fonts().AddFontFromMemoryTTF(quicksandBytes, 32)
-	Font48 = ImIO.Fonts().AddFontFromMemoryTTF(quicksandBytes, 48)
+	Font16 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 16)
+	Font20 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 20)
+	Font24 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 24)
+	Font32 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 32)
+	Font48 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 48)
 
 	fontAwesomeBytes, err := assets.GetBytes("assets/fonts/Font Awesome 6 Free-Solid-900.otf")
 	if err != nil {
 		panic(err)
 	}
 
+	awesomePtr := unsafe.Pointer(&fontAwesomeBytes[0])
+
 	//fontawesome is quite large so for now we will load only needed glyphs
-	awesomeBuilder := &imgui.GlyphRangesBuilder{}
-	awesomeBuilder.Add(0xF04B, 0xF04B) // play
-	awesomeBuilder.Add(0xF04D, 0xF04D) // stop
-	awesomeBuilder.Add('+', '+')
-	awesomeBuilder.Add(0xF068, 0xF068) // minus
-	awesomeBuilder.Add(0xF0AD, 0xF0AD) // wrench
-	awesomeBuilder.Add(0xE163, 0xE163) // display
-	awesomeBuilder.Add(0xF028, 0xF028) // volume-high
-	awesomeBuilder.Add(0xF11C, 0xF11C) // keyboard
-	awesomeBuilder.Add(0xF245, 0xF245) // arrow-pointer
-	awesomeBuilder.Add(0xE599, 0xE599) // worm
-	awesomeBuilder.Add(0xF0CB, 0xF0CB) // list-ol
-	awesomeBuilder.Add(0xF03D, 0xF03D) // video
-	awesomeBuilder.Add(0xF882, 0xF882) // arrow-up-z-a
-	awesomeBuilder.Add(0xF15D, 0xF15D) // arrow-down-a-z
-	awesomeBuilder.Add(0xF084, 0xF084) // key
-	awesomeBuilder.Add(0xF7A2, 0xF7A2) // earth-europe
-	awesomeBuilder.Add(0xF192, 0xF192) // circle-dot
-	awesomeBuilder.Add(0xF1E0, 0xF1E0) // share-nodes
-	awesomeBuilder.Add(0xF1FC, 0xF1FC) // paintbrush
-	awesomeBuilder.Add(0xF43C, 0xF43C) // chess-board
+	awesomeBuilder := imgui.NewFontGlyphRangesBuilder()
+	awesomeBuilder.AddChar(0xF04B) // play
+	awesomeBuilder.AddChar(0xF04D) // stop
+	awesomeBuilder.AddChar('+')
+	awesomeBuilder.AddChar(0xF068) // minus
+	awesomeBuilder.AddChar(0xF0AD) // wrench
+	awesomeBuilder.AddChar(0xE163) // display
+	awesomeBuilder.AddChar(0xF028) // volume-high
+	awesomeBuilder.AddChar(0xF11C) // keyboard
+	awesomeBuilder.AddChar(0xF245) // arrow-pointer
+	awesomeBuilder.AddChar(0xE599) // worm
+	awesomeBuilder.AddChar(0xF0CB) // list-ol
+	awesomeBuilder.AddChar(0xF03D) // video
+	awesomeBuilder.AddChar(0xF882) // arrow-up-z-a
+	awesomeBuilder.AddChar(0xF15D) // arrow-down-a-z
+	awesomeBuilder.AddChar(0xF084) // key
+	awesomeBuilder.AddChar(0xF7A2) // earth-europe
+	awesomeBuilder.AddChar(0xF192) // circle-dot
+	awesomeBuilder.AddChar(0xF1E0) // share-nodes
+	awesomeBuilder.AddChar(0xF1FC) // paintbrush
+	awesomeBuilder.AddChar(0xF43C) // chess-board
+	awesomeBuilder.AddChar(0xF188) // bug
 
-	//awesomeBuilder.Add(0x0020, 0xffff)
+	awesomeRange := imgui.NewGlyphRange()
+	awesomeBuilder.BuildRanges(awesomeRange)
 
-	awesomeRange := awesomeBuilder.Build()
+	FontAw = ImIO.Fonts().AddFontFromMemoryTTFV(uintptr(awesomePtr), int32(len(fontAwesomeBytes)), 32, imgui.NewFontConfig(), awesomeRange.Data())
 
-	FontAw = ImIO.Fonts().AddFontFromMemoryTTFV(fontAwesomeBytes, 32, imgui.DefaultFontConfig, awesomeRange.GlyphRanges)
+	img0, w0, h0, _ := ImIO.Fonts().TextureDataAsAlpha8()
+	img1, _, _, _ := ImIO.Fonts().GetTextureDataAsRGBA32()
 
-	img0 := ImIO.Fonts().TextureDataAlpha8()
-	img1 := ImIO.Fonts().TextureDataRGBA32()
+	runtime.KeepAlive(quicksandPtr)
+	runtime.KeepAlive(awesomePtr)
 
-	tex = texture.NewTextureSingleFormat(img0.Width, img0.Height, texture.Red, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
+	tex = texture.NewTextureSingleFormat(int(w0), int(h0), texture.Red, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
 
-	size := img0.Width * img0.Height
+	size := w0 * h0
 
-	pixels := (*[1 << 30]uint8)(img0.Pixels)[:size:size] // cast from unsafe pointer to uint8 slice
+	pixels := (*[1 << 30]uint8)(img0)[:size:size] // cast from unsafe pointer to uint8 slice
 
-	tex.SetData(0, 0, img0.Width, img0.Height, pixels)
+	tex.SetData(0, 0, int(w0), int(h0), pixels)
 
-	C.free(img0.Pixels) //Reduce some memory, seems that imgui doesn't explode
-	C.free(img1.Pixels) //Reduce some memory, seems that imgui doesn't explode
+	C.free(img0) //Reduce some memory, seems that imgui doesn't explode
+	C.free(img1) //Reduce some memory, seems that imgui doesn't explode
 
 	//endregion
 
@@ -179,7 +195,7 @@ func SetupImgui(win *glfw.Window) {
 	})
 
 	input.Win.SetCharCallback(func(w *glfw.Window, char rune) {
-		ImIO.AddInputCharacters(string(char))
+		ImIO.AddInputCharactersUTF8(string(char))
 	})
 }
 
@@ -416,15 +432,18 @@ func keyToModifier(key glfw.Key) glfw.ModifierKey {
 }
 
 func updateKeyModifiers(mods glfw.ModifierKey) {
-	ImIO.AddKeyEvent(imgui.KeyModCtrl, (mods&glfw.ModControl) != 0)
-	ImIO.AddKeyEvent(imgui.KeyModShift, (mods&glfw.ModShift) != 0)
-	ImIO.AddKeyEvent(imgui.KeyModAlt, (mods&glfw.ModAlt) != 0)
-	ImIO.AddKeyEvent(imgui.KeyModSuper, (mods&glfw.ModSuper) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModCtrl, (mods&glfw.ModControl) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModShift, (mods&glfw.ModShift) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModAlt, (mods&glfw.ModAlt) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModSuper, (mods&glfw.ModSuper) != 0)
 }
 
 var lastTime float64
 
 func Begin() {
+	sliderSledLastFrame = sliderSledThisFrame
+	sliderSledThisFrame = false
+
 	x, y := input.Win.GetCursorPos()
 
 	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
@@ -432,7 +451,7 @@ func Begin() {
 
 	scaling := float32(h1) / float32(h)
 
-	ImIO.AddMousePosEvent(imgui.Vec2{X: float32(x) / scaling, Y: float32(y) / scaling})
+	ImIO.AddMousePosEvent(float32(x)/scaling, float32(y)/scaling)
 	ImIO.AddMouseButtonEvent(0, input.Win.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
 	ImIO.AddMouseButtonEvent(1, input.Win.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
 
@@ -452,7 +471,7 @@ func Begin() {
 func DrawImgui() {
 	imgui.Render()
 
-	drawData := imgui.RenderedDrawData()
+	drawData := imgui.CurrentDrawData()
 
 	if len(drawData.CommandLists()) == 0 {
 		return
@@ -468,7 +487,7 @@ func DrawImgui() {
 	rShader.SetUniform("tex", 0)
 	rShader.SetUniform("texRGBA", 0)
 
-	lastBound := imgui.TextureID(0)
+	lastBound := imgui.TextureID{Data: 0}
 
 	vao.Bind()
 	ibo.Bind()
@@ -482,7 +501,7 @@ func DrawImgui() {
 	scaling := float32(h1) / float32(h)
 
 	for _, list := range drawData.CommandLists() {
-		vertexBuffer, vertexBufferSize := list.VertexBuffer()
+		vertexBuffer, vertexBufferSize := list.GetVertexBuffer()
 		vertexBufferSize /= 4 // convert size in bytes to size in float32
 
 		vertices := (*[1 << 30]float32)(vertexBuffer)[:vertexBufferSize:vertexBufferSize] // cast from unsafe to float32 slice
@@ -493,7 +512,7 @@ func DrawImgui() {
 
 		vao.SetData("default", 0, vertices)
 
-		indexBuffer, indexBufferSize := list.IndexBuffer()
+		indexBuffer, indexBufferSize := list.GetIndexBuffer()
 		indexBufferSize /= 2
 
 		indices := (*[1 << 30]uint16)(indexBuffer)[:indexBufferSize:indexBufferSize]
@@ -501,14 +520,14 @@ func DrawImgui() {
 		ibo.SetData(0, indices)
 
 		for _, cmd := range list.Commands() {
-			cId := cmd.TextureID()
+			cId := cmd.TextureId()
 			if cId != lastBound {
-				if cId == 0 {
+				if cId.Data == 0 {
 					rShader.SetUniform("texRGBA", 0)
 					tex.Bind(0)
 				} else {
 					rShader.SetUniform("texRGBA", 1)
-					gl.BindTextureUnit(0, uint32(cId))
+					gl.BindTextureUnit(0, uint32(cId.Data))
 				}
 
 				lastBound = cId
@@ -517,11 +536,15 @@ func DrawImgui() {
 			if cmd.HasUserCallback() {
 				cmd.CallUserCallback(list)
 			} else {
-				clipRect := cmd.ClipRect().Times(scaling)
+				clipRect := cmd.ClipRect() //.Times(scaling)
+				clipRect.X *= scaling
+				clipRect.Y *= scaling
+				clipRect.Z *= scaling
+				clipRect.W *= scaling
 
 				viewport.PushScissorPos(int(clipRect.X), int(float32(h1)-clipRect.W), int(clipRect.Z-clipRect.X), int(clipRect.W-clipRect.Y))
 
-				ibo.DrawPart(cmd.IndexOffset(), cmd.ElementCount())
+				ibo.DrawPart(int(cmd.IdxOffset()), int(cmd.ElemCount()))
 
 				viewport.PopScissor()
 			}
@@ -533,4 +556,41 @@ func DrawImgui() {
 	ibo.Unbind()
 	vao.Unbind()
 	rShader.Unbind()
+}
+
+func handleDragScroll() (ret bool) {
+	window := context.CurrentWindow()
+
+	wId := window.ID()
+
+	if imgui.IsMouseDownNil(imgui.MouseButtonLeft) && (scrCache.cId == 0 || scrCache.cId == wId) {
+		intRect := window.InternalRect()
+
+		if !scrCache.blocked &&
+			(scrCache.held || ((&intRect).InternalContainsVec2(ImIO.MousePos()) && imgui.IsWindowHoveredV(imgui.HoveredFlagsAllowWhenBlockedByActiveItem) && imgui.InternalActiveID() != imgui.InternalWindowScrollbarID(window, imgui.AxisY))) {
+			ret = true
+
+			if !scrCache.started { // capture the first hold position
+				scrCache.started = true
+				scrCache.mY = ImIO.MousePos().Y
+				scrCache.cId = wId
+			}
+
+			if sliderSledLastFrame { // prevent scrolling if slider changed value
+				scrCache.blocked = true
+			} else if math32.Abs(ImIO.MousePos().Y-scrCache.mY) > 5 { // start scrolling if mouse goes over the threshold
+				scrCache.held = true
+			}
+
+			if scrCache.held { // deactivate items clicked mouse might be over
+				imgui.InternalSetActiveID(0, window)
+			}
+
+			window.SetScroll(vec2(window.Scroll().X, window.Scroll().Y-ImIO.MouseDelta().Y))
+		}
+	} else if scrCache.cId == wId {
+		scrCache = sCache{}
+	}
+
+	return
 }

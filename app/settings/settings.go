@@ -34,6 +34,7 @@ type Config struct {
 	CursorDance *cursorDance `icon:"\uE599"`                   // worm
 	Knockout    *knockout    `icon:"\uF0CB"`                   // list-ol
 	Recording   *recording   `icon:"\uF03D"`                   // video
+	Debug       *debug       `icon:"\uF188"`                   // bug
 	Dance       *danceOld    `json:",omitempty" icon:"\uF5B7"`
 }
 
@@ -51,6 +52,7 @@ type CombinedConfig struct {
 	CursorDance *cursorDance `icon:"\uE599"`                                               // worm
 	Knockout    *knockout    `icon:"\uF0CB"`                                               // list-ol
 	Recording   *recording   `icon:"\uF03D"`                                               // video
+	Debug       *debug       `icon:"\uF188"`                                               // bug
 }
 
 func LoadConfig(file *os.File) (*Config, error) {
@@ -99,6 +101,7 @@ func NewConfigFile() *Config {
 		CursorDance: initCursorDance(),
 		Knockout:    initKnockout(),
 		Recording:   initRecording(),
+		Debug:       initDebug(),
 	}
 }
 
@@ -226,6 +229,7 @@ func (config *Config) attachToGlobals() {
 	CursorDance = config.CursorDance
 	Knockout = config.Knockout
 	Recording = config.Recording
+	Debug = config.Debug
 }
 
 func (config *Config) GetCombined() *CombinedConfig {
@@ -243,6 +247,7 @@ func (config *Config) GetCombined() *CombinedConfig {
 		CursorDance: config.CursorDance,
 		Knockout:    config.Knockout,
 		Recording:   config.Recording,
+		Debug:       config.Debug,
 	}
 }
 

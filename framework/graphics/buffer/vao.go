@@ -2,13 +2,13 @@ package buffer
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/graphics/shader"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"runtime"
 )
 
@@ -163,7 +163,7 @@ func (vao *VertexArrayObject) SetData(name string, offset int, data []float32) {
 
 	holder.buffer.SetData(offset, data)
 
-	statistic.Add(statistic.VertexUpload, int64(len(data)*4/holder.format.Size()))
+	profiler.AddStat(profiler.VertexUpload, int64(len(data)*4/holder.format.Size()))
 }
 
 func (vao *VertexArrayObject) MapVBO(name string, size int) MemoryChunk {
@@ -183,7 +183,7 @@ func (vao *VertexArrayObject) UnmapVBO(name string, offset int, size int) {
 
 	holder.buffer.Unmap(offset, size)
 
-	statistic.Add(statistic.VertexUpload, int64(size*4/holder.format.Size()))
+	profiler.AddStat(profiler.VertexUpload, int64(size*4/holder.format.Size()))
 }
 
 func (vao *VertexArrayObject) Draw() {
@@ -211,8 +211,8 @@ func (vao *VertexArrayObject) DrawPart(offset, length int) {
 	} else {
 		vao.check(offset, length)
 
-		statistic.Add(statistic.VerticesDrawn, int64(length))
-		statistic.Increment(statistic.DrawCalls)
+		profiler.AddStat(profiler.VerticesDrawn, int64(length))
+		profiler.IncrementStat(profiler.DrawCalls)
 
 		gl.DrawArrays(gl.TRIANGLES, int32(offset), int32(length))
 
@@ -229,8 +229,8 @@ func (vao *VertexArrayObject) DrawPartInstanced(offset, length, baseInstance, in
 	} else {
 		vao.check(offset, length)
 
-		statistic.Add(statistic.VerticesDrawn, int64(length*instanceCount))
-		statistic.Increment(statistic.DrawCalls)
+		profiler.AddStat(profiler.VerticesDrawn, int64(length*instanceCount))
+		profiler.IncrementStat(profiler.DrawCalls)
 
 		gl.DrawArraysInstancedBaseInstance(gl.TRIANGLES, int32(offset), int32(length), int32(instanceCount), uint32(baseInstance))
 
@@ -264,7 +264,7 @@ func (vao *VertexArrayObject) Bind() {
 
 	history.Push(gl.VERTEX_ARRAY_BINDING, vao.handle)
 
-	statistic.Increment(statistic.VAOBinds)
+	profiler.IncrementStat(profiler.VAOBinds)
 
 	gl.BindVertexArray(vao.handle)
 }
@@ -279,7 +279,7 @@ func (vao *VertexArrayObject) Unbind() {
 	handle := history.Pop(gl.VERTEX_ARRAY_BINDING)
 
 	if handle > 0 {
-		statistic.Increment(statistic.VAOBinds)
+		profiler.IncrementStat(profiler.VAOBinds)
 	}
 
 	gl.BindVertexArray(handle)
@@ -291,7 +291,7 @@ func (vao *VertexArrayObject) Dispose() {
 			holder.buffer.Dispose()
 		}
 
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			gl.DeleteVertexArrays(1, &vao.handle)
 		})
 	}

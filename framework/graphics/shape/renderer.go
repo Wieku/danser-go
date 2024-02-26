@@ -9,7 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 )
 
 const defaultRendererSize = 2000
@@ -127,7 +127,7 @@ func (renderer *Renderer) Flush() {
 
 	renderer.vao.DrawPart(0, renderer.currentSize)
 
-	statistic.Add(statistic.SpritesDrawn, int64(renderer.currentSize))
+	profiler.AddStat(profiler.SpritesDrawn, int64(renderer.currentSize))
 
 	nextChunk := renderer.vao.MapVBO("default", renderer.maxSprites*3*renderer.vertexSize)
 

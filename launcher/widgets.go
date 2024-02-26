@@ -2,7 +2,7 @@ package launcher
 
 import (
 	"fmt"
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -18,6 +18,9 @@ const (
 	popMedium
 	popBig
 )
+
+var sliderSledLastFrame = false
+var sliderSledThisFrame = false
 
 type iPopup interface {
 	draw()
@@ -110,8 +113,8 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 	wSizeX, wSizeY := float32(settings.Graphics.WindowWidth), float32(settings.Graphics.WindowHeight)
 
 	if *opened {
-		if !imgui.IsPopupOpen("##" + name) {
-			imgui.OpenPopup("##" + name)
+		if !imgui.IsPopupOpenStr("##" + name) {
+			imgui.OpenPopupStr("##" + name)
 		}
 
 		imgui.SetNextWindowSize(size)
@@ -119,7 +122,7 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 		imgui.SetNextWindowPosV(imgui.Vec2{
 			X: wSizeX / 2,
 			Y: wSizeY / 2,
-		}, imgui.ConditionAppearing, imgui.Vec2{
+		}, imgui.CondAlways, imgui.Vec2{
 			X: 0.5,
 			Y: 0.5,
 		})
@@ -129,7 +132,7 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 
 			hovered := imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) || openedAbove
 
-			if ((imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !hovered) || imgui.IsKeyPressed(imgui.KeyEscape) {
+			if ((imgui.IsMouseClickedBool(0) || imgui.IsMouseClickedBool(1)) && !hovered) || imgui.IsKeyPressedBool(imgui.KeyEscape) {
 				*opened = false
 			}
 
@@ -189,8 +192,8 @@ func sliderResetBase(label string, draw, reset func()) {
 	imgui.PushFont(Font16)
 
 	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
-		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
 
 		imgui.TableNextColumn()
 
@@ -226,7 +229,7 @@ func sliderFloatStep(label string, val *float32, min, max, step float32, format 
 
 	tx := fmt.Sprintf(format, *val)
 
-	tS := imgui.CalcTextSize(tx+"f", false, 0)
+	tS := imgui.CalcTextSizeV(tx+"f", false, 0)
 
 	imgui.SetCursorPos(imgui.Vec2{
 		X: cPos.X + (iW-tS.X)/2,
@@ -238,12 +241,15 @@ func sliderFloatStep(label string, val *float32, min, max, step float32, format 
 	imgui.Text(tx)
 
 	imgui.SetCursorPos(cPos2)
+	imgui.Dummy(vzero())
 
 	return ret
 }
 
 func sliderIntSlide(label string, value *int32, min, max int32, format string, flags imgui.SliderFlags) (ret bool) {
 	ret = imgui.SliderIntV(label, value, min, max, format, flags)
+
+	sliderSledThisFrame = sliderSledThisFrame || ret
 
 	if imgui.IsItemHovered() || imgui.IsItemActive() {
 		ret = ret || keySlideInt(value, min, max)
@@ -254,6 +260,8 @@ func sliderIntSlide(label string, value *int32, min, max int32, format string, f
 
 func sliderFloatSlide(label string, value *float32, min, max float32, format string, flags imgui.SliderFlags) (ret bool) {
 	ret = imgui.SliderFloatV(label, value, min, max, format, flags)
+
+	sliderSledThisFrame = sliderSledThisFrame || ret
 
 	if imgui.IsItemHovered() || imgui.IsItemActive() {
 		iDot := strings.Index(format, ".")
@@ -268,12 +276,12 @@ func sliderFloatSlide(label string, value *float32, min, max float32, format str
 }
 
 func keySlideInt[T constraints.Integer](value *T, min, max T) (ret bool) {
-	if imgui.IsKeyPressed(imgui.KeyLeftArrow) {
+	if imgui.IsKeyPressedBool(imgui.KeyLeftArrow) {
 		*value = mutils.Clamp(*value-1, min, max)
 		ret = true
 	}
 
-	if imgui.IsKeyPressed(imgui.KeyRightArrow) {
+	if imgui.IsKeyPressedBool(imgui.KeyRightArrow) {
 		*value = mutils.Clamp(*value+1, min, max)
 		ret = true
 	}
@@ -282,12 +290,12 @@ func keySlideInt[T constraints.Integer](value *T, min, max T) (ret bool) {
 }
 
 func keySlideFloat[T constraints.Float](value *T, min, max, step T) (ret bool) {
-	if imgui.IsKeyPressed(imgui.KeyLeftArrow) {
+	if imgui.IsKeyPressedBool(imgui.KeyLeftArrow) {
 		*value = mutils.Clamp(*value-step, min, max)
 		ret = true
 	}
 
-	if imgui.IsKeyPressed(imgui.KeyRightArrow) {
+	if imgui.IsKeyPressedBool(imgui.KeyRightArrow) {
 		*value = mutils.Clamp(*value+step, min, max)
 		ret = true
 	}
@@ -297,9 +305,9 @@ func keySlideFloat[T constraints.Float](value *T, min, max, step T) (ret bool) {
 
 func centerTable(label string, width float32, draw func()) {
 	if imgui.BeginTableV(label, 3, imgui.TableFlagsSizingStretchProp, vec2(width, 0), -1) {
-		imgui.TableSetupColumnV("1"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-		imgui.TableSetupColumnV("2"+label, imgui.TableColumnFlagsWidthFixed, 0, uint(1))
-		imgui.TableSetupColumnV("3"+label, imgui.TableColumnFlagsWidthStretch, 0, uint(2))
+		imgui.TableSetupColumnV("1"+label, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("2"+label, imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
+		imgui.TableSetupColumnV("3"+label, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(2))
 
 		imgui.TableNextColumn()
 
@@ -319,10 +327,10 @@ func centerTable(label string, width float32, draw func()) {
 
 func selectableFocus(label string, selected, justOpened bool) (clicked bool) {
 	if selected && justOpened {
-		imgui.SetScrollY(imgui.CursorPosY()) //SetScrollHereY was not working reliably
+		imgui.SetScrollYFloat(imgui.CursorPosY()) //SetScrollHereY was not working reliably
 	}
 
-	clicked = imgui.SelectableV(label, selected, 0, imgui.Vec2{})
+	clicked = imgui.SelectableBoolV(label, selected, 0, imgui.Vec2{})
 
 	if clicked {
 		imgui.CloseCurrentPopup()
@@ -335,11 +343,11 @@ func searchBox(label string, searchString *string) (ok bool) {
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
 	imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
 
-	imgui.PushStyleColor(imgui.StyleColorFrameBg, vec4(0, 0, 0, 1))
-	imgui.PushStyleColor(imgui.StyleColorFrameBgActive, vec4(0.1, 0.1, 0.1, 1))
-	imgui.PushStyleColor(imgui.StyleColorFrameBgHovered, vec4(0.1, 0.1, 0.1, 1))
+	imgui.PushStyleColorVec4(imgui.ColFrameBg, vec4(0, 0, 0, 1))
+	imgui.PushStyleColorVec4(imgui.ColFrameBgActive, vec4(0.1, 0.1, 0.1, 1))
+	imgui.PushStyleColorVec4(imgui.ColFrameBgHovered, vec4(0.1, 0.1, 0.1, 1))
 
-	ok = imgui.InputTextWithHint(label, "Search", searchString)
+	ok = imgui.InputTextWithHint(label, "Search", searchString, imgui.InputTextFlagsNone, nil)
 
 	imgui.PopStyleColor()
 	imgui.PopStyleColor()
@@ -349,4 +357,12 @@ func searchBox(label string, searchString *string) (ok bool) {
 	imgui.PopStyleVar()
 
 	return
+}
+
+func inputText(label string, text *string) bool {
+	return inputTextV(label, text, imgui.InputTextFlagsNone, nil)
+}
+
+func inputTextV(label string, text *string, flags int, cb imgui.InputTextCallback) bool {
+	return imgui.InputTextWithHint(label, "", text, imgui.InputTextFlags(flags), cb)
 }

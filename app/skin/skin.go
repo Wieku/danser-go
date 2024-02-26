@@ -2,11 +2,11 @@ package skin
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/color"
@@ -371,7 +371,7 @@ func loadTexture(name string, source Source) *texture.TextureRegion {
 
 	if region != nil {
 		// Upload this texture in GL thread
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			checkAtlas()
 
 			var rg *texture.TextureRegion

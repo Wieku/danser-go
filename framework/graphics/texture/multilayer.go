@@ -1,8 +1,8 @@
 package texture
 
 import (
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"runtime"
 )
 
@@ -98,7 +98,7 @@ func (texture *TextureMultiLayer) GetLocation() uint {
 }
 
 func (texture *TextureMultiLayer) Dispose() {
-	mainthread.CallNonBlock(func() {
+	goroutines.CallNonBlockMain(func() {
 		texture.store.Dispose()
 	})
 }

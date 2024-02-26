@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
 	"log"
 	"os"
@@ -418,17 +419,21 @@ func (storyboard *Storyboard) Update(time float64) {
 }
 
 func (storyboard *Storyboard) Draw(time float64, batch *batch.QuadBatch) {
+	profiler.StartGroup("Storyboard.Draw", profiler.PDraw)
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.background.Draw(time, batch)
 	storyboard.pass.Draw(time, batch)
 	storyboard.foreground.Draw(time, batch)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
+	profiler.EndGroup()
 }
 
 func (storyboard *Storyboard) DrawOverlay(time float64, batch *batch.QuadBatch) {
+	profiler.StartGroup("Storyboard.Draw", profiler.PDraw)
 	batch.SetTranslation(vector.NewVec2d(-64, -48))
 	storyboard.overlay.Draw(time, batch)
 	batch.SetTranslation(vector.NewVec2d(0, 0))
+	profiler.EndGroup()
 }
 
 func (storyboard *Storyboard) GetRenderedSprites() int {

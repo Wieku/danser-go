@@ -2,12 +2,12 @@ package play
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/shape"
@@ -83,7 +83,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		}
 
 		if image != nil {
-			mainthread.CallNonBlock(func() {
+			goroutines.CallNonBlockMain(func() {
 				region := texture.LoadTextureSingle(image.RGBA(), 0).GetRegion()
 				bg.Texture = &region
 

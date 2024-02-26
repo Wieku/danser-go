@@ -2,11 +2,11 @@ package buffer
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/history"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"runtime"
 )
 
@@ -117,7 +117,7 @@ func (vbo *PersistentBufferObject) Bind() {
 
 	history.Push(gl.ARRAY_BUFFER_BINDING, vbo.handle)
 
-	statistic.Increment(statistic.VBOBinds)
+	profiler.IncrementStat(profiler.VBOBinds)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo.handle)
 }
@@ -132,7 +132,7 @@ func (vbo *PersistentBufferObject) Unbind() {
 	handle := history.Pop(gl.ARRAY_BUFFER_BINDING)
 
 	if handle > 0 {
-		statistic.Increment(statistic.VBOBinds)
+		profiler.IncrementStat(profiler.VBOBinds)
 	}
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, handle)
@@ -140,7 +140,7 @@ func (vbo *PersistentBufferObject) Unbind() {
 
 func (vbo *PersistentBufferObject) Dispose() {
 	if !vbo.disposed {
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			gl.DeleteBuffers(1, &vbo.handle)
 		})
 	}

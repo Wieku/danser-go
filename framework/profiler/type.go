@@ -1,4 +1,4 @@
-package statistic
+package profiler
 
 type StatisticType int
 

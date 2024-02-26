@@ -1,7 +1,7 @@
 package launcher
 
 import (
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go"
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -71,8 +71,8 @@ func drawCDMenu(bld *builder) {
 
 func drawRecordMenu(bld *builder) {
 	if imgui.BeginTable("rfa", 2) {
-		imgui.TableSetupColumnV("c1rfa", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("c2rfa", imgui.TableColumnFlagsWidthFixed, imgui.TextLineHeight()*7, uint(1))
+		imgui.TableSetupColumnV("c1rfa", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("c2rfa", imgui.TableColumnFlagsWidthFixed, imgui.TextLineHeight()*7, imgui.ID(1))
 
 		imgui.TableNextColumn()
 
@@ -83,7 +83,7 @@ func drawRecordMenu(bld *builder) {
 
 		imgui.SetNextItemWidth(-1)
 
-		imgui.InputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
+		inputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
 
 		if bld.currentPMode == Screenshot {
 			imgui.TableNextColumn()
@@ -94,8 +94,8 @@ func drawRecordMenu(bld *builder) {
 			imgui.TableNextColumn()
 
 			if imgui.BeginTableV("rrfa", 2, 0, vec2(-1, 0), -1) {
-				imgui.TableSetupColumnV("c1rrfa", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-				imgui.TableSetupColumnV("c2rrfa", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("s", false, 0).X+imgui.CurrentStyle().CellPadding().X*2, uint(1))
+				imgui.TableSetupColumnV("c1rrfa", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+				imgui.TableSetupColumnV("c2rrfa", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSizeV("s", false, 0).X+imgui.CurrentStyle().CellPadding().X*2, imgui.ID(1))
 
 				imgui.TableNextColumn()
 
@@ -104,7 +104,7 @@ func drawRecordMenu(bld *builder) {
 				valText := strconv.FormatFloat(float64(bld.ssTime), 'f', 3, 64)
 				prevText := valText
 
-				if imgui.InputText("##sstime", &valText) {
+				if inputText("##sstime", &valText) {
 					parsed, err := strconv.ParseFloat(valText, 64)
 					if err != nil {
 						valText = prevText
@@ -129,7 +129,7 @@ func drawRecordMenu(bld *builder) {
 
 func drawAbout(dTex texture.Texture) {
 	centerTable("about1", -1, func() {
-		imgui.Image(imgui.TextureID(dTex.GetID()), vec2(100, 100))
+		imgui.Image(imgui.TextureID{Data: uintptr(dTex.GetID())}, vec2(100, 100))
 	})
 
 	centerTable("about2", -1, func() {
@@ -188,8 +188,8 @@ func drawLauncherConfig() {
 
 	checkboxOption := func(text string, value *bool) {
 		if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
-			imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-			imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
+			imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+			imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
 
 			imgui.TableNextColumn()
 

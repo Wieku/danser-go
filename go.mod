@@ -3,15 +3,14 @@ module github.com/wieku/danser-go
 go 1.21
 
 require (
+	github.com/AllenDang/cimgui-go v0.0.0-20240225123420-d04298bbf6e9
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/dustin/go-humanize v1.0.0
-	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-gl/gl v0.0.0-20210813123233-e4099ee2221f
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
 	github.com/go-gl/mathgl v1.0.0
-	github.com/inkyblackness/imgui-go/v4 v4.4.1-0.20220209062255-f8ed29c1276f
 	github.com/itchio/lzma v0.0.0-20190703113020-d3e24e3e3d49
 	github.com/karrick/godirwalk v1.16.1
 	github.com/mattn/go-sqlite3 v1.14.17
@@ -44,11 +43,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
-replace github.com/inkyblackness/imgui-go/v4 => github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1
-
-replace github.com/sqweek/dialog => github.com/wieku/dialog v0.0.0-20221229220948-2d1daf4d8f13
+replace github.com/sqweek/dialog => github.com/wieku/dialog v1.0.0

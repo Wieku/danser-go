@@ -19,7 +19,12 @@ func (counter *Counter) PutSample(delta float64) {
 		counter.avg = delta
 	}
 
-	rate := 1 - math.Pow(0.1, delta/1000)
+	rtBase := delta
+	if rtBase < 0.2 {
+		rtBase = rtBase*0.5 + 0.1
+	}
+
+	rate := 1 - math.Pow(0.1, rtBase/1000)
 	counter.avg = counter.avg + (delta-counter.avg)*rate
 }
 

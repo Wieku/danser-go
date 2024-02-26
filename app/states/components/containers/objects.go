@@ -13,6 +13,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/profiler"
 	"log"
 	"math"
 	"sort"
@@ -174,6 +175,8 @@ func (container *HitObjectContainer) preProcessQueue(time float64) {
 }
 
 func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl32.Mat4, cameras []mgl32.Mat4, time float64, scale, alpha float32) {
+	profiler.StartGroup("HitObjectContainer.Draw", profiler.PDraw)
+
 	divides := len(cameras)
 
 	container.preProcessQueue(time)
@@ -211,36 +214,15 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 		batch.SetColor(1, 1, 1, 1)
 		batch.SetScale(1, 1)
 
+		profiler.StartGroup("HitObjectContainer.SliderPreDraw", profiler.PDraw)
 		for i := len(container.renderables) - 1; i >= 0; i-- {
 			if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
 				s.DrawBodyBase(time, baseCamera)
 			}
 		}
+		profiler.EndGroup()
 
-		//tEnabled := false
-		//
-		//for j := 0; j < divides; j++ {
-		//	ind := j - 1
-		//	if ind < 0 {
-		//		ind = divides - 1
-		//	}
-		//
-		//	for i := len(container.renderables) - 1; i >= 0; i-- {
-		//		if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
-		//			if !tEnabled {
-		//				tEnabled = true
-		//
-		//				sliderrenderer.BeginRendererMerge()
-		//			}
-		//
-		//			s.DrawBodyUnder(cameras[j], scale)
-		//		}
-		//	}
-		//}
-		//
-		//if tEnabled {
-		//	sliderrenderer.EndRendererMerge()
-		//}
+		slidersRendered := false
 
 		if settings.Objects.Sliders.SliderMerge {
 			enabled := false
@@ -255,10 +237,11 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 					if s, ok := container.renderables[i].renderable.(*objects.Slider); ok && container.renderables[i].isSliderBody {
 						if !enabled {
 							enabled = true
-
+							profiler.StartGroup("HitObjectContainer.SliderDraw", profiler.PDraw)
 							sliderrenderer.BeginRendererMerge()
 						}
 
+						slidersRendered = true
 						s.DrawBody(time, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
 					}
 				}
@@ -266,6 +249,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 
 			if enabled {
 				sliderrenderer.EndRendererMerge()
+				profiler.EndGroup()
 			}
 		}
 
@@ -290,8 +274,8 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 				if !proxy.isSliderBody {
 					if enabled && !settings.Objects.Sliders.SliderMerge {
 						enabled = false
-
 						sliderrenderer.EndRenderer()
+						profiler.EndGroup()
 					}
 
 					_, sp := container.renderables[i].renderable.(*objects.Spinner)
@@ -304,9 +288,11 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 
 						batch.Flush()
 
+						profiler.StartGroup("HitObjectContainer.SliderDraw", profiler.PDraw)
 						sliderrenderer.BeginRenderer()
 					}
 
+					slidersRendered = true
 					proxy.renderable.(*objects.Slider).DrawBody(time, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
 				}
 
@@ -321,7 +307,13 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 
 			if enabled {
 				sliderrenderer.EndRenderer()
+				profiler.EndGroup()
 			}
+		}
+
+		if !slidersRendered { //stub to have it on the graph
+			profiler.StartGroup("HitObjectContainer.SliderDraw", profiler.PDraw)
+			profiler.EndGroup()
 		}
 
 		if divides < settings.Objects.Colors.MandalaTexturesTrigger && settings.Objects.DrawApproachCircles {
@@ -340,6 +332,8 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 		batch.SetScale(1, 1)
 		batch.End()
 	}
+
+	profiler.EndGroup()
 }
 
 func (container *HitObjectContainer) GetNumProcessed() int {

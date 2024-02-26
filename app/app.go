@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/audio"
@@ -32,8 +31,8 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
 	"io/ioutil"
@@ -85,7 +84,7 @@ func run() {
 		}
 	}()
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
 
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
@@ -533,7 +532,7 @@ func mainLoopRecord() {
 
 	var fbo *buffer.Framebuffer
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
@@ -568,7 +567,7 @@ func mainLoopRecord() {
 
 		deltaSumF += updateDelta
 		if deltaSumF >= fpsDelta {
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				fbo.Bind()
 
 				ffmpeg.PreFrame()
@@ -610,7 +609,7 @@ func mainLoopRecord() {
 		}
 	}
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		ffmpeg.StopFFmpeg()
 	})
 }
@@ -620,7 +619,7 @@ func mainLoopSS() {
 
 	var fbo *buffer.Framebuffer
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
@@ -629,7 +628,7 @@ func mainLoopSS() {
 	for !p.Update(1) {
 		if p.GetTime() >= screenshotTime*1000 {
 			log.Println("Scheduling screenshot")
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				fbo.Bind()
 
 				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
@@ -647,10 +646,19 @@ func mainLoopSS() {
 }
 
 func mainLoopNormal() {
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if action == glfw.Press {
 				switch key {
+				case glfw.KeyF11:
+					switch mods {
+					case glfw.ModShift:
+						settings.PerfGraph = !settings.PerfGraph
+					case glfw.ModControl:
+						settings.CallGraph = !settings.CallGraph
+					default:
+						settings.DEBUG = !settings.DEBUG
+					}
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
@@ -672,49 +680,57 @@ func mainLoopNormal() {
 		})
 	})
 
-	for !win.ShouldClose() {
-		mainthread.Call(func() {
-			if lastVSync != settings.Graphics.VSync {
-				if settings.Graphics.VSync {
-					glfw.SwapInterval(1)
-				} else {
-					glfw.SwapInterval(0)
-				}
-
-				lastVSync = settings.Graphics.VSync
+	goroutines.RunMainLoop(func() bool {
+		return !win.ShouldClose()
+	}, func() {
+		if lastVSync != settings.Graphics.VSync {
+			if settings.Graphics.VSync {
+				glfw.SwapInterval(1)
+			} else {
+				glfw.SwapInterval(0)
 			}
 
-			glfw.PollEvents()
+			lastVSync = settings.Graphics.VSync
+		}
 
-			pushFrame()
+		profiler.StartGroup("glfw.PollEvents", profiler.PInput)
+		glfw.PollEvents()
+		profiler.EndGroup()
 
-			if scheduleScreenshot {
-				w, h := win.GetFramebufferSize()
-				utils.MakeScreenshot(w, h, "", true)
-				scheduleScreenshot = false
+		pushFrame()
+
+		if scheduleScreenshot {
+			w, h := win.GetFramebufferSize()
+			utils.MakeScreenshot(w, h, "", true)
+			scheduleScreenshot = false
+		}
+
+		profiler.StartGroup("App.mainLoopNormal", profiler.PSwapBuffers)
+
+		win.SwapBuffers()
+
+		profiler.EndGroup()
+
+		profiler.StartGroup("App.mainLoopNormal", profiler.PSleep)
+		if !settings.Graphics.VSync {
+			fCap := int(settings.Graphics.FPSCap)
+
+			if fCap < 0 {
+				fCap = -fCap * monitorHz
 			}
 
-			win.SwapBuffers()
-
-			if !settings.Graphics.VSync {
-				fCap := int(settings.Graphics.FPSCap)
-
-				if fCap < 0 {
-					fCap = -fCap * monitorHz
-				}
-
-				limiter.FPS = fCap
-				limiter.Sync()
-			}
-
-		})
-	}
+			limiter.FPS = fCap
+			limiter.Sync()
+		}
+		profiler.EndGroup()
+	})
 
 	settings.CloseWatcher()
 }
 
 func pushFrame() {
-	statistic.Reset()
+	profiler.StartGroup("App.pushFrame", profiler.PDraw)
+	profiler.ResetStats()
 
 	gl.Enable(gl.SCISSOR_TEST)
 	gl.Disable(gl.DITHER)
@@ -754,6 +770,8 @@ func pushFrame() {
 
 	blend.ClearStack()
 	viewport.Pop()
+
+	profiler.EndGroup()
 }
 
 func checkForUpdates() {
@@ -786,15 +804,15 @@ func Run() {
 		closeHandler(err, stackTrace)
 	}()
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	goroutines.SetCrashHandler(closeHandler)
 
 	platform.StartLogging("danser")
 
 	platform.DisableQuickEdit()
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	mainthread.CallQueueCap = 100000
-	mainthread.Run(run)
+	goroutines.RunMain(run)
 }
 
 func closeHandler(err any, stackTrace []string) {
