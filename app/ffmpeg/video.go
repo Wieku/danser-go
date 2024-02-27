@@ -246,6 +246,7 @@ func startVideo(fps, _w, _h int) {
 
 				if strings.Contains(lineLower, "error setting") ||
 					strings.Contains(lineLower, "error initializing") ||
+					strings.Contains(lineLower, "error creating") ||
 					strings.Contains(lineLower, "invalid") ||
 					strings.Contains(lineLower, "incompatible") ||
 					strings.Contains(lineLower, "not divisible") ||
