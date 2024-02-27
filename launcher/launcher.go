@@ -373,6 +373,10 @@ func (l *launcher) startGLFW() {
 	l.coin.DrawVisualiser(true)
 
 	goroutines.RunOS(func() {
+		l.splashText = "Initializing..."
+
+		settings.DefaultsFactory.EncoderOptions() // preload to avoid pauses
+
 		l.loadBeatmaps()
 
 		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
