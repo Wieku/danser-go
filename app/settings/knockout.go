@@ -5,6 +5,7 @@ var Knockout = initKnockout()
 func initKnockout() *knockout {
 	return &knockout{
 		Mode:                ComboBreak,
+		SmokeEnabled:        false,
 		GraceEndTime:        -10,
 		BubbleMinimumCombo:  200,
 		ExcludeMods:         "",
@@ -24,6 +25,8 @@ func initKnockout() *knockout {
 type knockout struct {
 	// Knockout mode. More info below
 	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit" liveedit:"false"`
+
+	SmokeEnabled bool `label:"Show cursor smoke in knockout mode"`
 
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
 	GraceEndTime float64 `string:"true" min:"-10" max:"1000000" showif:"Mode=0"`

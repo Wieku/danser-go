@@ -216,7 +216,7 @@ func (cursor *Cursor) Update(delta float64) {
 }
 
 func (cursor *Cursor) smokeUpdate() {
-	if (!settings.Cursor.SmokeEnabled && settings.PLAYERS == 1) || (!settings.Cursor.KnockoutSmokeEnabled && settings.PLAYERS != 1) {
+	if (!settings.Cursor.SmokeEnabled && settings.PLAYERS == 1) || (!settings.Knockout.SmokeEnabled && settings.PLAYERS != 1) {
 		return
 	}
 
