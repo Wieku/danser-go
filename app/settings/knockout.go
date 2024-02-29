@@ -5,6 +5,7 @@ var Knockout = initKnockout()
 func initKnockout() *knockout {
 	return &knockout{
 		Mode:                ComboBreak,
+		SmokeEnabled:        false,
 		GraceEndTime:        -10,
 		BubbleMinimumCombo:  200,
 		ExcludeMods:         "",
@@ -60,6 +61,8 @@ type knockout struct {
 
 	//Maximum cursor size (when there is only 1 player left)
 	MaxCursorSize float64 `min:"1" max:"20"`
+
+	SmokeEnabled bool `label:"Show cursor smoke in knockout mode"`
 
 	// Self explanatory
 	AddDanser  bool   `liveedit:"false"`
