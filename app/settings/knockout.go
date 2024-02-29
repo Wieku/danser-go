@@ -26,8 +26,6 @@ type knockout struct {
 	// Knockout mode. More info below
 	Mode KnockoutMode `combo:"0|Combo Break,1|Max Combo,2|Replay Showcase,3|Vs Mode,4|SS or Quit" liveedit:"false"`
 
-	SmokeEnabled bool `label:"Show cursor smoke in knockout mode"`
-
 	// In Mode = ComboBreak it won't knock out the player if they break combo before GraceEndTime (in seconds)
 	GraceEndTime float64 `string:"true" min:"-10" max:"1000000" showif:"Mode=0"`
 
@@ -63,6 +61,8 @@ type knockout struct {
 
 	//Maximum cursor size (when there is only 1 player left)
 	MaxCursorSize float64 `min:"1" max:"20"`
+
+	SmokeEnabled bool `label:"Show cursor smoke in knockout mode"`
 
 	// Self explanatory
 	AddDanser  bool   `liveedit:"false"`
