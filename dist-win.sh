@@ -38,7 +38,7 @@ preRC='#include "winuser.h"
                 VALUE "FileDescription", "danser'
 
 postRC='"
-      VALUE "LegalCopyright", "Wieku 2018-2022"
+      VALUE "LegalCopyright", "Wieku 2018-2024"
       VALUE "ProductName", "danser"
       VALUE "ProductVersion", "'$build'"
     END
