@@ -125,7 +125,7 @@ func (km *knockoutManagerPopup) drawManager() {
 		}
 
 		if changed > -1 {
-			if km.lastSelected > -1 && (imgui.IsKeyDownNil(imgui.KeyLeftShift) || imgui.IsKeyDownNil(imgui.KeyRightShift)) {
+			if km.lastSelected > -1 && (imgui.IsKeyDown(imgui.KeyLeftShift) || imgui.IsKeyDown(imgui.KeyRightShift)) {
 				value := km.bld.knockoutReplays[changed].included
 
 				lower := min(km.lastSelected, changed)

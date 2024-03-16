@@ -563,7 +563,7 @@ func handleDragScroll() (ret bool) {
 
 	wId := window.ID()
 
-	if imgui.IsMouseDownNil(imgui.MouseButtonLeft) && (scrCache.cId == 0 || scrCache.cId == wId) {
+	if imgui.IsMouseDown(imgui.MouseButtonLeft) && (scrCache.cId == 0 || scrCache.cId == wId) {
 		intRect := window.InternalRect()
 
 		if !scrCache.blocked &&

@@ -1,5 +1,5 @@
-github.com/AllenDang/cimgui-go v0.0.0-20240225123420-d04298bbf6e9 h1:CnhqAzvifJ4T2t2HpZvfjs5QFEUA/uxg0e5YCtzxm+4=
-github.com/AllenDang/cimgui-go v0.0.0-20240225123420-d04298bbf6e9/go.mod h1:e6feXR4FrATVY/UrWS3si3KCJOm0wruwbxVI/B85fUM=
+github.com/AllenDang/cimgui-go v0.0.0-20240313173929-fbcdab4101ce h1:IVDaYoNGworWG2D71ECyiQDKXehHuu1KHHEIfOSqMLU=
+github.com/AllenDang/cimgui-go v0.0.0-20240313173929-fbcdab4101ce/go.mod h1:e6feXR4FrATVY/UrWS3si3KCJOm0wruwbxVI/B85fUM=
 github.com/EdlinOrg/prominentcolor v1.0.0 h1:sQNY8Dtsv3PK3J1LbmrDmtlZm9Y9U8Loi1iZIl4YN3Y=
 github.com/EdlinOrg/prominentcolor v1.0.0/go.mod h1:mYmDsxfcmBz6izH/SqtSzfsUiZdPNPpPgUPKCZq70KQ=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=

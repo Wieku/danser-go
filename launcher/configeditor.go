@@ -969,7 +969,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 
 				if !editor.keyChangeOpened {
 					editor.keyChange = ""
-					imgui.SetWindowFocusNil()
+					imgui.SetWindowFocus()
 				}
 			}
 
