@@ -1,6 +1,6 @@
 module github.com/wieku/danser-go
 
-go 1.21
+go 1.22
 
 require (
 	github.com/AllenDang/cimgui-go v0.0.0-20240225123420-d04298bbf6e9
