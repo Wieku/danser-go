@@ -1,6 +1,7 @@
 package launcher
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/AllenDang/cimgui-go"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -1182,7 +1183,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 	editor.drawComponent(jsonPath, editor.getLabel(d), !okS && !okC, false, -1, d, func() {
 		imgui.SetNextItemWidth(-1)
 
-		format := firstOf(d.Tag.Get("format"), "%d")
+		format := cmp.Or(d.Tag.Get("format"), "%d")
 
 		if okC {
 			var values []int
@@ -1291,7 +1292,7 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 			min := parseFloatOr(d.Tag.Get("min"), 0)
 			max := parseFloatOr(d.Tag.Get("max"), 1)
 			scale := parseFloatOr(d.Tag.Get("scale"), 1)
-			format := firstOf(d.Tag.Get("format"), "%.2f")
+			format := cmp.Or(d.Tag.Get("format"), "%.2f")
 
 			base := float32(f.Float())
 			valSpeed := base * scale
@@ -1478,14 +1479,4 @@ func parseFloatOr(value string, alt float32) float32 {
 	}
 
 	return alt
-}
-
-func firstOf(args ...string) string {
-	for _, arg := range args {
-		if arg != "" {
-			return arg
-		}
-	}
-
-	return ""
 }
