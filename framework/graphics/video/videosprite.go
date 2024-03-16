@@ -51,7 +51,7 @@ func NewVideo(path string, depth float64, position vector.Vector2d, origin vecto
 
 func (video *Video) SetStartTime(startTime float64) {
 	video.Sprite.SetStartTime(startTime)
-	video.Sprite.SetEndTime(startTime+video.decoder.Metadata.Duration*1000)
+	video.Sprite.SetEndTime(startTime + video.decoder.Metadata.Duration*1000)
 }
 
 func (video *Video) Update(time float64) {
