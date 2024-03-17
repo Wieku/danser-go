@@ -44,9 +44,20 @@ type sCache struct {
 	held    bool
 	mY      float32
 	cId     imgui.ID
+	fakeId  imgui.ID
 }
 
 var scrCache = sCache{} //make(map[imgui.ID]sCache)
+
+type scrollContainer struct {
+	window      *imgui.Window
+	fakeId      imgui.ID
+	origPos     float32
+	speed       float32
+	totalScroll float32
+}
+
+var scrollDeltas = make(map[imgui.ID]scrollContainer)
 
 func SetupImgui(win *glfw.Window) {
 	log.Println("Imgui setup")
@@ -465,6 +476,26 @@ func Begin() {
 
 	ImIO.SetDeltaTime(delta)
 
+	delta60 := delta / 0.0166667
+
+	for k, v := range scrollDeltas {
+		if v.window.Scroll().Y != math32.Round(v.origPos+v.totalScroll) || math32.Abs(v.speed) < 1 {
+			delete(scrollDeltas, k)
+
+			continue
+		}
+
+		v.speed *= math32.Pow(0.95, delta60)
+		v.totalScroll += v.speed
+
+		v.window.SetScroll(vec2(v.window.Scroll().X, math32.Round(v.origPos+v.totalScroll)))
+
+		imgui.InternalKeepAliveID(v.fakeId)
+		imgui.InternalSetActiveID(v.fakeId, v.window)
+
+		scrollDeltas[k] = v
+	}
+
 	imgui.NewFrame()
 }
 
@@ -560,12 +591,13 @@ func DrawImgui() {
 
 func handleDragScroll() (ret bool) {
 	window := context.CurrentWindow()
-
 	wId := window.ID()
 
 	if imgui.IsMouseDown(imgui.MouseButtonLeft) && (scrCache.cId == 0 || scrCache.cId == wId) {
-		scrCache.blocked = scrCache.blocked || sliderSledLastFrame || isAnyScrollbarActive() // prevent scrolling if slider changed value or scrollbar is being held
-		if scrCache.blocked {
+		_, wasScrolling := scrollDeltas[wId]
+		delete(scrollDeltas, wId)
+
+		if scrCache.blocked || isAnyScrollbarActive() {
 			return
 		}
 
@@ -580,14 +612,22 @@ func handleDragScroll() (ret bool) {
 				scrCache.cId = wId
 			}
 
-			if math32.Abs(ImIO.MousePos().Y-scrCache.mY) > 5 { // start scrolling if mouse goes over the threshold
+			if sliderSledLastFrame { // prevent scrolling if slider changed valu
+				scrCache.blocked = true
+			} else if wasScrolling || math32.Abs(ImIO.MousePos().Y-scrCache.mY) > 5 { // start scrolling if mouse goes over the threshold
 				scrCache.held = true
-				imgui.InternalSetActiveID(0, window)
+				scrCache.fakeId = imgui.IDStr("#scrollcontainer" + window.Name())
+			}
+
+			if scrCache.held {
+				imgui.InternalKeepAliveID(scrCache.fakeId)
+				imgui.InternalSetActiveID(scrCache.fakeId, window)
 			}
 
 			window.SetScroll(vec2(window.Scroll().X, window.Scroll().Y-ImIO.MouseDelta().Y))
 		}
 	} else if scrCache.cId == wId {
+		scrollDeltas[wId] = scrollContainer{window: window, speed: -ImIO.MouseDelta().Y, fakeId: scrCache.fakeId, origPos: window.Scroll().Y}
 		scrCache = sCache{}
 	}
 
