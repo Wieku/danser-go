@@ -564,10 +564,14 @@ func handleDragScroll() (ret bool) {
 	wId := window.ID()
 
 	if imgui.IsMouseDown(imgui.MouseButtonLeft) && (scrCache.cId == 0 || scrCache.cId == wId) {
+		scrCache.blocked = scrCache.blocked || sliderSledLastFrame || isAnyScrollbarActive() // prevent scrolling if slider changed value or scrollbar is being held
+		if scrCache.blocked {
+			return
+		}
+
 		intRect := window.InternalRect()
 
-		if !scrCache.blocked &&
-			(scrCache.held || ((&intRect).InternalContainsVec2(ImIO.MousePos()) && imgui.IsWindowHoveredV(imgui.HoveredFlagsAllowWhenBlockedByActiveItem) && imgui.InternalActiveID() != imgui.InternalWindowScrollbarID(window, imgui.AxisY))) {
+		if scrCache.held || ((&intRect).InternalContainsVec2(ImIO.MousePos()) && imgui.IsWindowHoveredV(imgui.HoveredFlagsAllowWhenBlockedByActiveItem)) {
 			ret = true
 
 			if !scrCache.started { // capture the first hold position
@@ -576,13 +580,8 @@ func handleDragScroll() (ret bool) {
 				scrCache.cId = wId
 			}
 
-			if sliderSledLastFrame { // prevent scrolling if slider changed value
-				scrCache.blocked = true
-			} else if math32.Abs(ImIO.MousePos().Y-scrCache.mY) > 5 { // start scrolling if mouse goes over the threshold
+			if math32.Abs(ImIO.MousePos().Y-scrCache.mY) > 5 { // start scrolling if mouse goes over the threshold
 				scrCache.held = true
-			}
-
-			if scrCache.held { // deactivate items clicked mouse might be over
 				imgui.InternalSetActiveID(0, window)
 			}
 
@@ -593,4 +592,10 @@ func handleDragScroll() (ret bool) {
 	}
 
 	return
+}
+
+func isAnyScrollbarActive() bool {
+	activeWindow := context.ActiveIdWindow()
+
+	return activeWindow.CData != nil && imgui.InternalActiveID() == imgui.InternalWindowScrollbarID(activeWindow, imgui.AxisY)
 }
