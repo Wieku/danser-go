@@ -22,9 +22,9 @@ require (
 	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
 	github.com/wieku/rplpa v1.0.0
 	golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
-	golang.org/x/image v0.10.0
-	golang.org/x/sys v0.10.0
-	golang.org/x/text v0.11.0
+	golang.org/x/image v0.18.0
+	golang.org/x/sys v0.20.0
+	golang.org/x/text v0.16.0
 )
 
 require (
@@ -44,8 +44,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
