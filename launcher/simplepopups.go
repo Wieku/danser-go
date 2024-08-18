@@ -18,21 +18,31 @@ func drawSpeedMenu(bld *builder) {
 }
 
 func drawParamMenu(bld *builder) {
-	sliderFloatReset("Approach Rate (AR)", &bld.ar, 0, 10, "%.1f")
+	var arCSMin, vMax float32 = 0, 10
+
+	if bld.extendedValues {
+		arCSMin = -10
+		vMax = 12
+	}
+
+	sliderFloatReset("Approach Rate (AR)", &bld.ar, arCSMin, vMax, "%.1f")
 	imgui.Spacing()
 
 	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderFloatReset("Overall Difficulty (OD)", &bld.od, 0, 10, "%.1f")
+		sliderFloatReset("Overall Difficulty (OD)", &bld.od, 0, vMax, "%.1f")
 		imgui.Spacing()
 	}
 
-	sliderFloatReset("Circle Size (CS)", &bld.cs, 0, 10, "%.1f")
+	sliderFloatReset("Circle Size (CS)", &bld.cs, arCSMin, vMax, "%.1f")
 	imgui.Spacing()
 
 	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderFloatReset("Health Drain (HP)", &bld.hp, 0, 10, "%.1f")
+		sliderFloatReset("Health Drain (HP)", &bld.hp, 0, vMax, "%.1f")
 		imgui.Spacing()
 	}
+
+	imgui.Checkbox("Allow extended values", &bld.extendedValues)
+	imgui.Spacing()
 }
 
 func drawCDMenu(bld *builder) {

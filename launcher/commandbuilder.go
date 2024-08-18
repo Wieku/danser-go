@@ -33,10 +33,11 @@ type builder struct {
 	outputName string
 	ssTime     float32
 
-	ar floatParam
-	od floatParam
-	cs floatParam
-	hp floatParam
+	extendedValues bool
+	ar             floatParam
+	od             floatParam
+	cs             floatParam
+	hp             floatParam
 
 	speed floatParam
 	pitch floatParam

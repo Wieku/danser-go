@@ -144,30 +144,26 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 }
 
 func sliderFloatReset(label string, val *floatParam, min, max float32, format string) {
-	sliderResetBase(label, func() {
-		if sliderFloatSlide("##"+label, &val.value, min, max, format, imgui.SliderFlagsNoInput) {
-			if math32.Abs(val.value-val.ogValue) > 0.001 {
-				val.changed = true
-			} else {
-				val.changed = false
-				val.value = val.ogValue
-			}
-		}
-	}, func() {
-		val.value = val.ogValue
-		val.changed = false
+	sliderFloatResetBase(label, val, min, max, func() bool {
+		return sliderFloatSlide("##"+label, &val.value, min, max, format, imgui.SliderFlagsNoInput)
 	})
 }
 
 func sliderFloatResetStep(label string, val *floatParam, min, max, step float32, format string) {
-	sliderResetBase(label, func() {
-		if sliderFloatStep("##"+label, &val.value, min, max, step, format) {
-			if math32.Abs(val.value-val.ogValue) > 0.001 {
-				val.changed = true
-			} else {
-				val.changed = false
-				val.value = val.ogValue
-			}
+	sliderFloatResetBase(label, val, min, max, func() bool {
+		return sliderFloatStep("##"+label, &val.value, min, max, step, format)
+	})
+}
+
+func sliderFloatResetBase(label string, val *floatParam, min, max float32, sliderFunc func() bool) {
+	if val.value < min || val.value > max {
+		val.value = mutils.Clamp(val.value, min, max)
+		paramChanged(val)
+	}
+
+	sliderResetBase(label, !val.changed, func() {
+		if sliderFunc() {
+			paramChanged(val)
 		}
 	}, func() {
 		val.value = val.ogValue
@@ -175,8 +171,17 @@ func sliderFloatResetStep(label string, val *floatParam, min, max, step float32,
 	})
 }
 
+func paramChanged(val *floatParam) {
+	if math32.Abs(val.value-val.ogValue) > 0.001 {
+		val.changed = true
+	} else {
+		val.changed = false
+		val.value = val.ogValue
+	}
+}
+
 func sliderIntReset(label string, val *intParam, min, max int32, format string) {
-	sliderResetBase(label, func() {
+	sliderResetBase(label, !val.changed, func() {
 		if sliderIntSlide("##"+label, &val.value, min, max, format, imgui.SliderFlagsNoInput) {
 			val.changed = val.value != val.ogValue
 		}
@@ -186,7 +191,7 @@ func sliderIntReset(label string, val *intParam, min, max int32, format string) 
 	})
 }
 
-func sliderResetBase(label string, draw, reset func()) {
+func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 	imgui.Text(label + ":")
 
 	imgui.PushFont(Font16)
@@ -203,8 +208,16 @@ func sliderResetBase(label string, draw, reset func()) {
 
 		imgui.TableNextColumn()
 
+		if blockButton {
+			imgui.BeginDisabled()
+		}
+
 		if imgui.Button("Reset##" + label) {
 			reset()
+		}
+
+		if blockButton {
+			imgui.EndDisabled()
 		}
 
 		imgui.EndTable()
