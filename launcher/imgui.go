@@ -134,6 +134,7 @@ func SetupImgui(win *glfw.Window) {
 	awesomeBuilder.AddChar(0xF1FC) // paintbrush
 	awesomeBuilder.AddChar(0xF43C) // chess-board
 	awesomeBuilder.AddChar(0xF188) // bug
+	awesomeBuilder.AddChar(0xF2EA) // rotate-left
 
 	awesomeRange := imgui.NewGlyphRange()
 	awesomeBuilder.BuildRanges(awesomeRange)

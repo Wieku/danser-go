@@ -192,10 +192,6 @@ func sliderIntReset(label string, val *intParam, min, max int32, format string) 
 }
 
 func sliderResetBase(label string, blockButton bool, draw, reset func()) {
-	imgui.Text(label + ":")
-
-	imgui.PushFont(Font16)
-
 	if imgui.BeginTableV("rt"+label, 2, imgui.TableFlagsSizingStretchProp, vec2(-1, 0), -1) {
 		imgui.TableSetupColumnV("rt1"+label, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
 		imgui.TableSetupColumnV("rt2"+label, imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
@@ -204,7 +200,7 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 
 		imgui.SetNextItemWidth(-1)
 
-		draw()
+		imgui.Text(label + ":")
 
 		imgui.TableNextColumn()
 
@@ -212,9 +208,16 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 			imgui.BeginDisabled()
 		}
 
-		if imgui.Button("Reset##" + label) {
+		ImIO.SetFontGlobalScale(16.0 / 32)
+		imgui.PushFont(FontAw)
+
+		imgui.AlignTextToFramePadding()
+		if imgui.ButtonV("\uF2EA##"+label, vec2(imgui.FrameHeight(), imgui.FrameHeight())) {
 			reset()
 		}
+
+		ImIO.SetFontGlobalScale(1)
+		imgui.PopFont()
 
 		if blockButton {
 			imgui.EndDisabled()
@@ -222,6 +225,12 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 
 		imgui.EndTable()
 	}
+
+	imgui.PushFont(Font16)
+
+	imgui.SetNextItemWidth(-1)
+
+	draw()
 
 	imgui.PopFont()
 }
