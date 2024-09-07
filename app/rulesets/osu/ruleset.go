@@ -297,44 +297,48 @@ func (set *OsuRuleSet) Update(time int64) {
 	}
 
 	if len(set.queue) == 0 && len(set.processed) == 0 && !set.ended {
-		cs := make([]*graphics.Cursor, 0)
-		for c := range set.cursors {
-			cs = append(cs, c)
-		}
-
-		sort.Slice(cs, func(i, j int) bool {
-			return set.cursors[cs[i]].scoreProcessor.GetScore() > set.cursors[cs[j]].scoreProcessor.GetScore()
-		})
-
-		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetHeader([]string{"#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP"})
-
-		for i, c := range cs {
-			var data []string
-			data = append(data, fmt.Sprintf("%d", i+1))
-			data = append(data, c.Name)
-			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy))
-			data = append(data, set.cursors[c].score.Grade.String())
-			data = append(data, utils.Humanize(set.cursors[c].score.Count300))
-			data = append(data, utils.Humanize(set.cursors[c].score.Count100))
-			data = append(data, utils.Humanize(set.cursors[c].score.Count50))
-			data = append(data, utils.Humanize(set.cursors[c].score.CountMiss))
-			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
-			data = append(data, utils.Humanize(set.cursors[c].score.Combo))
-			data = append(data, set.cursors[c].player.diff.GetModString())
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
-			table.Append(data)
-		}
-
-		table.Render()
-
-		for _, s := range strings.Split(tableString.String(), "\n") {
-			log.Println(s)
-		}
+		set.printEndTable()
 
 		set.ended = true
+	}
+}
+
+func (set *OsuRuleSet) printEndTable() {
+	cs := make([]*graphics.Cursor, 0)
+	for c := range set.cursors {
+		cs = append(cs, c)
+	}
+
+	sort.Slice(cs, func(i, j int) bool {
+		return set.cursors[cs[i]].scoreProcessor.GetScore() > set.cursors[cs[j]].scoreProcessor.GetScore()
+	})
+
+	tableString := &strings.Builder{}
+	table := tablewriter.NewWriter(tableString)
+	table.SetHeader([]string{"#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP"})
+
+	for i, c := range cs {
+		var data []string
+		data = append(data, fmt.Sprintf("%d", i+1))
+		data = append(data, c.Name)
+		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy))
+		data = append(data, set.cursors[c].score.Grade.String())
+		data = append(data, utils.Humanize(set.cursors[c].score.Count300))
+		data = append(data, utils.Humanize(set.cursors[c].score.Count100))
+		data = append(data, utils.Humanize(set.cursors[c].score.Count50))
+		data = append(data, utils.Humanize(set.cursors[c].score.CountMiss))
+		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
+		data = append(data, utils.Humanize(set.cursors[c].score.Combo))
+		data = append(data, set.cursors[c].player.diff.GetModString())
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
+		table.Append(data)
+	}
+
+	table.Render()
+
+	for _, s := range strings.Split(tableString.String(), "\n") {
+		log.Println(s)
 	}
 }
 
