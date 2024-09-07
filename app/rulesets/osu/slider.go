@@ -149,7 +149,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 						slider.hitSlider.HitEdge(0, float64(time), hit != SliderMiss)
 					}
 
-					slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, hit, combo)
+					slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderStart, combo, time, position, slider))
 
 					state.isStartHit = true
 				}
@@ -158,7 +158,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				player.rightCondE = false
 			}
 		} else if action == Click {
-			slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, PositionalMiss, Hold)
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(PositionalMiss, SliderStart, Hold, time, position, slider))
 		}
 	}
 
@@ -251,29 +251,30 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 			index := state.scored + state.missed
 			point := state.points[index]
 
+			maxScore := SliderPoint
+			if pointsPassed == len(state.points) {
+				maxScore = SliderEnd
+			} else if pointsPassed%(len(state.points)/len(slider.hitSlider.TickReverse)) == 0 {
+				maxScore = SliderRepeat
+			}
+
+			scoreGiven := SliderMiss
+			combo := Reset
+
 			if allowable && state.slideStart <= point.time {
 				state.scored++
 
-				var scoreGiven HitResult
-				if pointsPassed == len(state.points) {
-					scoreGiven = SliderEnd
-				} else if pointsPassed%(len(state.points)/len(slider.hitSlider.TickReverse)) == 0 {
-					scoreGiven = SliderRepeat
-				} else {
-					scoreGiven = SliderPoint
-				}
-
-				slider.ruleSet.SendResult(time, player.cursor, slider, sliderPosition.X, sliderPosition.Y, scoreGiven, Increase)
+				scoreGiven = maxScore
+				combo = Increase
 			} else {
 				state.missed++
 
-				combo := Reset
 				if state.scored+state.missed == len(state.points) {
 					combo = Hold
 				}
-
-				slider.ruleSet.SendResult(time, player.cursor, slider, sliderPosition.X, sliderPosition.Y, SliderMiss, combo)
 			}
+
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(scoreGiven, maxScore, combo, time, sliderPosition, slider))
 		}
 
 		if !allowable && state.sliding && state.scored+state.missed < len(state.points) {
@@ -298,7 +299,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
 
-		slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, SliderMiss, Reset)
+		slider.ruleSet.SendResult(player.cursor, createJudgementResult(SliderMiss, SliderStart, Reset, time, position, slider))
 
 		if player.leftCond {
 			state.downButton = Left
@@ -344,7 +345,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
 
-		slider.ruleSet.SendResult(time, player.cursor, slider, position.X, position.Y, hit, combo)
+		slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, slider))
 
 		state.isHit = true
 	}

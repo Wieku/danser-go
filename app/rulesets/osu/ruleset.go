@@ -10,7 +10,6 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"sort"
@@ -25,14 +24,6 @@ const (
 	Ignored = ClickAction(iota)
 	Shake
 	Click
-)
-
-type ComboResult uint8
-
-const (
-	Reset = ComboResult(iota)
-	Hold
-	Increase
 )
 
 type buttonState struct {
@@ -114,7 +105,7 @@ type subSet struct {
 	forceFail  bool
 }
 
-type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults pp220930.PPv2Results, score int64)
+type hitListener func(cursor *graphics.Cursor, judgementResult JudgementResult, score Score)
 
 type endListener func(time int64, number int64)
 
@@ -427,43 +418,42 @@ func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64, proces
 	}
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitObject, x, y float32, result HitResult, comboResult ComboResult) {
-	number := src.GetNumber()
+func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult JudgementResult) {
 	subSet := set.cursors[cursor]
 
-	if result == Ignore || result == PositionalMiss {
-		if result == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
-			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
+	if judgementResult.HitResult == Ignore || judgementResult.HitResult == PositionalMiss {
+		if judgementResult.HitResult == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
+			set.hitListener(cursor, judgementResult, *subSet.score)
 		}
 
 		return
 	}
 
-	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == Reset) ||
-		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (result&BaseHitsM > 0 && result&BaseHitsM != Hit300)) {
-		if result&BaseHitsM > 0 {
-			result = Miss
-		} else if result&(SliderHits) > 0 {
-			result = SliderMiss
+	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && judgementResult.ComboResult == Reset) ||
+		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (judgementResult.HitResult&BaseHitsM > 0 && judgementResult.HitResult&BaseHitsM != Hit300)) {
+		if judgementResult.HitResult&BaseHitsM > 0 {
+			judgementResult.HitResult = Miss
+		} else if judgementResult.HitResult&(SliderHits) > 0 {
+			judgementResult.HitResult = SliderMiss
 		}
 
-		comboResult = Reset
+		judgementResult.ComboResult = Reset
 		subSet.sdpfFail = true
 	}
 
-	result = subSet.scoreProcessor.ModifyResult(result, src)
-	subSet.scoreProcessor.AddResult(result, comboResult)
+	judgementResult.HitResult = subSet.scoreProcessor.ModifyResult(judgementResult.HitResult, judgementResult.object)
+	subSet.scoreProcessor.AddResult(judgementResult.HitResult, judgementResult.ComboResult)
 
 	subSet.score.Score = subSet.scoreProcessor.GetScore()
 
-	if comboResult == Reset && result != Miss { // skips missed slider "ends" as they don't reset combo
+	if judgementResult.ComboResult == Reset && judgementResult.HitResult != Miss { // skips missed slider "ends" as they don't reset combo
 		subSet.score.CountSB++
 	}
 
-	bResult := result & BaseHitsM
+	bResult := judgementResult.HitResult & BaseHitsM
 
 	if bResult > 0 {
-		subSet.rawScore += result.ScoreValue()
+		subSet.rawScore += judgementResult.HitResult.ScoreValue()
 
 		switch bResult {
 		case Hit300:
@@ -521,19 +511,19 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 
 	subSet.score.PP = subSet.ppv2.Results
 
-	switch result {
+	switch judgementResult.HitResult {
 	case Hit100:
 		subSet.currentKatu++
 	case Hit50, Miss:
 		subSet.currentBad++
 	}
 
-	if result&BaseHitsM > 0 && (int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].IsNewCombo())) {
+	if judgementResult.HitResult&BaseHitsM > 0 && (int(judgementResult.Number) == len(set.beatMap.HitObjects)-1 || (int(judgementResult.Number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[judgementResult.Number+1].IsNewCombo())) {
 		allClicked := true
 
 		// We don't want to give geki/katu if all objects in current combo weren't clicked
 		index := sort.Search(len(set.processed), func(i int) bool {
-			return set.processed[i].GetNumber() >= number
+			return set.processed[i].GetNumber() >= judgementResult.Number
 		})
 
 		for i := index - 1; i >= 0; i-- {
@@ -549,15 +539,15 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 			}
 		}
 
-		if result&BaseHits > 0 {
+		if judgementResult.HitResult&BaseHits > 0 {
 			if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
-				result |= GekiAddition
+				judgementResult.HitResult |= GekiAddition
 				subSet.score.CountGeki++
 			} else if subSet.currentBad == 0 && allClicked {
-				result |= KatuAddition
+				judgementResult.HitResult |= KatuAddition
 				subSet.score.CountKatu++
 			} else {
-				result |= MuAddition
+				judgementResult.HitResult |= MuAddition
 			}
 		}
 
@@ -568,17 +558,17 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	if subSet.sdpfFail {
 		subSet.hp.Increase(-100000, true)
 	} else {
-		subSet.hp.AddResult(result)
+		subSet.hp.AddResult(judgementResult.HitResult)
 	}
 
 	if set.hitListener != nil {
-		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
+		set.hitListener(cursor, judgementResult, *subSet.score)
 	}
 
 	if len(set.cursors) == 1 && !settings.RECORD {
 		log.Println(fmt.Sprintf(
 			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f",
-			result.ScoreValue(),
+			judgementResult.HitResult.ScoreValue(),
 			subSet.scoreProcessor.GetCombo(),
 			subSet.score.Combo,
 			subSet.scoreProcessor.GetScore(),
@@ -587,10 +577,10 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 			subSet.score.Count100,
 			subSet.score.Count50,
 			subSet.score.CountMiss,
-			number,
-			time,
-			x,
-			y,
+			judgementResult.Number,
+			judgementResult.Time,
+			judgementResult.Position.X,
+			judgementResult.Position.Y,
 			subSet.ppv2.Results.Total,
 		))
 	}

@@ -91,7 +91,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 							circle.hitCircle.Arm(hit != Miss, float64(time))
 						}
 
-						circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, hit, combo)
+						circle.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, circle))
 
 						state.isHit = true
 					}
@@ -104,7 +104,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 					}
 				}
 			} else if action == Click {
-				circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, PositionalMiss, Hold)
+				circle.ruleSet.SendResult(player.cursor, createJudgementResult(PositionalMiss, Hit300, Hold, time, position, circle))
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64, _ bool
 
 	if time > int64(circle.hitCircle.GetEndTime())+player.diff.Hit50 && !state.isHit {
 		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
-		circle.ruleSet.SendResult(time, player.cursor, circle, position.X, position.Y, Miss, Reset)
+		circle.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, circle))
 
 		if len(circle.players) == 1 {
 			circle.hitCircle.Arm(false, float64(time))

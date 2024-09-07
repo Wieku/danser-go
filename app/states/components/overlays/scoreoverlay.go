@@ -324,41 +324,41 @@ func (overlay *ScoreOverlay) initUnderlay() {
 	overlay.underlay.SetScale(uScale)
 }
 
-func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number int64, position vector.Vector2d, result osu.HitResult, comboResult osu.ComboResult, ppResults pp220930.PPv2Results, _ int64) {
-	object := overlay.ruleset.GetBeatMap().HitObjects[number]
+func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu.JudgementResult, score osu.Score) {
+	object := overlay.ruleset.GetBeatMap().HitObjects[judgementResult.Number]
 
-	if result&(osu.BaseHitsM) > 0 {
-		overlay.results.AddResult(time, result, position, object)
+	if judgementResult.HitResult&(osu.BaseHitsM) > 0 {
+		overlay.results.AddResult(judgementResult.Time, judgementResult.HitResult, judgementResult.Position.Copy64(), object)
 	}
 
 	_, hC := object.(*objects.Circle)
-	allowCircle := hC && (result&(osu.BaseHits|osu.PositionalMiss) > 0)
+	allowCircle := hC && (judgementResult.HitResult&(osu.BaseHits|osu.PositionalMiss) > 0)
 	_, sl := object.(*objects.Slider)
-	allowSlider := sl && (result&(osu.SliderStart|osu.PositionalMiss)) > 0
+	allowSlider := sl && (judgementResult.HitResult&(osu.SliderStart|osu.PositionalMiss)) > 0
 
 	if allowCircle || allowSlider {
-		timeDiff := float64(time) - object.GetStartTime()
+		timeDiff := float64(judgementResult.Time) - object.GetStartTime()
 
-		overlay.hitErrorMeter.Add(float64(time), timeDiff, result == osu.PositionalMiss)
+		overlay.hitErrorMeter.Add(float64(judgementResult.Time), timeDiff, judgementResult.HitResult == osu.PositionalMiss)
 
 		var startPos *vector.Vector2f
-		if number > 0 {
-			pos := overlay.ruleset.GetBeatMap().HitObjects[number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+		if judgementResult.Number > 0 {
+			pos := overlay.ruleset.GetBeatMap().HitObjects[judgementResult.Number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
 			startPos = &pos
 		}
 
 		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
 
-		overlay.aimErrorMeter.Add(float64(time), c.Position, startPos, &endPos)
+		overlay.aimErrorMeter.Add(float64(judgementResult.Time), c.Position, startPos, &endPos)
 	}
 
-	if result == osu.PositionalMiss {
+	if judgementResult.HitResult == osu.PositionalMiss {
 		return
 	}
 
-	if comboResult == osu.Increase {
+	if judgementResult.ComboResult == osu.Increase {
 		overlay.comboCounter.Increase()
-	} else if comboResult == osu.Reset {
+	} else if judgementResult.ComboResult == osu.Reset {
 		overlay.comboCounter.Reset()
 	}
 
@@ -373,9 +373,9 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, time int64, number 
 	overlay.scoreGlider.SetValue(float64(sc.Score), settings.Gameplay.Score.StaticScore)
 	overlay.accuracyGlider.SetValue(sc.Accuracy, settings.Gameplay.Score.StaticAccuracy)
 
-	overlay.ppDisplay.Add(ppResults)
+	overlay.ppDisplay.Add(score.PP)
 
-	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(time), overlay.ruleset.GetHP(overlay.cursor)))
+	overlay.hpSections = append(overlay.hpSections, vector.NewVec2d(float64(judgementResult.Time), overlay.ruleset.GetHP(overlay.cursor)))
 
 	if overlay.oldGrade != sc.Grade {
 		goroutines.Run(func() {

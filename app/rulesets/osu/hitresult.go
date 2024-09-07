@@ -1,5 +1,7 @@
 package osu
 
+import "github.com/wieku/danser-go/framework/math/vector"
+
 type HitResult int64
 
 const (
@@ -53,4 +55,37 @@ func (r HitResult) ScoreValue() int64 {
 	}
 
 	return 0
+}
+
+type ComboResult uint8
+
+const (
+	Reset = ComboResult(iota)
+	Hold
+	Increase
+)
+
+type JudgementResult struct {
+	HitResult HitResult
+	MaxResult HitResult
+
+	ComboResult ComboResult
+
+	Time     int64
+	Position vector.Vector2f
+
+	Number int64
+	object HitObject
+}
+
+func createJudgementResult(result HitResult, maxResult HitResult, comboResult ComboResult, time int64, position vector.Vector2f, obj HitObject) JudgementResult {
+	return JudgementResult{
+		HitResult:   result,
+		MaxResult:   maxResult,
+		ComboResult: comboResult,
+		Time:        time,
+		Position:    position,
+		Number:      obj.GetNumber(),
+		object:      obj,
+	}
 }

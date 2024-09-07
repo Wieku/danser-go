@@ -188,11 +188,11 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 						spinner.hitSpinner.Bonus()
 					}
 
-					spinner.ruleSet.SendResult(time, player.cursor, spinner, spinnerPosition.X, spinnerPosition.Y, SpinnerBonus, Hold)
+					spinner.ruleSet.SendResult(player.cursor, createJudgementResult(SpinnerBonus, SpinnerBonus, Hold, time, spinnerPosition, spinner))
 				} else if state.scoringRotationCount > 1 && state.scoringRotationCount%2 == 0 {
-					spinner.ruleSet.SendResult(time, player.cursor, spinner, spinnerPosition.X, spinnerPosition.Y, SpinnerPoints, Hold)
+					spinner.ruleSet.SendResult(player.cursor, createJudgementResult(SpinnerPoints, SpinnerPoints, Hold, time, spinnerPosition, spinner))
 				} else if state.scoringRotationCount > 1 {
-					spinner.ruleSet.SendResult(time, player.cursor, spinner, spinnerPosition.X, spinnerPosition.Y, SpinnerSpin, Hold)
+					spinner.ruleSet.SendResult(player.cursor, createJudgementResult(SpinnerSpin, SpinnerSpin, Hold, time, spinnerPosition, spinner))
 				}
 
 				state.lastRotationCount = state.rotationCount
@@ -227,7 +227,7 @@ func (spinner *Spinner) UpdatePostFor(player *difficultyPlayer, time int64, _ bo
 			spinner.hitSpinner.Hit(float64(time), hit != Miss)
 		}
 
-		spinner.ruleSet.SendResult(time, player.cursor, spinner, spinner.hitSpinner.GetPosition().X, spinner.hitSpinner.GetPosition().Y, hit, combo)
+		spinner.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, spinner.hitSpinner.GetPosition(), spinner))
 
 		state.finished = true
 	}
