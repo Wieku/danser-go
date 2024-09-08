@@ -25,6 +25,26 @@ const (
 	MaxHp = 200.0
 )
 
+type IHealthProcessor interface {
+	CalculateRate()
+
+	ResetHp()
+
+	AddResult(result HitResult)
+
+	Increase(amount float64, fromHitObject bool)
+
+	IncreaseRelative(amount float64, fromHitObject bool)
+
+	Update(time int64)
+
+	AddFailListener(listener FailListener)
+
+	GetHealth() float64
+
+	GetDrainRate() float64
+}
+
 type FailListener func()
 
 type drainPeriod struct {
@@ -276,6 +296,10 @@ func (hp *HealthProcessor) Increase(amount float64, fromHitObject bool) {
 			f()
 		}
 	}
+}
+
+func (hp *HealthProcessor) IncreaseRelative(amount float64, fromHitObject bool) {
+	hp.Increase(amount*MaxHp, fromHitObject)
 }
 
 func (hp *HealthProcessor) reducePassive(amount int64) {

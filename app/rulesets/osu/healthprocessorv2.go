@@ -213,6 +213,10 @@ func (hp *HealthProcessorV2) Increase(amount float64, fromHitObject bool) {
 	}
 }
 
+func (hp *HealthProcessorV2) IncreaseRelative(amount float64, fromHitObject bool) {
+	hp.Increase(amount, fromHitObject)
+}
+
 func (hp *HealthProcessorV2) Update(time int64) {
 	drainTime := false
 

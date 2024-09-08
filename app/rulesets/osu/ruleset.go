@@ -89,7 +89,7 @@ type subSet struct {
 	player *difficultyPlayer
 
 	score          *Score
-	hp             *HealthProcessor
+	hp             IHealthProcessor
 	scoreProcessor scoreProcessor
 	rawScore       int64
 	currentKatu    int
@@ -658,7 +658,7 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 
 	// EZ mod gives 2 additional lives
 	if subSet.recoveries > 0 && !subSet.sdpfFail && !subSet.forceFail {
-		subSet.hp.Increase(160, false)
+		subSet.hp.IncreaseRelative(0.8, false)
 		subSet.recoveries--
 
 		return
