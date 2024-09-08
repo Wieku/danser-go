@@ -27,7 +27,7 @@ const (
 
 type FailListener func()
 
-type drain struct {
+type drainPeriod struct {
 	start, end int64
 }
 
@@ -39,10 +39,10 @@ type HealthProcessor struct {
 	HpMultiplierNormal   float64
 	HpMultiplierComboEnd float64
 
-	Health         float64
-	HealthUncapped float64
+	health         float64
+	healthUncapped float64
 
-	drains            []drain
+	drains            []drainPeriod
 	lastTime          int64
 	lowerSpinnerDrain bool
 
@@ -55,7 +55,7 @@ type HealthProcessor struct {
 }
 
 func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, lowerSpinnerDrain bool) *HealthProcessor {
-	proc := &HealthProcessor{
+	hp := &HealthProcessor{
 		beatMap:           beatMap,
 		diff:              diff,
 		lowerSpinnerDrain: lowerSpinnerDrain,
@@ -63,11 +63,42 @@ func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, l
 
 	for _, o := range beatMap.HitObjects {
 		if s, ok := o.(*objects.Spinner); ok {
-			proc.spinners = append(proc.spinners, s)
+			hp.spinners = append(hp.spinners, s)
 		}
 	}
 
-	return proc
+	hp.calculateDrainPeriods()
+
+	return hp
+}
+
+func (hp *HealthProcessor) calculateDrainPeriods() {
+	breakCount := len(hp.beatMap.Pauses)
+
+	breakNumber := 0
+	lastDrainStart := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
+	lastDrainEnd := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
+
+	for _, o := range hp.beatMap.HitObjects {
+		if breakCount > 0 && breakNumber < breakCount {
+			pause := hp.beatMap.Pauses[breakNumber]
+			if pause.GetStartTime() >= float64(lastDrainEnd) && pause.GetEndTime() <= o.GetStartTime() {
+				breakNumber++
+
+				if hp.beatMap.Version < 8 {
+					lastDrainEnd = int64(pause.GetStartTime())
+				}
+
+				hp.drains = append(hp.drains, drainPeriod{lastDrainStart, lastDrainEnd})
+
+				lastDrainStart = int64(o.GetStartTime())
+			}
+		}
+
+		lastDrainEnd = int64(o.GetEndTime())
+	}
+
+	hp.drains = append(hp.drains, drainPeriod{lastDrainStart, lastDrainEnd})
 }
 
 func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
@@ -87,7 +118,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 	for fail {
 		hp.ResetHp()
 
-		lowestHp := hp.Health
+		lowestHp := hp.health
 
 		lastTime := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
 		fail = false
@@ -117,9 +148,9 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 
 			lastTime = int64(o.GetEndTime())
 
-			lowestHp = min(lowestHp, hp.Health)
+			lowestHp = min(lowestHp, hp.health)
 
-			if hp.Health <= lowestHpEver {
+			if hp.health <= lowestHpEver {
 				fail = true
 				hp.PassiveDrain *= 0.96
 
@@ -127,7 +158,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 			}
 
 			decr := hp.PassiveDrain * (o.GetEndTime() - o.GetStartTime())
-			hpUnder := min(0, hp.Health-decr)
+			hpUnder := min(0, hp.health-decr)
 
 			hp.Increase(-decr, false)
 
@@ -147,7 +178,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 			}
 
 			//noinspection GoBoolExpressions - false positive
-			if hpUnder < 0 && hp.Health+hpUnder <= lowestHpEver {
+			if hpUnder < 0 && hp.health+hpUnder <= lowestHpEver {
 				fail = true
 				hp.PassiveDrain *= 0.96
 
@@ -157,7 +188,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 			if i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo() {
 				hp.AddResult(Hit300g)
 
-				if hp.Health < lowestHpComboEnd {
+				if hp.health < lowestHpComboEnd {
 					comboTooLowCount++
 					if comboTooLowCount > 2 {
 						hp.HpMultiplierComboEnd *= 1.07
@@ -172,14 +203,14 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 			}
 		}
 
-		if !fail && hp.Health < lowestHpEnd {
+		if !fail && hp.health < lowestHpEnd {
 			fail = true
 			hp.PassiveDrain *= 0.94
 			hp.HpMultiplierComboEnd *= 1.01
 			hp.HpMultiplierNormal *= 1.01
 		}
 
-		recovery := (hp.HealthUncapped - MaxHp) / float64(len(hp.beatMap.HitObjects))
+		recovery := (hp.healthUncapped - MaxHp) / float64(len(hp.beatMap.HitObjects))
 		if !fail && recovery < hpRecoveryAvailable {
 			fail = true
 			hp.PassiveDrain *= 0.96
@@ -188,38 +219,13 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 		}
 	}
 
-	breakNumber := 0
-	lastDrainStart := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
-	lastDrainEnd := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
-
-	for _, o := range hp.beatMap.HitObjects {
-		if breakCount > 0 && breakNumber < breakCount {
-			pause := hp.beatMap.Pauses[breakNumber]
-			if pause.GetStartTime() >= float64(lastDrainEnd) && pause.GetEndTime() <= o.GetStartTime() {
-				breakNumber++
-
-				if hp.beatMap.Version < 8 {
-					lastDrainEnd = int64(pause.GetStartTime())
-				}
-
-				hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
-
-				lastDrainStart = int64(o.GetStartTime())
-			}
-		}
-
-		lastDrainEnd = int64(o.GetEndTime())
-	}
-
-	hp.drains = append(hp.drains, drain{lastDrainStart, lastDrainEnd})
-
 	hp.ResetHp()
 	hp.playing = true
 }
 
 func (hp *HealthProcessor) ResetHp() {
-	hp.Health = MaxHp
-	hp.HealthUncapped = MaxHp
+	hp.health = MaxHp
+	hp.healthUncapped = MaxHp
 }
 
 func (hp *HealthProcessor) AddResult(result HitResult) {
@@ -262,17 +268,17 @@ func (hp *HealthProcessor) AddResult(result HitResult) {
 }
 
 func (hp *HealthProcessor) Increase(amount float64, fromHitObject bool) {
-	hp.HealthUncapped = max(0.0, hp.HealthUncapped+amount)
-	hp.Health = mutils.Clamp(hp.Health+amount, 0.0, MaxHp)
+	hp.healthUncapped = max(0.0, hp.healthUncapped+amount)
+	hp.health = mutils.Clamp(hp.health+amount, 0.0, MaxHp)
 
-	if hp.playing && hp.Health <= 0 && fromHitObject {
+	if hp.playing && hp.health <= 0 && fromHitObject {
 		for _, f := range hp.failListeners {
 			f()
 		}
 	}
 }
 
-func (hp *HealthProcessor) ReducePassive(amount int64) {
+func (hp *HealthProcessor) reducePassive(amount int64) {
 	scale := 1.0
 	if hp.spinnerActive && hp.lowerSpinnerDrain {
 		scale = 0.25
@@ -308,7 +314,7 @@ func (hp *HealthProcessor) Update(time int64) {
 	}
 
 	if drainTime && time > hp.lastTime {
-		hp.ReducePassive(time - hp.lastTime)
+		hp.reducePassive(time - hp.lastTime)
 	}
 
 	hp.lastTime = time
@@ -316,4 +322,12 @@ func (hp *HealthProcessor) Update(time int64) {
 
 func (hp *HealthProcessor) AddFailListener(listener FailListener) {
 	hp.failListeners = append(hp.failListeners, listener)
+}
+
+func (hp *HealthProcessor) GetHealth() float64 {
+	return hp.health / MaxHp
+}
+
+func (hp *HealthProcessor) GetDrainRate() float64 {
+	return hp.PassiveDrain
 }

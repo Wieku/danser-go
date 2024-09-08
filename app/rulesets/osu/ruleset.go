@@ -193,7 +193,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		hp.CalculateRate()
 		hp.ResetHp()
 
-		log.Println("\tPassive drain rate:", hp.PassiveDrain/2*1000)
+		log.Println("\tPassive drain rate:", hp.GetDrainRate()*1000)
 		log.Println("\tNormal multiplier:", hp.HpMultiplierNormal)
 		log.Println("\tCombo end multiplier:", hp.HpMultiplierComboEnd)
 
@@ -700,7 +700,7 @@ func (set *OsuRuleSet) GetScore(cursor *graphics.Cursor) Score {
 
 func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	subSet := set.cursors[cursor]
-	return subSet.hp.Health / MaxHp
+	return subSet.hp.GetHealth()
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
