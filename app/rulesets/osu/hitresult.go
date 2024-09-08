@@ -57,6 +57,28 @@ func (r HitResult) ScoreValue() int64 {
 	return 0
 }
 
+func (r HitResult) ScoreValueLazer() int64 {
+	v := r & (^(Additions | SliderStart))
+	switch v {
+	case Hit50:
+		return 50
+	case Hit100:
+		return 100
+	case SliderEnd:
+		return 150
+	case Hit300:
+		return 300
+	case SliderRepeat:
+		return 30
+	case SliderPoint, SpinnerPoints:
+		return 10
+	case SpinnerBonus:
+		return 50
+	}
+
+	return 0
+}
+
 type ComboResult uint8
 
 const (
