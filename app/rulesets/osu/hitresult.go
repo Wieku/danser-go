@@ -75,6 +75,14 @@ func (r HitResult) ScoreValue() int64 {
 	return 0
 }
 
+func (r HitResult) ScoreValueV2() int64 {
+	if r&SpinnerBonus > 0 {
+		return 500
+	}
+
+	return r.ScoreValue()
+}
+
 func (r HitResult) ScoreValueLazer() int64 {
 	v := r & (^(Additions | SliderStart))
 	switch v {

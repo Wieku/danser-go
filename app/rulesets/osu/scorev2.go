@@ -69,7 +69,7 @@ func (s *scoreV2Processor) AddResult(result JudgementResult) {
 		s.combo++
 	}
 
-	scoreValue := scoreValueV2(result.HitResult)
+	scoreValue := result.HitResult.ScoreValueV2()
 
 	if result.HitResult.IsBonus() {
 		s.bonus += float64(scoreValue)
@@ -116,13 +116,4 @@ func (s *scoreV2Processor) GetScore() int64 {
 
 func (s *scoreV2Processor) GetCombo() int64 {
 	return s.combo
-}
-
-func scoreValueV2(result HitResult) int64 {
-	scoreVal := result.ScoreValue()
-	if result&SpinnerBonus > 0 {
-		scoreVal = 500
-	}
-
-	return scoreVal
 }
