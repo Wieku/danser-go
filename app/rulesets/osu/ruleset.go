@@ -67,6 +67,7 @@ type scoreProcessor interface {
 	ModifyResult(result HitResult, src HitObject) HitResult
 	GetScore() int64
 	GetCombo() int64
+	GetAccuracy() float64
 }
 
 type Score struct {

@@ -7,9 +7,13 @@ import (
 )
 
 type scoreV3Processor struct {
-	score         int64
-	combo         int64
+	score    int64
+	combo    int64
+	accuracy float64
+
 	modMultiplier float64
+
+	bonus int64
 
 	comboPart    float64
 	comboPartMax float64
@@ -21,7 +25,6 @@ type scoreV3Processor struct {
 	maxHits int64
 
 	player *difficultyPlayer
-	bonus  float64
 }
 
 func newScoreV3Processor() *scoreV3Processor {
@@ -64,6 +67,7 @@ func (s *scoreV3Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.bonus = 0
 	s.accPart = 0
 	s.accPartMax = 0
+	s.accuracy = 1
 }
 
 func (s *scoreV3Processor) AddResult(result JudgementResult) {
@@ -74,7 +78,7 @@ func (s *scoreV3Processor) AddResult(result JudgementResult) {
 	}
 
 	if result.HitResult.IsBonus() {
-		s.bonus += float64(result.HitResult.ScoreValueLazer())
+		s.bonus += result.HitResult.ScoreValueLazer()
 	} else if result.HitResult.AffectsAccLZ() {
 		s.comboPart += float64(result.MaxResult.ScoreValueLazer()) * math.Pow(float64(s.combo), 0.5)
 
@@ -84,17 +88,21 @@ func (s *scoreV3Processor) AddResult(result JudgementResult) {
 		s.hits++
 	}
 
-	if s.maxHits > 0 {
-		acc := 1.0
-		if s.hits > 0 {
-			acc = float64(s.accPart) / float64(s.accPartMax)
-		}
-
-		cPart := s.comboPart / s.comboPartMax
-		aPart := float64(s.hits) / float64(s.maxHits)
-
-		s.score = int64(math.Round(math.Round(500000*acc*cPart+500000*math.Pow(acc, 5)*aPart+s.bonus) * s.modMultiplier))
+	if s.maxHits == 0 {
+		return
 	}
+
+	acc := 1.0
+	if s.hits > 0 {
+		acc = float64(s.accPart) / float64(s.accPartMax)
+	}
+
+	s.accuracy = acc
+
+	comboProgress := s.comboPart / s.comboPartMax
+	accProgress := float64(s.hits) / float64(s.maxHits)
+
+	s.score = int64(math.Round(math.Round(500000*acc*comboProgress+500000*math.Pow(acc, 5)*accProgress+float64(s.bonus)) * s.modMultiplier))
 }
 
 func (s *scoreV3Processor) ModifyResult(result HitResult, src HitObject) HitResult {
@@ -107,4 +115,8 @@ func (s *scoreV3Processor) GetScore() int64 {
 
 func (s *scoreV3Processor) GetCombo() int64 {
 	return s.combo
+}
+
+func (s *scoreV3Processor) GetAccuracy() float64 {
+	return s.accuracy
 }

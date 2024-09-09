@@ -13,13 +13,14 @@ type scoreV2Processor struct {
 	comboPartMax  float64
 	comboPart     float64
 
-	hitMap map[HitResult]int64
-
-	hits    int64
-	maxHits int64
+	rawScore int64
+	hits     int64
+	maxHits  int64
 
 	player *difficultyPlayer
 	bonus  float64
+
+	accuracy float64
 }
 
 func newScoreV2Processor() *scoreV2Processor {
@@ -32,7 +33,6 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 
 	s.comboPartMax = 0
 	s.maxHits = 0
-	s.hitMap = make(map[HitResult]int64)
 
 	for _, o := range beatMap.HitObjects {
 		if o.GetType() == objects.SPINNER {
@@ -56,10 +56,11 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.maxHits = s.hits
 
 	s.combo = 0
+	s.rawScore = 0
 	s.hits = 0
 	s.comboPart = 0
 	s.bonus = 0
-	s.hitMap = make(map[HitResult]int64)
+	s.accuracy = 1
 }
 
 func (s *scoreV2Processor) AddResult(result JudgementResult) {
@@ -77,19 +78,26 @@ func (s *scoreV2Processor) AddResult(result JudgementResult) {
 		s.comboPart += float64(scoreValue) * (1 + float64(s.combo)/10)
 	}
 
-	if result.HitResult&BaseHitsM > 0 {
-		s.hitMap[result.HitResult]++
+	if r := result.HitResult & BaseHitsM; r > 0 {
+		s.rawScore += r.ScoreValueV2()
 		s.hits++
 	}
 
-	if s.maxHits > 0 {
-		acc := float32(1.0)
-		if s.hits > 0 {
-			acc = float32(s.hitMap[Hit50]*50+s.hitMap[Hit100]*100+s.hitMap[Hit300]*300) / float32(s.hits*300)
-		}
-
-		s.score = int64(math.Round((s.comboPart/s.comboPartMax*700000 + math.Pow(float64(acc), 10)*(float64(s.hits)/float64(s.maxHits))*300000 + s.bonus) * s.modMultiplier))
+	if s.maxHits == 0 {
+		return
 	}
+
+	acc := float32(1.0)
+	acc2 := 1.0
+
+	if s.hits > 0 {
+		acc = float32(s.rawScore) / float32(s.hits*300)
+		acc2 = float64(s.rawScore) / float64(s.hits*300)
+	}
+
+	s.score = int64(math.Round((s.comboPart/s.comboPartMax*700000 + math.Pow(float64(acc), 10)*(float64(s.hits)/float64(s.maxHits))*300000 + s.bonus) * s.modMultiplier))
+
+	s.accuracy = acc2
 }
 
 func (s *scoreV2Processor) ModifyResult(result HitResult, src HitObject) HitResult {
@@ -116,4 +124,8 @@ func (s *scoreV2Processor) GetScore() int64 {
 
 func (s *scoreV2Processor) GetCombo() int64 {
 	return s.combo
+}
+
+func (s *scoreV2Processor) GetAccuracy() float64 {
+	return s.accuracy
 }
