@@ -35,18 +35,20 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.hitMap = make(map[HitResult]int64)
 
 	for _, o := range beatMap.HitObjects {
-		if o.GetType() == objects.CIRCLE || o.GetType() == objects.SPINNER {
-			s.AddResult(Hit300, Increase)
+		if o.GetType() == objects.SPINNER {
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
 		} else if slider, ok := o.(*objects.Slider); ok {
 			for j := 0; j < len(slider.TickReverse)+1; j++ {
-				s.AddResult(SliderRepeat, Increase)
+				s.AddResult(createJudgementResult(SliderRepeat, SliderRepeat, Increase, 0, o.GetStartPosition(), nil))
 			}
 
 			for j := 0; j < len(slider.TickPoints); j++ {
-				s.AddResult(SliderPoint, Increase)
+				s.AddResult(createJudgementResult(SliderPoint, SliderPoint, Increase, 0, o.GetStartPosition(), nil))
 			}
 
-			s.AddResult(Hit300, Hold)
+			s.AddResult(createJudgementResult(Hit300, Hit300, Hold, int64(o.GetEndTime()), o.GetEndPosition(), nil))
+		} else {
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetStartTime()), o.GetStartPosition(), nil))
 		}
 	}
 
@@ -60,23 +62,23 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.hitMap = make(map[HitResult]int64)
 }
 
-func (s *scoreV2Processor) AddResult(result HitResult, comboResult ComboResult) {
-	if comboResult == Reset || result == Miss {
+func (s *scoreV2Processor) AddResult(result JudgementResult) {
+	if result.ComboResult == Reset || result.HitResult == Miss {
 		s.combo = 0
-	} else if comboResult == Increase {
+	} else if result.ComboResult == Increase {
 		s.combo++
 	}
 
-	scoreValue := scoreValueV2(result)
+	scoreValue := scoreValueV2(result.HitResult)
 
-	if result&(SpinnerPoints|SpinnerBonus) > 0 {
+	if result.HitResult.IsBonus() {
 		s.bonus += float64(scoreValue)
 	} else {
 		s.comboPart += float64(scoreValue) * (1 + float64(s.combo)/10)
 	}
 
-	if result&BaseHitsM > 0 {
-		s.hitMap[result]++
+	if result.HitResult&BaseHitsM > 0 {
+		s.hitMap[result.HitResult]++
 		s.hits++
 	}
 

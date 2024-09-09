@@ -37,6 +37,24 @@ const (
 	RawHits     = SliderHits | SpinnerHits
 )
 
+func (r HitResult) IsBonus() bool {
+	v := r & (^Additions)
+
+	return v&(SpinnerPoints|SpinnerBonus) != 0
+}
+
+func (r HitResult) AffectsAccV1() bool {
+	v := r & (^Additions)
+
+	return v&(BaseHitsM) != 0
+}
+
+func (r HitResult) AffectsAccLZ() bool {
+	v := r & (^Additions)
+
+	return v&(BaseHitsM|SliderHits) != 0
+}
+
 func (r HitResult) ScoreValue() int64 {
 	v := r & (^Additions)
 	switch v {

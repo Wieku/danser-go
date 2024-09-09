@@ -10,10 +10,12 @@ type scoreV3Processor struct {
 	score         int64
 	combo         int64
 	modMultiplier float64
-	comboPartMax  float64
-	comboPart     float64
 
-	hitMap map[HitResult]int64
+	comboPart    float64
+	comboPartMax float64
+
+	accPart    int64
+	accPartMax int64
 
 	hits    int64
 	maxHits int64
@@ -32,21 +34,24 @@ func (s *scoreV3Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 
 	s.comboPartMax = 0
 	s.maxHits = 0
-	s.hitMap = make(map[HitResult]int64)
 
 	for _, o := range beatMap.HitObjects {
-		if o.GetType() == objects.CIRCLE || o.GetType() == objects.SPINNER {
-			s.AddResult(Hit300, Increase)
+		if o.GetType() == objects.SPINNER {
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
 		} else if slider, ok := o.(*objects.Slider); ok {
-			s.AddResult(Hit300, Increase)
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
 
-			for i := range slider.ScorePoints {
+			for i, p := range slider.ScorePointsLazer {
 				if i == len(slider.ScorePoints)-1 {
-					s.AddResult(SliderEnd, Increase)
+					s.AddResult(createJudgementResult(SliderEnd, SliderEnd, Increase, int64(p.Time), p.Pos, nil))
+				} else if p.IsReverse {
+					s.AddResult(createJudgementResult(SliderRepeat, SliderRepeat, Increase, int64(p.Time), p.Pos, nil))
 				} else {
-					s.AddResult(SliderRepeat, Increase)
+					s.AddResult(createJudgementResult(SliderPoint, SliderPoint, Increase, int64(p.Time), p.Pos, nil))
 				}
 			}
+		} else {
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetStartTime()), o.GetStartPosition(), nil))
 		}
 	}
 
@@ -57,33 +62,32 @@ func (s *scoreV3Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.hits = 0
 	s.comboPart = 0
 	s.bonus = 0
-	s.hitMap = make(map[HitResult]int64)
+	s.accPart = 0
+	s.accPartMax = 0
 }
 
-func (s *scoreV3Processor) AddResult(result HitResult, comboResult ComboResult) {
-	if comboResult == Reset || result == Miss {
+func (s *scoreV3Processor) AddResult(result JudgementResult) {
+	if result.ComboResult == Reset || result.HitResult == Miss {
 		s.combo = 0
-	} else if comboResult == Increase {
+	} else if result.ComboResult == Increase {
 		s.combo++
 	}
 
-	scoreValue := result.ScoreValueLazer()
+	if result.HitResult.IsBonus() {
+		s.bonus += float64(result.HitResult.ScoreValueLazer())
+	} else if result.HitResult.AffectsAccLZ() {
+		s.comboPart += float64(result.MaxResult.ScoreValueLazer()) * math.Pow(float64(s.combo), 0.5)
 
-	if result&(SpinnerPoints|SpinnerBonus) > 0 {
-		s.bonus += float64(scoreValue)
-	} else {
-		s.comboPart += float64(scoreValue) * (1 + float64(s.combo)/10)
-	}
+		s.accPart += result.HitResult.ScoreValueLazer()
+		s.accPartMax += result.MaxResult.ScoreValueLazer()
 
-	if result&BaseHitsM > 0 {
-		s.hitMap[result&BaseHitsM]++
 		s.hits++
 	}
 
 	if s.maxHits > 0 {
 		acc := 1.0
 		if s.hits > 0 {
-			acc = float64(s.hitMap[Hit50]*50+s.hitMap[Hit100]*100+s.hitMap[Hit300]*300) / float64(s.hits*300)
+			acc = float64(s.accPart) / float64(s.accPartMax)
 		}
 
 		cPart := s.comboPart / s.comboPartMax

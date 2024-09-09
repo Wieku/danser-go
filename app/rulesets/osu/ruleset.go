@@ -63,7 +63,7 @@ type difficultyPlayer struct {
 
 type scoreProcessor interface {
 	Init(beatMap *beatmap.BeatMap, player *difficultyPlayer)
-	AddResult(result HitResult, comboResult ComboResult)
+	AddResult(result JudgementResult)
 	ModifyResult(result HitResult, src HitObject) HitResult
 	GetScore() int64
 	GetCombo() int64
@@ -442,7 +442,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 	}
 
 	judgementResult.HitResult = subSet.scoreProcessor.ModifyResult(judgementResult.HitResult, judgementResult.object)
-	subSet.scoreProcessor.AddResult(judgementResult.HitResult, judgementResult.ComboResult)
+	subSet.scoreProcessor.AddResult(judgementResult)
 
 	subSet.score.Score = subSet.scoreProcessor.GetScore()
 
