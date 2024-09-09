@@ -61,40 +61,15 @@ type difficultyPlayer struct {
 	rightCondE      bool
 }
 
-type scoreProcessor interface {
-	Init(beatMap *beatmap.BeatMap, player *difficultyPlayer)
-	AddResult(result JudgementResult)
-	ModifyResult(result HitResult, src HitObject) HitResult
-	GetScore() int64
-	GetCombo() int64
-	GetAccuracy() float64
-}
-
-type Score struct {
-	Score        int64
-	Accuracy     float64
-	Grade        Grade
-	Combo        uint
-	PerfectCombo bool
-	Count300     uint
-	CountGeki    uint
-	Count100     uint
-	CountKatu    uint
-	Count50      uint
-	CountMiss    uint
-	CountSB      uint
-	PP           pp220930.PPv2Results
-}
-
 type subSet struct {
 	player *difficultyPlayer
 
 	score          *Score
 	hp             IHealthProcessor
 	scoreProcessor scoreProcessor
-	rawScore       int64
-	currentKatu    int
-	currentBad     int
+
+	currentKatu int
+	currentBad  int
 
 	numObjects uint
 
@@ -220,7 +195,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		ruleset.cursors[cursor] = &subSet{
 			player: player,
 			score: &Score{
-				Accuracy: 100,
+				Accuracy: 1,
 			},
 			ppv2:           &pp220930.PPv2{},
 			hp:             hp,
@@ -314,7 +289,7 @@ func (set *OsuRuleSet) printEndTable() {
 		data = append(data, fmt.Sprintf("%d", i+1))
 		data = append(data, c.Name)
 		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
-		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy))
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy*100))
 		data = append(data, set.cursors[c].score.Grade.String())
 		data = append(data, utils.Humanize(set.cursors[c].score.Count300))
 		data = append(data, utils.Humanize(set.cursors[c].score.Count100))
@@ -443,9 +418,6 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 	}
 
 	judgementResult.HitResult = subSet.scoreProcessor.ModifyResult(judgementResult.HitResult, judgementResult.object)
-	subSet.scoreProcessor.AddResult(judgementResult)
-
-	subSet.score.Score = subSet.scoreProcessor.GetScore()
 
 	if judgementResult.ComboResult == Reset && judgementResult.HitResult != Miss { // skips missed slider "ends" as they don't reset combo
 		subSet.score.CountSB++
@@ -454,53 +426,17 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 	bResult := judgementResult.HitResult & BaseHitsM
 
 	if bResult > 0 {
-		subSet.rawScore += judgementResult.HitResult.ScoreValue()
-
-		switch bResult {
-		case Hit300:
-			subSet.score.Count300++
-		case Hit100:
-			subSet.score.Count100++
-		case Hit50:
-			subSet.score.Count50++
-		case Miss:
-			subSet.score.CountMiss++
-		}
-
 		subSet.numObjects++
 	}
 
+	subSet.scoreProcessor.AddResult(judgementResult)
+	subSet.score.AddResult(judgementResult)
+
+	subSet.score.Score = subSet.scoreProcessor.GetScore()
 	subSet.score.Combo = max(uint(subSet.scoreProcessor.GetCombo()), subSet.score.Combo)
+	subSet.score.Accuracy = subSet.scoreProcessor.GetAccuracy()
 
-	if subSet.numObjects == 0 {
-		subSet.score.Accuracy = 100
-	} else {
-		subSet.score.Accuracy = 100 * float64(subSet.rawScore) / float64(subSet.numObjects*300)
-	}
-
-	ratio := float64(subSet.score.Count300) / float64(subSet.numObjects)
-
-	if subSet.score.Count300 == subSet.numObjects {
-		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			subSet.score.Grade = SSH
-		} else {
-			subSet.score.Grade = SS
-		}
-	} else if ratio > 0.9 && float64(subSet.score.Count50)/float64(subSet.numObjects) < 0.01 && subSet.score.CountMiss == 0 {
-		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			subSet.score.Grade = SH
-		} else {
-			subSet.score.Grade = S
-		}
-	} else if ratio > 0.8 && subSet.score.CountMiss == 0 || ratio > 0.9 {
-		subSet.score.Grade = A
-	} else if ratio > 0.7 && subSet.score.CountMiss == 0 || ratio > 0.8 {
-		subSet.score.Grade = B
-	} else if ratio > 0.6 {
-		subSet.score.Grade = C
-	} else {
-		subSet.score.Grade = D
-	}
+	subSet.score.CalculateGrade(subSet.player.diff.Mods)
 
 	index := max(1, subSet.numObjects) - 1
 
@@ -573,7 +509,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 			subSet.scoreProcessor.GetCombo(),
 			subSet.score.Combo,
 			subSet.scoreProcessor.GetScore(),
-			subSet.score.Accuracy,
+			subSet.score.Accuracy*100,
 			subSet.score.Count300,
 			subSet.score.Count100,
 			subSet.score.Count50,

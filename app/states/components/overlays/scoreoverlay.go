@@ -371,7 +371,7 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 	overlay.entry.UpdatePlayer(sc.Score, int64(sc.Combo))
 
 	overlay.scoreGlider.SetValue(float64(sc.Score), settings.Gameplay.Score.StaticScore)
-	overlay.accuracyGlider.SetValue(sc.Accuracy, settings.Gameplay.Score.StaticAccuracy)
+	overlay.accuracyGlider.SetValue(sc.Accuracy*100, settings.Gameplay.Score.StaticAccuracy)
 
 	overlay.ppDisplay.Add(score.PP)
 

@@ -36,6 +36,7 @@ const (
 	ScoreV2
 	LastMod
 	Daycore
+	Lazer
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax

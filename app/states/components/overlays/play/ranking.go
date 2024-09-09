@@ -184,7 +184,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 
 	panel.score = fmt.Sprintf("%08d", score.Score)
 	panel.maxCombo = fmt.Sprintf("%dx", score.Combo)
-	panel.accuracy = fmt.Sprintf("%.2f%%", score.Accuracy)
+	panel.accuracy = fmt.Sprintf("%.2f%%", score.Accuracy*100)
 
 	panel.hpGraph = make([]vector.Vector2d, len(hpGraph))
 	copy(panel.hpGraph, hpGraph)

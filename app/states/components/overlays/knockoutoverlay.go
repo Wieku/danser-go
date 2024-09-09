@@ -280,7 +280,7 @@ func (overlay *KnockoutOverlay) hitReceived(cursor *graphics.Cursor, judgementRe
 	player.perObjectStats[judgementResult.Number].pp = player.pp
 	player.perObjectStats[judgementResult.Number].accuracy = score.Accuracy
 
-	player.accDisp.SetValue(score.Accuracy, false)
+	player.accDisp.SetValue(score.Accuracy*100, false)
 
 	if judgementResult.ComboResult == osu.Increase {
 		player.sCombo++
@@ -481,7 +481,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 		highestCombo = max(highestCombo, overlay.players[r.Name].sCombo)
 		highestPP = max(highestPP, overlay.players[r.Name].pp)
-		highestACC = max(highestACC, r.Accuracy)
+		highestACC = max(highestACC, r.Accuracy*100)
 		highestScore = max(highestScore, overlay.players[r.Name].score)
 
 		pWidth := overlay.font.GetWidth(scl, r.Name)
