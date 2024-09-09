@@ -57,7 +57,13 @@ func (s *Score) AddResult(result JudgementResult) {
 }
 
 func (s *Score) CalculateGrade(mods difficulty.Modifier) {
-	baseGrade := s.gradeV1()
+	var baseGrade Grade
+
+	if mods&(difficulty.Lazer) > 0 {
+		baseGrade = s.gradeV2()
+	} else {
+		baseGrade = s.gradeV1()
+	}
 
 	if mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
 		switch baseGrade {
@@ -86,6 +92,22 @@ func (s *Score) gradeV1() Grade {
 	} else if ratio > 0.7 && s.CountMiss == 0 || ratio > 0.8 {
 		return B
 	} else if ratio > 0.6 {
+		return C
+	}
+
+	return D
+}
+
+func (s *Score) gradeV2() Grade {
+	if s.Accuracy == 1 && s.CountMiss == 0 {
+		return SS
+	} else if s.Accuracy >= 0.95 && s.CountMiss == 0 {
+		return S
+	} else if s.Accuracy >= 0.9 {
+		return A
+	} else if s.Accuracy >= 0.8 {
+		return B
+	} else if s.Accuracy >= 0.7 {
 		return C
 	}
 
