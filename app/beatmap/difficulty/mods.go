@@ -96,6 +96,7 @@ var modsString = [...]string{
 	"V2",
 	"LM",
 	"DC",
+	"LZ",
 }
 
 var modsStringFull = [...]string{
@@ -131,6 +132,7 @@ var modsStringFull = [...]string{
 	"ScoreV2",
 	"LastMod",
 	"Daycore",
+	"Lazer",
 }
 
 func (mods Modifier) GetScoreMultiplier() float64 {
