@@ -126,6 +126,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		diff.SetARCustom(beatMap.Diff.GetAR())
 
 		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.ScoreV2)) // if beatmap has ScoreV2 mod, force it for all players
+		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.Lazer))   // same for Lazer
 		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
 
 		player := &difficultyPlayer{cursor: cursor, diff: diff}
@@ -165,13 +166,23 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
 
-		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
+		var hp IHealthProcessor
+
+		if diff.CheckModActive(difficulty.Lazer) {
+			hp = NewHealthProcessorV2(beatMap, diff)
+		} else {
+			hp = NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
+		}
+
 		hp.CalculateRate()
 		hp.ResetHp()
 
 		log.Println("\tPassive drain rate:", hp.GetDrainRate()*1000)
-		log.Println("\tNormal multiplier:", hp.HpMultiplierNormal)
-		log.Println("\tCombo end multiplier:", hp.HpMultiplierComboEnd)
+
+		if hp2, ok := hp.(*HealthProcessor); ok {
+			log.Println("\tNormal multiplier:", hp2.HpMultiplierNormal)
+			log.Println("\tCombo end multiplier:", hp2.HpMultiplierComboEnd)
+		}
 
 		recoveries := 0
 		if diff.CheckModActive(difficulty.Easy) {
@@ -184,7 +195,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 		var sc scoreProcessor
 
-		if diff.CheckModActive(difficulty.ScoreV2) {
+		if diff.CheckModActive(difficulty.Lazer) {
+			sc = newScoreV3Processor()
+		} else if diff.CheckModActive(difficulty.ScoreV2) {
 			sc = newScoreV2Processor()
 		} else {
 			sc = newScoreV1Processor()
