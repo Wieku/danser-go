@@ -58,6 +58,10 @@ func (m *modPopup) drawModMenu() {
 			m.modCheckbox(difficulty.ScoreV2, difficulty.None)
 		})
 
+		m.drawRow("Conversion:", func() {
+			m.modCheckbox(difficulty.Lazer, difficulty.None)
+		})
+
 		imgui.EndTable()
 	}
 
