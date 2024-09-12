@@ -93,7 +93,7 @@ func (s *scoreV3Processor) AddResult(result JudgementResult) {
 	}
 
 	acc := 1.0
-	if s.hits > 0 {
+	if s.hits > 0 && s.accPartMax > 0 {
 		acc = float64(s.accPart) / float64(s.accPartMax)
 	}
 
