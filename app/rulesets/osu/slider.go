@@ -105,7 +105,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 	inRadius := player.cursor.RawPosition.Dst(position) <= radius
 
-	if clicked && !state.isStartHit && !state.isHit {
+	if clicked && !state.isStartHit && (!state.isHit || player.diff.CheckModActive(difficulty.Lazer)) {
 		action := slider.ruleSet.CanBeHit(time, slider, player)
 
 		if inRadius {
@@ -149,7 +149,20 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 						slider.hitSlider.HitEdge(0, float64(time), hit != SliderMiss)
 					}
 
-					slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderStart, combo, time, position, slider))
+					if player.diff.CheckModActive(difficulty.Lazer) {
+						slider.ruleSet.SendResult(player.cursor, createJudgementResult(state.startResult, Hit300, combo, time, position, slider))
+
+						if state.startResult != Miss {
+							state.sliding = true
+							state.slideStart = time
+
+							if len(slider.players) == 1 {
+								slider.hitSlider.InitSlide(float64(time))
+							}
+						}
+					} else {
+						slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderStart, combo, time, position, slider))
+					}
 
 					state.isStartHit = true
 				}
@@ -299,7 +312,11 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
 
-		slider.ruleSet.SendResult(player.cursor, createJudgementResult(SliderMiss, SliderStart, Reset, time, position, slider))
+		if player.diff.CheckModActive(difficulty.Lazer) {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
+		} else {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(SliderMiss, SliderStart, Reset, time, position, slider))
+		}
 
 		if player.leftCond {
 			state.downButton = Left
@@ -314,7 +331,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 	}
 
 	if (time >= int64(slider.hitSlider.GetEndTime()) || (processSliderEndsAhead && int64(slider.hitSlider.GetEndTime())-time == 1)) && !state.isHit {
-		if len(slider.players) == 1 && !state.isStartHit {
+		if len(slider.players) == 1 && !state.isStartHit && !player.diff.CheckModActive(difficulty.Lazer) {
 			slider.hitSlider.ArmStart(false, float64(time))
 		}
 
@@ -345,7 +362,9 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
 
-		slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, slider))
+		if !player.diff.CheckModActive(difficulty.Lazer) {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, slider))
+		}
 
 		state.isHit = true
 	}

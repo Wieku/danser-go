@@ -1,6 +1,9 @@
 package osu
 
-import "github.com/wieku/danser-go/framework/math/vector"
+import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/framework/math/vector"
+)
 
 type HitResult int64
 
@@ -103,6 +106,16 @@ func (r HitResult) ScoreValueLazer() int64 {
 	}
 
 	return 0
+}
+
+func (r HitResult) ScoreValueMod(mod difficulty.Modifier) int64 {
+	if mod.Active(difficulty.Lazer) {
+		return r.ScoreValueLazer()
+	} else if mod.Active(difficulty.ScoreV2) {
+		return r.ScoreValueV2()
+	}
+
+	return r.ScoreValue()
 }
 
 type ComboResult uint8
