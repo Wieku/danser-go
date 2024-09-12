@@ -127,13 +127,18 @@ type JudgementResult struct {
 }
 
 func createJudgementResult(result HitResult, maxResult HitResult, comboResult ComboResult, time int64, position vector.Vector2f, obj HitObject) JudgementResult {
+	nm := int64(-1)
+	if obj != nil {
+		nm = obj.GetNumber()
+	}
+
 	return JudgementResult{
 		HitResult:   result,
 		MaxResult:   maxResult,
 		ComboResult: comboResult,
 		Time:        time,
 		Position:    position,
-		Number:      obj.GetNumber(),
+		Number:      nm,
 		object:      obj,
 	}
 }
