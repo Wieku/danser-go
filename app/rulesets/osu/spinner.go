@@ -185,7 +185,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 
 				if state.scoringRotationCount > state.requirement+3 && (state.scoringRotationCount-(state.requirement+3))%2 == 0 {
 					if len(spinner.players) == 1 {
-						spinner.hitSpinner.Bonus()
+						spinner.hitSpinner.Bonus(int(SpinnerBonus.ScoreValueMod(player.diff.Mods)))
 					}
 
 					spinner.ruleSet.SendResult(player.cursor, createJudgementResult(SpinnerBonus, SpinnerBonus, Hold, time, spinnerPosition, spinner))

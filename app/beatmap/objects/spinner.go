@@ -423,7 +423,7 @@ func (spinner *Spinner) Clear() {
 	spinner.clear.AddTransform(animation.NewSingleTransform(animation.Fade, easing.OutQuad, spinner.lastTime, spinner.lastTime+spinner.diff.TimeFadeIn, 0.0, 1.0))
 }
 
-func (spinner *Spinner) Bonus() {
+func (spinner *Spinner) Bonus(bonusValue int) {
 	if spinner.glow != nil {
 		spinner.glow.AddTransform(animation.NewColorTransform(animation.Color3, easing.OutQuad, spinner.lastTime, spinner.lastTime+difficulty.HitFadeOut, color2.Color{R: 1, G: 1, B: 1, A: 1}, spinnerBlue))
 	}
@@ -438,7 +438,7 @@ func (spinner *Spinner) Bonus() {
 	spinner.bonusScale.Reset()
 	spinner.bonusScale.AddEventSEase(spinner.lastTime, spinner.lastTime+800, 2.0, 1.28, easing.OutQuad)
 
-	spinner.bonus += 1000
+	spinner.bonus += bonusValue
 }
 
 func (spinner *Spinner) GetType() Type {
