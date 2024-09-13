@@ -879,7 +879,7 @@ func (slider *Slider) initSnake() {
 }
 
 func (slider *Slider) InitSlide(time float64) {
-	if time < slider.StartTime || time > slider.EndTime {
+	if time > slider.EndTime {
 		return
 	}
 
