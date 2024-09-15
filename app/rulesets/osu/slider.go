@@ -28,6 +28,8 @@ type tickpoint struct {
 	time       int64
 	scoreGiven HitResult
 	edgeNum    int
+
+	judged bool
 }
 
 type Slider struct {
@@ -75,19 +77,36 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 
 		edgeNumber := 1
 
-		for _, point := range rSlider.ScorePoints {
-			if point.IsReverse {
-				slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), SliderRepeat, edgeNumber})
-				edgeNumber++
-			} else {
-				slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), SliderPoint, -1})
+		if player.diff.CheckModActive(difficulty.Lazer) {
+			for _, point := range rSlider.ScorePointsLazer {
+				if point.IsReverse || point.LastPoint {
+					scoreGiven := SliderRepeat
+					if point.LastPoint {
+						scoreGiven = SliderEnd
+					}
+
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), scoreGiven, edgeNumber, false})
+					edgeNumber++
+				} else {
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), SliderPoint, -1, false})
+				}
+			}
+		} else {
+			for _, point := range rSlider.ScorePoints {
+				if point.IsReverse {
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), SliderRepeat, edgeNumber, false})
+					edgeNumber++
+				} else {
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), SliderPoint, -1, false})
+				}
+			}
+
+			if len(slider.state[player].points) > 0 {
+				slider.state[player].points[len(slider.state[player].points)-1].time = max(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
+				slider.state[player].points[len(slider.state[player].points)-1].scoreGiven = SliderEnd
 			}
 		}
 
-		if len(slider.state[player].points) > 0 {
-			slider.state[player].points[len(slider.state[player].points)-1].time = max(int64(slider.hitSlider.GetStartTime())+int64(slider.hitSlider.GetEndTime()-slider.hitSlider.GetStartTime())/2, int64(slider.hitSlider.GetEndTime())-36) //slider ends 36ms before the real end for scoring
-			slider.state[player].points[len(slider.state[player].points)-1].scoreGiven = SliderEnd
-		}
 	}
 }
 
@@ -149,16 +168,13 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 						slider.hitSlider.HitEdge(0, float64(time), hit != SliderMiss)
 					}
 
+					state.isStartHit = true
+
 					if player.diff.CheckModActive(difficulty.Lazer) {
 						slider.ruleSet.SendResult(player.cursor, createJudgementResult(state.startResult, Hit300, combo, time, position, slider))
 
 						if state.startResult != Miss {
-							state.sliding = true
-							state.slideStart = time
-
-							if len(slider.players) == 1 {
-								slider.hitSlider.InitSlide(float64(time))
-							}
+							slider.lazerPostHeadProcess(player, state, time)
 						}
 					} else {
 						slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderStart, combo, time, position, slider))
@@ -176,6 +192,42 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	}
 
 	return state.isStartHit
+}
+
+func (slider *Slider) lazerPostHeadProcess(player *difficultyPlayer, state *sliderstate, time int64) {
+	sliderPosition := slider.hitSlider.GetStackedPositionAtMod(float64(time), player.diff.Mods)
+
+	followRadiusFull := player.diff.CircleRadius * 2.4
+
+	if player.cursor.RawPosition.Dst(sliderPosition) > float32(followRadiusFull) {
+		return
+	}
+
+	allTicksInRange := true
+
+	for _, point := range state.points {
+		if point.time > time {
+			break
+		}
+
+		currPos := slider.hitSlider.GetStackedPositionAtMod(float64(point.time), player.diff.Mods)
+
+		if player.cursor.RawPosition.Dst(currPos) > float32(followRadiusFull) {
+			allTicksInRange = false
+			break
+		}
+	}
+
+	slider.processTicksLazer(player, state, time, allTicksInRange, sliderPosition, false)
+
+	if allTicksInRange || player.cursor.RawPosition.Dst(sliderPosition) <= float32(player.diff.CircleRadius) {
+		state.sliding = true
+		state.slideStart = time
+
+		if len(slider.players) == 1 {
+			slider.hitSlider.InitSlide(float64(time))
+		}
+	}
 }
 
 func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool {
@@ -250,44 +302,10 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 			}
 		}
 
-		pointsPassed := 0
-
-		for i, point := range state.points {
-			if point.time > time && !(i == len(state.points)-1 && processSliderEndsAhead && point.time-time == 1) {
-				break
-			}
-
-			pointsPassed++
-		}
-
-		if state.scored+state.missed < pointsPassed {
-			index := state.scored + state.missed
-			point := state.points[index]
-
-			maxScore := SliderPoint
-			if pointsPassed == len(state.points) {
-				maxScore = SliderEnd
-			} else if pointsPassed%(len(state.points)/len(slider.hitSlider.TickReverse)) == 0 {
-				maxScore = SliderRepeat
-			}
-
-			scoreGiven := SliderMiss
-			combo := Reset
-
-			if allowable && state.slideStart <= point.time {
-				state.scored++
-
-				scoreGiven = maxScore
-				combo = Increase
-			} else {
-				state.missed++
-
-				if state.scored+state.missed == len(state.points) {
-					combo = Hold
-				}
-			}
-
-			slider.ruleSet.SendResult(player.cursor, createJudgementResult(scoreGiven, maxScore, combo, time, sliderPosition, slider))
+		if player.diff.CheckModActive(difficulty.Lazer) {
+			slider.processTicksLazer(player, state, time, allowable, sliderPosition, processSliderEndsAhead)
+		} else {
+			slider.processTicksStable(player, state, time, allowable, sliderPosition, processSliderEndsAhead)
 		}
 
 		if !allowable && state.sliding && state.scored+state.missed < len(state.points) {
@@ -300,6 +318,95 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 	}
 
 	return true
+}
+
+func (slider *Slider) processTicksStable(player *difficultyPlayer, state *sliderstate, time int64, allowable bool, sliderPosition vector.Vector2f, processSliderEndsAhead bool) {
+	pointsPassed := 0
+
+	for i, point := range state.points {
+		if point.time > time && !(i == len(state.points)-1 && processSliderEndsAhead && point.time-time == 1) {
+			break
+		}
+
+		pointsPassed++
+	}
+
+	if state.scored+state.missed < pointsPassed {
+		index := state.scored + state.missed
+		point := state.points[index]
+
+		maxScore := SliderPoint
+		if pointsPassed == len(state.points) {
+			maxScore = SliderEnd
+		} else if pointsPassed%(len(state.points)/len(slider.hitSlider.TickReverse)) == 0 {
+			maxScore = SliderRepeat
+		}
+
+		scoreGiven := SliderMiss
+		combo := Reset
+
+		if allowable && state.slideStart <= point.time {
+			state.scored++
+
+			scoreGiven = maxScore
+			combo = Increase
+		} else {
+			state.missed++
+
+			if state.scored+state.missed == len(state.points) {
+				combo = Hold
+			}
+		}
+
+		slider.ruleSet.SendResult(player.cursor, createJudgementResult(scoreGiven, maxScore, combo, time, sliderPosition, slider))
+	}
+}
+
+func (slider *Slider) processTicksLazer(player *difficultyPlayer, state *sliderstate, time int64, allowable bool, sliderPosition vector.Vector2f, processSliderEndsAhead bool) {
+	if !state.isStartHit {
+		return
+	}
+
+	pointsPassed := 0
+
+	for i, point := range state.points {
+		pTime := point.time
+		if point.edgeNum == slider.hitSlider.RepeatCount {
+			pTime -= 36
+		}
+
+		if pTime > time && !(i == len(state.points)-1 && processSliderEndsAhead && pTime-time == 1) {
+			break
+		}
+
+		pointsPassed++
+	}
+
+	for index := state.scored + state.missed; index < pointsPassed; index++ {
+		point := state.points[index]
+
+		scoreGiven := Ignore
+		combo := Reset
+
+		if allowable {
+			state.scored++
+
+			scoreGiven = point.scoreGiven
+			combo = Increase
+		} else if time >= point.time {
+			state.missed++
+
+			scoreGiven = SliderMiss
+
+			if state.scored+state.missed == len(state.points) {
+				combo = Hold
+			}
+		}
+
+		if scoreGiven != Ignore {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(scoreGiven, point.scoreGiven, combo, time, sliderPosition, slider))
+		}
+	}
 }
 
 func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool {
