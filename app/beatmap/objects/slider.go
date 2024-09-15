@@ -39,6 +39,7 @@ type TickPoint struct {
 	fade      *animation.Glider
 	scale     *animation.Glider
 	IsReverse bool
+	LastPoint bool
 	EdgeIndex int
 }
 
@@ -434,16 +435,11 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 			})
 		}
 
-		if span < int(slider.RepeatCount)-1 {
-			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
-				Time:      spanStartTime + slider.spanDuration,
-				IsReverse: true,
-			})
-		} else {
-			slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
-				Time: max(slider.StartTime+(slider.EndTimeLazer-slider.StartTime)/2, slider.EndTimeLazer-36),
-			})
-		}
+		slider.ScorePointsLazer = append(slider.ScorePointsLazer, TickPoint{
+			Time:      spanStartTime + slider.spanDuration,
+			IsReverse: span < int(slider.RepeatCount)-1,
+			LastPoint: span == int(slider.RepeatCount)-1,
+		})
 	}
 
 	sort.Slice(slider.ScorePointsLazer, func(i, j int) bool {
@@ -506,7 +502,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 
 				scoreTime := slider.StartTime + math.Floor(float64(float32(scoringLengthTotal)*1000)/velocity)
 
-				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false, -1}
+				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false, false, -1}
 				slider.TickPoints = append(slider.TickPoints, point)
 				slider.ScorePoints = append(slider.ScorePoints, point)
 			}
@@ -515,7 +511,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 		scoringLengthTotal += scoringDistance
 
 		scoreTime := slider.StartTime + math.Floor((float64(float32(scoringLengthTotal))/velocity)*1000)
-		point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), nil, nil, true, i + 1}
+		point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), nil, nil, true, (i + 1) == slider.RepeatCount, i + 1}
 
 		slider.TickReverse = append(slider.TickReverse, point)
 		slider.ScorePoints = append(slider.ScorePoints, point)
