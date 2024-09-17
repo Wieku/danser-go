@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	HitFadeIn     = 400.0
-	HitFadeOut    = 240.0
-	HittableRange = 400.0
-	ResultFadeIn  = 120.0
-	ResultFadeOut = 600.0
-	PostEmpt      = 500.0
+	HitFadeIn      = 400.0
+	HitFadeOut     = 240.0
+	HittableRange  = 400.0
+	ResultFadeIn   = 120.0
+	ResultFadeOut  = 600.0
+	PostEmpt       = 500.0
+	LzSpinBonusGap = 2
 )
 
 type Difficulty struct {
@@ -41,9 +42,11 @@ type Difficulty struct {
 	Hit100 int64
 	Hit300 int64
 
-	HPMod        float64
-	SpinnerRatio float64
-	Speed        float64
+	HPMod           float64
+	SpinnerRatio    float64
+	LzSpinnerMinRPS float64
+	LzSpinnerMaxRPS float64
+	Speed           float64
 
 	ARReal      float64
 	ODReal      float64
@@ -108,6 +111,8 @@ func (diff *Difficulty) calculate() {
 	diff.Hit300 = int64(diff.Hit300U)
 
 	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
+	diff.LzSpinnerMinRPS = DifficultyRate(od, 90, 150, 225) / 60
+	diff.LzSpinnerMaxRPS = DifficultyRate(od, 250, 380, 430) / 60
 	diff.Speed = 1.0 / diff.GetModifiedTime(1)
 
 	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
@@ -130,6 +135,16 @@ func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 		return time / (0.75 * diff.CustomSpeed)
 	} else {
 		return time / diff.CustomSpeed
+	}
+}
+
+func (diff *Difficulty) GetSpeed() float64 {
+	if diff.Mods&DoubleTime > 0 {
+		return 1.5 * diff.CustomSpeed
+	} else if diff.Mods&HalfTime > 0 {
+		return 0.75 * diff.CustomSpeed
+	} else {
+		return diff.CustomSpeed
 	}
 }
 
