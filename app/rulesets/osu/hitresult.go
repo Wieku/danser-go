@@ -55,7 +55,7 @@ func (r HitResult) AffectsAccV1() bool {
 func (r HitResult) AffectsAccLZ() bool {
 	v := r & (^Additions)
 
-	return v&(BaseHitsM|SliderHits) != 0
+	return v&(BaseHitsM|SliderHits|SliderMiss) != 0
 }
 
 func (r HitResult) ScoreValue() int64 {
