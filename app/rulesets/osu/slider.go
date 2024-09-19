@@ -85,12 +85,13 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 						scoreGiven = SliderEnd
 					}
 
-					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), scoreGiven, edgeNumber, false})
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(min(point.Time, rSlider.GetEndTime())), scoreGiven, edgeNumber, false})
 					edgeNumber++
 				} else {
-					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(point.Time), SliderPoint, -1, false})
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(min(point.Time, rSlider.GetEndTime())), SliderPoint, -1, false})
 				}
 			}
+			// TODO: min(point.Time, rSlider.GetEndTime()) is a hack, should be revisited later
 		} else {
 			for _, point := range rSlider.ScorePoints {
 				if point.IsReverse {
