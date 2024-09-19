@@ -53,14 +53,21 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 		current, pOk := scheduler.queue[i].(*objects.Circle)
 		next, cOk := scheduler.queue[i+1].(*objects.Circle)
 
-		if pOk && cOk && (!current.SliderPoint || current.SliderPointStart) && (!next.SliderPoint || next.SliderPointStart) {
+		if pOk && cOk && (!current.SliderPoint || current.SliderPointStart || (current.SliderPointEnd && diff.CheckModActive(difficulty.Lazer))) && (!next.SliderPoint || next.SliderPointStart || (next.SliderPointEnd && diff.CheckModActive(difficulty.Lazer))) {
 			dst := current.GetStackedEndPositionMod(diff.Mods).Dst(next.GetStackedStartPositionMod(diff.Mods))
 
 			if dst <= float32(diff.CircleRadius*1.995) && next.GetStartTime()-current.GetEndTime() <= 3 { // Sacrificing a bit of UR for better looks
 				sTime := (next.GetStartTime() + current.GetEndTime()) / 2
 
+				if current.SliderPointEnd && diff.CheckModActive(difficulty.Lazer) { // Prioritize slider end timing
+					sTime = current.GetEndTime()
+				}
+
 				dC := objects.DummyCircle(current.GetStackedEndPositionMod(diff.Mods).Add(next.GetStackedStartPositionMod(diff.Mods)).Scl(0.5), sTime)
-				dC.DoubleClick = true
+
+				if !diff.CheckModActive(difficulty.Lazer) || (!current.SliderPointEnd && !next.SliderPointEnd) { // Don't double-click if any of them is a slider end
+					dC.DoubleClick = true
+				}
 
 				scheduler.queue[i] = dC
 

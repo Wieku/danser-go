@@ -359,7 +359,7 @@ func (slider *Slider) GetAsDummyCircles() []IHitObject {
 
 	for i, p := range slider.ScorePoints {
 		time := p.Time
-		if i == len(slider.ScorePoints)-1 && settings.KNOCKOUT {
+		if i == len(slider.ScorePoints)-1 && settings.KNOCKOUT && !slider.diff.CheckModActive(difficulty.Lazer) { // Lazer ends work differently so skip -36ms
 			time = math.Floor(max(slider.StartTime+(slider.EndTime-slider.StartTime)/2, slider.EndTime-36))
 		}
 
@@ -511,6 +511,12 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 		scoringLengthTotal += scoringDistance
 
 		scoreTime := slider.StartTime + math.Floor((float64(float32(scoringLengthTotal))/velocity)*1000)
+
+		// Ensure last tick is not later than end time. Ruleset calculates the last tick regardless of this value
+		if i == slider.RepeatCount-1 {
+			scoreTime = slider.EndTime
+		}
+
 		point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), nil, nil, true, (i + 1) == slider.RepeatCount, i + 1}
 
 		slider.TickReverse = append(slider.TickReverse, point)
