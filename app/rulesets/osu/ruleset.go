@@ -40,9 +40,11 @@ type HitObject interface {
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
 	UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdatePost(time int64) bool
+	MissForcefully(player *difficultyPlayer, time int64)
 	IsHit(player *difficultyPlayer) bool
 	GetFadeTime() int64
 	GetNumber() int64
+	GetObject() objects.IHitObject
 }
 
 type difficultyPlayer struct {
@@ -537,50 +539,16 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 }
 
 func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficultyPlayer) ClickAction {
-	if !player.cursor.IsAutoplay && !player.cursor.IsPlayer {
-		if _, ok := object.(*Circle); ok {
-			index := -1
+	var clickAction ClickAction
 
-			for i, g := range set.processed {
-				if g == object {
-					index = i
-				}
-			}
-
-			if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
-				return Ignored //don't shake the stacks
-			}
-		}
-
-		for _, g := range set.processed {
-			if !g.IsHit(player) {
-				if g.GetNumber() != object.GetNumber() {
-					if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
-						return Shake
-					}
-				} else {
-					break
-				}
-			}
-		}
+	if player.cursor.IsAutoplay || player.diff.CheckModActive(difficulty.Lazer) {
+		clickAction = set.CanBeHitLazer(time, object, player)
 	} else {
-		cObj := set.beatMap.HitObjects[object.GetNumber()]
+		clickAction = set.CanBeHitStable(time, object, player)
+	}
 
-		var lastObj HitObject
-		var lastBObj objects.IHitObject
-
-		for _, g := range set.processed {
-			fObj := set.beatMap.HitObjects[g.GetNumber()]
-
-			if fObj.GetType() == objects.CIRCLE && fObj.GetStartTime() < cObj.GetStartTime() {
-				lastObj = g
-				lastBObj = fObj
-			}
-		}
-
-		if lastBObj != nil && (!lastObj.IsHit(player) && float64(time) < lastBObj.GetStartTime()) {
-			return Shake
-		}
+	if clickAction != Click {
+		return clickAction
 	}
 
 	hitRange := difficulty.HittableRange
@@ -588,11 +556,94 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 		hitRange -= 200
 	}
 
-	if math.Abs(float64(time-int64(set.beatMap.HitObjects[object.GetNumber()].GetStartTime()))) >= hitRange {
+	if math.Abs(float64(time-int64(object.GetObject().GetStartTime()))) >= hitRange {
 		return Shake
 	}
 
 	return Click
+}
+
+func (set *OsuRuleSet) CanBeHitStable(time int64, object HitObject, player *difficultyPlayer) ClickAction {
+	if _, ok := object.(*Circle); ok {
+		index := -1
+
+		for i, g := range set.processed {
+			if g == object {
+				index = i
+			}
+		}
+
+		if index > 0 && set.processed[index-1].GetObject().GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
+			return Ignored //don't shake the stacks
+		}
+	}
+
+	for _, g := range set.processed {
+		if !g.IsHit(player) {
+			if g.GetNumber() != object.GetNumber() {
+				if g.GetObject().GetEndTime()+Tolerance2B < object.GetObject().GetStartTime() {
+					return Shake
+				}
+			} else {
+				break
+			}
+		}
+	}
+
+	return Click
+}
+
+func (set *OsuRuleSet) CanBeHitLazer(time int64, object HitObject, player *difficultyPlayer) ClickAction {
+	var lastObj HitObject
+	var hitCheck func(player *difficultyPlayer) bool
+
+	for _, g := range set.processed {
+		if g.GetObject().GetStartTime() >= object.GetObject().GetStartTime() {
+			break
+		}
+
+		if (g.GetObject().GetType() & (objects.CIRCLE | objects.SLIDER)) > 0 {
+			if c, ok1 := g.(*Circle); ok1 {
+				hitCheck = c.IsHit
+			} else if s, ok2 := g.(*Slider); ok2 {
+				hitCheck = s.IsStartHit
+			}
+
+			lastObj = g
+		}
+	}
+
+	if !(lastObj == nil || hitCheck(player) || float64(time) >= lastObj.GetObject().GetStartTime()) {
+		return Shake
+	}
+
+	return Click
+}
+
+func (set *OsuRuleSet) PostHit(time int64, object HitObject, player *difficultyPlayer) {
+	if (!player.cursor.IsAutoplay && !player.diff.CheckModActive(difficulty.Lazer)) || (object.GetObject().GetType()&(objects.CIRCLE|objects.SLIDER)) == 0 {
+		return
+	}
+
+	for _, g := range set.processed {
+		if g.GetObject().GetStartTime() >= object.GetObject().GetStartTime() {
+			break
+		}
+
+		if (g.GetObject().GetType() & (objects.CIRCLE | objects.SLIDER)) > 0 {
+			var hitCheck func(player *difficultyPlayer) bool
+
+			if c, ok1 := g.(*Circle); ok1 {
+				hitCheck = c.IsHit
+			} else if s, ok2 := g.(*Slider); ok2 {
+				hitCheck = s.IsStartHit
+			}
+
+			if !hitCheck(player) {
+				g.MissForcefully(player, time)
+			}
+		}
+	}
 }
 
 func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {

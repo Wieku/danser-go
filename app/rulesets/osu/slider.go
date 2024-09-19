@@ -180,7 +180,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 						slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderStart, combo, time, position, slider))
 					}
 
-					state.isStartHit = true
+					slider.ruleSet.PostHit(time, slider, player)
 				}
 			} else {
 				player.leftCondE = false
@@ -493,6 +493,23 @@ func (slider *Slider) UpdatePost(_ int64) bool {
 	return numFinishedTotal == 0
 }
 
+func (slider *Slider) MissForcefully(player *difficultyPlayer, time int64) {
+	state := slider.state[player]
+
+	if !state.isStartHit {
+		position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
+
+		if len(slider.players) == 1 {
+			slider.hitSlider.HitEdge(0, float64(time), false)
+		}
+
+		slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
+
+		state.isStartHit = true
+		state.startResult = Miss
+	}
+}
+
 func (slider *Slider) IsHit(pl *difficultyPlayer) bool {
 	return slider.state[pl].isHit
 }
@@ -507,4 +524,8 @@ func (slider *Slider) GetStartResult(pl *difficultyPlayer) HitResult {
 
 func (slider *Slider) GetFadeTime() int64 {
 	return int64(slider.hitSlider.GetStartTime() - slider.fadeStartRelative)
+}
+
+func (slider *Slider) GetObject() objects.IHitObject {
+	return slider.hitSlider
 }

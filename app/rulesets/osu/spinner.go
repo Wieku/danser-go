@@ -407,12 +407,19 @@ func (spinner *Spinner) UpdatePost(_ int64) bool {
 	return numFinishedTotal == 0
 }
 
+func (spinner *Spinner) MissForcefully(_ *difficultyPlayer, _ int64) {
+}
+
 func (spinner *Spinner) IsHit(pl *difficultyPlayer) bool {
 	return spinner.state[pl].finished
 }
 
 func (spinner *Spinner) GetFadeTime() int64 {
 	return int64(spinner.hitSpinner.GetStartTime() - spinner.fadeStartRelative)
+}
+
+func (spinner *Spinner) GetObject() objects.IHitObject {
+	return spinner.hitSpinner
 }
 
 // new vs old spinner handling helpers

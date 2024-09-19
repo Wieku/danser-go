@@ -93,6 +93,8 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 						circle.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, circle))
 
+						circle.ruleSet.PostHit(time, circle, player)
+
 						state.isHit = true
 					}
 				} else {
@@ -143,10 +145,30 @@ func (circle *Circle) UpdatePost(_ int64) bool {
 	return unfinished == 0
 }
 
+func (circle *Circle) MissForcefully(player *difficultyPlayer, time int64) {
+	state := circle.state[player]
+
+	if !state.isHit {
+		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
+
+		if len(circle.players) == 1 {
+			circle.hitCircle.Arm(false, float64(time))
+		}
+
+		circle.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, circle))
+
+		state.isHit = true
+	}
+}
+
 func (circle *Circle) IsHit(player *difficultyPlayer) bool {
 	return circle.state[player].isHit
 }
 
 func (circle *Circle) GetFadeTime() int64 {
 	return int64(circle.hitCircle.GetStartTime() - circle.fadeStartRelative)
+}
+
+func (circle *Circle) GetObject() objects.IHitObject {
+	return circle.hitCircle
 }
