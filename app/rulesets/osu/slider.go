@@ -81,11 +81,14 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 			for _, point := range rSlider.ScorePointsLazer {
 				if point.IsReverse || point.LastPoint {
 					scoreGiven := SliderRepeat
+					time := point.Time
+
 					if point.LastPoint {
 						scoreGiven = SliderEnd
+						time = rSlider.GetEndTime()
 					}
 
-					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(min(point.Time, rSlider.GetEndTime())), scoreGiven, edgeNumber, false})
+					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(time), scoreGiven, edgeNumber, false})
 					edgeNumber++
 				} else {
 					slider.state[player].points = append(slider.state[player].points, tickpoint{int64(min(point.Time, rSlider.GetEndTime())), SliderPoint, -1, false})
