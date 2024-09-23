@@ -97,9 +97,9 @@ func (r HitResult) ScoreValueLazer() int64 {
 		return 150
 	case Hit300:
 		return 300
-	case SliderRepeat:
+	case SliderPoint, SliderRepeat:
 		return 30
-	case SliderPoint, SpinnerPoints:
+	case SpinnerPoints:
 		return 10
 	case SpinnerBonus:
 		return 50
