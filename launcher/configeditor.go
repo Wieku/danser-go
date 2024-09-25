@@ -3,7 +3,7 @@ package launcher
 import (
 	"cmp"
 	"fmt"
-	"github.com/AllenDang/cimgui-go"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/settings"
@@ -96,7 +96,7 @@ func (editor *settingsEditor) setSaveListener(saveListener func()) {
 }
 
 func (editor *settingsEditor) drawEditor() {
-	imgui.InternalPushItemFlag(imgui.ItemFlagsDisabled, false)
+	imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), false)
 
 	settings.General.OsuSkinsDir = editor.combined.General.OsuSkinsDir
 
@@ -174,7 +174,7 @@ func (editor *settingsEditor) drawEditor() {
 
 			imgui.PushStyleVarVec2(imgui.StyleVarWindowPadding, vec2(5, 0))
 
-			if imgui.BeginChildStrV("##Editor main", vec2(-1, -1), imgui.ChildFlagsNone, imgui.ChildFlagsAlwaysUseWindowPadding) {
+			if imgui.BeginChildStrV("##Editor main", vec2(-1, -1), imgui.ChildFlagsNone, imgui.WindowFlags(imgui.ChildFlagsAlwaysUseWindowPadding)) {
 				imgui.PopStyleVar()
 
 				editor.blockSearch = handleDragScroll()
@@ -220,7 +220,7 @@ func (editor *settingsEditor) drawEditor() {
 	imgui.PopStyleColor()
 	imgui.PopStyleColor()
 
-	imgui.InternalPopItemFlag()
+	imgui.PopItemFlag()
 }
 
 func (editor *settingsEditor) search() {
@@ -441,7 +441,7 @@ func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content f
 
 	imgui.PopFont()
 
-	imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Add(vec2(imgui.ContentRegionMax().X, 0)), packColor(*imgui.StyleColorVec4(imgui.ColSeparator)))
+	imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Add(vec2(contentRegionMax().X, 0)), packColor(*imgui.StyleColorVec4(imgui.ColSeparator)))
 
 	imgui.Spacing()
 
@@ -1440,7 +1440,7 @@ func (editor *settingsEditor) tryLockLive(d reflect.StructField) bool {
 
 	if dRunLock {
 		imgui.BeginGroup()
-		imgui.InternalPushItemFlag(imgui.ItemFlagsDisabled, true)
+		imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
 		imgui.PushStyleColorVec4(imgui.ColText, vec4(0.6, 0.6, 0.6, 1))
 	}
 
@@ -1449,7 +1449,7 @@ func (editor *settingsEditor) tryLockLive(d reflect.StructField) bool {
 
 func (editor *settingsEditor) unlockLive(plural bool) {
 	imgui.PopStyleColor()
-	imgui.InternalPopItemFlag()
+	imgui.PopItemFlag()
 	imgui.EndGroup()
 
 	if imgui.IsItemHovered() {

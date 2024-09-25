@@ -2,7 +2,7 @@ package launcher
 
 import (
 	"fmt"
-	"github.com/AllenDang/cimgui-go"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/utils"
 	"strconv"

@@ -2,7 +2,7 @@ package launcher
 
 import (
 	"fmt"
-	"github.com/AllenDang/cimgui-go"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -385,6 +385,6 @@ func inputText(label string, text *string) bool {
 	return inputTextV(label, text, imgui.InputTextFlagsNone, nil)
 }
 
-func inputTextV(label string, text *string, flags int, cb imgui.InputTextCallback) bool {
-	return imgui.InputTextWithHint(label, "", text, imgui.InputTextFlags(flags), cb)
+func inputTextV(label string, text *string, flags imgui.InputTextFlags, cb imgui.InputTextCallback) bool {
+	return imgui.InputTextWithHint(label, "", text, flags, cb)
 }

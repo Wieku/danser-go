@@ -3,7 +3,7 @@ package launcher
 import (
 	"cmp"
 	"fmt"
-	"github.com/AllenDang/cimgui-go"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
@@ -325,7 +325,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					s := b.bMaps[0].SetID == 0
 
 					if s {
-						imgui.InternalPushItemFlag(imgui.ItemFlagsDisabled, true)
+						imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
 					}
 
 					ImIO.SetFontGlobalScale(16.0 / 32)
@@ -352,7 +352,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					}
 
 					if s {
-						imgui.InternalPopItemFlag()
+						imgui.PopItemFlag()
 					}
 
 					imgui.SameLine()

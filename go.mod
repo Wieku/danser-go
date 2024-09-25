@@ -3,7 +3,7 @@ module github.com/wieku/danser-go
 go 1.22
 
 require (
-	github.com/AllenDang/cimgui-go v0.0.0-20240313173929-fbcdab4101ce
+	github.com/AllenDang/cimgui-go v1.0.0
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/dustin/go-humanize v1.0.0
@@ -22,7 +22,7 @@ require (
 	github.com/wieku/rplpa v1.0.0
 	golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
 	golang.org/x/image v0.10.0
-	golang.org/x/sys v0.10.0
+	golang.org/x/sys v0.20.0
 	golang.org/x/text v0.11.0
 )
 
