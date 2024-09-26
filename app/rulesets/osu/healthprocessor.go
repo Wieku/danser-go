@@ -30,7 +30,7 @@ type IHealthProcessor interface {
 
 	ResetHp()
 
-	AddResult(result HitResult)
+	AddResult(result JudgementResult)
 
 	Increase(amount float64, fromHitObject bool)
 
@@ -184,16 +184,16 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 
 			if s, ok := o.(*objects.Slider); ok {
 				for j := 0; j < len(s.TickReverse)+1; j++ {
-					hp.AddResult(SliderRepeat)
+					hp.addResultInternal(SliderRepeat)
 				}
 
 				for j := 0; j < len(s.TickPoints); j++ {
-					hp.AddResult(SliderPoint)
+					hp.addResultInternal(SliderPoint)
 				}
 			} else if s, ok := o.(*objects.Spinner); ok {
 				requirement := int((s.GetEndTime() - s.GetStartTime()) / 1000 * hp.diff.SpinnerRatio)
 				for j := 0; j < requirement; j++ {
-					hp.AddResult(SpinnerSpin)
+					hp.addResultInternal(SpinnerSpin)
 				}
 			}
 
@@ -206,7 +206,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 			}
 
 			if i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo() {
-				hp.AddResult(Hit300g)
+				hp.addResultInternal(Hit300g)
 
 				if hp.health < lowestHpComboEnd {
 					comboTooLowCount++
@@ -219,7 +219,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 					}
 				}
 			} else {
-				hp.AddResult(Hit300)
+				hp.addResultInternal(Hit300)
 			}
 		}
 
@@ -248,7 +248,11 @@ func (hp *HealthProcessor) ResetHp() {
 	hp.healthUncapped = MaxHp
 }
 
-func (hp *HealthProcessor) AddResult(result HitResult) {
+func (hp *HealthProcessor) AddResult(result JudgementResult) {
+	hp.addResultInternal(result.HitResult)
+}
+
+func (hp *HealthProcessor) addResultInternal(result HitResult) {
 	normal := result & (^Additions)
 	addition := result & Additions
 

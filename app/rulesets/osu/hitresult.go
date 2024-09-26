@@ -18,6 +18,7 @@ const (
 	SliderPoint
 	SliderRepeat
 	SliderEnd
+	SliderFinish // For lazer health processor
 	SpinnerSpin
 	SpinnerPoints
 	SpinnerBonus

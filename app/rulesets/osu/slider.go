@@ -22,6 +22,7 @@ type sliderstate struct {
 	slideStart  int64
 	sliding     bool
 	startResult HitResult
+	endScored   bool
 }
 
 type tickpoint struct {
@@ -395,6 +396,10 @@ func (slider *Slider) processTicksLazer(player *difficultyPlayer, state *sliders
 		if allowable {
 			state.scored++
 
+			if point.scoreGiven == SliderEnd {
+				state.endScored = true
+			}
+
 			scoreGiven = point.scoreGiven
 			combo = Increase
 		} else if time >= point.time {
@@ -450,30 +455,41 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 			state.scored++
 		}
 
-		hit := Miss
-		combo := Reset
-
-		rate := float64(state.scored) / float64(len(state.points)+1)
-
-		if rate > 0 && len(slider.players) == 1 {
-			slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), float64(time), true)
-		}
-
-		if rate == 1.0 {
-			hit = Hit300
-		} else if rate >= 0.5 {
-			hit = Hit100
-		} else if rate > 0 {
-			hit = Hit50
-		}
-
-		if hit != Miss {
-			combo = Hold
-		}
-
 		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
 
-		if !player.diff.CheckModActive(difficulty.Lazer) {
+		if player.diff.CheckModActive(difficulty.Lazer) {
+			if state.endScored && len(slider.players) == 1 {
+				slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), float64(time), true)
+			}
+
+			hit := Ignore
+			if state.scored > 0 {
+				hit = SliderFinish
+			}
+
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderFinish, Hold, time, position, slider))
+		} else {
+			hit := Miss
+
+			rate := float64(state.scored) / float64(len(state.points)+1)
+
+			if rate > 0 && len(slider.players) == 1 {
+				slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), float64(time), true)
+			}
+
+			if rate == 1.0 {
+				hit = Hit300
+			} else if rate >= 0.5 {
+				hit = Hit100
+			} else if rate > 0 {
+				hit = Hit50
+			}
+
+			combo := Reset
+			if hit != Miss {
+				combo = Hold
+			}
+
 			slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, slider))
 		}
 

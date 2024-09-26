@@ -510,14 +510,14 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 	if subSet.sdpfFail {
 		subSet.hp.Increase(-100000, true)
 	} else {
-		subSet.hp.AddResult(judgementResult.HitResult)
+		subSet.hp.AddResult(judgementResult)
 	}
 
 	if set.hitListener != nil {
 		set.hitListener(cursor, judgementResult, *subSet.score)
 	}
 
-	if len(set.cursors) == 1 && !settings.RECORD {
+	if len(set.cursors) == 1 && judgementResult.HitResult != SliderFinish && !settings.RECORD {
 		log.Println(fmt.Sprintf(
 			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f",
 			judgementResult.HitResult.ScoreValueMod(subSet.player.diff.Mods),

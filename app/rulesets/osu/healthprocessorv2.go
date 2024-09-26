@@ -26,6 +26,9 @@ type HealthProcessorV2 struct {
 	lastTime int64
 
 	failListeners []FailListener
+
+	countGood int
+	countBad  int
 }
 
 func NewHealthProcessorV2(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty) *HealthProcessorV2 {
@@ -160,47 +163,64 @@ func (hp *HealthProcessorV2) ResetHp() {
 	hp.health = 1
 }
 
-func (hp *HealthProcessorV2) AddResult(result HitResult) {
-	hp.Increase(hp.getHPResult(result), true)
+func (hp *HealthProcessorV2) AddResult(result JudgementResult) {
+	normal := result.HitResult & (^Additions)
+
+	hpRes := hp.getHPResult(normal)
+	if normal == SliderMiss && result.ComboResult == Hold { //Missed slider ends don't decrease hp
+		hpRes = 0
+	}
+
+	if (result.MaxResult == SliderFinish || result.object.GetObject().GetType() != objects.SLIDER) && result.object.GetObject().IsNewCombo() {
+		hp.countGood = 0
+		hp.countBad = 0
+	}
+
+	switch normal {
+	case SliderMiss, Hit100:
+		hp.countGood++
+	case Hit50, Miss:
+		hp.countBad++
+	}
+
+	if (result.HitResult&(BaseHits|SliderFinish)) > 0 && (result.MaxResult == SliderFinish || result.object.GetObject().GetType() != objects.SLIDER) && result.object.GetObject().IsLastCombo() {
+		if hp.countGood == 0 && hp.countBad == 0 {
+			hpRes += 0.07
+		} else if hp.countBad == 0 {
+			hpRes += 0.05
+		} else {
+			hpRes += 0.03
+		}
+	}
+
+	hp.Increase(hpRes, true)
 }
 
 func (hp *HealthProcessorV2) getHPResult(result HitResult) float64 {
 	normal := result & (^Additions)
-	addition := result & Additions
-
-	hpAdd := 0.0
 
 	switch normal {
 	case SliderMiss:
-		hpAdd += difficulty.DifficultyRate(hp.diff.HPMod, -0.02, -0.075, -0.14)
+		return difficulty.DifficultyRate(hp.diff.HPMod, -0.02, -0.075, -0.14)
 	case Miss:
-		hpAdd += difficulty.DifficultyRate(hp.diff.HPMod, -0.03, -0.125, -0.2)
+		return difficulty.DifficultyRate(hp.diff.HPMod, -0.03, -0.125, -0.2)
 	case Hit50:
-		hpAdd += 0.002
+		return 0.002
 	case Hit100:
-		hpAdd += 0.011
+		return 0.011
 	case Hit300:
-		hpAdd += 0.03
+		return 0.03
 	case SliderPoint:
-		hpAdd += 0.015
+		return 0.015
 	case SliderStart, SliderRepeat, SliderEnd:
-		hpAdd += 0.02
+		return 0.02
 	case SpinnerSpin, SpinnerPoints:
-		hpAdd += 0.0085
+		return 0.0085
 	case SpinnerBonus:
-		hpAdd += 0.01
+		return 0.01
 	}
 
-	switch addition {
-	case MuAddition:
-		hpAdd += 0.03
-	case KatuAddition:
-		hpAdd += 0.05
-	case GekiAddition:
-		hpAdd += 0.07
-	}
-
-	return hpAdd
+	return 0
 }
 
 func (hp *HealthProcessorV2) Increase(amount float64, fromHitObject bool) {
