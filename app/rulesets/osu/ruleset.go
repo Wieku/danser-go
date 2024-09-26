@@ -620,6 +620,28 @@ func (set *OsuRuleSet) CanBeHitLazer(time int64, object HitObject, player *diffi
 	return Click
 }
 
+func (set *OsuRuleSet) GetResultForDelta(player *difficultyPlayer, delta float64) HitResult {
+	if player.diff.CheckModActive(difficulty.Lazer) {
+		if delta <= player.diff.Hit300U {
+			return Hit300
+		} else if delta <= player.diff.Hit100U {
+			return Hit100
+		} else if delta <= player.diff.Hit50U {
+			return Hit50
+		}
+	} else {
+		if int64(delta) < player.diff.Hit300 {
+			return Hit300
+		} else if int64(delta) < player.diff.Hit100 {
+			return Hit100
+		} else if int64(delta) < player.diff.Hit50 {
+			return Hit50
+		}
+	}
+
+	return Miss
+}
+
 func (set *OsuRuleSet) PostHit(time int64, object HitObject, player *difficultyPlayer) {
 	if (!player.cursor.IsAutoplay && !player.diff.CheckModActive(difficulty.Lazer)) || (object.GetObject().GetType()&(objects.CIRCLE|objects.SLIDER)) == 0 {
 		return

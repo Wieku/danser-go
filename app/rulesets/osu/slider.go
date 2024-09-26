@@ -151,17 +151,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 				hit := SliderMiss
 				combo := Reset
 
-				relative := int64(math.Abs(float64(time) - slider.hitSlider.GetStartTime()))
-
-				if relative < player.diff.Hit300 {
-					state.startResult = Hit300
-				} else if relative < player.diff.Hit100 {
-					state.startResult = Hit100
-				} else if relative < player.diff.Hit50 {
-					state.startResult = Hit50
-				} else {
-					state.startResult = Miss
-				}
+				state.startResult = slider.ruleSet.GetResultForDelta(player, math.Abs(float64(time)-slider.hitSlider.GetStartTime()))
 
 				if state.startResult != Miss {
 					hit = SliderStart

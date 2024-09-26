@@ -66,16 +66,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 						player.rightCondE = false
 					}
 
-					hit := Miss
-
-					relative := int64(math.Abs(float64(time) - circle.hitCircle.GetEndTime()))
-					if relative < player.diff.Hit300 {
-						hit = Hit300
-					} else if relative < player.diff.Hit100 {
-						hit = Hit100
-					} else if relative < player.diff.Hit50 {
-						hit = Hit50
-					}
+					hit := circle.ruleSet.GetResultForDelta(player, math.Abs(float64(time)-circle.hitCircle.GetEndTime()))
 
 					if hit != Ignore {
 						combo := Increase
