@@ -10,6 +10,7 @@ import (
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/rplpa"
+	"math"
 	"sort"
 	"time"
 
@@ -49,7 +50,7 @@ type RpData struct {
 type subControl struct {
 	danceController Controller
 	replayIndex     int
-	replayTime      int64
+	replayTime      float64
 	frames          []*rplpa.ReplayData
 	newHandling     bool
 	lastTime        int64
@@ -134,6 +135,10 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
+
+		if replay.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
+			control.mods |= difficulty.Lazer
+		}
 
 		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
@@ -354,7 +359,7 @@ func (controller *ReplayController) InitCursors() {
 			cursor.OldSpinnerScoring = controller.controllers[i].oldSpinners
 			cursor.IsReplay = true
 
-			cursor.SetPos(vector.NewVec2f(c.frames[0].MouseX, c.frames[0].MouseY))
+			cursor.SetPos(vector.NewVec2d(c.frames[0].MouseX, c.frames[0].MouseY).Copy32())
 			cursor.Update(0)
 
 			c.replayTime += c.frames[0].Time
@@ -445,9 +450,11 @@ func (controller *ReplayController) updateMain(nTime float64) {
 			}
 
 			if c.replayIndex < len(c.frames) {
-				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= int64(nTime) {
+				for c.replayIndex < len(c.frames) && c.replayTime+c.frames[c.replayIndex].Time <= math.Floor(nTime) {
 					frame := c.frames[c.replayIndex]
 					c.replayTime += frame.Time
+
+					replayTime := int64(c.replayTime)
 
 					// If next frame is not in the next millisecond, assume it's -36ms slider end
 					processAhead := true
@@ -456,11 +463,11 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					}
 
 					if !isAutopilot {
-						controller.cursors[i].SetPos(vector.NewVec2f(frame.MouseX, frame.MouseY))
+						controller.cursors[i].SetPos(vector.NewVec2d(frame.MouseX, frame.MouseY).Copy32())
 					}
 
 					controller.cursors[i].LastFrameTime = controller.cursors[i].CurrentFrameTime
-					controller.cursors[i].CurrentFrameTime = c.replayTime
+					controller.cursors[i].CurrentFrameTime = replayTime
 					controller.cursors[i].IsReplayFrame = true
 
 					if !isRelax {
@@ -473,23 +480,23 @@ func (controller *ReplayController) updateMain(nTime float64) {
 						controller.cursors[i].LeftButton = frame.KeyPressed.LeftClick
 						controller.cursors[i].RightButton = frame.KeyPressed.RightClick
 					} else {
-						c.relaxController.Update(float64(c.replayTime))
+						c.relaxController.Update(float64(replayTime))
 					}
 
 					controller.cursors[i].SmokeKey = frame.KeyPressed.Smoke
 
-					controller.ruleset.UpdateClickFor(controller.cursors[i], c.replayTime)
-					controller.ruleset.UpdateNormalFor(controller.cursors[i], c.replayTime, processAhead)
+					controller.ruleset.UpdateClickFor(controller.cursors[i], replayTime)
+					controller.ruleset.UpdateNormalFor(controller.cursors[i], replayTime, processAhead)
 
 					// New replays (after 20190506) scores object ends only on replay frame
 					if c.newHandling || c.replayIndex == len(c.frames)-1 {
-						controller.ruleset.UpdatePostFor(controller.cursors[i], c.replayTime, processAhead)
+						controller.ruleset.UpdatePostFor(controller.cursors[i], replayTime, processAhead)
 					} else {
 						localIndex := mutils.Clamp(c.replayIndex+1, 0, len(c.frames)-1)
 						localFrame := c.frames[localIndex]
 
 						// HACK for older replays: update object ends till the next frame
-						for localTime := c.replayTime; localTime < c.replayTime+localFrame.Time; localTime++ {
+						for localTime := replayTime; localTime < int64(c.replayTime+localFrame.Time); localTime++ {
 							controller.ruleset.UpdatePostFor(controller.cursors[i], localTime, false)
 						}
 					}
@@ -503,21 +510,21 @@ func (controller *ReplayController) updateMain(nTime float64) {
 					if !isAutopilot {
 						localIndex := mutils.Clamp(c.replayIndex, 0, len(c.frames)-1)
 
-						progress := min(float32(nTime-float64(c.replayTime)), float32(c.frames[localIndex].Time)) / float32(c.frames[localIndex].Time)
+						progress := min(math.Floor(nTime)-c.replayTime, c.frames[localIndex].Time) / c.frames[localIndex].Time
 
 						prevIndex := max(0, localIndex-1)
 
 						mX := (c.frames[localIndex].MouseX-c.frames[prevIndex].MouseX)*progress + c.frames[prevIndex].MouseX
 						mY := (c.frames[localIndex].MouseY-c.frames[prevIndex].MouseY)*progress + c.frames[prevIndex].MouseY
 
-						controller.cursors[i].SetPos(vector.NewVec2f(mX, mY))
+						controller.cursors[i].SetPos(vector.NewVec2d(mX, mY).Copy32())
 					}
 
 					controller.cursors[i].IsReplayFrame = false
 				}
 
 				if c.replayIndex >= len(c.frames) {
-					controller.ruleset.PlayerStopped(controller.cursors[i], c.replayTime)
+					controller.ruleset.PlayerStopped(controller.cursors[i], int64(c.replayTime))
 				}
 			} else {
 				controller.cursors[i].LeftKey = false

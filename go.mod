@@ -19,7 +19,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/sqweek/dialog v0.0.0-20220504154117-be45b268883a
 	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
-	github.com/wieku/rplpa v1.0.0
+	github.com/wieku/rplpa v1.0.1
 	golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
 	golang.org/x/image v0.10.0
 	golang.org/x/sys v0.20.0
