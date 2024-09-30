@@ -82,9 +82,8 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 							circle.hitCircle.Arm(hit != Miss, float64(time))
 						}
 
-						circle.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, circle))
-
 						circle.ruleSet.PostHit(time, circle, player)
+						circle.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, circle))
 
 						state.isHit = true
 					}
