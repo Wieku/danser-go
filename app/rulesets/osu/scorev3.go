@@ -80,12 +80,15 @@ func (s *scoreV3Processor) AddResult(result JudgementResult) {
 	if result.HitResult.IsBonus() {
 		s.bonus += result.HitResult.ScoreValueLazer()
 	} else if result.HitResult.AffectsAccLZ() {
-		s.comboPart += float64(result.MaxResult.ScoreValueLazer()) * math.Pow(float64(s.combo), 0.5)
-
 		s.accPart += result.HitResult.ScoreValueLazer()
 		s.accPartMax += result.MaxResult.ScoreValueLazer()
 
 		s.hits++
+	}
+
+	// slider end misses don't propagate combo score
+	if result.HitResult.AffectsAccLZ() && !(result.HitResult == SliderMiss && result.MaxResult == SliderEnd) {
+		s.comboPart += float64(result.MaxResult.ScoreValueLazer()) * math.Pow(float64(s.combo), 0.5)
 	}
 
 	if s.maxHits == 0 {
