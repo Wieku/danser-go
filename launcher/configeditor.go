@@ -203,7 +203,7 @@ func (editor *settingsEditor) drawEditor() {
 	if currentRunning {
 		centerTable("tabdanser is running", -1, func() {
 			imgui.AlignTextToFramePadding()
-			imgui.Text("Danser is running! Click")
+			imgui.TextUnformatted("Danser is running! Click")
 			imgui.SameLine()
 			if imgui.Button("Apply##drunning") {
 				if editor.saveListener != nil {
@@ -211,7 +211,7 @@ func (editor *settingsEditor) drawEditor() {
 				}
 			}
 			imgui.SameLine()
-			imgui.Text("to see changes.")
+			imgui.TextUnformatted("to see changes.")
 		})
 	}
 
@@ -330,7 +330,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 			if imgui.IsItemHovered() {
 				imgui.PushFont(Font24)
 				imgui.BeginTooltip()
-				imgui.SetTooltip(label)
+				setTooltip(label)
 				imgui.EndTooltip()
 				imgui.PopFont()
 			}
@@ -407,7 +407,7 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	posLocal := imgui.CursorPos()
 
 	imgui.PushFont(Font48)
-	imgui.Text(name)
+	imgui.TextUnformatted(name)
 
 	imgui.PopFont()
 	imgui.Separator()
@@ -435,7 +435,7 @@ func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content f
 	imgui.BeginGroup()
 
 	imgui.PushFont(Font24)
-	imgui.Text(strings.ToUpper(name))
+	imgui.TextUnformatted(strings.ToUpper(name))
 
 	afterTitle()
 
@@ -796,7 +796,7 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 
 			imgui.TableNextColumn()
 
-			imgui.Text("x")
+			imgui.TextUnformatted("x")
 
 			imgui.TableNextColumn()
 
@@ -959,11 +959,11 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 					width := imgui.CalcTextSizeV("Click outside this box to cancel", false, 0).X + 30
 
 					centerTable("KeyChange1"+jsonPath, width, func() {
-						imgui.Text("Press any key...")
+						imgui.TextUnformatted("Press any key...")
 					})
 
 					centerTable("KeyChange2"+jsonPath, width, func() {
-						imgui.Text("Click outside this box to cancel")
+						imgui.TextUnformatted("Click outside this box to cancel")
 					})
 				})
 
@@ -1242,7 +1242,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 					}
 
 					imgui.AlignTextToFramePadding()
-					imgui.Text("Custom:")
+					imgui.TextUnformatted("Custom:")
 
 					imgui.SameLine()
 
@@ -1275,7 +1275,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 				editor.blockSearch = true
 
 				imgui.BeginTooltip()
-				imgui.SetTooltip(fmt.Sprintf(format, base))
+				setTooltip(fmt.Sprintf(format, base))
 				imgui.EndTooltip()
 			}
 		}
@@ -1314,7 +1314,7 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 				editor.blockSearch = true
 
 				imgui.BeginTooltip()
-				imgui.SetTooltip(fmt.Sprintf(format, valSpeed))
+				setTooltip(fmt.Sprintf(format, valSpeed))
 				imgui.EndTooltip()
 			}
 		}
@@ -1384,7 +1384,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 
 		imgui.BeginGroup()
 		imgui.AlignTextToFramePadding()
-		imgui.Text(label)
+		imgui.TextUnformatted(label)
 		imgui.EndGroup()
 
 		if imgui.IsItemHovered() {
@@ -1410,7 +1410,7 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 
 				imgui.PushTextWrapPosV(400)
 
-				imgui.Text(tTip)
+				imgui.TextUnformatted(tTip)
 
 				imgui.PopTextWrapPos()
 				imgui.EndTooltip()
@@ -1456,9 +1456,9 @@ func (editor *settingsEditor) unlockLive(plural bool) {
 		imgui.BeginTooltip()
 
 		if plural {
-			imgui.Text("These options can't be edited while danser is running.")
+			imgui.TextUnformatted("These options can't be edited while danser is running.")
 		} else {
-			imgui.Text("This option can't be edited while danser is running.")
+			imgui.TextUnformatted("This option can't be edited while danser is running.")
 		}
 
 		imgui.EndTooltip()

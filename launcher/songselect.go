@@ -169,7 +169,7 @@ func (m *songSelectPopup) drawSongSelect() {
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Sort by:")
+		imgui.TextUnformatted("Sort by:")
 
 		imgui.SameLine()
 
@@ -306,7 +306,7 @@ func (m *songSelectPopup) drawSongSelect() {
 
 				imgui.PushTextWrapPos()
 
-				imgui.Text(b.bMaps[0].Name)
+				imgui.TextUnformatted(b.bMaps[0].Name)
 
 				imgui.PopTextWrapPos()
 
@@ -347,9 +347,9 @@ func (m *songSelectPopup) drawSongSelect() {
 						imgui.BeginTooltip()
 
 						if s {
-							imgui.Text("Not available")
+							imgui.TextUnformatted("Not available")
 						} else {
-							imgui.Text(fmt.Sprintf("https://osu.ppy.sh/s/%d", b.bMaps[0].SetID))
+							imgui.TextUnformatted(fmt.Sprintf("https://osu.ppy.sh/s/%d", b.bMaps[0].SetID))
 						}
 
 						imgui.EndTooltip()
@@ -381,9 +381,9 @@ func (m *songSelectPopup) drawSongSelect() {
 						imgui.BeginTooltip()
 
 						if isPreviewed {
-							imgui.Text("Stop preview")
+							imgui.TextUnformatted("Stop preview")
 						} else {
-							imgui.Text("Play preview")
+							imgui.TextUnformatted("Play preview")
 						}
 
 						imgui.EndTooltip()
@@ -400,7 +400,7 @@ func (m *songSelectPopup) drawSongSelect() {
 				imgui.EndTable()
 			}
 
-			imgui.Text(fmt.Sprintf("%s // %s", b.bMaps[0].Artist, b.bMaps[0].Creator))
+			imgui.TextUnformatted(fmt.Sprintf("%s // %s", b.bMaps[0].Artist, b.bMaps[0].Creator))
 
 			imgui.PushFont(Font20)
 

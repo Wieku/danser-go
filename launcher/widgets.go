@@ -200,7 +200,7 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 
 		imgui.SetNextItemWidth(-1)
 
-		imgui.Text(label + ":")
+		imgui.TextUnformatted(label + ":")
 
 		imgui.TableNextColumn()
 
@@ -260,7 +260,7 @@ func sliderFloatStep(label string, val *float32, min, max, step float32, format 
 
 	imgui.AlignTextToFramePadding()
 
-	imgui.Text(tx)
+	imgui.TextUnformatted(tx)
 
 	imgui.SetCursorPos(cPos2)
 	imgui.Dummy(vzero())

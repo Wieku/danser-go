@@ -67,7 +67,7 @@ func checkForUpdates(pingUpToDate bool) {
 
 func textColumn(text string) {
 	imgui.TableNextColumn()
-	imgui.Text(text)
+	imgui.TextUnformatted(text)
 }
 
 func imguiPathFilter(data imgui.InputTextCallbackData) int {
@@ -160,6 +160,10 @@ func getRelativeOrABSPath(path string) string {
 	slashBase := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
 
 	return strings.ReplaceAll(strings.TrimPrefix(slashPath, slashBase), "/", string(os.PathSeparator))
+}
+
+func setTooltip(txt string) {
+	imgui.SetTooltip(strings.ReplaceAll(txt, "%", "%%"))
 }
 
 func contentRegionMin() imgui.Vec2 {

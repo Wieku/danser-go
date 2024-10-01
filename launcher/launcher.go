@@ -703,7 +703,7 @@ func (l *launcher) drawMain() {
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Mode:")
+		imgui.TextUnformatted("Mode:")
 
 		imgui.TableNextColumn()
 
@@ -801,7 +801,7 @@ func (l *launcher) drawSplash() {
 
 		dHeight += tSize.Y
 
-		imgui.Text(sText)
+		imgui.TextUnformatted(sText)
 	}
 
 	imgui.PopFont()
@@ -910,10 +910,10 @@ func (l *launcher) selectReplay() {
 		mString := fmt.Sprintf("%s - %s [%s]\nPlayed by: %s", b.Artist, b.Name, b.Difficulty, l.bld.currentReplay.Username)
 
 		imgui.PushTextWrapPosV(contentRegionMax().X / 2)
-		imgui.Text(mString)
+		imgui.TextUnformatted(mString)
 		imgui.PopTextWrapPos()
 	} else {
-		imgui.Text("No replay selected")
+		imgui.TextUnformatted("No replay selected")
 	}
 
 	imgui.UnindentV(5)
@@ -1041,11 +1041,11 @@ func (l *launcher) newKnockout() {
 
 		imgui.PushTextWrapPosV(contentRegionMax().X / 2)
 
-		imgui.Text(fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty))
+		imgui.TextUnformatted(fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty))
 
 		imgui.AlignTextToFramePadding()
 
-		imgui.Text(fmt.Sprintf("%d replays loaded", len(l.bld.knockoutReplays)))
+		imgui.TextUnformatted(fmt.Sprintf("%d replays loaded", len(l.bld.knockoutReplays)))
 
 		imgui.PopTextWrapPos()
 
@@ -1055,7 +1055,7 @@ func (l *launcher) newKnockout() {
 			l.openPopup(l.knockoutManager)
 		}
 	} else {
-		imgui.Text("No replays selected")
+		imgui.TextUnformatted("No replays selected")
 	}
 
 	imgui.UnindentV(5)
@@ -1123,10 +1123,10 @@ func (l *launcher) showSelect() {
 		mString := fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty)
 
 		imgui.PushTextWrapPosV(contentRegionMax().X / 2)
-		imgui.Text(mString)
+		imgui.TextUnformatted(mString)
 		imgui.PopTextWrapPos()
 	} else {
-		imgui.Text("No map selected")
+		imgui.TextUnformatted("No map selected")
 	}
 
 	imgui.UnindentV(5)
@@ -1191,7 +1191,7 @@ func (l *launcher) drawLowerPanel() {
 
 				cPos := imgui.CursorPos()
 
-				imgui.Text(l.recordStatusSpeed)
+				imgui.TextUnformatted(l.recordStatusSpeed)
 
 				cPos.X += 95
 
@@ -1199,13 +1199,13 @@ func (l *launcher) drawLowerPanel() {
 
 				eta := int(time.Since(l.encodeStart).Seconds())
 
-				imgui.Text("| Elapsed: " + util.FormatSeconds(eta))
+				imgui.TextUnformatted("| Elapsed: " + util.FormatSeconds(eta))
 
 				cPos.X += 135
 
 				imgui.SetCursorPos(cPos)
 
-				imgui.Text("| " + l.recordStatusETA)
+				imgui.TextUnformatted("| " + l.recordStatusETA)
 
 				imgui.PopFont()
 			}
@@ -1323,7 +1323,7 @@ func (l *launcher) drawConfigPanel() {
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Config:")
+		imgui.TextUnformatted("Config:")
 
 		imgui.SameLine()
 
@@ -1465,7 +1465,7 @@ func (l *launcher) drawConfigPanel() {
 			if imgui.BeginTable("rfa", 1) {
 				imgui.TableNextColumn()
 
-				imgui.Text("Name:")
+				imgui.TextUnformatted("Name:")
 
 				imgui.SameLine()
 

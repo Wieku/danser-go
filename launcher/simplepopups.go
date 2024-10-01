@@ -49,7 +49,7 @@ func drawCDMenu(bld *builder) {
 	if imgui.BeginTable("dfa", 2) {
 		imgui.TableNextColumn()
 
-		imgui.Text("Mirrored cursors:")
+		imgui.TextUnformatted("Mirrored cursors:")
 
 		imgui.TableNextColumn()
 
@@ -63,7 +63,7 @@ func drawCDMenu(bld *builder) {
 
 		imgui.TableNextColumn()
 
-		imgui.Text("Tag cursors:")
+		imgui.TextUnformatted("Tag cursors:")
 
 		imgui.TableNextColumn()
 
@@ -87,7 +87,7 @@ func drawRecordMenu(bld *builder) {
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Output name:")
+		imgui.TextUnformatted("Output name:")
 
 		imgui.TableNextColumn()
 
@@ -99,7 +99,7 @@ func drawRecordMenu(bld *builder) {
 			imgui.TableNextColumn()
 
 			imgui.AlignTextToFramePadding()
-			imgui.Text("Screenshot at:")
+			imgui.TextUnformatted("Screenshot at:")
 
 			imgui.TableNextColumn()
 
@@ -127,7 +127,7 @@ func drawRecordMenu(bld *builder) {
 				imgui.TableNextColumn()
 
 				imgui.AlignTextToFramePadding()
-				imgui.Text("s")
+				imgui.TextUnformatted("s")
 
 				imgui.EndTable()
 			}
@@ -143,7 +143,7 @@ func drawAbout(dTex texture.Texture) {
 	})
 
 	centerTable("about2", -1, func() {
-		imgui.Text("danser-go " + build.VERSION)
+		imgui.TextUnformatted("danser-go " + build.VERSION)
 	})
 
 	centerTable("about3", -1, func() {
@@ -155,11 +155,11 @@ func drawAbout(dTex texture.Texture) {
 	imgui.Dummy(vec2(1, imgui.FrameHeight()))
 
 	centerTable("about4.1", -1, func() {
-		imgui.Text("Advanced visualisation multi-tool")
+		imgui.TextUnformatted("Advanced visualisation multi-tool")
 	})
 
 	centerTable("about4.2", -1, func() {
-		imgui.Text("for osu!")
+		imgui.TextUnformatted("for osu!")
 	})
 
 	imgui.Dummy(vec2(1, imgui.FrameHeight()))
@@ -209,7 +209,7 @@ func drawLauncherConfig() {
 
 			imgui.PushTextWrapPos()
 
-			imgui.Text(text)
+			imgui.TextUnformatted(text)
 
 			imgui.PopTextWrapPos()
 
@@ -237,7 +237,7 @@ func drawLauncherConfig() {
 	checkboxOption("Preview selected maps", &launcherConfig.PreviewSelected)
 
 	imgui.AlignTextToFramePadding()
-	imgui.Text("Preview volume")
+	imgui.TextUnformatted("Preview volume")
 
 	volume := int32(launcherConfig.PreviewVolume * 100)
 

@@ -90,7 +90,7 @@ func (m *modPopup) drawRow(name string, work func()) {
 
 	imgui.AlignTextToFramePadding()
 
-	imgui.Text(name)
+	imgui.TextUnformatted(name)
 }
 
 func (m *modPopup) modCheckbox(mod, incompat difficulty.Modifier) (ret bool) {

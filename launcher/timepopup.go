@@ -67,7 +67,7 @@ func (m *timePopup) drawTimeMenu() {
 	start := &m.bld.start
 	end := &m.bld.end
 
-	imgui.Text("Start time:")
+	imgui.TextUnformatted("Start time:")
 	imgui.PushFont(Font16)
 	imgui.SetNextItemWidth(-1)
 	if sliderIntSlide("##Start time", &start.value, 0, end.ogValue-1, util.FormatSeconds(int(start.value)), imgui.SliderFlagsNoInput) {
@@ -79,7 +79,7 @@ func (m *timePopup) drawTimeMenu() {
 		end.value = start.value + 1
 	}
 
-	imgui.Text("End time:")
+	imgui.TextUnformatted("End time:")
 	imgui.PushFont(Font16)
 	imgui.SetNextItemWidth(-1)
 	if sliderIntSlide("##End time", &end.value, 1, end.ogValue, util.FormatSeconds(int(end.value)), imgui.SliderFlagsNoInput) {
@@ -127,7 +127,7 @@ func (m *timePopup) drawStrainGraph() {
 		dummyExactY(pad)
 
 		centerTable("sgraphstatus", -1, func() {
-			imgui.Text(m.graphStatus)
+			imgui.TextUnformatted(m.graphStatus)
 		})
 
 		dummyExactY(pad)

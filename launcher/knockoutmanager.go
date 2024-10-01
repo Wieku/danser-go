@@ -63,7 +63,7 @@ func (km *knockoutManagerPopup) drawManager() {
 		numText = fmt.Sprintf("%d replays", km.countEnabled)
 	}
 
-	imgui.Text(numText + " selected")
+	imgui.TextUnformatted(numText + " selected")
 
 	imgui.PopFont()
 
