@@ -26,6 +26,8 @@ import (
 )
 
 type Storyboard struct {
+	beatMap *beatmap.BeatMap
+
 	textures map[string]*texture.TextureRegion
 	atlas    *texture.TextureAtlas
 
@@ -43,7 +45,6 @@ type Storyboard struct {
 	limiter     *frame.Limiter
 	counter     *frame.Counter
 	numSprites  int
-	pathCache   *files2.FileMap
 	hasVisuals  bool
 
 	videos     []sprite.ISprite
@@ -60,14 +61,8 @@ func getSection(line string) string {
 }
 
 func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
-	path := filepath.Join(settings.General.GetSongsDir(), beatMap.Dir)
-
-	files := []string{
-		filepath.Join(path, beatMap.File),
-		filepath.Join(path, files2.FixName(fmt.Sprintf("%s - %s (%s).osb", beatMap.Artist, beatMap.Name, beatMap.Creator))),
-	}
-
 	storyboard := &Storyboard{
+		beatMap:    beatMap,
 		textures:   make(map[string]*texture.TextureRegion),
 		samples:    make(map[string]*bass.Sample),
 		zIndex:     -1,
@@ -79,7 +74,13 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 		videos:     make([]sprite.ISprite, 0),
 	}
 
-	storyboard.pathCache, _ = files2.NewFileMap(path)
+	files := []string{
+		filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.File),
+	}
+
+	if fPath, err := beatMap.GetRelatedFile(files2.FixName(fmt.Sprintf("%s - %s (%s).osb", beatMap.Artist, beatMap.Name, beatMap.Creator))); err == nil {
+		files = append(files, fPath)
+	}
 
 	var currentSection string
 	var currentSprite string
@@ -155,7 +156,12 @@ func NewStoryboard(beatMap *beatmap.BeatMap) *Storyboard {
 				} else if settings.Playfield.Background.LoadVideos && (strings.HasPrefix(line, "Video") || strings.HasPrefix(line, "1")) {
 					spl := strings.Split(line, ",")
 
-					video := video2.NewVideo(filepath.Join(path, strings.TrimSpace(strings.ReplaceAll(spl[2], `"`, ""))), -1, vector.NewVec2d(320, 240), vector.Centre)
+					fPath, err2 := beatMap.GetRelatedFile(strings.TrimSpace(strings.ReplaceAll(spl[2], `"`, "")))
+					if err2 != nil {
+						continue
+					}
+
+					video := video2.NewVideo(fPath, -1, vector.NewVec2d(320, 240), vector.Centre)
 
 					if video == nil {
 						continue
@@ -308,7 +314,7 @@ func (storyboard *Storyboard) getTexture(image string) *texture.TextureRegion {
 		if texture1 = skin.GetTexture(strings.TrimSuffix(image, filepath.Ext(image))); texture1 != nil {
 			storyboard.textures[image] = texture1
 		} else {
-			path, err := storyboard.pathCache.GetFile(image)
+			path, err := storyboard.beatMap.GetRelatedFile(image)
 			if err != nil {
 				log.Println("File:", image, "does not exist!")
 				return texture1
@@ -347,7 +353,7 @@ func (storyboard *Storyboard) getTexture(image string) *texture.TextureRegion {
 
 func (storyboard *Storyboard) getSample(sample string) (bassSample *bass.Sample) {
 	if bassSample = storyboard.samples[sample]; bassSample == nil {
-		path, err := storyboard.pathCache.GetFile(sample)
+		path, err := storyboard.beatMap.GetRelatedFile(sample)
 		if err != nil {
 			log.Println("File:", sample, "does not exist!")
 			return
