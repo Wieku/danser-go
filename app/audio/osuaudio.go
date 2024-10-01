@@ -1,12 +1,10 @@
 package audio
 
 import (
-	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/math/mutils"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
@@ -203,7 +201,7 @@ func PlaySliderTick(sampleSet, index int, volume float64, objNum int64, xPos flo
 	playSample(sampleSet, 4, index, volume, objNum, xPos)
 }
 
-func LoadBeatmapSamples(dir string) {
+func LoadBeatmapSamples(fMap map[string]string) {
 	splitBeforeDigit := func(name string) []string {
 		for i, r := range name {
 			if unicode.IsDigit(r) {
@@ -214,59 +212,47 @@ func LoadBeatmapSamples(dir string) {
 		return []string{name}
 	}
 
-	fullPath := filepath.Join(settings.General.GetSongsDir(), dir)
+	for lName, fName := range fMap {
+		if strings.Contains(lName, "/") || (!strings.HasSuffix(lName, ".wav") && !strings.HasSuffix(lName, ".mp3") && !strings.HasSuffix(lName, ".ogg")) {
+			continue
+		}
 
-	_ = godirwalk.Walk(fullPath, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != fullPath {
-				return godirwalk.SkipThis
+		rawName := strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(lName, ".wav"), ".ogg"), ".mp3")
+
+		if separated := strings.Split(rawName, "-"); len(separated) == 2 {
+			setID := sets[separated[0]]
+
+			if setID == 0 {
+				continue
 			}
 
-			if !strings.HasSuffix(de.Name(), ".wav") && !strings.HasSuffix(de.Name(), ".mp3") && !strings.HasSuffix(de.Name(), ".ogg") {
-				return nil
+			subSeparated := splitBeforeDigit(separated[1])
+
+			hitSoundIndex := 1
+
+			if len(subSeparated) > 1 {
+				index, err := strconv.ParseInt(subSeparated[1], 10, 32)
+
+				if err != nil {
+					continue
+				}
+
+				hitSoundIndex = int(index)
 			}
 
-			rawName := strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(de.Name(), ".wav"), ".ogg"), ".mp3")
+			hitSoundID := hitsounds[subSeparated[0]]
 
-			if separated := strings.Split(rawName, "-"); len(separated) == 2 {
-				setID := sets[separated[0]]
-
-				if setID == 0 {
-					return nil
-				}
-
-				subSeparated := splitBeforeDigit(separated[1])
-
-				hitSoundIndex := 1
-
-				if len(subSeparated) > 1 {
-					index, err := strconv.ParseInt(subSeparated[1], 10, 32)
-
-					if err != nil {
-						return nil
-					}
-
-					hitSoundIndex = int(index)
-				}
-
-				hitSoundID := hitsounds[subSeparated[0]]
-
-				if hitSoundID == 0 {
-					return nil
-				}
-
-				if MapSamples[setID-1][hitSoundID-1] == nil {
-					MapSamples[setID-1][hitSoundID-1] = make(map[int]*bass.Sample)
-				}
-
-				MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = bass.NewSample(osPathname)
+			if hitSoundID == 0 {
+				continue
 			}
 
-			return nil
-		},
-		Unsorted:            true,
-		FollowSymbolicLinks: true,
-	})
+			if MapSamples[setID-1][hitSoundID-1] == nil {
+				MapSamples[setID-1][hitSoundID-1] = make(map[int]*bass.Sample)
+			}
+
+			MapSamples[setID-1][hitSoundID-1][hitSoundIndex] = bass.NewSample(fName)
+		}
+	}
 }
 
 func LoadSample(name string) *bass.Sample {

@@ -204,7 +204,7 @@ func (beatMap *BeatMap) FinalizePoints() {
 }
 
 func (beatMap *BeatMap) LoadCustomSamples() {
-	audio.LoadBeatmapSamples(beatMap.Dir)
+	audio.LoadBeatmapSamples(beatMap.getPathCache().GetMap())
 }
 
 func (beatMap *BeatMap) UpdatePlayStats() {

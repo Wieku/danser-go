@@ -23,7 +23,7 @@ func NewFileMap(path string) (*FileMap, error) {
 	}
 
 	fileMap := &FileMap{
-		path: fPath,
+		path:      fPath,
 		pathCache: make(map[string]string),
 	}
 
@@ -35,7 +35,7 @@ func NewFileMap(path string) (*FileMap, error) {
 
 			return nil
 		},
-		Unsorted: true,
+		Unsorted:            true,
 		FollowSymbolicLinks: true,
 	})
 
@@ -51,4 +51,14 @@ func (f *FileMap) GetFile(path string) (string, error) {
 	}
 
 	return "", os.ErrNotExist
+}
+
+func (f *FileMap) GetMap() map[string]string {
+	retMap := make(map[string]string)
+
+	for k, v := range f.pathCache {
+		retMap[k] = filepath.Join(f.path, v)
+	}
+
+	return retMap
 }
