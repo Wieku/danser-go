@@ -325,7 +325,7 @@ func (m *songSelectPopup) drawSongSelect() {
 					s := b.bMaps[0].SetID == 0
 
 					if s {
-						imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
+						imgui.BeginDisabled()
 					}
 
 					ImIO.SetFontGlobalScale(16.0 / 32)
@@ -334,6 +334,10 @@ func (m *songSelectPopup) drawSongSelect() {
 					imgui.AlignTextToFramePadding()
 					if imgui.ButtonV("\uF7A2##"+rId, vec2(imgui.FrameHeight()*2, imgui.FrameHeight()*2)) {
 						platform.OpenURL(fmt.Sprintf("https://osu.ppy.sh/s/%d", b.bMaps[0].SetID))
+					}
+
+					if s {
+						imgui.EndDisabled()
 					}
 
 					ImIO.SetFontGlobalScale(1)
@@ -349,10 +353,6 @@ func (m *songSelectPopup) drawSongSelect() {
 						}
 
 						imgui.EndTooltip()
-					}
-
-					if s {
-						imgui.PopItemFlag()
 					}
 
 					imgui.SameLine()
