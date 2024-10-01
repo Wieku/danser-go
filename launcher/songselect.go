@@ -608,7 +608,10 @@ func (m *songSelectPopup) stopPreview() {
 func (m *songSelectPopup) startPreview(bMap *beatmap.BeatMap) {
 	cT := qpc.GetMilliTimeF()
 
-	track := bass.NewTrack(filepath.Join(settings.General.OsuSongsDir, bMap.Dir, bMap.Audio))
+	var track *bass.TrackBass
+	if fPath, err2 := bMap.GetAudioFile(); err2 == nil {
+		track = bass.NewTrack(fPath)
+	}
 
 	if track != nil {
 		beatmap.ParseTimingPointsAndPauses(bMap)

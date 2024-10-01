@@ -38,7 +38,6 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -168,7 +167,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	track := bass.NewTrack(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.Audio))
+	var track *bass.TrackBass
+	if fPath, err2 := beatMap.GetAudioFile(); err2 == nil {
+		track = bass.NewTrack(fPath)
+	}
 
 	if track == nil {
 		log.Println("Failed to create music stream, creating a dummy stream...")
