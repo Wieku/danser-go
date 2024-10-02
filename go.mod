@@ -22,7 +22,7 @@ require (
 	github.com/wieku/rplpa v1.0.1
 	golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
 	golang.org/x/image v0.10.0
-	golang.org/x/sys v0.20.0
+	golang.org/x/sys v0.25.0
 	golang.org/x/text v0.11.0
 )
 
@@ -49,3 +49,5 @@ require (
 )
 
 replace github.com/sqweek/dialog => github.com/wieku/dialog v1.0.0
+
+replace github.com/AllenDang/cimgui-go => github.com/Wieku/cimgui-go v1.0.0
