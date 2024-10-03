@@ -482,7 +482,7 @@ func (slider *Slider) processHeadMiss(player *difficultyPlayer, time int64) {
 			slider.hitSlider.ArmStart(false, float64(time))
 		}
 
-		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
+		position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
 
 		if player.diff.CheckModActive(difficulty.Lazer) {
 			slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
