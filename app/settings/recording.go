@@ -35,7 +35,7 @@ func initRecording() *recording {
 			Preset:            "fast",
 			AdditionalOptions: "",
 		},
-		SVT_AV1Settings: &svt_av1Settings{
+		SVTAV1Settings: &svtav1Settings{
 			RateControl:       "cbr",
 			Bitrate:           "5M",
 			Preset:            "p7",
