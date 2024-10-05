@@ -38,6 +38,11 @@ type HitErrorMeter struct {
 
 	urText   string
 	urGlider *animation.TargetGlider
+
+	averageN float64
+	averageP float64
+	countN   int
+	countP   int
 }
 
 func NewHitErrorMeter(width, height float64, diff *difficulty.Difficulty) *HitErrorMeter {
@@ -120,6 +125,7 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 	}
 
 	middle := sprite.NewSpriteSingle(&pixel, 3.0, vector.NewVec2d(meter.Width/2+errorPos*scale, meter.Height-errorBase*2*scale), vector.Centre)
+	middle.ShowForever(false)
 	middle.SetScaleV(vector.NewVec2d(3, errorBase*4).Scl(scale))
 	middle.SetAdditive(true)
 
@@ -161,24 +167,17 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 	meter.errorDisplayFade.SetValue(1.0)
 	meter.errorDisplayFade.AddEventSEase(time+4000, time+5000, 1.0, 0.0, easing.InQuad)
 
-	meter.errors = append(meter.errors, error)
-
-	averageN := 0.0
-	countN := 0
-
-	averageP := 0.0
-	countP := 0
-	for _, e := range meter.errors {
-		if e >= 0 {
-			averageP += e
-			countP++
-		} else {
-			averageN += e
-			countN++
-		}
+	if error >= 0 {
+		meter.averageP += error
+		meter.countP++
+	} else {
+		meter.averageN += error
+		meter.countN++
 	}
 
-	average := (averageN + averageP) / float64(countN+countP)
+	meter.errors = append(meter.errors, error)
+
+	average := (meter.averageN + meter.averageP) / float64(meter.countN+meter.countP)
 
 	urBase := 0.0
 	for _, e := range meter.errors {
@@ -187,8 +186,8 @@ func (meter *HitErrorMeter) Add(time, error float64, positionalMiss bool) {
 
 	urBase /= float64(len(meter.errors))
 
-	meter.avgNeg = averageN / max(float64(countN), 1)
-	meter.avgPos = averageP / max(float64(countP), 1)
+	meter.avgNeg = meter.averageN / max(float64(meter.countN), 1)
+	meter.avgPos = meter.averageP / max(float64(meter.countP), 1)
 	meter.unstableRate = math.Sqrt(urBase) * 10
 
 	meter.urGlider.SetValue(meter.GetUnstableRateConverted(), settings.Gameplay.HitErrorMeter.StaticUnstableRate)
