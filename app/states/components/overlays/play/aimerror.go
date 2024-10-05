@@ -40,6 +40,8 @@ type AimErrorMeter struct {
 
 	normalized    bool
 	shapeRenderer *shape.Renderer
+
+	toAverage vector.Vector2d
 }
 
 func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
@@ -99,7 +101,7 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 	}
 
 	middle := sprite.NewSpriteSingle(graphics.Cross, 2.0, errorS.Copy64().Scl(scl), vector.Centre)
-
+	middle.ShowForever(false)
 	middle.SetAdditive(true)
 
 	switch {
@@ -138,17 +140,13 @@ func (meter *AimErrorMeter) Add(time float64, hitPosition vector.Vector2f, start
 
 	meter.errors = append(meter.errors, err.Copy64())
 
-	var toAverage vector.Vector2d
+	meter.toAverage = meter.toAverage.Add(err.Copy64())
 
-	for _, e := range meter.errors {
-		toAverage = toAverage.Add(e)
-	}
-
-	average := toAverage.Scl(1 / float64(len(meter.errors)))
+	average := meter.toAverage.Scl(1 / float64(len(meter.errors)))
 
 	urBase := 0.0
 	for _, e := range meter.errors {
-		urBase += math.Pow(e.Dst(average), 2)
+		urBase += e.DstSq(average)
 	}
 
 	urBase /= float64(len(meter.errors))
