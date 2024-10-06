@@ -148,6 +148,16 @@ func (diff *Difficulty) GetSpeed() float64 {
 	}
 }
 
+func (diff *Difficulty) GetPitch() float64 {
+	if diff.Mods&Nightcore > 0 {
+		return 1.5
+	} else if diff.Mods&Daycore > 0 {
+		return 0.75
+	} else {
+		return 1
+	}
+}
+
 func (diff *Difficulty) GetScoreMultiplier() float64 {
 	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore))).GetScoreMultiplier()
 

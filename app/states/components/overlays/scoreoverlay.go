@@ -407,7 +407,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 	delta := time - overlay.audioTime
 
 	if overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
-		delta /= overlay.music.GetTempo()
+		delta /= overlay.music.GetSpeed()
 	}
 
 	overlay.normalTime += delta

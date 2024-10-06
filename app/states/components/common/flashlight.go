@@ -63,7 +63,7 @@ func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
 	size := animation.NewGlider(DefaultFlashlightSize * 8)
 
 	startTime := beatMap.HitObjects[0].GetStartTime() / settings.SPEED
-	endTime := (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50+5)) / settings.SPEED
+	endTime := (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50+5)) / settings.SPEED / beatMap.Diff.GetSpeed()
 
 	size.AddEvent(startTime-DefaultFlashlightDuration, startTime, DefaultFlashlightSize)
 	size.AddEvent(endTime, endTime+DefaultFlashlightDuration, DefaultFlashlightSize*8)
@@ -119,8 +119,8 @@ func (fl *Flashlight) Update(time float64) {
 	for i := fl.breakIndex + 1; i < len(fl.beatMap.Pauses); i++ {
 		pause := fl.beatMap.Pauses[i]
 
-		pauseStart := pause.GetStartTime() / settings.SPEED
-		pauseEnd := pause.GetEndTime() / settings.SPEED
+		pauseStart := pause.GetStartTime() / (settings.SPEED * fl.beatMap.Diff.GetSpeed())
+		pauseEnd := pause.GetEndTime() / (settings.SPEED * fl.beatMap.Diff.GetSpeed())
 
 		if time < pauseStart {
 			break
