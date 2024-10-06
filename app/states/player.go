@@ -8,6 +8,7 @@ import (
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
@@ -76,9 +77,9 @@ type Player struct {
 	bgCamera     *camera2.Camera
 	uiCamera     *camera2.Camera
 
-	dimGlider       *animation.Glider
-	blurGlider      *animation.Glider
-	fxGlider        *animation.Glider
+	dimGlider       *bmath.DimGlider
+	blurGlider      *bmath.DimGlider
+	fxGlider        *bmath.DimGlider
 	cursorGlider    *animation.Glider
 	counter         float64
 	storyboardDrawn int
@@ -302,13 +303,13 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.hudGlider = animation.NewGlider(0)
 	player.hudGlider.SetEasing(easing.OutQuad)
 
-	player.dimGlider = animation.NewGlider(0)
+	player.dimGlider = bmath.NewDimGlider(0)
 	player.dimGlider.SetEasing(easing.OutQuad)
 
-	player.blurGlider = animation.NewGlider(0)
+	player.blurGlider = bmath.NewDimGlider(0)
 	player.blurGlider.SetEasing(easing.OutQuad)
 
-	player.fxGlider = animation.NewGlider(0)
+	player.fxGlider = bmath.NewDimGlider(0)
 	player.cursorGlider = animation.NewGlider(0)
 	player.epiGlider = animation.NewGlider(0)
 	player.objectsAlpha = animation.NewGlider(1)
@@ -382,9 +383,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset += -settings.Playfield.LeadInHold * 1000
 
-	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
-	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
-	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
+	player.dimGlider.AddEvent(startOffset-500, startOffset, bmath.Intro)
+	player.blurGlider.AddEvent(startOffset-500, startOffset, bmath.Intro)
+	player.fxGlider.AddEvent(startOffset-500, startOffset, bmath.Intro)
 	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
@@ -393,9 +394,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 	}
 
-	player.dimGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Background.Dim.Normal)
-	player.blurGlider.AddEvent(beatmapStart, beatmapStart+1000, settings.Playfield.Background.Blur.Values.Normal)
-	player.fxGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Logo.Dim.Normal)
+	player.dimGlider.AddEvent(beatmapStart, beatmapStart+1000, bmath.Normal)
+	player.blurGlider.AddEvent(beatmapStart, beatmapStart+1000, bmath.Normal)
+	player.fxGlider.AddEvent(beatmapStart, beatmapStart+1000, bmath.Normal)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
 
@@ -422,8 +423,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	}
 
-	player.dimGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
-	player.fxGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+	player.dimGlider.AddEventV(beatmapEnd, beatmapEnd+fadeOut, 0.0, bmath.Absolute)
+	player.fxGlider.AddEventV(beatmapEnd, beatmapEnd+fadeOut, 0.0, bmath.Absolute)
 	player.cursorGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.hudGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 
@@ -470,17 +471,17 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			continue
 		}
 
-		player.dimGlider.AddEvent(startTime, startTime+1000*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Breaks)
-		player.blurGlider.AddEvent(startTime, startTime+1000*settings.SPEED, settings.Playfield.Background.Blur.Values.Breaks)
-		player.fxGlider.AddEvent(startTime, startTime+1000*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Breaks)
+		player.dimGlider.AddEvent(startTime, startTime+1000*settings.SPEED, bmath.Break)
+		player.blurGlider.AddEvent(startTime, startTime+1000*settings.SPEED, bmath.Break)
+		player.fxGlider.AddEvent(startTime, startTime+1000*settings.SPEED, bmath.Break)
 
 		if !settings.Cursor.ShowCursorsOnBreaks {
 			player.cursorGlider.AddEvent(startTime, startTime+100*settings.SPEED, 0.0)
 		}
 
-		player.dimGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Normal)
-		player.blurGlider.AddEvent(endTime, endTime+1000*settings.SPEED, settings.Playfield.Background.Blur.Values.Normal)
-		player.fxGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Normal)
+		player.dimGlider.AddEvent(endTime, endTime+1000*settings.SPEED, bmath.Normal)
+		player.blurGlider.AddEvent(endTime, endTime+1000*settings.SPEED, bmath.Normal)
+		player.fxGlider.AddEvent(endTime, endTime+1000*settings.SPEED, bmath.Normal)
 		player.cursorGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0)
 	}
 
@@ -755,10 +756,15 @@ func (player *Player) updateMain(delta float64) {
 
 	player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
 
+	bgDim := settings.Playfield.Background.Dim
+	blurDim := settings.Playfield.Background.Blur.Values
+	fxDim := settings.Playfield.Logo.Dim
+
+	player.dimGlider.Update(player.progressMsF, 1-bgDim.Intro, 1-bgDim.Normal, 1-bgDim.Breaks)
+	player.blurGlider.Update(player.progressMsF, blurDim.Intro, blurDim.Normal, blurDim.Breaks)
+	player.fxGlider.Update(player.progressMsF, 1-fxDim.Intro, 1-fxDim.Normal, 1-fxDim.Breaks)
+
 	player.epiGlider.Update(player.progressMsF)
-	player.dimGlider.Update(player.progressMsF)
-	player.blurGlider.Update(player.progressMsF)
-	player.fxGlider.Update(player.progressMsF)
 	player.cursorGlider.Update(player.progressMsF)
 	player.hudGlider.Update(player.progressMsF)
 	player.volumeGlider.Update(player.progressMsF)

@@ -108,7 +108,7 @@ type background struct {
 	FlashToTheBeat bool
 
 	// Dim controls
-	Dim *dim `liveedit:"false"`
+	Dim *dim
 
 	Parallax *parallax
 
@@ -132,7 +132,7 @@ type parallax struct {
 type blur struct {
 	Enabled bool
 
-	Values *dim2 `liveedit:"false"`
+	Values *dim2
 }
 
 type triangles struct {
@@ -148,7 +148,7 @@ type triangles struct {
 type logo struct {
 	Enabled      bool
 	DrawSpectrum bool `label:"Draw spectrum analyzer"`
-	Dim          *dim `liveedit:"false"`
+	Dim          *dim
 }
 
 type dim struct {
