@@ -235,6 +235,17 @@ func (mods Modifier) StringFull() (s []string) {
 	return
 }
 
+func ParseFromAcronym(mod string) (m Modifier) {
+	for index, availableMod := range modsString {
+		if availableMod == mod {
+			m = 1 << uint(index)
+			break
+		}
+	}
+
+	return
+}
+
 func ParseMods(mods string) (m Modifier) {
 	modsSl := make([]string, len(mods)/2)
 	for n, modPart := range mods {
@@ -242,12 +253,7 @@ func ParseMods(mods string) (m Modifier) {
 	}
 
 	for _, mod := range modsSl {
-		for index, availableMod := range modsString {
-			if availableMod == mod {
-				m |= 1 << uint(index)
-				break
-			}
-		}
+		m |= ParseFromAcronym(mod)
 	}
 
 	if m.Active(Nightcore) {
