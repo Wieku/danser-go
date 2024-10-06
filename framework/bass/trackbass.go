@@ -195,6 +195,10 @@ func (track *TrackBass) GetRelativeFrequency() float64 {
 	return track.relativeFrequency
 }
 
+func (track *TrackBass) GetSpeed() float64 {
+	return track.speed * track.relativeFrequency
+}
+
 func (track *TrackBass) GetState() int {
 	if !track.addedToMixer {
 		return MusicStopped

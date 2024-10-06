@@ -136,6 +136,10 @@ func (track *TrackVirtual) GetRelativeFrequency() float64 {
 	return track.rFreq
 }
 
+func (track *TrackVirtual) GetSpeed() float64 {
+	return track.speed * track.rFreq
+}
+
 func (track *TrackVirtual) GetState() int {
 	if !track.playing {
 		if track.paused {

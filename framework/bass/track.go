@@ -1,7 +1,7 @@
 package bass
 
 const (
-	MusicStopped  = 0
+	MusicStopped = 0
 	MusicPlaying = 1
 	MusicStalled = 2
 	MusicPaused  = 3
@@ -25,6 +25,7 @@ type ITrack interface {
 	GetPitch() float64
 	SetRelativeFrequency(rFreq float64)
 	GetRelativeFrequency() float64
+	GetSpeed() float64
 	GetState() int
 	Update()
 	GetFFT() []float32
