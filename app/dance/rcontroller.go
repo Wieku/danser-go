@@ -57,7 +57,7 @@ type subControl struct {
 	oldSpinners     bool
 	relaxController *input.RelaxInputProcessor
 	mouseController schedulers.Scheduler
-	mods            difficulty.Modifier
+	diff            *difficulty.Difficulty
 }
 
 func NewSubControl() *subControl {
@@ -125,9 +125,23 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		log.Println(fmt.Sprintf("Loading replay for \"%s\":", replay.Username))
 
 		control := NewSubControl()
-		control.mods = difficulty.Modifier(replay.Mods)
 
-		log.Println("\tMods:", control.mods.String())
+		control.diff = beatMap.Diff.Clone()
+		control.diff.SetMods(difficulty.None)
+
+		if replay.ScoreInfo != nil && replay.ScoreInfo.Mods != nil && len(replay.ScoreInfo.Mods) > 0 {
+			modsNew := make([]rplpa.ModInfo, 0, len(replay.ScoreInfo.Mods))
+
+			for _, mod := range replay.ScoreInfo.Mods {
+				modsNew = append(modsNew, *mod)
+			}
+
+			control.diff.SetMods2(modsNew)
+		} else {
+			control.diff.SetMods(difficulty.Modifier(replay.Mods))
+		}
+
+		log.Println("\tMods:", control.diff.GetModString())
 
 		loadFrames(control, replay.ReplayData)
 
@@ -137,10 +151,10 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
 		if replay.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
-			control.mods |= difficulty.Lazer
+			control.diff.Mods |= difficulty.Lazer
 		}
 
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.mods & displayedMods).String(), control.mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
+		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.diff.Mods & displayedMods).String(), control.diff.Mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("\tExpected score:", replay.Score)
@@ -149,12 +163,12 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 
 	if !localReplay && (settings.Knockout.AddDanser || len(candidates) == 0) {
 		control := NewSubControl()
-		control.mods = difficulty.Autoplay | beatMap.Diff.Mods
+		control.diff = beatMap.Diff.Clone()
 
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.mods.String(), control.mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
+		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.diff.GetModString(), control.diff.Mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
 
 		if len(candidates) == 0 {
@@ -316,14 +330,11 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 		meanFrameTime = (times[l/2] + times[l/2-1]) / 2
 	}
 
-	diff := difficulty.NewDifficulty(5, 5, 5, 5)
-	diff.SetMods(subController.mods)
-
-	meanFrameTime = diff.GetModifiedTime(meanFrameTime)
+	meanFrameTime = subController.diff.GetModifiedTime(meanFrameTime)
 
 	log.Println(fmt.Sprintf("\tMean cv frametime: %.2fms", meanFrameTime))
 
-	if meanFrameTime <= 13 && !diff.CheckModActive(difficulty.Autoplay|difficulty.Relax|difficulty.Relax2) {
+	if meanFrameTime <= 13 && !subController.diff.CheckModActive(difficulty.Autoplay|difficulty.Relax|difficulty.Relax2) {
 		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
 	}
 
@@ -333,7 +344,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 }
 
 func (controller *ReplayController) InitCursors() {
-	var modifiers []difficulty.Modifier
+	var diffs []*difficulty.Difficulty
 
 	for i, c := range controller.controllers {
 		if controller.controllers[i].danceController != nil {
@@ -372,12 +383,12 @@ func (controller *ReplayController) InitCursors() {
 			controller.cursors[i].InvertDisplay = true
 		}
 
-		modifiers = append(modifiers, controller.replays[i].ModsV)
+		diffs = append(diffs, c.diff)
 	}
 
-	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, modifiers)
+	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, diffs)
 
-	for i := range controller.controllers {
+	for i, c := range controller.controllers {
 		if controller.replays[i].ModsV.Active(difficulty.Relax) {
 			controller.controllers[i].relaxController = input.NewRelaxInputProcessor(controller.ruleset, controller.cursors[i])
 		}
@@ -385,11 +396,7 @@ func (controller *ReplayController) InitCursors() {
 		if controller.replays[i].ModsV.Active(difficulty.Relax2) {
 			controller.controllers[i].mouseController = schedulers.NewGenericScheduler(movers.NewLinearMoverSimple, 0, 0)
 
-			diff := difficulty.NewDifficulty(controller.bMap.Diff.GetHP(), controller.bMap.Diff.GetCS(), controller.bMap.Diff.GetOD(), controller.bMap.Diff.GetAR())
-			diff.SetMods(controller.replays[i].ModsV)
-			diff.SetCustomSpeed(controller.bMap.Diff.CustomSpeed)
-
-			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), diff, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
+			controller.controllers[i].mouseController.Init(controller.bMap.GetObjectsCopy(), c.diff, controller.cursors[i], spinners.GetMoverCtorByName("circle"), false)
 		}
 	}
 }
@@ -440,7 +447,7 @@ func (controller *ReplayController) updateMain(nTime float64) {
 
 			c.lastTime = int64(nTime)
 		} else {
-			if c.mods&difficulty.Lazer > 0 {
+			if c.diff.CheckModActive(difficulty.Lazer) {
 				controller.processLazer(i, c, nTime)
 			} else {
 				controller.processStable(i, c, nTime)

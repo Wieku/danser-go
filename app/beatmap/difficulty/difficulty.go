@@ -3,7 +3,10 @@ package difficulty
 import (
 	"fmt"
 	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/rplpa"
 	"math"
+	"reflect"
+	"slices"
 )
 
 const (
@@ -48,9 +51,13 @@ type Difficulty struct {
 	LzSpinnerMaxRPS float64
 	Speed           float64
 
-	ARReal      float64
-	ODReal      float64
-	CustomSpeed float64
+	ARReal float64
+	ODReal float64
+
+	BaseModSpeed float64
+
+	modSettings map[reflect.Type]any
+	adjustPitch bool
 }
 
 func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
@@ -68,7 +75,9 @@ func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
 	diff.baseAR = ar
 	diff.ar = ar
 
-	diff.CustomSpeed = 1
+	diff.Speed = 1
+
+	diff.modSettings = make(map[reflect.Type]any)
 
 	diff.calculate()
 
@@ -76,6 +85,14 @@ func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
 }
 
 func (diff *Difficulty) calculate() {
+	diff.hp, diff.cs, diff.od, diff.ar = diff.baseHP, diff.baseCS, diff.baseOD, diff.baseAR
+	if s, ok := diff.modSettings[rfType[DiffAdjustSettings]()].(DiffAdjustSettings); ok {
+		diff.ar = s.ApproachRate
+		diff.od = s.OverallDifficulty
+		diff.hp = s.DrainRate
+		diff.cs = s.CircleSize
+	}
+
 	hpDrain, cs, od, ar := diff.hp, diff.cs, diff.od, diff.ar
 
 	if diff.Mods&HardRock > 0 {
@@ -113,14 +130,98 @@ func (diff *Difficulty) calculate() {
 	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
 	diff.LzSpinnerMinRPS = DifficultyRate(od, 90, 150, 225) / 60
 	diff.LzSpinnerMaxRPS = DifficultyRate(od, 250, 380, 430) / 60
-	diff.Speed = 1.0 / diff.GetModifiedTime(1)
+
+	if diff.Mods&DoubleTime > 0 {
+		diff.BaseModSpeed = 1.5
+	} else if diff.Mods&HalfTime > 0 {
+		diff.BaseModSpeed = 0.75
+	} else {
+		diff.BaseModSpeed = 1
+	}
+
+	diff.Speed = diff.BaseModSpeed
+
+	if s, ok := diff.modSettings[rfType[SpeedSettings]()].(SpeedSettings); ok && diff.BaseModSpeed != s.SpeedChange {
+		diff.Speed = s.SpeedChange
+		diff.adjustPitch = s.AdjustPitch
+	}
 
 	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
 	diff.ODReal = DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
 }
 
 func (diff *Difficulty) SetMods(mods Modifier) {
+	clear(diff.modSettings)
+
 	diff.Mods = mods
+
+	if mods.Active(HalfTime | Daycore) {
+		diff.modSettings[rfType[SpeedSettings]()] = newSpeedSettings(0.75, mods.Active(Daycore))
+	} else if mods.Active(DoubleTime | Nightcore) {
+		diff.modSettings[rfType[SpeedSettings]()] = newSpeedSettings(1.5, mods.Active(Nightcore))
+	}
+
+	if mods.Active(Easy) {
+		diff.modSettings[rfType[EasySettings]()] = newEasySettings()
+	}
+
+	if mods.Active(Flashlight) {
+		diff.modSettings[rfType[FlashlightSettings]()] = newFlashlightSettings()
+	}
+
+	diff.calculate()
+}
+
+func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
+	mMap := make(map[Modifier]map[string]interface{})
+
+	mComp := None
+
+	for _, mInfo := range mods {
+		mod := ParseFromAcronym(mInfo.Acronym)
+
+		if mod != None {
+			mComp |= mod
+			mMap[mod] = mInfo.Settings
+
+			if mod.Active(HalfTime | Daycore) {
+				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(newSpeedSettings(0.75, mod.Active(Daycore)), mInfo.Settings)
+			} else if mod.Active(DoubleTime | Nightcore) {
+				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(newSpeedSettings(1.5, mod.Active(Nightcore)), mInfo.Settings)
+			}
+
+			if mod.Active(Easy) {
+				diff.modSettings[rfType[EasySettings]()] = parseConfig(newEasySettings(), mInfo.Settings)
+			}
+
+			if mod.Active(Flashlight) {
+				diff.modSettings[rfType[FlashlightSettings]()] = parseConfig(newFlashlightSettings(), mInfo.Settings)
+			}
+
+			if mod.Active(DifficultyAdjust) {
+				diff.modSettings[rfType[DiffAdjustSettings]()] = parseConfig(newDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD), mInfo.Settings)
+			}
+
+			if mod.Active(Classic) {
+				diff.modSettings[rfType[ClassicSettings]()] = parseConfig(newClassicSettings(), mInfo.Settings)
+			}
+		}
+	}
+
+	if mComp.Active(Nightcore) {
+		mComp |= DoubleTime
+	}
+
+	if mComp.Active(Perfect) {
+		mComp |= SuddenDeath
+	}
+
+	if mComp.Active(Daycore) {
+		mComp |= HalfTime
+	}
+
+	diff.Mods = mComp
+
 	diff.calculate()
 }
 
@@ -129,33 +230,19 @@ func (diff *Difficulty) CheckModActive(mods Modifier) bool {
 }
 
 func (diff *Difficulty) GetModifiedTime(time float64) float64 {
-	if diff.Mods&DoubleTime > 0 {
-		return time / (1.5 * diff.CustomSpeed)
-	} else if diff.Mods&HalfTime > 0 {
-		return time / (0.75 * diff.CustomSpeed)
-	} else {
-		return time / diff.CustomSpeed
-	}
+	return time / diff.Speed
 }
 
 func (diff *Difficulty) GetSpeed() float64 {
-	if diff.Mods&DoubleTime > 0 {
-		return 1.5 * diff.CustomSpeed
-	} else if diff.Mods&HalfTime > 0 {
-		return 0.75 * diff.CustomSpeed
-	} else {
-		return diff.CustomSpeed
-	}
+	return diff.Speed
 }
 
 func (diff *Difficulty) GetPitch() float64 {
-	if diff.Mods&Nightcore > 0 {
-		return 1.5
-	} else if diff.Mods&Daycore > 0 {
-		return 0.75
-	} else {
-		return 1
+	if diff.adjustPitch && diff.Speed != 1 {
+		return diff.Speed
 	}
+
+	return 1
 }
 
 func (diff *Difficulty) GetScoreMultiplier() float64 {
@@ -207,33 +294,53 @@ func (diff *Difficulty) GetModStringFull() []string {
 		mods = append(mods, fmt.Sprintf("DA:HP%s", mutils.FormatWOZeros(hp, 2)))
 	}
 
-	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
-		mods = append(mods, fmt.Sprintf("DA:%sx", mutils.FormatWOZeros(cSpeed, 2)))
+	if cSpeed := diff.Speed; math.Abs(cSpeed-diff.BaseModSpeed) > 0.001 {
+		toCheck := []Modifier{DoubleTime, Nightcore, HalfTime, Daycore}
+		anyFound := false
+
+		for _, ms := range toCheck {
+			if i := slices.Index(mods, ms.StringFull()[0]); i != -1 {
+				anyFound = true
+				mods[i] = fmt.Sprintf("DA:%s:%sx", ms.String(), mutils.FormatWOZeros(cSpeed, 2))
+			}
+		}
+
+		if !anyFound {
+			mods = append(mods, fmt.Sprintf("DA:%sx", mutils.FormatWOZeros(cSpeed, 2)))
+		}
 	}
 
 	return mods
 }
 
 func (diff *Difficulty) GetModString() string {
-	mods := diff.Mods.String()
+	return diff.getModStringBase(diff.Mods)
+}
 
-	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
+func (diff *Difficulty) GetModStringMasked() string {
+	return diff.getModStringBase(GetDiffMaskedMods(diff.Mods))
+}
+
+func (diff *Difficulty) getModStringBase(mod Modifier) string {
+	mods := mod.String()
+
+	if ar := diff.GetAR(); math.Abs(ar-diff.GetBaseAR()) > 0.001 {
 		mods += fmt.Sprintf("AR%s", mutils.FormatWOZeros(ar, 2))
 	}
 
-	if od := diff.GetOD(); od != diff.GetBaseOD() {
+	if od := diff.GetOD(); math.Abs(od-diff.GetBaseOD()) > 0.001 {
 		mods += fmt.Sprintf("OD%s", mutils.FormatWOZeros(od, 2))
 	}
 
-	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
+	if cs := diff.GetCS(); math.Abs(cs-diff.GetBaseCS()) > 0.001 {
 		mods += fmt.Sprintf("CS%s", mutils.FormatWOZeros(cs, 2))
 	}
 
-	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
+	if hp := diff.GetHP(); math.Abs(hp-diff.GetBaseHP()) > 0.001 {
 		mods += fmt.Sprintf("HP%s", mutils.FormatWOZeros(hp, 2))
 	}
 
-	if cSpeed := diff.CustomSpeed; cSpeed != 1 {
+	if cSpeed := diff.Speed; math.Abs(cSpeed-diff.BaseModSpeed) > 0.001 {
 		mods += fmt.Sprintf("S%sx", mutils.FormatWOZeros(cSpeed, 2))
 	}
 
@@ -316,9 +423,19 @@ func (diff *Difficulty) SetARCustom(ar float64) {
 	diff.calculate()
 }
 
-func (diff *Difficulty) SetCustomSpeed(speed float64) {
-	diff.CustomSpeed = speed
-	diff.calculate()
+//func (diff *Difficulty) SetCustomSpeed(speed float64) {
+//	diff.CustomSpeed = speed
+//	diff.calculate()
+//}
+
+func (diff *Difficulty) Clone() *Difficulty {
+	diff2 := *diff
+	diff2.modSettings = make(map[reflect.Type]any)
+	for k, v := range diff.modSettings {
+		diff2.modSettings[k] = v
+	}
+
+	return &diff2
 }
 
 func DifficultyRate(diff, min, mid, max float64) float64 {

@@ -187,6 +187,7 @@ func run() {
 		}
 
 		modsParsed := difficulty2.ParseMods(*mods)
+		var modsNew []rplpa.ModInfo = nil
 
 		if *replay != "" {
 			bytes, err := ioutil.ReadFile(*replay)
@@ -210,6 +211,15 @@ func run() {
 			*md5 = rp.BeatmapMD5
 			*id = -1
 			modsParsed = difficulty2.Modifier(rp.Mods)
+
+			if rp.ScoreInfo != nil && rp.ScoreInfo.Mods != nil && len(rp.ScoreInfo.Mods) > 0 {
+				modsNew = make([]rplpa.ModInfo, 0, len(rp.ScoreInfo.Mods))
+
+				for _, mod := range rp.ScoreInfo.Mods {
+					modsNew = append(modsNew, *mod)
+				}
+			}
+
 			*knockout = true
 			settings.REPLAY = *replay
 		}
@@ -486,7 +496,12 @@ func run() {
 			//beatMap.Diff.SetCustomSpeed(speedBefore)
 		}
 
-		beatMap.Diff.SetMods(modsParsed)
+		if modsNew != nil {
+			beatMap.Diff.SetMods2(modsNew)
+		} else {
+			beatMap.Diff.SetMods(modsParsed)
+		}
+
 		beatmap.ParseTimingPointsAndPauses(beatMap)
 		beatmap.ParseObjects(beatMap, false, true)
 		beatMap.LoadCustomSamples()

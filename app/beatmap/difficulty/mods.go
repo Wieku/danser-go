@@ -37,6 +37,8 @@ const (
 	LastMod
 	Daycore
 	Lazer
+	Classic
+	DifficultyAdjust
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
@@ -97,6 +99,8 @@ var modsString = [...]string{
 	"LM",
 	"DC",
 	"LZ",
+	"CL",
+	"DA",
 }
 
 var modsStringFull = [...]string{
@@ -133,6 +137,8 @@ var modsStringFull = [...]string{
 	"LastMod",
 	"Daycore",
 	"Lazer",
+	"Classic",
+	"DifficultyAdjust",
 }
 
 func (mods Modifier) GetScoreMultiplier() float64 {
@@ -180,6 +186,14 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 
 	if mods&SpunOut > 0 {
 		multiplier *= 0.9
+	}
+
+	if mods&Classic > 0 {
+		multiplier *= 0.96
+	}
+
+	if mods&DifficultyAdjust > 0 {
+		multiplier *= 0.5
 	}
 
 	return multiplier

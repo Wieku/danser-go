@@ -61,6 +61,8 @@ type difficultyPlayer struct {
 	leftCondE       bool
 	rightCond       bool
 	rightCondE      bool
+
+	maskedModString string
 }
 
 type subSet struct {
@@ -95,23 +97,21 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	oppDiffs map[difficulty.Modifier][]pp220930.Attributes
+	oppDiffs map[string][]pp220930.Attributes
 
 	queue        []HitObject
 	processed    []HitObject
 	hitListener  hitListener
 	endListener  endListener
 	failListener failListener
-
-	experimentalPP bool
 }
 
-func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
+func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs []*difficulty.Difficulty) *OsuRuleSet {
 	log.Println("Creating osu! ruleset...")
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]pp220930.Attributes)
+	ruleset.oppDiffs = make(map[string][]pp220930.Attributes)
 
 	log.Println("Using pp calc version 2022-09-30: https://osu.ppy.sh/home/news/2022-09-30-changes-to-osu-sr-and-pp")
 
@@ -120,32 +120,24 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
 	for i, cursor := range cursors {
-		diff := difficulty.NewDifficulty(beatMap.Diff.GetBaseHP(), beatMap.Diff.GetBaseCS(), beatMap.Diff.GetBaseOD(), beatMap.Diff.GetBaseAR())
+		diff := diffs[i]
 
-		diff.SetHPCustom(beatMap.Diff.GetHP())
-		diff.SetCSCustom(beatMap.Diff.GetCS())
-		diff.SetODCustom(beatMap.Diff.GetOD())
-		diff.SetARCustom(beatMap.Diff.GetAR())
+		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.ScoreV2) // if beatmap has ScoreV2 mod, force it for all players
+		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.Lazer)   // same for Lazer
 
-		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.ScoreV2)) // if beatmap has ScoreV2 mod, force it for all players
-		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.Lazer))   // same for Lazer
-		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
-
-		player := &difficultyPlayer{cursor: cursor, diff: diff}
+		player := &difficultyPlayer{cursor: cursor, diff: diff, maskedModString: diff.GetModStringMasked()}
 		diffPlayers = append(diffPlayers, player)
 
-		maskedMods := difficulty.GetDiffMaskedMods(mods[i])
+		if ruleset.oppDiffs[player.maskedModString] == nil {
+			ruleset.oppDiffs[player.maskedModString] = pp220930.CalculateStep(ruleset.beatMap.HitObjects, player.diff)
 
-		if ruleset.oppDiffs[maskedMods] == nil {
-			ruleset.oppDiffs[maskedMods] = pp220930.CalculateStep(ruleset.beatMap.HitObjects, diff)
-
-			star := ruleset.oppDiffs[maskedMods][len(ruleset.oppDiffs[maskedMods])-1]
+			star := ruleset.oppDiffs[player.maskedModString][len(ruleset.oppDiffs[player.maskedModString])-1]
 
 			log.Println("Stars:")
 			log.Println("\tAim:  ", star.Aim)
 			log.Println("\tSpeed:", star.Speed)
 
-			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+			if diff.CheckModActive(difficulty.Flashlight) {
 				log.Println("\tFlash:", star.Flashlight)
 			}
 
@@ -158,7 +150,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 			log.Println("\tAim:  ", pp.Results.Aim)
 			log.Println("\tTap:  ", pp.Results.Speed)
 
-			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+			if diff.CheckModActive(difficulty.Flashlight) {
 				log.Println("\tFlash:", star.Flashlight)
 			}
 
@@ -455,7 +447,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 
 	index := max(1, subSet.numObjects) - 1
 
-	diff := set.oppDiffs[difficulty.GetDiffMaskedMods(subSet.player.diff.Mods)][index]
+	diff := set.oppDiffs[subSet.player.maskedModString][index]
 
 	subSet.score.PerfectCombo = uint(diff.MaxCombo) == subSet.score.Combo
 

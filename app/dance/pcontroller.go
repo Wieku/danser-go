@@ -56,7 +56,7 @@ func (controller *PlayerController) InitCursors() {
 	controller.cursors[0].Name = settings.Gameplay.PlayUsername
 	controller.cursors[0].ScoreTime = time.Now()
 	controller.window = glfw.GetCurrentContext()
-	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []difficulty.Modifier{controller.bMap.Diff.Mods})
+	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []*difficulty.Difficulty{controller.bMap.Diff.Clone()})
 
 	if !controller.bMap.Diff.CheckModActive(difficulty.Relax) {
 		input2.RegisterListener(controller.KeyEvent)
