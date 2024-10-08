@@ -276,7 +276,7 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 }
 
 func (diff *Difficulty) GetModStringFull() []string {
-	mods := diff.Mods.StringFull()
+	mods := (diff.Mods & (^DifficultyAdjust)).StringFull()
 
 	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
 		mods = append(mods, fmt.Sprintf("DA:AR%s", mutils.FormatWOZeros(ar, 2)))
@@ -308,6 +308,10 @@ func (diff *Difficulty) GetModStringFull() []string {
 		if !anyFound {
 			mods = append(mods, fmt.Sprintf("DA:%sx", mutils.FormatWOZeros(cSpeed, 2)))
 		}
+	}
+
+	if i := slices.Index(mods, "Lazer"); i != -1 {
+		mods[i] = "LZ"
 	}
 
 	return mods

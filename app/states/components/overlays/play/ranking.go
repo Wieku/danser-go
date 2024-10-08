@@ -229,7 +229,7 @@ func (panel *RankingPanel) loadMods() {
 
 	offset := -64.0
 	for i, s := range mods {
-		if strings.HasPrefix(s, "DA:") {
+		if strings.HasPrefix(s, "DA:") || len(s) == 2 {
 			bgTex := skin.GetTexture("selection-mod-base")
 
 			modBg := sprite.NewSpriteSingle(bgTex, 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)

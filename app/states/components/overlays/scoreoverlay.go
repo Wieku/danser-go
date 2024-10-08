@@ -921,7 +921,7 @@ func (overlay *ScoreOverlay) initMods() {
 	for i, s := range mods {
 		var mod sprite.ISprite
 
-		if strings.HasPrefix(s, "DA:") {
+		if strings.HasPrefix(s, "DA:") || len(s) == 2 {
 			bgTex := skin.GetTexture("selection-mod-base")
 
 			modBg := sprite.NewSpriteSingle(bgTex, float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
