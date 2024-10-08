@@ -21,3 +21,12 @@ func parseConfig[T any](base T, config map[string]any) T {
 
 	return base
 }
+
+func GetModConfig[T any](diff *Difficulty) (T, bool) {
+	if s, ok := diff.modSettings[rfType[T]()].(T); ok {
+		return s, true
+	}
+
+	var ret T
+	return ret, false
+}

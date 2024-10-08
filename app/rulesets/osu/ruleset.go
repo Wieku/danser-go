@@ -180,7 +180,11 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 
 		recoveries := 0
 		if diff.CheckModActive(difficulty.Easy) {
-			recoveries = 2
+			if conf, ok := difficulty.GetModConfig[difficulty.EasySettings](diff); ok {
+				recoveries = conf.Retries
+			} else {
+				recoveries = 2
+			}
 		}
 
 		hp.AddFailListener(func() {
