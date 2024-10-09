@@ -246,7 +246,7 @@ func (diff *Difficulty) GetPitch() float64 {
 }
 
 func (diff *Difficulty) GetScoreMultiplier() float64 {
-	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore))).GetScoreMultiplier()
+	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore | Flashlight))).GetScoreMultiplier()
 
 	if diff.Mods.Active(Lazer) {
 		value := math.Floor(diff.Speed*10)/10 - 1
@@ -270,6 +270,18 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 				baseMultiplier *= max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
 			}
 		}
+	}
+
+	if diff.CheckModActive(Flashlight) {
+		mult := 1.12
+
+		if fl, ok := GetModConfig[FlashlightSettings](diff); ok {
+			if fl != newFlashlightSettings() {
+				mult = 1
+			}
+		}
+
+		baseMultiplier *= mult
 	}
 
 	return baseMultiplier
