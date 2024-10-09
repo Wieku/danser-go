@@ -191,7 +191,13 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 					hp.addResultInternal(SliderPoint)
 				}
 			} else if s, ok := o.(*objects.Spinner); ok {
-				requirement := int((s.GetEndTime() - s.GetStartTime()) / 1000 * hp.diff.SpinnerRatio)
+				spinnerTime := (s.GetEndTime() - s.GetStartTime()) / 1000
+
+				requirement := int(spinnerTime * hp.diff.SpinnerRatio)
+				if hp.diff.CheckModActive(difficulty.Lazer) {
+					requirement = int(hp.diff.LzSpinnerMinRPS*spinnerTime/1000 + 0.0001)
+				}
+
 				for j := 0; j < requirement; j++ {
 					hp.addResultInternal(SpinnerSpin)
 				}
@@ -205,7 +211,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 				break
 			}
 
-			if i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo() {
+			if !hp.diff.CheckModActive(difficulty.Lazer) && (i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo()) {
 				hp.addResultInternal(Hit300g)
 
 				if hp.health < lowestHpComboEnd {
@@ -279,13 +285,15 @@ func (hp *HealthProcessor) addResultInternal(result HitResult) {
 		hpAdd += hp.HpMultiplierNormal * HpSpinnerBonus
 	}
 
-	switch addition {
-	case MuAddition:
-		hpAdd += hp.HpMultiplierComboEnd * HpMu
-	case KatuAddition:
-		hpAdd += hp.HpMultiplierComboEnd * HpKatu
-	case GekiAddition:
-		hpAdd += hp.HpMultiplierComboEnd * HpGeki
+	if !hp.diff.CheckModActive(difficulty.Lazer) {
+		switch addition {
+		case MuAddition:
+			hpAdd += hp.HpMultiplierComboEnd * HpMu
+		case KatuAddition:
+			hpAdd += hp.HpMultiplierComboEnd * HpKatu
+		case GekiAddition:
+			hpAdd += hp.HpMultiplierComboEnd * HpGeki
+		}
 	}
 
 	hp.Increase(hpAdd, true)
@@ -308,12 +316,15 @@ func (hp *HealthProcessor) IncreaseRelative(amount float64, fromHitObject bool) 
 
 func (hp *HealthProcessor) reducePassive(amount int64) {
 	scale := 1.0
-	if hp.spinnerActive && hp.lowerSpinnerDrain {
-		scale = 0.25
-	}
 
-	if hp.diff.CheckModActive(difficulty.HalfTime) {
-		scale *= 0.75
+	if !hp.diff.CheckModActive(difficulty.Lazer) {
+		if hp.spinnerActive && hp.lowerSpinnerDrain {
+			scale = 0.25
+		}
+
+		if hp.diff.CheckModActive(difficulty.HalfTime) {
+			scale *= 0.75
+		}
 	}
 
 	hp.Increase(-hp.PassiveDrain*float64(amount)*scale, false)
