@@ -63,6 +63,10 @@ type difficultyPlayer struct {
 	rightCondE      bool
 
 	maskedModString string
+
+	lzLegacyNotelock bool
+	lzNoSliderAcc    bool
+	lzLegacySound    bool
 }
 
 type subSet struct {
@@ -128,6 +132,17 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 		player := &difficultyPlayer{cursor: cursor, diff: diff, maskedModString: diff.GetModStringMasked()}
 		diffPlayers = append(diffPlayers, player)
 
+		lzLegacyHP := false
+
+		if diff.CheckModActive(difficulty.Classic) {
+			if s, ok := difficulty.GetModConfig[difficulty.ClassicSettings](diff); ok {
+				player.lzLegacyNotelock = s.ClassicNoteLock
+				player.lzNoSliderAcc = s.NoSliderHeadAccuracy
+				player.lzLegacySound = s.AlwaysPlayTailSample
+				lzLegacyHP = s.ClassicHealth
+			}
+		}
+
 		if ruleset.oppDiffs[player.maskedModString] == nil {
 			ruleset.oppDiffs[player.maskedModString] = pp220930.CalculateStep(ruleset.beatMap.HitObjects, player.diff)
 
@@ -162,10 +177,10 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 
 		var hp IHealthProcessor
 
-		if diff.CheckModActive(difficulty.Lazer) {
-			hp = NewHealthProcessorV2(beatMap, diff)
+		if diff.CheckModActive(difficulty.Lazer) && !lzLegacyHP {
+			hp = NewHealthProcessorV2(beatMap, player)
 		} else {
-			hp = NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
+			hp = NewHealthProcessor(beatMap, player, !cursor.OldSpinnerScoring)
 		}
 
 		hp.CalculateRate()
@@ -537,7 +552,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficultyPlayer) ClickAction {
 	var clickAction ClickAction
 
-	if player.cursor.IsAutoplay || player.diff.CheckModActive(difficulty.Lazer) {
+	if player.cursor.IsAutoplay || (player.diff.CheckModActive(difficulty.Lazer) && !player.lzLegacyNotelock) {
 		clickAction = set.CanBeHitLazer(time, object, player)
 	} else {
 		clickAction = set.CanBeHitStable(time, object, player)

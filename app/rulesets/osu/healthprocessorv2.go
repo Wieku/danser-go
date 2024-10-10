@@ -16,7 +16,7 @@ const (
 
 type HealthProcessorV2 struct {
 	beatMap *beatmap.BeatMap
-	diff    *difficulty.Difficulty
+	player  *difficultyPlayer
 
 	passiveDrain float64
 
@@ -31,10 +31,10 @@ type HealthProcessorV2 struct {
 	countBad  int
 }
 
-func NewHealthProcessorV2(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty) *HealthProcessorV2 {
+func NewHealthProcessorV2(beatMap *beatmap.BeatMap, player *difficultyPlayer) *HealthProcessorV2 {
 	hp := &HealthProcessorV2{
 		beatMap: beatMap,
-		diff:    diff,
+		player:  player,
 	}
 
 	hp.calculateDrainPeriods()
@@ -73,7 +73,7 @@ func (hp *HealthProcessorV2) CalculateRate() { //nolint:gocyclo
 		increase float64
 	}
 
-	targetMinimumHealth := mutils.Clamp(difficulty.DifficultyRate(hp.diff.HPMod, lzMinHealthTarget, lzMidHealthTarget, lzMaxHealthTarget), 0, 1)
+	targetMinimumHealth := mutils.Clamp(difficulty.DifficultyRate(hp.player.diff.HPMod, lzMinHealthTarget, lzMidHealthTarget, lzMaxHealthTarget), 0, 1)
 
 	breakCount := len(hp.beatMap.Pauses)
 
@@ -86,12 +86,19 @@ func (hp *HealthProcessorV2) CalculateRate() { //nolint:gocyclo
 			time = o.GetEndTime()
 		}
 
+		s, ok := o.(*objects.Slider)
+
+		hr := Hit300
+		if ok && hp.player.lzNoSliderAcc {
+			hr = SliderStart
+		}
+
 		healthIncreases = append(healthIncreases, healthIncrease{
 			time:     time,
-			increase: hp.getHPResult(Hit300),
+			increase: hp.getHPResult(hr),
 		})
 
-		if s, ok := o.(*objects.Slider); ok {
+		if ok {
 			for j := 0; j < len(s.ScorePointsLazer); j++ {
 				sc := s.ScorePoints[j]
 
@@ -106,6 +113,13 @@ func (hp *HealthProcessorV2) CalculateRate() { //nolint:gocyclo
 				healthIncreases = append(healthIncreases, healthIncrease{
 					time:     sc.Time,
 					increase: hp.getHPResult(result),
+				})
+			}
+
+			if hp.player.lzNoSliderAcc {
+				healthIncreases = append(healthIncreases, healthIncrease{
+					time:     s.GetEndTime(),
+					increase: hp.getHPResult(Hit300),
 				})
 			}
 		}
@@ -171,7 +185,7 @@ func (hp *HealthProcessorV2) AddResult(result JudgementResult) {
 		hpRes = 0
 	}
 
-	if (result.MaxResult == SliderFinish || result.object.GetObject().GetType() != objects.SLIDER) && result.object.GetObject().IsNewCombo() {
+	if (result.fromSliderFinish || result.object.GetObject().GetType() != objects.SLIDER) && result.object.GetObject().IsNewCombo() {
 		hp.countGood = 0
 		hp.countBad = 0
 	}
@@ -183,7 +197,7 @@ func (hp *HealthProcessorV2) AddResult(result JudgementResult) {
 		hp.countBad++
 	}
 
-	if (result.HitResult&(BaseHits|SliderFinish)) > 0 && (result.MaxResult == SliderFinish || result.object.GetObject().GetType() != objects.SLIDER) && result.object.GetObject().IsLastCombo() {
+	if (result.HitResult&(BaseHits|SliderFinish)) > 0 && (result.fromSliderFinish || result.object.GetObject().GetType() != objects.SLIDER) && result.object.GetObject().IsLastCombo() {
 		if hp.countGood == 0 && hp.countBad == 0 {
 			hpRes += 0.07
 		} else if hp.countBad == 0 {
@@ -201,9 +215,9 @@ func (hp *HealthProcessorV2) getHPResult(result HitResult) float64 {
 
 	switch normal {
 	case SliderMiss:
-		return difficulty.DifficultyRate(hp.diff.HPMod, -0.02, -0.075, -0.14)
+		return difficulty.DifficultyRate(hp.player.diff.HPMod, -0.02, -0.075, -0.14)
 	case Miss:
-		return difficulty.DifficultyRate(hp.diff.HPMod, -0.03, -0.125, -0.2)
+		return difficulty.DifficultyRate(hp.player.diff.HPMod, -0.03, -0.125, -0.2)
 	case Hit50:
 		return 0.002
 	case Hit100:
@@ -212,7 +226,7 @@ func (hp *HealthProcessorV2) getHPResult(result HitResult) float64 {
 		return 0.03
 	case SliderPoint:
 		return 0.015
-	case SliderStart, SliderRepeat, SliderEnd:
+	case SliderStart, SliderRepeat, LegacySliderEnd, SliderEnd:
 		return 0.02
 	case SpinnerSpin, SpinnerPoints:
 		return 0.0085

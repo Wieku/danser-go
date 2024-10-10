@@ -42,16 +42,28 @@ func (s *scoreV3Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 		if o.GetType() == objects.SPINNER {
 			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
 		} else if slider, ok := o.(*objects.Slider); ok {
-			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
+			if player.lzNoSliderAcc {
+				s.AddResult(createJudgementResult(SliderStart, SliderStart, Increase, int64(o.GetStartTime()), o.GetStartPosition(), nil))
+			} else {
+				s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetStartTime()), o.GetStartPosition(), nil))
+			}
 
 			for i, p := range slider.ScorePointsLazer {
 				if i == len(slider.ScorePoints)-1 {
-					s.AddResult(createJudgementResult(SliderEnd, SliderEnd, Increase, int64(p.Time), p.Pos, nil))
+					if player.lzNoSliderAcc {
+						s.AddResult(createJudgementResult(LegacySliderEnd, LegacySliderEnd, Hold, int64(p.Time), p.Pos, nil))
+					} else {
+						s.AddResult(createJudgementResult(SliderEnd, SliderEnd, Increase, int64(p.Time), p.Pos, nil))
+					}
 				} else if p.IsReverse {
 					s.AddResult(createJudgementResult(SliderRepeat, SliderRepeat, Increase, int64(p.Time), p.Pos, nil))
 				} else {
 					s.AddResult(createJudgementResult(SliderPoint, SliderPoint, Increase, int64(p.Time), p.Pos, nil))
 				}
+			}
+
+			if player.lzNoSliderAcc {
+				s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
 			}
 		} else {
 			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetStartTime()), o.GetStartPosition(), nil))
@@ -86,7 +98,7 @@ func (s *scoreV3Processor) AddResult(result JudgementResult) {
 		s.hits++
 	}
 
-	// slider end misses don't propagate combo score
+	// slider end misses (not classic mod!) don't propagate combo score
 	if result.HitResult.AffectsAccLZ() && !(result.HitResult == SliderMiss && result.MaxResult == SliderEnd) {
 		s.comboPart += float64(result.MaxResult.ScoreValueLazer()) * math.Pow(float64(s.combo), 0.5)
 	}

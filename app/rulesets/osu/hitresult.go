@@ -17,6 +17,7 @@ const (
 	SliderStart
 	SliderPoint
 	SliderRepeat
+	LegacySliderEnd
 	SliderEnd
 	SliderFinish // For lazer health processor
 	SpinnerSpin
@@ -36,7 +37,7 @@ const (
 	BaseHits    = Hit50 | Hit100 | Hit300
 	BaseHitsM   = BaseHits | Miss
 	HitValues   = Hit50 | Hit100 | Hit300 | GekiAddition | KatuAddition
-	SliderHits  = SliderStart | SliderPoint | SliderRepeat | SliderEnd
+	SliderHits  = SliderStart | SliderPoint | SliderRepeat | LegacySliderEnd | SliderEnd
 	SpinnerHits = SpinnerSpin | SpinnerPoints | SpinnerBonus
 	RawHits     = SliderHits | SpinnerHits
 )
@@ -88,7 +89,7 @@ func (r HitResult) ScoreValueV2() int64 {
 }
 
 func (r HitResult) ScoreValueLazer() int64 {
-	v := r & (^(Additions | SliderStart))
+	v := r & (^Additions)
 	switch v {
 	case Hit50:
 		return 50
@@ -98,9 +99,9 @@ func (r HitResult) ScoreValueLazer() int64 {
 		return 150
 	case Hit300:
 		return 300
-	case SliderPoint, SliderRepeat:
+	case SliderStart, SliderPoint, SliderRepeat:
 		return 30
-	case SpinnerPoints:
+	case SpinnerPoints, LegacySliderEnd:
 		return 10
 	case SpinnerBonus:
 		return 50
@@ -138,6 +139,8 @@ type JudgementResult struct {
 
 	Number int64
 	object HitObject
+
+	fromSliderFinish bool
 }
 
 func createJudgementResult(result HitResult, maxResult HitResult, comboResult ComboResult, time int64, position vector.Vector2f, obj HitObject) JudgementResult {
@@ -155,4 +158,12 @@ func createJudgementResult(result HitResult, maxResult HitResult, comboResult Co
 		Number:      nm,
 		object:      obj,
 	}
+}
+
+func createJudgementResultF(result HitResult, maxResult HitResult, comboResult ComboResult, time int64, position vector.Vector2f, obj HitObject, sliderFinish bool) JudgementResult {
+	jResult := createJudgementResult(result, maxResult, comboResult, time, position, obj)
+
+	jResult.fromSliderFinish = sliderFinish
+
+	return jResult
 }

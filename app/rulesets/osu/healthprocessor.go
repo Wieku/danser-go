@@ -53,7 +53,7 @@ type drainPeriod struct {
 
 type HealthProcessor struct {
 	beatMap *beatmap.BeatMap
-	diff    *difficulty.Difficulty
+	player  *difficultyPlayer
 
 	PassiveDrain         float64
 	HpMultiplierNormal   float64
@@ -74,10 +74,10 @@ type HealthProcessor struct {
 	failListeners []FailListener
 }
 
-func NewHealthProcessor(beatMap *beatmap.BeatMap, diff *difficulty.Difficulty, lowerSpinnerDrain bool) *HealthProcessor {
+func NewHealthProcessor(beatMap *beatmap.BeatMap, player *difficultyPlayer, lowerSpinnerDrain bool) *HealthProcessor {
 	hp := &HealthProcessor{
 		beatMap:           beatMap,
-		diff:              diff,
+		player:            player,
 		lowerSpinnerDrain: lowerSpinnerDrain,
 	}
 
@@ -96,8 +96,8 @@ func (hp *HealthProcessor) calculateDrainPeriods() {
 	breakCount := len(hp.beatMap.Pauses)
 
 	breakNumber := 0
-	lastDrainStart := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
-	lastDrainEnd := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
+	lastDrainStart := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.player.diff.Preempt)
+	lastDrainEnd := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.player.diff.Preempt)
 
 	for _, o := range hp.beatMap.HitObjects {
 		if breakCount > 0 && breakNumber < breakCount {
@@ -122,10 +122,10 @@ func (hp *HealthProcessor) calculateDrainPeriods() {
 }
 
 func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
-	lowestHpEver := difficulty.DifficultyRate(hp.diff.HPMod, 195, 160, 60)
-	lowestHpComboEnd := difficulty.DifficultyRate(hp.diff.HPMod, 198, 170, 80)
-	lowestHpEnd := difficulty.DifficultyRate(hp.diff.HPMod, 198, 180, 80)
-	hpRecoveryAvailable := difficulty.DifficultyRate(hp.diff.HPMod, 8, 4, 0)
+	lowestHpEver := difficulty.DifficultyRate(hp.player.diff.HPMod, 195, 160, 60)
+	lowestHpComboEnd := difficulty.DifficultyRate(hp.player.diff.HPMod, 198, 170, 80)
+	lowestHpEnd := difficulty.DifficultyRate(hp.player.diff.HPMod, 198, 180, 80)
+	hpRecoveryAvailable := difficulty.DifficultyRate(hp.player.diff.HPMod, 8, 4, 0)
 
 	hp.PassiveDrain = 0.05
 	hp.HpMultiplierNormal = 1.0
@@ -140,7 +140,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 
 		lowestHp := hp.health
 
-		lastTime := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.diff.Preempt)
+		lastTime := int64(hp.beatMap.HitObjects[0].GetStartTime()) - int64(hp.player.diff.Preempt)
 		fail = false
 
 		breakNumber := 0
@@ -182,8 +182,18 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 
 			hp.Increase(-decr, false)
 
+			lzSkipScore := false
+
 			if s, ok := o.(*objects.Slider); ok {
-				for j := 0; j < len(s.TickReverse)+1; j++ {
+				repeats := len(s.TickReverse) + 1
+
+				if hp.player.diff.CheckModActive(difficulty.Lazer) && !hp.player.lzNoSliderAcc {
+					repeats -= 1
+					lzSkipScore = true
+					hp.addResultInternal(Hit300)
+				}
+
+				for j := 0; j < repeats; j++ {
 					hp.addResultInternal(SliderRepeat)
 				}
 
@@ -193,9 +203,9 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 			} else if s, ok := o.(*objects.Spinner); ok {
 				spinnerTime := (s.GetEndTime() - s.GetStartTime()) / 1000
 
-				requirement := int(spinnerTime * hp.diff.SpinnerRatio)
-				if hp.diff.CheckModActive(difficulty.Lazer) {
-					requirement = int(hp.diff.LzSpinnerMinRPS*spinnerTime/1000 + 0.0001)
+				requirement := int(spinnerTime * hp.player.diff.SpinnerRatio)
+				if hp.player.diff.CheckModActive(difficulty.Lazer) {
+					requirement = int(hp.player.diff.LzSpinnerMinRPS*spinnerTime/1000 + 0.0001)
 				}
 
 				for j := 0; j < requirement; j++ {
@@ -211,7 +221,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 				break
 			}
 
-			if !hp.diff.CheckModActive(difficulty.Lazer) && (i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo()) {
+			if !hp.player.diff.CheckModActive(difficulty.Lazer) && (i == len(hp.beatMap.HitObjects)-1 || hp.beatMap.HitObjects[i+1].IsNewCombo()) {
 				hp.addResultInternal(Hit300g)
 
 				if hp.health < lowestHpComboEnd {
@@ -224,7 +234,7 @@ func (hp *HealthProcessor) CalculateRate() { //nolint:gocyclo
 						break
 					}
 				}
-			} else {
+			} else if !lzSkipScore {
 				hp.addResultInternal(Hit300)
 			}
 		}
@@ -266,18 +276,18 @@ func (hp *HealthProcessor) addResultInternal(result HitResult) {
 
 	switch normal {
 	case SliderMiss:
-		hpAdd += difficulty.DifficultyRate(hp.diff.HPMod, -4.0, -15.0, -28.0)
+		hpAdd += difficulty.DifficultyRate(hp.player.diff.HPMod, -4.0, -15.0, -28.0)
 	case Miss:
-		hpAdd += difficulty.DifficultyRate(hp.diff.HPMod, -6.0, -25.0, -40.0)
+		hpAdd += difficulty.DifficultyRate(hp.player.diff.HPMod, -6.0, -25.0, -40.0)
 	case Hit50:
-		hpAdd += hp.HpMultiplierNormal * difficulty.DifficultyRate(hp.diff.HPMod, 8*Hp50, Hp50, Hp50)
+		hpAdd += hp.HpMultiplierNormal * difficulty.DifficultyRate(hp.player.diff.HPMod, 8*Hp50, Hp50, Hp50)
 	case Hit100:
-		hpAdd += hp.HpMultiplierNormal * difficulty.DifficultyRate(hp.diff.HPMod, 8*Hp100, Hp100, Hp100)
+		hpAdd += hp.HpMultiplierNormal * difficulty.DifficultyRate(hp.player.diff.HPMod, 8*Hp100, Hp100, Hp100)
 	case Hit300:
 		hpAdd += hp.HpMultiplierNormal * Hp300
 	case SliderPoint:
 		hpAdd += hp.HpMultiplierNormal * HpSliderTick
-	case SliderStart, SliderRepeat, SliderEnd:
+	case SliderStart, SliderRepeat, LegacySliderEnd, SliderEnd:
 		hpAdd += hp.HpMultiplierNormal * HpSliderRepeat
 	case SpinnerSpin, SpinnerPoints:
 		hpAdd += hp.HpMultiplierNormal * HpSpinnerSpin
@@ -285,7 +295,7 @@ func (hp *HealthProcessor) addResultInternal(result HitResult) {
 		hpAdd += hp.HpMultiplierNormal * HpSpinnerBonus
 	}
 
-	if !hp.diff.CheckModActive(difficulty.Lazer) {
+	if !hp.player.diff.CheckModActive(difficulty.Lazer) {
 		switch addition {
 		case MuAddition:
 			hpAdd += hp.HpMultiplierComboEnd * HpMu
@@ -317,12 +327,12 @@ func (hp *HealthProcessor) IncreaseRelative(amount float64, fromHitObject bool) 
 func (hp *HealthProcessor) reducePassive(amount int64) {
 	scale := 1.0
 
-	if !hp.diff.CheckModActive(difficulty.Lazer) {
+	if !hp.player.diff.CheckModActive(difficulty.Lazer) {
 		if hp.spinnerActive && hp.lowerSpinnerDrain {
 			scale = 0.25
 		}
 
-		if hp.diff.CheckModActive(difficulty.HalfTime) {
+		if hp.player.diff.CheckModActive(difficulty.HalfTime) {
 			scale *= 0.75
 		}
 	}

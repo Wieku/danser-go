@@ -86,6 +86,11 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 
 					if point.LastPoint {
 						scoreGiven = SliderEnd
+
+						if player.lzNoSliderAcc {
+							scoreGiven = LegacySliderEnd
+						}
+
 						time = rSlider.GetEndTime()
 					}
 
@@ -167,14 +172,14 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 					slider.ruleSet.PostHit(time, slider, player)
 
-					if player.diff.CheckModActive(difficulty.Lazer) {
+					if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
 						slider.ruleSet.SendResult(player.cursor, createJudgementResult(state.startResult, Hit300, combo, time, position, slider))
-
-						if state.startResult != Miss {
-							slider.lazerPostHeadProcess(player, state, time)
-						}
 					} else {
 						slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderStart, combo, time, position, slider))
+					}
+
+					if state.startResult != Miss && player.diff.CheckModActive(difficulty.Lazer) {
+						slider.lazerPostHeadProcess(player, state, time)
 					}
 				}
 			} else {
@@ -372,7 +377,7 @@ func (slider *Slider) processTicksLazer(player *difficultyPlayer, state *sliders
 
 	for _, point := range state.points {
 		pTime := point.time
-		if point.scoreGiven == SliderEnd {
+		if point.scoreGiven&(SliderEnd|LegacySliderEnd) > 0 {
 			pTime -= 36
 		}
 
@@ -392,18 +397,22 @@ func (slider *Slider) processTicksLazer(player *difficultyPlayer, state *sliders
 		if allowable {
 			state.scored++
 
-			if point.scoreGiven == SliderEnd {
-				state.endScored = true
-			}
-
 			scoreGiven = point.scoreGiven
 			combo = Increase
+
+			if point.scoreGiven&(SliderEnd|LegacySliderEnd) > 0 {
+				state.endScored = true
+
+				if player.lzNoSliderAcc {
+					combo = Hold
+				}
+			}
 		} else if time >= point.time {
 			state.missed++
 
 			scoreGiven = SliderMiss
 
-			if point.scoreGiven == SliderEnd {
+			if point.scoreGiven&(SliderEnd|LegacySliderEnd) > 0 {
 				combo = Hold
 			}
 		}
@@ -430,27 +439,27 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 			state.scored++
 		}
 
-		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
+		rate := float64(state.scored) / float64(len(state.points)+1)
 
-		if player.diff.CheckModActive(difficulty.Lazer) {
-			if state.endScored && len(slider.players) == 1 {
+		if len(slider.players) == 1 {
+			lzActive := player.diff.CheckModActive(difficulty.Lazer)
+
+			if ((!lzActive || player.lzLegacySound) && rate > 0) || (lzActive && !player.lzLegacySound && state.endScored) {
 				slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), float64(time), true)
 			}
+		}
 
+		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
+
+		if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
 			hit := Ignore
 			if state.scored > 0 {
 				hit = SliderFinish
 			}
 
-			slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, SliderFinish, Hold, time, position, slider))
+			slider.ruleSet.SendResult(player.cursor, createJudgementResultF(hit, SliderFinish, Hold, time, position, slider, true))
 		} else {
 			hit := Miss
-
-			rate := float64(state.scored) / float64(len(state.points)+1)
-
-			if rate > 0 && len(slider.players) == 1 {
-				slider.hitSlider.HitEdge(len(slider.hitSlider.TickReverse), float64(time), true)
-			}
 
 			if rate == 1.0 {
 				hit = Hit300
@@ -463,9 +472,13 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 			combo := Reset
 			if hit != Miss {
 				combo = Hold
+
+				if player.diff.CheckModActive(difficulty.Lazer) {
+					combo = Increase
+				}
 			}
 
-			slider.ruleSet.SendResult(player.cursor, createJudgementResult(hit, Hit300, combo, time, position, slider))
+			slider.ruleSet.SendResult(player.cursor, createJudgementResultF(hit, Hit300, combo, time, position, slider, true))
 		}
 
 		state.isHit = true
@@ -484,7 +497,7 @@ func (slider *Slider) processHeadMiss(player *difficultyPlayer, time int64) {
 
 		position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
 
-		if player.diff.CheckModActive(difficulty.Lazer) {
+		if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
 			slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
 		} else {
 			slider.ruleSet.SendResult(player.cursor, createJudgementResult(SliderMiss, SliderStart, Reset, time, position, slider))

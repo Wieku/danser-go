@@ -326,6 +326,10 @@ func (diff *Difficulty) GetModStringFull() []string {
 		mods[i] = "LZ"
 	}
 
+	if i := slices.Index(mods, "Classic"); i != -1 {
+		mods[i] = "CL"
+	}
+
 	return mods
 }
 
