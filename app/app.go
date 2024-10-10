@@ -40,6 +40,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 )
@@ -477,23 +478,72 @@ func run() {
 		audio.LoadSamples()
 
 		if settings.PLAY || !settings.KNOCKOUT || allowDA {
+			modsNew = modsParsed.ConvertToModInfoList()
+
+			daMap := make(map[string]any)
+
 			if !math.IsNaN(*ar) {
-				beatMap.Diff.SetARCustom(*ar)
+				daMap["approach_rate"] = *ar
 			}
 
 			if !math.IsNaN(*od) {
-				beatMap.Diff.SetODCustom(*od)
+				daMap["overall_difficulty"] = *od
 			}
 
 			if !math.IsNaN(*cs) {
-				beatMap.Diff.SetCSCustom(*cs)
+				daMap["circle_size"] = *cs
 			}
 
 			if !math.IsNaN(*hp) {
-				beatMap.Diff.SetHPCustom(*hp)
+				daMap["drain_rate"] = *hp
 			}
 
-			//beatMap.Diff.SetCustomSpeed(speedBefore)
+			if len(daMap) > 0 {
+				modsNew = append(modsNew, rplpa.ModInfo{
+					Acronym:  "DA",
+					Settings: daMap,
+				})
+			}
+
+			if math.Abs(settings.SPEED-1) > 0.001 {
+				found := false
+
+				if settings.SPEED >= 1 {
+					if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
+						return info.Acronym == "DT" || info.Acronym == "NC"
+					}); i != -1 {
+						found = true
+						modsNew[i].Settings["speed_change"] = settings.SPEED
+					}
+				} else {
+					if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
+						return info.Acronym == "HT" || info.Acronym == "DC"
+					}); i != -1 {
+						found = true
+						modsNew[i].Settings["speed_change"] = settings.SPEED
+					}
+				}
+
+				if !found {
+					modsNew = slices.DeleteFunc(modsNew, func(info rplpa.ModInfo) bool {
+						return info.Acronym == "DT" || info.Acronym == "NC" || info.Acronym == "HT" || info.Acronym == "DC"
+					})
+
+					acr := "HT"
+					if settings.SPEED >= 1 {
+						acr = "DT"
+					}
+
+					modsNew = append(modsNew, rplpa.ModInfo{
+						Acronym: acr,
+						Settings: map[string]any{
+							"speed_change": settings.SPEED,
+						},
+					})
+				}
+
+				settings.SPEED = 1
+			}
 		}
 
 		if modsNew != nil {

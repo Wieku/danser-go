@@ -153,7 +153,13 @@ func (diff *Difficulty) calculate() {
 func (diff *Difficulty) SetMods(mods Modifier) {
 	clear(diff.modSettings)
 
-	diff.Mods = mods
+	diff.Mods = 0
+
+	diff.AddMod(mods)
+}
+
+func (diff *Difficulty) AddMod(mods Modifier) {
+	diff.Mods |= mods
 
 	if mods.Active(HalfTime | Daycore) {
 		diff.modSettings[rfType[SpeedSettings]()] = newSpeedSettings(0.75, mods.Active(Daycore))
@@ -173,6 +179,8 @@ func (diff *Difficulty) SetMods(mods Modifier) {
 }
 
 func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
+	clear(diff.modSettings)
+
 	mMap := make(map[Modifier]map[string]interface{})
 
 	mComp := None

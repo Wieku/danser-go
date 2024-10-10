@@ -1,5 +1,7 @@
 package difficulty
 
+import "github.com/wieku/rplpa"
+
 type Modifier int64
 
 const (
@@ -260,6 +262,33 @@ func ParseFromAcronym(mod string) (m Modifier) {
 	return
 }
 
+func (mods Modifier) ConvertToModInfoList() (mi []rplpa.ModInfo) {
+	if mods.Active(Nightcore) {
+		mods &= ^DoubleTime
+	}
+
+	if mods.Active(Daycore) {
+		mods &= ^HalfTime
+	}
+
+	if mods.Active(Perfect) {
+		mods &= ^SuddenDeath
+	}
+
+	for i := 0; i < len(modsString); i++ {
+		if mods&1 == 1 {
+			mi = append(mi, rplpa.ModInfo{
+				Acronym:  modsString[i],
+				Settings: make(map[string]any),
+			})
+		}
+
+		mods >>= 1
+	}
+
+	return
+}
+
 func ParseMods(mods string) (m Modifier) {
 	modsSl := make([]string, len(mods)/2)
 	for n, modPart := range mods {
@@ -296,6 +325,8 @@ func (mods Modifier) Compatible() bool {
 
 	if mods.Active(Target) ||
 		(mods.Active(HardRock) && mods.Active(Easy)) ||
+		(mods.Active(Lazer) && mods.Active(ScoreV2)) ||
+		(mods.Active(HardRock|Easy) && mods.Active(DifficultyAdjust)) ||
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
 		(mods.Active(Relax) && mods.Active(Relax2)) ||

@@ -172,7 +172,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
 
 		if len(candidates) == 0 {
-			controller.bMap.Diff.SetMods(controller.bMap.Diff.Mods | difficulty.Autoplay)
+			controller.bMap.Diff.AddMod(difficulty.Autoplay)
 		}
 	}
 
