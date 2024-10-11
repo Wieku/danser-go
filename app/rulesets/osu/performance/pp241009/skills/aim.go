@@ -39,5 +39,7 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	skill.currentStrain *= skill.strainDecay(current.DeltaTime)
 	skill.currentStrain += evaluators.EvaluateAim(current, skill.withSliders) * aimSkillMultiplier
 
+	skill.objectStrains = append(skill.objectStrains, skill.currentStrain)
+
 	return skill.currentStrain
 }

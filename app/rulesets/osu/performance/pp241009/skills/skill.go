@@ -31,6 +31,10 @@ type Skill struct {
 
 	strainPeaks []float64
 
+	objectStrains []float64
+
+	difficulty float64
+
 	diff *difficulty.Difficulty
 }
 
@@ -40,6 +44,7 @@ func NewSkill(d *difficulty.Difficulty) *Skill {
 		SectionLength:         400,
 		ReducedSectionCount:   10,
 		ReducedStrainBaseline: 0.75,
+		objectStrains:         make([]float64, 0),
 		diff:                  d,
 	}
 
@@ -70,7 +75,7 @@ func (skill *Skill) GetCurrentStrainPeaks() []float64 {
 }
 
 func (skill *Skill) DifficultyValue() float64 {
-	diff := 0.0
+	skill.difficulty = 0.0
 	weight := 1.0
 
 	strains := skill.GetCurrentStrainPeaks()
@@ -86,11 +91,28 @@ func (skill *Skill) DifficultyValue() float64 {
 	reverseSortFloat64s(strains)
 
 	for _, strain := range strains {
-		diff += strain * weight
+		skill.difficulty += strain * weight
 		weight *= skill.DecayWeight
 	}
 
-	return diff
+	return skill.difficulty
+}
+
+func (skill *Skill) CountDifficultStrains() float64 {
+	if skill.difficulty == 0 {
+		return 0
+	}
+
+	consistentTopStrain := skill.difficulty / 10 // What would the top strain be if all strain values were identical
+	// Use a weighted sum of all strains. Constants are arbitrary and give nice values
+
+	sum := 0.0
+
+	for _, s := range skill.objectStrains {
+		sum += 1.1 / (1 + math.Exp(-10*(s/consistentTopStrain-0.88)))
+	}
+
+	return sum
 }
 
 func (skill *Skill) saveCurrentPeak() {

@@ -17,14 +17,11 @@ type SpeedSkill struct {
 
 	currentStrain float64
 	currentRhythm float64
-
-	objectStrains []float64
 }
 
 func NewSpeedSkill(d *difficulty.Difficulty) *SpeedSkill {
 	skill := &SpeedSkill{
-		Skill:         NewSkill(d),
-		objectStrains: make([]float64, 0),
+		Skill: NewSkill(d),
 	}
 
 	skill.ReducedSectionCount = 5
