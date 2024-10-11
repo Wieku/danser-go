@@ -2,22 +2,17 @@ package pp241009
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241009/skills"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
 const (
-	PerformanceBaseMultiplier float64 = 1.14
+	PerformanceBaseMultiplier float64 = 1.15
 )
 
 /* ------------------------------------------------------------- */
 /* pp calc                                                       */
-
-/* base pp value for stars, used internally by ppv2 */
-func ppBase(stars float64) float64 {
-	return math.Pow(5.0*max(1.0, stars/0.0675)-4.0, 3.0) /
-		100000.0
-}
 
 type PPv2Results struct {
 	Aim, Speed, Acc, Flashlight, Total float64
@@ -125,7 +120,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 }
 
 func (pp *PPv2) computeAimValue() float64 {
-	aimValue := ppBase(pp.attribs.Aim)
+	aimValue := skills.DefaultDifficultyToPerformance(pp.attribs.Aim)
 
 	// Longer maps are worth more
 	lengthBonus := 0.95 + 0.4*min(1.0, float64(pp.totalHits)/2000.0)
@@ -182,7 +177,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 		return 0
 	}
 
-	speedValue := ppBase(pp.attribs.Speed)
+	speedValue := skills.DefaultDifficultyToPerformance(pp.attribs.Speed)
 
 	// Longer maps are worth more
 	lengthBonus := 0.95 + 0.4*min(1.0, float64(pp.totalHits)/2000.0)

@@ -132,3 +132,7 @@ func reverseSortFloat64s(arr []float64) {
 		arr[i], arr[j] = arr[j], arr[i]
 	}
 }
+
+func DefaultDifficultyToPerformance(difficulty float64) float64 {
+	return math.Pow(5.0*max(1.0, difficulty/0.0675)-4.0, 3.0) / 100000.0
+}

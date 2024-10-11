@@ -13,7 +13,7 @@ import (
 const (
 	// StarScalingFactor is a global stars multiplier
 	StarScalingFactor float64 = 0.0675
-	CurrentVersion    int     = 20220930
+	CurrentVersion    int     = 20241009
 )
 
 type Attributes struct {
@@ -27,6 +27,9 @@ type Attributes struct {
 	Speed float64
 
 	SpeedNoteCount float64
+
+	AimDifficultStrainCount   float64
+	SpeedDifficultStrainCount float64
 
 	// Flashlight stars, needed for Performance Points (aka PP) calculations
 	Flashlight float64
@@ -81,12 +84,12 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 
 	var total float64
 
-	baseAimPerformance := ppBase(aimRating)
-	baseSpeedPerformance := ppBase(speedRating)
+	baseAimPerformance := skills.DefaultDifficultyToPerformance(aimRating)
+	baseSpeedPerformance := skills.DefaultDifficultyToPerformance(speedRating)
 	baseFlashlightPerformance := 0.0
 
 	if diff.CheckModActive(difficulty.Flashlight) {
-		baseFlashlightPerformance = math.Pow(flashlightRating, 2.0) * 25.0
+		baseFlashlightPerformance = skills.FlashlightDifficultyToPerformance(flashlightRating)
 	}
 
 	basePerformance := math.Pow(
@@ -121,6 +124,8 @@ func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills
 	)
 
 	attr.SpeedNoteCount = speed.RelevantNoteCount()
+	attr.AimDifficultStrainCount = aim.CountDifficultStrains()
+	attr.SpeedDifficultStrainCount = speed.CountDifficultStrains()
 
 	return attr
 }

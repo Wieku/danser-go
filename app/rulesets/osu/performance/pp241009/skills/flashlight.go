@@ -50,3 +50,7 @@ func (s *Flashlight) DifficultyValue() float64 {
 
 	return diff
 }
+
+func FlashlightDifficultyToPerformance(difficulty float64) float64 {
+	return math.Pow(difficulty, 2.0) * 25.0
+}
