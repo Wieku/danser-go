@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	flSkillMultiplier float64 = 0.052
+	flSkillMultiplier float64 = 0.05512
 	flStrainDecayBase float64 = 0.15
 )
 
@@ -48,5 +48,5 @@ func (s *Flashlight) DifficultyValue() float64 {
 		diff += strain
 	}
 
-	return diff * s.DifficultyMultiplier
+	return diff
 }

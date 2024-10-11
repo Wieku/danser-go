@@ -21,9 +21,6 @@ type Skill struct {
 	// Multiplier applied to the section with the biggest strain.
 	ReducedStrainBaseline float64
 
-	// Final multiplier after calculations.
-	DifficultyMultiplier float64
-
 	// Delegate to calculate strain value of skill
 	StrainValueOf func(obj *preprocessing.DifficultyObject) float64
 
@@ -43,7 +40,6 @@ func NewSkill(d *difficulty.Difficulty) *Skill {
 		SectionLength:         400,
 		ReducedSectionCount:   10,
 		ReducedStrainBaseline: 0.75,
-		DifficultyMultiplier:  1.06,
 		diff:                  d,
 	}
 
@@ -94,7 +90,7 @@ func (skill *Skill) DifficultyValue() float64 {
 		weight *= skill.DecayWeight
 	}
 
-	return diff * skill.DifficultyMultiplier
+	return diff
 }
 
 func (skill *Skill) saveCurrentPeak() {

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	speedSkillMultiplier float64 = 1375
+	speedSkillMultiplier float64 = 1.430
 	speedStrainDecayBase float64 = 0.3
 )
 
@@ -28,7 +28,6 @@ func NewSpeedSkill(d *difficulty.Difficulty) *SpeedSkill {
 	}
 
 	skill.ReducedSectionCount = 5
-	skill.DifficultyMultiplier = 1.04
 	skill.StrainValueOf = skill.speedStrainValue
 	skill.CalculateInitialStrain = skill.speedInitialStrain
 

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	aimSkillMultiplier float64 = 23.55
+	aimSkillMultiplier float64 = 25.18
 	aimStrainDecayBase float64 = 0.15
 )
 
