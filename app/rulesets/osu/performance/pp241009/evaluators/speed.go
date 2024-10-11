@@ -11,6 +11,7 @@ const (
 	speedSingleSpacingThreshold float64 = 125.0
 	speedMinSpeedBonus          float64 = 75.0 // ~200BPM
 	speedBalancingFactor        float64 = 40
+	speedDistanceMultiplier     float64 = 0.94
 )
 
 func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
@@ -20,29 +21,20 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 
 	osuCurrObj := current
 	osuPrevObj := current.Previous(0)
-	osuNextObj := current.Next(0)
 
 	strainTime := osuCurrObj.StrainTime
-	doubletapness := 1.0
-
-	if osuNextObj != nil {
-		currDeltaTime := max(1, osuCurrObj.DeltaTime)
-		nextDeltaTime := max(1, osuNextObj.DeltaTime)
-		deltaDifference := math.Abs(nextDeltaTime - currDeltaTime)
-		speedRatio := currDeltaTime / max(currDeltaTime, deltaDifference)
-		windowRatio := math.Pow(min(1, currDeltaTime/osuCurrObj.GreatWindow), 2)
-		doubletapness = math.Pow(speedRatio, 1-windowRatio)
-	}
+	doubletapness := 1.0 - osuCurrObj.GetDoubletapness(current.Next(0))
 
 	// Cap deltatime to the OD 300 hitwindow.
 	// 0.93 is derived from making sure 260bpm OD8 streams aren't nerfed harshly, whilst 0.92 limits the effect of the cap.
 	strainTime /= mutils.Clamp((strainTime/osuCurrObj.GreatWindow)/0.93, 0.92, 1)
 
-	// derive speedBonus for calculation
-	speedBonus := 1.0
+	// speedBonus will be 0.0 for BPM < 200
+	speedBonus := 0.0
 
+	// Add additional scaling bonus for streams/bursts higher than 200bpm
 	if strainTime < speedMinSpeedBonus {
-		speedBonus = 1 + 0.75*math.Pow((speedMinSpeedBonus-strainTime)/speedBalancingFactor, 2.0)
+		speedBonus = 0.75 * math.Pow((speedMinSpeedBonus-strainTime)/speedBalancingFactor, 2.0)
 	}
 
 	var travelDistance float64
@@ -50,7 +42,15 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 		travelDistance = osuPrevObj.TravelDistance
 	}
 
+	// Cap distance at single_spacing_threshold
 	distance := min(speedSingleSpacingThreshold, travelDistance+osuCurrObj.MinimumJumpDistance)
 
-	return (speedBonus + speedBonus*math.Pow(distance/speedSingleSpacingThreshold, 3.5)) * doubletapness / strainTime
+	// Max distance bonus is 1 * `distance_multiplier` at single_spacing_threshold
+	distanceBonus := math.Pow(distance/speedSingleSpacingThreshold, 3.95) * speedDistanceMultiplier
+
+	// Base difficulty with all bonuses
+	difficulty := (1.0 + speedBonus + distanceBonus) * 1000 / strainTime
+
+	// Apply penalty if there's doubletappable doubles
+	return difficulty * doubletapness
 }
