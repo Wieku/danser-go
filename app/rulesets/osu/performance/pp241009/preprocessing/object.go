@@ -73,6 +73,19 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 	return obj
 }
 
+func (o *DifficultyObject) GetDoubletapness(osuNextObj *DifficultyObject) float64 {
+	if osuNextObj != nil {
+		currDeltaTime := max(1, o.DeltaTime)
+		nextDeltaTime := max(1, osuNextObj.DeltaTime)
+		deltaDifference := math.Abs(nextDeltaTime - currDeltaTime)
+		speedRatio := currDeltaTime / max(currDeltaTime, deltaDifference)
+		windowRatio := math.Pow(min(1, currDeltaTime/o.GreatWindow), 2)
+		return 1 - math.Pow(speedRatio, 1-windowRatio)
+	}
+
+	return 0
+}
+
 func (o *DifficultyObject) OpacityAt(time float64) float64 {
 	if time > o.BaseObject.GetStartTime() {
 		return 0
