@@ -74,7 +74,7 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 		pp.accuracy = mutils.Clamp(acc, 0, 1)
 	}
 
-	if diff.CheckModActive(difficulty.ScoreV2) {
+	if diff.CheckModActive(difficulty.ScoreV2 | difficulty.Lazer) {
 		pp.amountHitObjectsWithAccuracy = attribs.ObjectCount
 	} else {
 		pp.amountHitObjectsWithAccuracy = attribs.Circles
@@ -132,11 +132,8 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		aimValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), pp.effectiveMissCount)
+		aimValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.AimDifficultStrainCount)
 	}
-
-	// Combo scaling
-	aimValue *= pp.getComboScalingFactor()
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
@@ -189,11 +186,8 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		speedValue *= 0.97 * math.Pow(1-math.Pow(pp.effectiveMissCount/float64(pp.totalHits), 0.775), math.Pow(pp.effectiveMissCount, 0.875))
+		speedValue *= pp.calculateMissPenalty(pp.effectiveMissCount, pp.attribs.SpeedDifficultStrainCount)
 	}
-
-	// Combo scaling
-	speedValue *= pp.getComboScalingFactor()
 
 	approachRateFactor := 0.0
 	if pp.diff.ARReal > 10.33 {
@@ -266,7 +260,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 		return 0
 	}
 
-	flashlightValue := math.Pow(pp.attribs.Flashlight, 2.0) * 25.0
+	flashlightValue := skills.FlashlightDifficultyToPerformance(pp.attribs.Flashlight)
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
@@ -310,7 +304,7 @@ func (pp *PPv2) calculateEffectiveMissCount() float64 {
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
-	return 0.95 / ((missCount / (3 * math.Sqrt(difficultStrainCount))) + 1)
+	return 0.96 / ((missCount / (4 * math.Pow(math.Log(difficultStrainCount), 0.94))) + 1)
 }
 
 func (pp *PPv2) getComboScalingFactor() float64 {
