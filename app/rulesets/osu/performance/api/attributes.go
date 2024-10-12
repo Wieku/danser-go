@@ -27,3 +27,7 @@ type Attributes struct {
 	Spinners    int
 	MaxCombo    int
 }
+
+type PPv2Results struct {
+	Aim, Speed, Acc, Flashlight, Total float64
+}

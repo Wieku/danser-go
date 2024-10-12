@@ -3,7 +3,7 @@ package osu
 import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 )
 
 type scoreProcessor interface {
@@ -28,7 +28,7 @@ type Score struct {
 	Count50      uint
 	CountMiss    uint
 	CountSB      uint
-	PP           pp220930.PPv2Results
+	PP           api.PPv2Results
 
 	scoredObjects uint
 }

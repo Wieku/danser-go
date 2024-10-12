@@ -15,13 +15,9 @@ const (
 /* ------------------------------------------------------------- */
 /* pp calc                                                       */
 
-type PPv2Results struct {
-	Aim, Speed, Acc, Flashlight, Total float64
-}
-
 // PPv2 : structure to store ppv2 values
 type PPv2 struct {
-	Results PPv2Results
+	Results api.PPv2Results
 
 	attribs api.Attributes
 
