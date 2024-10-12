@@ -102,7 +102,7 @@ func (skill *Skill) GetCurrentStrainPeaks() []float64 {
 }
 
 func (skill *Skill) getCurrentStrainPeaksSorted() []float64 {
-	peaks := skill.strainPeaksSorted.Clone()
+	peaks := skill.strainPeaksSorted.CloneWithAddCap(1)
 
 	peaks.Add(skill.currentSectionPeak)
 

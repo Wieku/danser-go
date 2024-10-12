@@ -19,8 +19,12 @@ func NewSortedList[T cmp.Ordered]() *SortedList[T] {
 }
 
 func (list *SortedList[T]) Clone() *SortedList[T] {
+	return list.CloneWithAddCap(0)
+}
+
+func (list *SortedList[T]) CloneWithAddCap(cap int) *SortedList[T] {
 	cloned := &SortedList[T]{
-		Slice: make([]T, len(list.Slice)),
+		Slice: make([]T, len(list.Slice), len(list.Slice)+cap),
 	}
 
 	copy(cloned.Slice, list.Slice)
