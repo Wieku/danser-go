@@ -3,7 +3,7 @@ package skills
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241009/evaluators"
-	preprocessing2 "github.com/wieku/danser-go/app/rulesets/osu/performance/pp241009/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241009/preprocessing"
 	"math"
 )
 
@@ -35,11 +35,11 @@ func (s *SpeedSkill) strainDecay(ms float64) float64 {
 	return math.Pow(speedStrainDecayBase, ms/1000)
 }
 
-func (s *SpeedSkill) speedInitialStrain(time float64, current *preprocessing2.DifficultyObject) float64 {
+func (s *SpeedSkill) speedInitialStrain(time float64, current *preprocessing.DifficultyObject) float64 {
 	return (s.currentStrain * s.currentRhythm) * s.strainDecay(time-current.Previous(0).StartTime)
 }
 
-func (s *SpeedSkill) speedStrainValue(current *preprocessing2.DifficultyObject) float64 {
+func (s *SpeedSkill) speedStrainValue(current *preprocessing.DifficultyObject) float64 {
 	s.currentStrain *= s.strainDecay(current.StrainTime)
 	s.currentStrain += evaluators.EvaluateSpeed(current) * speedSkillMultiplier
 

@@ -78,13 +78,13 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 				island.addDelta(int(currDelta))
 			} else {
 				// bpm change is into slider, this is easy acc window
-				if _, ok := currObj.BaseObject.(*objects.Slider); ok {
+				if _, ok := currObj.BaseObject.(*preprocessing.LazySlider); ok {
 					effectiveRatio *= 0.125
 				}
 
 				// bpm change was from a slider, this is easier typically than circle -> circle
 				// unintentional side effect is that bursts with kicksliders at the ends might have lower difficulty than bursts without sliders
-				if _, ok := prevObj.BaseObject.(*objects.Slider); ok {
+				if _, ok := prevObj.BaseObject.(*preprocessing.LazySlider); ok {
 					effectiveRatio *= 0.3
 				}
 
@@ -142,13 +142,13 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 			firstDeltaSwitch = true
 
 			// bpm change is into slider, this is easy acc window
-			if _, ok := currObj.BaseObject.(*objects.Slider); ok {
+			if _, ok := currObj.BaseObject.(*preprocessing.LazySlider); ok {
 				effectiveRatio *= 0.6
 			}
 
 			// bpm change was from a slider, this is easier typically than circle -> circle
 			// unintentional side effect is that bursts with kicksliders at the ends might have lower difficulty than bursts without sliders
-			if _, ok := prevObj.BaseObject.(*objects.Slider); ok {
+			if _, ok := prevObj.BaseObject.(*preprocessing.LazySlider); ok {
 				effectiveRatio *= 0.6
 			}
 
