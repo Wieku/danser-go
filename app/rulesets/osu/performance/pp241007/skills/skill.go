@@ -123,11 +123,16 @@ func (skill *Skill) difficultyValue() float64 {
 
 	strains := skill.getCurrentStrainPeaksSorted()
 
+	lowest := strains[len(strains)-1]
+
 	for i := range min(len(strains), skill.ReducedSectionCount) {
 		strains[len(strains)-1-i] *= skill.peakWeights[i]
+		lowest = min(lowest, strains[len(strains)-1-i])
 	}
 
-	slices.Sort(strains)
+	// Search for lowest strain that's higher or equal than lowest reduced strain to avoid unnecessary sorting
+	idx, _ := slices.BinarySearch(strains, lowest)
+	slices.Sort(strains[idx:])
 
 	lastDiff := -math.MaxFloat64
 
