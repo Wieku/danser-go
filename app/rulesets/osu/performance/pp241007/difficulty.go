@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/skills"
 	"log"
 	"math"
+	"time"
 )
 
 const (
@@ -114,7 +115,7 @@ func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObje
 
 	aimSkill := skills.NewAimSkill(diff, true)
 	aimNoSlidersSkill := skills.NewAimSkill(diff, false)
-	speedSkill := skills.NewSpeedSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff, false)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	attr := api.Attributes{}
@@ -142,11 +143,13 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 
 	log.Println("Calculating step SR for mods:", modString)
 
+	startTime := time.Now()
+
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true)
 	aimNoSlidersSkill := skills.NewAimSkill(diff, false)
-	speedSkill := skills.NewSpeedSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff, true)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	stars := make([]api.Attributes, 1, len(objects))
@@ -177,7 +180,9 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 		}
 	}
 
-	log.Println("Calculations finished!")
+	endTime := time.Now()
+
+	log.Println("Calculations finished! Took ", endTime.Sub(startTime).Truncate(time.Millisecond).String())
 
 	return stars
 }
@@ -186,7 +191,7 @@ func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHi
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true)
-	speedSkill := skills.NewSpeedSkill(diff)
+	speedSkill := skills.NewSpeedSkill(diff, false)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
 	for _, o := range diffObjects {
