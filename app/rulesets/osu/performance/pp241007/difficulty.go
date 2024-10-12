@@ -1,11 +1,11 @@
-package pp241009
+package pp241007
 
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241009/preprocessing"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241009/skills"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/skills"
 	"log"
 	"math"
 )
@@ -13,7 +13,7 @@ import (
 const (
 	// StarScalingFactor is a global stars multiplier
 	StarScalingFactor float64 = 0.0675
-	CurrentVersion    int     = 20241009
+	CurrentVersion    int     = 20241007
 )
 
 type Attributes struct {
