@@ -19,20 +19,24 @@ func NewSortedList[T cmp.Ordered]() *SortedList[T] {
 }
 
 func (list *SortedList[T]) Clone() *SortedList[T] {
-	return &SortedList[T]{
-		Slice: slices.Clone(list.Slice),
+	cloned := &SortedList[T]{
+		Slice: make([]T, len(list.Slice)),
 	}
+
+	copy(cloned.Slice, list.Slice)
+
+	return cloned
 }
 
 // Add adds item T to the list.
 // If comparer has been set, it puts the item in a place defined by comparer's criteria.
 // Returns index at which the item has been added.
 func (list *SortedList[T]) Add(v T) int {
+	n, _ := slices.BinarySearch(list.Slice, v)
+
+	oldLen := len(list.Slice)
+
 	list.Slice = append(list.Slice, v)
-
-	oldLen := len(list.Slice) - 1
-
-	n, _ := slices.BinarySearch(list.Slice[:oldLen], v)
 
 	if n != oldLen {
 		copy(list.Slice[n+1:], list.Slice[n:])
