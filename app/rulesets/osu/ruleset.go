@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
@@ -101,7 +102,7 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	oppDiffs map[string][]pp220930.Attributes
+	oppDiffs map[string][]api.Attributes
 
 	queue        []HitObject
 	processed    []HitObject
@@ -115,7 +116,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[string][]pp220930.Attributes)
+	ruleset.oppDiffs = make(map[string][]api.Attributes)
 
 	log.Println("Using pp calc version 2022-09-30: https://osu.ppy.sh/home/news/2022-09-30-changes-to-osu-sr-and-pp")
 

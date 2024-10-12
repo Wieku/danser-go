@@ -2,6 +2,7 @@ package pp220930
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
@@ -27,7 +28,7 @@ type PPv2Results struct {
 type PPv2 struct {
 	Results PPv2Results
 
-	attribs Attributes
+	attribs api.Attributes
 
 	experimental bool
 
@@ -45,7 +46,7 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
+func (pp *PPv2) PPv2x(attribs api.Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
 	attribs.MaxCombo = max(1, attribs.MaxCombo)
 
 	if combo < 0 {
