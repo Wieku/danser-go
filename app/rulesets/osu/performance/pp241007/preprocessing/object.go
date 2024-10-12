@@ -24,6 +24,9 @@ type DifficultyObject struct {
 
 	BaseObject objects.IHitObject
 
+	IsSlider  bool
+	IsSpinner bool
+
 	lastObject objects.IHitObject
 
 	lastLastObject objects.IHitObject
@@ -64,6 +67,14 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 		EndTime:        hitObject.GetEndTime() / d.Speed,
 		Angle:          math.NaN(),
 		GreatWindow:    2 * d.Hit300U / d.Speed,
+	}
+
+	if _, ok := hitObject.(*objects.Spinner); ok {
+		obj.IsSpinner = true
+	}
+
+	if _, ok := hitObject.(*LazySlider); ok {
+		obj.IsSlider = true
 	}
 
 	obj.StrainTime = max(obj.DeltaTime, MinDeltaTime)

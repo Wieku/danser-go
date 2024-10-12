@@ -2,7 +2,6 @@ package evaluators
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/preprocessing"
 	"math"
 )
@@ -16,7 +15,7 @@ const (
 )
 
 func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
-	if _, ok := current.BaseObject.(*objects.Spinner); ok {
+	if current.IsSpinner {
 		return 0
 	}
 
@@ -33,7 +32,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 	for i := 0; i < min(current.Index, 10); i++ {
 		currentObj := current.Previous(i)
 
-		if _, ok := currentObj.BaseObject.(*objects.Spinner); !ok {
+		if !currentObj.IsSpinner {
 			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(current.Diff.Mods).Dst(currentObj.BaseObject.GetStackedEndPositionMod(currentObj.Diff.Mods)))
 
 			cumulativeStrainTime += lastObj.StrainTime

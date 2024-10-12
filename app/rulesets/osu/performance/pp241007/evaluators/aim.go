@@ -1,7 +1,6 @@
 package evaluators
 
 import (
-	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/preprocessing"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
@@ -15,10 +14,10 @@ const (
 )
 
 func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) float64 {
-	if _, ok := current.BaseObject.(*objects.Spinner); ok || current.Index <= 1 {
+	if current.IsSpinner || current.Index <= 1 {
 		return 0
 	}
-	if _, ok := current.Previous(0).BaseObject.(*objects.Spinner); ok {
+	if current.Previous(0).IsSpinner {
 		return 0
 	}
 
@@ -30,7 +29,7 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 	currVelocity := osuCurrObj.LazyJumpDistance / osuCurrObj.StrainTime
 
 	// But if the last object is a slider, then we extend the travel velocity through the slider into the current object.
-	if _, ok := osuLastObj.BaseObject.(*preprocessing.LazySlider); ok && withSliders {
+	if osuLastObj.IsSlider && withSliders {
 		travelVelocity := osuLastObj.TravelDistance / osuLastObj.TravelTime             // calculate the slider velocity from slider head to slider end.
 		movementVelocity := osuCurrObj.MinimumJumpDistance / osuCurrObj.MinimumJumpTime // calculate the movement velocity from slider end to current object
 
@@ -40,7 +39,7 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 	// As above, do the same for the previous hitobject.
 	prevVelocity := osuLastObj.LazyJumpDistance / osuLastObj.StrainTime
 
-	if _, ok := osuLastLastObj.BaseObject.(*preprocessing.LazySlider); ok && withSliders {
+	if osuLastLastObj.IsSlider && withSliders {
 		travelVelocity := osuLastLastObj.TravelDistance / osuLastLastObj.TravelTime
 		movementVelocity := osuLastObj.MinimumJumpDistance / osuLastObj.MinimumJumpTime
 
@@ -100,7 +99,7 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 		velocityChangeBonus *= math.Pow(min(osuCurrObj.StrainTime, osuLastObj.StrainTime)/max(osuCurrObj.StrainTime, osuLastObj.StrainTime), 2)
 	}
 
-	if _, ok := osuLastObj.BaseObject.(*preprocessing.LazySlider); ok && withSliders {
+	if osuLastObj.IsSlider && withSliders {
 		// Reward sliders based on velocity.
 		sliderBonus = osuLastObj.TravelDistance / osuLastObj.TravelTime
 	}
