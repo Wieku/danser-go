@@ -18,7 +18,7 @@ type Flashlight struct {
 }
 
 func NewFlashlightSkill(d *difficulty.Difficulty) *Flashlight {
-	skill := &Flashlight{Skill: NewSkill(d)}
+	skill := &Flashlight{Skill: NewSkill(d, false)}
 
 	skill.StrainValueOf = skill.flashlightStrainValue
 	skill.CalculateInitialStrain = skill.flInitialStrain

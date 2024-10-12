@@ -113,8 +113,8 @@ func (diffCalc *DifficultyCalculator) addObjectToAttribs(o objects.IHitObject, a
 func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) api.Attributes {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(diff, true)
-	aimNoSlidersSkill := skills.NewAimSkill(diff, false)
+	aimSkill := skills.NewAimSkill(diff, true, false)
+	aimNoSlidersSkill := skills.NewAimSkill(diff, false, false)
 	speedSkill := skills.NewSpeedSkill(diff, false)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
@@ -147,8 +147,8 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(diff, true)
-	aimNoSlidersSkill := skills.NewAimSkill(diff, false)
+	aimSkill := skills.NewAimSkill(diff, true, true)
+	aimNoSlidersSkill := skills.NewAimSkill(diff, false, false)
 	speedSkill := skills.NewSpeedSkill(diff, true)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
@@ -190,7 +190,7 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) api.StrainPeaks {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
-	aimSkill := skills.NewAimSkill(diff, true)
+	aimSkill := skills.NewAimSkill(diff, true, false)
 	speedSkill := skills.NewSpeedSkill(diff, false)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 

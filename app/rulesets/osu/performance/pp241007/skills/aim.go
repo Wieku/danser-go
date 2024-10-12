@@ -18,8 +18,8 @@ type AimSkill struct {
 	currentStrain float64
 }
 
-func NewAimSkill(d *difficulty.Difficulty, withSliders bool) *AimSkill {
-	skill := &AimSkill{Skill: NewSkill(d), withSliders: withSliders}
+func NewAimSkill(d *difficulty.Difficulty, withSliders, stepCalc bool) *AimSkill {
+	skill := &AimSkill{Skill: NewSkill(d, stepCalc), withSliders: withSliders}
 
 	skill.StrainValueOf = skill.aimStrainValue
 	skill.CalculateInitialStrain = skill.aimInitialStrain

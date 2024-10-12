@@ -40,9 +40,11 @@ type Skill struct {
 	difficulty float64
 
 	diff *difficulty.Difficulty
+
+	stepCalc bool
 }
 
-func NewSkill(d *difficulty.Difficulty) *Skill {
+func NewSkill(d *difficulty.Difficulty, stepCalc bool) *Skill {
 	skill := &Skill{
 		DecayWeight:           0.9,
 		SectionLength:         400,
@@ -51,6 +53,7 @@ func NewSkill(d *difficulty.Difficulty) *Skill {
 		objectStrains:         make([]float64, 0),
 		strainPeaksSorted:     collections.NewSortedList[float64](),
 		diff:                  d,
+		stepCalc:              stepCalc,
 	}
 
 	return skill

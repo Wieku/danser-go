@@ -19,15 +19,12 @@ type SpeedSkill struct {
 	currentRhythm float64
 	maxStrain     float64
 
-	stepCalc bool
-
 	relevantNoteCountV float64
 }
 
 func NewSpeedSkill(d *difficulty.Difficulty, step bool) *SpeedSkill {
 	skill := &SpeedSkill{
-		Skill:    NewSkill(d),
-		stepCalc: step,
+		Skill: NewSkill(d, step),
 	}
 
 	skill.ReducedSectionCount = 5
