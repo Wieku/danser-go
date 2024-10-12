@@ -4,6 +4,7 @@ import (
 	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
@@ -23,7 +24,7 @@ type timePopup struct {
 	graphStatus string
 
 	timeCMap *beatmap.BeatMap
-	peaks    pp220930.StrainPeaks
+	peaks    api.StrainPeaks
 	sGraph   *play.StrainGraph
 
 	fbo *buffer.Framebuffer

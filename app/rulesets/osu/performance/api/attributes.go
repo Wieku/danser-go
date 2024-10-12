@@ -28,6 +28,21 @@ type Attributes struct {
 	MaxCombo    int
 }
 
+// StrainPeaks contains peaks of Aim, Speed and Flashlight skills, as well as peaks passed through star rating formula
+type StrainPeaks struct {
+	// Aim peaks
+	Aim []float64
+
+	// Speed peaks
+	Speed []float64
+
+	// Flashlight peaks
+	Flashlight []float64
+
+	// Total contains aim, speed and flashlight peaks passed through star rating formula
+	Total []float64
+}
+
 type PPv2Results struct {
 	Aim, Speed, Acc, Flashlight, Total float64
 }

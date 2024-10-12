@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -20,7 +20,7 @@ import (
 
 type StrainGraph struct {
 	shapeRenderer *shape.Renderer
-	strains       pp220930.StrainPeaks
+	strains       api.StrainPeaks
 	baseLine      float64
 	maxStrain     float32
 
@@ -55,7 +55,7 @@ type StrainGraph struct {
 	innerDarkness float64
 }
 
-func NewStrainGraph(beatMap *beatmap.BeatMap, peaks pp220930.StrainPeaks, countFromZero, countTrueEnd bool) *StrainGraph {
+func NewStrainGraph(beatMap *beatmap.BeatMap, peaks api.StrainPeaks, countFromZero, countTrueEnd bool) *StrainGraph {
 	graph := &StrainGraph{
 		shapeRenderer: shape.NewRenderer(),
 		strains:       peaks,

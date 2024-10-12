@@ -17,21 +17,6 @@ const (
 	CurrentVersion    int     = 20241007
 )
 
-// StrainPeaks contains peaks of Aim, Speed and Flashlight skills, as well as peaks passed through star rating formula
-type StrainPeaks struct {
-	// Aim peaks
-	Aim []float64
-
-	// Speed peaks
-	Speed []float64
-
-	// Flashlight peaks
-	Flashlight []float64
-
-	// Total contains aim, speed and flashlight peaks passed through star rating formula
-	Total []float64
-}
-
 // getStarsFromRawValues converts raw skill values to Attributes
 func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, attr api.Attributes) api.Attributes {
 	aimRating := math.Sqrt(rawAim) * StarScalingFactor
@@ -191,7 +176,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 	return stars
 }
 
-func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) StrainPeaks {
+func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) api.StrainPeaks {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true)
@@ -204,7 +189,7 @@ func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficu
 		flashlightSkill.Process(o)
 	}
 
-	peaks := StrainPeaks{
+	peaks := api.StrainPeaks{
 		Aim:        aimSkill.GetCurrentStrainPeaks(),
 		Speed:      speedSkill.GetCurrentStrainPeaks(),
 		Flashlight: flashlightSkill.GetCurrentStrainPeaks(),
