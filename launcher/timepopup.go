@@ -4,8 +4,8 @@ import (
 	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/overlays/play"
 	"github.com/wieku/danser-go/framework/goroutines"
@@ -113,7 +113,7 @@ func (m *timePopup) drawStrainGraph() {
 			beatmap.ParseTimingPointsAndPauses(m.timeCMap)
 			beatmap.ParseObjects(m.timeCMap, true, false)
 
-			m.peaks = pp220930.CalculateStrainPeaks(m.timeCMap.HitObjects, m.timeCMap.Diff)
+			m.peaks = performance.GetDifficultyCalculator().CalculateStrainPeaks(m.timeCMap.HitObjects, m.timeCMap.Diff)
 
 			m.graphStatus = ""
 		})

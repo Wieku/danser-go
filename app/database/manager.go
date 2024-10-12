@@ -41,6 +41,8 @@ var migrations []Migration
 
 var songsDir string
 
+var difficultyCalc = pp220930.NewDifficultyCalculator()
+
 func Init() error {
 	log.Println("DatabaseManager: Initializing database...")
 
@@ -428,7 +430,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	var toCalculate []*beatmap.BeatMap
 
 	for _, b := range maps {
-		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < pp220930.CurrentVersion) {
+		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < difficultyCalc.GetVersion()) {
 			toCalculate = append(toCalculate, b)
 		}
 	}
@@ -449,7 +451,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 			ret2 = true
 
 			defer func() {
-				bMap.StarsVersion = pp220930.CurrentVersion
+				bMap.StarsVersion = difficultyCalc.GetVersion()
 				bMap.Clear() //Clear objects and timing to avoid OOM
 
 				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
@@ -465,7 +467,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")
 				bMap.Stars = 0
 			} else {
-				attr := pp220930.CalculateSingle(bMap.HitObjects, bMap.Diff)
+				attr := difficultyCalc.CalculateSingle(bMap.HitObjects, bMap.Diff)
 				bMap.Stars = attr.Total
 			}
 

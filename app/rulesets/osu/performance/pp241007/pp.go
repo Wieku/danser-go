@@ -17,8 +17,6 @@ const (
 
 // PPv2 : structure to store ppv2 values
 type PPv2 struct {
-	Results api.PPv2Results
-
 	attribs api.Attributes
 
 	experimental bool
@@ -37,7 +35,11 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(attribs api.Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
+func NewPPCalculator() *PPv2 {
+	return &PPv2{}
+}
+
+func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) api.PPv2Results {
 	attribs.MaxCombo = max(1, attribs.MaxCombo)
 
 	if combo < 0 {
@@ -101,19 +103,21 @@ func (pp *PPv2) PPv2x(attribs api.Attributes, combo, n300, n100, n50, nmiss int,
 		pp.effectiveMissCount = min(pp.effectiveMissCount+float64(pp.countOk)*okMultiplier+float64(pp.countMeh)*mehMultiplier, float64(pp.totalHits))
 	}
 
-	pp.Results.Aim = pp.computeAimValue()
-	pp.Results.Speed = pp.computeSpeedValue()
-	pp.Results.Acc = pp.computeAccuracyValue()
-	pp.Results.Flashlight = pp.computeFlashlightValue()
+	results := api.PPv2Results{
+		Aim:        pp.computeAimValue(),
+		Speed:      pp.computeSpeedValue(),
+		Acc:        pp.computeAccuracyValue(),
+		Flashlight: pp.computeFlashlightValue(),
+	}
 
-	pp.Results.Total = math.Pow(
-		math.Pow(pp.Results.Aim, 1.1)+
-			math.Pow(pp.Results.Speed, 1.1)+
-			math.Pow(pp.Results.Acc, 1.1)+
-			math.Pow(pp.Results.Flashlight, 1.1),
+	results.Total = math.Pow(
+		math.Pow(results.Aim, 1.1)+
+			math.Pow(results.Speed, 1.1)+
+			math.Pow(results.Acc, 1.1)+
+			math.Pow(results.Flashlight, 1.1),
 		1.0/1.1) * multiplier
 
-	return *pp
+	return results
 }
 
 func (pp *PPv2) computeAimValue() float64 {

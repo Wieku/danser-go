@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/graphics"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
@@ -82,7 +83,7 @@ type subSet struct {
 
 	numObjects uint
 
-	ppv2 *pp220930.PPv2
+	ppv2 api.IPerformanceCalculator
 
 	recoveries int
 	failed     bool
@@ -118,7 +119,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 	ruleset.beatMap = beatMap
 	ruleset.oppDiffs = make(map[string][]api.Attributes)
 
-	log.Println("Using pp calc version 2022-09-30: https://osu.ppy.sh/home/news/2022-09-30-changes-to-osu-sr-and-pp")
+	log.Println("Using pp calc version", performance.GetDifficultyCalculator().GetVersionMessage())
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
@@ -145,7 +146,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 		}
 
 		if ruleset.oppDiffs[player.maskedModString] == nil {
-			ruleset.oppDiffs[player.maskedModString] = pp220930.CalculateStep(ruleset.beatMap.HitObjects, player.diff)
+			ruleset.oppDiffs[player.maskedModString] = performance.GetDifficultyCalculator().CalculateStep(ruleset.beatMap.HitObjects, player.diff)
 
 			star := ruleset.oppDiffs[player.maskedModString][len(ruleset.oppDiffs[player.maskedModString])-1]
 
@@ -159,19 +160,19 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 
 			log.Println("\tTotal:", star.Total)
 
-			pp := &pp220930.PPv2{}
-			pp.PPv2x(star, -1, -1, 0, 0, 0, diff)
+			pp := performance.CreatePPCalculator()
+			ppResults := pp.Calculate(star, -1, -1, 0, 0, 0, diff)
 
 			log.Println("SS PP:")
-			log.Println("\tAim:  ", pp.Results.Aim)
-			log.Println("\tTap:  ", pp.Results.Speed)
+			log.Println("\tAim:  ", ppResults.Aim)
+			log.Println("\tTap:  ", ppResults.Speed)
 
 			if diff.CheckModActive(difficulty.Flashlight) {
 				log.Println("\tFlash:", star.Flashlight)
 			}
 
-			log.Println("\tAcc:  ", pp.Results.Acc)
-			log.Println("\tTotal:", pp.Results.Total)
+			log.Println("\tAcc:  ", ppResults.Acc)
+			log.Println("\tTotal:", ppResults.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
@@ -325,7 +326,7 @@ func (set *OsuRuleSet) printEndTable() {
 		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
 		data = append(data, utils.Humanize(set.cursors[c].score.Combo))
 		data = append(data, set.cursors[c].player.diff.GetModString())
-		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.PP.Total))
 		table.Append(data)
 	}
 
@@ -471,9 +472,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 
 	subSet.score.PerfectCombo = uint(diff.MaxCombo) == subSet.score.Combo
 
-	subSet.ppv2.PPv2x(diff, int(subSet.score.Combo), int(subSet.score.Count300), int(subSet.score.Count100), int(subSet.score.Count50), int(subSet.score.CountMiss), subSet.player.diff)
-
-	subSet.score.PP = subSet.ppv2.Results
+	subSet.score.PP = subSet.ppv2.Calculate(diff, int(subSet.score.Combo), int(subSet.score.Count300), int(subSet.score.Count100), int(subSet.score.Count50), int(subSet.score.CountMiss), subSet.player.diff)
 
 	switch judgementResult.HitResult {
 	case Hit100:
@@ -545,7 +544,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 			judgementResult.Time,
 			judgementResult.Position.X,
 			judgementResult.Position.Y,
-			subSet.ppv2.Results.Total,
+			subSet.score.PP.Total,
 		))
 	}
 }

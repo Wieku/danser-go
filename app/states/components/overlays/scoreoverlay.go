@@ -12,7 +12,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -186,7 +186,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.ppDisplay = play.NewPPDisplay(ruleset.GetBeatMap().Diff.Mods, settings.Gameplay.UseLazerPP)
 
-	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap(), pp220930.CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff), false, true)
+	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap(), performance.GetDifficultyCalculator().CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff), false, true)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
