@@ -35,9 +35,11 @@ type Skill struct {
 	strainPeaks       []float64
 	strainPeaksSorted *collections.SortedList[float64]
 
-	objectStrains []float64
+	objectStrains        []float64
+	difficultStrainCount float64
 
-	difficulty float64
+	difficulty     float64
+	lastDifficulty float64
 
 	diff *difficulty.Difficulty
 
@@ -54,6 +56,7 @@ func NewSkill(d *difficulty.Difficulty, stepCalc bool) *Skill {
 		strainPeaksSorted:     collections.NewSortedList[float64](),
 		diff:                  d,
 		stepCalc:              stepCalc,
+		lastDifficulty:        -math.MaxFloat64,
 	}
 
 	return skill
@@ -71,7 +74,23 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 		skill.currentSectionEnd += skill.SectionLength
 	}
 
-	skill.currentSectionPeak = max(skill.StrainValueOf(current), skill.currentSectionPeak)
+	currentStrain := skill.StrainValueOf(current)
+
+	skill.currentSectionPeak = max(currentStrain, skill.currentSectionPeak)
+
+	if !skill.stepCalc {
+		return
+	}
+
+	skill.difficultyValue()
+
+	if skill.lastDifficulty != skill.difficulty {
+		skill.difficultStrainCount = skill.countDifficultStrains()
+	} else if skill.difficulty != 0 {
+		skill.difficultStrainCount += 1.1 / (1 + math.Exp(-10*(currentStrain/(skill.difficulty/10)-0.88)))
+	}
+
+	skill.lastDifficulty = skill.difficulty
 }
 
 func (skill *Skill) GetCurrentStrainPeaks() []float64 {
@@ -90,7 +109,7 @@ func (skill *Skill) getCurrentStrainPeaksSorted() []float64 {
 	return peaks.Slice
 }
 
-func (skill *Skill) DifficultyValue() float64 {
+func (skill *Skill) difficultyValue() float64 {
 	if skill.peakWeights == nil { //Precalculated peak weights
 		skill.peakWeights = make([]float64, skill.ReducedSectionCount)
 		for i := range skill.ReducedSectionCount {
@@ -126,7 +145,15 @@ func (skill *Skill) DifficultyValue() float64 {
 	return skill.difficulty
 }
 
-func (skill *Skill) CountDifficultStrains() float64 {
+func (skill *Skill) DifficultyValue() float64 {
+	if skill.stepCalc {
+		return skill.difficulty
+	}
+
+	return skill.difficultyValue()
+}
+
+func (skill *Skill) countDifficultStrains() float64 {
 	if skill.difficulty == 0 {
 		return 0
 	}
@@ -141,6 +168,14 @@ func (skill *Skill) CountDifficultStrains() float64 {
 	}
 
 	return sum
+}
+
+func (skill *Skill) CountDifficultStrains() float64 {
+	if skill.stepCalc {
+		return skill.difficultStrainCount
+	}
+
+	return skill.countDifficultStrains()
 }
 
 func (skill *Skill) saveCurrentPeak() {

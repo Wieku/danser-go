@@ -22,9 +22,9 @@ type SpeedSkill struct {
 	relevantNoteCountV float64
 }
 
-func NewSpeedSkill(d *difficulty.Difficulty, step bool) *SpeedSkill {
+func NewSpeedSkill(d *difficulty.Difficulty, stepCalc bool) *SpeedSkill {
 	skill := &SpeedSkill{
-		Skill: NewSkill(d, step),
+		Skill: NewSkill(d, stepCalc),
 	}
 
 	skill.ReducedSectionCount = 5
