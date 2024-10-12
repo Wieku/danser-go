@@ -36,11 +36,10 @@ type PPDisplay struct {
 	decimals int
 	format   string
 
-	mods           difficulty.Modifier
-	experimentalPP bool
+	mods difficulty.Modifier
 }
 
-func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
+func NewPPDisplay(mods difficulty.Modifier) *PPDisplay {
 	return &PPDisplay{
 		ppFont:           font.GetFont("HUDFont"),
 		aimGlider:        animation.NewTargetGlider(0, 0),
@@ -56,7 +55,6 @@ func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
 		decimals:         0,
 		format:           "%.0fpp",
 		mods:             mods,
-		experimentalPP:   experimentalPP,
 	}
 }
 
