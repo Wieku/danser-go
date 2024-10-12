@@ -3,9 +3,10 @@ package skills
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/preprocessing"
+	"github.com/wieku/danser-go/framework/collections"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
-	"sort"
+	"slices"
 )
 
 type Skill struct {
@@ -29,7 +30,8 @@ type Skill struct {
 	currentSectionPeak float64
 	currentSectionEnd  float64
 
-	strainPeaks []float64
+	strainPeaks       []float64
+	strainPeaksSorted *collections.SortedList[float64]
 
 	objectStrains []float64
 
@@ -45,6 +47,7 @@ func NewSkill(d *difficulty.Difficulty) *Skill {
 		ReducedSectionCount:   10,
 		ReducedStrainBaseline: 0.75,
 		objectStrains:         make([]float64, 0),
+		strainPeaksSorted:     collections.NewSortedList[float64](),
 		diff:                  d,
 	}
 
@@ -74,24 +77,31 @@ func (skill *Skill) GetCurrentStrainPeaks() []float64 {
 	return peaks
 }
 
+func (skill *Skill) getCurrentStrainPeaksSorted() []float64 {
+	peaks := skill.strainPeaksSorted.Clone()
+
+	peaks.Add(skill.currentSectionPeak)
+
+	return peaks.Slice
+}
+
 func (skill *Skill) DifficultyValue() float64 {
 	skill.difficulty = 0.0
 	weight := 1.0
 
-	strains := skill.GetCurrentStrainPeaks()
-	reverseSortFloat64s(strains)
+	strains := skill.getCurrentStrainPeaksSorted()
 
 	numReduced := min(len(strains), skill.ReducedSectionCount)
 
 	for i := 0; i < numReduced; i++ {
 		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
-		strains[i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
+		strains[len(strains)-1-i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
 	}
 
-	reverseSortFloat64s(strains)
+	slices.Sort(strains)
 
-	for _, strain := range strains {
-		skill.difficulty += strain * weight
+	for i := range strains {
+		skill.difficulty += strains[len(strains)-1-i] * weight
 		weight *= skill.DecayWeight
 	}
 
@@ -117,20 +127,11 @@ func (skill *Skill) CountDifficultStrains() float64 {
 
 func (skill *Skill) saveCurrentPeak() {
 	skill.strainPeaks = append(skill.strainPeaks, skill.currentSectionPeak)
+	skill.strainPeaksSorted.Add(skill.currentSectionPeak)
 }
 
 func (skill *Skill) startNewSectionFrom(end float64, current *preprocessing.DifficultyObject) {
 	skill.currentSectionPeak = skill.CalculateInitialStrain(end, current)
-}
-
-func reverseSortFloat64s(arr []float64) {
-	sort.Float64s(arr)
-
-	n := len(arr)
-	for i := 0; i < n/2; i++ {
-		j := n - i - 1
-		arr[i], arr[j] = arr[j], arr[i]
-	}
 }
 
 func DefaultDifficultyToPerformance(difficulty float64) float64 {
