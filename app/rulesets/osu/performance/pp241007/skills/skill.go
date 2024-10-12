@@ -30,6 +30,8 @@ type Skill struct {
 	currentSectionPeak float64
 	currentSectionEnd  float64
 
+	peakWeights []float64
+
 	strainPeaks       []float64
 	strainPeaksSorted *collections.SortedList[float64]
 
@@ -86,23 +88,36 @@ func (skill *Skill) getCurrentStrainPeaksSorted() []float64 {
 }
 
 func (skill *Skill) DifficultyValue() float64 {
+	if skill.peakWeights == nil { //Precalculated peak weights
+		skill.peakWeights = make([]float64, skill.ReducedSectionCount)
+		for i := range skill.ReducedSectionCount {
+			scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
+			skill.peakWeights[i] = mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
+		}
+	}
+
 	skill.difficulty = 0.0
 	weight := 1.0
 
 	strains := skill.getCurrentStrainPeaksSorted()
 
-	numReduced := min(len(strains), skill.ReducedSectionCount)
-
-	for i := 0; i < numReduced; i++ {
-		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
-		strains[len(strains)-1-i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
+	for i := range min(len(strains), skill.ReducedSectionCount) {
+		strains[len(strains)-1-i] *= skill.peakWeights[i]
 	}
 
 	slices.Sort(strains)
 
-	for i := range strains {
+	lastDiff := -math.MaxFloat64
+
+	for i := range len(strains) {
 		skill.difficulty += strains[len(strains)-1-i] * weight
 		weight *= skill.DecayWeight
+
+		if math.Abs(skill.difficulty-lastDiff) < math.SmallestNonzeroFloat64 { // escape when strain * weight calculates to 0
+			break
+		}
+
+		lastDiff = skill.difficulty
 	}
 
 	return skill.difficulty
