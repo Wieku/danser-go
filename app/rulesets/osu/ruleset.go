@@ -9,7 +9,6 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"log"
@@ -225,7 +224,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 			score: &Score{
 				Accuracy: 1,
 			},
-			ppv2:           &pp220930.PPv2{},
+			ppv2:           performance.CreatePPCalculator(),
 			hp:             hp,
 			recoveries:     recoveries,
 			scoreProcessor: sc,
