@@ -741,6 +741,11 @@ func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
 	return subSet.player
 }
 
+func (set *OsuRuleSet) GetPlayerDifficulty(cursor *graphics.Cursor) *difficulty.Difficulty {
+	subSet := set.cursors[cursor]
+	return subSet.player.diff
+}
+
 func (set *OsuRuleSet) GetProcessed() []HitObject {
 	return set.processed
 }

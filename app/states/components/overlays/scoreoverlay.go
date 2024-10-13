@@ -757,7 +757,14 @@ func (overlay *ScoreOverlay) drawScore(batch *batch.QuadBatch, alpha float64) {
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, scoreAlpha)
 
-	scoreText := fmt.Sprintf("%08d", int64(math.Round(overlay.scoreGlider.GetValue())))
+	scoreFormat := "%08d"
+
+	playerDiff := overlay.ruleset.GetPlayerDifficulty(overlay.cursor)
+	if playerDiff.CheckModActive(difficulty.Lazer) && !settings.Gameplay.LazerClassicScore {
+		scoreFormat = "%06d"
+	}
+
+	scoreText := fmt.Sprintf(scoreFormat, int64(math.Round(overlay.scoreGlider.GetValue())))
 	overlay.scoreFont.DrawOrigin(batch, overlay.ScaledWidth+rightOffset+scoreOverlap+xOff, yOff, vector.TopRight, scoreSize, true, scoreText)
 
 	accText := fmt.Sprintf("%5.2f%%", overlay.accuracyGlider.GetValue())

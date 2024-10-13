@@ -3,6 +3,7 @@ package osu
 import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/settings"
 	"math"
 )
 
@@ -21,8 +22,9 @@ type scoreV3Processor struct {
 	accPart    int64
 	accPartMax int64
 
-	hits    int64
-	maxHits int64
+	hits          int64
+	maxHits       int64
+	basicHitCount int64
 
 	player *difficultyPlayer
 }
@@ -80,6 +82,7 @@ func (s *scoreV3Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.accPart = 0
 	s.accPartMax = 0
 	s.accuracy = 1
+	s.basicHitCount = 0
 }
 
 func (s *scoreV3Processor) AddResult(result JudgementResult) {
@@ -96,6 +99,10 @@ func (s *scoreV3Processor) AddResult(result JudgementResult) {
 		s.accPartMax += result.MaxResult.ScoreValueLazer()
 
 		s.hits++
+	}
+
+	if result.HitResult&BaseHitsM > 0 {
+		s.basicHitCount++
 	}
 
 	// slider end misses (not classic mod!) don't propagate combo score
@@ -125,6 +132,10 @@ func (s *scoreV3Processor) ModifyResult(result HitResult, src HitObject) HitResu
 }
 
 func (s *scoreV3Processor) GetScore() int64 {
+	if settings.Gameplay.LazerClassicScore {
+		return int64(math.Round((math.Pow(float64(s.basicHitCount), 2)*32.57 + 100000) * float64(s.score) / 1000000))
+	}
+
 	return s.score
 }
 
