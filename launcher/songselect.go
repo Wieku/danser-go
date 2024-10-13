@@ -271,8 +271,10 @@ func (m *songSelectPopup) drawSongSelect() {
 			imgui.TableNextColumn()
 
 			if focusMap && m.sizeCalculated > 1 {
-				if m.bld.currentMap != nil && m.bld.currentMap.Dir == b.bMaps[0].Dir {
-					imgui.SetScrollYFloat(b.bounds.X)
+				if m.bld.currentMap != nil && m.bld.currentMap.Dir == b.bMaps[0].Dir { // Quick compare for the current set
+					if slices.ContainsFunc(b.bMaps, func(sub *beatmap.BeatMap) bool { return sub.MD5 == m.bld.currentMap.MD5 }) { // Search for a partitioned set containing that specific diff
+						imgui.SetScrollYFloat(b.bounds.X)
+					}
 				}
 			}
 
