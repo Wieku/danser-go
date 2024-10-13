@@ -333,8 +333,14 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 
 	sliderChecks := osu.SliderStart | osu.PositionalMiss
 
-	if overlay.ruleset.GetBeatMap().Diff.CheckModActive(difficulty.Lazer) {
-		sliderChecks |= osu.BaseHits
+	playerDiff := overlay.ruleset.GetPlayerDifficulty(c)
+
+	if playerDiff.CheckModActive(difficulty.Lazer) {
+		classicConf, confFound := difficulty.GetModConfig[difficulty.ClassicSettings](playerDiff)
+
+		if !playerDiff.CheckModActive(difficulty.Classic) || !confFound || !classicConf.NoSliderHeadAccuracy {
+			sliderChecks |= osu.BaseHits
+		}
 	}
 
 	_, hC := object.(*objects.Circle)
