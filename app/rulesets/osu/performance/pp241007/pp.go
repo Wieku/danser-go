@@ -35,7 +35,7 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func NewPPCalculator() *PPv2 {
+func NewPPCalculator() api.IPerformanceCalculator {
 	return &PPv2{}
 }
 

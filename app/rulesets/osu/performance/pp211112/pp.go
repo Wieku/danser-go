@@ -36,11 +36,11 @@ type PPv2 struct {
 	amountHitObjectsWithAccuracy int
 }
 
-func NewPPCalculator() *PPv2 {
+func NewPPCalculator() api.IPerformanceCalculator {
 	return &PPv2{}
 }
 
-func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty, experimental bool) api.PPv2Results {
+func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) api.PPv2Results {
 	attribs.MaxCombo = max(1, attribs.MaxCombo)
 
 	if combo < 0 {
@@ -54,7 +54,7 @@ func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss 
 	totalhits := n300 + n100 + n50 + nmiss
 
 	pp.attribs = attribs
-	pp.experimental = experimental
+	pp.experimental = false
 	pp.diff = diff
 	pp.totalHits = totalhits
 	pp.scoreMaxCombo = combo

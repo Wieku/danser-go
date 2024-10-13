@@ -19,12 +19,12 @@ const (
 
 type DifficultyCalculator struct{}
 
-func NewDifficultyCalculator() *DifficultyCalculator {
+func NewDifficultyCalculator() api.IDifficultyCalculator {
 	return &DifficultyCalculator{}
 }
 
 // getStarsFromRawValues converts raw skill values to Attributes
-func (diffCalc *DifficultyCalculator) getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, attr api.Attributes, _ bool) api.Attributes {
+func (diffCalc *DifficultyCalculator) getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, attr api.Attributes) api.Attributes {
 	aimRating := math.Sqrt(rawAim) * StarScalingFactor
 	aimRatingNoSliders := math.Sqrt(rawAimNoSliders) * StarScalingFactor
 	speedRating := math.Sqrt(rawSpeed) * StarScalingFactor
@@ -70,7 +70,7 @@ func (diffCalc *DifficultyCalculator) getStarsFromRawValues(rawAim, rawAimNoSlid
 }
 
 // Retrieves skill values and converts to Attributes
-func (diffCalc *DifficultyCalculator) getStars(aim *skills2.AimSkill, aimNoSliders *skills2.AimSkill, speed *skills2.SpeedSkill, flashlight *skills2.Flashlight, diff *difficulty.Difficulty, attr api.Attributes, experimental bool) api.Attributes {
+func (diffCalc *DifficultyCalculator) getStars(aim *skills2.AimSkill, aimNoSliders *skills2.AimSkill, speed *skills2.SpeedSkill, flashlight *skills2.Flashlight, diff *difficulty.Difficulty, attr api.Attributes) api.Attributes {
 	attr = diffCalc.getStarsFromRawValues(
 		aim.DifficultyValue(),
 		aimNoSliders.DifficultyValue(),
@@ -78,7 +78,6 @@ func (diffCalc *DifficultyCalculator) getStars(aim *skills2.AimSkill, aimNoSlide
 		flashlight.DifficultyValue(),
 		diff,
 		attr,
-		experimental,
 	)
 
 	attr.AimDifficultStrainCount = aim.CountDifficultStrains(diff.Speed)
@@ -102,13 +101,13 @@ func (diffCalc *DifficultyCalculator) addObjectToAttribs(o objects.IHitObject, a
 }
 
 // CalculateSingle calculates the final difficulty attributes of a map
-func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) api.Attributes {
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
+func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) api.Attributes {
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, false)
 
-	aimSkill := skills2.NewAimSkill(diff, true, experimental)
-	aimNoSlidersSkill := skills2.NewAimSkill(diff, false, experimental)
-	speedSkill := skills2.NewSpeedSkill(diff, experimental)
-	flashlightSkill := skills2.NewFlashlightSkill(diff, experimental)
+	aimSkill := skills2.NewAimSkill(diff, true, false)
+	aimNoSlidersSkill := skills2.NewAimSkill(diff, false, false)
+	speedSkill := skills2.NewSpeedSkill(diff, false)
+	flashlightSkill := skills2.NewFlashlightSkill(diff, false)
 
 	attr := api.Attributes{}
 
@@ -123,11 +122,11 @@ func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObje
 		flashlightSkill.Process(o)
 	}
 
-	return diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr, experimental)
+	return diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr)
 }
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
-func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) []api.Attributes {
+func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []api.Attributes {
 	modString := (diff.Mods & difficulty.DifficultyAdjustMask).String()
 	if modString == "" {
 		modString = "NM"
@@ -135,12 +134,12 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 
 	log.Println("Calculating step SR for mods:", modString)
 
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, false)
 
-	aimSkill := skills2.NewAimSkill(diff, true, experimental)
-	aimNoSlidersSkill := skills2.NewAimSkill(diff, false, experimental)
-	speedSkill := skills2.NewSpeedSkill(diff, experimental)
-	flashlightSkill := skills2.NewFlashlightSkill(diff, experimental)
+	aimSkill := skills2.NewAimSkill(diff, true, false)
+	aimNoSlidersSkill := skills2.NewAimSkill(diff, false, false)
+	speedSkill := skills2.NewSpeedSkill(diff, false)
+	flashlightSkill := skills2.NewFlashlightSkill(diff, false)
 
 	stars := make([]api.Attributes, 1, len(objects))
 
@@ -157,7 +156,7 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 		speedSkill.Process(o)
 		flashlightSkill.Process(o)
 
-		stars = append(stars, diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr, experimental))
+		stars = append(stars, diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)
@@ -175,12 +174,12 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 	return stars
 }
 
-func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty, experimental bool) api.StrainPeaks {
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, experimental)
+func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) api.StrainPeaks {
+	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff, false)
 
-	aimSkill := skills2.NewAimSkill(diff, true, experimental)
-	speedSkill := skills2.NewSpeedSkill(diff, experimental)
-	flashlightSkill := skills2.NewFlashlightSkill(diff, experimental)
+	aimSkill := skills2.NewAimSkill(diff, true, false)
+	speedSkill := skills2.NewSpeedSkill(diff, false)
+	flashlightSkill := skills2.NewFlashlightSkill(diff, false)
 
 	for _, o := range diffObjects {
 		aimSkill.Process(o)
@@ -197,7 +196,7 @@ func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHi
 	peaks.Total = make([]float64, len(peaks.Aim))
 
 	for i := 0; i < len(peaks.Aim); i++ {
-		stars := diffCalc.getStarsFromRawValues(peaks.Aim[i], peaks.Aim[i], peaks.Speed[i], peaks.Flashlight[i], diff, api.Attributes{}, experimental)
+		stars := diffCalc.getStarsFromRawValues(peaks.Aim[i], peaks.Aim[i], peaks.Speed[i], peaks.Flashlight[i], diff, api.Attributes{})
 		peaks.Total[i] = stars.Total
 	}
 

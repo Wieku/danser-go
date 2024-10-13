@@ -19,7 +19,7 @@ const (
 
 type DifficultyCalculator struct{}
 
-func NewDifficultyCalculator() *DifficultyCalculator {
+func NewDifficultyCalculator() api.IDifficultyCalculator {
 	return &DifficultyCalculator{}
 }
 
