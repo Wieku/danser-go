@@ -1,7 +1,6 @@
 package pp241007
 
 import (
-	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
@@ -156,8 +155,6 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 
 	diffCalc.addObjectToAttribs(objects[0], &stars[0])
 
-	lastProgress := -1
-
 	for i, o := range diffObjects {
 		attr := stars[i]
 		diffCalc.addObjectToAttribs(objects[i+1], &attr)
@@ -168,16 +165,6 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 		flashlightSkill.Process(o)
 
 		stars = append(stars, diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr))
-
-		if len(diffObjects) > 2500 {
-			progress := (100 * i) / (len(diffObjects) - 1)
-
-			if progress != lastProgress && progress%5 == 0 {
-				log.Println(fmt.Sprintf("Progress: %d%%", progress))
-			}
-
-			lastProgress = progress
-		}
 	}
 
 	endTime := time.Now()
