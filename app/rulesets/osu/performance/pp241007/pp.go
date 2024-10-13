@@ -39,7 +39,7 @@ func NewPPCalculator() api.IPerformanceCalculator {
 	return &PPv2{}
 }
 
-func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) api.PPv2Results {
+func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss int, acc float64, diff *difficulty.Difficulty) api.PPv2Results {
 	attribs.MaxCombo = max(1, attribs.MaxCombo)
 
 	if combo < 0 {
@@ -59,22 +59,10 @@ func (pp *PPv2) Calculate(attribs api.Attributes, combo, n300, n100, n50, nmiss 
 	pp.countMeh = n50
 	pp.countMiss = nmiss
 	pp.effectiveMissCount = pp.calculateEffectiveMissCount()
-
-	// accuracy
-
-	if pp.totalHits == 0 {
-		pp.accuracy = 0.0
-	} else {
-		acc := (float64(n50)*50 +
-			float64(n100)*100 +
-			float64(n300)*300) /
-			(float64(pp.totalHits) * 300)
-
-		pp.accuracy = mutils.Clamp(acc, 0, 1)
-	}
+	pp.accuracy = acc
 
 	if diff.CheckModActive(difficulty.ScoreV2 | difficulty.Lazer) {
-		pp.amountHitObjectsWithAccuracy = attribs.ObjectCount
+		pp.amountHitObjectsWithAccuracy = attribs.Circles + attribs.Sliders
 	} else {
 		pp.amountHitObjectsWithAccuracy = attribs.Circles
 	}
@@ -211,7 +199,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	}
 
 	// Scale the speed value with accuracy and OD
-	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.accuracy+relevantAccuracy)/2.0, (14.5-max(pp.diff.ODReal, 8))/2)
+	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.accuracy+relevantAccuracy)/2.0, (14.5-pp.diff.ODReal)/2)
 
 	// Scale the speed value with # of 50s to punish doubletapping.
 	if float64(pp.countMeh) >= float64(pp.totalHits)/500 {

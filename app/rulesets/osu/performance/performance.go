@@ -23,7 +23,7 @@ func initConstructors() {
 	case "220930":
 		diffCalcInit = pp220930.NewDifficultyCalculator
 		ppCalcInit = pp220930.NewPPCalculator
-	case "latest":
+	default:
 		diffCalcInit = pp241007.NewDifficultyCalculator
 		ppCalcInit = pp241007.NewPPCalculator
 	}
