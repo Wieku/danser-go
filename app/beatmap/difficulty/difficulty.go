@@ -162,17 +162,43 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 	diff.Mods |= mods
 
 	if mods.Active(HalfTime | Daycore) {
-		diff.modSettings[rfType[SpeedSettings]()] = newSpeedSettings(0.75, mods.Active(Daycore))
+		diff.modSettings[rfType[SpeedSettings]()] = NewSpeedSettings(0.75, mods.Active(Daycore))
 	} else if mods.Active(DoubleTime | Nightcore) {
-		diff.modSettings[rfType[SpeedSettings]()] = newSpeedSettings(1.5, mods.Active(Nightcore))
+		diff.modSettings[rfType[SpeedSettings]()] = NewSpeedSettings(1.5, mods.Active(Nightcore))
 	}
 
 	if mods.Active(Easy) {
-		diff.modSettings[rfType[EasySettings]()] = newEasySettings()
+		diff.modSettings[rfType[EasySettings]()] = NewEasySettings()
 	}
 
 	if mods.Active(Flashlight) {
-		diff.modSettings[rfType[FlashlightSettings]()] = newFlashlightSettings()
+		diff.modSettings[rfType[FlashlightSettings]()] = NewFlashlightSettings()
+	}
+
+	if mods.Active(Classic) {
+		diff.modSettings[rfType[ClassicSettings]()] = NewClassicSettings()
+	}
+
+	diff.calculate()
+}
+
+func (diff *Difficulty) RemoveMod(mods Modifier) {
+	diff.Mods &= ^mods
+
+	if mods.Active(HalfTime | Daycore | DoubleTime | Nightcore) {
+		delete(diff.modSettings, rfType[SpeedSettings]())
+	}
+
+	if mods.Active(Easy) {
+		delete(diff.modSettings, rfType[EasySettings]())
+	}
+
+	if mods.Active(Flashlight) {
+		delete(diff.modSettings, rfType[FlashlightSettings]())
+	}
+
+	if mods.Active(Classic) {
+		delete(diff.modSettings, rfType[ClassicSettings]())
 	}
 
 	diff.calculate()
@@ -193,25 +219,25 @@ func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 			mMap[mod] = mInfo.Settings
 
 			if mod.Active(HalfTime | Daycore) {
-				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(newSpeedSettings(0.75, mod.Active(Daycore)), mInfo.Settings)
+				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(NewSpeedSettings(0.75, mod.Active(Daycore)), mInfo.Settings)
 			} else if mod.Active(DoubleTime | Nightcore) {
-				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(newSpeedSettings(1.5, mod.Active(Nightcore)), mInfo.Settings)
+				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(NewSpeedSettings(1.5, mod.Active(Nightcore)), mInfo.Settings)
 			}
 
 			if mod.Active(Easy) {
-				diff.modSettings[rfType[EasySettings]()] = parseConfig(newEasySettings(), mInfo.Settings)
+				diff.modSettings[rfType[EasySettings]()] = parseConfig(NewEasySettings(), mInfo.Settings)
 			}
 
 			if mod.Active(Flashlight) {
-				diff.modSettings[rfType[FlashlightSettings]()] = parseConfig(newFlashlightSettings(), mInfo.Settings)
+				diff.modSettings[rfType[FlashlightSettings]()] = parseConfig(NewFlashlightSettings(), mInfo.Settings)
 			}
 
 			if mod.Active(DifficultyAdjust) {
-				diff.modSettings[rfType[DiffAdjustSettings]()] = parseConfig(newDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD), mInfo.Settings)
+				diff.modSettings[rfType[DiffAdjustSettings]()] = parseConfig(NewDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD), mInfo.Settings)
 			}
 
 			if mod.Active(Classic) {
-				diff.modSettings[rfType[ClassicSettings]()] = parseConfig(newClassicSettings(), mInfo.Settings)
+				diff.modSettings[rfType[ClassicSettings]()] = parseConfig(NewClassicSettings(), mInfo.Settings)
 			}
 		}
 	}
@@ -284,7 +310,7 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 		mult := 1.12
 
 		if fl, ok := GetModConfig[FlashlightSettings](diff); ok {
-			if fl != newFlashlightSettings() {
+			if fl != NewFlashlightSettings() {
 				mult = 1
 			}
 		}

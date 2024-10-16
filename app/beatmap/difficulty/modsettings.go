@@ -5,7 +5,7 @@ type SpeedSettings struct {
 	AdjustPitch bool    `json:"adjust_pitch"`
 }
 
-func newSpeedSettings(rate float64, adjustPitch bool) SpeedSettings {
+func NewSpeedSettings(rate float64, adjustPitch bool) SpeedSettings {
 	return SpeedSettings{
 		SpeedChange: rate,
 		AdjustPitch: adjustPitch,
@@ -20,7 +20,7 @@ type ClassicSettings struct {
 	ClassicHealth        bool `json:"classic_health"`
 }
 
-func newClassicSettings() ClassicSettings {
+func NewClassicSettings() ClassicSettings {
 	return ClassicSettings{
 		NoSliderHeadAccuracy: true,
 		ClassicNoteLock:      true,
@@ -34,7 +34,7 @@ type EasySettings struct {
 	Retries int `json:"retries"`
 }
 
-func newEasySettings() EasySettings {
+func NewEasySettings() EasySettings {
 	return EasySettings{
 		Retries: 2,
 	}
@@ -46,7 +46,7 @@ type FlashlightSettings struct {
 	ComboBasedSize bool    `json:"combo_based_size"`
 }
 
-func newFlashlightSettings() FlashlightSettings {
+func NewFlashlightSettings() FlashlightSettings {
 	return FlashlightSettings{
 		FollowDelay:    120,
 		SizeMultiplier: 1,
@@ -61,7 +61,7 @@ type DiffAdjustSettings struct {
 	OverallDifficulty float64 `json:"overall_difficulty"`
 }
 
-func newDiffAdjustSettings(ar, cs, hp, od float64) DiffAdjustSettings {
+func NewDiffAdjustSettings(ar, cs, hp, od float64) DiffAdjustSettings {
 	return DiffAdjustSettings{
 		ApproachRate:      ar,
 		CircleSize:        cs,
