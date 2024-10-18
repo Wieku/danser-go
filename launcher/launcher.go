@@ -834,8 +834,18 @@ func (l *launcher) drawControls() {
 		imgui.TableNextColumn()
 
 		if l.bld.currentMode != Replay {
+			nilMap := l.bld.currentMap == nil
+
+			if nilMap {
+				imgui.BeginDisabled()
+			}
+
 			if imgui.ButtonV("Mods", vec2(-1, imgui.TextLineHeight()*2)) {
 				l.openPopup(newModPopup(l.bld))
+			}
+
+			if nilMap {
+				imgui.EndDisabled()
 			}
 		}
 
