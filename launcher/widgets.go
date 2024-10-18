@@ -15,6 +15,7 @@ type popupType int
 
 const (
 	popDynamic = popupType(iota)
+	popCustom  = popupType(iota)
 	popMedium
 	popBig
 )
@@ -36,6 +37,8 @@ type popup struct {
 	popType popupType
 
 	opened bool
+
+	width, height float32
 
 	closeListener  func()
 	listenerCalled bool
@@ -59,6 +62,8 @@ func newPopupF(name string, popType popupType, draw func()) *popup {
 func (p *popup) draw() {
 	p.opened = true
 	switch p.popType {
+	case popCustom:
+		popupInter(p.name, &p.opened, vec2(p.width, p.height), p.internalDraw)
 	case popDynamic, popMedium:
 		popupSmall(p.name, &p.opened, p.popType == popDynamic, p.internalDraw)
 	case popBig:

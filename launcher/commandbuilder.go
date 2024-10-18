@@ -55,7 +55,7 @@ type builder struct {
 	mirrors int32
 	tags    int32
 
-	mods difficulty.Modifier
+	diff *difficulty.Difficulty
 
 	config string
 
@@ -81,6 +81,7 @@ func newBuilder() *builder {
 		mirrors: 1,
 		tags:    1,
 		config:  "default",
+		diff:    difficulty.NewDifficulty(1, 1, 1, 1),
 	}
 }
 
@@ -164,8 +165,8 @@ func (b *builder) getArguments() (args []string) {
 			mods = "AT"
 		}
 
-		if b.mods != difficulty.None {
-			mods += b.mods.String()
+		if b.diff.Mods != difficulty.None {
+			mods += b.diff.Mods.String()
 		}
 
 		if mods != "" {
