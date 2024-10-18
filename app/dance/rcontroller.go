@@ -332,7 +332,7 @@ func loadFrames(subController *subControl, frames []*rplpa.ReplayData) {
 
 	meanFrameTime = subController.diff.GetModifiedTime(meanFrameTime)
 
-	log.Println(fmt.Sprintf("\tMean cv frametime: %.2fms", meanFrameTime))
+	log.Println(fmt.Sprintf("\tMedian cv frametime: %.2fms", meanFrameTime))
 
 	if meanFrameTime <= 13 && !subController.diff.CheckModActive(difficulty.Autoplay|difficulty.Relax|difficulty.Relax2) {
 		log.Println("\tWARNING!!! THIS REPLAY WAS PROBABLY TIMEWARPED!!!")
