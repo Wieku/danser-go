@@ -1,5 +1,22 @@
 package difficulty
 
+import "reflect"
+
+var modConfigs map[Modifier]reflect.Type
+
+func init() {
+	modConfigs = map[Modifier]reflect.Type{
+		HalfTime:         rfType[SpeedSettings](),
+		Daycore:          rfType[SpeedSettings](),
+		DoubleTime:       rfType[SpeedSettings](),
+		Nightcore:        rfType[SpeedSettings](),
+		Easy:             rfType[EasySettings](),
+		Classic:          rfType[ClassicSettings](),
+		Flashlight:       rfType[FlashlightSettings](),
+		DifficultyAdjust: rfType[DiffAdjustSettings](),
+	}
+}
+
 type SpeedSettings struct {
 	SpeedChange float64 `json:"speed_change"`
 	AdjustPitch bool    `json:"adjust_pitch"`

@@ -175,6 +175,10 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 		diff.modSettings[rfType[FlashlightSettings]()] = NewFlashlightSettings()
 	}
 
+	if mods.Active(DifficultyAdjust) {
+		diff.modSettings[rfType[ClassicSettings]()] = NewDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD)
+	}
+
 	if mods.Active(Classic) {
 		diff.modSettings[rfType[ClassicSettings]()] = NewClassicSettings()
 	}
@@ -183,6 +187,18 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 }
 
 func (diff *Difficulty) RemoveMod(mods Modifier) {
+	if mods.Active(Nightcore) {
+		mods |= DoubleTime
+	}
+
+	if mods.Active(Daycore) {
+		mods |= HalfTime
+	}
+
+	if mods.Active(Perfect) {
+		mods |= SuddenDeath
+	}
+
 	diff.Mods &= ^mods
 
 	if mods.Active(HalfTime | Daycore | DoubleTime | Nightcore) {
@@ -197,6 +213,10 @@ func (diff *Difficulty) RemoveMod(mods Modifier) {
 		delete(diff.modSettings, rfType[FlashlightSettings]())
 	}
 
+	if mods.Active(DifficultyAdjust) {
+		delete(diff.modSettings, rfType[DiffAdjustSettings]())
+	}
+
 	if mods.Active(Classic) {
 		delete(diff.modSettings, rfType[ClassicSettings]())
 	}
@@ -207,8 +227,6 @@ func (diff *Difficulty) RemoveMod(mods Modifier) {
 func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 	clear(diff.modSettings)
 
-	mMap := make(map[Modifier]map[string]interface{})
-
 	mComp := None
 
 	for _, mInfo := range mods {
@@ -216,7 +234,6 @@ func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 
 		if mod != None {
 			mComp |= mod
-			mMap[mod] = mInfo.Settings
 
 			if mod.Active(HalfTime | Daycore) {
 				diff.modSettings[rfType[SpeedSettings]()] = parseConfig(NewSpeedSettings(0.75, mod.Active(Daycore)), mInfo.Settings)
@@ -257,6 +274,43 @@ func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 	diff.Mods = mComp
 
 	diff.calculate()
+}
+
+func (diff *Difficulty) ExportMods2() (mods []rplpa.ModInfo) {
+	mComp := diff.Mods
+
+	if mComp.Active(Nightcore) {
+		mComp &= ^DoubleTime
+	}
+
+	if mComp.Active(Daycore) {
+		mComp &= ^HalfTime
+	}
+
+	if mComp.Active(Perfect) {
+		mComp &= ^SuddenDeath
+	}
+
+	for i := 0; i <= 62; i++ {
+		mTest := Modifier(1 << i)
+
+		if mComp.Active(mTest) {
+			var modSettings map[string]any
+
+			if cType, ok := modConfigs[mTest]; ok {
+				if cConf, exists := diff.modSettings[cType]; exists {
+					modSettings = exportConfig(cConf)
+				}
+			}
+
+			mods = append(mods, rplpa.ModInfo{
+				Acronym:  modsString[i],
+				Settings: modSettings,
+			})
+		}
+	}
+
+	return
 }
 
 func (diff *Difficulty) CheckModActive(mods Modifier) bool {
@@ -476,11 +530,6 @@ func (diff *Difficulty) SetARCustom(ar float64) {
 	diff.ar = ar
 	diff.calculate()
 }
-
-//func (diff *Difficulty) SetCustomSpeed(speed float64) {
-//	diff.CustomSpeed = speed
-//	diff.calculate()
-//}
 
 func (diff *Difficulty) Clone() *Difficulty {
 	diff2 := *diff
