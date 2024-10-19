@@ -84,16 +84,117 @@ func (m *modPopup) drawModMenu() {
 	})
 
 	if m.firstCalc {
-		cStyle := imgui.CurrentContext().Style()
-		bSize := (&cStyle).WindowBorderSize()
+		m.height = contentRegionMin().Y + imgui.CurrentStyle().WindowBorderSize()
 
-		m.height = contentRegionMin().Y + bSize
 		imgui.CurrentContext().CurrentWindow().SetSize(vec2(0, m.height))
 
 		m.firstCalc = false
 	}
 
 	imgui.PopStyleVar()
+
+	m.drawModSettings()
+}
+
+func (m *modPopup) drawModSettings() {
+	m.tryDrawSpeedSettings()
+	m.tryDrawEasySettings()
+	m.tryDrawClassicSettings()
+	m.tryDrawFlashlightSettings()
+	m.tryDrawDASettings()
+}
+
+func (m *modPopup) tryDrawSpeedSettings() {
+	speedAdjust := difficulty.DoubleTime | difficulty.Nightcore | difficulty.HalfTime | difficulty.Daycore
+
+	m.drawSettingsBase(speedAdjust, func() {
+		var minV, maxV = 1.01, 2.0
+		if m.bld.diff.CheckModActive(difficulty.HalfTime | difficulty.Daycore) {
+			minV, maxV = 0.5, 0.99
+		}
+
+		conf, _ := difficulty.GetModConfig[difficulty.SpeedSettings](m.bld.diff)
+
+		sliderFloatResetStep2("Speed", m.baseDiff.GetSpeed(), &conf.SpeedChange, minV, maxV, 0.01, "%.2f")
+
+		if !m.bld.diff.CheckModActive(difficulty.Daycore | difficulty.Nightcore) {
+			checkboxOption("Adjust pitch", &conf.AdjustPitch)
+		} else {
+			conf.AdjustPitch = true
+		}
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawEasySettings() {
+	m.drawSettingsBase(difficulty.Easy, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.EasySettings](m.bld.diff)
+
+		sliderIntReset2("Extra lives", 2, &conf.Retries, 0, 10, "%d")
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawClassicSettings() {
+	m.drawSettingsBase(difficulty.Classic, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.ClassicSettings](m.bld.diff)
+
+		checkboxOption("No slider head accuracy requirement", &conf.NoSliderHeadAccuracy)
+		checkboxOption("Apply classic note lock", &conf.ClassicNoteLock)
+		checkboxOption("Always play a slider's tail sample", &conf.AlwaysPlayTailSample)
+		checkboxOption("Classic health", &conf.ClassicHealth)
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawFlashlightSettings() {
+	m.drawSettingsBase(difficulty.Flashlight, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.FlashlightSettings](m.bld.diff)
+
+		sliderFloatResetStep2("Follow delay", 120, &conf.FollowDelay, 120, 1200, 120, "%.f")
+		sliderFloatResetStep2("Size multiplier", 1, &conf.SizeMultiplier, 0.5, 2, 0.1, "%.1f")
+		checkboxOption("Combo based size", &conf.ComboBasedSize)
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawDASettings() {
+	m.drawSettingsBase(difficulty.DifficultyAdjust, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.DiffAdjustSettings](m.bld.diff)
+
+		arCSMin, vMax := 0.0, 10.0
+		if conf.ExtendedValues {
+			arCSMin, vMax = -10, 12
+		}
+
+		sliderFloatResetStep2("Approach Rate (AR)", m.bld.currentMap.Diff.GetBaseAR(), &conf.ApproachRate, arCSMin, vMax, 0.1, "%.1f")
+		sliderFloatResetStep2("Overall Difficulty (OD)", m.bld.currentMap.Diff.GetBaseOD(), &conf.OverallDifficulty, 0, vMax, 0.1, "%.1f")
+		sliderFloatResetStep2("Circle Size (CS)", m.bld.currentMap.Diff.GetBaseCS(), &conf.CircleSize, arCSMin, vMax, 0.1, "%.1f")
+		sliderFloatResetStep2("Health Drain (HP)", m.bld.currentMap.Diff.GetBaseHP(), &conf.DrainRate, 0, vMax, 0.1, "%.1f")
+
+		checkboxOption("Extended values", &conf.ExtendedValues)
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) drawSettingsBase(mask difficulty.Modifier, draw func()) {
+	if m.bld.diff.CheckModActive(mask) {
+		imgui.PushFont(Font32)
+		imgui.TextUnformatted((m.bld.diff.Mods & mask).StringFull()[0] + ":")
+		imgui.PopFont()
+		imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Add(vec2(contentRegionMax().X, 0)), packColor(*imgui.StyleColorVec4(imgui.ColSeparator)))
+
+		imgui.Spacing()
+
+		draw()
+
+		imgui.Spacing()
+	}
 }
 
 func (m *modPopup) drawRow(name string, work func()) {

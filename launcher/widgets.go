@@ -160,6 +160,18 @@ func sliderFloatResetStep(label string, val *floatParam, min, max, step float32,
 	})
 }
 
+func sliderFloatResetStep2[T constraints.Float](label string, ogValue T, value *T, min, max, step T, format string) {
+	val := floatParam{
+		ogValue: float32(ogValue),
+		value:   float32(*value),
+		changed: mutils.Abs(ogValue-*value) > 0.001,
+	}
+
+	sliderFloatResetStep(label, &val, float32(min), float32(max), float32(step), format)
+
+	*value = T(val.value)
+}
+
 func sliderFloatResetBase(label string, val *floatParam, min, max float32, sliderFunc func() bool) {
 	if val.value < min || val.value > max {
 		val.value = mutils.Clamp(val.value, min, max)
@@ -183,6 +195,18 @@ func paramChanged(val *floatParam) {
 		val.changed = false
 		val.value = val.ogValue
 	}
+}
+
+func sliderIntReset2[T constraints.Integer](label string, ogValue T, value *T, min, max T, format string) {
+	val := intParam{
+		ogValue: int32(ogValue),
+		value:   int32(*value),
+		changed: ogValue != *value,
+	}
+
+	sliderIntReset(label, &val, int32(min), int32(max), format)
+
+	*value = T(val.value)
 }
 
 func sliderIntReset(label string, val *intParam, min, max int32, format string) {
