@@ -120,6 +120,11 @@ func (b *builder) setMap(bMap *beatmap.BeatMap) {
 
 	b.offset.value = int32(bMap.LocalOffset)
 	b.offset.changed = b.offset.value != 0
+
+	b.diff.SetAR(bMap.Diff.GetBaseAR())
+	b.diff.SetOD(bMap.Diff.GetBaseOD())
+	b.diff.SetCS(bMap.Diff.GetBaseCS())
+	b.diff.SetHP(bMap.Diff.GetBaseHP())
 }
 
 func (b *builder) numKnockoutReplays() (ret int) {
@@ -146,7 +151,7 @@ func (b *builder) getArguments() (args []string) {
 	} else {
 		args = append(args, "-md5", b.currentMap.MD5)
 
-		mods := ""
+		diffClone := b.diff.Clone()
 
 		if b.currentMode == Play {
 			args = append(args, "-play")
@@ -162,15 +167,13 @@ func (b *builder) getArguments() (args []string) {
 			data, _ := json.Marshal(list)
 			args = append(args, "-knockout2", string(data))
 		} else if b.currentMode == DanserReplay {
-			mods = "AT"
+			diffClone.AddMod(difficulty.Autoplay)
 		}
 
-		if b.diff.Mods != difficulty.None {
-			mods += b.diff.Mods.String()
-		}
+		if diffClone.Mods != difficulty.None {
+			bt, _ := json.Marshal(diffClone.ExportMods2())
 
-		if mods != "" {
-			args = append(args, "-mods", mods)
+			args = append(args, "-mods2", string(bt))
 		}
 	}
 
