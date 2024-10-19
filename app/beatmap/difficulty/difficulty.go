@@ -176,7 +176,7 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 	}
 
 	if mods.Active(DifficultyAdjust) {
-		diff.modSettings[rfType[ClassicSettings]()] = NewDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD)
+		diff.modSettings[rfType[DiffAdjustSettings]()] = NewDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD)
 	}
 
 	if mods.Active(Classic) {
@@ -325,6 +325,10 @@ func (diff *Difficulty) GetSpeed() float64 {
 	return diff.Speed
 }
 
+func (diff *Difficulty) AdjustsPitch() bool {
+	return diff.adjustPitch
+}
+
 func (diff *Difficulty) GetPitch() float64 {
 	if diff.adjustPitch && diff.Speed != 1 {
 		return diff.Speed
@@ -378,19 +382,19 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 func (diff *Difficulty) GetModStringFull() []string {
 	mods := (diff.Mods & (^DifficultyAdjust)).StringFull()
 
-	if ar := diff.GetAR(); ar != diff.GetBaseAR() {
+	if ar := diff.GetAR(); math.Abs(ar-diff.GetBaseAR()) > 0.001 {
 		mods = append(mods, fmt.Sprintf("DA:AR%s", mutils.FormatWOZeros(ar, 2)))
 	}
 
-	if od := diff.GetOD(); od != diff.GetBaseOD() {
+	if od := diff.GetOD(); math.Abs(od-diff.GetBaseOD()) > 0.001 {
 		mods = append(mods, fmt.Sprintf("DA:OD%s", mutils.FormatWOZeros(od, 2)))
 	}
 
-	if cs := diff.GetCS(); cs != diff.GetBaseCS() {
+	if cs := diff.GetCS(); math.Abs(cs-diff.GetBaseCS()) > 0.001 {
 		mods = append(mods, fmt.Sprintf("DA:CS%s", mutils.FormatWOZeros(cs, 2)))
 	}
 
-	if hp := diff.GetHP(); hp != diff.GetBaseHP() {
+	if hp := diff.GetHP(); math.Abs(hp-diff.GetBaseHP()) > 0.001 {
 		mods = append(mods, fmt.Sprintf("DA:HP%s", mutils.FormatWOZeros(hp, 2)))
 	}
 
