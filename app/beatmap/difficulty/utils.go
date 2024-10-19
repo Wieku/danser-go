@@ -12,7 +12,7 @@ func parseConfig[T any](base T, config map[string]any) T {
 
 	for i := range rType.NumField() {
 		sField := rType.Field(i)
-		if fTag, ok := sField.Tag.Lookup("json"); ok {
+		if fTag, ok := sField.Tag.Lookup("json"); ok && fTag != "-" {
 			if v, ok2 := config[fTag]; ok2 {
 				rVal.Field(i).Set(reflect.ValueOf(v))
 			}
@@ -25,12 +25,12 @@ func parseConfig[T any](base T, config map[string]any) T {
 func exportConfig[T any](toExp T) map[string]any {
 	expMap := make(map[string]any)
 
-	rVal := reflect.ValueOf(&toExp).Elem()
+	rVal := reflect.ValueOf(toExp)
 	rType := reflect.TypeOf(toExp)
 
 	for i := range rType.NumField() {
 		sField := rType.Field(i)
-		if fTag, ok := sField.Tag.Lookup("json"); ok {
+		if fTag, ok := sField.Tag.Lookup("json"); ok && fTag != "-" {
 			expMap[fTag] = rVal.Field(i).Interface()
 		}
 	}

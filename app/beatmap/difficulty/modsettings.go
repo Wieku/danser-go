@@ -76,6 +76,7 @@ type DiffAdjustSettings struct {
 	CircleSize        float64 `json:"circle_size"`
 	DrainRate         float64 `json:"drain_rate"`
 	OverallDifficulty float64 `json:"overall_difficulty"`
+	ExtendedValues    bool    `json:"-"`
 }
 
 func NewDiffAdjustSettings(ar, cs, hp, od float64) DiffAdjustSettings {
