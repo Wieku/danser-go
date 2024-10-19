@@ -393,3 +393,31 @@ func inputText(label string, text *string) bool {
 func inputTextV(label string, text *string, flags imgui.InputTextFlags, cb imgui.InputTextCallback) bool {
 	return imgui.InputTextWithHint(label, "", text, flags, cb)
 }
+
+func checkboxOption(text string, value *bool) {
+	if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
+		imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+		imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
+
+		imgui.TableNextColumn()
+
+		pos1 := imgui.CursorPos()
+
+		imgui.AlignTextToFramePadding()
+
+		imgui.PushTextWrapPos()
+
+		imgui.TextUnformatted(text)
+
+		imgui.PopTextWrapPos()
+
+		pos2 := imgui.CursorPos()
+
+		imgui.TableNextColumn()
+
+		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (pos1.Y+pos2.Y-imgui.FrameHeightWithSpacing())/2))
+		imgui.Checkbox("##ck"+text, value)
+
+		imgui.EndTable()
+	}
+}
