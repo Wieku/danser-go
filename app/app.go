@@ -128,6 +128,7 @@ func run() {
 		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods")
+		mods2 := flag.String("mods2", "", "Specify beatmap/play mods, lazer style")
 
 		replay := flag.String("replay", "", replayDesc)
 		flag.StringVar(replay, "r", "", replayDesc+shorthand)
@@ -147,6 +148,10 @@ func run() {
 		flag.BoolVar(&preciseProgress, "preciseprogress", false, "Show rendering progress in 1% increments")
 
 		flag.Parse()
+
+		if *mods != "" && *mods2 != "" {
+			panic("You can't specify classic and lazer mods at the same time")
+		}
 
 		var knockoutReplays []string
 
@@ -223,6 +228,20 @@ func run() {
 
 			*knockout = true
 			settings.REPLAY = *replay
+		} else if *mods2 != "" {
+			var mods2I []rplpa.ModInfo
+
+			if err := json.Unmarshal([]byte(*mods2), &mods2I); err != nil {
+				panic(fmt.Sprintf("Failed to parse replay list: %s", err))
+			}
+
+			modsNew = mods2I
+		}
+
+		if modsNew != nil {
+			tempDiff := difficulty2.NewDifficulty(1, 1, 1, 1)
+			tempDiff.SetMods2(modsNew)
+			modsParsed = tempDiff.Mods
 		}
 
 		if !modsParsed.Compatible() {
@@ -478,7 +497,9 @@ func run() {
 		audio.LoadSamples()
 
 		if settings.PLAY || !settings.KNOCKOUT || allowDA {
-			modsNew = modsParsed.ConvertToModInfoList()
+			if modsNew == nil {
+				modsNew = modsParsed.ConvertToModInfoList()
+			}
 
 			daMap := make(map[string]any)
 
@@ -498,7 +519,8 @@ func run() {
 				daMap["drain_rate"] = *hp
 			}
 
-			if len(daMap) > 0 {
+			// Add DA only if DA hasn't been added already
+			if len(daMap) > 0 && !slices.ContainsFunc(modsNew, func(info rplpa.ModInfo) bool { return info.Acronym == "DA" }) {
 				modsNew = append(modsNew, rplpa.ModInfo{
 					Acronym:  "DA",
 					Settings: daMap,
@@ -506,23 +528,26 @@ func run() {
 			}
 
 			if math.Abs(settings.SPEED-1) > 0.001 {
-				found := false
+				skipMods := []string{"HT", "DC", "DT", "NC"}
 
-				if settings.SPEED >= 1 {
-					if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
-						return info.Acronym == "DT" || info.Acronym == "NC"
-					}); i != -1 {
-						found = true
-						modsNew[i].Settings["speed_change"] = settings.SPEED
-					}
-				} else {
-					if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
-						return info.Acronym == "HT" || info.Acronym == "DC"
-					}); i != -1 {
-						found = true
-						modsNew[i].Settings["speed_change"] = settings.SPEED
-					}
-				}
+				found := slices.ContainsFunc(modsNew, func(info rplpa.ModInfo) bool { return slices.Contains(skipMods, info.Acronym) })
+
+				// Don't modify current mods
+				//if settings.SPEED >= 1 {
+				//	if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
+				//		return info.Acronym == "DT" || info.Acronym == "NC"
+				//	}); i != -1 {
+				//		found = true
+				//		modsNew[i].Settings["speed_change"] = settings.SPEED
+				//	}
+				//} else {
+				//	if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
+				//		return info.Acronym == "HT" || info.Acronym == "DC"
+				//	}); i != -1 {
+				//		found = true
+				//		modsNew[i].Settings["speed_change"] = settings.SPEED
+				//	}
+				//}
 
 				if !found {
 					modsNew = slices.DeleteFunc(modsNew, func(info rplpa.ModInfo) bool {
