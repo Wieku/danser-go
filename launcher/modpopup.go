@@ -13,7 +13,8 @@ type modPopup struct {
 
 	baseDiff *difficulty.Difficulty
 
-	firstCalc bool
+	firstCalc     bool
+	settingsDrawn bool
 }
 
 func newModPopup(bld *builder) *modPopup {
@@ -24,6 +25,8 @@ func newModPopup(bld *builder) *modPopup {
 		firstCalc: true,
 	}
 
+	mP.addFlags = imgui.WindowFlagsAlwaysVerticalScrollbar
+
 	mP.baseDiff.SetMods(bld.diff.Mods)
 
 	mP.internalDraw = mP.drawModMenu
@@ -32,6 +35,7 @@ func newModPopup(bld *builder) *modPopup {
 }
 
 func (m *modPopup) drawModMenu() {
+	handleDragScroll()
 	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(10, 10))
 
 	if imgui.BeginTable("mfa", 6) {
@@ -97,6 +101,7 @@ func (m *modPopup) drawModMenu() {
 }
 
 func (m *modPopup) drawModSettings() {
+	m.settingsDrawn = false
 	m.tryDrawSpeedSettings()
 	m.tryDrawEasySettings()
 	m.tryDrawClassicSettings()
@@ -184,6 +189,10 @@ func (m *modPopup) tryDrawDASettings() {
 
 func (m *modPopup) drawSettingsBase(mask difficulty.Modifier, draw func()) {
 	if m.bld.diff.CheckModActive(mask) {
+		if m.settingsDrawn {
+			imgui.Dummy(vec2(0, 10))
+		}
+
 		imgui.PushFont(Font32)
 		imgui.TextUnformatted((m.bld.diff.Mods & mask).StringFull()[0] + ":")
 		imgui.PopFont()
@@ -193,7 +202,7 @@ func (m *modPopup) drawSettingsBase(mask difficulty.Modifier, draw func()) {
 
 		draw()
 
-		imgui.Spacing()
+		m.settingsDrawn = true
 	}
 }
 
