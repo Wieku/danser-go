@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"slices"
+	"strings"
 )
 
 const (
@@ -382,20 +383,26 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 func (diff *Difficulty) GetModStringFull() []string {
 	mods := (diff.Mods & (^DifficultyAdjust)).StringFull()
 
+	var daBase []string
+
 	if ar := diff.GetAR(); math.Abs(ar-diff.GetBaseAR()) > 0.001 {
-		mods = append(mods, fmt.Sprintf("DA:AR%s", mutils.FormatWOZeros(ar, 2)))
+		daBase = append(daBase, fmt.Sprintf("AR %s", mutils.FormatWOZeros(ar, 2)))
 	}
 
 	if od := diff.GetOD(); math.Abs(od-diff.GetBaseOD()) > 0.001 {
-		mods = append(mods, fmt.Sprintf("DA:OD%s", mutils.FormatWOZeros(od, 2)))
+		daBase = append(daBase, fmt.Sprintf("OD %s", mutils.FormatWOZeros(od, 2)))
 	}
 
 	if cs := diff.GetCS(); math.Abs(cs-diff.GetBaseCS()) > 0.001 {
-		mods = append(mods, fmt.Sprintf("DA:CS%s", mutils.FormatWOZeros(cs, 2)))
+		daBase = append(daBase, fmt.Sprintf("CS %s", mutils.FormatWOZeros(cs, 2)))
 	}
 
 	if hp := diff.GetHP(); math.Abs(hp-diff.GetBaseHP()) > 0.001 {
-		mods = append(mods, fmt.Sprintf("DA:HP%s", mutils.FormatWOZeros(hp, 2)))
+		daBase = append(daBase, fmt.Sprintf("HP %s", mutils.FormatWOZeros(hp, 2)))
+	}
+
+	if len(daBase) > 0 {
+		mods = slices.Insert(mods, 0, "DifficultyAdjust:"+strings.Join(daBase, ":"))
 	}
 
 	if cSpeed := diff.Speed; math.Abs(cSpeed-diff.BaseModSpeed) > 0.001 {
@@ -405,21 +412,13 @@ func (diff *Difficulty) GetModStringFull() []string {
 		for _, ms := range toCheck {
 			if i := slices.Index(mods, ms.StringFull()[0]); i != -1 {
 				anyFound = true
-				mods[i] = fmt.Sprintf("DA:%s:%sx", ms.String(), mutils.FormatWOZeros(cSpeed, 2))
+				mods[i] += ":" + mutils.FormatWOZeros(cSpeed, 2) + "x"
 			}
 		}
 
 		if !anyFound {
-			mods = append(mods, fmt.Sprintf("DA:%sx", mutils.FormatWOZeros(cSpeed, 2)))
+			mods = append(mods, fmt.Sprintf("DifficultyAdjust:%sx", mutils.FormatWOZeros(cSpeed, 2)))
 		}
-	}
-
-	if i := slices.Index(mods, "Lazer"); i != -1 {
-		mods[i] = "LZ"
-	}
-
-	if i := slices.Index(mods, "Classic"); i != -1 {
-		mods[i] = "CL"
 	}
 
 	return mods

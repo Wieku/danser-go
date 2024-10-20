@@ -659,13 +659,15 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	overlay.drawKeys(batch, alpha)
 
 	batch.ResetTransform()
-	batch.SetColor(1, 1, 1, alpha)
+	batch.SetColor(1, 1, 1, alpha*settings.Gameplay.Mods.Opacity)
 
 	if settings.Gameplay.Mods.Show {
 		batch.SetTranslation(vector.NewVec2d(settings.Gameplay.Mods.XOffset, settings.Gameplay.Mods.YOffset))
 		overlay.mods.Draw(overlay.lastTime, batch)
 		batch.ResetTransform()
 	}
+
+	batch.SetColor(1, 1, 1, alpha)
 
 	if !overlay.failed && settings.Gameplay.ShowWarningArrows {
 		overlay.arrows.Draw(overlay.audioTime, batch)
@@ -913,51 +915,61 @@ func (overlay *ScoreOverlay) initMods() {
 	mods := overlay.ruleset.GetBeatMap().Diff.GetModStringFull()
 
 	scale := settings.Gameplay.Mods.Scale
-	alpha := settings.Gameplay.Mods.Opacity
 
-	initMod := func(mod sprite.ISprite, i int) {
+	addMod := func(mod sprite.ISprite, i int, targetAlpha float64) {
 		mod.SetAlpha(0)
 		mod.ShowForever(true)
 
 		timeStart := overlay.audioTime + float64(i)*500
 
-		mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, 1.0*alpha))
+		mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, timeStart, timeStart+400, 0.0, targetAlpha))
 		mod.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, timeStart, timeStart+400, 2*scale, 1.0*scale))
 
 		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.HideInReplays {
-			startT := overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime()
-			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, 1.0*alpha, 0))
-		}
-	}
-
-	offset := -48.0 * scale
-	for i, s := range mods {
-		var mod sprite.ISprite
-
-		if strings.HasPrefix(s, "DA:") || len(s) == 2 {
-			bgTex := skin.GetTexture("selection-mod-base")
-
-			modBg := sprite.NewSpriteSingle(bgTex, float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
-
-			initMod(modBg, i)
-
-			overlay.mods.Add(modBg)
-
-			mod = sprite.NewTextSpriteSize(strings.TrimPrefix(s, "DA:"), overlay.keyFont, float64(bgTex.Height)/4, float64(i)+0.5, vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
-		} else {
-			modSpriteName := "selection-mod-" + strings.ToLower(s)
-			mod = sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(overlay.ScaledWidth+offset, 150), vector.Centre)
-		}
-
-		initMod(mod, i)
-
-		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.FoldInReplays {
-			offset -= (16 + settings.Gameplay.Mods.AdditionalSpacing) * scale
-		} else {
-			offset -= (80 + settings.Gameplay.Mods.AdditionalSpacing) * scale
+			startT := max(overlay.ruleset.GetBeatMap().HitObjects[0].GetStartTime(), overlay.audioTime+float64(len(mods))*500)
+			mod.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startT, startT+5000, targetAlpha, 0))
 		}
 
 		overlay.mods.Add(mod)
+	}
+
+	offsetX := overlay.ScaledWidth - 48.0*scale
+	offsetY := 150.0
+
+	for i, s := range mods {
+		var mod sprite.ISprite
+
+		nameSplit := strings.Split(s, ":")
+
+		modSpriteName := "selection-mod-" + strings.ToLower(nameSplit[0])
+
+		mod = sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(offsetX, offsetY), vector.Centre)
+		addMod(mod, i, 1)
+
+		for subI := 1; subI < len(nameSplit); subI++ {
+			vOffset := 36.0
+			fntSize := 16.0
+
+			offY2 := offsetY + (vOffset+fntSize/2)*scale + float64(subI-1)*fntSize*1.3*scale
+
+			pixelRg := graphics.Pixel.GetRegion()
+			pixelRg.Height = float32(fntSize) * 1.1
+			pixelRg.Width = float32(overlay.keyFont.GetWidth(fntSize, nameSplit[subI])) * 1.1
+
+			confBg := sprite.NewSpriteSingle(&pixelRg, float64(i)-0.25, vector.NewVec2d(offsetX, offY2), vector.Centre)
+			confBg.SetColor(color2.NewL(0))
+
+			addMod(confBg, i, 0.5)
+
+			modFg := sprite.NewTextSpriteSize(nameSplit[subI], overlay.keyFont, fntSize, float64(i)+0.5, vector.NewVec2d(offsetX, offY2), vector.Centre)
+			addMod(modFg, i, 1)
+		}
+
+		if (overlay.cursor.IsPlayer && !overlay.cursor.IsAutoplay) || settings.Gameplay.Mods.FoldInReplays {
+			offsetX -= (16 + settings.Gameplay.Mods.AdditionalSpacing) * scale
+		} else {
+			offsetX -= (80 + settings.Gameplay.Mods.AdditionalSpacing) * scale
+		}
 	}
 }
 
