@@ -1471,7 +1471,7 @@ func (l *launcher) drawConfigPanel() {
 	}
 
 	if l.newCloneOpened {
-		popupSmall("Clone/new box", &l.newCloneOpened, true, func() {
+		popupSmall("Clone/new box", &l.newCloneOpened, true, 0, 0, func() {
 			if imgui.BeginTable("rfa", 1) {
 				imgui.TableNextColumn()
 

@@ -40,6 +40,8 @@ type popup struct {
 
 	width, height float32
 
+	ignoreFlags, addFlags imgui.WindowFlags
+
 	closeListener  func()
 	listenerCalled bool
 }
@@ -63,11 +65,11 @@ func (p *popup) draw() {
 	p.opened = true
 	switch p.popType {
 	case popCustom:
-		popupInter(p.name, &p.opened, vec2(p.width, p.height), p.internalDraw)
+		popupInter(p.name, &p.opened, vec2(p.width, p.height), p.ignoreFlags, p.addFlags, p.internalDraw)
 	case popDynamic, popMedium:
-		popupSmall(p.name, &p.opened, p.popType == popDynamic, p.internalDraw)
+		popupSmall(p.name, &p.opened, p.popType == popDynamic, p.ignoreFlags, p.addFlags, p.internalDraw)
 	case popBig:
-		popupWide(p.name, &p.opened, p.internalDraw)
+		popupWide(p.name, &p.opened, p.ignoreFlags, p.addFlags, p.internalDraw)
 	}
 }
 
@@ -98,7 +100,7 @@ func resetPopupHierarchyInfo() {
 	openedAbove = false
 }
 
-func popupSmall(name string, opened *bool, dynamicSize bool, content func()) {
+func popupSmall(name string, opened *bool, dynamicSize bool, ignoreFlags, additionalFlags imgui.WindowFlags, content func()) {
 	width := float32(settings.Graphics.WindowWidth)
 
 	sX := width / 2
@@ -106,15 +108,15 @@ func popupSmall(name string, opened *bool, dynamicSize bool, content func()) {
 		sX = 0
 	}
 
-	popupInter(name, opened, imgui.Vec2{X: sX, Y: 0}, content)
+	popupInter(name, opened, imgui.Vec2{X: sX, Y: 0}, ignoreFlags, additionalFlags, content)
 }
 
-func popupWide(name string, opened *bool, content func()) {
+func popupWide(name string, opened *bool, ignoreFlags, additionalFlags imgui.WindowFlags, content func()) {
 	wSize := imgui.WindowSize()
-	popupInter(name, opened, imgui.Vec2{X: wSize.X * 0.9, Y: wSize.Y * 0.9}, content)
+	popupInter(name, opened, imgui.Vec2{X: wSize.X * 0.9, Y: wSize.Y * 0.9}, ignoreFlags, additionalFlags, content)
 }
 
-func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
+func popupInter(name string, opened *bool, size imgui.Vec2, ignoreFlags, additionalFlags imgui.WindowFlags, content func()) {
 	wSizeX, wSizeY := float32(settings.Graphics.WindowWidth), float32(settings.Graphics.WindowHeight)
 
 	if *opened {
@@ -132,7 +134,9 @@ func popupInter(name string, opened *bool, size imgui.Vec2, content func()) {
 			Y: 0.5,
 		})
 
-		if imgui.BeginPopupModalV("##"+name, opened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
+		baseFlags := imgui.WindowFlagsNoCollapse | imgui.WindowFlagsNoResize | imgui.WindowFlagsAlwaysAutoResize | imgui.WindowFlagsNoMove | imgui.WindowFlagsNoTitleBar
+
+		if imgui.BeginPopupModalV("##"+name, opened, baseFlags&(^ignoreFlags)|additionalFlags) {
 			content()
 
 			hovered := imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) || openedAbove

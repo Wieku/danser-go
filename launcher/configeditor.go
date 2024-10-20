@@ -955,7 +955,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 			if editor.keyChange == jsonPath {
 				imgui.SetNextWindowFocus()
 
-				popupSmall("KeyChange"+jsonPath, &editor.keyChangeOpened, true, func() {
+				popupSmall("KeyChange"+jsonPath, &editor.keyChangeOpened, true, 0, 0, func() {
 					width := imgui.CalcTextSizeV("Click outside this box to cancel", false, 0).X + 30
 
 					centerTable("KeyChange1"+jsonPath, width, func() {
