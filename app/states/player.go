@@ -706,9 +706,19 @@ func (player *Player) updateMain(delta float64) {
 		player.failed = true
 	}
 
-	player.musicPlayer.SetTempo(mutils.Lerp(1, settings.SPEED*player.bMap.Diff.GetSpeed(), player.speedGlider.GetValue()))
-	player.musicPlayer.SetPitch(mutils.Lerp(1, settings.PITCH*player.bMap.Diff.GetPitch(), player.pitchGlider.GetValue()))
-	player.musicPlayer.SetRelativeFrequency(player.frequencyGlider.GetValue())
+	speedAdjust := mutils.Lerp(1, settings.SPEED, player.speedGlider.GetValue())
+	freqAdjust := 1.0
+
+	speedVal := mutils.Lerp(1, player.bMap.Diff.GetSpeed(), player.speedGlider.GetValue())
+	if player.bMap.Diff.AdjustsPitch() {
+		freqAdjust = speedVal
+	} else {
+		speedAdjust *= speedVal
+	}
+
+	player.musicPlayer.SetTempo(speedAdjust)
+	player.musicPlayer.SetPitch(mutils.Lerp(1, settings.PITCH, player.pitchGlider.GetValue()))
+	player.musicPlayer.SetRelativeFrequency(freqAdjust * player.frequencyGlider.GetValue())
 
 	if player.progressMsF >= player.startPointE {
 		if _, ok := player.controller.(*dance.GenericController); ok {
