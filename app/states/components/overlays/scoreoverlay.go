@@ -937,14 +937,16 @@ func (overlay *ScoreOverlay) initMods() {
 	offsetY := 150.0
 
 	for i, s := range mods {
-		var mod sprite.ISprite
-
 		nameSplit := strings.Split(s, ":")
+
+		if !settings.Gameplay.Mods.ShowLazerMod && nameSplit[0] == "Lazer" {
+			continue
+		}
 
 		modSpriteName := "selection-mod-" + strings.ToLower(nameSplit[0])
 
-		mod = sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(offsetX, offsetY), vector.Centre)
-		addMod(mod, i, 1)
+		modIcon := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), float64(i), vector.NewVec2d(offsetX, offsetY), vector.Centre)
+		addMod(modIcon, i, 1)
 
 		for subI := 1; subI < len(nameSplit); subI++ {
 			vOffset := 36.0

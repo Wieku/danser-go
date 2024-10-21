@@ -205,6 +205,7 @@ func initGameplay() *gameplay {
 			},
 			HideInReplays:     false,
 			FoldInReplays:     false,
+			ShowLazerMod:      true,
 			AdditionalSpacing: 0,
 		},
 		Boundaries: &boundaries{
@@ -380,6 +381,7 @@ type mods struct {
 	*hudElementOffset
 	HideInReplays     bool
 	FoldInReplays     bool
+	ShowLazerMod      bool
 	AdditionalSpacing float64 `string:"true" min:"-1366" max:"1366"`
 }
 
