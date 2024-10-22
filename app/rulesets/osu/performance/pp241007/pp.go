@@ -25,7 +25,11 @@ type PPv2 struct {
 
 	effectiveMissCount           float64
 	totalHits                    int
+	totalImperfectHits           int
+	countSliderEndsDropped       int
 	amountHitObjectsWithAccuracy int
+
+	usingClassicSliderAccuracy bool
 }
 
 func NewPPCalculator() api.IPerformanceCalculator {
@@ -43,17 +47,52 @@ func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *dif
 		score.CountGreat = attribs.ObjectCount - score.CountOk - score.CountMeh - score.CountMiss
 	}
 
+	pp.usingClassicSliderAccuracy = !diff.CheckModActive(difficulty.Lazer)
+
+	if diff.CheckModActive(difficulty.Lazer) && diff.CheckModActive(difficulty.Classic) {
+		if conf, ok := difficulty.GetModConfig[difficulty.ClassicSettings](diff); ok {
+			pp.usingClassicSliderAccuracy = conf.NoSliderHeadAccuracy
+		}
+	}
+
 	pp.attribs = attribs
 	pp.diff = diff
 	pp.score = score
 
+	pp.countSliderEndsDropped = attribs.Sliders - score.SliderEnd
 	pp.totalHits = score.CountGreat + score.CountOk + score.CountMeh + score.CountMiss
-	pp.effectiveMissCount = pp.calculateEffectiveMissCount()
+	pp.totalImperfectHits = score.CountOk + score.CountMeh + score.CountMiss
+	pp.effectiveMissCount = 0
 
-	if diff.CheckModActive(difficulty.ScoreV2 | difficulty.Lazer) {
-		pp.amountHitObjectsWithAccuracy = attribs.Circles + attribs.Sliders
-	} else {
-		pp.amountHitObjectsWithAccuracy = attribs.Circles
+	if pp.attribs.Sliders > 0 {
+		if pp.usingClassicSliderAccuracy {
+			// Consider that full combo is maximum combo minus dropped slider tails since they don't contribute to combo but also don't break it
+			// In classic scores we can't know the amount of dropped sliders so we estimate to 10% of all sliders on the map
+			fullComboThreshold := float64(pp.attribs.MaxCombo) - 0.1*float64(pp.attribs.Sliders)
+
+			if float64(pp.score.MaxCombo) < fullComboThreshold {
+				pp.effectiveMissCount = fullComboThreshold / max(1.0, float64(pp.score.MaxCombo))
+			}
+
+			pp.effectiveMissCount = min(pp.effectiveMissCount, float64(pp.totalImperfectHits))
+		} else {
+			fullComboThreshold := float64(pp.attribs.MaxCombo - pp.countSliderEndsDropped)
+
+			if float64(pp.score.MaxCombo) < fullComboThreshold {
+				pp.effectiveMissCount = fullComboThreshold / max(1.0, float64(pp.score.MaxCombo))
+			}
+
+			// Combine regular misses with tick misses since tick misses break combo as well
+			pp.effectiveMissCount = min(pp.effectiveMissCount, float64(pp.score.SliderBreaks+pp.score.CountMiss))
+		}
+
+	}
+
+	pp.effectiveMissCount = max(float64(pp.score.CountMiss), pp.effectiveMissCount)
+
+	pp.amountHitObjectsWithAccuracy = attribs.Circles
+	if !pp.usingClassicSliderAccuracy {
+		pp.amountHitObjectsWithAccuracy += attribs.Sliders
 	}
 
 	// total pp
@@ -135,8 +174,18 @@ func (pp *PPv2) computeAimValue() float64 {
 	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 {
-		estimateSliderEndsDropped := mutils.Clamp(float64(min(pp.score.CountOk+pp.score.CountMeh+pp.score.CountMiss, pp.attribs.MaxCombo-pp.score.MaxCombo)), 0, estimateDifficultSliders)
-		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
+		estimateImproperlyFollowedDifficultSliders := 0.0
+
+		if pp.usingClassicSliderAccuracy {
+			// When the score is considered classic (regardless if it was made on old client or not) we consider all missing combo to be dropped difficult sliders
+			estimateImproperlyFollowedDifficultSliders = mutils.Clamp(min(float64(pp.totalImperfectHits), float64(pp.attribs.MaxCombo-pp.score.MaxCombo)), 0, estimateDifficultSliders)
+		} else {
+			// We add tick misses here since they too mean that the player didn't follow the slider properly
+			// We however aren't adding misses here because missing slider heads has a harsh penalty by itself and doesn't mean that the rest of the slider wasn't followed properly
+			estimateImproperlyFollowedDifficultSliders = min(float64(pp.countSliderEndsDropped+pp.score.SliderBreaks), estimateDifficultSliders)
+		}
+
+		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateImproperlyFollowedDifficultSliders/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}
 
@@ -262,23 +311,6 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	flashlightValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
 
 	return flashlightValue
-}
-
-func (pp *PPv2) calculateEffectiveMissCount() float64 {
-	// guess the number of misses + slider breaks from combo
-	comboBasedMissCount := 0.0
-
-	if pp.attribs.Sliders > 0 {
-		fullComboThreshold := float64(pp.attribs.MaxCombo) - 0.1*float64(pp.attribs.Sliders)
-		if float64(pp.score.MaxCombo) < fullComboThreshold {
-			comboBasedMissCount = fullComboThreshold / max(1.0, float64(pp.score.MaxCombo))
-		}
-	}
-
-	// Clamp miss count to maximum amount of possible breaks
-	comboBasedMissCount = min(comboBasedMissCount, float64(pp.score.CountOk+pp.score.CountMeh+pp.score.CountMiss))
-
-	return max(float64(pp.score.CountMiss), comboBasedMissCount)
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
