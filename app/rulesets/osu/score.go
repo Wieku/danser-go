@@ -28,9 +28,23 @@ type Score struct {
 	Count50      uint
 	CountMiss    uint
 	CountSB      uint
+	SliderEnd    uint
 	PP           api.PPv2Results
 
 	scoredObjects uint
+}
+
+func (s *Score) ToPerfScore() api.PerfScore {
+	return api.PerfScore{
+		MaxCombo:     int(s.Combo),
+		CountGreat:   int(s.Count300),
+		CountOk:      int(s.Count100),
+		CountMeh:     int(s.Count50),
+		CountMiss:    int(s.CountMiss),
+		SliderBreaks: int(s.CountSB),
+		SliderEnd:    int(s.SliderEnd),
+		Accuracy:     s.Accuracy,
+	}
 }
 
 func (s *Score) AddResult(result JudgementResult) {
@@ -49,6 +63,10 @@ func (s *Score) AddResult(result JudgementResult) {
 		}
 
 		s.scoredObjects++
+	}
+
+	if (result.HitResult & SliderEnd) > 0 {
+		s.SliderEnd++
 	}
 
 	if result.ComboResult == Reset && result.HitResult != Miss { // skips missed slider "ends" as they don't reset combo

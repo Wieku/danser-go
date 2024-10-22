@@ -160,7 +160,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 			log.Println("\tTotal:", star.Total)
 
 			pp := performance.CreatePPCalculator()
-			ppResults := pp.Calculate(star, -1, -1, 0, 0, 0, 1, diff)
+			ppResults := pp.Calculate(star, api.PerfScore{CountGreat: -1, MaxCombo: -1, Accuracy: 1}, diff)
 
 			log.Println("SS PP:")
 			log.Println("\tAim:  ", ppResults.Aim)
@@ -471,7 +471,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 
 	subSet.score.PerfectCombo = uint(diff.MaxCombo) == subSet.score.Combo
 
-	subSet.score.PP = subSet.ppv2.Calculate(diff, int(subSet.score.Combo), int(subSet.score.Count300), int(subSet.score.Count100), int(subSet.score.Count50), int(subSet.score.CountMiss), subSet.score.Accuracy, subSet.player.diff)
+	subSet.score.PP = subSet.ppv2.Calculate(diff, subSet.score.ToPerfScore(), subSet.player.diff)
 
 	switch judgementResult.HitResult {
 	case Hit100:

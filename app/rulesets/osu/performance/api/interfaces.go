@@ -18,5 +18,5 @@ type IDifficultyCalculator interface {
 }
 
 type IPerformanceCalculator interface {
-	Calculate(attribs Attributes, combo, n300, n100, n50, nmiss int, acc float64, diff *difficulty.Difficulty) PPv2Results
+	Calculate(attribs Attributes, score PerfScore, diff *difficulty.Difficulty) PPv2Results
 }
