@@ -3,33 +3,26 @@ package dance
 import (
 	"fmt"
 	"github.com/karrick/godirwalk"
+	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/schedulers"
 	"github.com/wieku/danser-go/app/dance/spinners"
-	"github.com/wieku/danser-go/framework/env"
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"github.com/wieku/rplpa"
-	"math"
-	"sort"
-	"time"
-
-	//"github.com/thehowl/go-osuapi"
-	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
-
+	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"io/ioutil"
+	"github.com/wieku/rplpa"
 	"log"
-	//"net/http"
-	//"net/url"
+	"math"
 	"os"
 	"path/filepath"
-	//"strconv"
+	"sort"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -91,7 +84,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 	if settings.REPLAY != "" {
 		log.Println("Loading: ", settings.REPLAY)
 
-		data, err := ioutil.ReadFile(settings.REPLAY)
+		data, err := os.ReadFile(settings.REPLAY)
 		if err != nil {
 			panic(err)
 		}
@@ -191,7 +184,7 @@ func organizeReplays() {
 			if strings.HasSuffix(de.Name(), ".osr") {
 				log.Println("Checking: ", osPathname)
 
-				data, err := ioutil.ReadFile(osPathname)
+				data, err := os.ReadFile(osPathname)
 				if err != nil {
 					log.Println("Error reading file: ", err)
 					log.Println("Skipping... ")
@@ -232,7 +225,7 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 	tryAddReplay := func(path string, modExclude bool) {
 		log.Println("Loading: ", path)
 
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			panic(err)
 		}
