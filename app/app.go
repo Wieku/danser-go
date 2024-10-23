@@ -226,9 +226,19 @@ func run() {
 				}
 			}
 
+			if rp.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
+				modsParsed |= difficulty2.Lazer
+
+				if modsNew != nil {
+					modsNew = append(modsNew, rplpa.ModInfo{Acronym: "LZ"})
+				}
+			}
+
 			*knockout = true
 			settings.REPLAY = *replay
-		} else if *mods2 != "" {
+		}
+
+		if *mods2 != "" {
 			var mods2I []rplpa.ModInfo
 
 			if err := json.Unmarshal([]byte(*mods2), &mods2I); err != nil {

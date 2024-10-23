@@ -51,6 +51,8 @@ type subControl struct {
 	relaxController *input.RelaxInputProcessor
 	mouseController schedulers.Scheduler
 	diff            *difficulty.Difficulty
+
+	modifiedMods bool
 }
 
 func NewSubControl() *subControl {
@@ -134,6 +136,20 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			control.diff.SetMods(difficulty.Modifier(replay.Mods))
 		}
 
+		if replay.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
+			control.diff.Mods |= difficulty.Lazer
+		}
+
+		if !localReplay && control.diff.CheckModActive(difficulty.DifficultyAdjust) {
+			log.Println("Difficulty Adjust is not supported for knockouts at the moment, skipping...")
+			continue
+		}
+
+		if localReplay && !beatMap.Diff.Equals(control.diff) {
+			control.diff.SetMods2(beatMap.Diff.ExportMods2())
+			control.modifiedMods = true
+		}
+
 		log.Println("\tMods:", control.diff.GetModString())
 
 		loadFrames(control, replay.ReplayData)
@@ -143,10 +159,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
-		if replay.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
-			control.diff.Mods |= difficulty.Lazer
-		}
-
 		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.diff.Mods & displayedMods).String(), control.diff.Mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
 
@@ -154,7 +166,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		log.Println("\tReplay loaded!")
 	}
 
-	if !localReplay && (settings.Knockout.AddDanser || len(candidates) == 0) {
+	if !localReplay && (settings.Knockout.AddDanser || len(controller.controllers) == 0) {
 		control := NewSubControl()
 		control.diff = beatMap.Diff.Clone()
 
@@ -361,6 +373,7 @@ func (controller *ReplayController) InitCursors() {
 			cursor.ScoreID = controller.replays[i].scoreID
 			cursor.ScoreTime = controller.replays[i].ScoreTime
 			cursor.OldSpinnerScoring = controller.controllers[i].oldSpinners
+			cursor.ModifiedMods = controller.controllers[i].modifiedMods
 			cursor.IsReplay = true
 
 			cursor.SetPos(vector.NewVec2d(c.frames[0].MouseX, c.frames[0].MouseY).Copy32())

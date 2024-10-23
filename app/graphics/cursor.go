@@ -75,6 +75,8 @@ type Cursor struct {
 
 	OldSpinnerScoring bool
 
+	ModifiedMods bool
+
 	LastFrameTime    int64 //
 	CurrentFrameTime int64 //
 	RawPosition      vector.Vector2f

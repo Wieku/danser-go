@@ -677,6 +677,20 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 	overlay.strainGraph.Draw(batch, alpha)
 	overlay.hitCounts.Draw(batch, alpha)
 
+	if overlay.cursor.ModifiedMods {
+		batch.ResetTransform()
+
+		hudFont := font.GetFont("HUDFont")
+
+		batch.SetColor(0, 0, 0, alpha*0.8)
+
+		hudFont.DrawOrigin(batch, overlay.ScaledWidth*0.5+1, overlay.ScaledHeight*0.1+1, vector.Centre, 25, false, "MODIFIED REPLAY")
+
+		batch.SetColor(1, 1, 1, alpha)
+
+		hudFont.DrawOrigin(batch, overlay.ScaledWidth*0.5, overlay.ScaledHeight*0.1, vector.Centre, 25, false, "MODIFIED REPLAY")
+	}
+
 	if overlay.panel != nil {
 		settings.Playfield.Bloom.Enabled = false
 		overlay.panel.Draw(batch, overlay.resultsFade.GetValue())
