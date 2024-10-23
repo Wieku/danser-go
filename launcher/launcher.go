@@ -718,7 +718,7 @@ func (l *launcher) drawMain() {
 
 					if m != Replay {
 						l.bld.replayPath = ""
-						l.bld.currentReplay = nil
+						l.bld.removeReplay()
 					}
 
 					if m != Knockout {
@@ -833,19 +833,20 @@ func (l *launcher) drawControls() {
 
 		imgui.TableNextColumn()
 
-		if l.bld.currentMode != Replay {
-			nilMap := l.bld.currentMap == nil
+		nilMap := l.bld.currentMap == nil
 
-			if nilMap {
-				imgui.BeginDisabled()
-			}
+		if nilMap {
+			imgui.BeginDisabled()
+		}
 
-			if imgui.ButtonV("Mods", vec2(-1, imgui.TextLineHeight()*2)) {
-				l.openPopup(newModPopup(l.bld))
-			}
+		if imgui.ButtonV("Mods", vec2(-1, imgui.TextLineHeight()*2)) {
+			l.openPopup(newModPopup(l.bld))
+		}
 
-			if nilMap {
-				imgui.EndDisabled()
+		if nilMap {
+			imgui.EndDisabled()
+			if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
+				imgui.SetTooltip("Select map/replay first")
 			}
 		}
 
@@ -1009,8 +1010,8 @@ func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
 			l.bld.currentMode = Replay
 			l.bld.replayPath = replay.path
-			l.bld.currentReplay = replay.parsedReplay
 			l.bld.setMap(bMap)
+			l.bld.setReplay(replay.parsedReplay)
 
 			return
 		}

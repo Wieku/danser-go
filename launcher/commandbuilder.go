@@ -55,7 +55,9 @@ type builder struct {
 	mirrors int32
 	tags    int32
 
-	diff *difficulty.Difficulty
+	sourceDiff *difficulty.Difficulty
+	baseDiff   *difficulty.Difficulty
+	diff       *difficulty.Difficulty
 
 	config string
 
@@ -78,10 +80,12 @@ func newBuilder() *builder {
 			ogValue: 0,
 			value:   0,
 		},
-		mirrors: 1,
-		tags:    1,
-		config:  "default",
-		diff:    difficulty.NewDifficulty(1, 1, 1, 1),
+		mirrors:    1,
+		tags:       1,
+		config:     "default",
+		sourceDiff: difficulty.NewDifficulty(1, 1, 1, 1),
+		baseDiff:   difficulty.NewDifficulty(1, 1, 1, 1),
+		diff:       difficulty.NewDifficulty(1, 1, 1, 1),
 	}
 }
 
@@ -121,10 +125,54 @@ func (b *builder) setMap(bMap *beatmap.BeatMap) {
 	b.offset.value = int32(bMap.LocalOffset)
 	b.offset.changed = b.offset.value != 0
 
+	b.sourceDiff.SetAR(bMap.Diff.GetBaseAR())
+	b.sourceDiff.SetOD(bMap.Diff.GetBaseOD())
+	b.sourceDiff.SetCS(bMap.Diff.GetBaseCS())
+	b.sourceDiff.SetHP(bMap.Diff.GetBaseHP())
+	b.sourceDiff.SetMods(difficulty.None)
+
 	b.diff.SetAR(bMap.Diff.GetBaseAR())
 	b.diff.SetOD(bMap.Diff.GetBaseOD())
 	b.diff.SetCS(bMap.Diff.GetBaseCS())
 	b.diff.SetHP(bMap.Diff.GetBaseHP())
+
+	b.baseDiff.SetAR(bMap.Diff.GetBaseAR())
+	b.baseDiff.SetOD(bMap.Diff.GetBaseOD())
+	b.baseDiff.SetCS(bMap.Diff.GetBaseCS())
+	b.baseDiff.SetHP(bMap.Diff.GetBaseHP())
+	b.baseDiff.SetMods(b.diff.Mods)
+}
+
+func (b *builder) setReplay(replay *rplpa.Replay) {
+	b.currentReplay = replay
+	b.diff.RemoveMod(^difficulty.None)
+
+	if replay.ScoreInfo != nil && replay.ScoreInfo.Mods != nil && len(replay.ScoreInfo.Mods) > 0 {
+		modsNew := make([]rplpa.ModInfo, 0, len(replay.ScoreInfo.Mods))
+
+		for _, mod := range replay.ScoreInfo.Mods {
+			modsNew = append(modsNew, *mod)
+		}
+
+		b.sourceDiff.SetMods2(modsNew)
+		b.baseDiff.SetMods(b.sourceDiff.Mods)
+		b.diff.SetMods2(modsNew)
+	} else {
+		b.sourceDiff.SetMods(difficulty.Modifier(replay.Mods))
+		b.baseDiff.SetMods(difficulty.Modifier(replay.Mods))
+		b.diff.SetMods(difficulty.Modifier(replay.Mods))
+	}
+
+	if replay.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
+		b.sourceDiff.AddMod(difficulty.Lazer)
+		b.baseDiff.AddMod(difficulty.Lazer)
+		b.diff.AddMod(difficulty.Lazer)
+	}
+}
+
+func (b *builder) removeReplay() {
+	b.currentReplay = nil
+	b.sourceDiff.RemoveMod(^difficulty.None)
 }
 
 func (b *builder) numKnockoutReplays() (ret int) {
@@ -148,6 +196,12 @@ func (b *builder) getArguments() (args []string) {
 
 	if b.currentMode == Replay {
 		args = append(args, "-replay", b.replayPath)
+
+		if !b.sourceDiff.Equals(b.diff) {
+			bt, _ := json.Marshal(b.diff.ExportMods2())
+
+			args = append(args, "-mods2", string(bt))
+		}
 	} else {
 		args = append(args, "-md5", b.currentMap.MD5)
 

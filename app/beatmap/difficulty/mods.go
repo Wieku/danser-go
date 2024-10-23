@@ -239,6 +239,10 @@ func (mods Modifier) StringFull() (s []string) {
 		mods &= ^SuddenDeath
 	}
 
+	return mods.StringFull2()
+}
+
+func (mods Modifier) StringFull2() (s []string) {
 	for i := 0; i < len(modsString); i++ {
 		activated := mods&1 == 1
 		if activated {

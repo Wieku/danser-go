@@ -544,6 +544,45 @@ func (diff *Difficulty) Clone() *Difficulty {
 	return &diff2
 }
 
+func (diff *Difficulty) Equals(diff2 *Difficulty) bool {
+	if diff.Mods != diff2.Mods {
+		return false
+	}
+
+	for k, v := range diff.modSettings {
+		v2, ok := diff2.modSettings[k]
+
+		if !ok {
+			return false
+		}
+
+		rVal1 := reflect.ValueOf(&v).Elem().Elem()
+		rVal2 := reflect.ValueOf(&v2).Elem().Elem()
+		rType := reflect.TypeOf(v)
+
+		for i := range rType.NumField() {
+			sField := rType.Field(i)
+
+			check := true
+
+			switch sField.Type.Kind() {
+			case reflect.Float64:
+				check = math.Abs(rVal1.Field(i).Float()-rVal2.Field(i).Float()) < 0.00001
+			case reflect.Int:
+				check = rVal1.Field(i).Int() == rVal2.Field(i).Int()
+			case reflect.Bool:
+				check = rVal1.Field(i).Bool() == rVal2.Field(i).Bool()
+			}
+
+			if !check {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 func DifficultyRate(diff, min, mid, max float64) float64 {
 	diff = float64(float32(diff))
 

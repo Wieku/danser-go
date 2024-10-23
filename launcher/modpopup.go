@@ -11,8 +11,6 @@ type modPopup struct {
 
 	bld *builder
 
-	baseDiff *difficulty.Difficulty
-
 	firstCalc     bool
 	settingsDrawn bool
 }
@@ -21,13 +19,10 @@ func newModPopup(bld *builder) *modPopup {
 	mP := &modPopup{
 		popup:     newPopup("Mods", popCustom),
 		bld:       bld,
-		baseDiff:  bld.currentMap.Diff.Clone(),
 		firstCalc: true,
 	}
 
 	mP.addFlags = imgui.WindowFlagsAlwaysVerticalScrollbar
-
-	mP.baseDiff.SetMods(bld.diff.Mods)
 
 	mP.internalDraw = mP.drawModMenu
 
@@ -82,8 +77,8 @@ func (m *modPopup) drawModMenu() {
 
 	centerTable("modresettable", -1, func() {
 		if imgui.Button("Reset##Mods") {
-			m.bld.diff.RemoveMod(^difficulty.None)
-			m.baseDiff.RemoveMod(^difficulty.None)
+			m.bld.diff = m.bld.sourceDiff.Clone()
+			m.bld.baseDiff.SetMods(m.bld.sourceDiff.Mods)
 		}
 	})
 
@@ -248,13 +243,13 @@ func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret
 
 	if ret = imgui.ButtonV(mod.String(), imgui.Vec2{X: fH * 2, Y: fH * 2}); ret {
 		if s {
-			m.baseDiff.RemoveMod(mod)
+			m.bld.baseDiff.RemoveMod(mod)
 			m.bld.diff.RemoveMod(mod)
 		} else {
-			m.baseDiff.RemoveMod(incompat)
+			m.bld.baseDiff.RemoveMod(incompat)
 			m.bld.diff.RemoveMod(incompat)
 
-			m.baseDiff.AddMod(mod)
+			m.bld.baseDiff.AddMod(mod)
 			m.bld.diff.AddMod(mod)
 		}
 	}
@@ -272,20 +267,27 @@ func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret
 	if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) || imgui.IsItemActive() {
 		imgui.BeginTooltip()
 
-		ttip := mod.StringFull()[0]
-		if ttip == "Relax2" {
-			ttip = "AutoPilot"
+		modTip := mod.StringFull()[0]
+		if modTip == "Relax2" {
+			modTip = "AutoPilot"
 		}
+
+		imgui.TextUnformatted(modTip)
+
+		imgui.PushFont(Font20)
+		imgui.PushTextWrapPosV(300)
 
 		if !req {
-			if ttip != "" {
-				ttip += "\n"
-			}
-
-			ttip += "Mods required: " + strings.Join(required.StringFull(), ", ")
+			imgui.TextUnformatted("Mods required: " + strings.Join(required.StringFull(), ", "))
 		}
 
-		imgui.SetTooltip(ttip)
+		if incompat != difficulty.None {
+			imgui.TextUnformatted("Incompatible with: " + strings.Join(incompat.StringFull2(), ", "))
+		}
+
+		imgui.PopTextWrapPos()
+		imgui.PopFont()
+
 		imgui.EndTooltip()
 	}
 
@@ -295,7 +297,7 @@ func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret
 func (m *modPopup) modCheckboxMulti(mod1, mod2, incompat, required difficulty.Modifier) {
 	if !m.bld.diff.CheckModActive(mod2) {
 		if m.modCheckbox(mod1, incompat, required) && !m.bld.diff.CheckModActive(mod1) {
-			m.baseDiff.AddMod(mod2)
+			m.bld.baseDiff.AddMod(mod2)
 			m.bld.diff.AddMod(mod2)
 		}
 	} else {
