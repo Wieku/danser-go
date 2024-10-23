@@ -18,7 +18,7 @@ func drawSpeedMenu(bld *builder) {
 }
 
 func drawParamMenu(bld *builder) {
-	var arCSMin, vMax float32 = 0, 10
+	var arCSMin, vMax = 0.0, 10.0
 
 	if bld.extendedValues {
 		arCSMin = -10

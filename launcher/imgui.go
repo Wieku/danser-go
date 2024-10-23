@@ -640,3 +640,21 @@ func isAnyScrollbarActive() bool {
 
 	return activeWindow.CData != nil && imgui.InternalActiveID() == imgui.InternalWindowScrollbarID(activeWindow, imgui.AxisY)
 }
+
+func sliderDoubleV(label string, v *float64, vMin float64, vMax float64, format string, flags imgui.SliderFlags) bool {
+	pinner := &runtime.Pinner{}
+
+	ptrV := unsafe.Pointer(v)
+	ptrMin := unsafe.Pointer(&vMin)
+	ptrMax := unsafe.Pointer(&vMax)
+
+	pinner.Pin(ptrV)
+	pinner.Pin(ptrMin)
+	pinner.Pin(ptrMax)
+
+	defer func() {
+		pinner.Unpin()
+	}()
+
+	return imgui.SliderScalarV(label, imgui.DataTypeDouble, uintptr(ptrV), uintptr(ptrMin), uintptr(ptrMax), format, flags)
+}

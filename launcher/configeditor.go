@@ -1289,12 +1289,12 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 		if d.Tag.Get("string") != "" {
 			editor.buildFloatBox(jsonPath, f, d)
 		} else {
-			min := parseFloatOr(d.Tag.Get("min"), 0)
-			max := parseFloatOr(d.Tag.Get("max"), 1)
-			scale := parseFloatOr(d.Tag.Get("scale"), 1)
+			minV := parseFloat64Or(d.Tag.Get("min"), 0)
+			maxV := parseFloat64Or(d.Tag.Get("max"), 1)
+			scale := parseFloat64Or(d.Tag.Get("scale"), 1)
 			format := cmp.Or(d.Tag.Get("format"), "%.2f")
 
-			base := float32(f.Float())
+			base := f.Float()
 			valSpeed := base * scale
 
 			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(0, -3))
@@ -1302,7 +1302,7 @@ func (editor *settingsEditor) buildFloat(jsonPath string, f reflect.Value, d ref
 			cSpacing := imgui.CurrentStyle().ItemSpacing()
 			imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, vec2(cSpacing.X, cSpacing.Y-3))
 
-			if sliderFloatSlide(jsonPath, &valSpeed, min*scale, max*scale, "##"+format, imgui.SliderFlagsNoInput) {
+			if sliderFloatSlide(jsonPath, &valSpeed, minV*scale, maxV*scale, "##"+format, imgui.SliderFlagsNoInput) {
 				f.SetFloat(float64(valSpeed / scale))
 			}
 
@@ -1476,6 +1476,14 @@ func parseIntOr(value string, alt int) int {
 func parseFloatOr(value string, alt float32) float32 {
 	if i, err := strconv.ParseFloat(value, 32); err == nil {
 		return float32(i)
+	}
+
+	return alt
+}
+
+func parseFloat64Or(value string, alt float64) float64 {
+	if i, err := strconv.ParseFloat(value, 64); err == nil {
+		return i
 	}
 
 	return alt

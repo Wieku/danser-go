@@ -120,7 +120,7 @@ func (m *modPopup) tryDrawSpeedSettings() {
 
 		conf, _ := difficulty.GetModConfig[difficulty.SpeedSettings](m.bld.diff)
 
-		sliderFloatResetStep2("Speed", m.baseDiff.GetSpeed(), &conf.SpeedChange, minV, maxV, 0.01, "%.2f")
+		sliderFloatReset2("Speed", m.bld.baseDiff.GetSpeed(), &conf.SpeedChange, minV, maxV, "%.2f")
 
 		if !m.bld.diff.CheckModActive(difficulty.Daycore | difficulty.Nightcore) {
 			checkboxOption("Adjust pitch", &conf.AdjustPitch)
@@ -160,7 +160,7 @@ func (m *modPopup) tryDrawFlashlightSettings() {
 		conf, _ := difficulty.GetModConfig[difficulty.FlashlightSettings](m.bld.diff)
 
 		sliderFloatResetStep2("Follow delay", 120, &conf.FollowDelay, 120, 1200, 120, "%.f")
-		sliderFloatResetStep2("Size multiplier", 1, &conf.SizeMultiplier, 0.5, 2, 0.1, "%.1f")
+		sliderFloatReset2("Size multiplier", 1, &conf.SizeMultiplier, 0.5, 2, "%.1f")
 		checkboxOption("Combo based size", &conf.ComboBasedSize)
 
 		difficulty.SetModConfig(m.bld.diff, conf)
@@ -176,10 +176,10 @@ func (m *modPopup) tryDrawDASettings() {
 			arCSMin, vMax = -10, 12
 		}
 
-		sliderFloatResetStep2("Approach Rate (AR)", m.bld.currentMap.Diff.GetBaseAR(), &conf.ApproachRate, arCSMin, vMax, 0.1, "%.1f")
-		sliderFloatResetStep2("Overall Difficulty (OD)", m.bld.currentMap.Diff.GetBaseOD(), &conf.OverallDifficulty, 0, vMax, 0.1, "%.1f")
-		sliderFloatResetStep2("Circle Size (CS)", m.bld.currentMap.Diff.GetBaseCS(), &conf.CircleSize, arCSMin, vMax, 0.1, "%.1f")
-		sliderFloatResetStep2("Health Drain (HP)", m.bld.currentMap.Diff.GetBaseHP(), &conf.DrainRate, 0, vMax, 0.1, "%.1f")
+		sliderFloatReset2("Approach Rate (AR)", m.bld.currentMap.Diff.GetBaseAR(), &conf.ApproachRate, arCSMin, vMax, "%.1f")
+		sliderFloatReset2("Overall Difficulty (OD)", m.bld.currentMap.Diff.GetBaseOD(), &conf.OverallDifficulty, 0, vMax, "%.1f")
+		sliderFloatReset2("Circle Size (CS)", m.bld.currentMap.Diff.GetBaseCS(), &conf.CircleSize, arCSMin, vMax, "%.1f")
+		sliderFloatReset2("Health Drain (HP)", m.bld.currentMap.Diff.GetBaseHP(), &conf.DrainRate, 0, vMax, "%.1f")
 
 		checkboxOption("Extended values", &conf.ExtendedValues)
 

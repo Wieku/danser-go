@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"golang.org/x/exp/constraints"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -152,13 +152,25 @@ func popupInter(name string, opened *bool, size imgui.Vec2, ignoreFlags, additio
 	}
 }
 
-func sliderFloatReset(label string, val *floatParam, min, max float32, format string) {
+func sliderFloatReset(label string, val *floatParam, min, max float64, format string) {
 	sliderFloatResetBase(label, val, min, max, func() bool {
 		return sliderFloatSlide("##"+label, &val.value, min, max, format, imgui.SliderFlagsNoInput)
 	})
 }
 
-func sliderFloatResetStep(label string, val *floatParam, min, max, step float32, format string) {
+func sliderFloatReset2[T constraints.Float](label string, ogValue T, value *T, min, max T, format string) {
+	val := floatParam{
+		ogValue: float64(ogValue),
+		value:   float64(*value),
+		changed: mutils.Abs(ogValue-*value) > 0.001,
+	}
+
+	sliderFloatReset(label, &val, float64(min), float64(max), format)
+
+	*value = T(val.value)
+}
+
+func sliderFloatResetStep(label string, val *floatParam, min, max, step float64, format string) {
 	sliderFloatResetBase(label, val, min, max, func() bool {
 		return sliderFloatStep("##"+label, &val.value, min, max, step, format)
 	})
@@ -166,17 +178,17 @@ func sliderFloatResetStep(label string, val *floatParam, min, max, step float32,
 
 func sliderFloatResetStep2[T constraints.Float](label string, ogValue T, value *T, min, max, step T, format string) {
 	val := floatParam{
-		ogValue: float32(ogValue),
-		value:   float32(*value),
+		ogValue: float64(ogValue),
+		value:   float64(*value),
 		changed: mutils.Abs(ogValue-*value) > 0.001,
 	}
 
-	sliderFloatResetStep(label, &val, float32(min), float32(max), float32(step), format)
+	sliderFloatResetStep(label, &val, float64(min), float64(max), float64(step), format)
 
 	*value = T(val.value)
 }
 
-func sliderFloatResetBase(label string, val *floatParam, min, max float32, sliderFunc func() bool) {
+func sliderFloatResetBase(label string, val *floatParam, min, max float64, sliderFunc func() bool) {
 	if val.value < min || val.value > max {
 		val.value = mutils.Clamp(val.value, min, max)
 		paramChanged(val)
@@ -193,7 +205,7 @@ func sliderFloatResetBase(label string, val *floatParam, min, max float32, slide
 }
 
 func paramChanged(val *floatParam) {
-	if math32.Abs(val.value-val.ogValue) > 0.001 {
+	if math.Abs(val.value-val.ogValue) > 0.001 {
 		val.changed = true
 	} else {
 		val.changed = false
@@ -268,10 +280,10 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 	imgui.PopFont()
 }
 
-func sliderFloatStep(label string, val *float32, min, max, step float32, format string) bool {
+func sliderFloatStep(label string, val *float64, min, max, step float64, format string) bool {
 	stepNum := int32((max - min) / step)
 
-	v := int32(math32.Round((*val - min) / step))
+	v := int32(math.Round((*val - min) / step))
 
 	cPos := imgui.CursorPos()
 	iW := imgui.CalcItemWidth() + imgui.CurrentStyle().FramePadding().X*2
@@ -280,7 +292,7 @@ func sliderFloatStep(label string, val *float32, min, max, step float32, format 
 
 	cPos2 := imgui.CursorPos()
 
-	*val = (float32(v) * step) + min
+	*val = (float64(v) * step) + min
 
 	tx := fmt.Sprintf(format, *val)
 
@@ -313,8 +325,8 @@ func sliderIntSlide(label string, value *int32, min, max int32, format string, f
 	return
 }
 
-func sliderFloatSlide(label string, value *float32, min, max float32, format string, flags imgui.SliderFlags) (ret bool) {
-	ret = imgui.SliderFloatV(label, value, min, max, format, flags)
+func sliderFloatSlide(label string, value *float64, min, max float64, format string, flags imgui.SliderFlags) (ret bool) {
+	ret = sliderDoubleV(label, value, min, max, format, flags)
 
 	sliderSledThisFrame = sliderSledThisFrame || ret
 
@@ -322,7 +334,7 @@ func sliderFloatSlide(label string, value *float32, min, max float32, format str
 		iDot := strings.Index(format, ".")
 		iF := strings.Index(format, "f")
 		prec, _ := strconv.Atoi(format[iDot+1 : iF])
-		step := math32.Pow(10, -float32(prec))
+		step := math.Pow(10, -float64(prec))
 
 		ret = ret || keySlideFloat(value, min, max, step)
 	}

@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type floatParam param[float32]
+type floatParam param[float64]
 type intParam param[int32]
 
 type param[T constraints.Integer | constraints.Float] struct {
@@ -89,23 +89,23 @@ func (b *builder) setMap(bMap *beatmap.BeatMap) {
 	b.currentMap = bMap
 
 	b.ar = floatParam{
-		ogValue: float32(bMap.Diff.GetAR()),
-		value:   float32(bMap.Diff.GetAR()),
+		ogValue: bMap.Diff.GetAR(),
+		value:   bMap.Diff.GetAR(),
 	}
 
 	b.od = floatParam{
-		ogValue: float32(bMap.Diff.GetOD()),
-		value:   float32(bMap.Diff.GetOD()),
+		ogValue: bMap.Diff.GetOD(),
+		value:   bMap.Diff.GetOD(),
 	}
 
 	b.cs = floatParam{
-		ogValue: float32(bMap.Diff.GetCS()),
-		value:   float32(bMap.Diff.GetCS()),
+		ogValue: bMap.Diff.GetCS(),
+		value:   bMap.Diff.GetCS(),
 	}
 
 	b.hp = floatParam{
-		ogValue: float32(bMap.Diff.GetHP()),
-		value:   float32(bMap.Diff.GetHP()),
+		ogValue: bMap.Diff.GetHP(),
+		value:   bMap.Diff.GetHP(),
 	}
 
 	b.start = intParam{}
