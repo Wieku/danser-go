@@ -36,9 +36,10 @@ func initRecording() *recording {
 			AdditionalOptions: "",
 		},
 		SVTAV1Settings: &svtav1Settings{
-			RateControl:       "cbr",
+			RateControl:       "crf",
 			Bitrate:           "5M",
-			Preset:            "p7",
+			CRF:               20,
+			Preset:            "10",
 			AdditionalOptions: "",
 		},
 		H264NvencSettings: &h264NvencSettings{
@@ -127,7 +128,7 @@ type recording struct {
 	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),libsvtav1|Software AV1,h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),av1_nvenc|NVIDIA NVENC AV1,h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC)" comboSrc:"EncoderOptions" tooltip:"Hardware encoding with AMD GPUs is not supported because software encoding provides better performance and results"`
 	X264Settings        *x264Settings      `json:"libx264" label:"Software x264 (AVC) Settings" showif:"Encoder=libx264"`
 	X265Settings        *x265Settings      `json:"libx265" label:"Software x265 (HEVC) Settings" showif:"Encoder=libx265"`
-	SVTAV1Settings      *svtav1Settings    `json:"svt_av1" label:"Software AV1 Settings" showif:"Encoder=libsvtav1"`
+	SVTAV1Settings      *svtav1Settings    `json:"libsvtav1" label:"Software AV1 Settings" showif:"Encoder=libsvtav1"`
 	H264NvencSettings   *h264NvencSettings `json:"h264_nvenc" label:"NVIDIA NVENC H.264 (AVC) Settings" showif:"Encoder=h264_nvenc"`
 	HEVCNvencSettings   *hevcNvencSettings `json:"hevc_nvenc" label:"NVIDIA NVENC H.265 (HEVC) Settings" showif:"Encoder=hevc_nvenc"`
 	AV1NvencSettings    *av1NvencSettings  `json:"av1_nvenc" label:"NVIDIA NVENC AV1 Settings" showif:"Encoder=av1_nvenc"`
@@ -158,6 +159,8 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 		return g.X264Settings
 	case "libx265":
 		return g.X265Settings
+	case "libsvtav1":
+		return g.SVTAV1Settings
 	case "h264_nvenc":
 		return g.H264NvencSettings
 	case "hevc_nvenc":

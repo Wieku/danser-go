@@ -82,7 +82,7 @@ type svtav1Settings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,crf|Constant Rate Factor (CRF)"`
 	Bitrate           string `showif:"RateControl=vbr,cbr"`
 	CRF               int    `string:"true" min:"0" max:"51" showif:"RateControl=crf"`
-	Preset            string `combo:"ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo"`
+	Preset            string `combo:"0,1,2,3,4,5,6,7,8,9,10,11,12,13"`
 	AdditionalOptions string
 }
 
