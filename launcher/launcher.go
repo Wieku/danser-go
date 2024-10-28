@@ -16,6 +16,7 @@ import (
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/input"
+	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/build"
@@ -420,6 +421,11 @@ func (l *launcher) startGLFW() {
 
 		if launcherConfig.CheckForUpdates {
 			checkForUpdates(false)
+		}
+
+		refreshErr := osuapi.TryRefreshToken()
+		if refreshErr != nil {
+			showMessage(mError, "Failed to refresh token!\nPlease go to Settings->Credentials and click Authorize.\nError: %s", refreshErr.Error())
 		}
 	})
 

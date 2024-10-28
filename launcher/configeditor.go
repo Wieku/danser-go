@@ -6,8 +6,10 @@ import (
 	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sqweek/dialog"
+	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -18,6 +20,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const padY = 30
@@ -413,6 +416,39 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	imgui.Separator()
 
 	editor.traverseChildren(jsonPath, sPath, u, reflect.StructField{})
+
+	if jsonPath == "##Credentials" {
+		centerTable("authbutton", -1, func() {
+			if imgui.Button("Reset Tokens##auth") {
+				settings.Credentails.AccessToken = ""
+				settings.Credentails.RefreshToken = ""
+				settings.Credentails.Expiry = time.Unix(0, 0)
+			}
+
+			imgui.SameLine()
+
+			if settings.Credentails.AuthType == "AuthorizationCode" {
+				if imgui.Button("Copy callback URL##auth") {
+					glfw.GetCurrentContext().SetClipboardString("http://localhost:" + strconv.Itoa(settings.Credentails.CallbackPort))
+				}
+
+				imgui.SameLine()
+			}
+
+			if imgui.Button("Authorize##auth") {
+				osuapi.Authorize(func(result osuapi.AuthResult, message string) {
+					goroutines.RunOS(func() {
+						switch result {
+						case osuapi.AuthError:
+							showMessage(mError, message)
+						default:
+							showMessage(mInfo, message)
+						}
+					})
+				})
+			}
+		})
+	}
 
 	posLocal1 := imgui.CursorPos()
 
