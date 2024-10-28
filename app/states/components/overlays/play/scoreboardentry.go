@@ -2,12 +2,11 @@ package play
 
 import (
 	"fmt"
-	"github.com/thehowl/go-osuapi"
+	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
-	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
@@ -16,9 +15,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strconv"
-	"strings"
 )
 
 type ScoreboardEntry struct {
@@ -178,19 +175,13 @@ func (entry *ScoreboardEntry) loadAvatar(pixmap *texture.Pixmap) {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarID(id int) {
-	url := "https://a.ppy.sh/" + strconv.Itoa(id)
+	entry.LoadAvatarURL("https://a.ppy.sh/" + strconv.Itoa(id))
+}
 
+func (entry *ScoreboardEntry) LoadAvatarURL(url string) {
 	log.Println("Trying to fetch avatar from:", url)
 
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-
-	if err != nil {
-		log.Println("Can't create request")
-		return
-	}
-
-	client := new(http.Client)
-	response, err := client.Do(request)
+	response, err := http.Get(url)
 
 	if err != nil {
 		log.Println(fmt.Sprintf("Failed to create request to: \"%s\": %s", url, err))
@@ -203,7 +194,7 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 		log.Println("a.ppy.sh responded with:", response.StatusCode)
 
 		if response.StatusCode == 404 {
-			log.Println("Avatar for user", id, "not found!")
+			log.Println("Avatar for user not found!")
 		}
 
 		return
@@ -233,24 +224,12 @@ func (entry *ScoreboardEntry) LoadDefaultAvatar() {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {
-	key := strings.TrimSpace(settings.Credentails.ApiV1Key)
-	if key == "" {
-		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "credentials.json")))
-	} else {
-		client := osuapi.NewClient(key)
-		err := client.Test()
+	sUser, err := osuapi.LookupUser(user)
 
-		if err != nil {
-			log.Println("Can't connect to osu!api:", err)
-		} else {
-			sUser, err := client.GetUser(osuapi.GetUserOpts{Username: user})
-			if err != nil {
-				log.Println("Can't find user:", user)
-				log.Println(err)
-			} else {
-				entry.LoadAvatarID(sUser.UserID)
-			}
-		}
+	if err != nil {
+		log.Println("Error connecting to osu!api:", err)
+	} else {
+		entry.LoadAvatarURL(sUser.AvatarURL)
 	}
 }
 

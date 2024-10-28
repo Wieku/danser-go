@@ -29,6 +29,7 @@ import (
 const replaysMaster = "replays"
 
 type RpData struct {
+	RawName   string
 	Name      string
 	Mods      string
 	ModsV     difficulty.Modifier
@@ -159,7 +160,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.newHandling = replay.OsuVersion >= 20190506 // This was when slider scoring was changed, so *I think* replay handling as well: https://osu.ppy.sh/home/changelog/cuttingedge/20190506
 		control.oldSpinners = replay.OsuVersion < 20190510  // This was when spinner scoring was changed: https://osu.ppy.sh/home/changelog/cuttingedge/20190510.2
 
-		controller.replays = append(controller.replays, RpData{replay.Username + string(rune(unicode.MaxRune-i)), (control.diff.Mods & displayedMods).String(), control.diff.Mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
+		controller.replays = append(controller.replays, RpData{replay.Username, replay.Username + string(rune(unicode.MaxRune-i)), (control.diff.Mods & displayedMods).String(), control.diff.Mods, 100, 0, int64(mxCombo), osu.NONE, replay.ScoreID, replay.Timestamp})
 		controller.controllers = append(controller.controllers, control)
 
 		log.Println("\tExpected score:", replay.Score)
@@ -173,7 +174,7 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 		control.danceController = NewGenericController()
 		control.danceController.SetBeatMap(beatMap)
 
-		controller.replays = append([]RpData{{settings.Knockout.DanserName, control.diff.GetModString(), control.diff.Mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
+		controller.replays = append([]RpData{{settings.Knockout.DanserName, settings.Knockout.DanserName, control.diff.GetModString(), control.diff.Mods, 100, 0, 0, osu.NONE, -1, time.Now()}}, controller.replays...)
 		controller.controllers = append([]*subControl{control}, controller.controllers...)
 
 		if len(candidates) == 0 {
@@ -369,7 +370,7 @@ func (controller *ReplayController) InitCursors() {
 			controller.cursors = append(controller.cursors, cursors...)
 		} else {
 			cursor := graphics.NewCursor()
-			cursor.Name = controller.replays[i].Name
+			cursor.Name = controller.replays[i].RawName
 			cursor.ScoreID = controller.replays[i].scoreID
 			cursor.ScoreTime = controller.replays[i].ScoreTime
 			cursor.OldSpinnerScoring = controller.controllers[i].oldSpinners
