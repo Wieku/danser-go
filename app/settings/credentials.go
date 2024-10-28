@@ -11,22 +11,27 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-var Credentails = &credentials{}
+var Credentails = &credentials{
+	AuthType:     "ClientCredentials",
+	CallbackPort: 8294,
+}
 
 type credentials struct {
-	ApiV1Key string `label:"API V1 Key" long:"true" password:"true" tooltip:"Valid API V1 Key has to be provided to have access to global leaderboards\n\nDON'T SHARE IT WITH OTHERS!!!" hidePath:"true"`
+	ApiV1Key string `skip:"true" showif:"ApiVersion=v1" label:"API V1 Key" long:"true" password:"true" tooltip:"Valid API V1 Key has to be provided to have access to global leaderboards\n\nDON'T SHARE IT WITH OTHERS!!!" hidePath:"true"`
 
-	//Future stuff
-	//ClientId     string
-	//ClientSecret string
+	ClientId     string
+	ClientSecret string `long:"true" password:"true"`
+
+	AuthType string `combo:"ClientCredentials|Client credentials (Anonymous),AuthorizationCode|Authorization code (User authenticated)"`
 	//
-	//CallbackPort uint
-	//
-	//AccessToken  string
-	//ExpireDate   time.Time
-	//RefreshToken string
+	CallbackPort int `string:"true" min:"0" max:"65535" showif:"AuthType=AuthorizationCode"`
+
+	AccessToken  string    `skip:"true" long:"true" password:"true"`
+	Expiry       time.Time `skip:"true"`
+	RefreshToken string    `skip:"true" long:"true" password:"true" showif:"AuthType=AuthorizationCode"`
 }
 
 var srcDataCred []byte
