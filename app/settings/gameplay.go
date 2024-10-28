@@ -187,6 +187,7 @@ func initGameplay() *gameplay {
 				XOffset: 0,
 				YOffset: 0,
 			},
+			Mode:           "Normal",
 			ModsOnly:       false,
 			AlignRight:     false,
 			HideOthers:     false,
@@ -370,8 +371,9 @@ type hitCounter struct {
 
 type scoreBoard struct {
 	*hudElementOffset
-	ModsOnly       bool `label:"Show mod leaderboard"`
-	AlignRight     bool `label:"Align to the right" label:"Simulates the second team of osu! multiplayer"`
+	Mode           string `combo:"Normal,Country,Friends" tooltip:"Country and Friends modes require osu!supporter and Authorization Code API Mode!"`
+	ModsOnly       bool   `label:"Show mod leaderboard"`
+	AlignRight     bool   `label:"Align to the right" label:"Simulates the second team of osu! multiplayer"`
 	HideOthers     bool
 	ShowAvatars    bool
 	ExplosionScale float64 `min:"0.1" max:"2" scale:"100" format:"%.0f%%"`

@@ -57,7 +57,7 @@ func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods .
 	case CountryMode:
 		vls.Set("type", "country")
 	case FriendsMode:
-		vls.Set("type", "friends")
+		vls.Set("type", "friend")
 	}
 
 	if limit > -1 {

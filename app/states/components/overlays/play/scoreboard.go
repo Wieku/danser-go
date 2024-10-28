@@ -54,13 +54,21 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 
 	var mods []string
 
+	mode := osuapi.NormalMode
+
+	if settings.Gameplay.ScoreBoard.Mode == "Country" {
+		mode = osuapi.CountryMode
+	} else if settings.Gameplay.ScoreBoard.Mode == "Friends" {
+		mode = osuapi.FriendsMode
+	}
+
 	if settings.Gameplay.ScoreBoard.ModsOnly {
 		for _, mInfo := range beatMap.Diff.ExportMods2() {
 			mods = append(mods, mInfo.Acronym)
 		}
 	}
 
-	scores, err := osuapi.GetScoresCheksum(beatMap.MD5, true, osuapi.NormalMode, 51, mods...)
+	scores, err := osuapi.GetScoresCheksum(beatMap.MD5, true, mode, 51, mods...)
 
 	if err != nil {
 		log.Println("Error connecting to osu!api:", err)
