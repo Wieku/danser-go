@@ -5,10 +5,11 @@
 # danser-go
 
 [![GitHub release](https://img.shields.io/github/release/wieku/danser-go.svg)](https://github.com/Wieku/danser-go/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/wieku/danser-go/total?label=Downloads)](https://github.com/Wieku/danser-go/releases)
 [![CodeFactor](https://www.codefactor.io/repository/github/wieku/danser-go/badge)](https://www.codefactor.io/repository/github/wieku/danser-go)
 [![Discord server](https://img.shields.io/discord/713705871758065685.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/UTPvbe8)
 
-danser-go is a CLI visualisation tool for osu!standard maps.
+danser-go is a GUI/CLI visualisation tool for osu!standard maps.
 
 As danser is in development phase, some things may break. If that happens please fill an issue with as much detail as possible.
 
@@ -27,20 +28,20 @@ As danser is in development phase, some things may break. If that happens please
 
 You can download the newest Windows/Linux 64-bit binaries from [releases](https://github.com/Wieku/danser-go/releases).
 
-After unpacking it to your desired directory, you need to run it using launcher (using `danser-launcher` executable) or
+After unpacking it to your desired directory, you need to run it using launcher (using `danser` executable) or
 a command-line application/terminal:
 
 ##### Windows cmd:
 ```bash
-danser <arguments>
+danser-cli <arguments>
 ```
 
 ##### Linux / Unix / git bash / Powershell:
 ```bash
-./danser <arguments>
+./danser-cli <arguments>
 ```
 
-If you try to run *danser* (not *danser-launcher*) without any arguments there's a surprise waiting for you ;)
+If you try to run *danser-cli* without any arguments there's a surprise waiting for you ;)
 
 ## Run arguments
 * `-artist="NOMA"` or `-a="NOMA"`
@@ -51,7 +52,7 @@ If you try to run *danser* (not *danser-launcher*) without any arguments there's
 * `-id=433005` - overrides all map selection arguments and attempts to find `.osu` file with matching BeatmapID (not BeatmapSetID!)
 * `-cursors=2` - number of cursors used in mirror collage
 * `-tag=2` - number of cursors in TAG mode
-* `-speed=1.5` - music speed. Value of 1.5 is equal to osu!'s DoubleTime mod.
+* `-speed=1.5` - music speed. Value of 1.5 is equal to osu!'s DoubleTime mod. Ignored if in `-play` mode with speed changing mods
 * `-pitch=1.5` - music pitch. Value of 1.5 is equal to osu!'s Nightcore pitch. To recreate osu!'s Nightcore mod, use
   with speed 1.5
 * `-settings=name` - settings filename - for example `settings/name.json` instead of `settings/default.json`
@@ -69,18 +70,18 @@ If you try to run *danser* (not *danser-launcher*) without any arguments there's
   file is set in settings. When the `-ss` flag is used, this sets the output filename as well.
 * `-replay="path_to_replay.osr"` or `-r="path_to_replay.osr"` - plays a given replay file. Be sure to replace `\`
   with `\\` or `/`. Overrides all map selection arguments
-* `-mods=HDHR` - displays the map with given mods. This argument is ignored when `-replay` is used. `-mods=AT` will
-  trigger cursordance with replay UI.
+* `-mods=HDHR` - displays the map with given mods. `-mods=AT` will
+  trigger cursordance with replay UI. If specified, it will override `-replay` mods
+* `-mods2="[{\"acronym\":\"DT\",\"settings\":{\"speed_change\":1.2}},{\"acronym\":\"HD\"}]"` - displays the map with given mods. It's using lazer's mod structure to support mod settings. If specified, it will override `-replay` mods. As above, adding AT will
+  trigger cursordance with replay UI
 * `-skin` - overrides `Skin.CurrentSkin` in settings
-* `-cs`, `-ar`, `-od`, `-hp` - overrides maps' difficulty settings (values outside of osu!'s normal limits accepted)
+* `-cs`, `-ar`, `-od`, `-hp` - overrides maps' difficulty settings (values outside of osu!'s normal limits accepted). Ignored if DA (Difficulty Adjust) mod is specified in `-mods2`
 * `-nodbcheck` - skips updating the database with new, changed or deleted maps
 * `-noupdatecheck` - skips checking GitHub for a newer version of danser
 * `-ss=20.5` - creates a screenshot at the given time in .png format
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
 * `-offset=20` - local audio offset in ms, applies to recordings unlike `Audio.Offset`. Inverted compared to stable.
 * `-preciseprogress` - prints record progress in 1% increments.
-
-Since danser 0.4.0b artist, creator, difficulty names and titles don't have to exactly match the `.osu` file. 
 
 Examples which should give the same result:
 
@@ -105,8 +106,8 @@ You need to clone it or download as a .zip (and unpack it to desired directory)
 
 #### Prerequisites
 
-* [64-bit go (1.19 at least)](https://go.dev/dl/)
-* gcc/g++ (Linux/Unix), [WinLibs](http://winlibs.com/) (Windows, TDM-GCC won't work, mingw-w64 is outdated)
+* [64-bit go (1.22 at least)](https://go.dev/dl/)
+* gcc/g++ (Linux/Unix), [WinLibs](http://winlibs.com/) MSVCRT+POSIX (Windows, TDM-GCC won't work, mingw-w64 is outdated)
 * OpenGL library (shipped with drivers, `libgl1-mesa-dev` when building on Linux servers)
 * xorg-dev, libgtk-3 and libgtk-3-dev (Linux)
 
