@@ -26,6 +26,21 @@ func NewIRGB(r, g, b uint8) Color {
 	return NewIRGBA(r, g, b, 255)
 }
 
+func NewI(c uint32) Color {
+	r := uint8((c >> 16) & 0xff)
+	g := uint8((c >> 8) & 0xff)
+	b := uint8(c & 0xff)
+	return NewIRGB(r, g, b)
+}
+
+func NewIA(c uint32) Color {
+	r := uint8((c >> 24) & 0xff)
+	g := uint8((c >> 16) & 0xff)
+	b := uint8((c >> 8) & 0xff)
+	a := uint8(c & 0xff)
+	return NewIRGBA(r, g, b, a)
+}
+
 func NewLA(lightness, a float32) Color {
 	return NewRGBA(lightness, lightness, lightness, a)
 }

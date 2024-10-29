@@ -2,11 +2,12 @@ package launcher
 
 import (
 	"fmt"
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/platform"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,10 +67,10 @@ func checkForUpdates(pingUpToDate bool) {
 
 func textColumn(text string) {
 	imgui.TableNextColumn()
-	imgui.Text(text)
+	imgui.TextUnformatted(text)
 }
 
-func imguiPathFilter(data imgui.InputTextCallbackData) int32 {
+func imguiPathFilter(data imgui.InputTextCallbackData) int {
 	if data.EventFlag() == imgui.InputTextFlagsCallbackCharFilter {
 		run := data.EventChar()
 
@@ -104,6 +105,34 @@ func vzero() imgui.Vec2 {
 	return vec2(0, 0)
 }
 
+func dummyExactY(y float32) {
+	dummyExact(vec2(0, y))
+}
+
+func dummyExact(v imgui.Vec2) {
+	imgui.PushStyleVarVec2(imgui.StyleVarItemSpacing, vzero())
+	imgui.Dummy(v)
+	imgui.PopStyleVar()
+}
+
+func packColor(vec imgui.Vec4) uint32 {
+	convert := func(f float32) uint32 {
+		scaled := (f * math.MaxUint8) + 0.5 // nolint: gomnd
+		switch {
+		case scaled <= 0:
+			return 0
+		case scaled >= math.MaxUint8:
+			return math.MaxUint8
+		default:
+			return uint32(scaled)
+		}
+	}
+	return convert(vec.X) |
+		convert(vec.Y)<<8 |
+		convert(vec.Z)<<16 |
+		convert(vec.W)<<24
+}
+
 // covers cases:
 // one of them is an abs path to data dir
 // has path separator suffixed
@@ -131,4 +160,16 @@ func getRelativeOrABSPath(path string) string {
 	slashBase := strings.TrimSuffix(strings.ReplaceAll(env.DataDir(), "\\", "/"), "/") + "/"
 
 	return strings.ReplaceAll(strings.TrimPrefix(slashPath, slashBase), "/", string(os.PathSeparator))
+}
+
+func setTooltip(txt string) {
+	imgui.SetTooltip(strings.ReplaceAll(txt, "%", "%%"))
+}
+
+func contentRegionMin() imgui.Vec2 {
+	return imgui.CursorScreenPos().Sub(imgui.WindowPos())
+}
+
+func contentRegionMax() imgui.Vec2 {
+	return imgui.ContentRegionAvail().Add(imgui.CursorScreenPos()).Sub(imgui.WindowPos())
 }

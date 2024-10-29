@@ -195,6 +195,10 @@ func (track *TrackBass) GetRelativeFrequency() float64 {
 	return track.relativeFrequency
 }
 
+func (track *TrackBass) GetSpeed() float64 {
+	return track.speed * track.relativeFrequency
+}
+
 func (track *TrackBass) GetState() int {
 	if !track.addedToMixer {
 		return MusicStopped
@@ -247,10 +251,12 @@ func (track *TrackBass) Update() {
 
 	var level int
 
-	if track.addedToMixer {
-		level = int(C.BASS_Mixer_ChannelGetLevel(track.channel))
-	} else {
-		level = int(C.BASS_ChannelGetLevel(track.channel))
+	if track.playing {
+		if track.addedToMixer {
+			level = int(C.BASS_Mixer_ChannelGetLevel(track.channel))
+		} else {
+			level = int(C.BASS_ChannelGetLevel(track.channel))
+		}
 	}
 
 	left := level & 65535

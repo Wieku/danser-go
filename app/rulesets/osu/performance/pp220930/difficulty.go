@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/skills"
 	"log"
@@ -16,48 +17,14 @@ const (
 	CurrentVersion    int     = 20220930
 )
 
-type Attributes struct {
-	// Total Star rating, visible on osu!'s beatmap page
-	Total float64
+type DifficultyCalculator struct{}
 
-	// Aim stars, needed for Performance Points (aka PP) calculations
-	Aim float64
-
-	// Speed stars, needed for Performance Points (aka PP) calculations
-	Speed float64
-
-	SpeedNoteCount float64
-
-	// Flashlight stars, needed for Performance Points (aka PP) calculations
-	Flashlight float64
-
-	// SliderFactor is a ratio of Aim calculated without sliders to Aim with them
-	SliderFactor float64
-
-	ObjectCount int
-	Circles     int
-	Sliders     int
-	Spinners    int
-	MaxCombo    int
-}
-
-// StrainPeaks contains peaks of Aim, Speed and Flashlight skills, as well as peaks passed through star rating formula
-type StrainPeaks struct {
-	// Aim peaks
-	Aim []float64
-
-	// Speed peaks
-	Speed []float64
-
-	// Flashlight peaks
-	Flashlight []float64
-
-	// Total contains aim, speed and flashlight peaks passed through star rating formula
-	Total []float64
+func NewDifficultyCalculator() api.IDifficultyCalculator {
+	return &DifficultyCalculator{}
 }
 
 // getStarsFromRawValues converts raw skill values to Attributes
-func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, attr Attributes) Attributes {
+func (diffCalc *DifficultyCalculator) getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight float64, diff *difficulty.Difficulty, attr api.Attributes) api.Attributes {
 	aimRating := math.Sqrt(rawAim) * StarScalingFactor
 	aimRatingNoSliders := math.Sqrt(rawAimNoSliders) * StarScalingFactor
 	speedRating := math.Sqrt(rawSpeed) * StarScalingFactor
@@ -110,8 +77,8 @@ func getStarsFromRawValues(rawAim, rawAimNoSliders, rawSpeed, rawFlashlight floa
 }
 
 // Retrieves skill values and converts to Attributes
-func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, attr Attributes) Attributes {
-	attr = getStarsFromRawValues(
+func (diffCalc *DifficultyCalculator) getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills.SpeedSkill, flashlight *skills.Flashlight, diff *difficulty.Difficulty, attr api.Attributes) api.Attributes {
+	attr = diffCalc.getStarsFromRawValues(
 		aim.DifficultyValue(),
 		aimNoSliders.DifficultyValue(),
 		speed.DifficultyValue(),
@@ -125,7 +92,7 @@ func getStars(aim *skills.AimSkill, aimNoSliders *skills.AimSkill, speed *skills
 	return attr
 }
 
-func addObjectToAttribs(o objects.IHitObject, attr *Attributes) {
+func (diffCalc *DifficultyCalculator) addObjectToAttribs(o objects.IHitObject, attr *api.Attributes) {
 	if s, ok := o.(*objects.Slider); ok {
 		attr.Sliders++
 		attr.MaxCombo += len(s.ScorePoints)
@@ -140,7 +107,7 @@ func addObjectToAttribs(o objects.IHitObject, attr *Attributes) {
 }
 
 // CalculateSingle calculates the final difficulty attributes of a map
-func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) Attributes {
+func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) api.Attributes {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true)
@@ -148,12 +115,12 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) 
 	speedSkill := skills.NewSpeedSkill(diff)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
-	attr := Attributes{}
+	attr := api.Attributes{}
 
-	addObjectToAttribs(objects[0], &attr)
+	diffCalc.addObjectToAttribs(objects[0], &attr)
 
 	for i, o := range diffObjects {
-		addObjectToAttribs(objects[i+1], &attr)
+		diffCalc.addObjectToAttribs(objects[i+1], &attr)
 
 		aimSkill.Process(o)
 		aimNoSlidersSkill.Process(o)
@@ -161,11 +128,11 @@ func CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) 
 		flashlightSkill.Process(o)
 	}
 
-	return getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr)
+	return diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr)
 }
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
-func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []Attributes {
+func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []api.Attributes {
 	modString := difficulty.GetDiffMaskedMods(diff.Mods).String()
 	if modString == "" {
 		modString = "NM"
@@ -180,22 +147,22 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 	speedSkill := skills.NewSpeedSkill(diff)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
-	stars := make([]Attributes, 1, len(objects))
+	stars := make([]api.Attributes, 1, len(objects))
 
-	addObjectToAttribs(objects[0], &stars[0])
+	diffCalc.addObjectToAttribs(objects[0], &stars[0])
 
 	lastProgress := -1
 
 	for i, o := range diffObjects {
 		attr := stars[i]
-		addObjectToAttribs(objects[i+1], &attr)
+		diffCalc.addObjectToAttribs(objects[i+1], &attr)
 
 		aimSkill.Process(o)
 		aimNoSlidersSkill.Process(o)
 		speedSkill.Process(o)
 		flashlightSkill.Process(o)
 
-		stars = append(stars, getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr))
+		stars = append(stars, diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, diff, attr))
 
 		if len(diffObjects) > 2500 {
 			progress := (100 * i) / (len(diffObjects) - 1)
@@ -213,7 +180,7 @@ func CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []
 	return stars
 }
 
-func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) StrainPeaks {
+func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) api.StrainPeaks {
 	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true)
@@ -226,7 +193,7 @@ func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficu
 		flashlightSkill.Process(o)
 	}
 
-	peaks := StrainPeaks{
+	peaks := api.StrainPeaks{
 		Aim:        aimSkill.GetCurrentStrainPeaks(),
 		Speed:      speedSkill.GetCurrentStrainPeaks(),
 		Flashlight: flashlightSkill.GetCurrentStrainPeaks(),
@@ -235,9 +202,17 @@ func CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficu
 	peaks.Total = make([]float64, len(peaks.Aim))
 
 	for i := 0; i < len(peaks.Aim); i++ {
-		stars := getStarsFromRawValues(peaks.Aim[i], peaks.Aim[i], peaks.Speed[i], peaks.Flashlight[i], diff, Attributes{})
+		stars := diffCalc.getStarsFromRawValues(peaks.Aim[i], peaks.Aim[i], peaks.Speed[i], peaks.Flashlight[i], diff, api.Attributes{})
 		peaks.Total[i] = stars.Total
 	}
 
 	return peaks
+}
+
+func (diffCalc *DifficultyCalculator) GetVersion() int {
+	return CurrentVersion
+}
+
+func (diffCalc *DifficultyCalculator) GetVersionMessage() string {
+	return "2022-09-30: https://osu.ppy.sh/home/news/2022-09-30-changes-to-osu-sr-and-pp"
 }

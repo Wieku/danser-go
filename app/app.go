@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/wieku/danser-go/app/audio"
@@ -32,8 +31,8 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/statistic"
 	"github.com/wieku/danser-go/framework/util"
 	"github.com/wieku/rplpa"
 	"io/ioutil"
@@ -41,6 +40,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 )
@@ -85,7 +85,7 @@ func run() {
 		}
 	}()
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		id := flag.Int64("id", -1, "Specify the beatmap id. Overrides other beatmap search flags")
 
 		md5 := flag.String("md5", "", "Specify the beatmap md5 hash. Overrides other beatmap search flags")
@@ -128,6 +128,7 @@ func run() {
 		ss := flag.Float64("ss", math.NaN(), "Screenshot mode. Snap single frame from danser at given time in seconds. Specify the name of file by -out, resolution is managed by Recording settings")
 
 		mods := flag.String("mods", "", "Specify beatmap/play mods")
+		mods2 := flag.String("mods2", "", "Specify beatmap/play mods, lazer style")
 
 		replay := flag.String("replay", "", replayDesc)
 		flag.StringVar(replay, "r", "", replayDesc+shorthand)
@@ -147,6 +148,10 @@ func run() {
 		flag.BoolVar(&preciseProgress, "preciseprogress", false, "Show rendering progress in 1% increments")
 
 		flag.Parse()
+
+		if *mods != "" && *mods2 != "" {
+			panic("You can't specify classic and lazer mods at the same time")
+		}
 
 		var knockoutReplays []string
 
@@ -188,6 +193,7 @@ func run() {
 		}
 
 		modsParsed := difficulty2.ParseMods(*mods)
+		var modsNew []rplpa.ModInfo = nil
 
 		if *replay != "" {
 			bytes, err := ioutil.ReadFile(*replay)
@@ -211,8 +217,41 @@ func run() {
 			*md5 = rp.BeatmapMD5
 			*id = -1
 			modsParsed = difficulty2.Modifier(rp.Mods)
+
+			if rp.ScoreInfo != nil && rp.ScoreInfo.Mods != nil && len(rp.ScoreInfo.Mods) > 0 {
+				modsNew = make([]rplpa.ModInfo, 0, len(rp.ScoreInfo.Mods))
+
+				for _, mod := range rp.ScoreInfo.Mods {
+					modsNew = append(modsNew, *mod)
+				}
+			}
+
+			if rp.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
+				modsParsed |= difficulty2.Lazer
+
+				if modsNew != nil {
+					modsNew = append(modsNew, rplpa.ModInfo{Acronym: "LZ"})
+				}
+			}
+
 			*knockout = true
 			settings.REPLAY = *replay
+		}
+
+		if *mods2 != "" {
+			var mods2I []rplpa.ModInfo
+
+			if err := json.Unmarshal([]byte(*mods2), &mods2I); err != nil {
+				panic(fmt.Sprintf("Failed to parse replay list: %s", err))
+			}
+
+			modsNew = mods2I
+		}
+
+		if modsNew != nil {
+			tempDiff := difficulty2.NewDifficulty(1, 1, 1, 1)
+			tempDiff.SetMods2(modsNew)
+			modsParsed = tempDiff.Mods
 		}
 
 		if !modsParsed.Compatible() {
@@ -467,41 +506,87 @@ func run() {
 		bass.Init(settings.RECORD)
 		audio.LoadSamples()
 
-		speedBefore := settings.SPEED
-
-		if modsParsed.Active(difficulty2.Nightcore) {
-			settings.SPEED *= 1.5
-			settings.PITCH *= 1.5
-		} else if modsParsed.Active(difficulty2.DoubleTime) {
-			settings.SPEED *= 1.5
-		} else if modsParsed.Active(difficulty2.Daycore) {
-			settings.PITCH *= 0.75
-			settings.SPEED *= 0.75
-		} else if modsParsed.Active(difficulty2.HalfTime) {
-			settings.SPEED *= 0.75
-		}
-
 		if settings.PLAY || !settings.KNOCKOUT || allowDA {
+			if modsNew == nil {
+				modsNew = modsParsed.ConvertToModInfoList()
+			}
+
+			daMap := make(map[string]any)
+
 			if !math.IsNaN(*ar) {
-				beatMap.Diff.SetARCustom(*ar)
+				daMap["approach_rate"] = *ar
 			}
 
 			if !math.IsNaN(*od) {
-				beatMap.Diff.SetODCustom(*od)
+				daMap["overall_difficulty"] = *od
 			}
 
 			if !math.IsNaN(*cs) {
-				beatMap.Diff.SetCSCustom(*cs)
+				daMap["circle_size"] = *cs
 			}
 
 			if !math.IsNaN(*hp) {
-				beatMap.Diff.SetHPCustom(*hp)
+				daMap["drain_rate"] = *hp
 			}
 
-			beatMap.Diff.SetCustomSpeed(speedBefore)
+			// Add DA only if DA hasn't been added already
+			if len(daMap) > 0 && !slices.ContainsFunc(modsNew, func(info rplpa.ModInfo) bool { return info.Acronym == "DA" }) {
+				modsNew = append(modsNew, rplpa.ModInfo{
+					Acronym:  "DA",
+					Settings: daMap,
+				})
+			}
+
+			if math.Abs(settings.SPEED-1) > 0.001 {
+				skipMods := []string{"HT", "DC", "DT", "NC"}
+
+				found := slices.ContainsFunc(modsNew, func(info rplpa.ModInfo) bool { return slices.Contains(skipMods, info.Acronym) })
+
+				// Don't modify current mods
+				//if settings.SPEED >= 1 {
+				//	if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
+				//		return info.Acronym == "DT" || info.Acronym == "NC"
+				//	}); i != -1 {
+				//		found = true
+				//		modsNew[i].Settings["speed_change"] = settings.SPEED
+				//	}
+				//} else {
+				//	if i := slices.IndexFunc(modsNew, func(info rplpa.ModInfo) bool {
+				//		return info.Acronym == "HT" || info.Acronym == "DC"
+				//	}); i != -1 {
+				//		found = true
+				//		modsNew[i].Settings["speed_change"] = settings.SPEED
+				//	}
+				//}
+
+				if !found {
+					modsNew = slices.DeleteFunc(modsNew, func(info rplpa.ModInfo) bool {
+						return info.Acronym == "DT" || info.Acronym == "NC" || info.Acronym == "HT" || info.Acronym == "DC"
+					})
+
+					acr := "HT"
+					if settings.SPEED >= 1 {
+						acr = "DT"
+					}
+
+					modsNew = append(modsNew, rplpa.ModInfo{
+						Acronym: acr,
+						Settings: map[string]any{
+							"speed_change": settings.SPEED,
+						},
+					})
+				}
+
+				settings.SPEED = 1
+			}
 		}
 
-		beatMap.Diff.SetMods(modsParsed)
+		if modsNew != nil {
+			beatMap.Diff.SetMods2(modsNew)
+		} else {
+			beatMap.Diff.SetMods(modsParsed)
+		}
+
 		beatmap.ParseTimingPointsAndPauses(beatMap)
 		beatmap.ParseObjects(beatMap, false, true)
 		beatMap.LoadCustomSamples()
@@ -533,7 +618,7 @@ func mainLoopRecord() {
 
 	var fbo *buffer.Framebuffer
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
@@ -568,7 +653,7 @@ func mainLoopRecord() {
 
 		deltaSumF += updateDelta
 		if deltaSumF >= fpsDelta {
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				fbo.Bind()
 
 				ffmpeg.PreFrame()
@@ -610,7 +695,7 @@ func mainLoopRecord() {
 		}
 	}
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		ffmpeg.StopFFmpeg()
 	})
 }
@@ -620,7 +705,7 @@ func mainLoopSS() {
 
 	var fbo *buffer.Framebuffer
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		fbo = buffer.NewFrameMultisampleScreen(w, h, false, 0)
 	})
 
@@ -629,7 +714,7 @@ func mainLoopSS() {
 	for !p.Update(1) {
 		if p.GetTime() >= screenshotTime*1000 {
 			log.Println("Scheduling screenshot")
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				fbo.Bind()
 
 				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
@@ -647,10 +732,19 @@ func mainLoopSS() {
 }
 
 func mainLoopNormal() {
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			if action == glfw.Press {
 				switch key {
+				case glfw.KeyF11:
+					switch mods {
+					case glfw.ModShift:
+						settings.PerfGraph = !settings.PerfGraph
+					case glfw.ModControl:
+						settings.CallGraph = !settings.CallGraph
+					default:
+						settings.DEBUG = !settings.DEBUG
+					}
 				case glfw.KeyEscape:
 					win.SetShouldClose(true)
 				case glfw.KeyMinus:
@@ -672,49 +766,57 @@ func mainLoopNormal() {
 		})
 	})
 
-	for !win.ShouldClose() {
-		mainthread.Call(func() {
-			if lastVSync != settings.Graphics.VSync {
-				if settings.Graphics.VSync {
-					glfw.SwapInterval(1)
-				} else {
-					glfw.SwapInterval(0)
-				}
-
-				lastVSync = settings.Graphics.VSync
+	goroutines.RunMainLoop(func() bool {
+		return !win.ShouldClose()
+	}, func() {
+		if lastVSync != settings.Graphics.VSync {
+			if settings.Graphics.VSync {
+				glfw.SwapInterval(1)
+			} else {
+				glfw.SwapInterval(0)
 			}
 
-			glfw.PollEvents()
+			lastVSync = settings.Graphics.VSync
+		}
 
-			pushFrame()
+		profiler.StartGroup("glfw.PollEvents", profiler.PInput)
+		glfw.PollEvents()
+		profiler.EndGroup()
 
-			if scheduleScreenshot {
-				w, h := win.GetFramebufferSize()
-				utils.MakeScreenshot(w, h, "", true)
-				scheduleScreenshot = false
+		pushFrame()
+
+		if scheduleScreenshot {
+			w, h := win.GetFramebufferSize()
+			utils.MakeScreenshot(w, h, "", true)
+			scheduleScreenshot = false
+		}
+
+		profiler.StartGroup("App.mainLoopNormal", profiler.PSwapBuffers)
+
+		win.SwapBuffers()
+
+		profiler.EndGroup()
+
+		profiler.StartGroup("App.mainLoopNormal", profiler.PSleep)
+		if !settings.Graphics.VSync {
+			fCap := int(settings.Graphics.FPSCap)
+
+			if fCap < 0 {
+				fCap = -fCap * monitorHz
 			}
 
-			win.SwapBuffers()
-
-			if !settings.Graphics.VSync {
-				fCap := int(settings.Graphics.FPSCap)
-
-				if fCap < 0 {
-					fCap = -fCap * monitorHz
-				}
-
-				limiter.FPS = fCap
-				limiter.Sync()
-			}
-
-		})
-	}
+			limiter.FPS = fCap
+			limiter.Sync()
+		}
+		profiler.EndGroup()
+	})
 
 	settings.CloseWatcher()
 }
 
 func pushFrame() {
-	statistic.Reset()
+	profiler.StartGroup("App.pushFrame", profiler.PDraw)
+	profiler.ResetStats()
 
 	gl.Enable(gl.SCISSOR_TEST)
 	gl.Disable(gl.DITHER)
@@ -754,6 +856,8 @@ func pushFrame() {
 
 	blend.ClearStack()
 	viewport.Pop()
+
+	profiler.EndGroup()
 }
 
 func checkForUpdates() {
@@ -786,15 +890,15 @@ func Run() {
 		closeHandler(err, stackTrace)
 	}()
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	goroutines.SetCrashHandler(closeHandler)
 
 	platform.StartLogging("danser")
 
 	platform.DisableQuickEdit()
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	mainthread.CallQueueCap = 100000
-	mainthread.Run(run)
+	goroutines.RunMain(run)
 }
 
 func closeHandler(err any, stackTrace []string) {

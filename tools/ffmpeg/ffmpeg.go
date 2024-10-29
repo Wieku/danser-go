@@ -15,9 +15,9 @@ import (
 func main() {
 	targetDir, _ := filepath.Abs(os.Args[1])
 
-	archiveName := "ffmpeg-n5.1-latest-linux64-gpl-shared-5.1"
+	archiveName := "ffmpeg-n6.1-latest-linux64-gpl-shared-6.1"
 	if runtime.GOOS == "windows" {
-		archiveName = "ffmpeg-n5.1-latest-win64-gpl-shared-5.1"
+		archiveName = "ffmpeg-n6.1-latest-win64-gpl-shared-6.1"
 	}
 
 	downloadUrl := "https://github.com/Wieku/FFmpeg-Builds/releases/download/latest/" + archiveName + ".zip"

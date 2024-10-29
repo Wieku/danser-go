@@ -2,6 +2,7 @@ package pp220930
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
@@ -19,68 +20,43 @@ func ppBase(stars float64) float64 {
 		100000.0
 }
 
-type PPv2Results struct {
-	Aim, Speed, Acc, Flashlight, Total float64
-}
-
 // PPv2 : structure to store ppv2 values
 type PPv2 struct {
-	Results PPv2Results
+	attribs api.Attributes
 
-	attribs Attributes
-
-	experimental bool
-
-	scoreMaxCombo      int
-	countGreat         int
-	countOk            int
-	countMeh           int
-	countMiss          int
-	effectiveMissCount float64
+	score api.PerfScore
 
 	diff *difficulty.Difficulty
 
+	effectiveMissCount           float64
 	totalHits                    int
-	accuracy                     float64
 	amountHitObjectsWithAccuracy int
 }
 
-func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, diff *difficulty.Difficulty) PPv2 {
+func NewPPCalculator() api.IPerformanceCalculator {
+	return &PPv2{}
+}
+
+func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *difficulty.Difficulty) api.PPv2Results {
 	attribs.MaxCombo = max(1, attribs.MaxCombo)
 
-	if combo < 0 {
-		combo = attribs.MaxCombo
+	if score.MaxCombo < 0 {
+		score.MaxCombo = attribs.MaxCombo
 	}
 
-	if n300 < 0 {
-		n300 = attribs.ObjectCount - n100 - n50 - nmiss
+	if score.CountGreat < 0 {
+		score.CountGreat = attribs.ObjectCount - score.CountOk - score.CountMeh - score.CountMiss
 	}
 
 	pp.attribs = attribs
 	pp.diff = diff
-	pp.totalHits = n300 + n100 + n50 + nmiss
-	pp.scoreMaxCombo = combo
-	pp.countGreat = n300
-	pp.countOk = n100
-	pp.countMeh = n50
-	pp.countMiss = nmiss
+	pp.score = score
+
+	pp.totalHits = score.CountGreat + score.CountOk + score.CountMeh + score.CountMiss
 	pp.effectiveMissCount = pp.calculateEffectiveMissCount()
 
-	// accuracy
-
-	if pp.totalHits == 0 {
-		pp.accuracy = 0.0
-	} else {
-		acc := (float64(n50)*50 +
-			float64(n100)*100 +
-			float64(n300)*300) /
-			(float64(pp.totalHits) * 300)
-
-		pp.accuracy = mutils.Clamp(acc, 0, 1)
-	}
-
 	if diff.CheckModActive(difficulty.ScoreV2) {
-		pp.amountHitObjectsWithAccuracy = attribs.ObjectCount
+		pp.amountHitObjectsWithAccuracy = attribs.Circles + attribs.Sliders
 	} else {
 		pp.amountHitObjectsWithAccuracy = attribs.Circles
 	}
@@ -106,22 +82,24 @@ func (pp *PPv2) PPv2x(attribs Attributes, combo, n300, n100, n50, nmiss int, dif
 			mehMultiplier = max(0.0, 1-math.Pow(diff.ODReal/13.33, 5))
 		}
 
-		pp.effectiveMissCount = min(pp.effectiveMissCount+float64(pp.countOk)*okMultiplier+float64(pp.countMeh)*mehMultiplier, float64(pp.totalHits))
+		pp.effectiveMissCount = min(pp.effectiveMissCount+float64(pp.score.CountOk)*okMultiplier+float64(pp.score.CountMeh)*mehMultiplier, float64(pp.totalHits))
 	}
 
-	pp.Results.Aim = pp.computeAimValue()
-	pp.Results.Speed = pp.computeSpeedValue()
-	pp.Results.Acc = pp.computeAccuracyValue()
-	pp.Results.Flashlight = pp.computeFlashlightValue()
+	results := api.PPv2Results{
+		Aim:        pp.computeAimValue(),
+		Speed:      pp.computeSpeedValue(),
+		Acc:        pp.computeAccuracyValue(),
+		Flashlight: pp.computeFlashlightValue(),
+	}
 
-	pp.Results.Total = math.Pow(
-		math.Pow(pp.Results.Aim, 1.1)+
-			math.Pow(pp.Results.Speed, 1.1)+
-			math.Pow(pp.Results.Acc, 1.1)+
-			math.Pow(pp.Results.Flashlight, 1.1),
+	results.Total = math.Pow(
+		math.Pow(results.Aim, 1.1)+
+			math.Pow(results.Speed, 1.1)+
+			math.Pow(results.Acc, 1.1)+
+			math.Pow(results.Flashlight, 1.1),
 		1.0/1.1) * multiplier
 
-	return *pp
+	return results
 }
 
 func (pp *PPv2) computeAimValue() float64 {
@@ -165,12 +143,12 @@ func (pp *PPv2) computeAimValue() float64 {
 	estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 {
-		estimateSliderEndsDropped := mutils.Clamp(float64(min(pp.countOk+pp.countMeh+pp.countMiss, pp.attribs.MaxCombo-pp.scoreMaxCombo)), 0, estimateDifficultSliders)
+		estimateSliderEndsDropped := mutils.Clamp(float64(min(pp.score.CountOk+pp.score.CountMeh+pp.score.CountMiss, pp.attribs.MaxCombo-pp.score.MaxCombo)), 0, estimateDifficultSliders)
 		sliderNerfFactor := (1-pp.attribs.SliderFactor)*math.Pow(1-estimateSliderEndsDropped/estimateDifficultSliders, 3) + pp.attribs.SliderFactor
 		aimValue *= sliderNerfFactor
 	}
 
-	aimValue *= pp.accuracy
+	aimValue *= pp.score.Accuracy
 	// It is important to also consider accuracy difficulty when doing that
 	aimValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
 
@@ -214,18 +192,18 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	relevantAccuracy := 0.0
 	if pp.attribs.SpeedNoteCount != 0 {
 		relevantTotalDiff := float64(pp.totalHits) - pp.attribs.SpeedNoteCount
-		relevantCountGreat := max(0, float64(pp.countGreat)-relevantTotalDiff)
-		relevantCountOk := max(0, float64(pp.countOk)-max(0, relevantTotalDiff-float64(pp.countGreat)))
-		relevantCountMeh := max(0, float64(pp.countMeh)-max(0, relevantTotalDiff-float64(pp.countGreat)-float64(pp.countOk)))
+		relevantCountGreat := max(0, float64(pp.score.CountGreat)-relevantTotalDiff)
+		relevantCountOk := max(0, float64(pp.score.CountOk)-max(0, relevantTotalDiff-float64(pp.score.CountGreat)))
+		relevantCountMeh := max(0, float64(pp.score.CountMeh)-max(0, relevantTotalDiff-float64(pp.score.CountGreat)-float64(pp.score.CountOk)))
 		relevantAccuracy = (relevantCountGreat*6.0 + relevantCountOk*2.0 + relevantCountMeh) / (pp.attribs.SpeedNoteCount * 6.0)
 	}
 
 	// Scale the speed value with accuracy and OD
-	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.accuracy+relevantAccuracy)/2.0, (14.5-max(pp.diff.ODReal, 8))/2)
+	speedValue *= (0.95 + math.Pow(pp.diff.ODReal, 2)/750) * math.Pow((pp.score.Accuracy+relevantAccuracy)/2.0, (14.5-max(pp.diff.ODReal, 8))/2)
 
 	// Scale the speed value with # of 50s to punish doubletapping.
-	if float64(pp.countMeh) >= float64(pp.totalHits)/500 {
-		speedValue *= math.Pow(0.99, float64(pp.countMeh)-float64(pp.totalHits)/500.0)
+	if float64(pp.score.CountMeh) >= float64(pp.totalHits)/500 {
+		speedValue *= math.Pow(0.99, float64(pp.score.CountMeh)-float64(pp.totalHits)/500.0)
 	}
 
 	return speedValue
@@ -240,7 +218,7 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 	betterAccuracyPercentage := 0.0
 
 	if pp.amountHitObjectsWithAccuracy > 0 {
-		betterAccuracyPercentage = float64((pp.countGreat-(pp.totalHits-pp.amountHitObjectsWithAccuracy))*6+pp.countOk*2+pp.countMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
+		betterAccuracyPercentage = float64((pp.score.CountGreat-(pp.totalHits-pp.amountHitObjectsWithAccuracy))*6+pp.score.CountOk*2+pp.score.CountMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
 	}
 
 	// It is possible to reach a negative accuracy with this formula. Cap it at zero - zero points
@@ -290,7 +268,7 @@ func (pp *PPv2) computeFlashlightValue() float64 {
 	flashlightValue *= scale
 
 	// Scale the flashlight value with accuracy _slightly_.
-	flashlightValue *= 0.5 + pp.accuracy/2.0
+	flashlightValue *= 0.5 + pp.score.Accuracy/2.0
 	// It is important to also consider accuracy difficulty when doing that.
 	flashlightValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
 
@@ -303,15 +281,15 @@ func (pp *PPv2) calculateEffectiveMissCount() float64 {
 
 	if pp.attribs.Sliders > 0 {
 		fullComboThreshold := float64(pp.attribs.MaxCombo) - 0.1*float64(pp.attribs.Sliders)
-		if float64(pp.scoreMaxCombo) < fullComboThreshold {
-			comboBasedMissCount = fullComboThreshold / max(1.0, float64(pp.scoreMaxCombo))
+		if float64(pp.score.MaxCombo) < fullComboThreshold {
+			comboBasedMissCount = fullComboThreshold / max(1.0, float64(pp.score.MaxCombo))
 		}
 	}
 
 	// Clamp miss count to maximum amount of possible breaks
-	comboBasedMissCount = min(comboBasedMissCount, float64(pp.countOk+pp.countMeh+pp.countMiss))
+	comboBasedMissCount = min(comboBasedMissCount, float64(pp.score.CountOk+pp.score.CountMeh+pp.score.CountMiss))
 
-	return max(float64(pp.countMiss), comboBasedMissCount)
+	return max(float64(pp.score.CountMiss), comboBasedMissCount)
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
@@ -322,6 +300,6 @@ func (pp *PPv2) getComboScalingFactor() float64 {
 	if pp.attribs.MaxCombo <= 0 {
 		return 1.0
 	} else {
-		return min(math.Pow(float64(pp.scoreMaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
+		return min(math.Pow(float64(pp.score.MaxCombo), 0.8)/math.Pow(float64(pp.attribs.MaxCombo), 0.8), 1.0)
 	}
 }

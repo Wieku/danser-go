@@ -30,7 +30,7 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v3
         with:
-          go-version: '1.21.0'
+          go-version: '1.22.4'
           cache: true
 
       - name: Build danser
@@ -54,7 +54,7 @@ jobs:
 
   build_linux:
     name: Building linux version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout master branch
         uses: actions/checkout@v3
@@ -67,7 +67,7 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v3
         with:
-          go-version: '1.21.0'
+          go-version: '1.22.4'
           cache: true
 
       - name: Build danser

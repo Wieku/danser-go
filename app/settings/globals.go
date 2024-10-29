@@ -17,3 +17,5 @@ var TAG = 1
 var RECORD = false
 var REPLAY = ""
 var LOCALOFFSET = 0
+var PerfGraph = false
+var CallGraph = false

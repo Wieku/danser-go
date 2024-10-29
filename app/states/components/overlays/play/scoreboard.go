@@ -1,9 +1,8 @@
 package play
 
 import (
-	"fmt"
-	"github.com/thehowl/go-osuapi"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/env"
@@ -13,9 +12,9 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 )
 
 const spacing = 57.6
@@ -37,14 +36,19 @@ type ScoreBoard struct {
 	first            bool
 	avatarsVisible   bool
 
+	currentPlayerURL string
+
 	width float64
+
+	lazerScore bool
 }
 
-func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
+func NewScoreboard(beatMap *beatmap.BeatMap, lazerScore bool, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
 		first:            true,
 		explosionManager: sprite.NewManager(),
 		width:            768 * settings.Graphics.GetAspectRatio(),
+		lazerScore:       lazerScore,
 	}
 
 	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
@@ -54,72 +58,71 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 		return board
 	}
 
-	key := strings.TrimSpace(settings.Credentails.ApiV1Key)
-	if key == "" {
-		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "credentials.json")))
-	} else {
-		client := osuapi.NewClient(key)
-		err := client.Test()
-
+	if settings.Gameplay.ScoreBoard.ShowAvatars {
+		err := os.MkdirAll(filepath.Join(env.DataDir(), "cache", "avatars"), 0755)
 		if err != nil {
-			log.Println("Can't connect to osu!api:", err)
-		} else {
-			beatMaps, err := client.GetBeatmaps(osuapi.GetBeatmapsOpts{BeatmapHash: beatMap.MD5})
-			if len(beatMaps) == 0 || err != nil {
-				log.Println("Online beatmap not found!")
-				if err != nil {
-					log.Println(err)
-				}
-			} else {
-				opts := osuapi.GetScoresOpts{BeatmapID: beatMaps[0].BeatmapID, Limit: 51}
+			panic(err)
+		}
+	}
 
-				if settings.Gameplay.ScoreBoard.ModsOnly {
-					mods1 := osuapi.Mods(beatMap.Diff.Mods)
-					opts.Mods = &mods1
-				}
+	var mods []string
 
-				scores, err := client.GetScores(opts)
-				if len(scores) == 0 || err != nil {
-					log.Println("Can't find online scores!")
-					if err != nil {
-						log.Println(err)
-					}
-				} else {
-					for i := 0; i < len(scores); i++ {
-						if scores[i].ScoreID == omitID {
-							scores = append(scores[:i], scores[i+1:]...)
-							i--
-						}
-					}
+	mode := osuapi.NormalMode
 
-					sort.SliceStable(scores, func(i, j int) bool {
-						return scores[i].Score.Score > scores[j].Score.Score
-					})
+	if settings.Gameplay.ScoreBoard.Mode == "Country" {
+		mode = osuapi.CountryMode
+	} else if settings.Gameplay.ScoreBoard.Mode == "Friends" {
+		mode = osuapi.FriendsMode
+	}
 
-					for i := 0; i < min(len(scores), 50); i++ {
-						s := scores[i]
-
-						entry := NewScoreboardEntry(s.Username, s.Score.Score, int64(s.MaxCombo), i+1, false)
-
-						if settings.Gameplay.ScoreBoard.ShowAvatars {
-							entry.LoadAvatarID(s.UserID)
-						}
-
-						board.scores = append(board.scores, entry)
-						board.displayScores = append(board.displayScores, entry)
-					}
-				}
-
-				log.Println("SCORES", len(scores))
+	if settings.Gameplay.ScoreBoard.ModsOnly {
+		for _, mInfo := range beatMap.Diff.ExportMods2() {
+			if mInfo.Acronym != "LZ" {
+				mods = append(mods, mInfo.Acronym)
 			}
 		}
+	}
+
+	scores, err := osuapi.GetScoresCheksum(beatMap.MD5, !lazerScore, mode, 51, mods...)
+
+	if err != nil {
+		log.Println("Error connecting to osu!api:", err)
+	} else if len(scores) == 0 {
+		log.Println("Can't find online scores!")
+	} else {
+		for i := 0; i < len(scores); i++ {
+			if scores[i].LegacyScoreID == omitID || scores[i].ID == omitID {
+				board.currentPlayerURL = scores[i].User.AvatarURL
+				scores = append(scores[:i], scores[i+1:]...)
+				i--
+			}
+		}
+
+		sort.SliceStable(scores, func(i, j int) bool {
+			return scores[i].LegacyTotalScore > scores[j].LegacyTotalScore
+		})
+
+		for i := 0; i < min(len(scores), 50); i++ {
+			s := scores[i]
+
+			entry := NewScoreboardEntry(s.User.Username, s, lazerScore, i+1, false)
+
+			if settings.Gameplay.ScoreBoard.ShowAvatars {
+				entry.LoadAvatarURL(s.User.AvatarURL)
+			}
+
+			board.scores = append(board.scores, entry)
+			board.displayScores = append(board.displayScores, entry)
+		}
+
+		log.Println("SCORES", len(scores))
 	}
 
 	return board
 }
 
 func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
-	board.playerEntry = NewScoreboardEntry(name, 0, 0, len(board.scores)+1, true)
+	board.playerEntry = NewScoreboardEntry(name, osuapi.Score{}, board.lazerScore, len(board.scores)+1, true)
 	board.playerIndex = len(board.scores)
 	board.lastPlayerIndex = board.playerIndex
 
@@ -130,7 +133,11 @@ func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
 		if autoPlay {
 			board.playerEntry.LoadDefaultAvatar()
 		} else {
-			board.playerEntry.LoadAvatarUser(name)
+			if board.currentPlayerURL != "" {
+				board.playerEntry.LoadAvatarURL(board.currentPlayerURL)
+			} else {
+				board.playerEntry.LoadAvatarUser(name)
+			}
 		}
 	}
 
@@ -155,11 +162,13 @@ func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
 }
 
 func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
-	board.playerEntry.score = score
-	board.playerEntry.combo = combo
+	board.playerEntry.score.Score = score
+	board.playerEntry.score.ClassicTotalScore = score
+	board.playerEntry.score.TotalScore = score
+	board.playerEntry.score.MaxCombo = combo
 
 	sort.SliceStable(board.scores, func(i, j int) bool {
-		return board.scores[i].score > board.scores[j].score
+		return board.scores[i].getScore() > board.scores[j].getScore()
 	})
 
 	for i := 0; i < len(board.scores); i++ {

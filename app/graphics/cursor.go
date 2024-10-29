@@ -75,6 +75,8 @@ type Cursor struct {
 
 	OldSpinnerScoring bool
 
+	ModifiedMods bool
+
 	LastFrameTime    int64 //
 	CurrentFrameTime int64 //
 	RawPosition      vector.Vector2f
@@ -107,7 +109,7 @@ func NewCursor() *Cursor {
 		initCursor()
 	}
 
-	cursor := &Cursor{Position: vector.NewVec2f(100, 100)}
+	cursor := &Cursor{Position: vector.NewVec2f(256, -500)}
 	cursor.scale = animation.NewGlider(1.0)
 
 	cursor.lastSetting = settings.Skin.Cursor.UseSkinCursor
@@ -216,11 +218,11 @@ func (cursor *Cursor) Update(delta float64) {
 }
 
 func (cursor *Cursor) smokeUpdate() {
-	if !settings.Cursor.SmokeEnabled || settings.PLAYERS != 1 {
+	if (!settings.Cursor.SmokeEnabled && settings.PLAYERS == 1) || (!settings.Knockout.SmokeEnabled && settings.PLAYERS != 1) {
 		return
 	}
 
-	if cursor.SmokeKey && settings.PLAYERS == 1 {
+	if cursor.SmokeKey {
 		if !cursor.lastSmokeKey {
 			cursor.lastSmokePosition = cursor.Position
 			cursor.firstSmokePosition = cursor.Position
@@ -235,10 +237,10 @@ func (cursor *Cursor) smokeUpdate() {
 				temp = cursor.Position.Sub(cursor.lastSmokePosition).Scl(i / points).Add(cursor.lastSmokePosition)
 
 				smoke := sprite.NewSpriteSingle(cursor.smokeTexture, cursor.time*1000+float64(i), temp.Copy64(), vector.Centre)
-				smoke.SetAdditive(true)
+				smoke.SetAdditive(settings.PLAYERS == 1)
 				smoke.SetRotation(rand.Float64() * 2 * math.Pi)
 				smoke.SetScale(0.5 / scaling)
-				smoke.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+4000, 0.6, 0.0))
+				smoke.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, cursor.time, cursor.time+(4000/settings.Cursor.SmokeRemoveSpeed), 0.6, 0.0))
 				smoke.ResetValuesToTransforms()
 				smoke.AdjustTimesToTransformations()
 				smoke.ShowForever(false)
@@ -271,8 +273,9 @@ func (cursor *Cursor) smokeBrighten() {
 	for _, s := range smokes {
 		if (s.GetEndTime() - s.GetStartTime()) < 5000 {
 			s.ClearTransformations()
-			s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, cursor.time+delay, cursor.time+delay+8000, 1.0, 0.0))
-			s.SetEndTime(cursor.time + delay + 8000)
+			duration := 8000 / settings.Cursor.SmokeRemoveSpeed
+			s.AddTransform(animation.NewSingleTransform(animation.Fade, easing.InQuad, cursor.time+delay, cursor.time+delay+duration, 1.0, 0.0))
+			s.SetEndTime(cursor.time + delay + duration)
 
 			delay += 2.0
 		}
@@ -334,7 +337,12 @@ func (cursor *Cursor) DrawM(scale float64, batch *batch.QuadBatch, color color2.
 		batch.SetScale(scaling*scaling, scaling*scaling)
 		batch.SetSubScale(1, 1)
 
+		if settings.PLAYERS > 1 {
+			batch.SetColor32(color.R, color.G, color.B, color.A)
+		}
+
 		cursor.smokeContainer.Draw(cursor.time, batch)
+		batch.SetColor(1, 1, 1, float64(color.A))
 		cursor.rippleContainer.Draw(cursor.time, batch)
 
 		batch.End()

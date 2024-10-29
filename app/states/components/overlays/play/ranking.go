@@ -2,12 +2,12 @@ package play
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/shape"
@@ -83,7 +83,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		}
 
 		if image != nil {
-			mainthread.CallNonBlock(func() {
+			goroutines.CallNonBlockMain(func() {
 				region := texture.LoadTextureSingle(image.RGBA(), 0).GetRegion()
 				bg.Texture = &region
 
@@ -184,7 +184,7 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 
 	panel.score = fmt.Sprintf("%08d", score.Score)
 	panel.maxCombo = fmt.Sprintf("%dx", score.Combo)
-	panel.accuracy = fmt.Sprintf("%.2f%%", score.Accuracy)
+	panel.accuracy = fmt.Sprintf("%.2f%%", score.Accuracy*100)
 
 	panel.hpGraph = make([]vector.Vector2d, len(hpGraph))
 	copy(panel.hpGraph, hpGraph)
@@ -225,25 +225,15 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 }
 
 func (panel *RankingPanel) loadMods() {
-	mods := panel.ruleset.GetBeatMap().Diff.GetModStringFull()
+	mods := panel.ruleset.GetBeatMap().Diff.Mods.StringFull()
 
 	offset := -64.0
 	for i, s := range mods {
-		if strings.HasPrefix(s, "DA:") {
-			bgTex := skin.GetTexture("selection-mod-base")
+		modSpriteName := "selection-mod-" + strings.ToLower(s)
 
-			modBg := sprite.NewSpriteSingle(bgTex, 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
-			panel.manager.Add(modBg)
+		mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
 
-			mod := sprite.NewTextSpriteSize(strings.TrimPrefix(s, "DA:"), font.GetFont("Quicksand Bold"), float64(bgTex.Height)/4, 6+float64(i)+0.5, vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
-			panel.manager.Add(mod)
-		} else {
-			modSpriteName := "selection-mod-" + strings.ToLower(s)
-
-			mod := sprite.NewSpriteSingle(skin.GetTexture(modSpriteName), 6+float64(i), vector.NewVec2d(panel.ScaledWidth+offset, 416), vector.Centre)
-
-			panel.manager.Add(mod)
-		}
+		panel.manager.Add(mod)
 
 		offset -= 32
 	}

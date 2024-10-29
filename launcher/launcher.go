@@ -5,18 +5,18 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"github.com/faiface/mainthread"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/inkyblackness/imgui-go/v4"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/input"
+	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
 	"github.com/wieku/danser-go/build"
@@ -176,6 +176,9 @@ type launcher struct {
 	snow *drawables.Snow
 
 	timeMenu *timePopup
+
+	cHold           map[string]*bool
+	configScrolling bool
 }
 
 func StartLauncher() {
@@ -197,8 +200,9 @@ func StartLauncher() {
 	launcher := &launcher{
 		bld:        newBuilder(),
 		popupStack: make([]iPopup, 0),
-		winter:     (cTime.Month() == 12 && cTime.Day() >= 6) || (cTime.Month() < 3),
+		winter:     (cTime.Month() == 12 && cTime.Day() >= 6) || (cTime.Month() < 2),
 		christmas:  cTime.Month() == 12 && cTime.Day() >= 6,
+		cHold:      make(map[string]*bool),
 	}
 
 	platform.StartLogging("launcher")
@@ -215,7 +219,7 @@ func StartLauncher() {
 
 	assets.Init(build.Stream == "Dev")
 
-	mainthread.Run(func() {
+	goroutines.RunMain(func() {
 		defer func() {
 			if err := recover(); err != nil {
 				stackTrace := goroutines.GetStackTrace(4)
@@ -223,10 +227,10 @@ func StartLauncher() {
 			}
 		}()
 
-		mainthread.Call(launcher.startGLFW)
+		goroutines.CallMain(launcher.startGLFW)
 
 		for !launcher.win.ShouldClose() {
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				if launcher.win.GetAttrib(glfw.Iconified) == glfw.False {
 					if launcher.win.GetAttrib(glfw.Focused) == glfw.False {
 						glfw.SwapInterval(2)
@@ -354,7 +358,7 @@ func (l *launcher) startGLFW() {
 	settings.Playfield.Background.Triangles.Enabled = true
 
 	if l.winter {
-		imgui.PushStyleColor(imgui.StyleColorBorder, vec4(0.76, 0.9, 1, 1))
+		imgui.PushStyleColorVec4(imgui.ColBorder, vec4(0.76, 0.9, 1, 1))
 
 		settings.Playfield.Background.Triangles.Enabled = false
 
@@ -370,6 +374,10 @@ func (l *launcher) startGLFW() {
 	l.coin.DrawVisualiser(true)
 
 	goroutines.RunOS(func() {
+		l.splashText = "Initializing..."
+
+		settings.DefaultsFactory.EncoderOptions() // preload to avoid pauses
+
 		l.loadBeatmaps()
 
 		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
@@ -413,6 +421,11 @@ func (l *launcher) startGLFW() {
 
 		if launcherConfig.CheckForUpdates {
 			checkForUpdates(false)
+		}
+
+		refreshErr := osuapi.TryRefreshToken()
+		if refreshErr != nil {
+			showMessage(mError, "Failed to refresh token!\nPlease go to Settings->Credentials and click Authorize.\nError: %s", refreshErr.Error())
 		}
 	})
 
@@ -589,7 +602,9 @@ func (l *launcher) Draw() {
 			l.batch.DrawStObject(vector.NewVec2d(0, settings.Graphics.GetHeightF()), vector.BottomLeft, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, bSnow)
 
 			//record button
-			l.batch.DrawStObject(l.recordSnowPos.Copy64().AddS(0, 2), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[2])
+			if l.bld.currentMode != Play {
+				l.batch.DrawStObject(l.recordSnowPos.Copy64().AddS(0, 2), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[2])
+			}
 
 			//danse button
 			l.batch.DrawStObject(vector.NewVec2d(624, 448), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[1])
@@ -648,7 +663,7 @@ func (l *launcher) drawImgui() {
 	lock := l.danserRunning
 
 	if lock {
-		imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+		imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
 	}
 
 	wW, wH := int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight)
@@ -683,18 +698,18 @@ func (l *launcher) drawImgui() {
 }
 
 func (l *launcher) drawMain() {
-	w := imgui.WindowContentRegionMax().X
+	w := contentRegionMax().X
 
 	imgui.PushFont(Font24)
 
 	if imgui.BeginTableV("ltpanel", 2, imgui.TableFlagsSizingStretchProp, vec2(float32(w)/2, 0), -1) {
-		imgui.TableSetupColumnV("ltpanel1", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("ltpanel2", imgui.TableColumnFlagsWidthStretch, 0, uint(1))
+		imgui.TableSetupColumnV("ltpanel1", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("ltpanel2", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(1))
 
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Mode:")
+		imgui.TextUnformatted("Mode:")
 
 		imgui.TableNextColumn()
 
@@ -702,14 +717,14 @@ func (l *launcher) drawMain() {
 
 		if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
 			for _, m := range modes {
-				if imgui.SelectableV(m.String(), l.bld.currentMode == m, 0, vzero()) {
+				if imgui.SelectableBoolV(m.String(), l.bld.currentMode == m, 0, vzero()) {
 					if m == Play {
 						l.bld.currentPMode = Watch
 					}
 
 					if m != Replay {
 						l.bld.replayPath = ""
-						l.bld.currentReplay = nil
+						l.bld.removeReplay()
 					}
 
 					if m != Knockout {
@@ -747,7 +762,7 @@ func (l *launcher) drawMain() {
 
 	imgui.PopFont()
 
-	if imgui.IsMouseClicked(0) && !l.danserRunning {
+	if imgui.IsMouseClickedBool(0) && !l.danserRunning {
 		platform.StopProgress(l.win)
 		l.showProgressBar = false
 		l.recordStatus = ""
@@ -771,7 +786,7 @@ func (l *launcher) drawMain() {
 }
 
 func (l *launcher) drawSplash() {
-	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+	w, h := contentRegionMax().X, contentRegionMax().Y
 
 	imgui.PushFont(Font48)
 
@@ -780,19 +795,19 @@ func (l *launcher) drawSplash() {
 	var height float32
 
 	for _, sText := range splText {
-		height += imgui.CalcTextSize(sText, false, 0).Y
+		height += imgui.CalcTextSizeV(sText, false, 0).Y
 	}
 
 	var dHeight float32
 
 	for _, sText := range splText {
-		tSize := imgui.CalcTextSize(sText, false, 0)
+		tSize := imgui.CalcTextSizeV(sText, false, 0)
 
 		imgui.SetCursorPos(vec2(20+(w-tSize.X)/2, 20+(h-height)/2+dHeight))
 
 		dHeight += tSize.Y
 
-		imgui.Text(sText)
+		imgui.TextUnformatted(sText)
 	}
 
 	imgui.PopFont()
@@ -811,7 +826,7 @@ func (l *launcher) drawControls() {
 
 	imgui.SetCursorPos(vec2(20, 204+34))
 
-	w := imgui.WindowContentRegionMax().X
+	w := contentRegionMax().X
 
 	if imgui.BeginTableV("abtn", 2, imgui.TableFlagsSizingStretchSame, vec2(float32(w)/2, -1), -1) {
 		imgui.TableNextColumn()
@@ -824,9 +839,20 @@ func (l *launcher) drawControls() {
 
 		imgui.TableNextColumn()
 
-		if l.bld.currentMode != Replay {
-			if imgui.ButtonV("Mods", vec2(-1, imgui.TextLineHeight()*2)) {
-				l.openPopup(newModPopup(l.bld))
+		nilMap := l.bld.currentMap == nil
+
+		if nilMap {
+			imgui.BeginDisabled()
+		}
+
+		if imgui.ButtonV("Mods", vec2(-1, imgui.TextLineHeight()*2)) {
+			l.openPopup(newModPopup(l.bld))
+		}
+
+		if nilMap {
+			imgui.EndDisabled()
+			if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
+				imgui.SetTooltip("Select map/replay first")
 			}
 		}
 
@@ -900,11 +926,11 @@ func (l *launcher) selectReplay() {
 
 		mString := fmt.Sprintf("%s - %s [%s]\nPlayed by: %s", b.Artist, b.Name, b.Difficulty, l.bld.currentReplay.Username)
 
-		imgui.PushTextWrapPosV(imgui.ContentRegionMax().X / 2)
-		imgui.Text(mString)
+		imgui.PushTextWrapPosV(contentRegionMax().X / 2)
+		imgui.TextUnformatted(mString)
 		imgui.PopTextWrapPos()
 	} else {
-		imgui.Text("No replay selected")
+		imgui.TextUnformatted("No replay selected")
 	}
 
 	imgui.UnindentV(5)
@@ -990,8 +1016,8 @@ func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
 			l.bld.currentMode = Replay
 			l.bld.replayPath = replay.path
-			l.bld.currentReplay = replay.parsedReplay
 			l.bld.setMap(bMap)
+			l.bld.setReplay(replay.parsedReplay)
 
 			return
 		}
@@ -1030,13 +1056,13 @@ func (l *launcher) newKnockout() {
 	if l.bld.knockoutReplays != nil && l.bld.currentMap != nil {
 		b := l.bld.currentMap
 
-		imgui.PushTextWrapPosV(imgui.ContentRegionMax().X / 2)
+		imgui.PushTextWrapPosV(contentRegionMax().X / 2)
 
-		imgui.Text(fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty))
+		imgui.TextUnformatted(fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty))
 
 		imgui.AlignTextToFramePadding()
 
-		imgui.Text(fmt.Sprintf("%d replays loaded", len(l.bld.knockoutReplays)))
+		imgui.TextUnformatted(fmt.Sprintf("%d replays loaded", len(l.bld.knockoutReplays)))
 
 		imgui.PopTextWrapPos()
 
@@ -1046,7 +1072,7 @@ func (l *launcher) newKnockout() {
 			l.openPopup(l.knockoutManager)
 		}
 	} else {
-		imgui.Text("No replays selected")
+		imgui.TextUnformatted("No replays selected")
 	}
 
 	imgui.UnindentV(5)
@@ -1113,11 +1139,11 @@ func (l *launcher) showSelect() {
 
 		mString := fmt.Sprintf("%s - %s [%s]", b.Artist, b.Name, b.Difficulty)
 
-		imgui.PushTextWrapPosV(imgui.ContentRegionMax().X / 2)
-		imgui.Text(mString)
+		imgui.PushTextWrapPosV(contentRegionMax().X / 2)
+		imgui.TextUnformatted(mString)
 		imgui.PopTextWrapPos()
 	} else {
-		imgui.Text("No map selected")
+		imgui.TextUnformatted("No map selected")
 	}
 
 	imgui.UnindentV(5)
@@ -1126,7 +1152,7 @@ func (l *launcher) showSelect() {
 }
 
 func (l *launcher) drawLowerPanel() {
-	w, h := imgui.WindowContentRegionMax().X, imgui.WindowContentRegionMax().Y
+	w, h := contentRegionMax().X, contentRegionMax().Y
 
 	if l.bld.currentMode != Play {
 		showProgress := l.bld.currentPMode == Record && l.showProgressBar
@@ -1144,7 +1170,7 @@ func (l *launcher) drawLowerPanel() {
 
 		if imgui.BeginCombo("##Watch mode", l.bld.currentPMode.String()) {
 			for _, m := range pModes {
-				if imgui.SelectableV(m.String(), l.bld.currentPMode == m, 0, vzero()) {
+				if imgui.SelectableBoolV(m.String(), l.bld.currentPMode == m, 0, vzero()) {
 					l.bld.currentPMode = m
 				}
 			}
@@ -1161,18 +1187,18 @@ func (l *launcher) drawLowerPanel() {
 			}
 		}
 
-		imgui.SetCursorPos(vec2(imgui.WindowContentRegionMin().X, h-imgui.FrameHeightWithSpacing()))
+		imgui.SetCursorPos(vec2(contentRegionMin().X, h-imgui.FrameHeightWithSpacing()))
 
 		if showProgress {
 			if strings.HasPrefix(l.recordStatus, "Done") {
-				imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.Vec4{
+				imgui.PushStyleColorVec4(imgui.ColPlotHistogram, imgui.Vec4{
 					X: 0.16,
 					Y: 0.75,
 					Z: 0.18,
 					W: 1,
 				})
 			} else {
-				imgui.PushStyleColor(imgui.StyleColorPlotHistogram, imgui.CurrentStyle().Color(imgui.StyleColorCheckMark))
+				imgui.PushStyleColorVec4(imgui.ColPlotHistogram, *imgui.StyleColorVec4(imgui.ColCheckMark))
 			}
 
 			imgui.ProgressBarV(l.recordProgress, vec2(w/2, imgui.FrameHeight()), l.recordStatus)
@@ -1182,7 +1208,7 @@ func (l *launcher) drawLowerPanel() {
 
 				cPos := imgui.CursorPos()
 
-				imgui.Text(l.recordStatusSpeed)
+				imgui.TextUnformatted(l.recordStatusSpeed)
 
 				cPos.X += 95
 
@@ -1190,13 +1216,13 @@ func (l *launcher) drawLowerPanel() {
 
 				eta := int(time.Since(l.encodeStart).Seconds())
 
-				imgui.Text("| Elapsed: " + util.FormatSeconds(eta))
+				imgui.TextUnformatted("| Elapsed: " + util.FormatSeconds(eta))
 
 				cPos.X += 135
 
 				imgui.SetCursorPos(cPos)
 
-				imgui.Text("| " + l.recordStatusETA)
+				imgui.TextUnformatted("| " + l.recordStatusETA)
 
 				imgui.PopFont()
 			}
@@ -1209,7 +1235,7 @@ func (l *launcher) drawLowerPanel() {
 
 	bW := (w) / 4
 
-	imgui.SetCursorPos(vec2(imgui.WindowContentRegionMax().X-w/2.5, h-imgui.FrameHeightWithSpacing()*2))
+	imgui.SetCursorPos(vec2(contentRegionMax().X-w/2.5, h-imgui.FrameHeightWithSpacing()*2))
 
 	centerTable("dansebutton", w/2.5, func() {
 		imgui.PushFont(Font48)
@@ -1222,7 +1248,7 @@ func (l *launcher) drawLowerPanel() {
 
 			if !dRun {
 				if s {
-					imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+					imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
 				}
 			} else {
 				imgui.PopItemFlag()
@@ -1270,7 +1296,7 @@ func (l *launcher) drawLowerPanel() {
 					imgui.PopItemFlag()
 				}
 			} else {
-				imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+				imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
 			}
 
 			imgui.PopFont()
@@ -1283,9 +1309,9 @@ func (l *launcher) drawConfigPanel() {
 		l.currentEditor.setDanserRunning(l.danserRunning && l.bld.currentPMode == Watch)
 	}
 
-	w := imgui.WindowContentRegionMax().X
+	w := contentRegionMax().X
 
-	imgui.SetCursorPos(vec2(imgui.WindowContentRegionMax().X-float32(w)/2.5, 20))
+	imgui.SetCursorPos(vec2(contentRegionMax().X-float32(w)/2.5, 20))
 
 	if imgui.BeginTableV("rtpanel", 2, imgui.TableFlagsSizingStretchProp, vec2(float32(w)/2.5, 0), -1) {
 		imgui.TableSetupColumnV("rtpanel1", imgui.TableColumnFlagsWidthStretch, 0, 0)
@@ -1314,7 +1340,7 @@ func (l *launcher) drawConfigPanel() {
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Config:")
+		imgui.TextUnformatted("Config:")
 
 		imgui.SameLine()
 
@@ -1324,18 +1350,18 @@ func (l *launcher) drawConfigPanel() {
 
 		if imgui.BeginComboV("##config", l.bld.config, imgui.ComboFlagsHeightLarge) {
 			for _, s := range l.configList {
-				mWidth = max(mWidth, imgui.CalcTextSize(s, false, 0).X+20)
+				mWidth = max(mWidth, imgui.CalcTextSizeV(s, false, 0).X+20)
 			}
 
 			imgui.SetNextItemWidth(mWidth)
 
 			focusScroll := searchBox("##configSearch", &l.configSearch)
 
-			if !imgui.IsMouseClicked(0) && !imgui.IsMouseClicked(1) && !imgui.IsAnyItemActive() && !(imgui.IsWindowFocusedV(imgui.FocusedFlagsChildWindows) && !imgui.IsWindowFocused()) {
+			if !imgui.IsMouseClickedBool(0) && !imgui.IsMouseClickedBool(1) && !imgui.IsAnyItemActive() && !l.configEditOpened && !l.configScrolling {
 				imgui.SetKeyboardFocusHereV(-1)
 			}
 
-			if imgui.Selectable("Create new...") {
+			if imgui.SelectableBool("Create new...") {
 				l.newCloneOpened = true
 				l.configManiMode = New
 			}
@@ -1343,7 +1369,7 @@ func (l *launcher) drawConfigPanel() {
 			imgui.PushStyleVarFloat(imgui.StyleVarFrameRounding, 0)
 			imgui.PushStyleVarFloat(imgui.StyleVarFrameBorderSize, 0)
 			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vzero())
-			imgui.PushStyleColor(imgui.StyleColorFrameBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: 0})
+			imgui.PushStyleColorVec4(imgui.ColFrameBg, imgui.Vec4{X: 0, Y: 0, Z: 0, W: 0})
 
 			searchResults := make([]string, 0, len(l.configList))
 
@@ -1359,6 +1385,7 @@ func (l *launcher) drawConfigPanel() {
 				sHeight := float32(min(8, len(searchResults)))*imgui.FrameHeightWithSpacing() - imgui.CurrentStyle().ItemSpacing().Y/2
 
 				if imgui.BeginListBoxV("##blistbox", vec2(mWidth, sHeight)) {
+					l.configScrolling = handleDragScroll()
 					focusScroll = focusScroll || imgui.IsWindowAppearing()
 
 					for _, s := range searchResults {
@@ -1368,42 +1395,54 @@ func (l *launcher) drawConfigPanel() {
 							}
 						}
 
-						if imgui.IsMouseClicked(1) && imgui.IsItemHovered() {
-							l.configEditOpened = true
-
-							imgui.SetNextWindowPosV(imgui.MousePos(), imgui.ConditionAlways, vzero())
-
-							imgui.OpenPopup("##context" + s)
+						if _, ok := l.cHold[s]; !ok {
+							l.cHold[s] = new(bool)
 						}
 
-						if imgui.BeginPopupModalV("##context"+s, &l.configEditOpened, imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
+						if imgui.IsMouseClickedBool(1) && imgui.IsItemHovered() {
+							*l.cHold[s] = true
+							l.configEditOpened = true
+
+							imgui.SetNextWindowPosV(imgui.MousePos(), imgui.CondAlways, vzero())
+
+							imgui.OpenPopupStr("##context" + s)
+						}
+
+						befHold := *l.cHold[s]
+
+						if imgui.BeginPopupModalV("##context"+s, l.cHold[s], imgui.WindowFlagsNoCollapse|imgui.WindowFlagsNoResize|imgui.WindowFlagsAlwaysAutoResize|imgui.WindowFlagsNoMove|imgui.WindowFlagsNoTitleBar) {
 							if s != "default" {
-								if imgui.Selectable("Rename") {
+								if imgui.SelectableBool("Rename") {
 									l.newCloneOpened = true
 									l.configPrevName = s
 									l.configManiMode = Rename
 								}
 							}
 
-							if imgui.Selectable("Clone") {
+							if imgui.SelectableBool("Clone") {
 								l.newCloneOpened = true
 								l.configPrevName = s
 								l.configManiMode = Clone
 							}
 
 							if s != "default" {
-								if imgui.Selectable("Remove") {
+								if imgui.SelectableBool("Remove") {
 									if showMessage(mQuestion, "Are you sure you want to remove \"%s\" profile?", s) {
 										l.removeConfig(s)
 									}
 								}
 							}
 
-							if (imgui.IsMouseClicked(0) || imgui.IsMouseClicked(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
-								l.configEditOpened = false
+							if (imgui.IsMouseClickedBool(0) || imgui.IsMouseClickedBool(1)) && !imgui.IsWindowHoveredV(imgui.HoveredFlagsRootAndChildWindows|imgui.HoveredFlagsAllowWhenBlockedByActiveItem|imgui.HoveredFlagsAllowWhenBlockedByPopup) {
+								*l.cHold[s] = false
+								//imgui.CloseCurrentPopup()
 							}
 
 							imgui.EndPopup()
+						}
+
+						if befHold && !*l.cHold[s] {
+							l.configEditOpened = false
 						}
 					}
 
@@ -1424,7 +1463,7 @@ func (l *launcher) drawConfigPanel() {
 		dRun := l.danserRunning && l.bld.currentPMode == Watch
 
 		if dRun {
-			imgui.PushItemFlag(imgui.ItemFlagsDisabled, false)
+			imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), false)
 		}
 
 		if imgui.ButtonV("Edit", vec2(-1, 0)) {
@@ -1439,21 +1478,21 @@ func (l *launcher) drawConfigPanel() {
 	}
 
 	if l.newCloneOpened {
-		popupSmall("Clone/new box", &l.newCloneOpened, true, func() {
+		popupSmall("Clone/new box", &l.newCloneOpened, true, 0, 0, func() {
 			if imgui.BeginTable("rfa", 1) {
 				imgui.TableNextColumn()
 
-				imgui.Text("Name:")
+				imgui.TextUnformatted("Name:")
 
 				imgui.SameLine()
 
 				imgui.SetNextItemWidth(imgui.TextLineHeight() * 10)
 
-				if imgui.InputTextV("##nclonename", &l.newCloneName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter) {
+				if inputTextV("##nclonename", &l.newCloneName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter) {
 					l.newCloneName = strings.TrimSpace(l.newCloneName)
 				}
 
-				if !imgui.IsAnyItemActive() && !imgui.IsMouseClicked(0) {
+				if !imgui.IsAnyItemActive() && !imgui.IsMouseClickedBool(0) {
 					imgui.SetKeyboardFocusHereV(-1)
 				}
 
@@ -1461,15 +1500,15 @@ func (l *launcher) drawConfigPanel() {
 
 				cPos := imgui.CursorPos()
 
-				imgui.SetCursorPos(vec2(cPos.X+(imgui.ContentRegionAvail().X-imgui.CalcTextSize("Save", false, 0).X-imgui.CurrentStyle().FramePadding().X*2)/2, cPos.Y))
+				imgui.SetCursorPos(vec2(cPos.X+(imgui.ContentRegionAvail().X-imgui.CalcTextSizeV("Save", false, 0).X-imgui.CurrentStyle().FramePadding().X*2)/2, cPos.Y))
 
 				e := l.newCloneName == ""
 
 				if e {
-					imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+					imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), true)
 				}
 
-				if imgui.Button("Save##newclone") || (!e && (imgui.IsKeyPressed(imgui.KeyEnter) || imgui.IsKeyPressed(imgui.KeyKeypadEnter))) {
+				if imgui.Button("Save##newclone") || (!e && (imgui.IsKeyPressedBool(imgui.KeyEnter) || imgui.IsKeyPressedBool(imgui.KeyKeypadEnter))) {
 					_, err := os.Stat(filepath.Join(env.ConfigDir(), l.newCloneName+".json"))
 					if err == nil {
 						showMessage(mError, "Config with that name already exists!\nPlease pick a different name")
@@ -1764,7 +1803,7 @@ func (l *launcher) startDanser() {
 		if err != nil {
 			panicWait.Wait()
 
-			mainthread.Call(func() {
+			goroutines.CallMain(func() {
 				pMsg := panicMessage
 				if idx := strings.Index(pMsg, "Error:"); idx > -1 {
 					pMsg = pMsg[:idx-1] + "\n\n" + pMsg[idx+7:]
@@ -1846,7 +1885,7 @@ func (l *launcher) reloadMaps(after func()) {
 		l.loadBeatmaps()
 
 		// Add to main thread scheduler to avoid race conditions
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			if l.bld.currentMap != nil {
 				for _, b := range l.beatmaps {
 					if b.MD5 == l.bld.currentMap.MD5 {

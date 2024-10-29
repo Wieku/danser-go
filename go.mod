@@ -1,17 +1,18 @@
 module github.com/wieku/danser-go
 
-go 1.21
+go 1.22.0
+
+toolchain go1.22.4
 
 require (
+	github.com/AllenDang/cimgui-go v1.0.0
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/dustin/go-humanize v1.0.0
-	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-gl/gl v0.0.0-20210813123233-e4099ee2221f
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
 	github.com/go-gl/mathgl v1.0.0
-	github.com/inkyblackness/imgui-go/v4 v4.4.1-0.20220209062255-f8ed29c1276f
 	github.com/itchio/lzma v0.0.0-20190703113020-d3e24e3e3d49
 	github.com/karrick/godirwalk v1.16.1
 	github.com/mattn/go-sqlite3 v1.14.17
@@ -19,11 +20,11 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/sqweek/dialog v0.0.0-20220504154117-be45b268883a
-	github.com/thehowl/go-osuapi v0.0.0-20181219091033-b29455689881
-	github.com/wieku/rplpa v1.0.0
+	github.com/wieku/rplpa v1.0.1
 	golang.org/x/exp v0.0.0-20220312040426-20fd27f61765
 	golang.org/x/image v0.10.0
-	golang.org/x/sys v0.10.0
+	golang.org/x/oauth2 v0.23.0
+	golang.org/x/sys v0.25.0
 	golang.org/x/text v0.11.0
 )
 
@@ -44,11 +45,11 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
-replace github.com/inkyblackness/imgui-go/v4 => github.com/neclepsio/imgui-go/v4 v4.0.0-20220215070259-092710ff7bb1
+replace github.com/sqweek/dialog => github.com/wieku/dialog v1.0.0
 
-replace github.com/sqweek/dialog => github.com/wieku/dialog v0.0.0-20221229220948-2d1daf4d8f13
+replace github.com/AllenDang/cimgui-go => github.com/Wieku/cimgui-go v1.0.0

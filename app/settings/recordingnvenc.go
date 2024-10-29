@@ -77,6 +77,28 @@ func (s *hevcNvencSettings) GenerateFFmpegArgs() (ret []string, err error) {
 	return append(ret, ret2...), nil
 }
 
+type av1NvencSettings struct {
+	RateControl       string `combo:"vbr|VBR,cbr|CBR,cqp|Constant Frame Compression (CQP),cq|Constant Quality"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	CQ                int    `string:"true" min:"0" max:"51" showif:"RateControl=cqp,cq"`
+	Preset            string `combo:"fast|fast (legacy),medium|medium (legacy),slow|slow (legacy),p1|fastest (p1),p2|faster (p2),p3|fast (p3),p4|medium (p4),p5|slow (p5),p6|slower (p6),p7|slowest (p7)"`
+	AdditionalOptions string
+}
+
+func (s *av1NvencSettings) GenerateFFmpegArgs() (ret []string, err error) {
+	ret, err = nvencCommon(s.RateControl, s.Bitrate, s.CQ)
+	if err != nil {
+		return nil, err
+	}
+
+	ret2, err := nvencCommon2(s.Preset, s.AdditionalOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(ret, ret2...), nil
+}
+
 func nvencCommon(rateControl, bitrate string, cq int) (ret []string, err error) {
 	switch strings.ToLower(rateControl) {
 	case "vbr":

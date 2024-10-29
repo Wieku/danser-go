@@ -1,7 +1,7 @@
 package launcher
 
 import (
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/mutils"
@@ -18,28 +18,38 @@ func drawSpeedMenu(bld *builder) {
 }
 
 func drawParamMenu(bld *builder) {
-	sliderFloatReset("Approach Rate (AR)", &bld.ar, 0, 10, "%.1f")
+	var arCSMin, vMax = 0.0, 10.0
+
+	if bld.extendedValues {
+		arCSMin = -10
+		vMax = 12
+	}
+
+	sliderFloatReset("Approach Rate (AR)", &bld.ar, arCSMin, vMax, "%.1f")
 	imgui.Spacing()
 
 	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderFloatReset("Overall Difficulty (OD)", &bld.od, 0, 10, "%.1f")
+		sliderFloatReset("Overall Difficulty (OD)", &bld.od, 0, vMax, "%.1f")
 		imgui.Spacing()
 	}
 
-	sliderFloatReset("Circle Size (CS)", &bld.cs, 0, 10, "%.1f")
+	sliderFloatReset("Circle Size (CS)", &bld.cs, arCSMin, vMax, "%.1f")
 	imgui.Spacing()
 
 	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderFloatReset("Health Drain (HP)", &bld.hp, 0, 10, "%.1f")
+		sliderFloatReset("Health Drain (HP)", &bld.hp, 0, vMax, "%.1f")
 		imgui.Spacing()
 	}
+
+	imgui.Checkbox("Allow extended values", &bld.extendedValues)
+	imgui.Spacing()
 }
 
 func drawCDMenu(bld *builder) {
 	if imgui.BeginTable("dfa", 2) {
 		imgui.TableNextColumn()
 
-		imgui.Text("Mirrored cursors:")
+		imgui.TextUnformatted("Mirrored cursors:")
 
 		imgui.TableNextColumn()
 
@@ -53,7 +63,7 @@ func drawCDMenu(bld *builder) {
 
 		imgui.TableNextColumn()
 
-		imgui.Text("Tag cursors:")
+		imgui.TextUnformatted("Tag cursors:")
 
 		imgui.TableNextColumn()
 
@@ -71,31 +81,31 @@ func drawCDMenu(bld *builder) {
 
 func drawRecordMenu(bld *builder) {
 	if imgui.BeginTable("rfa", 2) {
-		imgui.TableSetupColumnV("c1rfa", imgui.TableColumnFlagsWidthFixed, 0, uint(0))
-		imgui.TableSetupColumnV("c2rfa", imgui.TableColumnFlagsWidthFixed, imgui.TextLineHeight()*7, uint(1))
+		imgui.TableSetupColumnV("c1rfa", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(0))
+		imgui.TableSetupColumnV("c2rfa", imgui.TableColumnFlagsWidthFixed, imgui.TextLineHeight()*7, imgui.ID(1))
 
 		imgui.TableNextColumn()
 
 		imgui.AlignTextToFramePadding()
-		imgui.Text("Output name:")
+		imgui.TextUnformatted("Output name:")
 
 		imgui.TableNextColumn()
 
 		imgui.SetNextItemWidth(-1)
 
-		imgui.InputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
+		inputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
 
 		if bld.currentPMode == Screenshot {
 			imgui.TableNextColumn()
 
 			imgui.AlignTextToFramePadding()
-			imgui.Text("Screenshot at:")
+			imgui.TextUnformatted("Screenshot at:")
 
 			imgui.TableNextColumn()
 
 			if imgui.BeginTableV("rrfa", 2, 0, vec2(-1, 0), -1) {
-				imgui.TableSetupColumnV("c1rrfa", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-				imgui.TableSetupColumnV("c2rrfa", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSize("s", false, 0).X+imgui.CurrentStyle().CellPadding().X*2, uint(1))
+				imgui.TableSetupColumnV("c1rrfa", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+				imgui.TableSetupColumnV("c2rrfa", imgui.TableColumnFlagsWidthFixed, imgui.CalcTextSizeV("s", false, 0).X+imgui.CurrentStyle().CellPadding().X*2, imgui.ID(1))
 
 				imgui.TableNextColumn()
 
@@ -104,7 +114,7 @@ func drawRecordMenu(bld *builder) {
 				valText := strconv.FormatFloat(float64(bld.ssTime), 'f', 3, 64)
 				prevText := valText
 
-				if imgui.InputText("##sstime", &valText) {
+				if inputText("##sstime", &valText) {
 					parsed, err := strconv.ParseFloat(valText, 64)
 					if err != nil {
 						valText = prevText
@@ -117,7 +127,7 @@ func drawRecordMenu(bld *builder) {
 				imgui.TableNextColumn()
 
 				imgui.AlignTextToFramePadding()
-				imgui.Text("s")
+				imgui.TextUnformatted("s")
 
 				imgui.EndTable()
 			}
@@ -129,11 +139,11 @@ func drawRecordMenu(bld *builder) {
 
 func drawAbout(dTex texture.Texture) {
 	centerTable("about1", -1, func() {
-		imgui.Image(imgui.TextureID(dTex.GetID()), vec2(100, 100))
+		imgui.Image(imgui.TextureID{Data: uintptr(dTex.GetID())}, vec2(100, 100))
 	})
 
 	centerTable("about2", -1, func() {
-		imgui.Text("danser-go " + build.VERSION)
+		imgui.TextUnformatted("danser-go " + build.VERSION)
 	})
 
 	centerTable("about3", -1, func() {
@@ -145,11 +155,11 @@ func drawAbout(dTex texture.Texture) {
 	imgui.Dummy(vec2(1, imgui.FrameHeight()))
 
 	centerTable("about4.1", -1, func() {
-		imgui.Text("Advanced visualisation multi-tool")
+		imgui.TextUnformatted("Advanced visualisation multi-tool")
 	})
 
 	centerTable("about4.2", -1, func() {
-		imgui.Text("for osu!")
+		imgui.TextUnformatted("for osu!")
 	})
 
 	imgui.Dummy(vec2(1, imgui.FrameHeight()))
@@ -186,34 +196,6 @@ func drawAbout(dTex texture.Texture) {
 func drawLauncherConfig() {
 	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(imgui.CurrentStyle().CellPadding().X, 10))
 
-	checkboxOption := func(text string, value *bool) {
-		if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
-			imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, uint(0))
-			imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 0, uint(1))
-
-			imgui.TableNextColumn()
-
-			pos1 := imgui.CursorPos()
-
-			imgui.AlignTextToFramePadding()
-
-			imgui.PushTextWrapPos()
-
-			imgui.Text(text)
-
-			imgui.PopTextWrapPos()
-
-			pos2 := imgui.CursorPos()
-
-			imgui.TableNextColumn()
-
-			imgui.SetCursorPos(vec2(imgui.CursorPosX(), (pos1.Y+pos2.Y-imgui.FrameHeightWithSpacing())/2))
-			imgui.Checkbox("##ck"+text, value)
-
-			imgui.EndTable()
-		}
-	}
-
 	checkboxOption("Check for updates on startup", &launcherConfig.CheckForUpdates)
 
 	checkboxOption("Load latest replay on startup", &launcherConfig.LoadLatestReplay)
@@ -227,7 +209,7 @@ func drawLauncherConfig() {
 	checkboxOption("Preview selected maps", &launcherConfig.PreviewSelected)
 
 	imgui.AlignTextToFramePadding()
-	imgui.Text("Preview volume")
+	imgui.TextUnformatted("Preview volume")
 
 	volume := int32(launcherConfig.PreviewVolume * 100)
 

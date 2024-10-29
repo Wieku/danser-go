@@ -1,8 +1,8 @@
 package shader
 
 import (
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/wieku/danser-go/framework/goroutines"
 )
 
 type Type uint32
@@ -65,7 +65,7 @@ func NewSource(source string, srcType Type) *Source {
 }
 
 func (src *Source) Dispose() {
-	mainthread.CallNonBlock(func() {
+	goroutines.CallNonBlockMain(func() {
 		gl.DeleteShader(src.handle)
 	})
 }

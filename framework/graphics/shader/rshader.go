@@ -2,12 +2,13 @@ package shader
 
 import (
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"runtime"
 )
@@ -179,70 +180,14 @@ func (s *RShader) GetUniformInfo(name string) attribute.VertexAttribute {
 	return attr
 }
 
-func (s *RShader) SetUniform(name string, value interface{}) {
+func (s *RShader) SetUniform(name string, value any) {
 	uniform, exists := s.uniforms[name]
 	if !exists {
 		log.Println(s.uniforms)
 		panic(fmt.Sprintf("Uniform %s doesn't exist", name))
 	}
 
-	switch uniform.Type {
-	case attribute.Float:
-		*s.fCache = value.(float32)
-		gl.ProgramUniform1fv(s.handle, uniform.Location, 1, s.fCache)
-	case attribute.Vec2:
-		*s.v2Cache = value.(mgl32.Vec2)
-		gl.ProgramUniform2fv(s.handle, uniform.Location, 1, &s.v2Cache[0])
-	case attribute.Vec3:
-		*s.v3Cache = value.(mgl32.Vec3)
-		gl.ProgramUniform3fv(s.handle, uniform.Location, 1, &s.v3Cache[0])
-	case attribute.Vec4:
-		if c, ok := value.(color.Color); ok {
-			s.v4Cache[0] = c.R
-			s.v4Cache[1] = c.G
-			s.v4Cache[2] = c.B
-			s.v4Cache[3] = c.A
-		} else {
-			*s.v4Cache = value.(mgl32.Vec4)
-		}
-
-		gl.ProgramUniform4fv(s.handle, uniform.Location, 1, &s.v4Cache[0])
-	case attribute.Mat2:
-		*s.m2Cache = value.(mgl32.Mat2)
-		gl.ProgramUniformMatrix2fv(s.handle, uniform.Location, 1, false, &s.m2Cache[0])
-	case attribute.Mat23:
-		*s.m23Cache = value.(mgl32.Mat2x3)
-		gl.ProgramUniformMatrix2x3fv(s.handle, uniform.Location, 1, false, &s.m23Cache[0])
-	case attribute.Mat24:
-		*s.m24Cache = value.(mgl32.Mat2x4)
-		gl.ProgramUniformMatrix2x4fv(s.handle, uniform.Location, 1, false, &s.m24Cache[0])
-	case attribute.Mat3:
-		*s.m3Cache = value.(mgl32.Mat3)
-		gl.ProgramUniformMatrix3fv(s.handle, uniform.Location, 1, false, &s.m3Cache[0])
-	case attribute.Mat32:
-		*s.m32Cache = value.(mgl32.Mat3x2)
-		gl.ProgramUniformMatrix3x2fv(s.handle, uniform.Location, 1, false, &s.m32Cache[0])
-	case attribute.Mat34:
-		*s.m34Cache = value.(mgl32.Mat3x4)
-		gl.ProgramUniformMatrix3x4fv(s.handle, uniform.Location, 1, false, &s.m34Cache[0])
-	case attribute.Mat4:
-		*s.m4Cache = value.(mgl32.Mat4)
-		gl.ProgramUniformMatrix4fv(s.handle, uniform.Location, 1, false, &s.m4Cache[0])
-	case attribute.Mat42:
-		*s.m42Cache = value.(mgl32.Mat4x2)
-		gl.ProgramUniformMatrix4x2fv(s.handle, uniform.Location, 1, false, &s.m42Cache[0])
-	case attribute.Mat43:
-		*s.m43Cache = value.(mgl32.Mat4x3)
-		gl.ProgramUniformMatrix4x3fv(s.handle, uniform.Location, 1, false, &s.m43Cache[0])
-	default: // We assume that uniform is of type int or sampler
-		if vI, ok := value.(int); ok {
-			*s.iCache = int32(vI)
-		} else {
-			*s.iCache = value.(int32)
-		}
-
-		gl.ProgramUniform1iv(s.handle, uniform.Location, 1, s.iCache)
-	}
+	s.setUniformInternal(uniform.Location, uniform.Type, value)
 }
 
 func (s *RShader) SetUniformArr(name string, offset int, value interface{}) {
@@ -254,62 +199,75 @@ func (s *RShader) SetUniformArr(name string, offset int, value interface{}) {
 		panic(fmt.Sprintf("Uniform %s doesn't exist", name))
 	}
 
-	switch uniform.Type {
+	s.setUniformInternal(uniform.Location+int32(offset), uniform.Type, value)
+}
+
+func (s *RShader) setUniformInternal(location int32, uType attribute.Type, value any) {
+	switch uType {
 	case attribute.Float:
-		value := value.(float32)
-		gl.ProgramUniform1fv(s.handle, uniform.Location+int32(offset), 1, &value)
+		*s.fCache = value.(float32)
+		gl.ProgramUniform1fv(s.handle, location, 1, s.fCache)
 	case attribute.Vec2:
-		value := value.(mgl32.Vec2)
-		gl.ProgramUniform2fv(s.handle, uniform.Location+int32(offset), 1, &value[0])
+		if c, ok := value.(vector.Vector2f); ok {
+			s.v2Cache[0] = c.X
+			s.v2Cache[1] = c.Y
+		} else if c2, ok2 := value.(vector.Vector2d); ok2 {
+			s.v2Cache[0] = c2.X32()
+			s.v2Cache[1] = c2.Y32()
+		} else {
+			*s.v2Cache = value.(mgl32.Vec2)
+		}
+
+		gl.ProgramUniform2fv(s.handle, location, 1, &s.v2Cache[0])
 	case attribute.Vec3:
-		value := value.(mgl32.Vec3)
-		gl.ProgramUniform3fv(s.handle, uniform.Location+int32(offset), 1, &value[0])
+		*s.v3Cache = value.(mgl32.Vec3)
+		gl.ProgramUniform3fv(s.handle, location, 1, &s.v3Cache[0])
 	case attribute.Vec4:
 		if c, ok := value.(color.Color); ok {
-			gl.ProgramUniform4fv(s.handle, uniform.Location+int32(offset), 1, &c.ToArray()[0])
-
-			break
+			s.v4Cache[0] = c.R
+			s.v4Cache[1] = c.G
+			s.v4Cache[2] = c.B
+			s.v4Cache[3] = c.A
+		} else {
+			*s.v4Cache = value.(mgl32.Vec4)
 		}
 
-		value := value.(mgl32.Vec4)
-		gl.ProgramUniform4fv(s.handle, uniform.Location+int32(offset), 1, &value[0])
+		gl.ProgramUniform4fv(s.handle, location, 1, &s.v4Cache[0])
 	case attribute.Mat2:
-		value := value.(mgl32.Mat2)
-		gl.ProgramUniformMatrix2fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m2Cache = value.(mgl32.Mat2)
+		gl.ProgramUniformMatrix2fv(s.handle, location, 1, false, &s.m2Cache[0])
 	case attribute.Mat23:
-		value := value.(mgl32.Mat2x3)
-		gl.ProgramUniformMatrix2x3fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m23Cache = value.(mgl32.Mat2x3)
+		gl.ProgramUniformMatrix2x3fv(s.handle, location, 1, false, &s.m23Cache[0])
 	case attribute.Mat24:
-		value := value.(mgl32.Mat2x4)
-		gl.ProgramUniformMatrix2x4fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m24Cache = value.(mgl32.Mat2x4)
+		gl.ProgramUniformMatrix2x4fv(s.handle, location, 1, false, &s.m24Cache[0])
 	case attribute.Mat3:
-		value := value.(mgl32.Mat3)
-		gl.ProgramUniformMatrix3fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m3Cache = value.(mgl32.Mat3)
+		gl.ProgramUniformMatrix3fv(s.handle, location, 1, false, &s.m3Cache[0])
 	case attribute.Mat32:
-		value := value.(mgl32.Mat3x2)
-		gl.ProgramUniformMatrix3x2fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m32Cache = value.(mgl32.Mat3x2)
+		gl.ProgramUniformMatrix3x2fv(s.handle, location, 1, false, &s.m32Cache[0])
 	case attribute.Mat34:
-		value := value.(mgl32.Mat3x4)
-		gl.ProgramUniformMatrix3x4fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m34Cache = value.(mgl32.Mat3x4)
+		gl.ProgramUniformMatrix3x4fv(s.handle, location, 1, false, &s.m34Cache[0])
 	case attribute.Mat4:
-		value := value.(mgl32.Mat4)
-		gl.ProgramUniformMatrix4fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m4Cache = value.(mgl32.Mat4)
+		gl.ProgramUniformMatrix4fv(s.handle, location, 1, false, &s.m4Cache[0])
 	case attribute.Mat42:
-		value := value.(mgl32.Mat4x2)
-		gl.ProgramUniformMatrix4x2fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m42Cache = value.(mgl32.Mat4x2)
+		gl.ProgramUniformMatrix4x2fv(s.handle, location, 1, false, &s.m42Cache[0])
 	case attribute.Mat43:
-		value := value.(mgl32.Mat4x3)
-		gl.ProgramUniformMatrix4x3fv(s.handle, uniform.Location+int32(offset), 1, false, &value[0])
+		*s.m43Cache = value.(mgl32.Mat4x3)
+		gl.ProgramUniformMatrix4x3fv(s.handle, location, 1, false, &s.m43Cache[0])
 	default: // We assume that uniform is of type int or sampler
-		if value, ok := value.(int); ok {
-			value := int32(value)
-			gl.ProgramUniform1iv(s.handle, uniform.Location+int32(offset), 1, &value)
-
-			break
+		if vI, ok := value.(int); ok {
+			*s.iCache = int32(vI)
+		} else {
+			*s.iCache = value.(int32)
 		}
 
-		value := value.(int32)
-		gl.ProgramUniform1iv(s.handle, uniform.Location+int32(offset), 1, &value)
+		gl.ProgramUniform1iv(s.handle, location, 1, s.iCache)
 	}
 }
 
@@ -342,7 +300,7 @@ func (s *RShader) Unbind() {
 
 func (s *RShader) Dispose() {
 	if !s.disposed {
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			gl.DeleteProgram(s.handle)
 		})
 	}

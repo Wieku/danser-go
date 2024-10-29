@@ -1,9 +1,11 @@
 package preprocessing
 
 import (
+	"cmp"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"slices"
 )
 
 const (
@@ -34,17 +36,25 @@ func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty) *LazySlider
 }
 
 func (slider *LazySlider) calculateEndPosition() {
-	slider.LazyTravelTime = slider.ScorePointsLazer[len(slider.ScorePointsLazer)-1].Time - slider.GetStartTime()
+	scorePoints := slices.Clone(slider.ScorePointsLazer)
+
+	scorePoints[len(scorePoints)-1].Time = max(slider.StartTime+(slider.EndTimeLazer-slider.StartTime)/2, slider.EndTimeLazer-36)
+
+	slices.SortFunc(scorePoints, func(a, b objects.TickPoint) int {
+		return cmp.Compare(a.Time, b.Time)
+	})
+
+	slider.LazyTravelTime = scorePoints[len(scorePoints)-1].Time - slider.GetStartTime()
 
 	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff.Mods) // temporary lazy end position until a real result can be derived.
 	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff.Mods)
 	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusU // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
-	for i := 0; i < len(slider.ScorePointsLazer); i++ {
-		var currMovementObj = slider.ScorePointsLazer[i]
+	for i := 0; i < len(scorePoints); i++ {
+		var currMovementObj = scorePoints[i]
 
 		var stackedPosition vector.Vector2f
-		if i == len(slider.ScorePointsLazer)-1 { // bug that made into deployment but well
+		if currMovementObj.LastPoint { // bug that made into deployment but well
 			stackedPosition = slider.GetStackedPositionAtModLazer(slider.EndTimeLazer, slider.diff.Mods)
 		} else {
 			stackedPosition = slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff.Mods)
@@ -56,7 +66,7 @@ func (slider *LazySlider) calculateEndPosition() {
 		// Amount of movement required so that the cursor position needs to be updated.
 		requiredMovement := float64(assumedSliderRadius)
 
-		if i == len(slider.ScorePointsLazer)-1 {
+		if i == len(scorePoints)-1 {
 			// The end of a slider has special aim rules due to the relaxed time constraint on position.
 			// There is both a lazy end position as well as the actual end slider position. We assume the player takes the simpler movement.
 			// For sliders that are circular, the lazy end position may actually be farther away than the sliders true end.
@@ -80,7 +90,7 @@ func (slider *LazySlider) calculateEndPosition() {
 			slider.LazyTravelDistance += float32(currMovementLength)
 		}
 
-		if i == len(slider.ScorePointsLazer)-1 {
+		if i == len(scorePoints)-1 {
 			slider.LazyEndPosition = currCursorPosition
 		}
 	}

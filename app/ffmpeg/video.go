@@ -3,7 +3,6 @@ package ffmpeg
 import (
 	"bufio"
 	"fmt"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/files"
@@ -211,7 +210,7 @@ func startVideo(fps, _w, _h int) {
 
 	freePBOPool = make(chan *PBO, MaxVideoBuffers)
 
-	mainthread.Call(func() {
+	goroutines.CallMain(func() {
 		if parsedFormat != pixconv.ARGB {
 			rgbToYuvConverter = effects.NewRGBYUV(w, h, parsedFormat != pixconv.I444 && parsedFormat != pixconv.I422)
 		}
@@ -247,6 +246,7 @@ func startVideo(fps, _w, _h int) {
 
 				if strings.Contains(lineLower, "error setting") ||
 					strings.Contains(lineLower, "error initializing") ||
+					strings.Contains(lineLower, "error creating") ||
 					strings.Contains(lineLower, "invalid") ||
 					strings.Contains(lineLower, "incompatible") ||
 					strings.Contains(lineLower, "not divisible") ||

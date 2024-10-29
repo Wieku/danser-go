@@ -7,10 +7,10 @@ import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
 	"math"
 	"sort"
@@ -27,14 +27,6 @@ const (
 	Click
 )
 
-type ComboResult uint8
-
-const (
-	Reset = ComboResult(iota)
-	Hold
-	Increase
-)
-
 type buttonState struct {
 	Left, Right bool
 }
@@ -49,9 +41,11 @@ type HitObject interface {
 	UpdateClickFor(player *difficultyPlayer, time int64) bool
 	UpdatePostFor(player *difficultyPlayer, time int64, processSliderEndsAhead bool) bool
 	UpdatePost(time int64) bool
+	MissForcefully(player *difficultyPlayer, time int64)
 	IsHit(player *difficultyPlayer) bool
 	GetFadeTime() int64
 	GetNumber() int64
+	GetObject() objects.IHitObject
 }
 
 type difficultyPlayer struct {
@@ -68,45 +62,27 @@ type difficultyPlayer struct {
 	leftCondE       bool
 	rightCond       bool
 	rightCondE      bool
-}
 
-type scoreProcessor interface {
-	Init(beatMap *beatmap.BeatMap, player *difficultyPlayer)
-	AddResult(result HitResult, comboResult ComboResult)
-	ModifyResult(result HitResult, src HitObject) HitResult
-	GetScore() int64
-	GetCombo() int64
-}
+	maskedModString string
 
-type Score struct {
-	Score        int64
-	Accuracy     float64
-	Grade        Grade
-	Combo        uint
-	PerfectCombo bool
-	Count300     uint
-	CountGeki    uint
-	Count100     uint
-	CountKatu    uint
-	Count50      uint
-	CountMiss    uint
-	CountSB      uint
-	PP           pp220930.PPv2Results
+	lzLegacyNotelock bool
+	lzNoSliderAcc    bool
+	lzLegacySound    bool
 }
 
 type subSet struct {
 	player *difficultyPlayer
 
 	score          *Score
-	hp             *HealthProcessor
+	hp             IHealthProcessor
 	scoreProcessor scoreProcessor
-	rawScore       int64
-	currentKatu    int
-	currentBad     int
+
+	currentKatu int
+	currentBad  int
 
 	numObjects uint
 
-	ppv2 *pp220930.PPv2
+	ppv2 api.IPerformanceCalculator
 
 	recoveries int
 	failed     bool
@@ -114,7 +90,7 @@ type subSet struct {
 	forceFail  bool
 }
 
-type hitListener func(cursor *graphics.Cursor, time int64, number int64, position vector.Vector2d, result HitResult, comboResult ComboResult, ppResults pp220930.PPv2Results, score int64)
+type hitListener func(cursor *graphics.Cursor, judgementResult JudgementResult, score Score)
 
 type endListener func(time int64, number int64)
 
@@ -126,89 +102,105 @@ type OsuRuleSet struct {
 
 	ended bool
 
-	oppDiffs map[difficulty.Modifier][]pp220930.Attributes
+	oppDiffs map[string][]api.Attributes
 
 	queue        []HitObject
 	processed    []HitObject
 	hitListener  hitListener
 	endListener  endListener
 	failListener failListener
-
-	experimentalPP bool
 }
 
-func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []difficulty.Modifier) *OsuRuleSet {
+func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs []*difficulty.Difficulty) *OsuRuleSet {
 	log.Println("Creating osu! ruleset...")
 
 	ruleset := new(OsuRuleSet)
 	ruleset.beatMap = beatMap
-	ruleset.oppDiffs = make(map[difficulty.Modifier][]pp220930.Attributes)
+	ruleset.oppDiffs = make(map[string][]api.Attributes)
 
-	log.Println("Using pp calc version 2022-09-30: https://osu.ppy.sh/home/news/2022-09-30-changes-to-osu-sr-and-pp")
+	log.Println("Using pp calc version", performance.GetDifficultyCalculator().GetVersionMessage())
 
 	ruleset.cursors = make(map[*graphics.Cursor]*subSet)
 
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
 	for i, cursor := range cursors {
-		diff := difficulty.NewDifficulty(beatMap.Diff.GetBaseHP(), beatMap.Diff.GetBaseCS(), beatMap.Diff.GetBaseOD(), beatMap.Diff.GetBaseAR())
+		diff := diffs[i]
 
-		diff.SetHPCustom(beatMap.Diff.GetHP())
-		diff.SetCSCustom(beatMap.Diff.GetCS())
-		diff.SetODCustom(beatMap.Diff.GetOD())
-		diff.SetARCustom(beatMap.Diff.GetAR())
+		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.ScoreV2) // if beatmap has ScoreV2 mod, force it for all players
+		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.Lazer)   // same for Lazer
 
-		diff.SetMods(mods[i] | (beatMap.Diff.Mods & difficulty.ScoreV2)) // if beatmap has ScoreV2 mod, force it for all players
-		diff.SetCustomSpeed(beatMap.Diff.CustomSpeed)
-
-		player := &difficultyPlayer{cursor: cursor, diff: diff}
+		player := &difficultyPlayer{cursor: cursor, diff: diff, maskedModString: diff.GetModStringMasked()}
 		diffPlayers = append(diffPlayers, player)
 
-		maskedMods := difficulty.GetDiffMaskedMods(mods[i])
+		lzLegacyHP := false
 
-		if ruleset.oppDiffs[maskedMods] == nil {
-			ruleset.oppDiffs[maskedMods] = pp220930.CalculateStep(ruleset.beatMap.HitObjects, diff)
+		if diff.CheckModActive(difficulty.Classic) {
+			if s, ok := difficulty.GetModConfig[difficulty.ClassicSettings](diff); ok {
+				player.lzLegacyNotelock = s.ClassicNoteLock
+				player.lzNoSliderAcc = s.NoSliderHeadAccuracy
+				player.lzLegacySound = s.AlwaysPlayTailSample
+				lzLegacyHP = s.ClassicHealth
+			}
+		}
 
-			star := ruleset.oppDiffs[maskedMods][len(ruleset.oppDiffs[maskedMods])-1]
+		if ruleset.oppDiffs[player.maskedModString] == nil {
+			ruleset.oppDiffs[player.maskedModString] = performance.GetDifficultyCalculator().CalculateStep(ruleset.beatMap.HitObjects, player.diff)
+
+			star := ruleset.oppDiffs[player.maskedModString][len(ruleset.oppDiffs[player.maskedModString])-1]
 
 			log.Println("Stars:")
 			log.Println("\tAim:  ", star.Aim)
 			log.Println("\tSpeed:", star.Speed)
 
-			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+			if diff.CheckModActive(difficulty.Flashlight) {
 				log.Println("\tFlash:", star.Flashlight)
 			}
 
 			log.Println("\tTotal:", star.Total)
 
-			pp := &pp220930.PPv2{}
-			pp.PPv2x(star, -1, -1, 0, 0, 0, diff)
+			pp := performance.CreatePPCalculator()
+			ppResults := pp.Calculate(star, api.PerfScore{CountGreat: -1, MaxCombo: -1, Accuracy: 1}, diff)
 
 			log.Println("SS PP:")
-			log.Println("\tAim:  ", pp.Results.Aim)
-			log.Println("\tTap:  ", pp.Results.Speed)
+			log.Println("\tAim:  ", ppResults.Aim)
+			log.Println("\tTap:  ", ppResults.Speed)
 
-			if ruleset.experimentalPP && mods[i].Active(difficulty.Flashlight) {
+			if diff.CheckModActive(difficulty.Flashlight) {
 				log.Println("\tFlash:", star.Flashlight)
 			}
 
-			log.Println("\tAcc:  ", pp.Results.Acc)
-			log.Println("\tTotal:", pp.Results.Total)
+			log.Println("\tAcc:  ", ppResults.Acc)
+			log.Println("\tTotal:", ppResults.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
 
-		hp := NewHealthProcessor(beatMap, diff, !cursor.OldSpinnerScoring)
+		var hp IHealthProcessor
+
+		if diff.CheckModActive(difficulty.Lazer) && !lzLegacyHP {
+			hp = NewHealthProcessorV2(beatMap, player)
+		} else {
+			hp = NewHealthProcessor(beatMap, player, !cursor.OldSpinnerScoring)
+		}
+
 		hp.CalculateRate()
 		hp.ResetHp()
 
-		log.Println("\tPassive drain rate:", hp.PassiveDrain/2*1000)
-		log.Println("\tNormal multiplier:", hp.HpMultiplierNormal)
-		log.Println("\tCombo end multiplier:", hp.HpMultiplierComboEnd)
+		log.Println("\tPassive drain rate:", hp.GetDrainRate()*1000)
+
+		if hp2, ok := hp.(*HealthProcessor); ok {
+			log.Println("\tNormal multiplier:", hp2.HpMultiplierNormal)
+			log.Println("\tCombo end multiplier:", hp2.HpMultiplierComboEnd)
+		}
 
 		recoveries := 0
 		if diff.CheckModActive(difficulty.Easy) {
-			recoveries = 2
+			if conf, ok := difficulty.GetModConfig[difficulty.EasySettings](diff); ok {
+				recoveries = conf.Retries
+			} else {
+				recoveries = 2
+			}
 		}
 
 		hp.AddFailListener(func() {
@@ -217,7 +209,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 
 		var sc scoreProcessor
 
-		if diff.CheckModActive(difficulty.ScoreV2) {
+		if diff.CheckModActive(difficulty.Lazer) {
+			sc = newScoreV3Processor()
+		} else if diff.CheckModActive(difficulty.ScoreV2) {
 			sc = newScoreV2Processor()
 		} else {
 			sc = newScoreV1Processor()
@@ -228,9 +222,9 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, mods []
 		ruleset.cursors[cursor] = &subSet{
 			player: player,
 			score: &Score{
-				Accuracy: 100,
+				Accuracy: 1,
 			},
-			ppv2:           &pp220930.PPv2{},
+			ppv2:           performance.CreatePPCalculator(),
 			hp:             hp,
 			recoveries:     recoveries,
 			scoreProcessor: sc,
@@ -297,44 +291,48 @@ func (set *OsuRuleSet) Update(time int64) {
 	}
 
 	if len(set.queue) == 0 && len(set.processed) == 0 && !set.ended {
-		cs := make([]*graphics.Cursor, 0)
-		for c := range set.cursors {
-			cs = append(cs, c)
-		}
-
-		sort.Slice(cs, func(i, j int) bool {
-			return set.cursors[cs[i]].scoreProcessor.GetScore() > set.cursors[cs[j]].scoreProcessor.GetScore()
-		})
-
-		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetHeader([]string{"#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP"})
-
-		for i, c := range cs {
-			var data []string
-			data = append(data, fmt.Sprintf("%d", i+1))
-			data = append(data, c.Name)
-			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy))
-			data = append(data, set.cursors[c].score.Grade.String())
-			data = append(data, utils.Humanize(set.cursors[c].score.Count300))
-			data = append(data, utils.Humanize(set.cursors[c].score.Count100))
-			data = append(data, utils.Humanize(set.cursors[c].score.Count50))
-			data = append(data, utils.Humanize(set.cursors[c].score.CountMiss))
-			data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
-			data = append(data, utils.Humanize(set.cursors[c].score.Combo))
-			data = append(data, set.cursors[c].player.diff.GetModString())
-			data = append(data, fmt.Sprintf("%.2f", set.cursors[c].ppv2.Results.Total))
-			table.Append(data)
-		}
-
-		table.Render()
-
-		for _, s := range strings.Split(tableString.String(), "\n") {
-			log.Println(s)
-		}
+		set.printEndTable()
 
 		set.ended = true
+	}
+}
+
+func (set *OsuRuleSet) printEndTable() {
+	cs := make([]*graphics.Cursor, 0)
+	for c := range set.cursors {
+		cs = append(cs, c)
+	}
+
+	sort.Slice(cs, func(i, j int) bool {
+		return set.cursors[cs[i]].scoreProcessor.GetScore() > set.cursors[cs[j]].scoreProcessor.GetScore()
+	})
+
+	tableString := &strings.Builder{}
+	table := tablewriter.NewWriter(tableString)
+	table.SetHeader([]string{"#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP"})
+
+	for i, c := range cs {
+		var data []string
+		data = append(data, fmt.Sprintf("%d", i+1))
+		data = append(data, c.Name)
+		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy*100))
+		data = append(data, set.cursors[c].score.Grade.String())
+		data = append(data, utils.Humanize(set.cursors[c].score.Count300))
+		data = append(data, utils.Humanize(set.cursors[c].score.Count100))
+		data = append(data, utils.Humanize(set.cursors[c].score.Count50))
+		data = append(data, utils.Humanize(set.cursors[c].score.CountMiss))
+		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
+		data = append(data, utils.Humanize(set.cursors[c].score.Combo))
+		data = append(data, set.cursors[c].player.diff.GetModString())
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.PP.Total))
+		table.Append(data)
+	}
+
+	table.Render()
+
+	for _, s := range strings.Split(tableString.String(), "\n") {
+		log.Println(s)
 	}
 }
 
@@ -423,113 +421,71 @@ func (set *OsuRuleSet) UpdatePostFor(cursor *graphics.Cursor, time int64, proces
 	}
 }
 
-func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitObject, x, y float32, result HitResult, comboResult ComboResult) {
-	number := src.GetNumber()
+func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult JudgementResult) {
 	subSet := set.cursors[cursor]
 
-	if result == Ignore || result == PositionalMiss {
-		if result == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
-			set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
+	if judgementResult.HitResult == Ignore || judgementResult.HitResult == PositionalMiss {
+		if judgementResult.HitResult == PositionalMiss && set.hitListener != nil && !subSet.player.diff.Mods.Active(difficulty.Relax) {
+			set.hitListener(cursor, judgementResult, *subSet.score)
 		}
 
 		return
 	}
 
-	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && comboResult == Reset) ||
-		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (result&BaseHitsM > 0 && result&BaseHitsM != Hit300)) {
-		if result&BaseHitsM > 0 {
-			result = Miss
-		} else if result&(SliderHits) > 0 {
-			result = SliderMiss
+	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && judgementResult.ComboResult == Reset) ||
+		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (judgementResult.HitResult&BaseHitsM > 0 && judgementResult.HitResult&BaseHitsM != Hit300)) {
+		if judgementResult.HitResult&BaseHitsM > 0 {
+			judgementResult.HitResult = Miss
+		} else if judgementResult.HitResult&(SliderHits) > 0 {
+			judgementResult.HitResult = SliderMiss
 		}
 
-		comboResult = Reset
+		judgementResult.ComboResult = Reset
 		subSet.sdpfFail = true
 	}
 
-	result = subSet.scoreProcessor.ModifyResult(result, src)
-	subSet.scoreProcessor.AddResult(result, comboResult)
+	judgementResult.HitResult = subSet.scoreProcessor.ModifyResult(judgementResult.HitResult, judgementResult.object)
 
-	subSet.score.Score = subSet.scoreProcessor.GetScore()
-
-	if comboResult == Reset && result != Miss {
+	if judgementResult.ComboResult == Reset && judgementResult.HitResult != Miss { // skips missed slider "ends" as they don't reset combo
 		subSet.score.CountSB++
 	}
 
-	bResult := result & BaseHitsM
+	bResult := judgementResult.HitResult & BaseHitsM
 
 	if bResult > 0 {
-		subSet.rawScore += result.ScoreValue()
-
-		switch bResult {
-		case Hit300:
-			subSet.score.Count300++
-		case Hit100:
-			subSet.score.Count100++
-		case Hit50:
-			subSet.score.Count50++
-		case Miss:
-			subSet.score.CountMiss++
-		}
-
 		subSet.numObjects++
 	}
 
+	subSet.scoreProcessor.AddResult(judgementResult)
+	subSet.score.AddResult(judgementResult)
+
+	subSet.score.Score = subSet.scoreProcessor.GetScore()
 	subSet.score.Combo = max(uint(subSet.scoreProcessor.GetCombo()), subSet.score.Combo)
+	subSet.score.Accuracy = subSet.scoreProcessor.GetAccuracy()
 
-	if subSet.numObjects == 0 {
-		subSet.score.Accuracy = 100
-	} else {
-		subSet.score.Accuracy = 100 * float64(subSet.rawScore) / float64(subSet.numObjects*300)
-	}
-
-	ratio := float64(subSet.score.Count300) / float64(subSet.numObjects)
-
-	if subSet.score.Count300 == subSet.numObjects {
-		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			subSet.score.Grade = SSH
-		} else {
-			subSet.score.Grade = SS
-		}
-	} else if ratio > 0.9 && float64(subSet.score.Count50)/float64(subSet.numObjects) < 0.01 && subSet.score.CountMiss == 0 {
-		if subSet.player.diff.Mods&(difficulty.Hidden|difficulty.Flashlight) > 0 {
-			subSet.score.Grade = SH
-		} else {
-			subSet.score.Grade = S
-		}
-	} else if ratio > 0.8 && subSet.score.CountMiss == 0 || ratio > 0.9 {
-		subSet.score.Grade = A
-	} else if ratio > 0.7 && subSet.score.CountMiss == 0 || ratio > 0.8 {
-		subSet.score.Grade = B
-	} else if ratio > 0.6 {
-		subSet.score.Grade = C
-	} else {
-		subSet.score.Grade = D
-	}
+	subSet.score.CalculateGrade(subSet.player.diff.Mods)
 
 	index := max(1, subSet.numObjects) - 1
 
-	diff := set.oppDiffs[difficulty.GetDiffMaskedMods(subSet.player.diff.Mods)][index]
+	diff := set.oppDiffs[subSet.player.maskedModString][index]
 
 	subSet.score.PerfectCombo = uint(diff.MaxCombo) == subSet.score.Combo
 
-	subSet.ppv2.PPv2x(diff, int(subSet.score.Combo), int(subSet.score.Count300), int(subSet.score.Count100), int(subSet.score.Count50), int(subSet.score.CountMiss), subSet.player.diff)
+	subSet.score.PP = subSet.ppv2.Calculate(diff, subSet.score.ToPerfScore(), subSet.player.diff)
 
-	subSet.score.PP = subSet.ppv2.Results
-
-	switch result {
+	switch judgementResult.HitResult {
 	case Hit100:
 		subSet.currentKatu++
 	case Hit50, Miss:
 		subSet.currentBad++
 	}
 
-	if result&BaseHitsM > 0 && (int(number) == len(set.beatMap.HitObjects)-1 || (int(number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[number+1].IsNewCombo())) {
+	if judgementResult.HitResult&BaseHitsM > 0 && (int(judgementResult.Number) == len(set.beatMap.HitObjects)-1 || (int(judgementResult.Number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[judgementResult.Number+1].IsNewCombo())) {
 		allClicked := true
 
 		// We don't want to give geki/katu if all objects in current combo weren't clicked
 		index := sort.Search(len(set.processed), func(i int) bool {
-			return set.processed[i].GetNumber() >= number
+			return set.processed[i].GetNumber() >= judgementResult.Number
 		})
 
 		for i := index - 1; i >= 0; i-- {
@@ -545,15 +501,15 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 			}
 		}
 
-		if result&BaseHits > 0 {
+		if judgementResult.HitResult&BaseHits > 0 {
 			if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
-				result |= GekiAddition
+				judgementResult.HitResult |= GekiAddition
 				subSet.score.CountGeki++
 			} else if subSet.currentBad == 0 && allClicked {
-				result |= KatuAddition
+				judgementResult.HitResult |= KatuAddition
 				subSet.score.CountKatu++
 			} else {
-				result |= MuAddition
+				judgementResult.HitResult |= MuAddition
 			}
 		}
 
@@ -564,79 +520,45 @@ func (set *OsuRuleSet) SendResult(time int64, cursor *graphics.Cursor, src HitOb
 	if subSet.sdpfFail {
 		subSet.hp.Increase(-100000, true)
 	} else {
-		subSet.hp.AddResult(result)
+		subSet.hp.AddResult(judgementResult)
 	}
 
 	if set.hitListener != nil {
-		set.hitListener(cursor, time, number, vector.NewVec2f(x, y).Copy64(), result, comboResult, subSet.ppv2.Results, subSet.scoreProcessor.GetScore())
+		set.hitListener(cursor, judgementResult, *subSet.score)
 	}
 
-	if len(set.cursors) == 1 && !settings.RECORD {
+	if len(set.cursors) == 1 && judgementResult.HitResult != SliderFinish && !settings.RECORD {
 		log.Println(fmt.Sprintf(
 			"Got: %3d, Combo: %4d, Max Combo: %4d, Score: %9d, Acc: %6.2f%%, 300: %4d, 100: %3d, 50: %2d, miss: %2d, from: %d, at: %d, pos: %.0fx%.0f, pp: %.2f",
-			result.ScoreValue(),
+			judgementResult.HitResult.ScoreValueMod(subSet.player.diff.Mods),
 			subSet.scoreProcessor.GetCombo(),
 			subSet.score.Combo,
 			subSet.scoreProcessor.GetScore(),
-			subSet.score.Accuracy,
+			subSet.score.Accuracy*100,
 			subSet.score.Count300,
 			subSet.score.Count100,
 			subSet.score.Count50,
 			subSet.score.CountMiss,
-			number,
-			time,
-			x,
-			y,
-			subSet.ppv2.Results.Total,
+			judgementResult.Number,
+			judgementResult.Time,
+			judgementResult.Position.X,
+			judgementResult.Position.Y,
+			subSet.score.PP.Total,
 		))
 	}
 }
 
 func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficultyPlayer) ClickAction {
-	if !player.cursor.IsAutoplay && !player.cursor.IsPlayer {
-		if _, ok := object.(*Circle); ok {
-			index := -1
+	var clickAction ClickAction
 
-			for i, g := range set.processed {
-				if g == object {
-					index = i
-				}
-			}
-
-			if index > 0 && set.beatMap.HitObjects[set.processed[index-1].GetNumber()].GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
-				return Ignored //don't shake the stacks
-			}
-		}
-
-		for _, g := range set.processed {
-			if !g.IsHit(player) {
-				if g.GetNumber() != object.GetNumber() {
-					if set.beatMap.HitObjects[g.GetNumber()].GetEndTime()+Tolerance2B < set.beatMap.HitObjects[object.GetNumber()].GetStartTime() {
-						return Shake
-					}
-				} else {
-					break
-				}
-			}
-		}
+	if player.cursor.IsAutoplay || (player.diff.CheckModActive(difficulty.Lazer) && !player.lzLegacyNotelock) {
+		clickAction = set.CanBeHitLazer(time, object, player)
 	} else {
-		cObj := set.beatMap.HitObjects[object.GetNumber()]
+		clickAction = set.CanBeHitStable(time, object, player)
+	}
 
-		var lastObj HitObject
-		var lastBObj objects.IHitObject
-
-		for _, g := range set.processed {
-			fObj := set.beatMap.HitObjects[g.GetNumber()]
-
-			if fObj.GetType() == objects.CIRCLE && fObj.GetStartTime() < cObj.GetStartTime() {
-				lastObj = g
-				lastBObj = fObj
-			}
-		}
-
-		if lastBObj != nil && (!lastObj.IsHit(player) && float64(time) < lastBObj.GetStartTime()) {
-			return Shake
-		}
+	if clickAction != Click {
+		return clickAction
 	}
 
 	hitRange := difficulty.HittableRange
@@ -644,11 +566,116 @@ func (set *OsuRuleSet) CanBeHit(time int64, object HitObject, player *difficulty
 		hitRange -= 200
 	}
 
-	if math.Abs(float64(time-int64(set.beatMap.HitObjects[object.GetNumber()].GetStartTime()))) >= hitRange {
+	if math.Abs(float64(time-int64(object.GetObject().GetStartTime()))) >= hitRange {
 		return Shake
 	}
 
 	return Click
+}
+
+func (set *OsuRuleSet) CanBeHitStable(time int64, object HitObject, player *difficultyPlayer) ClickAction {
+	if _, ok := object.(*Circle); ok {
+		index := -1
+
+		for i, g := range set.processed {
+			if g == object {
+				index = i
+			}
+		}
+
+		if index > 0 && set.processed[index-1].GetObject().GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
+			return Ignored //don't shake the stacks
+		}
+	}
+
+	for _, g := range set.processed {
+		if !g.IsHit(player) {
+			if g.GetNumber() != object.GetNumber() {
+				if g.GetObject().GetEndTime()+Tolerance2B < object.GetObject().GetStartTime() {
+					return Shake
+				}
+			} else {
+				break
+			}
+		}
+	}
+
+	return Click
+}
+
+func (set *OsuRuleSet) CanBeHitLazer(time int64, object HitObject, player *difficultyPlayer) ClickAction {
+	var lastObj HitObject
+	var hitCheck func(player *difficultyPlayer) bool
+
+	for _, g := range set.processed {
+		if g.GetObject().GetStartTime() >= object.GetObject().GetStartTime() {
+			break
+		}
+
+		if (g.GetObject().GetType() & (objects.CIRCLE | objects.SLIDER)) > 0 {
+			if c, ok1 := g.(*Circle); ok1 {
+				hitCheck = c.IsHit
+			} else if s, ok2 := g.(*Slider); ok2 {
+				hitCheck = s.IsStartHit
+			}
+
+			lastObj = g
+		}
+	}
+
+	if !(lastObj == nil || hitCheck(player) || float64(time) >= lastObj.GetObject().GetStartTime()) {
+		return Shake
+	}
+
+	return Click
+}
+
+func (set *OsuRuleSet) GetResultForDelta(player *difficultyPlayer, delta float64) HitResult {
+	if player.diff.CheckModActive(difficulty.Lazer) {
+		if delta <= player.diff.Hit300U {
+			return Hit300
+		} else if delta <= player.diff.Hit100U {
+			return Hit100
+		} else if delta <= player.diff.Hit50U {
+			return Hit50
+		}
+	} else {
+		if int64(delta) < player.diff.Hit300 {
+			return Hit300
+		} else if int64(delta) < player.diff.Hit100 {
+			return Hit100
+		} else if int64(delta) < player.diff.Hit50 {
+			return Hit50
+		}
+	}
+
+	return Miss
+}
+
+func (set *OsuRuleSet) PostHit(time int64, object HitObject, player *difficultyPlayer) {
+	if (!player.cursor.IsAutoplay && !player.diff.CheckModActive(difficulty.Lazer)) || (object.GetObject().GetType()&(objects.CIRCLE|objects.SLIDER)) == 0 {
+		return
+	}
+
+	for _, g := range set.processed {
+		if g.GetObject().GetStartTime() >= object.GetObject().GetStartTime() {
+			break
+		}
+
+		if (g.GetObject().GetType() & (objects.CIRCLE | objects.SLIDER)) > 0 {
+			var hitCheck func(player *difficultyPlayer) bool
+
+			if c, ok1 := g.(*Circle); ok1 {
+				hitCheck = c.IsHit
+			} else if s, ok2 := g.(*Slider); ok2 {
+				hitCheck = s.IsStartHit
+			}
+
+			if !hitCheck(player) {
+				g.MissForcefully(player, time)
+			}
+		}
+	}
 }
 
 func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
@@ -664,7 +691,7 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 
 	// EZ mod gives 2 additional lives
 	if subSet.recoveries > 0 && !subSet.sdpfFail && !subSet.forceFail {
-		subSet.hp.Increase(160, false)
+		subSet.hp.IncreaseRelative(0.8, false)
 		subSet.recoveries--
 
 		return
@@ -706,12 +733,17 @@ func (set *OsuRuleSet) GetScore(cursor *graphics.Cursor) Score {
 
 func (set *OsuRuleSet) GetHP(cursor *graphics.Cursor) float64 {
 	subSet := set.cursors[cursor]
-	return subSet.hp.Health / MaxHp
+	return subSet.hp.GetHealth()
 }
 
 func (set *OsuRuleSet) GetPlayer(cursor *graphics.Cursor) *difficultyPlayer {
 	subSet := set.cursors[cursor]
 	return subSet.player
+}
+
+func (set *OsuRuleSet) GetPlayerDifficulty(cursor *graphics.Cursor) *difficulty.Difficulty {
+	subSet := set.cursors[cursor]
+	return subSet.player.diff
 }
 
 func (set *OsuRuleSet) GetProcessed() []HitObject {

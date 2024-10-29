@@ -13,13 +13,14 @@ type scoreV2Processor struct {
 	comboPartMax  float64
 	comboPart     float64
 
-	hitMap map[HitResult]int64
-
-	hits    int64
-	maxHits int64
+	rawScore int64
+	hits     int64
+	maxHits  int64
 
 	player *difficultyPlayer
 	bonus  float64
+
+	accuracy float64
 }
 
 func newScoreV2Processor() *scoreV2Processor {
@@ -32,21 +33,22 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 
 	s.comboPartMax = 0
 	s.maxHits = 0
-	s.hitMap = make(map[HitResult]int64)
 
 	for _, o := range beatMap.HitObjects {
-		if o.GetType() == objects.CIRCLE || o.GetType() == objects.SPINNER {
-			s.AddResult(Hit300, Increase)
+		if o.GetType() == objects.SPINNER {
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetEndTime()), o.GetStartPosition(), nil))
 		} else if slider, ok := o.(*objects.Slider); ok {
 			for j := 0; j < len(slider.TickReverse)+1; j++ {
-				s.AddResult(SliderRepeat, Increase)
+				s.AddResult(createJudgementResult(SliderRepeat, SliderRepeat, Increase, 0, o.GetStartPosition(), nil))
 			}
 
 			for j := 0; j < len(slider.TickPoints); j++ {
-				s.AddResult(SliderPoint, Increase)
+				s.AddResult(createJudgementResult(SliderPoint, SliderPoint, Increase, 0, o.GetStartPosition(), nil))
 			}
 
-			s.AddResult(Hit300, Hold)
+			s.AddResult(createJudgementResult(Hit300, Hit300, Hold, int64(o.GetEndTime()), o.GetEndPosition(), nil))
+		} else {
+			s.AddResult(createJudgementResult(Hit300, Hit300, Increase, int64(o.GetStartTime()), o.GetStartPosition(), nil))
 		}
 	}
 
@@ -54,40 +56,48 @@ func (s *scoreV2Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.maxHits = s.hits
 
 	s.combo = 0
+	s.rawScore = 0
 	s.hits = 0
 	s.comboPart = 0
 	s.bonus = 0
-	s.hitMap = make(map[HitResult]int64)
+	s.accuracy = 1
 }
 
-func (s *scoreV2Processor) AddResult(result HitResult, comboResult ComboResult) {
-	if comboResult == Reset || result == Miss {
+func (s *scoreV2Processor) AddResult(result JudgementResult) {
+	if result.ComboResult == Reset || result.HitResult == Miss {
 		s.combo = 0
-	} else if comboResult == Increase {
+	} else if result.ComboResult == Increase {
 		s.combo++
 	}
 
-	scoreValue := scoreValueV2(result)
+	scoreValue := result.HitResult.ScoreValueV2()
 
-	if result&(SpinnerPoints|SpinnerBonus) > 0 {
+	if result.HitResult.IsBonus() {
 		s.bonus += float64(scoreValue)
 	} else {
 		s.comboPart += float64(scoreValue) * (1 + float64(s.combo)/10)
 	}
 
-	if result&BaseHitsM > 0 {
-		s.hitMap[result]++
+	if r := result.HitResult & BaseHitsM; r > 0 {
+		s.rawScore += r.ScoreValueV2()
 		s.hits++
 	}
 
-	if s.maxHits > 0 {
-		acc := float32(1.0)
-		if s.hits > 0 {
-			acc = float32(s.hitMap[Hit50]*50+s.hitMap[Hit100]*100+s.hitMap[Hit300]*300) / float32(s.hits*300)
-		}
-
-		s.score = int64(math.Round((s.comboPart/s.comboPartMax*700000 + math.Pow(float64(acc), 10)*(float64(s.hits)/float64(s.maxHits))*300000 + s.bonus) * s.modMultiplier))
+	if s.maxHits == 0 {
+		return
 	}
+
+	acc := float32(1.0)
+	acc2 := 1.0
+
+	if s.hits > 0 {
+		acc = float32(s.rawScore) / float32(s.hits*300)
+		acc2 = float64(s.rawScore) / float64(s.hits*300)
+	}
+
+	s.score = int64(math.Round((s.comboPart/s.comboPartMax*700000 + math.Pow(float64(acc), 10)*(float64(s.hits)/float64(s.maxHits))*300000 + s.bonus) * s.modMultiplier))
+
+	s.accuracy = acc2
 }
 
 func (s *scoreV2Processor) ModifyResult(result HitResult, src HitObject) HitResult {
@@ -116,11 +126,6 @@ func (s *scoreV2Processor) GetCombo() int64 {
 	return s.combo
 }
 
-func scoreValueV2(result HitResult) int64 {
-	scoreVal := result.ScoreValue()
-	if result&SpinnerBonus > 0 {
-		scoreVal = 500
-	}
-
-	return scoreVal
+func (s *scoreV2Processor) GetAccuracy() float64 {
+	return s.accuracy
 }

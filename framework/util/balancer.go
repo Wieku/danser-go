@@ -5,15 +5,15 @@ import (
 	"sync"
 )
 
-func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*B {
-	receive := make(chan *B, workers)
+func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) (B, bool)) []B {
+	receive := make(chan B, workers)
 
 	goroutines.Run(func() {
 		BalanceChan(workers, candidates, receive, workerFunc)
 		close(receive)
 	})
 
-	results := make([]*B, 0, len(candidates))
+	results := make([]B, 0, len(candidates))
 
 	for ret := range receive {
 		results = append(results, ret)
@@ -22,7 +22,7 @@ func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) *B) []*
 	return results
 }
 
-func BalanceChan[T, B any](workers int, candidates []T, receive chan<- *B, workerFunc func(a T) *B) {
+func BalanceChan[T, B any](workers int, candidates []T, receive chan<- B, workerFunc func(a T) (B, bool)) {
 	queue := make(chan T, workers)
 
 	wg := &sync.WaitGroup{}
@@ -34,9 +34,9 @@ func BalanceChan[T, B any](workers int, candidates []T, receive chan<- *B, worke
 			defer wg.Done()
 
 			for candidate := range queue {
-				result := workerFunc(candidate)
+				result, ok := workerFunc(candidate)
 
-				if result != nil {
+				if ok {
 					receive <- result
 				}
 			}

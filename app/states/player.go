@@ -3,10 +3,12 @@ package states
 import (
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/bmath"
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
@@ -24,6 +26,7 @@ import (
 	batch2 "github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/effects"
 	"github.com/wieku/danser-go/framework/graphics/font"
+	"github.com/wieku/danser-go/framework/graphics/shape"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
@@ -31,14 +34,14 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
-	"github.com/wieku/danser-go/framework/statistic"
 	"log"
 	"math"
 	"math/rand"
-	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -74,9 +77,9 @@ type Player struct {
 	bgCamera     *camera2.Camera
 	uiCamera     *camera2.Camera
 
-	dimGlider       *animation.Glider
-	blurGlider      *animation.Glider
-	fxGlider        *animation.Glider
+	dimGlider       *bmath.DimGlider
+	blurGlider      *bmath.DimGlider
+	fxGlider        *bmath.DimGlider
 	cursorGlider    *animation.Glider
 	counter         float64
 	storyboardDrawn int
@@ -131,6 +134,7 @@ type Player struct {
 	mStats2   *runtime.MemStats
 	mBuffer   []byte
 	memTicker *time.Ticker
+	ftGraph   *shape.SteppingGraph
 }
 
 func NewPlayer(beatMap *beatmap.BeatMap) *Player {
@@ -139,6 +143,14 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mStats1 = new(runtime.MemStats)
 	player.mStats2 = new(runtime.MemStats)
 	player.mBuffer = make([]byte, 0, 256)
+
+	player.ftGraph = shape.NewSteppingGraph(1920-600-20, 1080-300-40, 600, 250, 6, 16.667, "ms")
+	player.ftGraph.SetLabel(0, "BG Tasks", color2.NewIA(0x00ff34ff))
+	player.ftGraph.SetLabel(1, "Input", color2.NewIA(0xffff00ff))
+	player.ftGraph.SetLabel(2, "Draw", color2.NewIA(0xbf6500ff))
+	player.ftGraph.SetLabel(3, "SwapBuffers", color2.NewIA(0xff0000ff))
+	player.ftGraph.SetLabel(4, "Sleep", color2.NewIA(0x5555bbff))
+	player.ftGraph.SetLabel(5, "Overhead", color2.NewIA(0xffffffff))
 
 	graphics.LoadTextures()
 
@@ -156,7 +168,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.mapFullName = fmt.Sprintf("%s - %s [%s]", beatMap.Artist, beatMap.Name, beatMap.Difficulty)
 	log.Println("Playing:", player.mapFullName)
 
-	track := bass.NewTrack(filepath.Join(settings.General.GetSongsDir(), beatMap.Dir, beatMap.Audio))
+	var track *bass.TrackBass
+	if fPath, err2 := beatMap.GetAudioFile(); err2 == nil {
+		track = bass.NewTrack(fPath)
+	}
 
 	if track == nil {
 		log.Println("Failed to create music stream, creating a dummy stream...")
@@ -281,20 +296,20 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.fadeIn = 0.0
 
 	player.volumeGlider = animation.NewGlider(1)
-	player.speedGlider = animation.NewGlider(settings.SPEED)
-	player.pitchGlider = animation.NewGlider(settings.PITCH)
+	player.speedGlider = animation.NewGlider(1)
+	player.pitchGlider = animation.NewGlider(1)
 	player.frequencyGlider = animation.NewGlider(1)
 
 	player.hudGlider = animation.NewGlider(0)
 	player.hudGlider.SetEasing(easing.OutQuad)
 
-	player.dimGlider = animation.NewGlider(0)
+	player.dimGlider = bmath.NewDimGlider(0)
 	player.dimGlider.SetEasing(easing.OutQuad)
 
-	player.blurGlider = animation.NewGlider(0)
+	player.blurGlider = bmath.NewDimGlider(0)
 	player.blurGlider.SetEasing(easing.OutQuad)
 
-	player.fxGlider = animation.NewGlider(0)
+	player.fxGlider = bmath.NewDimGlider(0)
 	player.cursorGlider = animation.NewGlider(0)
 	player.epiGlider = animation.NewGlider(0)
 	player.objectsAlpha = animation.NewGlider(1)
@@ -368,9 +383,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 	startOffset += -settings.Playfield.LeadInHold * 1000
 
-	player.dimGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Background.Dim.Intro)
-	player.blurGlider.AddEvent(startOffset-500, startOffset, settings.Playfield.Background.Blur.Values.Intro)
-	player.fxGlider.AddEvent(startOffset-500, startOffset, 1.0-settings.Playfield.Logo.Dim.Intro)
+	player.dimGlider.AddEvent(startOffset-500, startOffset, bmath.Intro)
+	player.blurGlider.AddEvent(startOffset-500, startOffset, bmath.Intro)
+	player.fxGlider.AddEvent(startOffset-500, startOffset, bmath.Intro)
 	player.hudGlider.AddEvent(startOffset-500, startOffset, 1.0)
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok {
@@ -379,9 +394,9 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		player.cursorGlider.AddEvent(beatmapStart-750, beatmapStart-250, 1.0)
 	}
 
-	player.dimGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Background.Dim.Normal)
-	player.blurGlider.AddEvent(beatmapStart, beatmapStart+1000, settings.Playfield.Background.Blur.Values.Normal)
-	player.fxGlider.AddEvent(beatmapStart, beatmapStart+1000, 1.0-settings.Playfield.Logo.Dim.Normal)
+	player.dimGlider.AddEvent(beatmapStart, beatmapStart+1000, bmath.Normal)
+	player.blurGlider.AddEvent(beatmapStart, beatmapStart+1000, bmath.Normal)
+	player.fxGlider.AddEvent(beatmapStart, beatmapStart+1000, bmath.Normal)
 
 	fadeOut := settings.Playfield.FadeOutTime * 1000
 
@@ -408,8 +423,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		}
 	}
 
-	player.dimGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
-	player.fxGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
+	player.dimGlider.AddEventV(beatmapEnd, beatmapEnd+fadeOut, 0.0, bmath.Absolute)
+	player.fxGlider.AddEventV(beatmapEnd, beatmapEnd+fadeOut, 0.0, bmath.Absolute)
 	player.cursorGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 	player.hudGlider.AddEvent(beatmapEnd, beatmapEnd+fadeOut, 0.0)
 
@@ -417,8 +432,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	player.MapEnd = beatmapEnd + fadeOut
 
 	if _, ok := player.overlay.(*overlays.ScoreOverlay); ok && settings.Gameplay.ShowResultsScreen {
-		player.speedGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 1)
-		player.pitchGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 1)
+		player.speedGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 0)
+		player.pitchGlider.AddEvent(beatmapEnd+fadeOut, beatmapEnd+fadeOut, 0)
 
 		player.MapEnd += (settings.Gameplay.ResultsScreenTime + 1) * 1000
 		if player.MapEnd < player.musicPlayer.GetLength()*1000 {
@@ -452,22 +467,24 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		startTime := p.GetStartTime()
 		endTime := p.GetEndTime()
 
-		if endTime-startTime < 1000*settings.SPEED || endTime < player.startPoint || startTime > player.MapEnd {
+		speed := settings.SPEED * player.bMap.Diff.GetSpeed()
+
+		if endTime-startTime < 1000*speed || endTime < player.startPoint || startTime > player.MapEnd {
 			continue
 		}
 
-		player.dimGlider.AddEvent(startTime, startTime+1000*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Breaks)
-		player.blurGlider.AddEvent(startTime, startTime+1000*settings.SPEED, settings.Playfield.Background.Blur.Values.Breaks)
-		player.fxGlider.AddEvent(startTime, startTime+1000*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Breaks)
+		player.dimGlider.AddEvent(startTime, startTime+1000*speed, bmath.Break)
+		player.blurGlider.AddEvent(startTime, startTime+1000*speed, bmath.Break)
+		player.fxGlider.AddEvent(startTime, startTime+1000*speed, bmath.Break)
 
 		if !settings.Cursor.ShowCursorsOnBreaks {
-			player.cursorGlider.AddEvent(startTime, startTime+100*settings.SPEED, 0.0)
+			player.cursorGlider.AddEvent(startTime, startTime+100*speed, 0.0)
 		}
 
-		player.dimGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0-settings.Playfield.Background.Dim.Normal)
-		player.blurGlider.AddEvent(endTime, endTime+1000*settings.SPEED, settings.Playfield.Background.Blur.Values.Normal)
-		player.fxGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0-settings.Playfield.Logo.Dim.Normal)
-		player.cursorGlider.AddEvent(endTime, endTime+1000*settings.SPEED, 1.0)
+		player.dimGlider.AddEvent(endTime, endTime+1000*speed, bmath.Normal)
+		player.blurGlider.AddEvent(endTime, endTime+1000*speed, bmath.Normal)
+		player.fxGlider.AddEvent(endTime, endTime+1000*speed, bmath.Normal)
+		player.cursorGlider.AddEvent(endTime, endTime+1000*speed, 1.0)
 	}
 
 	player.background.SetTrack(player.musicPlayer)
@@ -517,12 +534,12 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 				if player.rawPositionF < player.startPointE || player.start {
 					player.rawPositionF += delta
 				} else {
-					speed = settings.SPEED
+					speed = settings.SPEED * player.bMap.Diff.GetSpeed()
 					player.rawPositionF += delta * speed
 				}
 			} else {
 				musicPos := player.musicPlayer.GetPosition() * 1000
-				speed = player.musicPlayer.GetTempo()
+				speed = player.musicPlayer.GetSpeed()
 
 				if musicPos != player.lastMusicPos || musicState == bass.MusicPaused {
 					player.rawPositionF = musicPos
@@ -612,9 +629,9 @@ func (player *Player) Update(delta float64) bool {
 	speed := 1.0
 
 	if player.musicPlayer.GetState() == bass.MusicPlaying {
-		speed = player.musicPlayer.GetTempo() * player.musicPlayer.GetRelativeFrequency()
+		speed = player.musicPlayer.GetSpeed()
 	} else if !(player.progressMsF < player.startPointE || player.start) {
-		speed = settings.SPEED
+		speed = settings.SPEED * player.bMap.Diff.GetSpeed()
 	}
 
 	player.rawPositionF += delta * speed
@@ -658,7 +675,7 @@ func (player *Player) updateMain(delta float64) {
 
 		player.musicPlayer.SetPosition(player.startPoint / 1000)
 
-		discord.SetDuration(int64((player.mapEndL-player.musicPlayer.GetPosition()*1000)/settings.SPEED + (player.MapEnd - player.mapEndL)))
+		discord.SetDuration(int64((player.mapEndL-player.musicPlayer.GetPosition()*1000)/(settings.SPEED*player.bMap.Diff.GetSpeed()) + (player.MapEnd - player.mapEndL)))
 
 		if player.overlay == nil {
 			discord.UpdateDance(settings.TAG, settings.DIVIDES)
@@ -689,9 +706,19 @@ func (player *Player) updateMain(delta float64) {
 		player.failed = true
 	}
 
-	player.musicPlayer.SetTempo(player.speedGlider.GetValue())
-	player.musicPlayer.SetPitch(player.pitchGlider.GetValue())
-	player.musicPlayer.SetRelativeFrequency(player.frequencyGlider.GetValue())
+	speedAdjust := mutils.Lerp(1, settings.SPEED, player.speedGlider.GetValue())
+	freqAdjust := 1.0
+
+	speedVal := mutils.Lerp(1, player.bMap.Diff.GetSpeed(), player.speedGlider.GetValue())
+	if player.bMap.Diff.AdjustsPitch() {
+		freqAdjust = speedVal
+	} else {
+		speedAdjust *= speedVal
+	}
+
+	player.musicPlayer.SetTempo(speedAdjust)
+	player.musicPlayer.SetPitch(mutils.Lerp(1, settings.PITCH, player.pitchGlider.GetValue()))
+	player.musicPlayer.SetRelativeFrequency(freqAdjust * player.frequencyGlider.GetValue())
 
 	if player.progressMsF >= player.startPointE {
 		if _, ok := player.controller.(*dance.GenericController); ok {
@@ -741,10 +768,15 @@ func (player *Player) updateMain(delta float64) {
 
 	player.background.Update(player.progressMsF, offset.X*player.cursorGlider.GetValue(), offset.Y*player.cursorGlider.GetValue())
 
+	bgDim := settings.Playfield.Background.Dim
+	blurDim := settings.Playfield.Background.Blur.Values
+	fxDim := settings.Playfield.Logo.Dim
+
+	player.dimGlider.Update(player.progressMsF, 1-bgDim.Intro, 1-bgDim.Normal, 1-bgDim.Breaks)
+	player.blurGlider.Update(player.progressMsF, blurDim.Intro, blurDim.Normal, blurDim.Breaks)
+	player.fxGlider.Update(player.progressMsF, 1-fxDim.Intro, 1-fxDim.Normal, 1-fxDim.Breaks)
+
 	player.epiGlider.Update(player.progressMsF)
-	player.dimGlider.Update(player.progressMsF)
-	player.blurGlider.Update(player.progressMsF)
-	player.fxGlider.Update(player.progressMsF)
 	player.cursorGlider.Update(player.progressMsF)
 	player.hudGlider.Update(player.progressMsF)
 	player.volumeGlider.Update(player.progressMsF)
@@ -769,7 +801,9 @@ func (player *Player) updateMusic(delta float64) {
 	}
 }
 
-func (player *Player) Draw(float64) {
+func (player *Player) DrawMain(float64) {
+	profiler.StartGroup("Player.DrawMain", profiler.PDraw)
+
 	if player.lastTime <= 0 {
 		player.lastTime = qpc.GetNanoTime()
 	}
@@ -909,7 +943,16 @@ func (player *Player) Draw(float64) {
 		player.bloomEffect.EndAndRender()
 	}
 
+	profiler.EndGroup()
+}
+
+func (player *Player) Draw(d float64) {
+	profiler.StartGroup("Player.Draw", profiler.PDraw)
+
+	player.DrawMain(d)
 	player.drawDebug()
+
+	profiler.EndGroup()
 }
 
 func (player *Player) drawEpilepsyWarning() {
@@ -964,6 +1007,7 @@ func (player *Player) drawOverlayPart(drawFunc func(*batch2.QuadBatch, []color2.
 }
 
 func (player *Player) drawDebug() {
+	profiler.StartGroup("Player.DrawDebug", profiler.PDraw)
 	if settings.DEBUG && player.memTicker == nil {
 		player.memTicker = time.NewTicker(100 * time.Millisecond)
 
@@ -991,7 +1035,13 @@ func (player *Player) drawDebug() {
 		})
 	}
 
-	if settings.DEBUG || settings.Graphics.ShowFPS {
+	var profRes *profiler.PNode
+
+	if settings.DEBUG || settings.PerfGraph {
+		profRes = profiler.GetLastProfileResult()
+	}
+
+	if settings.DEBUG || settings.Graphics.ShowFPS || settings.PerfGraph {
 		padDown := 4.0
 		size := 16.0
 
@@ -1053,13 +1103,13 @@ func (player *Player) drawDebug() {
 
 			drawWithBackground("MSAA: %s", msaa)
 
-			drawWithBackground("FBO Binds: %d", statistic.GetPrevious(statistic.FBOBinds))
-			drawWithBackground("VAO Binds: %d", statistic.GetPrevious(statistic.VAOBinds))
-			drawWithBackground("VBO Binds: %d", statistic.GetPrevious(statistic.VBOBinds))
-			drawWithBackground("Vertex Upload: %.2fk", float64(statistic.GetPrevious(statistic.VertexUpload))/1000)
-			drawWithBackground("Vertices Drawn: %.2fk", float64(statistic.GetPrevious(statistic.VerticesDrawn))/1000)
-			drawWithBackground("Draw Calls: %d", statistic.GetPrevious(statistic.DrawCalls))
-			drawWithBackground("Sprites Drawn: %d", statistic.GetPrevious(statistic.SpritesDrawn))
+			drawWithBackground("FBO Binds: %d", profiler.GetPreviousStat(profiler.FBOBinds))
+			drawWithBackground("VAO Binds: %d", profiler.GetPreviousStat(profiler.VAOBinds))
+			drawWithBackground("VBO Binds: %d", profiler.GetPreviousStat(profiler.VBOBinds))
+			drawWithBackground("Vertex Upload: %.2fk", float64(profiler.GetPreviousStat(profiler.VertexUpload))/1000)
+			drawWithBackground("Vertices Drawn: %.2fk", float64(profiler.GetPreviousStat(profiler.VerticesDrawn))/1000)
+			drawWithBackground("Draw Calls: %d", profiler.GetPreviousStat(profiler.DrawCalls))
+			drawWithBackground("Sprites Drawn: %d", profiler.GetPreviousStat(profiler.SpritesDrawn))
 
 			if storyboard := player.background.GetStoryboard(); storyboard != nil {
 				drawWithBackground("SB sprites: %d", player.storyboardDrawn)
@@ -1073,6 +1123,11 @@ func (player *Player) drawDebug() {
 			drawWithBackground("System: %s", humanize.Bytes(player.mStats2.Sys))
 			drawWithBackground("GC Runs: %d", player.mStats2.NumGC)
 			drawWithBackground("GC Time: %.3fms", float64(player.mStats2.PauseTotalNs)/1000000)
+
+			if profRes != nil && settings.CallGraph {
+				pos++
+				player.traverseGraph(0, profRes, drawWithBackground)
+			}
 
 			player.font.DrawBg(false)
 
@@ -1092,7 +1147,27 @@ func (player *Player) drawDebug() {
 			}
 		}
 
-		if settings.DEBUG || settings.Graphics.ShowFPS {
+		if settings.DEBUG || settings.Graphics.ShowFPS || settings.PerfGraph {
+			if settings.PerfGraph {
+				if profRes != nil && input.Win.GetKey(glfw.KeyLeftShift) != glfw.Press {
+					root := profRes.TimeTotal
+					sched := profRes.Nodes[0].TimeTotal
+					input := profRes.Nodes[1].TimeTotal
+					draw := profRes.Nodes[2].TimeTotal
+					swp := profRes.Nodes[3].TimeTotal
+					slp := profRes.Nodes[4].TimeTotal
+					root += -input - draw - swp - slp - sched
+
+					player.ftGraph.Advance(sched, input, draw, swp, slp, root)
+				}
+
+				player.batch.Flush()
+
+				player.ftGraph.SetCamera(player.uiCamera.GetProjectionView())
+				player.ftGraph.SetMaxValue(settings.Debug.PerfGraph.MaxRange)
+				player.ftGraph.Draw()
+			}
+
 			fpsC := player.profiler.GetFPS()
 			fpsU := player.profilerU.GetFPS()
 
@@ -1122,6 +1197,15 @@ func (player *Player) drawDebug() {
 		}
 
 		player.batch.End()
+	}
+
+	profiler.EndGroup()
+}
+
+func (player *Player) traverseGraph(ident int, node *profiler.PNode, draw func(format string, a ...any)) {
+	draw(strings.Repeat("  ", ident)+"%s: %.5fms", node.GetFullName(), node.TimeTotal)
+	for _, sNode := range node.Nodes {
+		player.traverseGraph(ident+1, sNode, draw)
 	}
 }
 

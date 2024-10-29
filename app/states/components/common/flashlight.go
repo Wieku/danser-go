@@ -3,6 +3,7 @@ package common
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -29,6 +30,8 @@ type Flashlight struct {
 	breakIndex int
 	target     float64
 	sliding    bool
+
+	flSettings difficulty.FlashlightSettings
 }
 
 func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
@@ -63,10 +66,20 @@ func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
 	size := animation.NewGlider(DefaultFlashlightSize * 8)
 
 	startTime := beatMap.HitObjects[0].GetStartTime() / settings.SPEED
-	endTime := (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50+5)) / settings.SPEED
+	endTime := (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetEndTime() + float64(beatMap.Diff.Hit50+5)) / settings.SPEED / beatMap.Diff.GetSpeed()
 
 	size.AddEvent(startTime-DefaultFlashlightDuration, startTime, DefaultFlashlightSize)
 	size.AddEvent(endTime, endTime+DefaultFlashlightDuration, DefaultFlashlightSize*8)
+
+	flSettings := difficulty.FlashlightSettings{
+		FollowDelay:    120,
+		SizeMultiplier: 1,
+		ComboBasedSize: true,
+	}
+
+	if fl, ok := difficulty.GetModConfig[difficulty.FlashlightSettings](beatMap.Diff); ok {
+		flSettings = fl
+	}
 
 	return &Flashlight{
 		flShader:   flShader,
@@ -75,22 +88,25 @@ func NewFlashlight(beatMap *beatmap.BeatMap) *Flashlight {
 		beatMap:    beatMap,
 		breakIndex: -1,
 		dim:        animation.NewGlider(0.0),
+		flSettings: flSettings,
 	}
 }
 
 func (fl *Flashlight) UpdatePosition(cursorPosition vector.Vector2f) {
 	oldPosition := fl.position
-	fl.position = cursorPosition.Sub(oldPosition).Scl(float32(easing.OutQuad(min(fl.delta, 120) / 120))).Add(oldPosition)
+	fl.position = cursorPosition.Sub(oldPosition).Scl(float32(easing.OutQuad(min(fl.delta, fl.flSettings.FollowDelay) / fl.flSettings.FollowDelay))).Add(oldPosition)
 }
 
 func (fl *Flashlight) UpdateCombo(combo int64) {
 	target := DefaultFlashlightSize
 
-	switch {
-	case combo > 200:
-		target *= 0.625
-	case combo > 100:
-		target *= 0.8125
+	if fl.flSettings.ComboBasedSize {
+		switch {
+		case combo > 200:
+			target *= 0.625
+		case combo > 100:
+			target *= 0.8125
+		}
 	}
 
 	fl.target = target
@@ -119,8 +135,8 @@ func (fl *Flashlight) Update(time float64) {
 	for i := fl.breakIndex + 1; i < len(fl.beatMap.Pauses); i++ {
 		pause := fl.beatMap.Pauses[i]
 
-		pauseStart := pause.GetStartTime() / settings.SPEED
-		pauseEnd := pause.GetEndTime() / settings.SPEED
+		pauseStart := pause.GetStartTime() / (settings.SPEED * fl.beatMap.Diff.GetSpeed())
+		pauseEnd := pause.GetEndTime() / (settings.SPEED * fl.beatMap.Diff.GetSpeed())
 
 		if time < pauseStart {
 			break
@@ -145,7 +161,7 @@ func (fl *Flashlight) Draw(matrix mgl32.Mat4) {
 
 	fl.flShader.Bind()
 	fl.flShader.SetUniform("cursorPosition", mgl32.Vec2{fl.position.X, fl.position.Y})
-	fl.flShader.SetUniform("radius", float32(fl.size.GetValue()))
+	fl.flShader.SetUniform("radius", float32(fl.size.GetValue()*fl.flSettings.SizeMultiplier))
 	fl.flShader.SetUniform("dim", float32(fl.dim.GetValue()))
 	fl.flShader.SetUniform("maxDim", float32(settings.Gameplay.FlashlightDim))
 	fl.flShader.SetUniform("invMatrix", matrix.Inv())

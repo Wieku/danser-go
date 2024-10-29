@@ -1,12 +1,12 @@
 package buffer
 
 import (
+	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	color2 "github.com/wieku/danser-go/framework/math/color"
-	"github.com/wieku/danser-go/framework/statistic"
+	"github.com/wieku/danser-go/framework/profiler"
 	"runtime"
 
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 )
@@ -107,7 +107,6 @@ func NewFrameMultisample(width, height int, samples int) *Framebuffer {
 
 	gl.CreateFramebuffers(1, &f.handle)
 
-
 	gl.CreateRenderbuffers(1, &f.texRenderbuffer)
 	gl.NamedRenderbufferStorageMultisample(f.texRenderbuffer, int32(samples), texture.RGBA.InternalFormat(), int32(width), int32(height))
 	gl.NamedFramebufferRenderbuffer(f.handle, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, f.texRenderbuffer)
@@ -147,7 +146,7 @@ func NewFrameMultisampleScreen(width, height int, depth bool, samples int) *Fram
 
 func (f *Framebuffer) Dispose() {
 	if !f.disposed {
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			if f.tex != nil {
 				f.tex.Dispose()
 			}
@@ -184,7 +183,7 @@ func (f *Framebuffer) GetID() uint32 {
 func (f *Framebuffer) Bind() {
 	history.Push(gl.FRAMEBUFFER_BINDING, f.handle)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, f.handle)
-	statistic.Increment(statistic.FBOBinds)
+	profiler.IncrementStat(profiler.FBOBinds)
 }
 
 // Unbind unbinds the Framebuffer. All draw operations will go to whatever was bound before this Framebuffer.
@@ -207,7 +206,7 @@ func (f *Framebuffer) Unbind() {
 	}
 
 	if handle != 0 {
-		statistic.Increment(statistic.FBOBinds)
+		profiler.IncrementStat(profiler.FBOBinds)
 	}
 	gl.BindFramebuffer(gl.FRAMEBUFFER, handle)
 }

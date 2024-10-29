@@ -6,6 +6,7 @@ import (
 	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/math/color"
 	"io"
+	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -135,19 +136,25 @@ func tokenize(line, delimiter string) []string {
 func ParseFloat(text, errType string) float64 {
 	value, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		panic(fmt.Sprintf("Error while parsing %s: %s", errType, text))
+		panic(fmt.Sprintf("error while parsing %s: %s", errType, text))
 	}
 
 	return value
 }
 
-func ParseBool(text, errType string) bool {
-	value, err := strconv.Atoi(text)
-	if err != nil {
-		panic(fmt.Sprintf("Error while parsing %s: %s", errType, text))
+func ParseBool(text, errType string, target *bool) bool {
+	if trueVal := strings.EqualFold(text, "true"); trueVal || strings.EqualFold(text, "false") { // We can't use strconv.ParseBool since it won't match osu!'s/.net behavior
+		*target = trueVal
+	} else {
+		value, err := strconv.Atoi(text)
+		if err != nil {
+			log.Println(fmt.Sprintf("SkinManager: Unable to parse %s: %s. Using default value", errType, text))
+		} else {
+			*target = value != 0
+		}
 	}
 
-	return value != 0
+	return *target
 }
 
 func ParseColor(text, errType string) color.Color {
@@ -166,8 +173,8 @@ func ParseColor(text, errType string) color.Color {
 			clr.G = float32(ParseFloat(v, errType+".G")) / 255
 		case 2:
 			clr.B = float32(ParseFloat(v, errType+".B")) / 255
-		case 3:
-			clr.A = float32(ParseFloat(v, errType+".A")) / 255
+			//case 3:
+			//	clr.A = float32(ParseFloat(v, errType+".A")) / 255
 		}
 	}
 
@@ -223,19 +230,19 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 		case "AnimationFramerate":
 			info.AnimationFramerate = ParseFloat(tokenized[1], tokenized[0])
 		case "SpinnerFadePlayfield":
-			info.SpinnerFadePlayfield = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.SpinnerFadePlayfield)
 		case "SpinnerNoBlink":
-			info.SpinnerNoBlink = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.SpinnerNoBlink)
 		case "SpinnerFrequencyModulate":
-			info.SpinnerFrequencyModulate = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.SpinnerFrequencyModulate)
 		case "LayeredHitSounds":
-			info.LayeredHitSounds = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.LayeredHitSounds)
 		case "CursorCentre":
-			info.CursorCentre = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.CursorCentre)
 		case "CursorExpand":
-			info.CursorExpand = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.CursorExpand)
 		case "CursorRotate":
-			info.CursorRotate = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.CursorRotate)
 		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
 			index, _ := strconv.ParseInt(strings.TrimPrefix(tokenized[0], "Combo"), 10, 64)
 			colorsI = append(colorsI, colorI{
@@ -243,11 +250,11 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 				color: ParseColor(tokenized[1], tokenized[0]),
 			})
 		case "DefaultSkinFollowpointBehavior":
-			info.DefaultSkinFollowpointBehavior = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.DefaultSkinFollowpointBehavior)
 		case "AllowSliderBallTint":
-			info.SliderBallTint = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.SliderBallTint)
 		case "SliderBallFlip":
-			info.SliderBallFlip = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.SliderBallFlip)
 		case "SliderBorder":
 			info.SliderBorder = ParseColor(tokenized[1], tokenized[0])
 		case "SliderTrackOverride":
@@ -267,7 +274,7 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 		case "HitCircleOverlap":
 			info.HitCircleOverlap = ParseFloat(tokenized[1], tokenized[0])
 		case "HitCircleOverlayAboveNumber", "HitCircleOverlayAboveNumer":
-			info.HitCircleOverlayAboveNumber = ParseBool(tokenized[1], tokenized[0])
+			ParseBool(tokenized[1], tokenized[0], &info.HitCircleOverlayAboveNumber)
 		case "ScorePrefix":
 			info.ScorePrefix = tokenized[1]
 		case "ScoreOverlap":

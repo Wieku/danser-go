@@ -3,7 +3,7 @@ package play
 import (
 	"fmt"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
@@ -36,11 +36,10 @@ type PPDisplay struct {
 	decimals int
 	format   string
 
-	mods           difficulty.Modifier
-	experimentalPP bool
+	mods difficulty.Modifier
 }
 
-func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
+func NewPPDisplay(mods difficulty.Modifier) *PPDisplay {
 	return &PPDisplay{
 		ppFont:           font.GetFont("HUDFont"),
 		aimGlider:        animation.NewTargetGlider(0, 0),
@@ -56,11 +55,10 @@ func NewPPDisplay(mods difficulty.Modifier, experimentalPP bool) *PPDisplay {
 		decimals:         0,
 		format:           "%.0fpp",
 		mods:             mods,
-		experimentalPP:   experimentalPP,
 	}
 }
 
-func (ppDisplay *PPDisplay) Add(results pp220930.PPv2Results) {
+func (ppDisplay *PPDisplay) Add(results api.PPv2Results) {
 	static := settings.Gameplay.PPCounter.Static
 
 	ppDisplay.aimGlider.SetValue(results.Aim, static)

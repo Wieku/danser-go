@@ -1,5 +1,7 @@
 package difficulty
 
+import "github.com/wieku/rplpa"
+
 type Modifier int64
 
 const (
@@ -36,6 +38,9 @@ const (
 	ScoreV2
 	LastMod
 	Daycore
+	Lazer
+	Classic
+	DifficultyAdjust
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
@@ -95,6 +100,9 @@ var modsString = [...]string{
 	"V2",
 	"LM",
 	"DC",
+	"LZ",
+	"CL",
+	"DA",
 }
 
 var modsStringFull = [...]string{
@@ -130,6 +138,9 @@ var modsStringFull = [...]string{
 	"ScoreV2",
 	"LastMod",
 	"Daycore",
+	"Lazer",
+	"Classic",
+	"DifficultyAdjust",
 }
 
 func (mods Modifier) GetScoreMultiplier() float64 {
@@ -179,6 +190,14 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 		multiplier *= 0.9
 	}
 
+	if mods&Classic > 0 {
+		multiplier *= 0.96
+	}
+
+	if mods&DifficultyAdjust > 0 {
+		multiplier *= 0.5
+	}
+
 	return multiplier
 }
 
@@ -220,10 +239,52 @@ func (mods Modifier) StringFull() (s []string) {
 		mods &= ^SuddenDeath
 	}
 
+	return mods.StringFull2()
+}
+
+func (mods Modifier) StringFull2() (s []string) {
 	for i := 0; i < len(modsString); i++ {
 		activated := mods&1 == 1
 		if activated {
 			s = append(s, modsStringFull[i])
+		}
+
+		mods >>= 1
+	}
+
+	return
+}
+
+func ParseFromAcronym(mod string) (m Modifier) {
+	for index, availableMod := range modsString {
+		if availableMod == mod {
+			m = 1 << uint(index)
+			break
+		}
+	}
+
+	return
+}
+
+func (mods Modifier) ConvertToModInfoList() (mi []rplpa.ModInfo) {
+	if mods.Active(Nightcore) {
+		mods &= ^DoubleTime
+	}
+
+	if mods.Active(Daycore) {
+		mods &= ^HalfTime
+	}
+
+	if mods.Active(Perfect) {
+		mods &= ^SuddenDeath
+	}
+
+	for i := 0; i < len(modsString); i++ {
+		if mods&1 == 1 {
+			mi = append(mi, rplpa.ModInfo{
+				Acronym:  modsString[i],
+				Settings: make(map[string]any),
+			})
 		}
 
 		mods >>= 1
@@ -239,12 +300,7 @@ func ParseMods(mods string) (m Modifier) {
 	}
 
 	for _, mod := range modsSl {
-		for index, availableMod := range modsString {
-			if availableMod == mod {
-				m |= 1 << uint(index)
-				break
-			}
-		}
+		m |= ParseFromAcronym(mod)
 	}
 
 	if m.Active(Nightcore) {
@@ -273,6 +329,8 @@ func (mods Modifier) Compatible() bool {
 
 	if mods.Active(Target) ||
 		(mods.Active(HardRock) && mods.Active(Easy)) ||
+		(mods.Active(Lazer) && mods.Active(ScoreV2)) ||
+		(mods.Active(HardRock|Easy) && mods.Active(DifficultyAdjust)) ||
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
 		(mods.Active(Relax) && mods.Active(Relax2)) ||

@@ -8,7 +8,7 @@ import (
 	"github.com/karrick/godirwalk"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
@@ -40,6 +40,8 @@ type mapLocation struct {
 var migrations []Migration
 
 var songsDir string
+
+var difficultyCalc = pp241007.NewDifficultyCalculator()
 
 func Init() error {
 	log.Println("DatabaseManager: Initializing database...")
@@ -340,7 +342,7 @@ func importMaps(skipDatabaseCheck bool, mustCheckDirs []string, importListener I
 	receive := make(chan *beatmap.BeatMap, workers)
 
 	goroutines.Run(func() {
-		util.BalanceChan(workers, mapsToImport, receive, func(candidate mapLocation) *beatmap.BeatMap {
+		util.BalanceChan(workers, mapsToImport, receive, func(candidate mapLocation) (*beatmap.BeatMap, bool) {
 			defer func() {
 				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
 					log.Println("DatabaseManager: Failed to load \"", candidate.dir+"/"+candidate.file, "\":", err)
@@ -353,7 +355,7 @@ func importMaps(skipDatabaseCheck bool, mustCheckDirs []string, importListener I
 			file, err := os.Open(mapPath)
 			if err != nil {
 				log.Println(fmt.Sprintf("\"DatabaseManager: Failed to read \"%s\", skipping. Error: %s", partialPath, err))
-				return nil
+				return nil, false
 			}
 
 			defer file.Close()
@@ -376,12 +378,12 @@ func importMaps(skipDatabaseCheck bool, mustCheckDirs []string, importListener I
 					log.Println("DatabaseManager: Imported:", partialPath)
 				}
 
-				return bMap
+				return bMap, true
 			} else {
 				log.Println("DatabaseManager: Failed to import:", partialPath)
 			}
 
-			return nil
+			return nil, false
 		})
 
 		close(receive)
@@ -428,7 +430,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	var toCalculate []*beatmap.BeatMap
 
 	for _, b := range maps {
-		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < pp220930.CurrentVersion) {
+		if b.Mode == 0 && (b.Stars < 0 || b.StarsVersion < difficultyCalc.GetVersion()) {
 			toCalculate = append(toCalculate, b)
 		}
 	}
@@ -444,11 +446,12 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	receive := make(chan *beatmap.BeatMap, workers)
 
 	goroutines.Run(func() {
-		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) (ret *beatmap.BeatMap) {
+		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) (ret *beatmap.BeatMap, ret2 bool) {
 			ret = bMap // HACK: still return the beatmap even if execution panics: https://golangbyexample.com/return-value-function-panic-recover-go/
+			ret2 = true
 
 			defer func() {
-				bMap.StarsVersion = pp220930.CurrentVersion
+				bMap.StarsVersion = difficultyCalc.GetVersion()
 				bMap.Clear() //Clear objects and timing to avoid OOM
 
 				if err := recover(); err != nil { //TODO: Technically should be fixed but unexpected parsing problem won't crash whole process
@@ -464,11 +467,11 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")
 				bMap.Stars = 0
 			} else {
-				attr := pp220930.CalculateSingle(bMap.HitObjects, bMap.Diff)
+				attr := difficultyCalc.CalculateSingle(bMap.HitObjects, bMap.Diff)
 				bMap.Stars = attr.Total
 			}
 
-			return bMap
+			return
 		})
 
 		close(receive)

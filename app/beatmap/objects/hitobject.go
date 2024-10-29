@@ -41,6 +41,8 @@ type IHitObject interface {
 	SetStackOffset(offset float32, modifier difficulty.Modifier)
 
 	GetColorOffset() int64
+	IsLastCombo() bool
+	SetLastInCombo(b bool)
 	IsNewCombo() bool
 	SetNewCombo(b bool)
 
@@ -84,6 +86,7 @@ type HitObject struct {
 
 	HitObjectID int64
 
+	LastInCombo bool
 	NewCombo    bool
 	ComboNumber int64
 	ComboSet    int64
@@ -247,6 +250,14 @@ func (hitObject *HitObject) SetStackOffset(offset float32, modifier difficulty.M
 
 func (hitObject *HitObject) GetColorOffset() int64 {
 	return hitObject.ColorOffset
+}
+
+func (hitObject *HitObject) IsLastCombo() bool {
+	return hitObject.LastInCombo
+}
+
+func (hitObject *HitObject) SetLastInCombo(b bool) {
+	hitObject.LastInCombo = b
 }
 
 func (hitObject *HitObject) IsNewCombo() bool {

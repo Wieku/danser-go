@@ -11,6 +11,11 @@ type scoreV1Processor struct {
 	combo           int64
 	modMultiplier   float64
 	scoreMultiplier float64
+
+	rawScore int64
+	maxHits  int64
+
+	accuracy float64
 }
 
 func newScoreV1Processor() *scoreV1Processor {
@@ -18,6 +23,10 @@ func newScoreV1Processor() *scoreV1Processor {
 }
 
 func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlayer) {
+	s.rawScore = 0
+	s.maxHits = 0
+	s.accuracy = 1
+
 	s.modMultiplier = player.diff.GetScoreMultiplier()
 
 	pauses := int64(0)
@@ -31,24 +40,36 @@ func (s *scoreV1Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlay
 	s.scoreMultiplier = math.RoundToEven((float64(float32(beatMap.Diff.GetHP())) + float64(float32(beatMap.Diff.GetOD())) + float64(float32(beatMap.Diff.GetCS())) + float64(mutils.Clamp(float32(len(beatMap.HitObjects))/drainTime*8, 0, 16))) / 38 * 5)
 }
 
-func (s *scoreV1Processor) AddResult(result HitResult, comboResult ComboResult) {
+func (s *scoreV1Processor) AddResult(result JudgementResult) {
 	combo := max(s.combo-1, 0)
 
-	if result != SliderMiss && result != Miss {
-		increase := result.ScoreValue()
+	if result.HitResult != SliderMiss && result.HitResult != Miss {
+		increase := result.HitResult.ScoreValue()
 
-		if result&RawHits > 0 {
+		if result.HitResult&RawHits > 0 {
 			s.score += increase
 		} else {
 			s.score += increase + int64(float64(increase)*float64(combo)*s.scoreMultiplier*s.modMultiplier/25.0)
 		}
 	}
 
-	if comboResult == Reset || result == Miss {
+	if result.ComboResult == Reset || result.HitResult == Miss {
 		s.combo = 0
-	} else if comboResult == Increase {
+	} else if result.ComboResult == Increase {
 		s.combo++
 	}
+
+	if r := result.HitResult & BaseHitsM; r > 0 {
+		s.rawScore += r.ScoreValue()
+		s.maxHits++
+	}
+
+	acc := 1.0
+	if s.maxHits > 0 {
+		acc = float64(s.rawScore) / float64(s.maxHits*300)
+	}
+
+	s.accuracy = acc
 }
 
 func (s *scoreV1Processor) ModifyResult(result HitResult, _ HitObject) HitResult {
@@ -61,4 +82,8 @@ func (s *scoreV1Processor) GetScore() int64 {
 
 func (s *scoreV1Processor) GetCombo() int64 {
 	return s.combo
+}
+
+func (s *scoreV1Processor) GetAccuracy() float64 {
+	return s.accuracy
 }

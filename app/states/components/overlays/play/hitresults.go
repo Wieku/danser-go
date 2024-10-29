@@ -99,6 +99,7 @@ func (results *HitResults) AddResult(time int64, result osu.HitResult, position 
 	}
 
 	hit := sprite.NewAnimation(frames, 1000.0/60, false, float64(time)+1, position, vector.Centre)
+	hit.ShowForever(false)
 
 	fadeIn := float64(time + difficulty.ResultFadeIn)
 	if particles {

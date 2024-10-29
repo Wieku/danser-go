@@ -1,8 +1,9 @@
 package play
 
 import (
+	"errors"
 	"fmt"
-	"github.com/thehowl/go-osuapi"
+	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
@@ -14,8 +15,10 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,9 +27,10 @@ import (
 type ScoreboardEntry struct {
 	*sprite.Sprite
 
-	name    string
-	score   int64
-	combo   int64
+	name       string
+	score      osuapi.Score
+	lazerScore bool
+
 	rank    int
 	visible bool
 
@@ -37,14 +41,14 @@ type ScoreboardEntry struct {
 	showAvatar     bool
 }
 
-func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlayer bool) *ScoreboardEntry {
+func NewScoreboardEntry(name string, score osuapi.Score, lazerScore bool, rank int, isPlayer bool) *ScoreboardEntry {
 	bg := skin.GetTexture("menu-button-background")
 	entry := &ScoreboardEntry{
-		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.CentreRight),
-		name:   name,
-		score:  score,
-		combo:  combo,
-		rank:   rank,
+		Sprite:     sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.CentreRight),
+		name:       name,
+		score:      score,
+		lazerScore: lazerScore,
+		rank:       rank,
 	}
 
 	entry.Sprite.SetScale(0.625)
@@ -77,8 +81,8 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 }
 
 func (entry *ScoreboardEntry) UpdateData() {
-	entry.scoreHumanized = utils.Humanize(entry.score)
-	entry.comboHumanized = utils.Humanize(entry.combo) + "x"
+	entry.scoreHumanized = utils.Humanize(entry.getScore())
+	entry.comboHumanized = utils.Humanize(entry.score.MaxCombo) + "x"
 	entry.rankHumanized = fmt.Sprintf("%d", entry.rank)
 }
 
@@ -178,38 +182,42 @@ func (entry *ScoreboardEntry) loadAvatar(pixmap *texture.Pixmap) {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarID(id int) {
-	url := "https://a.ppy.sh/" + strconv.Itoa(id)
+	entry.LoadAvatarURL("https://a.ppy.sh/" + strconv.Itoa(id))
+}
 
-	log.Println("Trying to fetch avatar from:", url)
-
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-
-	if err != nil {
-		log.Println("Can't create request")
+func (entry *ScoreboardEntry) LoadAvatarURL(url string) {
+	if url == "" { // just in case
 		return
 	}
 
-	client := new(http.Client)
-	response, err := client.Do(request)
+	fileName := strings.ReplaceAll(url[strings.LastIndex(url, "/")+1:], "?", "-")
+	filePath := filepath.Join(env.DataDir(), "cache", "avatars", fileName)
 
-	if err != nil {
-		log.Println(fmt.Sprintf("Failed to create request to: \"%s\": %s", url, err))
-		return
-	}
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) { // Avatar does not exist, try to download
+		log.Println("Trying to fetch avatar from:", url)
 
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		log.Println("a.ppy.sh responded with:", response.StatusCode)
-
-		if response.StatusCode == 404 {
-			log.Println("Avatar for user", id, "not found!")
+		err2 := downloadAvatar(url, filePath)
+		if err2 != nil {
+			log.Println(err2)
+			return
 		}
+	}
 
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Println(fmt.Sprintf("Failed to open avatar \"%s\": %s", fileName, err.Error()))
 		return
 	}
 
-	pixmap, err := texture.NewPixmapReader(response.Body, response.ContentLength)
+	defer file.Close()
+
+	fStat, err2 := file.Stat()
+	if err2 != nil {
+		log.Println(fmt.Sprintf("Failed to open file stats \"%s\": %s", fileName, err2.Error()))
+		return
+	}
+
+	pixmap, err := texture.NewPixmapReader(file, fStat.Size())
 	if err != nil {
 		log.Println("Can't load avatar! Error:", err)
 		return
@@ -218,6 +226,34 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 	entry.loadAvatar(pixmap)
 
 	pixmap.Dispose()
+}
+
+func downloadAvatar(url, path string) error {
+	response, err := http.Get(url)
+
+	if err != nil {
+		return fmt.Errorf("failed to create request to: \"%s\": %s", url, err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		return fmt.Errorf("failed to create request to: \"%s\": %s", url, response.StatusCode)
+	}
+
+	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to create file: \"%s\": %s", path, err)
+	}
+
+	defer out.Close()
+
+	_, err = io.Copy(out, response.Body)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: \"%s\": %s", path, err)
+	}
+
+	return nil
 }
 
 func (entry *ScoreboardEntry) LoadDefaultAvatar() {
@@ -233,24 +269,12 @@ func (entry *ScoreboardEntry) LoadDefaultAvatar() {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarUser(user string) {
-	key := strings.TrimSpace(settings.Credentails.ApiV1Key)
-	if key == "" {
-		log.Println(fmt.Sprintf("Please put your osu!api v1 key into '%s' file", filepath.Join(env.ConfigDir(), "credentials.json")))
-	} else {
-		client := osuapi.NewClient(key)
-		err := client.Test()
+	sUser, err := osuapi.LookupUser(user)
 
-		if err != nil {
-			log.Println("Can't connect to osu!api:", err)
-		} else {
-			sUser, err := client.GetUser(osuapi.GetUserOpts{Username: user})
-			if err != nil {
-				log.Println("Can't find user:", user)
-				log.Println(err)
-			} else {
-				entry.LoadAvatarID(sUser.UserID)
-			}
-		}
+	if err != nil {
+		log.Println("Error connecting to osu!api:", err)
+	} else {
+		entry.LoadAvatarURL(sUser.AvatarURL)
 	}
 }
 
@@ -260,4 +284,16 @@ func (entry *ScoreboardEntry) IsAvatarLoaded() bool {
 
 func (entry *ScoreboardEntry) ShowAvatar(value bool) {
 	entry.showAvatar = value
+}
+
+func (entry *ScoreboardEntry) getScore() int64 {
+	if entry.lazerScore {
+		if settings.Gameplay.LazerClassicScore {
+			return entry.score.ClassicTotalScore
+		}
+
+		return entry.score.TotalScore
+	}
+
+	return entry.score.Score
 }

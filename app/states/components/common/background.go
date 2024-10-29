@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/EdlinOrg/prominentcolor"
-	"github.com/faiface/mainthread"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
@@ -39,6 +38,8 @@ type Background struct {
 	blurredTexture texture.Texture
 	forceRedraw    bool
 
+	blurActive bool
+
 	parallaxPosition vector.Vector2d
 	parallaxScale    float64
 }
@@ -47,6 +48,7 @@ func NewBackground(loadDefault bool) *Background {
 	bg := new(Background)
 	bg.blurVal = -1
 	bg.blur = effects.NewBlurEffect(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+	bg.blurActive = settings.Playfield.Background.Blur.Enabled
 
 	if loadDefault {
 		image, err := assets.GetPixmap("assets/textures/background-1.png")
@@ -86,7 +88,7 @@ func (bg *Background) SetBeatmap(beatMap *beatmap.BeatMap, loadDefault, loadStor
 
 		bg.triangles.SetColors(bg.getColors(image))
 
-		mainthread.CallNonBlock(func() {
+		goroutines.CallNonBlockMain(func() {
 			if bg.background != nil { // Dispose old background texture
 				bg.background.Dispose()
 				bg.background = nil
@@ -179,11 +181,16 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 
 	batch.Begin()
 
-	needsRedraw := bg.forceRedraw || (bg.storyboard != nil && bg.storyboard.HasVisuals()) || !settings.Playfield.Background.Blur.Enabled || (settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur)
+	needsRedraw := bg.forceRedraw || (bg.storyboard != nil && bg.storyboard.HasVisuals()) || !bg.blurActive || (settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur)
 
 	bg.forceRedraw = false
 
-	if math.Abs(bg.blurVal-blurVal) > 0.001 {
+	if bg.blurActive != settings.Playfield.Background.Blur.Enabled {
+		needsRedraw = true
+		bg.blurActive = settings.Playfield.Background.Blur.Enabled
+	}
+
+	if math.Abs(bg.blurVal-blurVal) > 0.0001 {
 		needsRedraw = true
 		bg.blurVal = blurVal
 	}
@@ -213,7 +220,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 			opacity *= 1.0 - bg.storyboard.GetVideoAlpha()
 		}
 
-		if settings.Playfield.Background.Blur.Enabled {
+		if bg.blurActive {
 			bg.blur.SetBlur(blurVal, blurVal)
 			bg.blur.Begin()
 		} else {
@@ -222,7 +229,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 
 		batch.SetColor(opacity, opacity, opacity, 1)
 
-		if !widescreen && !settings.Playfield.Background.Blur.Enabled {
+		if !widescreen && !bg.blurActive {
 			viewport.PushScissorPos(clipX, clipY, clipW, clipH)
 		}
 
@@ -230,7 +237,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 			batch.SetCamera(mgl32.Ortho(float32(-settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2), float32(-settings.Graphics.GetHeightF()/2), 1, -1))
 			size := bg.scaling.Apply(float32(bg.background.GetWidth()), float32(bg.background.GetHeight()), float32(settings.Graphics.GetWidthF()), float32(settings.Graphics.GetHeightF())).Scl(0.5)
 
-			if !settings.Playfield.Background.Blur.Enabled {
+			if !bg.blurActive {
 				batch.SetTranslation(bg.parallaxPosition.Mult(vector.NewVec2d(1, -1)).Mult(vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5)))
 				size = size.Scl(float32(1 + bg.parallaxScale))
 			}
@@ -239,7 +246,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 			batch.DrawUnit(bg.background.GetRegion())
 		}
 
-		if settings.Playfield.Background.Blur.Enabled {
+		if bg.blurActive {
 			batch.SetColor(1, 1, 1, 1)
 		} else {
 			batch.SetColor(bgAlpha, bgAlpha, bgAlpha, 1)
@@ -250,7 +257,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 			batch.SetTranslation(vector.NewVec2d(0, 0))
 
 			cam := camera
-			if !settings.Playfield.Background.Blur.Enabled {
+			if !bg.blurActive {
 				scale := float32(1 + bg.parallaxScale)
 				cam = mgl32.Translate3D(bg.parallaxPosition.X32(), bg.parallaxPosition.Y32(), 0).Mul4(mgl32.Scale3D(scale, scale, 1)).Mul4(cam)
 			}
@@ -261,18 +268,18 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 		}
 
 		if settings.Playfield.Background.Triangles.Enabled && !settings.Playfield.Background.Triangles.DrawOverBlur {
-			bg.drawTriangles(batch, bgAlpha, settings.Playfield.Background.Blur.Enabled)
+			bg.drawTriangles(batch, bgAlpha, bg.blurActive)
 		}
 
 		batch.Flush()
 		batch.SetColor(1, 1, 1, 1)
 		batch.ResetTransform()
 
-		if !widescreen && !settings.Playfield.Background.Blur.Enabled {
+		if !widescreen && !bg.blurActive {
 			viewport.PopScissor()
 		}
 
-		if settings.Playfield.Background.Blur.Enabled {
+		if bg.blurActive {
 			bg.blurredTexture = bg.blur.EndAndProcess()
 		}
 	}
@@ -281,7 +288,7 @@ func (bg *Background) Draw(time float64, batch *batch.QuadBatch, blurVal, bgAlph
 		viewport.PushScissorPos(clipX, clipY, clipW, clipH)
 	}
 
-	if settings.Playfield.Background.Blur.Enabled && bg.blurredTexture != nil {
+	if bg.blurActive && bg.blurredTexture != nil {
 		batch.ResetTransform()
 		batch.SetAdditive(false)
 		batch.SetColor(1, 1, 1, bgAlpha)
