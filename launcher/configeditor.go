@@ -447,6 +447,12 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 					})
 				})
 			}
+
+			imgui.SameLine()
+
+			if imgui.Button("Help##auth") {
+				platform.OpenURL("https://github.com/Wieku/danser-go/wiki/APIv2-Tutorial")
+			}
 		})
 	}
 
