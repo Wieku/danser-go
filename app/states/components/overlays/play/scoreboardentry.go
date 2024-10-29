@@ -1,21 +1,27 @@
 package play
 
 import (
+	"errors"
 	"fmt"
 	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type ScoreboardEntry struct {
@@ -180,28 +186,38 @@ func (entry *ScoreboardEntry) LoadAvatarID(id int) {
 }
 
 func (entry *ScoreboardEntry) LoadAvatarURL(url string) {
-	log.Println("Trying to fetch avatar from:", url)
-
-	response, err := http.Get(url)
-
-	if err != nil {
-		log.Println(fmt.Sprintf("Failed to create request to: \"%s\": %s", url, err))
+	if url == "" { // just in case
 		return
 	}
 
-	defer response.Body.Close()
+	fileName := strings.ReplaceAll(url[strings.LastIndex(url, "/")+1:], "?", "-")
+	filePath := filepath.Join(env.DataDir(), "cache", "avatars", fileName)
 
-	if response.StatusCode != 200 {
-		log.Println("a.ppy.sh responded with:", response.StatusCode)
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) { // Avatar does not exist, try to download
+		log.Println("Trying to fetch avatar from:", url)
 
-		if response.StatusCode == 404 {
-			log.Println("Avatar for user not found!")
+		err2 := downloadAvatar(url, filePath)
+		if err2 != nil {
+			log.Println(err2)
+			return
 		}
+	}
 
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Println(fmt.Sprintf("Failed to open avatar \"%s\": %s", fileName, err.Error()))
 		return
 	}
 
-	pixmap, err := texture.NewPixmapReader(response.Body, response.ContentLength)
+	defer file.Close()
+
+	fStat, err2 := file.Stat()
+	if err2 != nil {
+		log.Println(fmt.Sprintf("Failed to open file stats \"%s\": %s", fileName, err2.Error()))
+		return
+	}
+
+	pixmap, err := texture.NewPixmapReader(file, fStat.Size())
 	if err != nil {
 		log.Println("Can't load avatar! Error:", err)
 		return
@@ -210,6 +226,34 @@ func (entry *ScoreboardEntry) LoadAvatarURL(url string) {
 	entry.loadAvatar(pixmap)
 
 	pixmap.Dispose()
+}
+
+func downloadAvatar(url, path string) error {
+	response, err := http.Get(url)
+
+	if err != nil {
+		return fmt.Errorf("failed to create request to: \"%s\": %s", url, err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		return fmt.Errorf("failed to create request to: \"%s\": %s", url, response.StatusCode)
+	}
+
+	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to create file: \"%s\": %s", path, err)
+	}
+
+	defer out.Close()
+
+	_, err = io.Copy(out, response.Body)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: \"%s\": %s", path, err)
+	}
+
+	return nil
 }
 
 func (entry *ScoreboardEntry) LoadDefaultAvatar() {

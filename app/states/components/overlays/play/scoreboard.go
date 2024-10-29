@@ -5,12 +5,15 @@ import (
 	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	"github.com/wieku/danser-go/framework/math/animation"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 )
 
@@ -53,6 +56,13 @@ func NewScoreboard(beatMap *beatmap.BeatMap, lazerScore bool, omitID int64) *Sco
 
 	if settings.Gameplay.ScoreBoard.HideOthers {
 		return board
+	}
+
+	if settings.Gameplay.ScoreBoard.ShowAvatars {
+		err := os.MkdirAll(filepath.Join(env.DataDir(), "cache", "avatars"), 0755)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	var mods []string
