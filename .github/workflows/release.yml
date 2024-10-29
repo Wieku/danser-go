@@ -114,6 +114,6 @@ jobs:
           NAME="${version// / snapshot }"
           TAGNAME="${version// /-s}"
 
-          hub release create --draft $(for a in artifacts/*.{zip,tar.xz}; do echo -a $a; done) -m "$NAME" -t "master" "$TAGNAME"
+          gh release create "$TAGNAME" --draft -t "$NAME" --target "master" $(for a in artifacts/*.{zip,tar.xz}; do echo $a; done)
         env:
           GITHUB_TOKEN: ${{ github.token }}
