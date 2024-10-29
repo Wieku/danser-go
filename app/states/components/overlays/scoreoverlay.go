@@ -285,7 +285,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 		overlay.flashlight = common.NewFlashlight(overlay.ruleset.GetBeatMap())
 	}
 
-	overlay.entry = play.NewScoreboard(overlay.ruleset.GetBeatMap(), overlay.cursor.ScoreID)
+	overlay.entry = play.NewScoreboard(overlay.ruleset.GetBeatMap(), ruleset.GetPlayerDifficulty(overlay.cursor).CheckModActive(difficulty.Lazer), overlay.cursor.ScoreID)
 	overlay.entry.AddPlayer(overlay.cursor.Name, overlay.cursor.IsAutoplay)
 
 	overlay.initArrows()

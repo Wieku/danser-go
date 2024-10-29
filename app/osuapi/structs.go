@@ -46,12 +46,12 @@ type User struct {
 }
 
 type Score struct {
-	ClassicTotalScore     int                   `json:"classic_total_score"`
+	ClassicTotalScore     int64                 `json:"classic_total_score"`
 	Preserve              bool                  `json:"preserve"`
 	Processed             bool                  `json:"processed"`
 	Ranked                bool                  `json:"ranked"`
 	MaximumStatistics     map[string]int64      `json:"maximum_statistics,omitempty"`
-	Mods                  []Mods                `json:"mods"`
+	Mods                  []any                 `json:"mods"`
 	Statistics            map[string]int64      `json:"statistics,omitempty"`
 	BeatmapID             int                   `json:"beatmap_id"`
 	BestID                any                   `json:"best_id"`
@@ -66,18 +66,18 @@ type Score struct {
 	IsPerfectCombo        bool                  `json:"is_perfect_combo"`
 	LegacyPerfect         bool                  `json:"legacy_perfect"`
 	LegacyScoreID         int64                 `json:"legacy_score_id"`
-	LegacyTotalScore      int                   `json:"legacy_total_score"`
-	MaxCombo              int                   `json:"max_combo"`
+	LegacyTotalScore      int64                 `json:"legacy_total_score"`
+	MaxCombo              int64                 `json:"max_combo"`
 	Passed                bool                  `json:"passed"`
 	Pp                    float64               `json:"pp"`
 	RulesetID             int                   `json:"ruleset_id"`
 	StartedAt             any                   `json:"started_at"`
-	Score                 int                   `json:"score"`
-	TotalScore            int                   `json:"total_score"`
+	Score                 int64                 `json:"score"`
+	TotalScore            int64                 `json:"total_score"`
 	Replay                bool                  `json:"replay"`
 	CurrentUserAttributes CurrentUserAttributes `json:"current_user_attributes"`
 	User                  User                  `json:"user"`
-	TotalScoreWithoutMods int                   `json:"total_score_without_mods,omitempty"`
+	TotalScoreWithoutMods int64                 `json:"total_score_without_mods,omitempty"`
 }
 
 type LookupResult struct {

@@ -21,9 +21,10 @@ import (
 type ScoreboardEntry struct {
 	*sprite.Sprite
 
-	name    string
-	score   int64
-	combo   int64
+	name       string
+	score      osuapi.Score
+	lazerScore bool
+
 	rank    int
 	visible bool
 
@@ -34,14 +35,14 @@ type ScoreboardEntry struct {
 	showAvatar     bool
 }
 
-func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlayer bool) *ScoreboardEntry {
+func NewScoreboardEntry(name string, score osuapi.Score, lazerScore bool, rank int, isPlayer bool) *ScoreboardEntry {
 	bg := skin.GetTexture("menu-button-background")
 	entry := &ScoreboardEntry{
-		Sprite: sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.CentreRight),
-		name:   name,
-		score:  score,
-		combo:  combo,
-		rank:   rank,
+		Sprite:     sprite.NewSpriteSingle(bg, 0, vector.NewVec2d(0, 0), vector.CentreRight),
+		name:       name,
+		score:      score,
+		lazerScore: lazerScore,
+		rank:       rank,
 	}
 
 	entry.Sprite.SetScale(0.625)
@@ -74,8 +75,8 @@ func NewScoreboardEntry(name string, score int64, combo int64, rank int, isPlaye
 }
 
 func (entry *ScoreboardEntry) UpdateData() {
-	entry.scoreHumanized = utils.Humanize(entry.score)
-	entry.comboHumanized = utils.Humanize(entry.combo) + "x"
+	entry.scoreHumanized = utils.Humanize(entry.getScore())
+	entry.comboHumanized = utils.Humanize(entry.score.MaxCombo) + "x"
 	entry.rankHumanized = fmt.Sprintf("%d", entry.rank)
 }
 
@@ -239,4 +240,16 @@ func (entry *ScoreboardEntry) IsAvatarLoaded() bool {
 
 func (entry *ScoreboardEntry) ShowAvatar(value bool) {
 	entry.showAvatar = value
+}
+
+func (entry *ScoreboardEntry) getScore() int64 {
+	if entry.lazerScore {
+		if settings.Gameplay.LazerClassicScore {
+			return entry.score.ClassicTotalScore
+		}
+
+		return entry.score.TotalScore
+	}
+
+	return entry.score.Score
 }

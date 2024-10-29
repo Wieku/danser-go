@@ -36,13 +36,16 @@ type ScoreBoard struct {
 	currentPlayerURL string
 
 	width float64
+
+	lazerScore bool
 }
 
-func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
+func NewScoreboard(beatMap *beatmap.BeatMap, lazerScore bool, omitID int64) *ScoreBoard {
 	board := &ScoreBoard{
 		first:            true,
 		explosionManager: sprite.NewManager(),
 		width:            768 * settings.Graphics.GetAspectRatio(),
+		lazerScore:       lazerScore,
 	}
 
 	skin.GetTextureSource("scoreboard-explosion-1", skin.LOCAL)
@@ -64,11 +67,13 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 
 	if settings.Gameplay.ScoreBoard.ModsOnly {
 		for _, mInfo := range beatMap.Diff.ExportMods2() {
-			mods = append(mods, mInfo.Acronym)
+			if mInfo.Acronym != "LZ" {
+				mods = append(mods, mInfo.Acronym)
+			}
 		}
 	}
 
-	scores, err := osuapi.GetScoresCheksum(beatMap.MD5, true, mode, 51, mods...)
+	scores, err := osuapi.GetScoresCheksum(beatMap.MD5, !lazerScore, mode, 51, mods...)
 
 	if err != nil {
 		log.Println("Error connecting to osu!api:", err)
@@ -90,7 +95,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 		for i := 0; i < min(len(scores), 50); i++ {
 			s := scores[i]
 
-			entry := NewScoreboardEntry(s.User.Username, int64(s.LegacyTotalScore), int64(s.MaxCombo), i+1, false)
+			entry := NewScoreboardEntry(s.User.Username, s, lazerScore, i+1, false)
 
 			if settings.Gameplay.ScoreBoard.ShowAvatars {
 				entry.LoadAvatarURL(s.User.AvatarURL)
@@ -107,7 +112,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, omitID int64) *ScoreBoard {
 }
 
 func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
-	board.playerEntry = NewScoreboardEntry(name, 0, 0, len(board.scores)+1, true)
+	board.playerEntry = NewScoreboardEntry(name, osuapi.Score{}, board.lazerScore, len(board.scores)+1, true)
 	board.playerIndex = len(board.scores)
 	board.lastPlayerIndex = board.playerIndex
 
@@ -147,11 +152,13 @@ func (board *ScoreBoard) AddPlayer(name string, autoPlay bool) {
 }
 
 func (board *ScoreBoard) UpdatePlayer(score, combo int64) {
-	board.playerEntry.score = score
-	board.playerEntry.combo = combo
+	board.playerEntry.score.Score = score
+	board.playerEntry.score.ClassicTotalScore = score
+	board.playerEntry.score.TotalScore = score
+	board.playerEntry.score.MaxCombo = combo
 
 	sort.SliceStable(board.scores, func(i, j int) bool {
-		return board.scores[i].score > board.scores[j].score
+		return board.scores[i].getScore() > board.scores[j].getScore()
 	})
 
 	for i := 0; i < len(board.scores); i++ {

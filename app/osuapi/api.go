@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/url"
-	"slices"
 	"strconv"
 )
 
@@ -49,8 +48,10 @@ func GetScoresCheksum(checksum string, legacyOnly bool, mode ScoreType, limit in
 func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
 	vls := url.Values{}
 
-	if legacyOnly && !slices.Contains(mods, "CL") {
-		mods = append(mods, "CL")
+	prefix := "solo-"
+	if legacyOnly {
+		prefix = ""
+		vls.Set("legacy_only", "1")
 	}
 
 	switch mode {
@@ -70,7 +71,7 @@ func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods .
 		}
 	}
 
-	resp, err := makeRequest("beatmaps/" + strconv.Itoa(beatmapId) + "/solo-scores?" + vls.Encode())
+	resp, err := makeRequest("beatmaps/" + strconv.Itoa(beatmapId) + "/" + prefix + "scores?" + vls.Encode())
 
 	if err != nil {
 		return nil, err
