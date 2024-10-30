@@ -33,6 +33,7 @@ func (texture *TextureMultiLayer) NewLayer() {
 	layers := texture.store.layers + 1
 
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
+	dstStore.Clear()
 	dstStore.SetFiltering(texture.store.min, texture.store.mag)
 	dstStore.Bind(texture.store.binding)
 
