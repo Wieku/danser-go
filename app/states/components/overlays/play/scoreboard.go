@@ -90,11 +90,13 @@ func NewScoreboard(beatMap *beatmap.BeatMap, lazerScore bool, omitID int64) *Sco
 	} else if len(scores) == 0 {
 		log.Println("Can't find online scores!")
 	} else {
-		for i := 0; i < len(scores); i++ {
-			if scores[i].LegacyScoreID == omitID || scores[i].ID == omitID {
-				board.currentPlayerURL = scores[i].User.AvatarURL
-				scores = append(scores[:i], scores[i+1:]...)
-				i--
+		if omitID > 0 {
+			for i := 0; i < len(scores); i++ {
+				if scores[i].ID == omitID {
+					board.currentPlayerURL = scores[i].User.AvatarURL
+					scores = append(scores[:i], scores[i+1:]...)
+					i--
+				}
 			}
 		}
 
@@ -115,7 +117,7 @@ func NewScoreboard(beatMap *beatmap.BeatMap, lazerScore bool, omitID int64) *Sco
 			board.displayScores = append(board.displayScores, entry)
 		}
 
-		log.Println("SCORES", len(scores))
+		log.Println("SCORES", len(board.scores))
 	}
 
 	return board
