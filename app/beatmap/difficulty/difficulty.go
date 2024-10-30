@@ -142,8 +142,11 @@ func (diff *Difficulty) calculate() {
 
 	diff.Speed = diff.BaseModSpeed
 
-	if s, ok := diff.modSettings[rfType[SpeedSettings]()].(SpeedSettings); ok && diff.BaseModSpeed != s.SpeedChange {
-		diff.Speed = s.SpeedChange
+	if s, ok := diff.modSettings[rfType[SpeedSettings]()].(SpeedSettings); ok {
+		if diff.BaseModSpeed != s.SpeedChange {
+			diff.Speed = s.SpeedChange
+		}
+
 		diff.adjustPitch = s.AdjustPitch
 	}
 
