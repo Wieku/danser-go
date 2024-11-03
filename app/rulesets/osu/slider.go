@@ -123,7 +123,7 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool {
 	state := slider.state[player]
 
-	position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
+	position := slider.hitSlider.GetStackedStartPositionMod(player.diff)
 
 	clicked := player.leftCondE || player.rightCondE
 
@@ -195,7 +195,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 }
 
 func (slider *Slider) lazerPostHeadProcess(player *difficultyPlayer, state *sliderstate, time int64) {
-	sliderPosition := slider.hitSlider.GetStackedPositionAtMod(float64(time), player.diff.Mods)
+	sliderPosition := slider.hitSlider.GetStackedPositionAtMod(float64(time), player.diff)
 
 	followRadiusFull := player.diff.CircleRadius * 2.4
 
@@ -210,7 +210,7 @@ func (slider *Slider) lazerPostHeadProcess(player *difficultyPlayer, state *slid
 			break
 		}
 
-		currPos := slider.hitSlider.GetStackedPositionAtMod(float64(point.time), player.diff.Mods)
+		currPos := slider.hitSlider.GetStackedPositionAtMod(float64(point.time), player.diff)
 
 		if player.cursor.RawPosition.Dst(currPos) > float32(followRadiusFull) {
 			allTicksInRange = false
@@ -239,31 +239,32 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 
 	state := slider.state[player]
 
-	var sliderPosition vector.Vector2f
-
-	switch {
-	case player.diff.Mods&difficulty.HardRock > 0:
-		if time != slider.lastSliderTimeHR {
-			slider.sliderPositionHR = slider.hitSlider.GetStackedPositionAtMod(float64(time), difficulty.HardRock)
-			slider.lastSliderTimeHR = time
-		}
-
-		sliderPosition = slider.sliderPositionHR
-	case player.diff.Mods&difficulty.Easy > 0:
-		if time != slider.lastSliderTimeEZ {
-			slider.sliderPositionEZ = slider.hitSlider.GetStackedPositionAtMod(float64(time), difficulty.Easy)
-			slider.lastSliderTimeEZ = time
-		}
-
-		sliderPosition = slider.sliderPositionEZ
-	default:
-		if time != slider.lastSliderTime {
-			slider.sliderPosition = slider.hitSlider.GetStackedPositionAt(float64(time))
-			slider.lastSliderTime = time
-		}
-
-		sliderPosition = slider.sliderPosition
-	}
+	sliderPosition := slider.hitSlider.GetStackedPositionAtMod(float64(time), player.diff)
+	//var sliderPosition vector.Vector2f
+	//
+	//switch {
+	//case player.diff.Mods&difficulty.HardRock > 0:
+	//	if time != slider.lastSliderTimeHR {
+	//		slider.sliderPositionHR = slider.hitSlider.GetStackedPositionAtMod(float64(time), player.d)
+	//		slider.lastSliderTimeHR = time
+	//	}
+	//
+	//	sliderPosition = slider.sliderPositionHR
+	//case player.diff.Mods&difficulty.Easy > 0:
+	//	if time != slider.lastSliderTimeEZ {
+	//		slider.sliderPositionEZ = slider.hitSlider.GetStackedPositionAtMod(float64(time), difficulty.Easy)
+	//		slider.lastSliderTimeEZ = time
+	//	}
+	//
+	//	sliderPosition = slider.sliderPositionEZ
+	//default:
+	//	if time != slider.lastSliderTime {
+	//		slider.sliderPosition = slider.hitSlider.GetStackedPositionAt(float64(time))
+	//		slider.lastSliderTime = time
+	//	}
+	//
+	//	sliderPosition = slider.sliderPosition
+	//}
 
 	if time >= int64(slider.hitSlider.GetStartTime()) && ((!state.isHit && !lzMod) || (lzMod && state.isStartHit)) {
 		mouseDownAcceptable := false
@@ -449,7 +450,7 @@ func (slider *Slider) UpdatePostFor(player *difficultyPlayer, time int64, proces
 			}
 		}
 
-		position := slider.hitSlider.GetStackedEndPositionMod(player.diff.Mods)
+		position := slider.hitSlider.GetStackedEndPositionMod(player.diff)
 
 		if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
 			hit := Ignore
@@ -495,7 +496,7 @@ func (slider *Slider) processHeadMiss(player *difficultyPlayer, time int64) {
 			slider.hitSlider.ArmStart(false, float64(time))
 		}
 
-		position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
+		position := slider.hitSlider.GetStackedStartPositionMod(player.diff)
 
 		if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
 			slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
@@ -534,7 +535,7 @@ func (slider *Slider) MissForcefully(player *difficultyPlayer, time int64) {
 	state := slider.state[player]
 
 	if !state.isStartHit {
-		position := slider.hitSlider.GetStackedStartPositionMod(player.diff.Mods)
+		position := slider.hitSlider.GetStackedStartPositionMod(player.diff)
 
 		if len(slider.players) == 1 {
 			slider.hitSlider.HitEdge(0, float64(time), false)

@@ -56,9 +56,9 @@ func (slider *LazySlider) calculateEndPosition() {
 	}
 
 	slider.LazyTravelTime = trackingEndTime - slider.GetStartTime()
-	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff.Mods) // temporary lazy end position until a real result can be derived.
+	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff) // temporary lazy end position until a real result can be derived.
 
-	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff.Mods)
+	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff)
 	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusU // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
 	for i := 0; i < len(nestedObjects); i++ {
@@ -71,7 +71,7 @@ func (slider *LazySlider) calculateEndPosition() {
 		//	stackedPosition = slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff.Mods)
 		//}
 
-		stackedPosition := slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff.Mods)
+		stackedPosition := slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff)
 
 		currMovement := stackedPosition.Sub(currCursorPosition)
 		currMovementLength := scalingFactor * float64(currMovement.Len())

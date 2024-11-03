@@ -137,7 +137,7 @@ func (o *DifficultyObject) setDistances() {
 
 	lastCursorPosition := getEndCursorPosition(o.lastObject, o.Diff)
 
-	o.LazyJumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.Diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
+	o.LazyJumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.Diff).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
 	o.MinimumJumpTime = o.StrainTime
 	o.MinimumJumpDistance = o.LazyJumpDistance
 
@@ -167,7 +167,7 @@ func (o *DifficultyObject) setDistances() {
 		// Thus, the player is assumed to jump the minimum of these two distances in all cases.
 		//
 
-		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.Diff.Mods).Dst(o.BaseObject.GetStackedStartPositionMod(o.Diff.Mods)) * scalingFactor
+		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.Diff).Dst(o.BaseObject.GetStackedStartPositionMod(o.Diff)) * scalingFactor
 		o.MinimumJumpDistance = max(0, min(o.LazyJumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
 	}
 
@@ -178,8 +178,8 @@ func (o *DifficultyObject) setDistances() {
 
 		lastLastCursorPosition := getEndCursorPosition(o.lastLastObject, o.Diff)
 
-		v1 := lastLastCursorPosition.Sub(o.lastObject.GetStackedStartPositionMod(o.Diff.Mods))
-		v2 := o.BaseObject.GetStackedStartPositionMod(o.Diff.Mods).Sub(lastCursorPosition)
+		v1 := lastLastCursorPosition.Sub(o.lastObject.GetStackedStartPositionMod(o.Diff))
+		v2 := o.BaseObject.GetStackedStartPositionMod(o.Diff).Sub(lastCursorPosition)
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X
 		o.Angle = float64(math32.Abs(math32.Atan2(det, dot)))
@@ -187,7 +187,7 @@ func (o *DifficultyObject) setDistances() {
 }
 
 func getEndCursorPosition(obj objects.IHitObject, d *difficulty.Difficulty) (pos vector.Vector2f) {
-	pos = obj.GetStackedStartPositionMod(d.Mods)
+	pos = obj.GetStackedStartPositionMod(d)
 
 	if s, ok := obj.(*LazySlider); ok {
 		pos = s.LazyEndPosition

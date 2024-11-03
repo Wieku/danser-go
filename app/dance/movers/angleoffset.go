@@ -43,8 +43,8 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 	timeDelta := mover.endTime - mover.startTime
 
-	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff)
+	endPos := end.GetStackedStartPositionMod(mover.diff)
 
 	distance := startPos.Dst(endPos)
 
@@ -69,7 +69,7 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 			pt1 := vector.NewVec2fRad(mover.lastAngle, scaledDistance).Add(startPos)
 
 			if ok1 {
-				pt1 = vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff.Mods), scaledDistance).Add(startPos)
+				pt1 = vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff), scaledDistance).Add(startPos)
 			}
 
 			if !ok2 {
@@ -80,7 +80,7 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 
 				points = []vector.Vector2f{startPos, pt1, pt2, endPos}
 			} else {
-				pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(endPos)
+				pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff), scaledDistance).Add(endPos)
 				points = []vector.Vector2f{startPos, pt1, pt2, endPos}
 			}
 		} else {
@@ -89,15 +89,15 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 	} else if ok1 && ok2 {
 		mover.invert = -1 * mover.invert
 
-		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff.Mods), scaledDistance).Add(startPos)
-		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(endPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff), scaledDistance).Add(startPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff), scaledDistance).Add(endPos)
 
 		points = []vector.Vector2f{startPos, pt1, pt2, endPos}
 	} else if ok1 {
 		mover.invert = -1 * mover.invert
 		mover.lastAngle = startPos.AngleRV(endPos) - newAngle*mover.invert
 
-		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff.Mods), scaledDistance).Add(startPos)
+		pt1 := vector.NewVec2fRad(s1.GetEndAngleMod(mover.diff), scaledDistance).Add(startPos)
 		pt2 := vector.NewVec2fRad(mover.lastAngle, scaledDistance).Add(endPos)
 
 		points = []vector.Vector2f{startPos, pt1, pt2, endPos}
@@ -105,7 +105,7 @@ func (mover *AngleOffsetMover) SetObjects(objs []objects.IHitObject) int {
 		mover.lastAngle += math.Pi
 
 		pt1 := vector.NewVec2fRad(mover.lastAngle, scaledDistance).Add(startPos)
-		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(endPos)
+		pt2 := vector.NewVec2fRad(s2.GetStartAngleMod(mover.diff), scaledDistance).Add(endPos)
 
 		points = []vector.Vector2f{startPos, pt1, pt2, endPos}
 	} else {

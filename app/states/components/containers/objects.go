@@ -68,10 +68,10 @@ func (container *HitObjectContainer) createFollowPoints() {
 		}
 
 		prevTime := container.objectQueue[i-1].GetEndTime()
-		prevPos := container.objectQueue[i-1].GetStackedEndPositionMod(container.beatMap.Diff.Mods).Copy64()
+		prevPos := container.objectQueue[i-1].GetStackedEndPositionMod(container.beatMap.Diff).Copy64()
 
 		nextTime := container.objectQueue[i].GetStartTime()
-		nextPos := container.objectQueue[i].GetStackedStartPositionMod(container.beatMap.Diff.Mods).Copy64()
+		nextPos := container.objectQueue[i].GetStackedStartPositionMod(container.beatMap.Diff).Copy64()
 
 		duration := nextTime - prevTime
 

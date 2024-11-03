@@ -66,18 +66,21 @@ type BeatMap struct {
 	LocalOffset int
 
 	pathCache *files.FileMap
+
+	stackCalcCache map[int64]bool
 }
 
 func NewBeatMap() *BeatMap {
 	beatMap := &BeatMap{
-		Timings:       objects.NewTimings(),
-		StackLeniency: 0.7,
-		Diff:          difficulty.NewDifficulty(5, 5, 5, 5),
-		Stars:         -1,
-		MinBPM:        math.Inf(0),
-		MaxBPM:        0,
+		Timings:        objects.NewTimings(),
+		StackLeniency:  0.7,
+		Diff:           difficulty.NewDifficulty(5, 5, 5, 5),
+		Stars:          -1,
+		MinBPM:         math.Inf(0),
+		MaxBPM:         0,
+		stackCalcCache: make(map[int64]bool),
 	}
-	//beatMap.Diff.SetMods(difficulty.HardRock|difficulty.Hidden)
+
 	return beatMap
 }
 
@@ -226,4 +229,13 @@ func (beatMap *BeatMap) GetRelatedFile(path string) (string, error) {
 
 func (beatMap *BeatMap) GetAudioFile() (string, error) {
 	return beatMap.GetRelatedFile(beatMap.Audio)
+}
+
+func (beatMap *BeatMap) CalculateStackLeniency(diff *difficulty.Difficulty) {
+	stackThreshold := int64(math.Floor(diff.Preempt * beatMap.StackLeniency))
+
+	if !beatMap.stackCalcCache[stackThreshold] {
+		processStacking(beatMap.HitObjects, beatMap.Version, diff, beatMap.StackLeniency)
+		beatMap.stackCalcCache[stackThreshold] = true
+	}
 }

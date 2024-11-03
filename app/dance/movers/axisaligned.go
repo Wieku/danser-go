@@ -25,8 +25,8 @@ func (mover *AxisMover) SetObjects(objs []objects.IHitObject) int {
 	mover.startTime = start.GetEndTime()
 	mover.endTime = end.GetStartTime()
 
-	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff)
+	endPos := end.GetStackedStartPositionMod(mover.diff)
 
 	var midP vector.Vector2f
 

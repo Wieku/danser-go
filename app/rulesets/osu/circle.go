@@ -44,7 +44,7 @@ func (circle *Circle) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 	state := circle.state[player]
 
 	if !state.isHit {
-		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
+		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff)
 
 		clicked := player.leftCondE || player.rightCondE
 
@@ -108,7 +108,7 @@ func (circle *Circle) UpdatePostFor(player *difficultyPlayer, time int64, _ bool
 	state := circle.state[player]
 
 	if time > int64(circle.hitCircle.GetEndTime())+player.diff.Hit50 && !state.isHit {
-		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
+		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff)
 		circle.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, circle))
 
 		if len(circle.players) == 1 {
@@ -139,7 +139,7 @@ func (circle *Circle) MissForcefully(player *difficultyPlayer, time int64) {
 	state := circle.state[player]
 
 	if !state.isHit {
-		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff.Mods)
+		position := circle.hitCircle.GetStackedPositionAtMod(float64(time), player.diff)
 
 		if len(circle.players) == 1 {
 			circle.hitCircle.Arm(false, float64(time))

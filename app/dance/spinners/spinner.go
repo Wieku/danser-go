@@ -35,20 +35,12 @@ func NewSpinner(spinner *objects.Spinner, moverCtor func() SpinnerMover, id int)
 	return danceSpinner
 }
 
-func (spinner *DanceSpinner) GetStartAngle() float32 {
-	return spinner.GetStackedStartPosition().AngleRV(spinner.GetStackedPositionAt(spinner.StartTime + min(10, spinner.GetDuration()))) //temporary solution
+func (spinner *DanceSpinner) GetStartAngleMod(diff *difficulty.Difficulty) float32 {
+	return spinner.GetStackedStartPositionMod(diff).AngleRV(spinner.GetStackedPositionAtMod(spinner.StartTime+min(10, spinner.GetDuration()), diff)) //temporary solution
 }
 
-func (spinner *DanceSpinner) GetStartAngleMod(modifier difficulty.Modifier) float32 {
-	return spinner.GetStackedStartPositionMod(modifier).AngleRV(spinner.GetStackedPositionAtMod(spinner.StartTime+min(10, spinner.GetDuration()), modifier)) //temporary solution
-}
-
-func (spinner *DanceSpinner) GetEndAngle() float32 {
-	return spinner.GetStackedEndPosition().AngleRV(spinner.GetStackedPositionAt(spinner.EndTime - min(10, spinner.GetDuration()))) //temporary solution
-}
-
-func (spinner *DanceSpinner) GetEndAngleMod(modifier difficulty.Modifier) float32 {
-	return spinner.GetStackedEndPositionMod(modifier).AngleRV(spinner.GetStackedPositionAtMod(spinner.EndTime-min(10, spinner.GetDuration()), modifier)) //temporary solution
+func (spinner *DanceSpinner) GetEndAngleMod(diff *difficulty.Difficulty) float32 {
+	return spinner.GetStackedEndPositionMod(diff).AngleRV(spinner.GetStackedPositionAtMod(spinner.EndTime-min(10, spinner.GetDuration()), diff)) //temporary solution
 }
 
 func (spinner *DanceSpinner) GetPartLen() float32 {
@@ -57,16 +49,16 @@ func (spinner *DanceSpinner) GetPartLen() float32 {
 	return float32(20.0) / float32(spinner.GetDuration()) * float32(radius)
 }
 
-func (spinner *DanceSpinner) GetStackedPositionAtMod(time float64, _ difficulty.Modifier) vector.Vector2f {
-	return spinner.GetStackedPositionAt(time)
+func (spinner *DanceSpinner) GetStackedPositionAtMod(time float64, _ *difficulty.Difficulty) vector.Vector2f {
+	return spinner.GetPositionAt(time)
 }
 
-func (spinner *DanceSpinner) GetStackedStartPositionMod(_ difficulty.Modifier) vector.Vector2f {
-	return spinner.GetStackedStartPosition()
+func (spinner *DanceSpinner) GetStackedStartPositionMod(_ *difficulty.Difficulty) vector.Vector2f {
+	return spinner.GetStartPosition()
 }
 
-func (spinner *DanceSpinner) GetStackedEndPositionMod(_ difficulty.Modifier) vector.Vector2f {
-	return spinner.GetStackedEndPosition()
+func (spinner *DanceSpinner) GetStackedEndPositionMod(_ *difficulty.Difficulty) vector.Vector2f {
+	return spinner.GetEndPosition()
 }
 
 func (spinner *DanceSpinner) GetType() objects.Type {

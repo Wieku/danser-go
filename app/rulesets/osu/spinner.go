@@ -108,7 +108,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 }
 
 func (spinner *Spinner) processStable(player *difficultyPlayer, time int64) {
-	spinnerPosition := spinner.hitSpinner.GetStackedStartPosition()
+	spinnerPosition := spinner.hitSpinner.GetStartPosition()
 
 	state := spinner.state[player]
 
@@ -239,7 +239,7 @@ func (spinner *Spinner) processStable(player *difficultyPlayer, time int64) {
 }
 
 func (spinner *Spinner) processLazer(player *difficultyPlayer, time int64) {
-	spinnerPosition := spinner.hitSpinner.GetStackedStartPosition()
+	spinnerPosition := spinner.hitSpinner.GetStartPosition()
 
 	state := spinner.state[player]
 

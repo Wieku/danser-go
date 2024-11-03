@@ -36,8 +36,8 @@ func (mover *HalfCircleMover) SetObjects(objs []objects.IHitObject) int {
 	mover.startTime = start.GetEndTime()
 	mover.endTime = end.GetStartTime()
 
-	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff)
+	endPos := end.GetStackedStartPositionMod(mover.diff)
 
 	if config.StreamTrigger < 0 || (mover.endTime-mover.startTime) < float64(config.StreamTrigger) {
 		mover.invert = -1 * mover.invert

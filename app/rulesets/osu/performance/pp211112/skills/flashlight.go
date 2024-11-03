@@ -45,7 +45,7 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 		previous := s.GetPrevious(i)
 
 		if _, ok := previous.BaseObject.(*objects.Spinner); !ok {
-			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(s.diff.Mods).Dst(previous.BaseObject.GetStackedEndPositionMod(s.diff.Mods)))
+			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(s.diff).Dst(previous.BaseObject.GetStackedEndPositionMod(s.diff)))
 
 			if s.Experimental {
 				cumulativeStrainTime += lastObj.StrainTime

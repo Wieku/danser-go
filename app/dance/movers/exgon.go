@@ -20,7 +20,7 @@ type ExGonMover struct {
 	lastPos  vector.Vector2f
 	nextTime float64
 
-	delay   float64
+	delay float64
 }
 
 func NewExGonMover() MultiPointMover {
@@ -49,14 +49,14 @@ func (mover *ExGonMover) SetObjects(objs []objects.IHitObject) int {
 	mover.startTime = start.GetStartTime()
 	mover.endTime = end.GetStartTime()
 
-	mover.lastPos = start.GetStackedEndPositionMod(mover.diff.Mods)
-	mover.endPos = end.GetStackedStartPositionMod(mover.diff.Mods)
+	mover.lastPos = start.GetStackedEndPositionMod(mover.diff)
+	mover.endPos = end.GetStackedStartPositionMod(mover.diff)
 
 	return 2
 }
 
 func (mover *ExGonMover) Update(time float64) vector.Vector2f {
-	if mover.endTime - time < mover.delay {
+	if mover.endTime-time < mover.delay {
 		return mover.endPos
 	}
 

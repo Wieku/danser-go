@@ -29,8 +29,8 @@ func (mover *PippiMover) SetObjects(objs []objects.IHitObject) int {
 	mover.startTime = max(start.GetEndTime(), end.GetStartTime()-(mover.diff.Preempt-100*mover.diff.Speed))
 	mover.endTime = end.GetStartTime()
 
-	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff)
+	endPos := end.GetStackedStartPositionMod(mover.diff)
 
 	timeDifference := mover.endTime - mover.startTime
 
@@ -77,7 +77,7 @@ func (mover *PippiMover) Update(time float64) vector.Vector2f {
 func (mover *PippiMover) GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f {
 	c, ok := object.(*objects.Circle)
 	if ok && c.DoubleClick {
-		return c.GetStackedStartPositionMod(mover.diff.Mods)
+		return c.GetStackedStartPositionMod(mover.diff)
 	}
 
 	return mover.modifyPos(time, object.GetType() == objects.SPINNER, mover.basicMover.GetObjectsPosition(time, object))

@@ -79,7 +79,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 	}
 
 	lastCursorPosition := getEndCursorPosition(o.lastObject, o.diff)
-	o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
+	o.JumpDistance = float64((o.BaseObject.GetStackedStartPositionMod(o.diff).Scl(scalingFactor)).Dst(lastCursorPosition.Scl(scalingFactor)))
 
 	if lastSlider, ok := o.lastObject.(*LazySlider); ok {
 		o.TravelDistance = float64(lastSlider.LazyTravelDistance)
@@ -87,7 +87,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 		o.MovementTime = max(o.StrainTime-o.TravelTime, MinDeltaTime)
 
 		// Jump distance from the slider tail to the next object, as opposed to the lazy position of JumpDistance.
-		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.diff.Mods).Dst(o.BaseObject.GetStackedStartPositionMod(o.diff.Mods)) * scalingFactor
+		tailJumpDistance := lastSlider.GetStackedPositionAtModLazer(lastSlider.EndTimeLazer, o.diff).Dst(o.BaseObject.GetStackedStartPositionMod(o.diff)) * scalingFactor
 
 		// For hitobjects which continue in the direction of the slider, the player will normally follow through the slider,
 		// such that they're not jumping from the lazy position but rather from very close to (or the end of) the slider.
@@ -107,8 +107,8 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 
 		lastLastCursorPosition := getEndCursorPosition(o.lastLastObject, o.diff)
 
-		v1 := lastLastCursorPosition.Sub(o.lastObject.GetStackedStartPositionMod(o.diff.Mods))
-		v2 := o.BaseObject.GetStackedStartPositionMod(o.diff.Mods).Sub(lastCursorPosition)
+		v1 := lastLastCursorPosition.Sub(o.lastObject.GetStackedStartPositionMod(o.diff))
+		v2 := o.BaseObject.GetStackedStartPositionMod(o.diff).Sub(lastCursorPosition)
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X
 		o.Angle = float64(math32.Abs(math32.Atan2(det, dot)))
@@ -116,7 +116,7 @@ func (o *DifficultyObject) setDistances(experimental bool) {
 }
 
 func getEndCursorPosition(obj objects.IHitObject, d *difficulty.Difficulty) (pos vector.Vector2f) {
-	pos = obj.GetStackedStartPositionMod(d.Mods)
+	pos = obj.GetStackedStartPositionMod(d)
 
 	if s, ok := obj.(*LazySlider); ok {
 		pos = s.LazyEndPosition

@@ -23,13 +23,14 @@ func commonParse(data []string, extraIndex int) *HitObject {
 	startPos := vector.NewVec2f(float32(x), float32(y))
 
 	hitObject := &HitObject{
-		StartPosRaw: startPos,
-		EndPosRaw:   startPos,
-		StartTime:   time,
-		EndTime:     time,
-		HitObjectID: -1,
-		NewCombo:    (objType & 4) == 4,
-		ColorOffset: (objType >> 4) & 7,
+		StartPosRaw:   startPos,
+		EndPosRaw:     startPos,
+		StartTime:     time,
+		EndTime:       time,
+		HitObjectID:   -1,
+		NewCombo:      (objType & 4) == 4,
+		ColorOffset:   (objType >> 4) & 7,
+		StackIndexMap: make(map[int64]int64),
 	}
 
 	hitObject.BasicHitSound = parseExtras(data, extraIndex)

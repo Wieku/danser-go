@@ -3,7 +3,6 @@ package beatmap
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/settings"
 	"math"
 )
 
@@ -21,56 +20,29 @@ func isSlider(obj objects.IHitObject) bool {
 	return ok1
 }
 
-func calculateStackLeniency(b *BeatMap, diffCalcOnly bool) {
-	if !settings.Objects.StackEnabled && !diffCalcOnly {
-		return
-	}
-
-	diffNM := difficulty.NewDifficulty(b.Diff.GetHP(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
-	diffEZ := difficulty.NewDifficulty(b.Diff.GetHP(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
-	diffHR := difficulty.NewDifficulty(b.Diff.GetHP(), b.Diff.GetCS(), b.Diff.GetOD(), b.Diff.GetAR())
-
-	diffEZ.SetMods(difficulty.Easy)
-	diffHR.SetMods(difficulty.HardRock)
-
-	processStacking(b.HitObjects, b.Version, diffNM, b.StackLeniency)
-
-	if !diffCalcOnly {
-		processStacking(b.HitObjects, b.Version, diffEZ, b.StackLeniency)
-		processStacking(b.HitObjects, b.Version, diffHR, b.StackLeniency)
-	}
-
-	for _, v := range b.HitObjects {
-		v.UpdateStacking()
-	}
-}
-
 func processStacking(hitObjects []objects.IHitObject, version int, diff *difficulty.Difficulty, stackLeniency float64) {
-	stackThreshold := math.Floor(diff.Preempt * stackLeniency)
-	modifiers := diff.Mods
+	stackThreshold := int64(math.Floor(diff.Preempt * stackLeniency))
 
 	for _, v := range hitObjects {
-		v.SetStackIndex(0, diff.Mods)
+		v.SetStackIndex(stackThreshold, 0)
 	}
 
 	if version >= 6 {
-		applyNewStacking(hitObjects, modifiers, stackThreshold)
+		applyNewStacking(hitObjects, stackThreshold)
 	} else {
-		applyOldStacking(hitObjects, modifiers, stackThreshold)
+		applyOldStacking(hitObjects, stackThreshold)
 	}
 
 	for _, v := range hitObjects {
 		if isSpinner(v) {
-			v.SetStackIndex(0, difficulty.None)
-			v.SetStackIndex(0, difficulty.Easy)
-			v.SetStackIndex(0, difficulty.HardRock)
-		} else {
-			v.SetStackOffset(-float32(v.GetStackIndex(modifiers))*float32(diff.CircleRadius)/10, modifiers)
+			v.SetStackIndex(stackThreshold, 0)
 		}
 	}
 }
 
-func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modifier, stackThreshold float64) {
+func applyNewStacking(hitObjects []objects.IHitObject, stackThreshold int64) {
+	stackThresholdF := float64(stackThreshold)
+
 	extendedEndIndex := len(hitObjects) - 1
 	for i := len(hitObjects) - 1; i >= 0; i-- {
 		stackBaseIndex := i
@@ -87,13 +59,13 @@ func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modi
 				continue
 			}
 
-			if objectN.GetStartTime()-stackIHitObject.GetEndTime() > stackThreshold {
+			if objectN.GetStartTime()-stackIHitObject.GetEndTime() > stackThresholdF {
 				break
 			}
 
 			if stackIHitObject.GetStartPosition().Dst(objectN.GetStartPosition()) < stackDistance || isSlider(stackIHitObject) && stackIHitObject.GetEndPosition().Dst(objectN.GetStartPosition()) < stackDistance {
 				stackBaseIndex = n
-				objectN.SetStackIndex(0, modifiers)
+				objectN.SetStackIndex(stackThreshold, 0)
 			}
 		}
 
@@ -112,7 +84,7 @@ func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modi
 
 		objectI := hitObjects[i]
 
-		if objectI.GetStackIndex(modifiers) != 0 || isSpinner(objectI) {
+		if objectI.GetStackIndex(stackThreshold) != 0 || isSpinner(objectI) {
 			continue
 		}
 
@@ -124,21 +96,21 @@ func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modi
 					continue
 				}
 
-				if objectI.GetStartTime()-objectN.GetEndTime() > stackThreshold {
+				if objectI.GetStartTime()-objectN.GetEndTime() > stackThresholdF {
 					break
 				}
 
 				if n < extendedStartIndex {
-					objectN.SetStackIndex(0, modifiers)
+					objectN.SetStackIndex(stackThreshold, 0)
 					extendedStartIndex = n
 				}
 
 				if isSlider(objectN) && objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stackDistance {
-					offset := objectI.GetStackIndex(modifiers) - objectN.GetStackIndex(modifiers) + 1
+					offset := objectI.GetStackIndex(stackThreshold) - objectN.GetStackIndex(stackThreshold) + 1
 					for j := n + 1; j <= i; j++ {
 						objectJ := hitObjects[j]
 						if objectN.GetEndPosition().Dst(objectJ.GetStartPosition()) < stackDistance {
-							objectJ.SetStackIndex(objectJ.GetStackIndex(modifiers)-offset, modifiers)
+							objectJ.SetStackIndex(stackThreshold, objectJ.GetStackIndex(stackThreshold)-offset)
 						}
 					}
 
@@ -146,7 +118,7 @@ func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modi
 				}
 
 				if objectN.GetStartPosition().Dst(objectI.GetStartPosition()) < stackDistance {
-					objectN.SetStackIndex(objectI.GetStackIndex(modifiers)+1, modifiers)
+					objectN.SetStackIndex(stackThreshold, objectI.GetStackIndex(stackThreshold)+1)
 					objectI = objectN
 				}
 			}
@@ -159,12 +131,12 @@ func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modi
 					continue
 				}
 
-				if objectI.GetStartTime()-objectN.GetStartTime() > stackThreshold {
+				if objectI.GetStartTime()-objectN.GetStartTime() > stackThresholdF {
 					break
 				}
 
 				if objectN.GetEndPosition().Dst(objectI.GetStartPosition()) < stackDistance {
-					objectN.SetStackIndex(objectI.GetStackIndex(modifiers)+1, modifiers)
+					objectN.SetStackIndex(stackThreshold, objectI.GetStackIndex(stackThreshold)+1)
 					objectI = objectN
 				}
 
@@ -173,28 +145,30 @@ func applyNewStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modi
 	}
 }
 
-func applyOldStacking(hitObjects []objects.IHitObject, modifiers difficulty.Modifier, stackThreshold float64) {
+func applyOldStacking(hitObjects []objects.IHitObject, stackThreshold int64) {
+	stackThresholdF := float64(stackThreshold)
+
 	for i := 0; i < len(hitObjects); i++ {
 		objectI := hitObjects[i]
 
 		startTime := objectI.GetEndTime()
 
-		if objectI.GetStackIndex(modifiers) == 0 || isSlider(objectI) {
+		if objectI.GetStackIndex(stackThreshold) == 0 || isSlider(objectI) {
 			sliderStack := int64(0)
 
 			for n := i + 1; n < len(hitObjects); n++ {
 				objectN := hitObjects[n]
 
-				if objectN.GetStartTime()-stackThreshold > startTime {
+				if objectN.GetStartTime()-stackThresholdF > startTime {
 					break
 				}
 
 				if objectN.GetStartPosition().Dst(objectI.GetStartPosition()) < stackDistance {
-					objectI.SetStackIndex(objectI.GetStackIndex(modifiers)+1, modifiers)
+					objectI.SetStackIndex(stackThreshold, objectI.GetStackIndex(stackThreshold)+1)
 					startTime = objectN.GetEndTime()
 				} else if objectN.GetStartPosition().Dst(objectI.GetEndPosition()) < stackDistance {
 					sliderStack++
-					objectN.SetStackIndex(objectN.GetStackIndex(modifiers)-sliderStack, modifiers)
+					objectN.SetStackIndex(stackThreshold, objectN.GetStackIndex(stackThreshold)-sliderStack)
 					startTime = objectN.GetEndTime()
 				}
 			}

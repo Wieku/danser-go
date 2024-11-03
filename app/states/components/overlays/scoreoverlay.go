@@ -355,11 +355,11 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 
 		var startPos *vector.Vector2f
 		if judgementResult.Number > 0 {
-			pos := overlay.ruleset.GetBeatMap().HitObjects[judgementResult.Number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+			pos := overlay.ruleset.GetBeatMap().HitObjects[judgementResult.Number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff)
 			startPos = &pos
 		}
 
-		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff)
 
 		overlay.aimErrorMeter.Add(float64(judgementResult.Time), c.Position, startPos, &endPos)
 	}

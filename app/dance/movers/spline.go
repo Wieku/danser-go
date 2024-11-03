@@ -40,14 +40,14 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 		o := objs[i]
 
 		if i == 0 {
-			cEnd := o.GetStackedEndPositionMod(mover.diff.Mods)
-			nStart := objs[i+1].GetStackedStartPositionMod(mover.diff.Mods)
+			cEnd := o.GetStackedEndPositionMod(mover.diff)
+			nStart := objs[i+1].GetStackedStartPositionMod(mover.diff)
 
 			var wPoint vector.Vector2f
 
 			switch s := o.(type) {
 			case objects.ILongObject:
-				wPoint = cEnd.Add(vector.NewVec2fRad(s.GetEndAngleMod(mover.diff.Mods), cEnd.Dst(nStart)*0.7))
+				wPoint = cEnd.Add(vector.NewVec2fRad(s.GetEndAngleMod(mover.diff), cEnd.Dst(nStart)*0.7))
 			default:
 				wPoint = cEnd.Lerp(nStart, 0.333)
 			}
@@ -61,14 +61,14 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 		}
 
 		if _, ok := o.(objects.ILongObject); ok || i == len(objs)-1 {
-			pEnd := objs[i-1].GetStackedEndPositionMod(mover.diff.Mods)
-			cStart := o.GetStackedStartPositionMod(mover.diff.Mods)
+			pEnd := objs[i-1].GetStackedEndPositionMod(mover.diff)
+			cStart := o.GetStackedStartPositionMod(mover.diff)
 
 			var wPoint vector.Vector2f
 
 			switch s := o.(type) {
 			case objects.ILongObject:
-				wPoint = cStart.Add(vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), cStart.Dst(pEnd)*0.7))
+				wPoint = cStart.Add(vector.NewVec2fRad(s.GetStartAngleMod(mover.diff), cStart.Dst(pEnd)*0.7))
 			default:
 				wPoint = cStart.Lerp(pEnd, 0.333)
 			}
@@ -80,9 +80,9 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 			break
 		} else if i > 1 && i < len(objs)-1 {
-			pos1 := objs[i-1].GetStackedStartPositionMod(mover.diff.Mods)
-			pos2 := o.GetStackedStartPositionMod(mover.diff.Mods)
-			pos3 := objs[i+1].GetStackedStartPositionMod(mover.diff.Mods)
+			pos1 := objs[i-1].GetStackedStartPositionMod(mover.diff)
+			pos2 := o.GetStackedStartPositionMod(mover.diff)
+			pos3 := objs[i+1].GetStackedStartPositionMod(mover.diff)
 
 			min := float32(streamEntryMin)
 			max := float32(streamEntryMax)
@@ -160,7 +160,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			}
 		}
 
-		points = append(points, o.GetStackedEndPositionMod(mover.diff.Mods))
+		points = append(points, o.GetStackedEndPositionMod(mover.diff))
 		timing = append(timing, o.GetStartTime())
 	}
 
