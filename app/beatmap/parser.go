@@ -387,7 +387,7 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 		obj.SetTiming(beatMap.Timings, beatMap.Version, diffCalcOnly)
 	}
 
-	if !settings.Objects.StackEnabled && !diffCalcOnly {
+	if settings.Objects.StackEnabled || settings.KNOCKOUT || settings.PLAY || diffCalcOnly {
 		beatMap.CalculateStackLeniency(beatMap.Diff)
 	}
 }

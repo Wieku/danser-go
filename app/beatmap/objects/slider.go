@@ -348,6 +348,7 @@ func (slider *Slider) GetAsDummyCircles() []IHitObject {
 
 func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd bool) *Circle {
 	circle := DummyCircleInherit(slider.GetPositionAt(time), time, true, inheritStart, inheritEnd)
+	circle.StackLeniency = slider.StackLeniency
 	circle.StackIndexMap = slider.StackIndexMap
 	circle.ComboSet = slider.ComboSet
 
@@ -521,6 +522,15 @@ func (slider *Slider) calculateFollowPoints() {
 	sort.Slice(slider.ScorePoints, func(i, j int) bool { return slider.ScorePoints[i].Time < slider.ScorePoints[j].Time })
 }
 
+func copySliderHOData(target, base *HitObject) {
+	target.ComboNumber = base.ComboNumber
+	target.ComboSet = base.ComboSet
+	target.ComboSetHax = base.ComboSetHax
+	target.HitObjectID = base.HitObjectID
+	target.StackLeniency = base.StackLeniency
+	target.StackIndexMap = base.StackIndexMap
+}
+
 func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.diff = diff
 	slider.sliderSnakeTail = animation.NewGlider(0)
@@ -539,11 +549,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.fade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 
 	slider.startCircle = DummyCircle(slider.StartPosRaw, slider.StartTime)
-	slider.startCircle.ComboNumber = slider.ComboNumber
-	slider.startCircle.ComboSet = slider.ComboSet
-	slider.startCircle.ComboSetHax = slider.ComboSetHax
-	slider.startCircle.HitObjectID = slider.HitObjectID
-	slider.startCircle.StackIndexMap = slider.StackIndexMap
+	copySliderHOData(slider.startCircle.HitObject, slider.HitObject)
 	slider.startCircle.SetDifficulty(diff)
 
 	slider.edges = append(slider.edges, slider.startCircle)
@@ -575,11 +581,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		}
 
 		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, bounceStartTime, circleTime, i == 1, i == slider.RepeatCount)
-		circle.ComboNumber = slider.ComboNumber
-		circle.ComboSet = slider.ComboSet
-		circle.ComboSetHax = slider.ComboSetHax
-		circle.HitObjectID = slider.HitObjectID
-		circle.StackIndexMap = slider.StackIndexMap
+		copySliderHOData(circle.HitObject, slider.HitObject)
 		circle.SetTiming(slider.Timings, 14, false)
 		circle.SetDifficulty(diff)
 
