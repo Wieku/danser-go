@@ -73,6 +73,10 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 }
 
 func NewPixmapFromBytes(bytes []byte) (*Pixmap, error) {
+	if bytes == nil || len(bytes) == 0 {
+		return nil, errors.New("empty bytes")
+	}
+
 	var x, y C.int
 	data := C.stbi_load_from_memory((*C.stbi_uc)(&bytes[0]), C.int(len(bytes)), &x, &y, nil, 4)
 
