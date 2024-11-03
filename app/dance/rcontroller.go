@@ -141,11 +141,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			control.diff.Mods |= difficulty.Lazer
 		}
 
-		if !localReplay && control.diff.CheckModActive(difficulty.DifficultyAdjust) {
-			log.Println("Difficulty Adjust is not supported for knockouts at the moment, skipping...")
-			continue
-		}
-
 		if localReplay && !beatMap.Diff.Equals(control.diff) {
 			control.diff.SetMods2(beatMap.Diff.ExportMods2())
 			control.modifiedMods = true
