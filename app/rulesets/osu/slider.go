@@ -42,12 +42,6 @@ type Slider struct {
 
 	lastSliderTime int64
 	sliderPosition vector.Vector2f
-
-	lastSliderTimeHR int64
-	sliderPositionHR vector.Vector2f
-
-	lastSliderTimeEZ int64
-	sliderPositionEZ vector.Vector2f
 }
 
 func (slider *Slider) GetNumber() int64 {
@@ -67,8 +61,6 @@ func (slider *Slider) Init(ruleSet *OsuRuleSet, object objects.IHitObject, playe
 	rSlider := object.(*objects.Slider)
 
 	slider.lastSliderTime = math.MinInt64
-	slider.lastSliderTimeEZ = math.MinInt64
-	slider.lastSliderTimeHR = math.MinInt64
 	slider.fadeStartRelative = 100000
 
 	for _, player := range slider.players {
@@ -239,32 +231,12 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 
 	state := slider.state[player]
 
-	sliderPosition := slider.hitSlider.GetStackedPositionAtMod(float64(time), player.diff)
-	//var sliderPosition vector.Vector2f
-	//
-	//switch {
-	//case player.diff.Mods&difficulty.HardRock > 0:
-	//	if time != slider.lastSliderTimeHR {
-	//		slider.sliderPositionHR = slider.hitSlider.GetStackedPositionAtMod(float64(time), player.d)
-	//		slider.lastSliderTimeHR = time
-	//	}
-	//
-	//	sliderPosition = slider.sliderPositionHR
-	//case player.diff.Mods&difficulty.Easy > 0:
-	//	if time != slider.lastSliderTimeEZ {
-	//		slider.sliderPositionEZ = slider.hitSlider.GetStackedPositionAtMod(float64(time), difficulty.Easy)
-	//		slider.lastSliderTimeEZ = time
-	//	}
-	//
-	//	sliderPosition = slider.sliderPositionEZ
-	//default:
-	//	if time != slider.lastSliderTime {
-	//		slider.sliderPosition = slider.hitSlider.GetStackedPositionAt(float64(time))
-	//		slider.lastSliderTime = time
-	//	}
-	//
-	//	sliderPosition = slider.sliderPosition
-	//}
+	if time != slider.lastSliderTime {
+		slider.sliderPosition = slider.hitSlider.GetPositionAt(float64(time))
+		slider.lastSliderTime = time
+	}
+
+	sliderPosition := objects.ModifyPosition(slider.hitSlider.HitObject, slider.sliderPosition, player.diff) // Calculate stacked position
 
 	if time >= int64(slider.hitSlider.GetStartTime()) && ((!state.isHit && !lzMod) || (lzMod && state.isStartHit)) {
 		mouseDownAcceptable := false
