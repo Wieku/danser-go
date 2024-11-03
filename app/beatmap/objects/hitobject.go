@@ -39,6 +39,7 @@ type IHitObject interface {
 	GetStackIndex(modifier difficulty.Modifier) int64
 	SetStackIndex(index int64, modifier difficulty.Modifier)
 	SetStackOffset(offset float32, modifier difficulty.Modifier)
+	SetStackLeniency(leniency float64)
 
 	GetColorOffset() int64
 	IsLastCombo() bool
@@ -74,6 +75,7 @@ type HitObject struct {
 	StartTime float64
 	EndTime   float64
 
+	StackLeniency float64
 	StackOffset   vector.Vector2f
 	StackOffsetEZ vector.Vector2f
 	StackOffsetHR vector.Vector2f
@@ -246,6 +248,10 @@ func (hitObject *HitObject) SetStackOffset(offset float32, modifier difficulty.M
 	default:
 		hitObject.StackOffset = vector.NewVec2f(1, 1).Scl(offset)
 	}
+}
+
+func (hitObject *HitObject) SetStackLeniency(leniency float64) {
+	hitObject.StackLeniency = leniency
 }
 
 func (hitObject *HitObject) GetColorOffset() int64 {

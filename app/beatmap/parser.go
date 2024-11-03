@@ -377,6 +377,7 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 		iO.SetComboNumber(int64(comboNumber))
 		iO.SetComboSet(int64(comboSet))
 		iO.SetComboSetHax(int64(comboSetHax))
+		iO.SetStackLeniency(beatMap.StackLeniency)
 
 		comboNumber++
 		num++
