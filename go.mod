@@ -14,7 +14,6 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
 	github.com/go-gl/mathgl v1.0.0
 	github.com/itchio/lzma v0.0.0-20190703113020-d3e24e3e3d49
-	github.com/karrick/godirwalk v1.16.1
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/nattawitc/rich-go v0.0.0-20200402133947-4fcadd738f5b
 	github.com/olekukonko/tablewriter v0.0.5
