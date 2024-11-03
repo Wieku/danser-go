@@ -1,7 +1,6 @@
 package files
 
 import (
-	"github.com/karrick/godirwalk"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,17 +26,12 @@ func NewFileMap(path string) (*FileMap, error) {
 		pathCache: make(map[string]string),
 	}
 
-	_ = godirwalk.Walk(fPath, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			fixedPath := strings.TrimPrefix(strings.ReplaceAll(osPathname, "\\", "/"), fPath)
+	results, _ := SearchFiles(fPath, "*", -1)
 
-			fileMap.pathCache[strings.ToLower(fixedPath)] = fixedPath
-
-			return nil
-		},
-		Unsorted:            true,
-		FollowSymbolicLinks: true,
-	})
+	for _, result := range results {
+		fixedPath := strings.TrimPrefix(strings.ReplaceAll(result, "\\", "/"), fPath)
+		fileMap.pathCache[strings.ToLower(fixedPath)] = fixedPath
+	}
 
 	return fileMap, nil
 }
