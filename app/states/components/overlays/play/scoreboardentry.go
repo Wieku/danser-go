@@ -193,7 +193,7 @@ func (entry *ScoreboardEntry) LoadAvatarURL(url string) {
 	fileName := strings.ReplaceAll(url[strings.LastIndex(url, "/")+1:], "?", "-")
 	filePath := filepath.Join(env.DataDir(), "cache", "avatars", fileName)
 
-	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) { // Avatar does not exist, try to download
+	if s, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) || s.Size() == 0 { // Avatar does not exist or is empty, try to download
 		log.Println("Trying to fetch avatar from:", url)
 
 		err2 := downloadAvatar(url, filePath)
@@ -241,7 +241,7 @@ func downloadAvatar(url, path string) error {
 		return fmt.Errorf("failed to create request to: \"%s\": %s", url, response.StatusCode)
 	}
 
-	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC, 0644)
+	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create file: \"%s\": %s", path, err)
 	}
