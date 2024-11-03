@@ -770,12 +770,16 @@ func (l *launcher) drawMain() {
 	}
 
 	if !l.danserRunning && l.beatmapDirUpdated && qpc.GetMilliTimeF() >= l.showBeatmapAlert {
-		mapText := "Do you want to refresh the database?"
-		if launcherConfig.SkipMapUpdate {
-			mapText = "Do you want to load new beatmap sets?"
-		}
+		reload := launcherConfig.AutoRefreshDB
 
-		reload := showMessage(mQuestion, "Changes in osu!'s Song directory have been detected.\n\n"+mapText)
+		if !reload {
+			mapText := "Do you want to refresh the database?"
+			if launcherConfig.SkipMapUpdate {
+				mapText = "Do you want to load new beatmap sets?"
+			}
+
+			reload = showMessage(mQuestion, "Changes in osu!'s Song directory have been detected.\n\n"+mapText)
+		}
 
 		l.beatmapDirUpdated = false
 
@@ -1320,7 +1324,11 @@ func (l *launcher) drawConfigPanel() {
 		imgui.TableNextColumn()
 
 		if imgui.ButtonV("Launcher settings", vec2(-1, 0)) {
-			lEditor := newPopupF("About", popMedium, drawLauncherConfig)
+			wSize := imgui.WindowSize()
+
+			lEditor := newPopupF("About", popCustom, drawLauncherConfig)
+			lEditor.width = wSize.X / 2
+			lEditor.height = wSize.Y * 0.9
 
 			lEditor.setCloseListener(func() {
 				saveLauncherConfig()
@@ -1908,7 +1916,12 @@ func (l *launcher) reloadMaps(after func()) {
 
 func (l *launcher) setupWatcher() {
 	setupWatcher(settings.General.GetSongsDir(), func(event fsnotify.Event) {
-		l.showBeatmapAlert = qpc.GetMilliTimeF() + 3000 //Wait for the last map to load on osu side
+		delay := 3000.0                   //Wait for the last map to load on osu side
+		if launcherConfig.AutoRefreshDB { // Wait a bit longer if we're about to refresh the DB automatically
+			delay = 6000
+		}
+
+		l.showBeatmapAlert = qpc.GetMilliTimeF() + delay
 		l.beatmapDirUpdated = true
 	})
 }

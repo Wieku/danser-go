@@ -202,6 +202,8 @@ func drawLauncherConfig() {
 
 	checkboxOption("Speed up startup on slow HDDs.\nWon't detect deleted/updated\nmaps!", &launcherConfig.SkipMapUpdate)
 
+	checkboxOption("Load changes in Songs folder automatically", &launcherConfig.AutoRefreshDB)
+
 	checkboxOption("Show JSON paths in config editor", &launcherConfig.ShowJSONPaths)
 
 	checkboxOption("Show exported videos/images\nin explorer", &launcherConfig.ShowFileAfter)
