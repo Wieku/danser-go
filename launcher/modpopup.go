@@ -35,7 +35,7 @@ func (m *modPopup) drawModMenu() {
 
 	if imgui.BeginTable("mfa", 6) {
 		m.drawRow("Reduction:", func() {
-			m.modCheckbox(difficulty.Easy, difficulty.HardRock|difficulty.DifficultyAdjust, difficulty.None)
+			m.modCheckbox(difficulty.Easy, difficulty.HardRock, difficulty.None)
 
 			m.modCheckbox(difficulty.NoFail, difficulty.SuddenDeath|difficulty.Perfect|difficulty.Relax|difficulty.Relax2, difficulty.None)
 
@@ -43,7 +43,7 @@ func (m *modPopup) drawModMenu() {
 		})
 
 		m.drawRow("Increase:", func() {
-			m.modCheckbox(difficulty.HardRock, difficulty.Easy|difficulty.DifficultyAdjust, difficulty.None)
+			m.modCheckbox(difficulty.HardRock, difficulty.Easy, difficulty.None)
 
 			m.modCheckboxMulti(difficulty.SuddenDeath, difficulty.Perfect, difficulty.NoFail|difficulty.Relax|difficulty.Relax2, difficulty.None)
 
@@ -63,7 +63,7 @@ func (m *modPopup) drawModMenu() {
 
 			m.modCheckbox(difficulty.SpunOut, difficulty.Relax2, difficulty.None)
 
-			m.modCheckbox(difficulty.DifficultyAdjust, difficulty.Easy|difficulty.HardRock, difficulty.None)
+			m.modCheckbox(difficulty.DifficultyAdjust, difficulty.None, difficulty.None)
 		})
 
 		m.drawRow("Conversion:", func() {
