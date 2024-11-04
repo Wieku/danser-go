@@ -269,13 +269,20 @@ func (panel *RankingPanel) Draw(batch *batch.QuadBatch, alpha float64) {
 	fnt.DrawOrigin(batch, text1-65/0.625, row4+10/0.625, vector.TopLeft, fnt.GetSize()*1.12, false, panel.maxCombo)
 	fnt.DrawOrigin(batch, text2-86/0.625, row4+10/0.625, vector.TopLeft, fnt.GetSize()*1.12, false, panel.accuracy)
 
-	fnt2 := font.GetFont("Ubuntu Regular")
+	ubuFont := font.GetFont("Ubuntu Regular")
+	fnt2 := font.GetFont("SBFont")
 
-	fnt2.Overlap = 0.7
+	fnt2.Overlap = 0
+
+	if fnt2 == ubuFont {
+		fnt2.Overlap = 0.7
+	}
 
 	fnt2.Draw(batch, 5, 30-3, 30, panel.beatmapName)
 
-	fnt2.Overlap = 1
+	if fnt2 == ubuFont {
+		fnt2.Overlap = 1
+	}
 
 	fnt2.Draw(batch, 5, 30+22, 22, panel.beatmapCreator)
 

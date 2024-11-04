@@ -144,24 +144,32 @@ func loadFonts() {
 		file.Close()
 	}
 
+	font.AddAlias(font.GetFont("Ubuntu Regular"), "SBFont")
 	font.AddAlias(font.GetFont("Quicksand Bold"), "HUDFont")
 
 	if strings.TrimSpace(settings.Gameplay.HUDFont) != "" {
-		uPath := settings.Gameplay.HUDFont
-		if !filepath.IsAbs(uPath) {
-			uPath = filepath.Join(env.DataDir(), uPath)
-		}
+		loadSubFont(settings.Gameplay.HUDFont, "HUDFont")
+	}
 
-		file, err := os.Open(uPath)
+	if strings.TrimSpace(settings.Gameplay.SBFont) != "" {
+		loadSubFont(settings.Gameplay.SBFont, "SBFont")
+	}
+}
 
-		if err == nil {
-			fnt := font.LoadFont(file)
-			file.Close()
+func loadSubFont(uPath, alias string) {
+	if !filepath.IsAbs(uPath) {
+		uPath = filepath.Join(env.DataDir(), uPath)
+	}
 
-			font.AddAlias(fnt, "HUDFont")
-		} else {
-			log.Println("Can't open HUDFont:", err.Error())
-		}
+	file, err := os.Open(uPath)
+
+	if err == nil {
+		fnt := font.LoadFont(file)
+		file.Close()
+
+		font.AddAlias(fnt, alias)
+	} else {
+		log.Println("Can't open "+alias+":", err.Error())
 	}
 }
 
