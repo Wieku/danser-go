@@ -2,6 +2,7 @@ package texture
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"log"
 	"runtime"
 )
@@ -25,7 +26,15 @@ func NewTextureAtlas(size, mipmaps int) *TextureAtlas {
 	return NewTextureAtlasFormat(size, RGBA, mipmaps, 1)
 }
 
+func NewTextureAtlasCC(size, mipmaps int, clearColor color2.Color) *TextureAtlas {
+	return NewTextureAtlasFormatCC(size, RGBA, mipmaps, 1, clearColor)
+}
+
 func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *TextureAtlas {
+	return NewTextureAtlasFormatCC(size, format, mipmaps, layers, color2.NewLA(0, 0))
+}
+
+func NewTextureAtlasFormatCC(size int, format Format, mipmaps int, layers int, clearColor color2.Color) *TextureAtlas {
 	texture := new(TextureAtlas)
 	texture.subTextures = make(map[string]*TextureRegion)
 	texture.emptySpaces = make(map[int][]rectangle)
@@ -42,7 +51,7 @@ func NewTextureAtlasFormat(size int, format Format, mipmaps int, layers int) *Te
 		size = int(siz)
 	}
 
-	texture.TextureMultiLayer = NewTextureMultiLayerFormat(size, size, format, mipmaps, layers)
+	texture.TextureMultiLayer = NewTextureMultiLayerFormatCC(size, size, format, mipmaps, layers, clearColor)
 
 	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, float32(size), float32(size), 0}
 	texture.padding = 1 << uint(texture.store.mipmaps)

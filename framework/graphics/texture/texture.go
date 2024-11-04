@@ -3,6 +3,7 @@ package texture
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/graphics/hacks"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 type Filter int32
@@ -105,6 +106,12 @@ func (store *textureStore) Bind(loc uint) {
 
 func (store *textureStore) Clear() {
 	gl.ClearTexImage(store.id, 0, store.format.Format(), store.format.Type(), gl.Ptr(nil))
+}
+
+func (store *textureStore) ClearColor(clearColor color2.Color) {
+	clr := clearColor.ToIntArray()
+
+	gl.ClearTexImage(store.id, 0, store.format.Format(), store.format.Type(), gl.Ptr(&clr[0]))
 }
 
 func (store *textureStore) SetFiltering(min, mag Filter) {

@@ -32,6 +32,19 @@ func NewPixMap(width, height int) *Pixmap {
 	return NewPixMapC(width, height, 4)
 }
 
+func NewPixMapW(width, height int) *Pixmap {
+	pixmap := NewPixMapC(width, height, 4)
+
+	for i := 0; i < width*height; i++ {
+		pixmap.Data[i*4] = 255
+		pixmap.Data[i*4+1] = 255
+		pixmap.Data[i*4+2] = 255
+		pixmap.Data[i*4+3] = 0
+	}
+
+	return pixmap
+}
+
 func NewPixMapC(width, height, components int) *Pixmap {
 	pixmap := new(Pixmap)
 	pixmap.Width = width
