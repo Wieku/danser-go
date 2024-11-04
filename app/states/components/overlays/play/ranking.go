@@ -205,7 +205,10 @@ func NewRankingPanel(cursor *graphics.Cursor, ruleset *osu.OsuRuleSet, hitError 
 		panel.perfect = sprite.NewSpriteSingle(skin.GetTexture("ranking-perfect"), 0, pPos, vector.Centre)
 	}
 
-	stats := "Accuracy:\n"
+	stats := fmt.Sprintf("Slider ticks: %d/%d", int64(score.MaxTicks)-int64(score.CountSB), score.MaxTicks)
+	stats += fmt.Sprintf("\nSlider ends: %d/%d", score.SliderEnd, score.MaxSliderEnd)
+
+	stats += "\nAccuracy:\n"
 	stats += fmt.Sprintf("Error: %.2fms - %.2fms avg", hitError.GetAvgNeg(), hitError.GetAvgPos())
 
 	if panel.ruleset.GetBeatMap().Diff.Speed != 1.0 {
