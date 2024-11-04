@@ -33,14 +33,14 @@ func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	mover.startTime = start.GetEndTime()
 	mover.endTime = end.GetStartTime()
 
-	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff)
+	endPos := end.GetStackedStartPositionMod(mover.diff)
 
 	scaledDistance := float32(mover.endTime - mover.startTime)
 
 	newAngle := mover.lastAngle + math.Pi
 	if s, ok := start.(objects.ILongObject); ok {
-		newAngle = s.GetEndAngleMod(mover.diff.Mods)
+		newAngle = s.GetEndAngleMod(mover.diff)
 	}
 
 	points := []vector.Vector2f{startPos, vector.NewVec2fRad(newAngle, scaledDistance).Add(startPos)}
@@ -50,7 +50,7 @@ func (mover *AggressiveMover) SetObjects(objs []objects.IHitObject) int {
 	}
 
 	if s, ok := end.(objects.ILongObject); ok {
-		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.diff.Mods), scaledDistance).Add(endPos))
+		points = append(points, vector.NewVec2fRad(s.GetStartAngleMod(mover.diff), scaledDistance).Add(endPos))
 	}
 
 	points = append(points, endPos)

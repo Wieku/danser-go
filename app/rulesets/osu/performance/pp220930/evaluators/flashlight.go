@@ -34,7 +34,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 		currentObj := current.Previous(i)
 
 		if _, ok := currentObj.BaseObject.(*objects.Spinner); !ok {
-			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(current.Diff.Mods).Dst(currentObj.BaseObject.GetStackedEndPositionMod(currentObj.Diff.Mods)))
+			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(current.Diff).Dst(currentObj.BaseObject.GetStackedEndPositionMod(currentObj.Diff)))
 
 			cumulativeStrainTime += lastObj.StrainTime
 

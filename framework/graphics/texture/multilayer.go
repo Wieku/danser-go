@@ -3,6 +3,7 @@ package texture
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/wieku/danser-go/framework/goroutines"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"runtime"
 )
 
@@ -10,17 +11,27 @@ type TextureMultiLayer struct {
 	store         *textureStore
 	defRegion     TextureRegion
 	manualMipmaps bool
+	clearColor    color2.Color
 }
 
 func NewTextureMultiLayer(width, height, mipmaps, layers int) *TextureMultiLayer {
 	return NewTextureMultiLayerFormat(width, height, RGBA, mipmaps, layers)
 }
 
+func NewTextureMultiLayerCC(width, height, mipmaps, layers int, clearColor color2.Color) *TextureMultiLayer {
+	return NewTextureMultiLayerFormatCC(width, height, RGBA, mipmaps, layers, clearColor)
+}
+
 func NewTextureMultiLayerFormat(width, height int, format Format, mipmaps int, layers int) *TextureMultiLayer {
+	return NewTextureMultiLayerFormatCC(width, height, format, mipmaps, layers, color2.NewLA(0, 0))
+}
+
+func NewTextureMultiLayerFormatCC(width, height int, format Format, mipmaps int, layers int, clearColor color2.Color) *TextureMultiLayer {
 	texture := new(TextureMultiLayer)
+	texture.clearColor = clearColor
 
 	texture.store = newStore(layers, width, height, format, mipmaps)
-	texture.store.Clear()
+	texture.store.ClearColor(texture.clearColor)
 
 	texture.defRegion = TextureRegion{texture, 0, 1, 0, 1, float32(width), float32(height), 0}
 
@@ -33,6 +44,7 @@ func (texture *TextureMultiLayer) NewLayer() {
 	layers := texture.store.layers + 1
 
 	dstStore := newStore(int(layers), int(texture.store.width), int(texture.store.height), texture.store.format, int(texture.store.mipmaps))
+	dstStore.ClearColor(texture.clearColor)
 	dstStore.SetFiltering(texture.store.min, texture.store.mag)
 	dstStore.Bind(texture.store.binding)
 

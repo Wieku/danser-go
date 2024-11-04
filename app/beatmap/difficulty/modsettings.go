@@ -4,6 +4,10 @@ import "reflect"
 
 var modConfigs map[Modifier]reflect.Type
 
+type modSetting[T any] interface {
+	postLoad() T
+}
+
 func init() {
 	modConfigs = map[Modifier]reflect.Type{
 		HalfTime:         rfType[SpeedSettings](),
@@ -29,6 +33,10 @@ func NewSpeedSettings(rate float64, adjustPitch bool) SpeedSettings {
 	}
 }
 
+func (s SpeedSettings) postLoad() SpeedSettings {
+	return s
+}
+
 type ClassicSettings struct {
 	NoSliderHeadAccuracy bool `json:"no_slider_head_accuracy"`
 	ClassicNoteLock      bool `json:"classic_note_lock"`
@@ -47,6 +55,10 @@ func NewClassicSettings() ClassicSettings {
 	}
 }
 
+func (s ClassicSettings) postLoad() ClassicSettings {
+	return s
+}
+
 type EasySettings struct {
 	Retries int `json:"retries"`
 }
@@ -55,6 +67,10 @@ func NewEasySettings() EasySettings {
 	return EasySettings{
 		Retries: 2,
 	}
+}
+
+func (s EasySettings) postLoad() EasySettings {
+	return s
 }
 
 type FlashlightSettings struct {
@@ -69,6 +85,10 @@ func NewFlashlightSettings() FlashlightSettings {
 		SizeMultiplier: 1,
 		ComboBasedSize: true,
 	}
+}
+
+func (s FlashlightSettings) postLoad() FlashlightSettings {
+	return s
 }
 
 type DiffAdjustSettings struct {
@@ -86,4 +106,13 @@ func NewDiffAdjustSettings(ar, cs, hp, od float64) DiffAdjustSettings {
 		DrainRate:         hp,
 		OverallDifficulty: od,
 	}
+}
+
+func (diffAdjust DiffAdjustSettings) postLoad() DiffAdjustSettings {
+	minVal := min(diffAdjust.ApproachRate, diffAdjust.CircleSize, diffAdjust.DrainRate, diffAdjust.OverallDifficulty)
+	maxVal := max(diffAdjust.ApproachRate, diffAdjust.CircleSize, diffAdjust.DrainRate, diffAdjust.OverallDifficulty)
+
+	diffAdjust.ExtendedValues = minVal < 0 || maxVal > 10
+
+	return diffAdjust
 }

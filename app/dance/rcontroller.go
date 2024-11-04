@@ -2,7 +2,6 @@ package dance
 
 import (
 	"fmt"
-	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/dance/input"
@@ -13,6 +12,7 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/rplpa"
@@ -141,11 +141,6 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			control.diff.Mods |= difficulty.Lazer
 		}
 
-		if !localReplay && control.diff.CheckModActive(difficulty.DifficultyAdjust) {
-			log.Println("Difficulty Adjust is not supported for knockouts at the moment, skipping...")
-			continue
-		}
-
 		if localReplay && !beatMap.Diff.Equals(control.diff) {
 			control.diff.SetMods2(beatMap.Diff.ExportMods2())
 			control.modifiedMods = true
@@ -188,48 +183,38 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 func organizeReplays() {
 	replayDir := filepath.Join(env.DataDir(), replaysMaster)
 
-	_ = godirwalk.Walk(replayDir, &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsDir() && osPathname != replayDir {
-				return godirwalk.SkipThis
-			}
+	unorganizedReplays, _ := files.SearchFiles(replayDir, "*.osr", 0)
 
-			if strings.HasSuffix(de.Name(), ".osr") {
-				log.Println("Checking: ", osPathname)
+	for _, osPathname := range unorganizedReplays {
+		log.Println("Checking: ", osPathname)
 
-				data, err := os.ReadFile(osPathname)
-				if err != nil {
-					log.Println("Error reading file: ", err)
-					log.Println("Skipping... ")
-					return nil
-				}
+		data, err := os.ReadFile(osPathname)
+		if err != nil {
+			log.Println("Error reading file: ", err)
+			log.Println("Skipping... ")
+			continue
+		}
 
-				replayD, err := rplpa.ParseReplay(data)
-				if err != nil {
-					log.Println("Error parsing file: ", err)
-					log.Println("Skipping... ")
-					return nil
-				}
+		replayD, err := rplpa.ParseReplay(data)
+		if err != nil {
+			log.Println("Error parsing file: ", err)
+			log.Println("Skipping... ")
+			continue
+		}
 
-				err = os.MkdirAll(filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5)), 0755)
-				if err != nil {
-					log.Println("Error creating directory: ", err)
-					log.Println("Skipping... ")
-					return nil
-				}
+		err = os.MkdirAll(filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5)), 0755)
+		if err != nil {
+			log.Println("Error creating directory: ", err)
+			log.Println("Skipping... ")
+			continue
+		}
 
-				err = os.Rename(osPathname, filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5), de.Name()))
-				if err != nil {
-					log.Println("Error moving file: ", err)
-					log.Println("Skipping... ")
-				}
-			}
-
-			return nil
-		},
-		Unsorted:            true,
-		FollowSymbolicLinks: true,
-	})
+		err = os.Rename(osPathname, filepath.Join(replayDir, strings.ToLower(replayD.BeatmapMD5), filepath.Base(osPathname)))
+		if err != nil {
+			log.Println("Error moving file: ", err)
+			log.Println("Skipping... ")
+		}
+	}
 }
 
 func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay) {
@@ -280,21 +265,11 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 	} else {
 		replayDir := filepath.Join(env.DataDir(), replaysMaster, controller.bMap.MD5)
 
-		_ = godirwalk.Walk(replayDir, &godirwalk.Options{
-			Callback: func(osPathname string, de *godirwalk.Dirent) error {
-				if de.IsDir() && osPathname != replayDir {
-					return godirwalk.SkipThis
-				}
+		replayPaths, _ := files.SearchFiles(replayDir, "*.osr", 0)
 
-				if strings.HasSuffix(de.Name(), ".osr") {
-					tryAddReplay(osPathname, true)
-				}
-
-				return nil
-			},
-			Unsorted:            true,
-			FollowSymbolicLinks: true,
-		})
+		for _, replayPath := range replayPaths {
+			tryAddReplay(replayPath, true)
+		}
 	}
 
 	return

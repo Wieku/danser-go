@@ -330,7 +330,6 @@ func (mods Modifier) Compatible() bool {
 	if mods.Active(Target) ||
 		(mods.Active(HardRock) && mods.Active(Easy)) ||
 		(mods.Active(Lazer) && mods.Active(ScoreV2)) ||
-		(mods.Active(HardRock|Easy) && mods.Active(DifficultyAdjust)) ||
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
 		(mods.Active(Relax) && mods.Active(Relax2)) ||

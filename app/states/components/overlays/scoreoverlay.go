@@ -144,24 +144,32 @@ func loadFonts() {
 		file.Close()
 	}
 
+	font.AddAlias(font.GetFont("Ubuntu Regular"), "SBFont")
 	font.AddAlias(font.GetFont("Quicksand Bold"), "HUDFont")
 
 	if strings.TrimSpace(settings.Gameplay.HUDFont) != "" {
-		uPath := settings.Gameplay.HUDFont
-		if !filepath.IsAbs(uPath) {
-			uPath = filepath.Join(env.DataDir(), uPath)
-		}
+		loadSubFont(settings.Gameplay.HUDFont, "HUDFont")
+	}
 
-		file, err := os.Open(uPath)
+	if strings.TrimSpace(settings.Gameplay.SBFont) != "" {
+		loadSubFont(settings.Gameplay.SBFont, "SBFont")
+	}
+}
 
-		if err == nil {
-			fnt := font.LoadFont(file)
-			file.Close()
+func loadSubFont(uPath, alias string) {
+	if !filepath.IsAbs(uPath) {
+		uPath = filepath.Join(env.DataDir(), uPath)
+	}
 
-			font.AddAlias(fnt, "HUDFont")
-		} else {
-			log.Println("Can't open HUDFont:", err.Error())
-		}
+	file, err := os.Open(uPath)
+
+	if err == nil {
+		fnt := font.LoadFont(file)
+		file.Close()
+
+		font.AddAlias(fnt, alias)
+	} else {
+		log.Println("Can't open "+alias+":", err.Error())
 	}
 }
 
@@ -355,11 +363,11 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 
 		var startPos *vector.Vector2f
 		if judgementResult.Number > 0 {
-			pos := overlay.ruleset.GetBeatMap().HitObjects[judgementResult.Number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+			pos := overlay.ruleset.GetBeatMap().HitObjects[judgementResult.Number-1].GetStackedEndPositionMod(overlay.ruleset.GetBeatMap().Diff)
 			startPos = &pos
 		}
 
-		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff.Mods)
+		endPos := object.GetStackedStartPositionMod(overlay.ruleset.GetBeatMap().Diff)
 
 		overlay.aimErrorMeter.Add(float64(judgementResult.Time), c.Position, startPos, &endPos)
 	}

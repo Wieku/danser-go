@@ -45,15 +45,15 @@ func (mover *basicMover) GetObjectsEndTime(object objects.IHitObject) float64 {
 }
 
 func (mover *basicMover) GetObjectsStartPosition(object objects.IHitObject) vector.Vector2f {
-	return object.GetStackedStartPositionMod(mover.diff.Mods)
+	return object.GetStackedStartPositionMod(mover.diff)
 }
 
 func (mover *basicMover) GetObjectsEndPosition(object objects.IHitObject) vector.Vector2f {
-	return object.GetStackedEndPositionMod(mover.diff.Mods)
+	return object.GetStackedEndPositionMod(mover.diff)
 }
 
 func (mover *basicMover) GetObjectsPosition(time float64, object objects.IHitObject) vector.Vector2f {
-	return object.GetStackedPositionAtMod(time, mover.diff.Mods)
+	return object.GetStackedPositionAtMod(time, mover.diff)
 }
 
 func (mover *basicMover) GetStartTime() float64 {

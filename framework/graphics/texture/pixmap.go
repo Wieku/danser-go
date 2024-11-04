@@ -32,6 +32,19 @@ func NewPixMap(width, height int) *Pixmap {
 	return NewPixMapC(width, height, 4)
 }
 
+func NewPixMapW(width, height int) *Pixmap {
+	pixmap := NewPixMapC(width, height, 4)
+
+	for i := 0; i < width*height; i++ {
+		pixmap.Data[i*4] = 255
+		pixmap.Data[i*4+1] = 255
+		pixmap.Data[i*4+2] = 255
+		pixmap.Data[i*4+3] = 0
+	}
+
+	return pixmap
+}
+
 func NewPixMapC(width, height, components int) *Pixmap {
 	pixmap := new(Pixmap)
 	pixmap.Width = width
@@ -73,6 +86,10 @@ func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 }
 
 func NewPixmapFromBytes(bytes []byte) (*Pixmap, error) {
+	if bytes == nil || len(bytes) == 0 {
+		return nil, errors.New("empty bytes")
+	}
+
 	var x, y C.int
 	data := C.stbi_load_from_memory((*C.stbi_uc)(&bytes[0]), C.int(len(bytes)), &x, &y, nil, 4)
 

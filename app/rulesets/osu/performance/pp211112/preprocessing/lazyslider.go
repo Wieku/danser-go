@@ -26,8 +26,8 @@ type LazySlider struct {
 
 func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty, experimental bool) *LazySlider {
 	decorated := &LazySlider{
-		Slider: slider,
-		diff:   d,
+		Slider:       slider,
+		diff:         d,
 		experimental: experimental,
 	}
 
@@ -39,8 +39,8 @@ func NewLazySlider(slider *objects.Slider, d *difficulty.Difficulty, experimenta
 func (slider *LazySlider) calculateEndPosition() {
 	slider.LazyTravelTime = slider.ScorePointsLazer[len(slider.ScorePointsLazer)-1].Time - slider.GetStartTime()
 
-	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff.Mods) // temporary lazy end position until a real result can be derived.
-	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff.Mods)
+	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff) // temporary lazy end position until a real result can be derived.
+	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff)
 	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusU // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
 	for i := 0; i < len(slider.ScorePointsLazer); i++ {
@@ -48,9 +48,9 @@ func (slider *LazySlider) calculateEndPosition() {
 
 		var stackedPosition vector.Vector2f
 		if i == len(slider.ScorePointsLazer)-1 { // bug that made into deployment but well
-			stackedPosition = slider.GetStackedPositionAtModLazer(slider.EndTimeLazer, slider.diff.Mods)
+			stackedPosition = slider.GetStackedPositionAtModLazer(slider.EndTimeLazer, slider.diff)
 		} else {
-			stackedPosition = slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff.Mods)
+			stackedPosition = slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff)
 		}
 
 		currMovement := stackedPosition.Sub(currCursorPosition)

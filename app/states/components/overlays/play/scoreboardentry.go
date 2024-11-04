@@ -61,12 +61,16 @@ func NewScoreboardEntry(name string, score osuapi.Score, lazerScore bool, rank i
 		entry.SetColor(color2.NewIRGB(31, 115, 153))
 	}
 
-	fnt := font.GetFont("Ubuntu Regular")
-	fnt.Overlap = 2.5
+	fnt := font.GetFont("SBFont")
+	if fnt == font.GetFont("Ubuntu Regular") {
+		fnt.Overlap = 2.5
+	} else {
+		fnt.Overlap = 0
+	}
 
 	testName := entry.name
 
-	for fnt.GetWidth(20, testName) > 135 {
+	for fnt.GetWidth(19, testName) > 135 {
 		entry.name = entry.name[:len(entry.name)-1]
 		testName = entry.name + "..."
 	}
@@ -158,16 +162,21 @@ func (entry *ScoreboardEntry) Draw(time float64, batch *batch.QuadBatch, alpha f
 	fnt.Overlap = 2.5
 	fnt.DrawOrigin(batch, entryPos.X+posScale*(padding-10)*scale, entryPos.Y+8.8*scale, topRight, fnt.GetSize()*scale, true, entry.comboHumanized)
 
-	ubu := font.GetFont("Ubuntu Regular")
-	ubu.Overlap = 2.5
+	sbFnt := font.GetFont("SBFont")
+
+	if sbFnt == font.GetFont("Ubuntu Regular") {
+		sbFnt.Overlap = 2.5
+	} else {
+		sbFnt.Overlap = 0
+	}
 
 	batch.SetColor(0.1, 0.1, 0.1, a*0.8)
-	ubu.DrawOrigin(batch, entryPos.X+posScale*(3.5*scale), entryPos.Y-18.5*scale, topLeft, 20*scale, false, entry.name)
+	sbFnt.DrawOrigin(batch, entryPos.X+posScale*(3.5*scale), entryPos.Y-18.5*scale, topLeft, 19*scale, false, entry.name)
 
 	batch.SetColor(1, 1, 1, a)
-	ubu.DrawOrigin(batch, entryPos.X+posScale*(3*scale), entryPos.Y-19*scale, topLeft, 20*scale, false, entry.name)
+	sbFnt.DrawOrigin(batch, entryPos.X+posScale*(3*scale), entryPos.Y-19*scale, topLeft, 19*scale, false, entry.name)
 
-	ubu.Overlap = 0
+	sbFnt.Overlap = 0
 
 	batch.ResetTransform()
 	batch.SetColor(1, 1, 1, 1)
@@ -193,7 +202,7 @@ func (entry *ScoreboardEntry) LoadAvatarURL(url string) {
 	fileName := strings.ReplaceAll(url[strings.LastIndex(url, "/")+1:], "?", "-")
 	filePath := filepath.Join(env.DataDir(), "cache", "avatars", fileName)
 
-	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) { // Avatar does not exist, try to download
+	if s, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) || s.Size() == 0 { // Avatar does not exist or is empty, try to download
 		log.Println("Trying to fetch avatar from:", url)
 
 		err2 := downloadAvatar(url, filePath)
@@ -241,7 +250,7 @@ func downloadAvatar(url, path string) error {
 		return fmt.Errorf("failed to create request to: \"%s\": %s", url, response.StatusCode)
 	}
 
-	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC, 0644)
+	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create file: \"%s\": %s", path, err)
 	}

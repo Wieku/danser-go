@@ -148,3 +148,7 @@ func (c Color) ToVec4() mgl32.Vec4 {
 func (c Color) ToArray() []float32 {
 	return []float32{c.R, c.G, c.B, c.A}
 }
+
+func (c Color) ToIntArray() []uint8 {
+	return []uint8{uint8(c.R * 255), uint8(c.G * 255), uint8(c.B * 255), uint8(c.A * 255)}
+}

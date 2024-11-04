@@ -100,8 +100,6 @@ func (spinner *Spinner) SetTiming(timings *Timings, _ int, _ bool) {
 	spinner.Timings = timings
 }
 
-func (spinner *Spinner) UpdateStacking() {}
-
 func (spinner *Spinner) SetDifficulty(diff *difficulty.Difficulty) {
 	spinner.diff = diff
 

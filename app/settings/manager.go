@@ -2,8 +2,8 @@ package settings
 
 import (
 	"github.com/fsnotify/fsnotify"
-	"github.com/karrick/godirwalk"
 	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/files"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"log"
 	"os"
@@ -152,32 +152,20 @@ func CreateDefault() {
 }
 
 func migrateSettings() {
-	_ = godirwalk.Walk(env.DataDir(), &godirwalk.Options{
-		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if osPathname != env.DataDir() && de.IsDir() {
-				return godirwalk.SkipThis
-			}
+	currentSettings, _ := files.SearchFiles(env.DataDir(), "settings*.json", 0)
 
-			if !strings.HasSuffix(osPathname, ".json") || !strings.HasPrefix(osPathname, "settings") {
-				return nil
-			}
+	for _, osPathname := range currentSettings {
+		destName := filepath.Base(osPathname)
 
-			var destName string
+		if destName == "settings.json" {
+			destName = "default.json"
+		} else {
+			destName = strings.TrimPrefix(destName, "settings-")
+		}
 
-			if osPathname == "settings.json" {
-				destName = "default.json"
-			} else {
-				destName = strings.TrimPrefix(osPathname, "settings-")
-			}
-
-			err := os.Rename(osPathname, filepath.Join(env.ConfigDir(), destName))
-			if err != nil {
-				panic(err)
-			}
-
-			return nil
-		},
-		Unsorted:            true,
-		FollowSymbolicLinks: true,
-	})
+		err := files.MoveFile(osPathname, filepath.Join(env.ConfigDir(), destName))
+		if err != nil {
+			panic(err)
+		}
+	}
 }

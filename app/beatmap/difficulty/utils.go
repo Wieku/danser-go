@@ -6,7 +6,7 @@ func rfType[T any]() reflect.Type {
 	return reflect.TypeOf((*T)(nil)).Elem()
 }
 
-func parseConfig[T any](base T, config map[string]any) T {
+func parseConfig[T modSetting[T]](base T, config map[string]any) T {
 	rVal := reflect.ValueOf(&base).Elem()
 	rType := reflect.TypeOf(base)
 
@@ -19,7 +19,7 @@ func parseConfig[T any](base T, config map[string]any) T {
 		}
 	}
 
-	return base
+	return base.postLoad()
 }
 
 func exportConfig[T any](toExp T) map[string]any {

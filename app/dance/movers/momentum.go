@@ -34,8 +34,8 @@ func (mover *MomentumMover) Reset(diff *difficulty.Difficulty, id int) {
 	mover.last = vector.NewVec2f(0, 0)
 }
 
-func same(mods difficulty.Modifier, o1 objects.IHitObject, o2 objects.IHitObject, skipStackAngles bool) bool {
-	return o1.GetStackedStartPositionMod(mods) == o2.GetStackedStartPositionMod(mods) || (skipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
+func same(diff *difficulty.Difficulty, o1 objects.IHitObject, o2 objects.IHitObject, skipStackAngles bool) bool {
+	return o1.GetStackedStartPositionMod(diff) == o2.GetStackedStartPositionMod(diff) || (skipStackAngles && o1.GetStartPosition() == o2.GetStartPosition())
 }
 
 func anorm(a float32) float32 {
@@ -73,8 +73,8 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 		next = objs[i+2]
 	}
 
-	startPos := start.GetStackedEndPositionMod(mover.diff.Mods)
-	endPos := end.GetStackedStartPositionMod(mover.diff.Mods)
+	startPos := start.GetStackedEndPositionMod(mover.diff)
+	endPos := end.GetStackedStartPositionMod(mover.diff)
 
 	dst := startPos.Dst(endPos)
 
@@ -83,7 +83,7 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	for i++; i < len(objs); i++ {
 		o := objs[i]
 		if s, ok := o.(objects.ILongObject); ok {
-			a2 = s.GetStartAngleMod(mover.diff.Mods)
+			a2 = s.GetStartAngleMod(mover.diff)
 			fromLong = true
 			break
 		}
@@ -91,15 +91,15 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 			a2 = mover.last.AngleRV(startPos)
 			break
 		}
-		if !same(mover.diff.Mods, o, objs[i+1], ms.SkipStackAngles) {
-			a2 = o.GetStackedStartPositionMod(mover.diff.Mods).AngleRV(objs[i+1].GetStackedStartPositionMod(mover.diff.Mods))
+		if !same(mover.diff, o, objs[i+1], ms.SkipStackAngles) {
+			a2 = o.GetStackedStartPositionMod(mover.diff).AngleRV(objs[i+1].GetStackedStartPositionMod(mover.diff))
 			break
 		}
 	}
 
 	var sq1, sq2 float32
 	if next != nil {
-		nextPos := next.GetStackedStartPositionMod(mover.diff.Mods)
+		nextPos := next.GetStackedStartPositionMod(mover.diff)
 		sq1 = startPos.DstSq(endPos)
 		sq2 = endPos.DstSq(nextPos)
 	}
@@ -119,7 +119,7 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 
 	var a1 float32
 	if s, ok := start.(objects.ILongObject); ok {
-		a1 = s.GetEndAngleMod(mover.diff.Mods)
+		a1 = s.GetEndAngleMod(mover.diff)
 	} else if mover.first {
 		a1 = a2 + math.Pi
 	} else {
@@ -170,7 +170,7 @@ func (mover *MomentumMover) SetObjects(objs []objects.IHitObject) int {
 	p1 := vector.NewVec2fRad(a1, dst*float32(mult)).Add(startPos)
 	p2 := vector.NewVec2fRad(a2, dst*float32(mult)).Add(endPos)
 
-	if !same(mover.diff.Mods, start, end, ms.SkipStackAngles) {
+	if !same(mover.diff, start, end, ms.SkipStackAngles) {
 		mover.last = p2
 		mover.curve = curves.NewBezierNA([]vector.Vector2f{startPos, p1, p2, endPos})
 	} else {

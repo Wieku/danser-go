@@ -72,11 +72,10 @@ type Slider struct {
 
 	startCircle *Circle
 
-	startAngle, endAngle float64
-	sliderSnakeTail      *animation.Glider
-	sliderSnakeHead      *animation.Glider
-	fade                 *animation.Glider
-	bodyFade             *animation.Glider
+	sliderSnakeTail *animation.Glider
+	sliderSnakeHead *animation.Glider
+	fade            *animation.Glider
+	bodyFade        *animation.Glider
 
 	diff     *difficulty.Difficulty
 	body     *sliderrenderer.Body
@@ -272,24 +271,12 @@ func (slider *Slider) GetLength() float32 {
 	return slider.multiCurve.GetLength()
 }
 
-func (slider *Slider) GetHalf() vector.Vector2f {
-	return slider.multiCurve.PointAt(0.5).Add(slider.StackOffset)
+func (slider *Slider) GetStartAngleMod(diff *difficulty.Difficulty) float32 {
+	return slider.GetStackedStartPositionMod(diff).AngleRV(slider.GetStackedPositionAtMod(slider.StartTime+min(10, slider.partLen), diff)) //temporary solution
 }
 
-func (slider *Slider) GetStartAngle() float32 {
-	return slider.GetStackedStartPosition().AngleRV(slider.GetStackedPositionAt(slider.StartTime + min(10, slider.partLen))) //temporary solution
-}
-
-func (slider *Slider) GetStartAngleMod(modifier difficulty.Modifier) float32 {
-	return slider.GetStackedStartPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.StartTime+min(10, slider.partLen), modifier)) //temporary solution
-}
-
-func (slider *Slider) GetEndAngle() float32 {
-	return slider.GetStackedEndPosition().AngleRV(slider.GetStackedPositionAt(slider.EndTime - min(10, slider.partLen))) //temporary solution
-}
-
-func (slider *Slider) GetEndAngleMod(modifier difficulty.Modifier) float32 {
-	return slider.GetStackedEndPositionMod(modifier).AngleRV(slider.GetStackedPositionAtMod(slider.EndTime-min(10, slider.partLen), modifier)) //temporary solution
+func (slider *Slider) GetEndAngleMod(diff *difficulty.Difficulty) float32 {
+	return slider.GetStackedEndPositionMod(diff).AngleRV(slider.GetStackedPositionAtMod(slider.EndTime-min(10, slider.partLen), diff)) //temporary solution
 }
 
 func (slider *Slider) GetPartLen() float32 {
@@ -336,18 +323,8 @@ func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
 	return slider.multiCurve.PointAt(float32(progress))
 }
 
-func (slider *Slider) GetStackedPositionAtModLazer(time float64, modifier difficulty.Modifier) vector.Vector2f {
-	basePosition := slider.PositionAtLazer(time)
-
-	switch {
-	case modifier&difficulty.HardRock > 0:
-		basePosition.Y = 384 - basePosition.Y
-		return basePosition.Add(slider.StackOffsetHR)
-	case modifier&difficulty.Easy > 0:
-		return basePosition.Add(slider.StackOffsetEZ)
-	}
-
-	return basePosition.Add(slider.StackOffset)
+func (slider *Slider) GetStackedPositionAtModLazer(time float64, diff *difficulty.Difficulty) vector.Vector2f {
+	return ModifyPosition(slider.HitObject, slider.PositionAtLazer(time), diff)
 }
 
 func (slider *Slider) GetAsDummyCircles() []IHitObject {
@@ -371,9 +348,8 @@ func (slider *Slider) GetAsDummyCircles() []IHitObject {
 
 func (slider *Slider) createDummyCircle(time float64, inheritStart, inheritEnd bool) *Circle {
 	circle := DummyCircleInherit(slider.GetPositionAt(time), time, true, inheritStart, inheritEnd)
-	circle.StackOffset = slider.StackOffset
-	circle.StackOffsetHR = slider.StackOffsetHR
-	circle.StackOffsetEZ = slider.StackOffsetEZ
+	circle.StackLeniency = slider.StackLeniency
+	circle.StackIndexMap = slider.StackIndexMap
 	circle.ComboSet = slider.ComboSet
 
 	return circle
@@ -539,13 +515,6 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	//}
 
 	slider.calculateFollowPoints()
-
-	slider.startAngle = float64(slider.GetStartAngle())
-	if len(lines) > 0 {
-		slider.endAngle = float64(lines[len(lines)-1].GetEndAngle())
-	} else {
-		slider.endAngle = slider.startAngle + math.Pi
-	}
 }
 
 func (slider *Slider) calculateFollowPoints() {
@@ -553,11 +522,13 @@ func (slider *Slider) calculateFollowPoints() {
 	sort.Slice(slider.ScorePoints, func(i, j int) bool { return slider.ScorePoints[i].Time < slider.ScorePoints[j].Time })
 }
 
-func (slider *Slider) UpdateStacking() {
-	for i, tp := range slider.TickPoints {
-		tp.Pos = tp.Pos.Add(slider.StackOffset)
-		slider.TickPoints[i] = tp
-	}
+func copySliderHOData(target, base *HitObject) {
+	target.ComboNumber = base.ComboNumber
+	target.ComboSet = base.ComboSet
+	target.ComboSetHax = base.ComboSetHax
+	target.HitObjectID = base.HitObjectID
+	target.StackLeniency = base.StackLeniency
+	target.StackIndexMap = base.StackIndexMap
 }
 
 func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
@@ -578,13 +549,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.fade.AddEvent(slider.EndTime, slider.EndTime+difficulty.HitFadeOut, 0)
 
 	slider.startCircle = DummyCircle(slider.StartPosRaw, slider.StartTime)
-	slider.startCircle.ComboNumber = slider.ComboNumber
-	slider.startCircle.ComboSet = slider.ComboSet
-	slider.startCircle.ComboSetHax = slider.ComboSetHax
-	slider.startCircle.HitObjectID = slider.HitObjectID
-	slider.startCircle.StackOffset = slider.StackOffset
-	slider.startCircle.StackOffsetHR = slider.StackOffsetHR
-	slider.startCircle.StackOffsetEZ = slider.StackOffsetEZ
+	copySliderHOData(slider.startCircle.HitObject, slider.HitObject)
 	slider.startCircle.SetDifficulty(diff)
 
 	slider.edges = append(slider.edges, slider.startCircle)
@@ -616,13 +581,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		}
 
 		circle := NewSliderEndCircle(vector.NewVec2f(0, 0), appearTime, bounceStartTime, circleTime, i == 1, i == slider.RepeatCount)
-		circle.ComboNumber = slider.ComboNumber
-		circle.ComboSet = slider.ComboSet
-		circle.ComboSetHax = slider.ComboSetHax
-		circle.HitObjectID = slider.HitObjectID
-		circle.StackOffset = slider.StackOffset
-		circle.StackOffsetHR = slider.StackOffsetHR
-		circle.StackOffsetEZ = slider.StackOffsetEZ
+		copySliderHOData(circle.HitObject, slider.HitObject)
 		circle.SetTiming(slider.Timings, 14, false)
 		circle.SetDifficulty(diff)
 
@@ -637,13 +596,13 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	}
 
 	for i, p := range slider.TickPoints {
-		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff.Mods)
+		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff)
 
 		slider.TickPoints[i] = p
 	}
 
 	for i, p := range slider.TickReverse {
-		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff.Mods)
+		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff)
 
 		slider.TickReverse[i] = p
 	}
@@ -736,11 +695,11 @@ func (slider *Slider) Update(time float64) bool {
 		p.scale.Update(time)
 	}
 
-	pos := slider.GetStackedPositionAtMod(time, slider.diff.Mods)
+	pos := slider.GetStackedPositionAtMod(time, slider.diff)
 
 	if settings.Objects.Sliders.Snaking.Out && slider.RepeatCount%2 == 1 && time >= math.Floor(slider.EndTime-slider.partLen) {
 		snakeTime := slider.EndTime - slider.partLen*(1-slider.sliderSnakeHead.GetValue())
-		p2 := slider.GetStackedPositionAtMod(snakeTime, slider.diff.Mods)
+		p2 := slider.GetStackedPositionAtMod(snakeTime, slider.diff)
 		slider.ball.SetPosition(p2.Copy64())
 		slider.startCircle.StartPosRaw = slider.GetPositionAt(snakeTime)
 	} else {
@@ -874,7 +833,7 @@ func (slider *Slider) initSnake() {
 			p.fade.AddEventS(p.Time, p.Time, 1.0, 0.0)
 		}
 
-		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff.Mods)
+		p.Pos = slider.GetStackedPositionAtMod(p.Time, slider.diff)
 
 		slider.TickPoints[i] = p
 	}
@@ -981,7 +940,7 @@ func (slider *Slider) PlayEdgeSample(index int) {
 		sampleSet = slider.BasicHitSound.SampleSet
 	}
 
-	slider.playSampleT(sampleSet, slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)))
+	slider.playSampleT(sampleSet, slider.additionSets[index], slider.samples[index], slider.Timings.GetPointAt(slider.StartTime+math.Floor(float64(index)*slider.partLen)+5), slider.GetStackedPositionAtMod(slider.StartTime+math.Floor(float64(index)*slider.partLen), slider.diff))
 }
 
 func (slider *Slider) HitEdge(index int, time float64, isHit bool) {
@@ -1076,14 +1035,10 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 	bodyInner.A = float32(colorAlpha) * bodyOpacityInner
 	bodyOuter.A = float32(colorAlpha) * bodyOpacityOuter
 
-	stackOffset := slider.StackOffset
-	if slider.diff.Mods&difficulty.HardRock > 0 {
-		stackOffset = slider.StackOffsetHR
-	} else if slider.diff.Mods&difficulty.Easy > 0 {
-		stackOffset = slider.StackOffsetEZ
-	}
+	stackIndex := slider.GetStackIndexMod(slider.diff)
+	stackOffset := -float32(stackIndex) * float32(slider.diff.CircleRadius) / 10
 
-	slider.body.DrawNormal(projection, stackOffset, scale, bodyInner, bodyOuter, borderInner, borderOuter)
+	slider.body.DrawNormal(projection, vector.NewVec2f(stackOffset, stackOffset), scale, bodyInner, bodyOuter, borderInner, borderOuter)
 }
 
 func (slider *Slider) Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool {

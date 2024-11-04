@@ -127,6 +127,8 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 	for i, cursor := range cursors {
 		diff := diffs[i]
 
+		beatMap.CalculateStackLeniency(diff) // Calculate additional stack indexes for DA/EZ/HR/whatever that changes Preempt
+
 		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.ScoreV2) // if beatmap has ScoreV2 mod, force it for all players
 		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.Lazer)   // same for Lazer
 
@@ -583,7 +585,7 @@ func (set *OsuRuleSet) CanBeHitStable(time int64, object HitObject, player *diff
 			}
 		}
 
-		if index > 0 && set.processed[index-1].GetObject().GetStackIndex(player.diff.Mods) > 0 && !set.processed[index-1].IsHit(player) {
+		if index > 0 && set.processed[index-1].GetObject().GetStackIndexMod(player.diff) > 0 && !set.processed[index-1].IsHit(player) {
 			return Ignored //don't shake the stacks
 		}
 	}

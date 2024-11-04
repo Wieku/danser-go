@@ -69,6 +69,7 @@ func DummyCircle(pos vector.Vector2f, time float64) *Circle {
 
 func DummyCircleInherit(pos vector.Vector2f, time float64, inherit bool, inheritStart bool, inheritEnd bool) *Circle {
 	circle := &Circle{HitObject: &HitObject{}}
+	circle.StackIndexMap = make(map[int64]int64)
 	circle.StartPosRaw = pos
 	circle.EndPosRaw = pos
 	circle.StartTime = time
@@ -132,7 +133,7 @@ func (circle *Circle) PlaySound() {
 		sampleSet = point.SampleSet
 	}
 
-	audio.PlaySample(sampleSet, circle.BasicHitSound.AdditionSet, circle.sample, index, point.SampleVolume, circle.HitObjectID, circle.GetStackedStartPosition().X64())
+	audio.PlaySample(sampleSet, circle.BasicHitSound.AdditionSet, circle.sample, index, point.SampleVolume, circle.HitObjectID, circle.GetStackedStartPositionMod(circle.diff).X64())
 }
 
 func (circle *Circle) SetTiming(timings *Timings, _ int, _ bool) {
@@ -286,12 +287,8 @@ func (circle *Circle) Shake(time float64) {
 	}
 }
 
-func (circle *Circle) UpdateStacking() {
-
-}
-
 func (circle *Circle) Draw(time float64, color color2.Color, batch *batch.QuadBatch) bool {
-	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
+	position := circle.GetStackedPositionAtMod(time, circle.diff)
 
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(position.Copy64())
@@ -352,7 +349,7 @@ func (circle *Circle) DrawApproach(time float64, color color2.Color, batch *batc
 		return
 	}
 
-	position := circle.GetStackedPositionAtMod(time, circle.diff.Mods)
+	position := circle.GetStackedPositionAtMod(time, circle.diff)
 
 	batch.SetSubScale(1, 1)
 	batch.SetTranslation(position.Copy64())

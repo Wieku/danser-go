@@ -33,12 +33,6 @@ type builder struct {
 	outputName string
 	ssTime     float32
 
-	extendedValues bool
-	ar             floatParam
-	od             floatParam
-	cs             floatParam
-	hp             floatParam
-
 	speed floatParam
 	pitch floatParam
 
@@ -91,26 +85,6 @@ func newBuilder() *builder {
 
 func (b *builder) setMap(bMap *beatmap.BeatMap) {
 	b.currentMap = bMap
-
-	b.ar = floatParam{
-		ogValue: bMap.Diff.GetAR(),
-		value:   bMap.Diff.GetAR(),
-	}
-
-	b.od = floatParam{
-		ogValue: bMap.Diff.GetOD(),
-		value:   bMap.Diff.GetOD(),
-	}
-
-	b.cs = floatParam{
-		ogValue: bMap.Diff.GetCS(),
-		value:   bMap.Diff.GetCS(),
-	}
-
-	b.hp = floatParam{
-		ogValue: bMap.Diff.GetHP(),
-		value:   bMap.Diff.GetHP(),
-	}
 
 	b.start = intParam{}
 
@@ -247,24 +221,6 @@ func (b *builder) getArguments() (args []string) {
 			args = append(args, "-ss", strconv.FormatFloat(float64(b.ssTime), 'f', 3, 32))
 		} else if oEmpty {
 			args = append(args, "-record")
-		}
-	}
-
-	if b.currentMode != Replay {
-		if b.ar.changed {
-			args = append(args, "-ar", strconv.FormatFloat(float64(b.ar.value), 'f', 1, 32))
-		}
-
-		if b.od.changed {
-			args = append(args, "-od", strconv.FormatFloat(float64(b.od.value), 'f', 1, 32))
-		}
-
-		if b.cs.changed {
-			args = append(args, "-cs", strconv.FormatFloat(float64(b.cs.value), 'f', 1, 32))
-		}
-
-		if b.hp.changed {
-			args = append(args, "-hp", strconv.FormatFloat(float64(b.hp.value), 'f', 1, 32))
 		}
 	}
 

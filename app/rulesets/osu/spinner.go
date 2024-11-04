@@ -33,6 +33,7 @@ type spinnerstate struct {
 	currentSpinMaxRotation                   float32
 	totalAccumulatedRotationAtLastCompletion float32
 	maximumBonusSpins                        int64
+	lastTime                                 int64
 }
 
 func (s *spinnerstate) currentSpinRotation() float32 {
@@ -107,7 +108,7 @@ func (spinner *Spinner) UpdateFor(player *difficultyPlayer, time int64, _ bool) 
 }
 
 func (spinner *Spinner) processStable(player *difficultyPlayer, time int64) {
-	spinnerPosition := spinner.hitSpinner.GetStackedStartPosition()
+	spinnerPosition := spinner.hitSpinner.GetStartPosition()
 
 	state := spinner.state[player]
 
@@ -222,7 +223,7 @@ func (spinner *Spinner) processStable(player *difficultyPlayer, time int64) {
 
 			if state.scoringRotationCount > state.requirement+3 && (state.scoringRotationCount-(state.requirement+3))%2 == 0 {
 				if len(spinner.players) == 1 {
-					spinner.hitSpinner.Bonus(int(SpinnerBonus.ScoreValueMod(player.diff.Mods)))
+					spinner.hitSpinner.Bonus(1000)
 				}
 
 				spinner.ruleSet.SendResult(player.cursor, createJudgementResult(SpinnerBonus, SpinnerBonus, Hold, time, spinnerPosition, spinner))
@@ -238,16 +239,14 @@ func (spinner *Spinner) processStable(player *difficultyPlayer, time int64) {
 }
 
 func (spinner *Spinner) processLazer(player *difficultyPlayer, time int64) {
-	spinnerPosition := spinner.hitSpinner.GetStackedStartPosition()
+	spinnerPosition := spinner.hitSpinner.GetStartPosition()
 
 	state := spinner.state[player]
 
-	timeDiff := float64(time - player.cursor.LastFrameTime)
-	if player.cursor.LastFrameTime == 0 {
-		timeDiff = FrameTime
-	}
+	if time >= int64(spinner.hitSpinner.GetStartTime()) && time <= int64(spinner.hitSpinner.GetEndTime()) {
+		timeDiff := float64(time - state.lastTime)
+		state.lastTime = time
 
-	if player.cursor.IsReplayFrame && time >= int64(spinner.hitSpinner.GetStartTime()) && time <= int64(spinner.hitSpinner.GetEndTime()) {
 		thisAngle := player.cursor.RawPosition.Sub(spinnerPosition).Angle()
 
 		var delta float32 = 0.0
@@ -313,9 +312,11 @@ func (spinner *Spinner) processLazer(player *difficultyPlayer, time int64) {
 			}
 		}
 
-		// We don't use lazer's fancy rpm metre
-		decay1 := math.Pow(0.95, timeDiff/FrameTime)
-		state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(float64(deltaRPM)/timeDiff*1000))/360*60
+		if timeDiff > 0 {
+			// We don't use lazer's fancy rpm metre
+			decay1 := math.Pow(0.95, timeDiff/FrameTime)
+			state.rpm = state.rpm*decay1 + (1.0-decay1)*(math.Abs(float64(deltaRPM)/timeDiff*1000))/360*60
+		}
 
 		if len(spinner.players) == 1 {
 			spinner.hitSpinner.SetRotation(float64(state.rotationCountFPrev * math32.Pi / 180))

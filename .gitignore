@@ -5,6 +5,7 @@
 /settings/
 /ffmpeg/
 /dist/
+/cache/
 settings.json
 settings-*
 *.db

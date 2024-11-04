@@ -377,6 +377,7 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 		iO.SetComboNumber(int64(comboNumber))
 		iO.SetComboSet(int64(comboSet))
 		iO.SetComboSetHax(int64(comboSetHax))
+		iO.SetStackLeniency(beatMap.StackLeniency)
 
 		comboNumber++
 		num++
@@ -386,5 +387,7 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 		obj.SetTiming(beatMap.Timings, beatMap.Version, diffCalcOnly)
 	}
 
-	calculateStackLeniency(beatMap, diffCalcOnly)
+	if settings.Objects.StackEnabled || settings.KNOCKOUT || settings.PLAY || diffCalcOnly {
+		beatMap.CalculateStackLeniency(beatMap.Diff)
+	}
 }

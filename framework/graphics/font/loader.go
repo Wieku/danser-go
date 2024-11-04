@@ -3,6 +3,7 @@ package font
 import (
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/graphics/texture"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/sfnt"
@@ -33,7 +34,7 @@ func LoadFont(reader io.Reader) *Font {
 	fnt.glyphs = make(map[rune]*glyphData)
 	fnt.kernTable = make(map[rune]map[rune]float64)
 
-	fnt.atlas = texture.NewTextureAtlas(1024, 5)
+	fnt.atlas = texture.NewTextureAtlasCC(1024, 5, color2.NewLA(1, 0))
 	fnt.atlas.SetManualMipmapping(true)
 
 	buf := make([]byte, 25*4)
@@ -60,14 +61,8 @@ func LoadFont(reader io.Reader) *Font {
 			w, h := (b.Max.X - b.Min.X).Ceil(), (b.Max.Y - b.Min.Y).Ceil()
 
 			if w == 0 || h == 0 {
-				b, _ = ttf.Bounds(buff, fixed.Int26_6(20), font.HintingFull)
-
-				w, h = (b.Max.X - b.Min.X).Ceil(), (b.Max.Y - b.Min.Y).Ceil()
-
-				if w == 0 || h == 0 {
-					w = 1
-					h = 1
-				}
+				w = 2
+				h = 2
 			}
 
 			if b.Min.X&((1<<6)-1) != 0 {
@@ -78,7 +73,7 @@ func LoadFont(reader io.Reader) *Font {
 				h++
 			}
 
-			pixmap := texture.NewPixMap(w, h)
+			pixmap := texture.NewPixMapW(w, h)
 
 			d := font.Drawer{
 				Dst:  pixmap.NRGBA(),
