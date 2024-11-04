@@ -240,7 +240,9 @@ func ParseBeatMap(beatMap *BeatMap) error {
 
 func ParseBeatMapFile(file *os.File) *BeatMap {
 	beatMap := NewBeatMap()
-	beatMap.Dir = filepath.Base(filepath.Dir(file.Name()))
+	beatMap.Dir, _ = filepath.Rel(settings.General.GetSongsDir(), filepath.Dir(file.Name()))
+	beatMap.Dir = filepath.ToSlash(beatMap.Dir)
+
 	f, _ := file.Stat()
 	beatMap.File = f.Name()
 
