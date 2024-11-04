@@ -17,34 +17,6 @@ func drawSpeedMenu(bld *builder) {
 	imgui.Spacing()
 }
 
-func drawParamMenu(bld *builder) {
-	var arCSMin, vMax = 0.0, 10.0
-
-	if bld.extendedValues {
-		arCSMin = -10
-		vMax = 12
-	}
-
-	sliderFloatReset("Approach Rate (AR)", &bld.ar, arCSMin, vMax, "%.1f")
-	imgui.Spacing()
-
-	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderFloatReset("Overall Difficulty (OD)", &bld.od, 0, vMax, "%.1f")
-		imgui.Spacing()
-	}
-
-	sliderFloatReset("Circle Size (CS)", &bld.cs, arCSMin, vMax, "%.1f")
-	imgui.Spacing()
-
-	if bld.currentMode == Play || bld.currentMode == DanserReplay {
-		sliderFloatReset("Health Drain (HP)", &bld.hp, 0, vMax, "%.1f")
-		imgui.Spacing()
-	}
-
-	imgui.Checkbox("Allow extended values", &bld.extendedValues)
-	imgui.Spacing()
-}
-
 func drawCDMenu(bld *builder) {
 	if imgui.BeginTable("dfa", 2) {
 		imgui.TableNextColumn()

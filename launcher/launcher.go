@@ -853,32 +853,8 @@ func (l *launcher) drawControls() {
 			l.openPopup(newModPopup(l.bld))
 		}
 
-		if nilMap {
-			imgui.EndDisabled()
-			if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
-				imgui.SetTooltip("Select map/replay first")
-			}
-		}
-
-		imgui.TableNextColumn()
-		if l.bld.currentMode != Replay {
-			if imgui.ButtonV("Adjust difficulty", vec2(-1, imgui.TextLineHeight()*2)) {
-				l.openPopup(newPopupF("Difficulty adjust", popMedium, func() {
-					drawParamMenu(l.bld)
-				}))
-			}
-		} else {
-			imgui.Dummy(vec2(-1, imgui.TextLineHeight()*2))
-		}
-
-		imgui.TableNextColumn()
-
-		if l.bld.currentMode == CursorDance {
-			if imgui.ButtonV("Mirrors/Tags", vec2(-1, imgui.TextLineHeight()*2)) {
-				l.openPopup(newPopupF("Difficulty adjust", popDynamic, func() {
-					drawCDMenu(l.bld)
-				}))
-			}
+		if nilMap && imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
+			imgui.SetTooltip("Select map/replay first")
 		}
 
 		imgui.TableNextColumn()
@@ -896,6 +872,23 @@ func (l *launcher) drawControls() {
 			}
 
 			l.openPopup(l.timeMenu)
+		}
+
+		if nilMap {
+			imgui.EndDisabled()
+			if imgui.IsItemHoveredV(imgui.HoveredFlagsAllowWhenDisabled) {
+				imgui.SetTooltip("Select map/replay first")
+			}
+		}
+
+		imgui.TableNextColumn()
+
+		if l.bld.currentMode == CursorDance {
+			if imgui.ButtonV("Mirrors/Tags", vec2(-1, imgui.TextLineHeight()*2)) {
+				l.openPopup(newPopupF("Difficulty adjust", popDynamic, func() {
+					drawCDMenu(l.bld)
+				}))
+			}
 		}
 
 		imgui.EndTable()
