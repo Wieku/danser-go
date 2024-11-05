@@ -208,5 +208,5 @@ func (diffCalc *DifficultyCalculator) GetVersion() int {
 }
 
 func (diffCalc *DifficultyCalculator) GetVersionMessage() string {
-	return "2024-10-07: no post yet"
+	return "2024-10-07: https://osu.ppy.sh/home/news/2024-10-28-performance-points-star-rating-updates"
 }
