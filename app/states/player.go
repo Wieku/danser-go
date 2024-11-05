@@ -558,10 +558,10 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 
 			oldOffset := 0.0
 			if player.bMap.Version < 5 {
-				oldOffset = -24
+				oldOffset = 24
 			}
 
-			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset)+float64(settings.LOCALOFFSET))*speed + oldOffset
+			player.progressMsF = player.rawPositionF + (platformOffset+float64(settings.Audio.Offset))*speed - oldOffset - float64(settings.LOCALOFFSET)
 
 			player.updateMain(delta)
 
@@ -638,10 +638,10 @@ func (player *Player) Update(delta float64) bool {
 
 	oldOffset := 0.0
 	if player.bMap.Version < 5 {
-		oldOffset = -24
+		oldOffset = 24
 	}
 
-	player.progressMsF = player.rawPositionF + float64(settings.LOCALOFFSET)*speed + oldOffset
+	player.progressMsF = player.rawPositionF - oldOffset - float64(settings.LOCALOFFSET)
 
 	player.updateMain(delta)
 

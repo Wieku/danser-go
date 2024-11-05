@@ -80,7 +80,7 @@ If you try to run *danser-cli* without any arguments there's a surprise waiting 
 * `-noupdatecheck` - skips checking GitHub for a newer version of danser
 * `-ss=20.5` - creates a screenshot at the given time in .png format
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
-* `-offset=20` - local audio offset in ms, applies to recordings unlike `Audio.Offset`. Inverted compared to stable.
+* `-offset=20` - local audio offset in ms, applies to recordings unlike `Audio.Offset`. ~~Inverted compared to stable~~ not anymore.
 * `-preciseprogress` - prints record progress in 1% increments.
 
 Examples which should give the same result:
