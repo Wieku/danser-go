@@ -8,6 +8,7 @@ func initAudio() *audio {
 		MusicVolume:                0.5,
 		SampleVolume:               0.5,
 		Offset:                     0,
+		OnlineOffset:               false,
 		HitsoundPositionMultiplier: 1.0,
 		IgnoreBeatmapSamples:       false,
 		IgnoreBeatmapSampleVolume:  false,
@@ -28,6 +29,7 @@ type audio struct {
 	MusicVolume                float64 `scale:"100.0" format:"%.0f%%"` //=0.5
 	SampleVolume               float64 `scale:"100.0" format:"%.0f%%"` //=0.5
 	Offset                     int64   `min:"-300" max:"300" format:"%dms" label:"Universal Offset"`
+	OnlineOffset               bool    `label:"Apply online offset (needs API access)"`
 	HitsoundPositionMultiplier float64
 	IgnoreBeatmapSamples       bool        `label:"Ignore beatmap hitsounds"`       //= false
 	IgnoreBeatmapSampleVolume  bool        `label:"Ignore hitsound volume changes"` //= false
