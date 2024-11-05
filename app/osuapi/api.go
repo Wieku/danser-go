@@ -15,7 +15,7 @@ const (
 	CountryMode
 )
 
-func LookupBeatmap(checksum string) (int, error) {
+func LookupBeatmap(checksum string) (int64, error) {
 	resp, err := makeRequest("beatmaps/lookup?checksum=" + checksum)
 
 	if err != nil {
@@ -45,7 +45,7 @@ func GetScoresCheksum(checksum string, legacyOnly bool, mode ScoreType, limit in
 	return GetScores(id, legacyOnly, mode, limit, mods...)
 }
 
-func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
+func GetScores(beatmapId int64, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
 	vls := url.Values{}
 
 	prefix := "solo-"
@@ -71,7 +71,7 @@ func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods .
 		}
 	}
 
-	resp, err := makeRequest("beatmaps/" + strconv.Itoa(beatmapId) + "/" + prefix + "scores?" + vls.Encode())
+	resp, err := makeRequest("beatmaps/" + strconv.FormatInt(beatmapId, 10) + "/" + prefix + "scores?" + vls.Encode())
 
 	if err != nil {
 		return nil, err
