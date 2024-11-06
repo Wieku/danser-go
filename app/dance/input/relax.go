@@ -6,6 +6,11 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu"
 )
 
+const (
+	stableLeniency = 12
+	lazerLeniency  = 3
+)
+
 type RelaxInputProcessor struct {
 	cursor  *graphics.Cursor
 	ruleset *osu.OsuRuleSet
@@ -26,10 +31,7 @@ func (processor *RelaxInputProcessor) Update(time float64) {
 
 	click := false
 
-	leniency := 12.0
-	if processor.ruleset.GetPlayerDifficulty(processor.cursor).CheckModActive(difficulty.Lazer) {
-		leniency = 2
-	}
+	isLazer := processor.ruleset.GetPlayerDifficulty(processor.cursor).CheckModActive(difficulty.Lazer)
 
 	for _, o := range processed {
 		circle, c1 := o.(*osu.Circle)
@@ -37,7 +39,8 @@ func (processor *RelaxInputProcessor) Update(time float64) {
 
 		objectStartTime := processor.ruleset.GetBeatMap().HitObjects[o.GetNumber()].GetStartTime()
 
-		if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) && time > objectStartTime-leniency {
+		if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) &&
+			((!isLazer && time > objectStartTime-stableLeniency) || (isLazer && time >= objectStartTime-lazerLeniency)) {
 			click = true
 		}
 	}
