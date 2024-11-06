@@ -15,37 +15,37 @@ const (
 	CountryMode
 )
 
-func LookupBeatmap(checksum string) (int, error) {
+func LookupBeatmap(checksum string) (*LookupResult, error) {
 	resp, err := makeRequest("beatmaps/lookup?checksum=" + checksum)
-
-	if err != nil {
-		return -1, err
-	}
-
-	buf, err2 := io.ReadAll(resp.Body)
-	if err2 != nil {
-		return -1, err
-	}
-
-	lRes := &LookupResult{}
-	if err = json.Unmarshal(buf, &lRes); err != nil {
-		return -1, err
-	}
-
-	return lRes.ID, nil
-}
-
-func GetScoresCheksum(checksum string, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
-	id, err := LookupBeatmap(checksum)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return GetScores(id, legacyOnly, mode, limit, mods...)
+	buf, err2 := io.ReadAll(resp.Body)
+	if err2 != nil {
+		return nil, err
+	}
+
+	lRes := &LookupResult{}
+	if err = json.Unmarshal(buf, &lRes); err != nil {
+		return nil, err
+	}
+
+	return lRes, nil
 }
 
-func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
+func GetScoresCheksum(checksum string, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
+	lRes, err := LookupBeatmap(checksum)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return GetScores(lRes.ID, legacyOnly, mode, limit, mods...)
+}
+
+func GetScores(beatmapId int64, legacyOnly bool, mode ScoreType, limit int, mods ...string) ([]Score, error) {
 	vls := url.Values{}
 
 	prefix := "solo-"
@@ -71,7 +71,7 @@ func GetScores(beatmapId int, legacyOnly bool, mode ScoreType, limit int, mods .
 		}
 	}
 
-	resp, err := makeRequest("beatmaps/" + strconv.Itoa(beatmapId) + "/" + prefix + "scores?" + vls.Encode())
+	resp, err := makeRequest("beatmaps/" + strconv.FormatInt(beatmapId, 10) + "/" + prefix + "scores?" + vls.Encode())
 
 	if err != nil {
 		return nil, err
