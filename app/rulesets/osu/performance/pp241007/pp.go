@@ -47,6 +47,10 @@ func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *dif
 		score.CountGreat = attribs.ObjectCount - score.CountOk - score.CountMeh - score.CountMiss
 	}
 
+	if score.SliderEnd < 0 {
+		score.SliderEnd = attribs.Sliders
+	}
+
 	pp.usingClassicSliderAccuracy = !diff.CheckModActive(difficulty.Lazer)
 
 	if diff.CheckModActive(difficulty.Lazer) && diff.CheckModActive(difficulty.Classic) {

@@ -162,7 +162,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 			log.Println("\tTotal:", star.Total)
 
 			pp := performance.CreatePPCalculator()
-			ppResults := pp.Calculate(star, api.PerfScore{CountGreat: -1, MaxCombo: -1, Accuracy: 1}, diff)
+			ppResults := pp.Calculate(star, api.PerfScore{CountGreat: -1, MaxCombo: -1, Accuracy: 1, SliderEnd: -1}, diff)
 
 			log.Println("SS PP:")
 			log.Println("\tAim:  ", ppResults.Aim)
