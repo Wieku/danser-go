@@ -513,7 +513,11 @@ func (slider *Slider) MissForcefully(player *difficultyPlayer, time int64) {
 			slider.hitSlider.HitEdge(0, float64(time), false)
 		}
 
-		slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
+		if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
+		} else {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(SliderMiss, SliderStart, Reset, time, position, slider))
+		}
 
 		state.isStartHit = true
 		state.startResult = Miss
