@@ -229,7 +229,7 @@ func (editor *settingsEditor) drawEditor() {
 func (editor *settingsEditor) search() {
 	editor.sectionCache = make(map[string]imgui.Vec2)
 	editor.searchCache = make(map[string]int)
-	editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), editor.searchString, false)
+	editor.buildSearchCache("Main", reflect.ValueOf(editor.combined), strings.ToLower(editor.searchString), false)
 }
 
 func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, search string, omitSearch bool) bool {
