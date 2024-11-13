@@ -94,7 +94,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	}
 
 	if initKeys {
-		scheduler.input = input.NewNaturalInputProcessor(scheduler.queue, cursor, scheduler.mover)
+		scheduler.input = input.NewNaturalInputProcessor(scheduler.queue, cursor, scheduler.mover, diff.GetSpeed())
 	}
 
 	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), -500)}, scheduler.queue...)
