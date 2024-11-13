@@ -511,6 +511,11 @@ func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u re
 }
 
 func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
+	minSize := 1
+	if lVal, ok := d.Tag.Lookup("minSize"); ok {
+		minSize, _ = strconv.Atoi(lVal)
+	}
+
 	editor.subSectionTempl(name, func() {
 		imgui.SameLine()
 		imgui.Dummy(vec2(2, 0))
@@ -523,13 +528,17 @@ func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect
 			if fName, ok := d.Tag.Lookup("new"); ok {
 				u.Set(reflect.Append(u, reflect.ValueOf(settings.DefaultsFactory).MethodByName(fName).Call(nil)[0]))
 			}
+
+			if u.Len() == 1 { // We need to rebuild the search cache if we started from 0 elements
+				editor.search()
+			}
 		}
 
 		ImIO.SetFontGlobalScale(1)
 		imgui.PopFont()
 	}, func() {
 		for j := 0; j < u.Len(); j++ {
-			if editor.buildArrayElement(fmt.Sprintf("%s[%d]", jsonPath, j), sPath, u.Index(j), d, j) && u.Len() > 1 {
+			if editor.buildArrayElement(fmt.Sprintf("%s[%d]", jsonPath, j), sPath, u.Index(j), d, j) && u.Len() > minSize {
 				u.Set(reflect.AppendSlice(u.Slice(0, j), u.Slice(j+1, u.Len())))
 				j--
 			}
