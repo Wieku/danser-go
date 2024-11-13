@@ -126,9 +126,10 @@ func (scheduler *GenericScheduler) Update(time float64) {
 			if scheduler.lastTime <= gStartTime || time <= gEndTime {
 				if scheduler.lastTime <= gStartTime { // brief movement lock for ExGon mover
 					useMover = false
+					scheduler.cursor.SetPos(scheduler.mover.GetObjectsStartPosition(g))
+				} else {
+					scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
 				}
-
-				scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
 			}
 
 			if time > gEndTime {
