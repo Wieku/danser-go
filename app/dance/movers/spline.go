@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
 const (
@@ -18,16 +19,19 @@ const (
 type SplineMover struct {
 	*basicMover
 
-	curve *curves.Spline
+	curve    *curves.Spline
+	objs     []objects.IHitObject
+	lastTime float64
 }
 
 func NewSplineMover() MultiPointMover {
-	return &SplineMover{basicMover: &basicMover{}}
+	return &SplineMover{basicMover: &basicMover{}, lastTime: -math.MaxFloat64}
 }
 
 func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	config := settings.CursorDance.MoverSettings.Spline[mover.id%len(settings.CursorDance.MoverSettings.Spline)]
 
+	mover.objs = mover.objs[:0]
 	points := make([]vector.Vector2f, 0)
 	timing := make([]float64, 0)
 
@@ -162,6 +166,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 		points = append(points, o.GetStackedEndPositionMod(mover.diff))
 		timing = append(timing, o.GetStartTime())
+		mover.objs = append(mover.objs, o)
 	}
 
 	timeDiff := make([]float32, len(timing)-1)
@@ -190,6 +195,34 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *SplineMover) Update(time float64) vector.Vector2f {
-	t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
-	return mover.curve.PointAt(float32(t))
+	useMover := true
+	var overridePos vector.Vector2f
+
+	for i := 0; i < len(mover.objs); i++ {
+		g := mover.objs[i]
+
+		gStartTime := mover.GetObjectsStartTime(g)
+
+		if gStartTime > time {
+			break
+		}
+
+		if mover.lastTime <= gStartTime {
+			useMover = false
+
+			mover.objs = append(mover.objs[:i], mover.objs[i+1:]...)
+			i--
+
+			overridePos = mover.GetObjectsStartPosition(g)
+		}
+	}
+
+	mover.lastTime = time
+
+	if useMover {
+		t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+		return mover.curve.PointAt(float32(t))
+	}
+
+	return overridePos
 }
