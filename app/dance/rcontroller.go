@@ -384,7 +384,7 @@ func (controller *ReplayController) InitCursors() {
 }
 
 func (controller *ReplayController) Update(time float64, delta float64) {
-	numSkipped := int(time-controller.lastTime) - 1
+	numSkipped := int(time) - int(controller.lastTime) - 1
 
 	if numSkipped >= 1 {
 		for nTime := numSkipped; nTime >= 1; nTime-- {
