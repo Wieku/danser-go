@@ -430,8 +430,18 @@ func inputText(label string, text *string) bool {
 	return inputTextV(label, text, imgui.InputTextFlagsNone, nil)
 }
 
+func inputTextMulti(label string, text *string) bool {
+	return inputTextMultiV(label, text, imgui.InputTextFlagsNone, nil)
+}
+
 func inputTextV(label string, text *string, flags imgui.InputTextFlags, cb imgui.InputTextCallback) bool {
 	return imgui.InputTextWithHint(label, "", text, flags, cb)
+}
+
+func inputTextMultiV(label string, text *string, flags imgui.InputTextFlags, cb imgui.InputTextCallback) bool {
+	lSize := mutils.Clamp(strings.Count(*text, "\n")+1, 1, 5)
+
+	return imgui.InputTextMultiline(label, text, vec2(0, float32(lSize)*imgui.FontSize()+imgui.CurrentStyle().FramePadding().Y*2), flags, cb)
 }
 
 func checkboxOption(text string, value *bool) {

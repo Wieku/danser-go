@@ -995,6 +995,7 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 		cSpec, okC := d.Tag.Lookup("combo")
 		cFunc, okCS := d.Tag.Lookup("comboSrc")
 		_, okPW := d.Tag.Lookup("password")
+		_, okMulti := d.Tag.Lookup("multi")
 
 		if okKey {
 			if imgui.ButtonV(base+"##"+jsonPath, vec2(-1, 0)) {
@@ -1218,7 +1219,11 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 				imgui.EndTable()
 			}
 		} else {
-			if inputText(jsonPath, &base) {
+			if okMulti {
+				if inputTextMulti(jsonPath, &base) {
+					f.SetString(base)
+				}
+			} else if inputText(jsonPath, &base) {
 				f.SetString(base)
 			}
 		}
