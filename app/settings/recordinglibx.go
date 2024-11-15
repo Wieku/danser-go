@@ -78,6 +78,28 @@ func (s *x265Settings) GenerateFFmpegArgs() (ret []string, err error) {
 	return append(ret, ret2...), nil
 }
 
+type svtav1Settings struct {
+	RateControl       string `combo:"vbr|VBR,cbr|CBR,crf|Constant Rate Factor (CRF)"`
+	Bitrate           string `showif:"RateControl=vbr,cbr"`
+	CRF               int    `string:"true" min:"0" max:"51" showif:"RateControl=crf"`
+	Preset            string `combo:"0,1,2,3,4,5,6,7,8,9,10,11,12,13"`
+	AdditionalOptions string
+}
+
+func (s *svtav1Settings) GenerateFFmpegArgs() (ret []string, err error) {
+	ret, err = libxCommon(s.RateControl, s.Bitrate, s.CRF)
+	if err != nil {
+		return nil, err
+	}
+
+	ret2, err := libxCommon2(s.Preset, s.AdditionalOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(ret, ret2...), nil
+}
+
 func libxCommon(rateControl, bitrate string, crf int) (ret []string, err error) {
 	switch strings.ToLower(rateControl) {
 	case "vbr":
