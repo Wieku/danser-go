@@ -80,8 +80,6 @@ type subSet struct {
 	currentKatu int
 	currentBad  int
 
-	numObjects uint
-
 	ppv2 api.IPerformanceCalculator
 
 	recoveries int
@@ -450,16 +448,6 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 
 	judgementResult.HitResult = subSet.scoreProcessor.ModifyResult(judgementResult.HitResult, judgementResult.object)
 
-	if judgementResult.ComboResult == Reset && judgementResult.HitResult != Miss { // skips missed slider "ends" as they don't reset combo
-		subSet.score.CountSB++
-	}
-
-	bResult := judgementResult.HitResult & BaseHitsM
-
-	if bResult > 0 {
-		subSet.numObjects++
-	}
-
 	if judgementResult.ComboResult == Increase || judgementResult.ComboResult == Reset {
 		subSet.potentialCombo++
 	}
@@ -474,57 +462,13 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 
 	subSet.score.CalculateGrade(subSet.player.diff.Mods)
 
-	index := max(1, subSet.numObjects) - 1
-
-	diff := set.oppDiffs[subSet.player.maskedModString][index]
+	diff := set.GetCurrentDiffAttribs(cursor)
 
 	subSet.score.PerfectCombo = uint(diff.MaxCombo) == subSet.score.Combo
 
 	subSet.score.PP = subSet.ppv2.Calculate(diff, subSet.score.ToPerfScore(), subSet.player.diff)
 
-	switch judgementResult.HitResult {
-	case Hit100:
-		subSet.currentKatu++
-	case Hit50, Miss:
-		subSet.currentBad++
-	}
-
-	if judgementResult.HitResult&BaseHitsM > 0 && (int(judgementResult.Number) == len(set.beatMap.HitObjects)-1 || (int(judgementResult.Number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[judgementResult.Number+1].IsNewCombo())) {
-		allClicked := true
-
-		// We don't want to give geki/katu if all objects in current combo weren't clicked
-		index := sort.Search(len(set.processed), func(i int) bool {
-			return set.processed[i].GetNumber() >= judgementResult.Number
-		})
-
-		for i := index - 1; i >= 0; i-- {
-			obj := set.processed[i]
-
-			if !obj.IsHit(subSet.player) {
-				allClicked = false
-				break
-			}
-
-			if set.beatMap.HitObjects[obj.GetNumber()].IsNewCombo() {
-				break
-			}
-		}
-
-		if judgementResult.HitResult&BaseHits > 0 {
-			if subSet.currentKatu == 0 && subSet.currentBad == 0 && allClicked {
-				judgementResult.HitResult |= GekiAddition
-				subSet.score.CountGeki++
-			} else if subSet.currentBad == 0 && allClicked {
-				judgementResult.HitResult |= KatuAddition
-				subSet.score.CountKatu++
-			} else {
-				judgementResult.HitResult |= MuAddition
-			}
-		}
-
-		subSet.currentBad = 0
-		subSet.currentKatu = 0
-	}
+	set.processGekiKatu(subSet, &judgementResult)
 
 	if subSet.sdpfFail {
 		subSet.hp.Increase(-100000, true)
@@ -554,6 +498,52 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 			judgementResult.Position.Y,
 			subSet.score.PP.Total,
 		))
+	}
+}
+
+func (set *OsuRuleSet) processGekiKatu(sSet *subSet, judgementResult *JudgementResult) {
+	switch judgementResult.HitResult {
+	case Hit100:
+		sSet.currentKatu++
+	case Hit50, Miss:
+		sSet.currentBad++
+	}
+
+	if judgementResult.HitResult&BaseHitsM > 0 && (int(judgementResult.Number) == len(set.beatMap.HitObjects)-1 || (int(judgementResult.Number) < len(set.beatMap.HitObjects)-1 && set.beatMap.HitObjects[judgementResult.Number+1].IsNewCombo())) {
+		allClicked := true
+
+		// We don't want to give geki/katu if all objects in current combo weren't clicked
+		index := sort.Search(len(set.processed), func(i int) bool {
+			return set.processed[i].GetNumber() >= judgementResult.Number
+		})
+
+		for i := index - 1; i >= 0; i-- {
+			obj := set.processed[i]
+
+			if !obj.IsHit(sSet.player) {
+				allClicked = false
+				break
+			}
+
+			if set.beatMap.HitObjects[obj.GetNumber()].IsNewCombo() {
+				break
+			}
+		}
+
+		if judgementResult.HitResult&BaseHits > 0 {
+			if sSet.currentKatu == 0 && sSet.currentBad == 0 && allClicked {
+				judgementResult.HitResult |= GekiAddition
+				sSet.score.CountGeki++
+			} else if sSet.currentBad == 0 && allClicked {
+				judgementResult.HitResult |= KatuAddition
+				sSet.score.CountKatu++
+			} else {
+				judgementResult.HitResult |= MuAddition
+			}
+		}
+
+		sSet.currentBad = 0
+		sSet.currentKatu = 0
 	}
 }
 
@@ -739,7 +729,7 @@ func (set *OsuRuleSet) SetFailListener(listener failListener) {
 func (set *OsuRuleSet) GetFCPP(cursor *graphics.Cursor) api.PPv2Results {
 	subSet := set.cursors[cursor]
 
-	index := max(1, subSet.numObjects) - 1
+	index := max(1, subSet.score.scoredObjects) - 1
 
 	diff := set.oppDiffs[subSet.player.maskedModString][index]
 
@@ -750,7 +740,7 @@ func (set *OsuRuleSet) GetFCPP(cursor *graphics.Cursor) api.PPv2Results {
 	apiScore.SliderBreaks = 0
 
 	rawScore := int64(apiScore.CountGreat*300 + apiScore.CountOk*100 + apiScore.CountMeh*50)
-	maxRawScore := int64(subSet.numObjects * 300)
+	maxRawScore := int64(subSet.score.scoredObjects * 300)
 
 	if subSet.player.diff.CheckModActive(difficulty.Lazer) {
 		pointScore := SliderPoint.ScoreValueMod(subSet.player.diff.Mods) * int64(subSet.score.MaxTicks)
@@ -770,11 +760,25 @@ func (set *OsuRuleSet) GetFCPP(cursor *graphics.Cursor) api.PPv2Results {
 func (set *OsuRuleSet) GetSSPP(cursor *graphics.Cursor) api.PPv2Results {
 	subSet := set.cursors[cursor]
 
-	index := max(1, subSet.numObjects) - 1
+	index := max(1, subSet.score.scoredObjects) - 1
 
 	diff := set.oppDiffs[subSet.player.maskedModString][index]
 
 	return subSet.ppv2.Calculate(diff, api.PerfScore{CountGreat: -1, MaxCombo: -1, Accuracy: 1, SliderEnd: -1}, subSet.player.diff)
+}
+
+func (set *OsuRuleSet) GetCurrentDiffAttribs(cursor *graphics.Cursor) api.Attributes {
+	subSet := set.cursors[cursor]
+
+	index := max(1, subSet.score.scoredObjects) - 1
+
+	return set.oppDiffs[subSet.player.maskedModString][index]
+}
+
+func (set *OsuRuleSet) GetFinalDiffAttribs(cursor *graphics.Cursor) api.Attributes {
+	subSet := set.cursors[cursor]
+
+	return set.oppDiffs[subSet.player.maskedModString][len(set.oppDiffs[subSet.player.maskedModString])-1]
 }
 
 func (set *OsuRuleSet) GetScore(cursor *graphics.Cursor) Score {
