@@ -35,13 +35,6 @@ func initRecording() *recording {
 			Preset:            "fast",
 			AdditionalOptions: "",
 		},
-		AV1Settings: &av1Settings{
-			RateControl:       "crf",
-			Bitrate:           "10M",
-			CRF:               20,
-			Preset:            10,
-			AdditionalOptions: "",
-		},
 		H264NvencSettings: &h264NvencSettings{
 			RateControl:       "cq",
 			Bitrate:           "10M",
@@ -78,13 +71,19 @@ func initRecording() *recording {
 			Preset:            "slow",
 			AdditionalOptions: "",
 		},
-		H264AMFSettings: &h264AMFSettings{
+		H264AmfSettings: &h264AmfSettings{
 			RateControl:       "cbr",
 			Bitrate:           "10M",
 			Preset:            "Quality",
 			AdditionalOptions: "",
 		},
-		H265AMFSettings: &h265AMFSettings{
+		H265AmfSettings: &h265AmfSettings{
+			RateControl:       "cbr",
+			Bitrate:           "10M",
+			Preset:            "Quality",
+			AdditionalOptions: "",
+		},
+		AV1AmfSettings: &av1AmfSettings{
 			RateControl:       "cbr",
 			Bitrate:           "10M",
 			Preset:            "Quality",
@@ -146,8 +145,8 @@ type recording struct {
 	AV1NvencSettings    *av1NvencSettings  `json:"av1_nvenc" label:"NVIDIA NVENC AV1 Settings" showif:"Encoder=av1_nvenc"`
 	H264QSVSettings     *h264QSVSettings   `json:"h264_qsv" label:"Intel QuickSync H.264 (AVC) Settings" showif:"Encoder=h264_qsv"`
 	HEVCQSVSettings     *hevcQSVSettings   `json:"hevc_qsv" label:"Intel QuickSync H.265 (HEVC) Settings" showif:"Encoder=hevc_qsv"`
-	H264AMFSettings     *h264AMFSettings   `json:"h264_amf" label:"AMD AMF H.264 (AVC) Settings" showif:Encoder=h264_amf"`
-	H265AMFSettings     *h265AMFSettings   `json:"h265_amf" label:"AMD AMD H.265 (HEVC) Settings" showif:Encoder=h265_amf"`
+	H264AmfSettings     *h264AmfSettings   `json:"h264_amf" label:"AMD AMF H.264 (AVC) Settings" showif:Encoder=h264_amf"`
+	H265AmfSettings     *h265AmfSettings   `json:"h265_amf" label:"AMD AMD H.265 (HEVC) Settings" showif:Encoder=h265_amf"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
 	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21" showif:"Encoder=!h264_qsv,!hevc_qsv"`
 	Filters             string             `label:"FFmpeg Video Filters"`
@@ -186,9 +185,9 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 	case "hevc_qsv":
 		return g.HEVCQSVSettings
 	case "h264_amf":
-		return g.H264AMFSettings
+		return g.H264AmfSettings
 	case "h265_amf":
-		return g.H265AMFSettings
+		return g.H265AmfSettings
 	default:
 		return g.CustomSettings
 	}
