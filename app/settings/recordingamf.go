@@ -11,10 +11,10 @@ var amfProfiles = []string{
 	"main",
 }
 
-var nvencPresets = []string{
-  "speed",
-  "balanced",
-  "quality",
+var amfPresets = []string{
+	"speed",
+	"balanced",
+	"quality",
 }
 
 type h264AmfSettings struct {

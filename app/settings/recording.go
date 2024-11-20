@@ -1,14 +1,15 @@
 package settings
 
 import (
-	"github.com/wieku/danser-go/framework/env"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/util"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/util"
 )
 
 var Recording = initRecording()
@@ -77,7 +78,7 @@ func initRecording() *recording {
 			Preset:            "Quality",
 			AdditionalOptions: "",
 		},
-		H265AmfSettings: &h265AmfSettings{
+		HEVCAmfSettings: &hevcAmfSettings{
 			RateControl:       "cbr",
 			Bitrate:           "10M",
 			Preset:            "Quality",
@@ -145,8 +146,9 @@ type recording struct {
 	AV1NvencSettings    *av1NvencSettings  `json:"av1_nvenc" label:"NVIDIA NVENC AV1 Settings" showif:"Encoder=av1_nvenc"`
 	H264QSVSettings     *h264QSVSettings   `json:"h264_qsv" label:"Intel QuickSync H.264 (AVC) Settings" showif:"Encoder=h264_qsv"`
 	HEVCQSVSettings     *hevcQSVSettings   `json:"hevc_qsv" label:"Intel QuickSync H.265 (HEVC) Settings" showif:"Encoder=hevc_qsv"`
-	H264AmfSettings     *h264AmfSettings   `json:"h264_amf" label:"AMD AMF H.264 (AVC) Settings" showif:Encoder=h264_amf"`
-	H265AmfSettings     *h265AmfSettings   `json:"h265_amf" label:"AMD AMD H.265 (HEVC) Settings" showif:Encoder=h265_amf"`
+	H264AmfSettings     *h264AmfSettings   `json:"h264_amf" label:"AMD AMF H.264 (AVC) Settings" showif:"Encoder=h264_amf"`
+	HEVCAmfSettings     *hevcAmfSettings   `json:"hevc_amf" label:"AMD AMF H.265 (HEVC) Settings" showif:"Encoder=h265_amf"`
+	AV1AmfSettings      *av1AmfSettings    `json:"av1_amf" label:"AMD AMF AV1 Settings" showif:"Encoder=av1_amf"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
 	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21" showif:"Encoder=!h264_qsv,!hevc_qsv"`
 	Filters             string             `label:"FFmpeg Video Filters"`
@@ -187,7 +189,9 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 	case "h264_amf":
 		return g.H264AmfSettings
 	case "h265_amf":
-		return g.H265AmfSettings
+		return g.HEVCAmfSettings
+	case "av1_amf":
+		return g.AV1AmfSettings
 	default:
 		return g.CustomSettings
 	}
