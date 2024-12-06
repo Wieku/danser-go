@@ -27,11 +27,12 @@ type h264AmfSettings struct {
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Profile           string `combo:"main|Main,high|High,constrained_baseline|Constrained Baseline,constrained_high|Constrained High"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality"`
+	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides a good balance of speed and quality without sacrifcing encoding speed. 'Low Latency' variants are on par with 'Transcoding'."`
 	AdditionalOptions string
 }
 
 func (s *h264AmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret, err = amfCommon(s.RateControl, s.Bitrate, s.CQ, "h264_amf")
+	ret, err = amfCommon(s.Usage, s.RateControl, s.Bitrate, s.CQ, "h264_amf")
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +66,12 @@ type hevcAmfSettings struct {
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Profile           string `combo:"main|Main,high|High"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality"`
+	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides a good balance of speed and quality without sacrifcing encoding speed. 'Low Latency' variants are on par with 'Transcoding'."`
 	AdditionalOptions string
 }
 
 func (s *hevcAmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret, err = amfCommon(s.RateControl, s.Bitrate, s.CQ, "hevc_amf")
+	ret, err = amfCommon(s.Usage, s.RateControl, s.Bitrate, s.CQ, "hevc_amf")
 	if err != nil {
 		return nil, err
 	}
@@ -98,11 +100,12 @@ type av1AmfSettings struct {
 	Bitrate           string `showif:"RateControl=cbr,vbr_peak,vbr_latency,qvbr,hqvbr,hqcbr"`
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality,high_quality|High Quality"`
+	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides a good balance of speed and quality without sacrifcing encoding speed. 'Low Latency' variants are on par with 'Transcoding'."`
 	AdditionalOptions string
 }
 
 func (s *av1AmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret, err = amfCommon(s.RateControl, s.Bitrate, s.CQ, "av1_amf")
+	ret, err = amfCommon(s.Usage, s.RateControl, s.Bitrate, s.CQ, "av1_amf")
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +118,9 @@ func (s *av1AmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
 	return append(ret, ret2...), nil
 }
 
-func amfCommon(rateControl, bitrate string, cq int, encoderType string) (ret []string, err error) {
+func amfCommon(usage, rateControl, bitrate string, cq int, encoderType string) (ret []string, err error) {
+	ret = append(ret, "-usage", usage)
+
 	switch strings.ToLower(rateControl) {
 	case "cqp":
 		// The AV1 encoder allows values from -1 to 255 in the '-qp_i' and 'qp_p' arguments, but the
@@ -132,11 +137,24 @@ func amfCommon(rateControl, bitrate string, cq int, encoderType string) (ret []s
 			ret = append(ret, "-rc", "0", "-qp_i", strconv.Itoa(cq), "-qp_p", strconv.Itoa(cq))
 		}
 	case "cbr":
-		ret = append(ret, "-rc", "1", "-b:v", bitrate)
+		// The AMF rate control values for CBR and VBR low latency are inversely mapped.
+		// For H264: CBR = 1, VBR low latency = 3
+		// For HEVC/AV1: CBR = 3, VBR low latency = 1
+		switch encoderType {
+		case "h264_amf":
+			ret = append(ret, "-rc", "1", "-b:v", bitrate)
+		case "hevc_amf", "av1_amf":
+			ret = append(ret, "-rc", "3", "-b:v", bitrate)
+		}
 	case "vbr_peak":
 		ret = append(ret, "-rc", "2", "-b:v", bitrate)
 	case "vbr_latency":
-		ret = append(ret, "-rc", "3", "-b:v", bitrate)
+		switch encoderType {
+		case "h264_amf":
+			ret = append(ret, "-rc", "3", "-b:v", bitrate)
+		case "hevc_amf", "av1_amf":
+			ret = append(ret, "-rc", "1", "-b:v", bitrate)
+		}
 	case "qvbr":
 		ret = append(ret, "-rc", "4", "-b:v", bitrate, "-qvbr_quality_level", strconv.Itoa(cq))
 	case "hqvbr":
@@ -155,7 +173,7 @@ func amfCommon2(preset string, additional string) (ret []string, err error) {
 		return nil, fmt.Errorf("invalid preset: %s", preset)
 	}
 
-	ret = append(ret, "-quality:v", preset)
+	ret = append(ret, "-preset:v", preset)
 
 	ret = parseCustomOptions(ret, additional)
 
