@@ -27,7 +27,7 @@ type h264AmfSettings struct {
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Profile           string `combo:"main|Main,high|High,constrained_baseline|Constrained Baseline,constrained_high|Constrained High"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality"`
-	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides good quality without sacrifcing encoding speed. 'Low Latency' variants are almost on par with 'Transcoding'."`
+	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides good quality without sacrificing encoding speed. 'Low Latency' variants are almost on par with 'Transcoding'."`
 	AdditionalOptions string
 }
 
@@ -66,7 +66,7 @@ type hevcAmfSettings struct {
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Profile           string `combo:"main|Main,high|High"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality"`
-	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides good quality without sacrifcing encoding speed. 'Low Latency' variants are almost on par with 'Transcoding'."`
+	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides good quality without sacrificing encoding speed. 'Low Latency' variants are almost on par with 'Transcoding'."`
 	AdditionalOptions string
 }
 
@@ -100,7 +100,7 @@ type av1AmfSettings struct {
 	Bitrate           string `showif:"RateControl=cbr,vbr_peak,vbr_latency,qvbr,hqvbr,hqcbr"`
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality,high_quality|High Quality"`
-	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides good quality without sacrifcing encoding speed. 'Low Latency' variants are almost on par with 'Transcoding'."`
+	Usage             string `combo:"ultralowlatency|Ultra Low Latency,lowlatency|Low Latency,lowlatency_high_quality|Low Latency High Quality,transcoding|Transcoding,high_quality|High Quality" tooltip:"'Transcoding' is preferred over 'High Quality' as it provides good quality without sacrificing encoding speed. 'Low Latency' variants are almost on par with 'Transcoding'."`
 	AdditionalOptions string
 }
 
