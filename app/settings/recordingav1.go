@@ -9,8 +9,6 @@ import (
 
 var av1Profiles = []string{
 	"main",
-	"high",
-	"professional",
 }
 
 var av1Presets = []string{
@@ -34,8 +32,8 @@ type av1Settings struct {
 	RateControl       string `combo:"vbr|VBR,cbr|CBR,crf|Constant Rate Factor (CRF)"`
 	Bitrate           string `showif:"RateControl=vbr,cbr"`
 	CRF               int    `string:"true" min:"0" max:"63" showif:"RateControl=crf"`
-	Profile           string `combo:"main|Main,high|High,professional|Professional"`
-	Preset            string `combo:"0,1,2,3,4,5,6,7,8,9,10,11,12"`
+	Profile           string `combo:"main|Main"`
+	Preset            string `combo:"0,1,2,3,4,5,6,7,8,9,10,11,12,13"`
 	AdditionalOptions string
 }
 
@@ -60,17 +58,19 @@ func av1Common(rateControl, bitrate, profile string, crf int) (ret []string, err
 
 	switch strings.ToLower(rateControl) {
 	case "vbr":
-		ret = append(ret, "-svtav1-params", fmt.Sprintf("rc=1:tbr=%s:profile=%s", bitrate, profile))
+		// 'enable-overlays' improves quality of keyframes.
+		ret = append(ret, "-svtav1-params", fmt.Sprintf("enable-overlays=1:rc=1:tbr=%s:profile=%s", bitrate, profile))
 	case "cbr":
 		// CBR is not suppoted by libsvtav1's random access prediction structure (SVT_AV1_PRED_RANDOM_ACCESS).
-		// Low delay B (SVT_AV1_PRED_LOW_DELAY_B) will be used instead which is a bit worse but supports CBR.
+		// Low delay B (SVT_AV1_PRED_LOW_DELAY_B) will be used instead which is a bit worse in encoding speed
+		// and does not support overlays but supports CBR.
 		ret = append(ret, "-svtav1-params", fmt.Sprintf("pred-struct=1:rc=2:tbr=%s:profile=%s", bitrate, profile))
 	case "crf":
 		if crf < 0 || crf > 63 {
 			return nil, fmt.Errorf("CRF parameter out of range [0-63]")
 		}
 
-		ret = append(ret, "-crf", strconv.Itoa(crf))
+		ret = append(ret, "-svtav1-params", "enable-overlays=1", "-crf", strconv.Itoa(crf))
 	default:
 		return nil, fmt.Errorf("invalid rate control value: %s", rateControl)
 	}
