@@ -29,7 +29,7 @@ var av1Presets = []string{
 }
 
 type av1Settings struct {
-	RateControl       string `combo:"vbr|VBR,cbr|CBR,crf|Constant Rate Factor (CRF)"`
+	RateControl       string `combo:"crf|Constant Rate Factor (CRF),vbr|VBR,cbr|CBR"`
 	Bitrate           string `showif:"RateControl=vbr,cbr"`
 	CRF               int    `string:"true" min:"0" max:"63" showif:"RateControl=crf"`
 	Profile           string `combo:"main|Main"`
