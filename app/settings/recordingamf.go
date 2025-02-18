@@ -30,7 +30,7 @@ type h264AmfSettings struct {
 }
 
 func (s *h264AmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret, err = amfCommon(s.Usage, s.RateControl, s.Bitrate, s.CQ, "h264_amf")
+	ret, err = amfCommon("transcoding", s.RateControl, s.Bitrate, s.CQ, "h264_amf")
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ type hevcAmfSettings struct {
 }
 
 func (s *hevcAmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret, err = amfCommon(s.Usage, s.RateControl, s.Bitrate, s.CQ, "hevc_amf")
+	ret, err = amfCommon("transcoding", s.RateControl, s.Bitrate, s.CQ, "hevc_amf")
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ type av1AmfSettings struct {
 }
 
 func (s *av1AmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
-	ret, err = amfCommon(s.Usage, s.RateControl, s.Bitrate, s.CQ, "av1_amf")
+	ret, err = amfCommon("transcoding", s.RateControl, s.Bitrate, s.CQ, "av1_amf")
 	if err != nil {
 		return nil, err
 	}
