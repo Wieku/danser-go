@@ -32,6 +32,7 @@ func initRecording() *recording {
 			RateControl:       "crf",
 			Bitrate:           "10M",
 			CRF:               18,
+			Profile:           "main",
 			Preset:            "fast",
 			AdditionalOptions: "",
 		},
