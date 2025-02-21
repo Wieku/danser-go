@@ -76,6 +76,8 @@ func (s *flacSettings) GenerateFFmpegArgs() (ret []string, err error) {
 	}
 
 	ret = append(ret, "-compression_level", strconv.Itoa(s.CompressionLevel))
+	ret = append(ret, "-sample_fmt", "s32")
+	ret = append(ret, "-bits_per_raw_sample", "24")
 
 	ret = parseCustomOptions(ret, s.AdditionalOptions)
 
