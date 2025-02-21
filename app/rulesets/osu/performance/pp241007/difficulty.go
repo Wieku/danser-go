@@ -36,14 +36,14 @@ func (diffCalc *DifficultyCalculator) getStarsFromRawValues(rawAim, rawAimNoSlid
 	}
 
 	if diff.CheckModActive(difficulty.TouchDevice) {
-		aimRating = math.Pow(aimRating, 0.8)
-		flashlightRating = math.Pow(flashlightRating, 0.8)
+		aimRating = math.Pow(aimRating, 1.0)
+		flashlightRating = math.Pow(flashlightRating, 1.0)
 	}
 
 	if diff.CheckModActive(difficulty.Relax) {
-		aimRating *= 0.9
-		speedRating = 0
-		flashlightRating *= 0.7
+		aimRating *= 1.0
+		speedRating = 1.0
+		flashlightRating *= 1.0
 	}
 
 	var total float64
