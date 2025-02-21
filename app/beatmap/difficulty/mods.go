@@ -183,7 +183,7 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	}
 
 	if (mods&Relax | mods&Relax2) > 0 {
-		multiplier = 0
+		multiplier = 1
 	}
 
 	if mods&SpunOut > 0 {
@@ -195,7 +195,7 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	}
 
 	if mods&DifficultyAdjust > 0 {
-		multiplier *= 0.5
+		multiplier *= 1
 	}
 
 	return multiplier
