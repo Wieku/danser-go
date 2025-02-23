@@ -87,20 +87,23 @@ func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
 
 func (diff *Difficulty) calculate() {
 	diff.hp, diff.cs, diff.od, diff.ar = diff.baseHP, diff.baseCS, diff.baseOD, diff.baseAR
-	if s, ok := diff.modSettings[rfType[DiffAdjustSettings]()].(DiffAdjustSettings); ok {
-		diff.ar = s.ApproachRate
-		diff.od = s.OverallDifficulty
-		diff.hp = s.DrainRate
-		diff.cs = s.CircleSize
+
+	dS, dOk := diff.modSettings[rfType[DiffAdjustSettings]()].(DiffAdjustSettings)
+
+	if dOk {
+		diff.ar = dS.ApproachRate
+		diff.od = dS.OverallDifficulty
+		diff.hp = dS.DrainRate
+		diff.cs = dS.CircleSize
 	}
 
 	hpDrain, cs, od, ar := diff.hp, diff.cs, diff.od, diff.ar
 
 	if diff.Mods&HardRock > 0 {
-		ar = min(ar*1.4, 10)
-		cs = min(cs*1.3, 10)
-		od = min(od*1.4, 10)
-		hpDrain = min(hpDrain*1.4, 10)
+		ar = min(ar*1.4, cMax(dOk, 10, dS.ApproachRate))
+		cs = min(cs*1.3, cMax(dOk, 10, dS.CircleSize))
+		od = min(od*1.4, cMax(dOk, 10, dS.OverallDifficulty))
+		hpDrain = min(hpDrain*1.4, cMax(dOk, 10, dS.DrainRate))
 	}
 
 	if diff.Mods&Easy > 0 {
@@ -152,6 +155,14 @@ func (diff *Difficulty) calculate() {
 
 	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
 	diff.ODReal = DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
+}
+
+func cMax(cond bool, a, b float64) float64 {
+	if cond {
+		return max(10, b)
+	}
+
+	return a
 }
 
 func (diff *Difficulty) SetMods(mods Modifier) {
