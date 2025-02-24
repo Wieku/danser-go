@@ -41,6 +41,7 @@ const (
 	Lazer
 	Classic
 	DifficultyAdjust
+	Mirror
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
@@ -103,6 +104,7 @@ var modsString = [...]string{
 	"LZ",
 	"CL",
 	"DA",
+	"MR",
 }
 
 var modsStringFull = [...]string{
@@ -141,6 +143,7 @@ var modsStringFull = [...]string{
 	"Lazer",
 	"Classic",
 	"DifficultyAdjust",
+	"Mirror",
 }
 
 func (mods Modifier) GetScoreMultiplier() float64 {
@@ -329,6 +332,7 @@ func (mods Modifier) Compatible() bool {
 
 	if mods.Active(Target) ||
 		(mods.Active(HardRock) && mods.Active(Easy)) ||
+		(mods.Active(HardRock) && mods.Active(Mirror)) ||
 		(mods.Active(Lazer) && mods.Active(ScoreV2)) ||
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||

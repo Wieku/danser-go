@@ -68,7 +68,7 @@ type Body struct {
 	capBuffer  []float32
 }
 
-func NewBody(curve *curves.MultiCurve, hardRock bool, hitCircleRadius float32) *Body {
+func NewBody(curve *curves.MultiCurve, vFlip, hFlip bool, hitCircleRadius float32) *Body {
 	if capShader == nil {
 		InitRenderer()
 	}
@@ -84,7 +84,7 @@ func NewBody(curve *curves.MultiCurve, hardRock bool, hitCircleRadius float32) *
 		capBuffer:        make([]float32, 4),
 	}
 
-	body.setupLinesAndBounds(curve, hardRock)
+	body.setupLinesAndBounds(curve, vFlip, hFlip)
 
 	if body.sections != nil && len(body.sections) > 0 {
 		body.setupLineVAO()
@@ -95,7 +95,7 @@ func NewBody(curve *curves.MultiCurve, hardRock bool, hitCircleRadius float32) *
 	return body
 }
 
-func (body *Body) setupLinesAndBounds(curve *curves.MultiCurve, hardRock bool) {
+func (body *Body) setupLinesAndBounds(curve *curves.MultiCurve, vFlip, hFlip bool) {
 	lines := curve.GetLines()
 	if lines == nil || len(lines) == 0 {
 		return
@@ -105,9 +105,14 @@ func (body *Body) setupLinesAndBounds(curve *curves.MultiCurve, hardRock bool) {
 	body.bottomRight = vector.NewVec2f(-math.MaxFloat32, -math.MaxFloat32)
 
 	for _, line := range lines {
-		if hardRock {
+		if vFlip {
 			line.Point1.Y = 384 - line.Point1.Y
 			line.Point2.Y = 384 - line.Point2.Y
+		}
+
+		if hFlip {
+			line.Point1.X = 512 - line.Point1.X
+			line.Point2.X = 512 - line.Point2.X
 		}
 
 		length := line.GetLength()

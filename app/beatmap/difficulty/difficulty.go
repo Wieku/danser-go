@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -198,6 +199,10 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 		diff.modSettings[rfType[ClassicSettings]()] = NewClassicSettings()
 	}
 
+	if mods.Active(Mirror) {
+		diff.modSettings[rfType[MirrorSettings]()] = NewMirrorSettings()
+	}
+
 	diff.calculate()
 }
 
@@ -236,6 +241,10 @@ func (diff *Difficulty) RemoveMod(mods Modifier) {
 		delete(diff.modSettings, rfType[ClassicSettings]())
 	}
 
+	if mods.Active(Mirror) {
+		delete(diff.modSettings, rfType[MirrorSettings]())
+	}
+
 	diff.calculate()
 }
 
@@ -270,6 +279,10 @@ func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 
 			if mod.Active(Classic) {
 				diff.modSettings[rfType[ClassicSettings]()] = parseConfig(NewClassicSettings(), mInfo.Settings)
+			}
+
+			if mod.Active(Mirror) {
+				diff.modSettings[rfType[MirrorSettings]()] = parseConfig(NewMirrorSettings(), mInfo.Settings)
 			}
 		}
 	}
@@ -447,7 +460,7 @@ func (diff *Difficulty) GetModStringMasked() string {
 }
 
 func (diff *Difficulty) getModStringBase(mod Modifier) string {
-	mods := mod.String()
+	mods := (mod & ^Mirror).String()
 
 	if ar := diff.GetAR(); math.Abs(ar-diff.GetBaseAR()) > 0.001 {
 		mods += fmt.Sprintf("AR%s", mutils.FormatWOZeros(ar, 2))
@@ -467,6 +480,14 @@ func (diff *Difficulty) getModStringBase(mod Modifier) string {
 
 	if cSpeed := diff.Speed; math.Abs(cSpeed-diff.BaseModSpeed) > 0.001 {
 		mods += fmt.Sprintf("S%sx", mutils.FormatWOZeros(cSpeed, 2))
+	}
+
+	if diff.Mods.Active(Mirror) {
+		if mrS, ok := GetModConfig[MirrorSettings](diff); ok {
+			mods += "MR" + strconv.Itoa(mrS.FlipMode)
+		} else {
+			mods += "MR0"
+		}
 	}
 
 	return mods

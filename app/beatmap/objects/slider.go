@@ -607,7 +607,12 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		slider.TickReverse[i] = p
 	}
 
-	slider.body = sliderrenderer.NewBody(slider.multiCurve, diff.Mods&difficulty.HardRock > 0, float32(slider.diff.CircleRadius))
+	mS, mOk := difficulty.GetModConfig[difficulty.MirrorSettings](slider.diff)
+
+	vFlip := slider.diff.CheckModActive(difficulty.HardRock) != (mOk && (mS.FlipMode+1)&2 == 2)
+	hFlip := mOk && (mS.FlipMode+1)&1 == 1
+
+	slider.body = sliderrenderer.NewBody(slider.multiCurve, vFlip, hFlip, float32(slider.diff.CircleRadius))
 }
 
 func (slider *Slider) IsRetarded() bool {
@@ -673,9 +678,21 @@ func (slider *Slider) Update(time float64) bool {
 	headAngle := slider.multiCurve.GetStartAngleAt(float32(slider.sliderSnakeHead.GetValue())) + math.Pi
 	tailAngle := slider.multiCurve.GetEndAngleAt(float32(slider.sliderSnakeTail.GetValue())) + math.Pi
 
-	if slider.diff.Mods&difficulty.HardRock > 0 {
+	// TODO: fix this
+
+	mS, mOk := difficulty.GetModConfig[difficulty.MirrorSettings](slider.diff)
+
+	vFlip := slider.diff.CheckModActive(difficulty.HardRock) != (mOk && (mS.FlipMode+1)&2 == 2)
+	hFlip := mOk && (mS.FlipMode+1)&1 == 1
+
+	if vFlip {
 		headAngle = -headAngle
 		tailAngle = -tailAngle
+	}
+
+	if hFlip {
+		headAngle = mutils.Signum(headAngle)*math.Pi - headAngle
+		tailAngle = mutils.Signum(tailAngle)*math.Pi - tailAngle
 	}
 
 	for _, s := range slider.headEndCircles {

@@ -205,7 +205,16 @@ func (hitObject *HitObject) DisableAudioSubmission(value bool) {
 }
 
 func ModifyPosition(hitObject *HitObject, basePosition vector.Vector2f, diff *difficulty.Difficulty) vector.Vector2f {
-	if diff.CheckModActive(difficulty.HardRock) {
+	mS, mOk := difficulty.GetModConfig[difficulty.MirrorSettings](diff)
+
+	vFlip := diff.CheckModActive(difficulty.HardRock) != (mOk && (mS.FlipMode+1)&2 == 2)
+	hFlip := mOk && (mS.FlipMode+1)&1 == 1
+
+	if hFlip {
+		basePosition.X = 512 - basePosition.X
+	}
+
+	if vFlip {
 		basePosition.Y = 384 - basePosition.Y
 	}
 

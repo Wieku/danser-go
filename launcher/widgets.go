@@ -471,3 +471,39 @@ func checkboxOption(text string, value *bool) {
 		imgui.EndTable()
 	}
 }
+
+func comboOption(text string, value *string, values []string) (success bool) {
+	if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
+		imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+		imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 180, imgui.ID(1))
+
+		imgui.TableNextColumn()
+
+		imgui.AlignTextToFramePadding()
+
+		imgui.PushTextWrapPos()
+
+		imgui.TextUnformatted(text)
+
+		imgui.PopTextWrapPos()
+
+		imgui.TableNextColumn()
+
+		imgui.SetNextItemWidth(-1)
+
+		if imgui.BeginCombo("##text", *value) {
+			for _, m := range values {
+				if imgui.SelectableBoolV(m, *value == m, 0, vzero()) {
+					*value = m
+					success = true
+				}
+			}
+
+			imgui.EndCombo()
+		}
+
+		imgui.EndTable()
+	}
+
+	return
+}
