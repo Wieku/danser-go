@@ -678,8 +678,6 @@ func (slider *Slider) Update(time float64) bool {
 	headAngle := slider.multiCurve.GetStartAngleAt(float32(slider.sliderSnakeHead.GetValue())) + math.Pi
 	tailAngle := slider.multiCurve.GetEndAngleAt(float32(slider.sliderSnakeTail.GetValue())) + math.Pi
 
-	// TODO: fix this
-
 	mS, mOk := difficulty.GetModConfig[difficulty.MirrorSettings](slider.diff)
 
 	vFlip := slider.diff.CheckModActive(difficulty.HardRock) != (mOk && (mS.FlipMode+1)&2 == 2)
