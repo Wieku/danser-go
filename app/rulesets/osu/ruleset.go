@@ -27,6 +27,15 @@ const (
 	Click
 )
 
+type ButtonAction uint8
+
+const (
+	Resting = ButtonAction(1 << iota)
+	Clicked
+	Pressed
+	Released
+)
+
 type buttonState struct {
 	Left, Right bool
 }
@@ -63,6 +72,10 @@ type difficultyPlayer struct {
 	rightCond       bool
 	rightCondE      bool
 
+	lastMouseState buttonState
+	lastKbState    buttonState
+	lastSmokeState bool
+
 	maskedModString string
 
 	lzLegacyNotelock bool
@@ -92,6 +105,8 @@ type subSet struct {
 
 type hitListener func(cursor *graphics.Cursor, judgementResult JudgementResult, score Score)
 
+type clickListener func(cursor *graphics.Cursor, leftMouse, rightMouse, leftKb, rightKb, smoke ButtonAction)
+
 type endListener func(time int64, number int64)
 
 type failListener func(cursor *graphics.Cursor)
@@ -104,11 +119,12 @@ type OsuRuleSet struct {
 
 	oppDiffs map[string][]api.Attributes
 
-	queue        []HitObject
-	processed    []HitObject
-	hitListener  hitListener
-	endListener  endListener
-	failListener failListener
+	queue         []HitObject
+	processed     []HitObject
+	hitListener   hitListener
+	endListener   endListener
+	failListener  failListener
+	clickListener clickListener
 }
 
 func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs []*difficulty.Difficulty) *OsuRuleSet {
@@ -344,6 +360,8 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 	player.alreadyStolen = false
 
 	if player.cursor.IsReplayFrame || player.cursor.IsPlayer {
+		set.processButtonChangesForEvent(player)
+
 		player.leftCond = !player.buttons.Left && player.cursor.LeftButton
 		player.rightCond = !player.buttons.Right && player.cursor.RightButton
 
@@ -379,6 +397,34 @@ func (set *OsuRuleSet) UpdateClickFor(cursor *graphics.Cursor, time int64) {
 		player.buttons.Left = player.cursor.LeftButton
 		player.buttons.Right = player.cursor.RightButton
 	}
+}
+
+func (set *OsuRuleSet) processButtonChangesForEvent(player *difficultyPlayer) {
+	mLAction := set.processButtonActionType(&player.lastMouseState.Left, player.cursor.LeftMouse)
+	mRAction := set.processButtonActionType(&player.lastMouseState.Right, player.cursor.RightMouse)
+	kLAction := set.processButtonActionType(&player.lastKbState.Left, player.cursor.LeftKey)
+	kRAction := set.processButtonActionType(&player.lastKbState.Right, player.cursor.RightKey)
+	smokeAction := set.processButtonActionType(&player.lastSmokeState, player.cursor.SmokeKey)
+
+	if (mLAction|mRAction|kLAction|kRAction|smokeAction)&(Clicked|Released) > 0 && set.clickListener != nil {
+		set.clickListener(player.cursor, mLAction, mRAction, kLAction, kRAction, smokeAction)
+	}
+}
+
+func (set *OsuRuleSet) processButtonActionType(previous *bool, current bool) (ac ButtonAction) {
+	ac = Resting
+
+	if !*previous && current {
+		ac = Clicked
+	} else if *previous && !current {
+		ac = Released
+	} else if *previous && current {
+		ac = Pressed
+	}
+
+	*previous = current
+
+	return
 }
 
 func (set *OsuRuleSet) UpdateNormalFor(cursor *graphics.Cursor, time int64, processSliderEndsAhead bool) {
@@ -716,6 +762,10 @@ func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
 
 func (set *OsuRuleSet) SetListener(listener hitListener) {
 	set.hitListener = listener
+}
+
+func (set *OsuRuleSet) SetClickListener(listener clickListener) {
+	set.clickListener = listener
 }
 
 func (set *OsuRuleSet) SetEndListener(listener endListener) {
