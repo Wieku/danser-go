@@ -103,6 +103,8 @@ func startVideo(fps, _w, _h int) {
 
 	if strings.HasSuffix(encoder, "_qsv") { // qsv works best with nv12 format
 		outputFormat = "nv12"
+	} else if encoder == "libsvtav1" {
+		outputFormat = "yuv420p"
 	}
 
 	parsedFormat = pixconv.ARGB
