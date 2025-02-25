@@ -24,6 +24,7 @@ type knockoutReplay struct {
 	path         string
 	parsedReplay *rplpa.Replay
 	included     bool
+	mods         difficulty.Modifier
 }
 
 type builder struct {

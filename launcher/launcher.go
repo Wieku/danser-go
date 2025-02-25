@@ -12,6 +12,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sqweek/dialog"
 	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
@@ -1104,10 +1105,29 @@ func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 	replay.LifebarGraph = nil
 	replay.ReplayData = nil
 
+	diff := difficulty.NewDifficulty(5, 5, 5, 5)
+
+	if replay.ScoreInfo != nil && replay.ScoreInfo.Mods != nil && len(replay.ScoreInfo.Mods) > 0 {
+		modsNew := make([]rplpa.ModInfo, 0, len(replay.ScoreInfo.Mods))
+
+		for _, mod := range replay.ScoreInfo.Mods {
+			modsNew = append(modsNew, *mod)
+		}
+
+		diff.SetMods2(modsNew)
+	} else {
+		diff.SetMods(difficulty.Modifier(replay.Mods))
+	}
+
+	if replay.OsuVersion >= 30000000 { // Lazer is 1000 years in the future
+		diff.AddMod(difficulty.Lazer)
+	}
+
 	return &knockoutReplay{
 		path:         p,
 		parsedReplay: replay,
 		included:     true,
+		mods:         diff.Mods,
 	}, nil
 }
 

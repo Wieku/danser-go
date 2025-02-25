@@ -3,7 +3,6 @@ package launcher
 import (
 	"fmt"
 	"github.com/AllenDang/cimgui-go/imgui"
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/utils"
 	"strconv"
 )
@@ -111,7 +110,7 @@ func (km *knockoutManagerPopup) drawManager() {
 
 			textColumn(utils.Humanize(pReplay.Score))
 
-			textColumn(difficulty.Modifier(pReplay.Mods).String())
+			textColumn(replay.mods.String())
 
 			textColumn(utils.Humanize(pReplay.Count300))
 
