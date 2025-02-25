@@ -1,15 +1,14 @@
 package settings
 
 import (
+	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/util"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
-
-	"github.com/wieku/danser-go/framework/env"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/util"
 )
 
 var Recording = initRecording()
