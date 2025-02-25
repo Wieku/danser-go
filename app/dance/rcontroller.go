@@ -361,8 +361,22 @@ func (controller *ReplayController) InitCursors() {
 			controller.cursors = append(controller.cursors, cursor)
 		}
 
-		if controller.bMap.Diff.Mods.Active(difficulty.HardRock) != controller.replays[i].ModsV.Active(difficulty.HardRock) {
-			controller.cursors[i].InvertDisplay = true
+		rMS, rMOk := difficulty.GetModConfig[difficulty.MirrorSettings](c.diff)
+
+		rvFlip := c.diff.CheckModActive(difficulty.HardRock) != (rMOk && (rMS.FlipMode+1)&2 == 2)
+		rhFlip := rMOk && (rMS.FlipMode+1)&1 == 1
+
+		bMS, bMOk := difficulty.GetModConfig[difficulty.MirrorSettings](controller.bMap.Diff)
+
+		bvFlip := controller.bMap.Diff.CheckModActive(difficulty.HardRock) != (bMOk && (bMS.FlipMode+1)&2 == 2)
+		bhFlip := bMOk && (bMS.FlipMode+1)&1 == 1
+
+		if rvFlip != bvFlip {
+			controller.cursors[i].InvertDisplayV = true
+		}
+
+		if rhFlip != bhFlip {
+			controller.cursors[i].InvertDisplayH = true
 		}
 
 		diffs = append(diffs, c.diff)

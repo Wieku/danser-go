@@ -80,7 +80,8 @@ type Cursor struct {
 	LastFrameTime    int64 //
 	CurrentFrameTime int64 //
 	RawPosition      vector.Vector2f
-	InvertDisplay    bool
+	InvertDisplayH   bool
+	InvertDisplayV   bool
 
 	Position vector.Vector2f
 
@@ -134,8 +135,12 @@ func (cursor *Cursor) SetPos(pt vector.Vector2f) {
 	cursor.RawPosition = pt
 	tmp := pt
 
-	if cursor.InvertDisplay {
+	if cursor.InvertDisplayV {
 		tmp.Y = 384 - tmp.Y
+	}
+
+	if cursor.InvertDisplayH {
+		tmp.X = 512 - tmp.X
 	}
 
 	if settings.Cursor.BounceOnEdges && settings.DIVIDES <= 2 {
