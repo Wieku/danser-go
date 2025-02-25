@@ -127,8 +127,6 @@ type ScoreOverlay struct {
 	underlay *sprite.Sprite
 	failed   bool
 
-	customStats *play.StatDisplay
-
 	lazerScore bool
 }
 
@@ -332,16 +330,6 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.initArrows()
 
-	pDiff := overlay.ruleset.GetPlayerDifficulty(overlay.cursor)
-
-	overlay.customStats = play.NewStatDisplay(ruleset.GetBeatMap(), pDiff)
-
-	currentStars := overlay.ruleset.GetCurrentDiffAttribs(overlay.cursor)
-	endStars := overlay.ruleset.GetFinalDiffAttribs(overlay.cursor)
-
-	overlay.customStats.GetStatHolder().SetStars(endStars.Total)
-	overlay.customStats.GetStatHolder().SetCurrentStars(currentStars.Total)
-
 	return overlay
 }
 
@@ -454,6 +442,17 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 			overlay.oldGrade = sc.Grade
 		})
 	}
+
+	overlay.customStats.GetStatHolder().SetScoreStats(score)
+
+	fcPP := overlay.ruleset.GetFCPP(overlay.cursor)
+	ssPP := overlay.ruleset.GetSSPP(overlay.cursor)
+
+	overlay.customStats.GetStatHolder().SetFCPP(fcPP)
+	overlay.customStats.GetStatHolder().SetSSPP(ssPP)
+
+	currentStars := overlay.ruleset.GetCurrentDiffAttribs(overlay.cursor)
+	overlay.customStats.GetStatHolder().SetCurrentStars(currentStars.Total)
 }
 
 func (overlay *ScoreOverlay) clickReceived(c *graphics.Cursor, leftMouse, rightMouse, leftKb, rightKb, smoke osu.ButtonAction) {
