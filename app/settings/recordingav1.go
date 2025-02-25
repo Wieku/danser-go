@@ -33,7 +33,7 @@ type av1Settings struct {
 	Bitrate           string `showif:"RateControl=vbr,cbr"`
 	CRF               int    `string:"true" min:"0" max:"63" showif:"RateControl=crf"`
 	Profile           string `combo:"main|Main"`
-	Preset            string `combo:"0,1,2,3,4,5,6,7,8,9,10,11,12,13"`
+	Preset            string `combo:"0|0 (slowest),1,2,3,4,5,6,7,8,9,10,11,12,13|13 (fastest)"`
 	AdditionalOptions string
 }
 
