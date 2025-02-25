@@ -25,7 +25,6 @@ type h264AmfSettings struct {
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Profile           string `combo:"main|Main,high|High"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality"`
-	Usage             string `skip:"true" combo:"transcoding|Transcoding"`
 	AdditionalOptions string
 }
 
@@ -60,7 +59,6 @@ type hevcAmfSettings struct {
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Profile           string `combo:"main|Main,high|High"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality"`
-	Usage             string `skip:"true" combo:"transcoding|Transcoding"`
 	AdditionalOptions string
 }
 
@@ -94,7 +92,6 @@ type av1AmfSettings struct {
 	Bitrate           string `showif:"RateControl=cbr,vbr_peak,vbr_latency,qvbr,hqvbr,hqcbr"`
 	CQ                int    `string:"true" min:"-1" max:"51" showif:"RateControl=cqp,qvbr"`
 	Preset            string `combo:"speed|Speed,balanced|Balanced,quality|Quality,high_quality|High Quality"`
-	Usage             string `skip:"true" combo:"transcoding|Transcoding"`
 	AdditionalOptions string
 }
 

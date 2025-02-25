@@ -86,7 +86,6 @@ func initRecording() *recording {
 			CQ:                20,
 			Profile:           "high",
 			Preset:            "quality",
-			Usage:             "transcoding",
 			AdditionalOptions: "",
 		},
 		HEVCAmfSettings: &hevcAmfSettings{
@@ -95,7 +94,6 @@ func initRecording() *recording {
 			CQ:                22,
 			Profile:           "high",
 			Preset:            "quality",
-			Usage:             "transcoding",
 			AdditionalOptions: "",
 		},
 		AV1AmfSettings: &av1AmfSettings{
@@ -103,7 +101,6 @@ func initRecording() *recording {
 			Bitrate:           "10M",
 			CQ:                24,
 			Preset:            "high_quality",
-			Usage:             "transcoding",
 			AdditionalOptions: "",
 		},
 		CustomSettings: &custom{
