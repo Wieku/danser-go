@@ -13,6 +13,8 @@ exec=$1
 build=$1
 ver=${1//./,}','
 
+buildMode=${DANSER_BUILD_MODE:-"0"}
+
 if [[ $# > 1 ]]
 then
   exec+='-s'$2
@@ -21,6 +23,9 @@ then
 else
   ver+='0'
 fi
+
+if [[ $buildMode == "0" || $buildMode == "1" ]]
+then
 
 preRC='#include "winuser.h"
           1 VERSIONINFO
@@ -83,8 +88,15 @@ rm $BUILD_DIR/{danser.syso,danser-core.h}
 
 go run tools/ffmpeg/ffmpeg.go $BUILD_DIR/
 
+fi
+
+if [[ $buildMode == "0" || $buildMode == "2" ]]
+then
+
 mkdir -p $TARGET_DIR
 
 go run tools/pack2/pack.go $TARGET_DIR/danser-$exec-win.zip $BUILD_DIR/
 
 rm -rf $BUILD_DIR
+
+fi

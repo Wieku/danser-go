@@ -12,6 +12,11 @@ on:
         type: boolean
         required: false
         default: true
+      sign:
+        description: 'Sign files (Windows only)'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build_windows:
@@ -35,7 +40,56 @@ jobs:
 
       - name: Build danser
         run: |
-          version="${{ github.event.inputs.version }}"
+          version="${{ inputs.version }}"
+
+          export DANSER_BUILD_MODE=0
+
+          if [[ ${{ inputs.sign }} == 'true' || ${{ inputs.sign }} == true ]]
+          then
+          export DANSER_BUILD_MODE=1
+          
+          ./dist-win.sh $version
+
+          if [ ! -f "dist/build-win/danser-core.dll" ]; then
+            echo "Danser failed to build"
+            exit 1
+          fi
+          
+          else
+          
+          ./dist-win.sh $version
+          
+          if [ ! -f "dist/artifacts/danser-${version// /-s}-win.zip" ]; then
+            echo "Danser failed to build"
+            exit 1
+          fi
+          
+          fi
+
+        id: build
+
+      - name: Sign files with Trusted Signing
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: https://weu.codesigning.azure.net/
+          trusted-signing-account-name: mailatwiekume
+          certificate-profile-name: danser
+          files-folder: ${{ github.workspace }}/dist/build-win
+          files-folder-filter: exe,dll
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Pack danser
+        if: ${{ inputs.sign == true || inputs.sign == 'true' }}
+        run: |
+          version="${{ inputs.version }}"
+
+          export DANSER_BUILD_MODE=2
 
           ./dist-win.sh $version
 
@@ -72,7 +126,7 @@ jobs:
 
       - name: Build danser
         run: |
-          version="${{ github.event.inputs.version }}"
+          version="${{ inputs.version }}"
           
           chmod +x dist-linux.sh
           ./dist-linux.sh $version
@@ -92,7 +146,7 @@ jobs:
 
   publish_release:
     name: Publish draft release
-    if: ${{ !cancelled() && needs.build_windows.result == 'success' && needs.build_linux.result == 'success' && github.event.inputs.draft }}
+    if: ${{ !cancelled() && needs.build_windows.result == 'success' && needs.build_linux.result == 'success' && (inputs.draft == true || inputs.draft == 'true') }}
     needs: [build_windows, build_linux]
     runs-on: ubuntu-latest
     steps:
@@ -109,7 +163,7 @@ jobs:
           set -xe
           shopt -s nullglob
 
-          version="${{ github.event.inputs.version }}"
+          version="${{ inputs.version }}"
 
           NAME="${version// / snapshot }"
           TAGNAME="${version// /-s}"
