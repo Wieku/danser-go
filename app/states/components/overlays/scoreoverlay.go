@@ -442,24 +442,9 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 			overlay.oldGrade = sc.Grade
 		})
 	}
-
-	overlay.customStats.GetStatHolder().SetScoreStats(score)
-
-	fcPP := overlay.ruleset.GetFCPP(overlay.cursor)
-	ssPP := overlay.ruleset.GetSSPP(overlay.cursor)
-
-	overlay.customStats.GetStatHolder().SetFCPP(fcPP)
-	overlay.customStats.GetStatHolder().SetSSPP(ssPP)
-
-	currentStars := overlay.ruleset.GetCurrentDiffAttribs(overlay.cursor)
-	overlay.customStats.GetStatHolder().SetCurrentStars(currentStars.Total)
 }
 
 func (overlay *ScoreOverlay) clickReceived(c *graphics.Cursor, leftMouse, rightMouse, leftKb, rightKb, smoke osu.ButtonAction) {
-	if (leftMouse|rightMouse|leftKb|rightKb)&(osu.Clicked) > 0 {
-		overlay.customStats.GetStatHolder().AddClick(overlay.audioTime)
-	}
-
 	if overlay.lazerScore {
 		overlay.processKey(overlay.keyInfos[0], leftMouse|leftKb)
 		overlay.processKey(overlay.keyInfos[1], rightMouse|rightKb)
@@ -547,10 +532,6 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	//normal timing
 	overlay.updateNormal(overlay.normalTime)
-
-	overlay.customStats.GetStatHolder().SetHP(overlay.ruleset.GetHP(overlay.cursor))
-	overlay.customStats.GetStatHolder().SetUsername(overlay.cursor.Name)
-	overlay.customStats.Update(overlay.audioTime, overlay.normalTime)
 }
 
 func (overlay *ScoreOverlay) updateNormal(time float64) {
@@ -760,8 +741,6 @@ func (overlay *ScoreOverlay) DrawHUD(batch *batch.QuadBatch, _ []color2.Color, a
 		settings.Playfield.Bloom.Enabled = false
 		overlay.panel.Draw(batch, overlay.resultsFade.GetValue())
 	}
-
-	overlay.customStats.Draw(batch, alpha, overlay.ScaledWidth, overlay.ScaledHeight)
 
 	batch.SetCamera(prev)
 }
