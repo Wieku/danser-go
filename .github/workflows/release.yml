@@ -97,7 +97,6 @@ jobs:
             echo "Danser failed to build"
             exit 1
           fi
-        id: build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
