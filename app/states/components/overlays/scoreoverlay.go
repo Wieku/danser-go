@@ -456,10 +456,6 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 }
 
 func (overlay *ScoreOverlay) clickReceived(c *graphics.Cursor, leftMouse, rightMouse, leftKb, rightKb, smoke osu.ButtonAction) {
-	if (leftMouse|rightMouse|leftKb|rightKb)&(osu.Clicked) > 0 {
-		overlay.customStats.GetStatHolder().AddClick(overlay.audioTime)
-	}
-
 	if overlay.lazerScore {
 		overlay.processKey(overlay.keyInfos[0], leftMouse)
 		overlay.processKey(overlay.keyInfos[1], rightMouse)
