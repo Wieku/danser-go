@@ -457,8 +457,8 @@ func (overlay *ScoreOverlay) hitReceived(c *graphics.Cursor, judgementResult osu
 
 func (overlay *ScoreOverlay) clickReceived(c *graphics.Cursor, leftMouse, rightMouse, leftKb, rightKb, smoke osu.ButtonAction) {
 	if overlay.lazerScore {
-		overlay.processKey(overlay.keyInfos[0], leftMouse)
-		overlay.processKey(overlay.keyInfos[1], rightMouse)
+		overlay.processKey(overlay.keyInfos[0], leftMouse|leftKb)
+		overlay.processKey(overlay.keyInfos[1], rightMouse|rightKb)
 		overlay.processKey(overlay.keyInfos[2], smoke)
 	} else {
 		overlay.processKey(overlay.keyInfos[0], leftKb)
