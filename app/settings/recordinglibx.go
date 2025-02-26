@@ -52,7 +52,7 @@ func (s *x264Settings) GenerateFFmpegArgs() (ret []string, err error) {
 		return nil, fmt.Errorf("invalid profile: %s", s.Profile)
 	}
 
-	ret = append(ret, "-profile", s.Profile)
+	ret = append(ret, "-profile:v", s.Profile)
 
 	ret2, err := libxCommon2(s.Preset, s.AdditionalOptions)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *x265Settings) GenerateFFmpegArgs() (ret []string, err error) {
 		return nil, fmt.Errorf("invalid profile: %s", s.Profile)
 	}
 
-	ret = append(ret, "-profile", s.Profile)
+	ret = append(ret, "-profile:v", s.Profile)
 
 	ret2, err := libxCommon2(s.Preset, s.AdditionalOptions)
 	if err != nil {

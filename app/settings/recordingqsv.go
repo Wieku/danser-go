@@ -42,7 +42,7 @@ func (s *h264QSVSettings) GenerateFFmpegArgs() (ret []string, err error) {
 		return nil, fmt.Errorf("invalid profile: %s", s.Profile)
 	}
 
-	ret = append(ret, "-profile", s.Profile)
+	ret = append(ret, "-profile:v", s.Profile)
 
 	ret2, err := qsvCommon2(s.Preset, s.AdditionalOptions)
 	if err != nil {

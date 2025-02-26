@@ -38,12 +38,7 @@ func (s *h264AmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
 		return nil, fmt.Errorf("invalid profile: %s", s.Profile)
 	}
 
-	switch s.Profile {
-	case "main":
-		ret = append(ret, "-profile:v", "main")
-	case "high":
-		ret = append(ret, "-profile:v", "high")
-	}
+	ret = append(ret, "-profile:v", s.Profile)
 
 	ret2, err := amfCommon2(s.Preset, s.AdditionalOptions)
 	if err != nil {
@@ -72,12 +67,7 @@ func (s *hevcAmfSettings) GenerateFFmpegArgs() (ret []string, err error) {
 		return nil, fmt.Errorf("invalid profile tier: %s", s.Profile)
 	}
 
-	switch s.Profile {
-	case "main":
-		ret = append(ret, "-profile_tier:v", "main")
-	case "high":
-		ret = append(ret, "-profile_tier:v", "high")
-	}
+	ret = append(ret, "-profile_tier:v", s.Profile)
 
 	ret2, err := amfCommon2(s.Preset, s.AdditionalOptions)
 	if err != nil {
