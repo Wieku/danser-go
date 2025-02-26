@@ -148,22 +148,34 @@ func startVideo(fps, _w, _h int) {
 		"-y", //(optional) overwrite output file if it exists
 
 		"-f", "rawvideo",
-		"-vcodec", "rawvideo",
+		"-c:v", "rawvideo",
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", inputPixFmt,
 		"-r", strconv.Itoa(fps), //frames per second
+	}
+
+	if inputPixFmt != "rgb24" {
+		options = append(options,
+			"-color_range", "1",
+			"-colorspace", "1",
+			"-color_trc", "1",
+			"-color_primaries", "1",
+		)
+	}
+
+	options = append(options,
 		"-i", inputName, //The input comes from a videoPipe
 
 		"-an",
 
-		"-vf", "vflip" + videoFilters,
+		"-vf", "vflip"+videoFilters,
 		"-c:v", encoder,
 		"-color_range", "1",
 		"-colorspace", "1",
 		"-color_trc", "1",
 		"-color_primaries", "1",
 		"-movflags", "+write_colr",
-	}
+	)
 
 	if parsedFormat == pixconv.ARGB {
 		options = append(options, "-pix_fmt", outputFormat)
