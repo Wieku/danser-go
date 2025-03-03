@@ -269,7 +269,7 @@ type gameplay struct {
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
 	IgnoreFailsInReplays    bool
-	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021-11-12 (First Xexxar),220930|2022-09-30 (current web),latest|2024 pp rework (latest)"`
+	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021 pp rework (First Xexxar),220930|2022 pp rework,241007|2024 pp rework,latest|2025 Q1 update (latest)"`
 	LazerClassicScore       bool   `label:"Use \"Classic\" score for osu!lazer plays"`
 }
 
