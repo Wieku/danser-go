@@ -2,6 +2,7 @@ package evaluators
 
 import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"slices"
@@ -112,7 +113,7 @@ func EvaluateRhythm(current *preprocessing.DifficultyObject) float64 {
 					}
 
 					// repeated island (ex: triplet -> triplet)
-					power := logistic(float64(island.delta), 2.75, 0.24, 14)
+					power := putils.Logistic(float64(island.delta), 58.33, 0.24, 2.75)
 					effectiveRatio *= min(3.0/float64(islandCount.count), math.Pow(1.0/float64(islandCount.count), power))
 
 					//islandCounts[countIndex] = (islandCount.Island, islandCount.Count);
@@ -211,8 +212,4 @@ func (island *Island) equals(other *Island) bool {
 	}
 
 	return math.Abs(float64(island.delta-other.delta)) < island.deltaDifferenceEpsilon && island.deltaCount == other.deltaCount
-}
-
-func logistic(x, maxValue, multiplier, offset float64) float64 {
-	return maxValue / (1 + math.Pow(math.E, offset-(multiplier*x)))
 }

@@ -1,16 +1,18 @@
 package evaluators
 
 import (
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 )
 
 const (
-	speedSingleSpacingThreshold float64 = 125.0
-	speedMinSpeedBonus          float64 = 75.0 // ~200BPM
+	speedSingleSpacingThreshold float64 = preprocessing.NormalizedRadius * 2 * 1.25
+	speedMinSpeedBonus          float64 = 200 // 200 BPM 1/4th
 	speedBalancingFactor        float64 = 40
-	speedDistanceMultiplier     float64 = 0.94
+	speedDistanceMultiplier     float64 = 0.9
 )
 
 func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
@@ -32,8 +34,8 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 	speedBonus := 0.0
 
 	// Add additional scaling bonus for streams/bursts higher than 200bpm
-	if strainTime < speedMinSpeedBonus {
-		speedBonus = 0.75 * math.Pow((speedMinSpeedBonus-strainTime)/speedBalancingFactor, 2.0)
+	if putils.MillisecondsToBPMD(strainTime) > speedMinSpeedBonus {
+		speedBonus = 0.75 * math.Pow((putils.BPMToMillisecondsD(speedMinSpeedBonus)-strainTime)/speedBalancingFactor, 2.0)
 	}
 
 	var travelDistance float64
@@ -46,6 +48,10 @@ func EvaluateSpeed(current *preprocessing.DifficultyObject) float64 {
 
 	// Max distance bonus is 1 * `distance_multiplier` at single_spacing_threshold
 	distanceBonus := math.Pow(distance/speedSingleSpacingThreshold, 3.95) * speedDistanceMultiplier
+
+	if current.Diff.CheckModActive(difficulty.Relax2) {
+		distanceBonus = 0
+	}
 
 	// Base difficulty with all bonuses
 	difficulty := (1.0 + speedBonus + distanceBonus) * 1000 / strainTime

@@ -89,6 +89,7 @@ func (diffCalc *DifficultyCalculator) getStars(aim *skills.AimSkill, aimNoSlider
 
 	attr.SpeedNoteCount = speed.RelevantNoteCount()
 	attr.AimDifficultStrainCount = aim.CountDifficultStrains()
+	attr.AimDifficultSliderCount = aim.GetDifficultSliders()
 	attr.SpeedDifficultStrainCount = speed.CountDifficultStrains()
 
 	return attr

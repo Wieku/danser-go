@@ -2,28 +2,31 @@ package evaluators
 
 import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/preprocessing"
-	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"math"
 )
 
 const (
 	aimWideAngleMultiplier      float64 = 1.5
-	aimAcuteAngleMultiplier     float64 = 1.95
+	aimAcuteAngleMultiplier     float64 = 2.6
 	aimSliderMultiplier         float64 = 1.35
 	aimVelocityChangeMultiplier float64 = 0.75
+	aimWiggleMultiplier         float64 = 1.02
 )
 
 func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) float64 {
-	if current.IsSpinner || current.Index <= 1 {
-		return 0
-	}
-	if current.Previous(0).IsSpinner {
+	if current.IsSpinner || current.Index <= 1 || current.Previous(0).IsSpinner {
 		return 0
 	}
 
 	osuCurrObj := current
 	osuLastObj := current.Previous(0)
 	osuLastLastObj := current.Previous(1)
+
+	const (
+		radius   = preprocessing.NormalizedRadius
+		diameter = preprocessing.NormalizedRadius * 2
+	)
 
 	// Calculate the velocity to the current hitobject, which starts with a base distance / time assuming the last object is a hitcircle.
 	currVelocity := osuCurrObj.LazyJumpDistance / osuCurrObj.StrainTime
@@ -50,14 +53,14 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 	acuteAngleBonus := 0.0
 	sliderBonus := 0.0
 	velocityChangeBonus := 0.0
+	wiggleBonus := 0.0
 
 	aimStrain := currVelocity // Start strain with regular velocity.
 
 	if max(osuCurrObj.StrainTime, osuLastObj.StrainTime) < 1.25*min(osuCurrObj.StrainTime, osuLastObj.StrainTime) { // If rhythms are the same.
-		if !math.IsNaN(osuCurrObj.Angle) && !math.IsNaN(osuLastObj.Angle) && !math.IsNaN(osuLastLastObj.Angle) {
+		if !math.IsNaN(osuCurrObj.Angle) && !math.IsNaN(osuLastObj.Angle) {
 			currAngle := osuCurrObj.Angle
 			lastAngle := osuLastObj.Angle
-			lastLastAngle := osuLastLastObj.Angle
 
 			// Rewarding angles, take the smaller velocity as base.
 			angleBonus := min(currVelocity, prevVelocity)
@@ -65,19 +68,27 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 			wideAngleBonus = calcWideAngleBonus(currAngle)
 			acuteAngleBonus = calcAcuteAngleBonus(currAngle)
 
-			if osuCurrObj.StrainTime > 100 { // Only buff deltaTime exceeding 300 bpm 1/2.
-				acuteAngleBonus = 0
-			} else {
-				acuteAngleBonus *= calcAcuteAngleBonus(lastAngle) * // Multiply by previous angle, we don't want to buff unless this is a wiggle type pattern.
-					min(angleBonus, 125/osuCurrObj.StrainTime) * // The maximum velocity we buff is equal to 125 / strainTime
-					math.Pow(math.Sin(math.Pi/2*min(1, (100-osuCurrObj.StrainTime)/25)), 2) * // scale buff from 150 bpm 1/4 to 200 bpm 1/4
-					math.Pow(math.Sin(math.Pi/2*(mutils.Clamp(osuCurrObj.LazyJumpDistance, 50, 100)-50)/50), 2) // Buff distance exceeding 50 (radius) up to 100 (diameter).
-			}
+			// Penalize angle repetition.
+			wideAngleBonus *= 1 - min(wideAngleBonus, math.Pow(calcWideAngleBonus(lastAngle), 3))
+			acuteAngleBonus *= 0.08 + 0.92*(1-min(acuteAngleBonus, math.Pow(calcAcuteAngleBonus(lastAngle), 3)))
 
-			// Penalize wide angles if they're repeated, reducing the penalty as the lastAngle gets more acute.
-			wideAngleBonus *= angleBonus * (1 - min(wideAngleBonus, math.Pow(calcWideAngleBonus(lastAngle), 3)))
-			// Penalize acute angles if they're repeated, reducing the penalty as the lastLastAngle gets more obtuse.
-			acuteAngleBonus *= 0.5 + 0.5*(1-min(acuteAngleBonus, math.Pow(calcAcuteAngleBonus(lastLastAngle), 3)))
+			// Apply full wide angle bonus for distance more than one diameter
+			wideAngleBonus *= angleBonus * putils.Smootherstep(osuCurrObj.LazyJumpDistance, 0, diameter)
+
+			// Apply acute angle bonus for BPM above 300 1/2 and distance more than one diameter
+			acuteAngleBonus *= angleBonus *
+				putils.Smootherstep(putils.MillisecondsToBPM(osuCurrObj.StrainTime, 2), 300, 400) *
+				putils.Smootherstep(osuCurrObj.LazyJumpDistance, diameter, diameter*2)
+
+			// Apply wiggle bonus for jumps that are [radius, 3*diameter] in distance, with < 110 angle
+			// https://www.desmos.com/calculator/dp0v0nvowc
+			wiggleBonus = angleBonus *
+				putils.Smootherstep(osuCurrObj.LazyJumpDistance, radius, diameter) *
+				math.Pow(putils.ReverseLerp(osuCurrObj.LazyJumpDistance, diameter*3, diameter), 1.8) *
+				putils.Smootherstep(currAngle, putils.DegreesToRadians(110), putils.DegreesToRadians(60)) *
+				putils.Smootherstep(osuLastObj.LazyJumpDistance, radius, diameter) *
+				math.Pow(putils.ReverseLerp(osuLastObj.LazyJumpDistance, diameter*3, diameter), 1.8) *
+				putils.Smootherstep(lastAngle, putils.DegreesToRadians(110), putils.DegreesToRadians(60))
 		}
 	}
 
@@ -90,7 +101,7 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 		distRatio := math.Pow(math.Sin(math.Pi/2*math.Abs(prevVelocity-currVelocity)/max(prevVelocity, currVelocity)), 2)
 
 		// Reward for % distance up to 125 / strainTime for overlaps where velocity is still changing.
-		overlapVelocityBuff := min(125/min(osuCurrObj.StrainTime, osuLastObj.StrainTime), math.Abs(prevVelocity-currVelocity))
+		overlapVelocityBuff := min(diameter*1.25/min(osuCurrObj.StrainTime, osuLastObj.StrainTime), math.Abs(prevVelocity-currVelocity))
 
 		// Choose the largest bonus, multiplied by ratio.
 		velocityChangeBonus = overlapVelocityBuff * distRatio
@@ -104,6 +115,8 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 		sliderBonus = osuLastObj.TravelDistance / osuLastObj.TravelTime
 	}
 
+	aimStrain += wiggleBonus * aimWiggleMultiplier
+
 	// Add in acute angle bonus or wide angle bonus + velocity change bonus, whichever is larger.
 	aimStrain += max(acuteAngleBonus*aimAcuteAngleMultiplier, wideAngleBonus*aimWideAngleMultiplier+velocityChangeBonus*aimVelocityChangeMultiplier)
 
@@ -116,9 +129,9 @@ func EvaluateAim(current *preprocessing.DifficultyObject, withSliders bool) floa
 }
 
 func calcWideAngleBonus(angle float64) float64 {
-	return math.Pow(math.Sin(3.0/4*(min(5.0/6*math.Pi, max(math.Pi/6, angle))-math.Pi/6)), 2)
+	return putils.Smoothstep(angle, putils.DegreesToRadians(40), putils.DegreesToRadians(140))
 }
 
 func calcAcuteAngleBonus(angle float64) float64 {
-	return 1 - calcWideAngleBonus(angle)
+	return putils.Smoothstep(angle, putils.DegreesToRadians(140), putils.DegreesToRadians(40))
 }

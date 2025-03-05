@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	aimSkillMultiplier float64 = 25.18
+	aimSkillMultiplier float64 = 25.6
 	aimStrainDecayBase float64 = 0.15
 )
 
@@ -16,6 +16,10 @@ type AimSkill struct {
 	*Skill
 	withSliders   bool
 	currentStrain float64
+
+	maxStrain float64
+
+	difficultSlidersV float64
 }
 
 func NewAimSkill(d *difficulty.Difficulty, withSliders, stepCalc bool) *AimSkill {
@@ -41,5 +45,40 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 
 	skill.objectStrains = append(skill.objectStrains, skill.currentStrain)
 
+	if !skill.stepCalc { // Don't need to precalculate difficult sliders for normal strain calc
+		return skill.currentStrain
+	}
+
+	if skill.currentStrain > skill.maxStrain {
+		skill.maxStrain = skill.currentStrain
+		skill.difficultSlidersV = skill.getDifficultSliders()
+	} else if skill.maxStrain != 0 {
+		skill.difficultSlidersV += 1.0 / (1.0 + math.Exp(-(skill.currentStrain/skill.maxStrain*12.0 - 6.0)))
+	}
+
 	return skill.currentStrain
+}
+
+func (skill *AimSkill) getDifficultSliders() (sum float64) {
+	if len(skill.objectStrains) == 0 {
+		return
+	}
+
+	if skill.maxStrain == 0 {
+		return
+	}
+
+	for _, strain := range skill.objectStrains {
+		sum += 1.0 / (1.0 + math.Exp(-(strain/skill.maxStrain*12.0 - 6.0)))
+	}
+
+	return
+}
+
+func (skill *AimSkill) GetDifficultSliders() float64 {
+	if skill.stepCalc {
+		return skill.difficultSlidersV
+	}
+
+	return skill.getDifficultSliders()
 }

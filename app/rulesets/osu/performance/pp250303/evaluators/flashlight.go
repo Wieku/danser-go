@@ -32,10 +32,10 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 	for i := 0; i < min(current.Index, 10); i++ {
 		currentObj := current.Previous(i)
 
+		cumulativeStrainTime += lastObj.StrainTime
+
 		if !currentObj.IsSpinner {
 			jumpDistance := float64(current.BaseObject.GetStackedStartPositionMod(current.Diff).Dst(currentObj.BaseObject.GetStackedEndPositionMod(currentObj.Diff)))
-
-			cumulativeStrainTime += lastObj.StrainTime
 
 			// We want to nerf objects that can be easily seen within the Flashlight circle radius.
 			if i == 0 {

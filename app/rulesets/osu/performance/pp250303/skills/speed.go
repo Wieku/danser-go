@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	speedSkillMultiplier float64 = 1.430
+	speedSkillMultiplier float64 = 1.46
 	speedStrainDecayBase float64 = 0.3
 )
 

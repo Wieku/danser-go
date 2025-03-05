@@ -13,6 +13,7 @@ type Attributes struct {
 	SpeedNoteCount float64
 
 	AimDifficultStrainCount   float64
+	AimDifficultSliderCount   float64
 	SpeedDifficultStrainCount float64
 
 	// Flashlight stars, needed for Performance Points (aka PP) calculations
