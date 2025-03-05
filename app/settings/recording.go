@@ -106,9 +106,10 @@ func initRecording() *recording {
 		CustomSettings: &custom{
 			CustomOptions: "",
 		},
-		PixelFormat: "yuv420p",
-		Filters:     "",
-		AudioCodec:  "aac",
+		PixelFormat:      "yuv420p",
+		PixelFormatUseHW: true,
+		Filters:          "",
+		AudioCodec:       "aac",
 		AACSettings: &aacSettings{
 			Bitrate:           "192k",
 			AdditionalOptions: "",
@@ -164,6 +165,7 @@ type recording struct {
 	AV1AmfSettings      *av1AmfSettings    `json:"av1_amf" label:"AMD AMF AV1 Settings" showif:"Encoder=av1_amf"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
 	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12,nv21|NV21" showif:"Encoder=!h264_qsv,!hevc_qsv,!libsvtav1"`
+	PixelFormatUseHW    bool               `label:"HW Accelerated Pixel Format conversion"`
 	Filters             string             `label:"FFmpeg Video Filters"`
 	AudioCodec          string             `combo:"aac|AAC,libmp3lame|MP3,libopus|OPUS,flac|FLAC"`
 	AACSettings         *aacSettings       `json:"aac" label:"AAC Settings" showif:"AudioCodec=aac"`
