@@ -357,7 +357,7 @@ func MakeFrame() {
 		blend.Blend()
 	}
 
-	var yuvFull, yuvHalf texture.Texture
+	var yuvFull, yuvHalf []texture.Texture
 
 	if rgbToYuvConverter != nil {
 		rgbToYuvConverter.End()
@@ -377,15 +377,19 @@ func MakeFrame() {
 
 	if !settings.Recording.PixelFormatUseHW && pbo.convFormat != pixconv.ARGB {
 		gl.ReadPixels(0, 0, int32(w), int32(h), uint32(gl.BGRA), gl.UNSIGNED_BYTE, gl.Ptr(nil))
-	} else if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 { //Read as yuv420p
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+	} else if pbo.convFormat == pixconv.NV12 { //Read as yuv420p
+		gl.GetTextureSubImage(yuvFull[0].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
 
-		gl.GetTextureSubImage(yuvHalf.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
-		gl.GetTextureSubImage(yuvHalf.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
+		gl.GetTextureSubImage(yuvHalf[0].GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.RG, gl.UNSIGNED_BYTE, int32(w*h/2), gl.PtrOffset(w*h))
+	} else if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV21 { //Read as yuv420p
+		gl.GetTextureSubImage(yuvFull[0].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+
+		gl.GetTextureSubImage(yuvHalf[0].GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(yuvHalf[1].GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
 	} else if pbo.convFormat != pixconv.ARGB { //Read as yuv444p
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
+		gl.GetTextureSubImage(yuvFull[0].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+		gl.GetTextureSubImage(yuvFull[1].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(yuvFull[2].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
 	} else {
 		gl.ReadPixels(0, 0, int32(w), int32(h), uint32(gl.RGB), gl.UNSIGNED_BYTE, gl.Ptr(nil))
 	}
@@ -432,7 +436,7 @@ func checkData(waitForFirst, waitForAll bool) { // I tried to do that on another
 }
 
 func submitFrame(pbo *PBO) {
-	if (pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420) && settings.Recording.PixelFormatUseHW || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
+	if (pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12) && settings.Recording.PixelFormatUseHW || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
 		pbo.convData = pbo.data
 	} else {
 		pbo.convertSync.Add(1)
