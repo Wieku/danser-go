@@ -92,9 +92,9 @@ func (effect *RGBYUV) Draw() (y texture.Texture, uv texture.Texture) {
 	blend.Push()
 	blend.Disable()
 
-	effect.fbo.Texture().Bind(0)
+	effect.fbo.Texture().Bind(6)
 
-	effect.yuvShader.SetUniform("tex", 0)
+	effect.yuvShader.SetUniform("tex", 6)
 
 	effect.vao.Bind()
 
@@ -113,8 +113,8 @@ func (effect *RGBYUV) Draw() (y texture.Texture, uv texture.Texture) {
 	effect.yuvFBO.Unbind()
 
 	if effect.subsample {
-		effect.yuvFBO.Texture().Bind(0)
-		effect.subsampleShader.SetUniform("tex", 0)
+		effect.yuvFBO.Texture().Bind(7)
+		effect.subsampleShader.SetUniform("tex", 7)
 
 		effect.subsampleFBO.Bind()
 
