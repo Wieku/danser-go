@@ -1,9 +1,9 @@
-package pp250303
+package pp250306
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/skills"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306/skills"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"

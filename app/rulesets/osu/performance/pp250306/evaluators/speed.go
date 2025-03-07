@@ -2,7 +2,7 @@ package evaluators
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"

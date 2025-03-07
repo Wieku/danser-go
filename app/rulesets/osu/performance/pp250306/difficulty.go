@@ -1,11 +1,11 @@
-package pp250303
+package pp250306
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/preprocessing"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/skills"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306/skills"
 	"log"
 	"math"
 	"time"
@@ -14,7 +14,7 @@ import (
 const (
 	// StarScalingFactor is a global stars multiplier
 	StarScalingFactor float64 = 0.0675
-	CurrentVersion    int     = 20241007
+	CurrentVersion    int     = 20250306
 )
 
 type DifficultyCalculator struct{}
@@ -209,5 +209,5 @@ func (diffCalc *DifficultyCalculator) GetVersion() int {
 }
 
 func (diffCalc *DifficultyCalculator) GetVersionMessage() string {
-	return "2024-10-07: https://osu.ppy.sh/home/news/2024-10-28-performance-points-star-rating-updates"
+	return "2025-03-06: https://osu.ppy.sh/home/news/2025-03-06-performance-points-star-rating-updates"
 }

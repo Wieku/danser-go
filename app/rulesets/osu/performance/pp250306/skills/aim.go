@@ -2,8 +2,8 @@ package skills
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/evaluators"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250303/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306/evaluators"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306/preprocessing"
 	"math"
 )
 
