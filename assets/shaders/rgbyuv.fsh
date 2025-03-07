@@ -33,7 +33,7 @@ const mat4x3 rgbToYuvBT601TV = mat4x3(0.257796, -0.148804,  0.440937,
                                       0.062745,  0.501961,  0.501961);
 
 void main() {
-    vec3 src = texture(tex, vec3(tex_coord, 0)).rgb;
+    vec3 src = texture(tex, vec3(tex_coord.x, 1 - tex_coord.y, 0)).rgb;
     vec3 color = rgbToYuvBT601TV*vec4(src, 1);
     outY = color.r;
     outU = color.g;

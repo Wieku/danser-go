@@ -106,14 +106,18 @@ func startVideo(fps, _w, _h int) {
 		parsedFormat = pixconv.NV12
 	}
 
+	var filters []string
+
 	inputPixFmt := "rgb24"
 	if parsedFormat != pixconv.ARGB {
 		inputPixFmt = outputFormat
+	} else {
+		filters = append(filters, "vflip")
 	}
 
 	videoFilters := strings.TrimSpace(settings.Recording.Filters)
 	if len(videoFilters) > 0 {
-		videoFilters = "," + videoFilters
+		filters = append(filters, videoFilters)
 	}
 
 	inputName := "-"
@@ -129,8 +133,8 @@ func startVideo(fps, _w, _h int) {
 	}
 
 	options := []string{
-		"-y", //(optional) overwrite output file if it exists
-
+		"-y",  //(optional) overwrite output file if it exists
+		"-an", // no audio
 		"-f", "rawvideo",
 		"-c:v", "rawvideo",
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
@@ -149,10 +153,13 @@ func startVideo(fps, _w, _h int) {
 
 	options = append(options,
 		"-i", inputName, //The input comes from a videoPipe
+	)
 
-		"-an",
+	if len(filters) > 0 {
+		options = append(options, "-vf", strings.Join(filters, ","))
+	}
 
-		"-vf", "vflip"+videoFilters,
+	options = append(options,
 		"-c:v", encoder,
 		"-color_range", "1",
 		"-colorspace", "1",
