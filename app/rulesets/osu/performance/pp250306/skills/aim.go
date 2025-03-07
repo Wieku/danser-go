@@ -17,13 +17,14 @@ type AimSkill struct {
 	withSliders   bool
 	currentStrain float64
 
-	maxStrain float64
+	maxStrain     float64
+	sliderStrains []float64
 
 	difficultSlidersV float64
 }
 
 func NewAimSkill(d *difficulty.Difficulty, withSliders, stepCalc bool) *AimSkill {
-	skill := &AimSkill{Skill: NewSkill(d, stepCalc), withSliders: withSliders}
+	skill := &AimSkill{Skill: NewSkill(d, stepCalc), withSliders: withSliders, sliderStrains: make([]float64, 0)}
 
 	skill.StrainValueOf = skill.aimStrainValue
 	skill.CalculateInitialStrain = skill.aimInitialStrain
@@ -45,22 +46,26 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 
 	skill.objectStrains = append(skill.objectStrains, skill.currentStrain)
 
-	if !skill.stepCalc { // Don't need to precalculate difficult sliders for normal strain calc
-		return skill.currentStrain
-	}
+	if current.IsSlider {
+		skill.sliderStrains = append(skill.sliderStrains, skill.currentStrain)
 
-	if skill.currentStrain > skill.maxStrain {
-		skill.maxStrain = skill.currentStrain
-		skill.difficultSlidersV = skill.getDifficultSliders()
-	} else if skill.maxStrain != 0 {
-		skill.difficultSlidersV += 1.0 / (1.0 + math.Exp(-(skill.currentStrain/skill.maxStrain*12.0 - 6.0)))
+		if !skill.stepCalc { // Don't need to precalculate difficult sliders for normal strain calc
+			return skill.currentStrain
+		}
+
+		if skill.currentStrain > skill.maxStrain {
+			skill.maxStrain = skill.currentStrain
+			skill.difficultSlidersV = skill.getDifficultSliders()
+		} else if skill.maxStrain != 0 {
+			skill.difficultSlidersV += 1.0 / (1.0 + math.Exp(-(skill.currentStrain/skill.maxStrain*12.0 - 6.0)))
+		}
 	}
 
 	return skill.currentStrain
 }
 
 func (skill *AimSkill) getDifficultSliders() (sum float64) {
-	if len(skill.objectStrains) == 0 {
+	if len(skill.sliderStrains) == 0 {
 		return
 	}
 
@@ -68,7 +73,7 @@ func (skill *AimSkill) getDifficultSliders() (sum float64) {
 		return
 	}
 
-	for _, strain := range skill.objectStrains {
+	for _, strain := range skill.sliderStrains {
 		sum += 1.0 / (1.0 + math.Exp(-(strain/skill.maxStrain*12.0 - 6.0)))
 	}
 
