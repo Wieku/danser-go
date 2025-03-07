@@ -53,11 +53,8 @@ type PBO struct {
 	data       []byte
 
 	convFormat pixconv.PixFmt
-	convData   []byte
 
 	sync uintptr
-
-	convertSync *sync.WaitGroup
 }
 
 func createPBO(format pixconv.PixFmt) *PBO {
@@ -66,15 +63,8 @@ func createPBO(format pixconv.PixFmt) *PBO {
 
 	glSize := w * h * 3
 
-	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 {
 		glSize = w * h * 3 / 2
-
-		if pbo.convFormat == pixconv.NV21 {
-			pbo.convData = make([]byte, glSize)
-		}
-	} else if pbo.convFormat != pixconv.ARGB && pbo.convFormat != pixconv.I444 {
-		convSize := pixconv.GetRequiredBufferSize(pbo.convFormat, w, h)
-		pbo.convData = make([]byte, convSize)
 	}
 
 	gl.CreateBuffers(1, &pbo.handle)
@@ -83,8 +73,6 @@ func createPBO(format pixconv.PixFmt) *PBO {
 	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_COHERENT_BIT|gl.MAP_READ_BIT)
 
 	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[:glSize:glSize]
-
-	pbo.convertSync = &sync.WaitGroup{}
 
 	return pbo
 }
@@ -112,14 +100,10 @@ func startVideo(fps, _w, _h int) {
 	switch outputFormat {
 	case "yuv420p":
 		parsedFormat = pixconv.I420
-	case "yuv422p":
-		parsedFormat = pixconv.I422
 	case "yuv444p":
 		parsedFormat = pixconv.I444
 	case "nv12":
 		parsedFormat = pixconv.NV12
-	case "nv21":
-		parsedFormat = pixconv.NV21
 	}
 
 	inputPixFmt := "rgb24"
@@ -284,10 +268,8 @@ func startVideo(fps, _w, _h int) {
 
 	goroutines.RunOS(func() {
 		for pbo := range videoWriteQueue {
-			pbo.convertSync.Wait() // Wait for conversion to end
-
-			if _, err := videoPipe.Write(pbo.convData); err != nil {
-				errorMsg := err.Error()
+			if _, err2 := videoPipe.Write(pbo.data); err2 != nil {
+				errorMsg := err2.Error()
 
 				videoErrorWait.Wait()
 
@@ -424,26 +406,6 @@ func checkData(waitForFirst, waitForAll bool) { // I tried to do that on another
 
 		frameReadQueue = frameReadQueue[1:]
 
-		submitFrame(pbo)
+		videoWriteQueue <- pbo
 	}
-}
-
-func submitFrame(pbo *PBO) {
-	if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
-		pbo.convData = pbo.data
-	} else {
-		pbo.convertSync.Add(1)
-
-		goroutines.RunOS(func() { // offload conversion to another thread
-			if pbo.convFormat == pixconv.NV21 {
-				pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
-			} else {
-				pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
-			}
-
-			pbo.convertSync.Done()
-		})
-	}
-
-	videoWriteQueue <- pbo
 }
