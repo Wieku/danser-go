@@ -62,6 +62,7 @@ func (diffCalc *DifficultyCalculator) getStarsFromRawValues(rawAim, rawAimNoSlid
 
 	attr.Total = total
 	attr.Aim = aimRating
+	attr.AimNoSliders = aimRatingNoSliders
 	attr.SliderFactor = sliderFactor
 	attr.Speed = speedRating
 	attr.Flashlight = flashlightVal
