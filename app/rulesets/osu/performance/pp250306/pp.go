@@ -75,7 +75,7 @@ func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *dif
 	pp.totalHits = score.CountGreat + score.CountOk + score.CountMeh + score.CountMiss
 	pp.totalSuccessfulHits = score.CountGreat + score.CountOk + score.CountMeh
 	pp.totalImperfectHits = score.CountOk + score.CountMeh + score.CountMiss
-	pp.effectiveMissCount = 0
+	pp.effectiveMissCount = float64(score.CountMiss)
 
 	pp.greatHitWindow = diff.Hit300U / diff.GetSpeed()
 	pp.okHitWindow = diff.Hit100U / diff.GetSpeed()
@@ -217,7 +217,7 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	aimValue *= pp.score.Accuracy
 	// It is important to also consider accuracy difficulty when doing that
-	aimValue *= 0.98 + math.Pow(pp.diff.ODReal, 2)/2500
+	aimValue *= 0.98 + math.Pow(max(0, pp.diff.ODReal), 2)/2500
 
 	return aimValue
 }
@@ -284,7 +284,7 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 	betterAccuracyPercentage := 0.0
 
 	if pp.amountHitObjectsWithAccuracy > 0 {
-		betterAccuracyPercentage = float64((pp.score.CountGreat-(pp.totalHits-pp.amountHitObjectsWithAccuracy))*6+pp.score.CountOk*2+pp.score.CountMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
+		betterAccuracyPercentage = float64((pp.score.CountGreat-max(pp.totalHits-pp.amountHitObjectsWithAccuracy, 0))*6+pp.score.CountOk*2+pp.score.CountMeh) / (float64(pp.amountHitObjectsWithAccuracy) * 6)
 	}
 
 	// It is possible to reach a negative accuracy with this formula. Cap it at zero - zero points

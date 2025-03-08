@@ -22,7 +22,7 @@ func MillisecondsToBPM(ms float64, delimiter int) float64 {
 }
 
 func Logistic(x, midpointOffset, multiplier, maxValue float64) float64 {
-	return LogisticE(multiplier*(midpointOffset-x), maxValue)
+	return maxValue / (1 + math.Exp(multiplier*(midpointOffset-x)))
 }
 
 func LogisticE(exponent, maxValue float64) float64 {
