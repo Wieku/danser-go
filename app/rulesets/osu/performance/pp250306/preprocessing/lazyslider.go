@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	maximumSliderRadius float32 = NormalizedRadius * 2.4
-	assumedSliderRadius float32 = NormalizedRadius * 1.8
+	maximumSliderRadius = float32(NormalizedRadius) * 2.4
+	assumedSliderRadius = float32(NormalizedRadius) * 1.8
 )
 
 // LazySlider is a utility struct that has LazyEndPosition and LazyTravelDistance needed for difficulty calculations
@@ -59,17 +59,10 @@ func (slider *LazySlider) calculateEndPosition() {
 	slider.LazyEndPosition = slider.GetStackedPositionAtModLazer(slider.LazyTravelTime+slider.GetStartTime(), slider.diff) // temporary lazy end position until a real result can be derived.
 
 	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff)
-	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusU // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
+	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusL // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
 	for i := 0; i < len(nestedObjects); i++ {
 		var currMovementObj = nestedObjects[i]
-
-		//var stackedPosition vector.Vector2f
-		//if currMovementObj.LastPoint { // bug that made into deployment but well
-		//	stackedPosition = slider.GetStackedPositionAtModLazer(slider.EndTimeLazer, slider.diff.Mods)
-		//} else {
-		//	stackedPosition = slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff.Mods)
-		//}
 
 		stackedPosition := slider.GetStackedPositionAtModLazer(currMovementObj.Time, slider.diff)
 

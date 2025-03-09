@@ -32,12 +32,17 @@ type Difficulty struct {
 	baseCS float64
 	baseHP float64
 
-	PreemptU      float64
-	Preempt       float64
-	TimeFadeIn    float64
+	PreemptU   float64
+	Preempt    float64
+	TimeFadeIn float64
+
 	CircleRadiusU float64
 	CircleRadius  float64
-	Mods          Modifier
+
+	CircleScaleL  float32
+	CircleRadiusL float64
+
+	Mods Modifier
 
 	Hit50U  float64
 	Hit100U float64
@@ -119,6 +124,9 @@ func (diff *Difficulty) calculate() {
 	diff.CircleRadiusU = DifficultyRate(cs, 54.4, 32, 9.6)
 	diff.CircleRadius = diff.CircleRadiusU * 1.00041 //some weird allowance osu has
 
+	diff.CircleScaleL = (1.0 - 0.7*float32((diff.GetCS()-5)/5)) / 2 * 1.00041
+	diff.CircleRadiusL = float64(diff.CircleScaleL) * 64
+
 	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
 	diff.Preempt = math.Floor(diff.PreemptU)
 
@@ -155,7 +163,7 @@ func (diff *Difficulty) calculate() {
 	}
 
 	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
-	diff.ODReal = DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
+	diff.ODReal = (80 - diff.GetModifiedTime(diff.Hit300U)) / 6 //DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
 }
 
 func cMax(cond bool, a, b float64) float64 {

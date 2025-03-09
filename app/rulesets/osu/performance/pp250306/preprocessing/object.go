@@ -3,7 +3,6 @@ package preprocessing
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
@@ -152,10 +151,10 @@ func (o *DifficultyObject) setDistances() {
 		return
 	}
 
-	scalingFactor := NormalizedRadius / float32(o.Diff.CircleRadiusU)
+	scalingFactor := NormalizedRadius / float32(o.Diff.CircleRadiusL)
 
 	if o.Diff.CircleRadiusU < CircleSizeBuffThreshold {
-		smallCircleBonus := min(CircleSizeBuffThreshold-float32(o.Diff.CircleRadiusU), 5.0) / 50.0
+		smallCircleBonus := min(CircleSizeBuffThreshold-float32(o.Diff.CircleRadiusL), 5.0) / 50.0
 		scalingFactor *= 1.0 + smallCircleBonus
 	}
 
@@ -207,6 +206,7 @@ func (o *DifficultyObject) setDistances() {
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X
 		o.Angle = float64(math32.Abs(math32.Atan2(det, dot)))
+		o.Angle = math.Abs(math.Atan2(float64(det), float64(dot)))
 	}
 }
 
