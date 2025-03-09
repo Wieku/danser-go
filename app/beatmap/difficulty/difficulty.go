@@ -65,6 +65,8 @@ type Difficulty struct {
 
 	modSettings map[reflect.Type]any
 	adjustPitch bool
+
+	DiffCalcMode bool
 }
 
 func NewDifficulty(hp, cs, od, ar float64) *Difficulty {

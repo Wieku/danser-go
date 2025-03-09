@@ -205,7 +205,6 @@ func (o *DifficultyObject) setDistances() {
 		v2 := o.BaseObject.GetStackedStartPositionMod(o.Diff).Sub(lastCursorPosition)
 		dot := v1.Dot(v2)
 		det := v1.X*v2.Y - v1.Y*v2.X
-		o.Angle = float64(math32.Abs(math32.Atan2(det, dot)))
 		o.Angle = math.Abs(math.Atan2(float64(det), float64(dot)))
 	}
 }
