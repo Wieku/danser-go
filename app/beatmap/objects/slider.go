@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"cmp"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -17,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -359,19 +361,23 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	slider.Timings = timings
 	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
+	slider.calculateFollowPointsLazer(beatmapVersion)
+
+	if diffCalcOnly { // We're not interested in stable-like path in difficulty calculator mode
+		return
+	}
+
+	slider.calculateFollowPointsStable(beatmapVersion)
+}
+
+func (slider *Slider) calculateFollowPointsLazer(beatmapVersion int) {
 	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
-
-	lines := slider.multiCurve.GetLines()
-
-	startTime := slider.StartTime
 
 	velocity := slider.Timings.GetVelocity(slider.TPoint)
 
 	cLength := float64(slider.multiCurve.GetLength())
 
 	slider.spanDuration = cLength * 1000 / velocity
-
-	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
 
 	minDistanceFromEnd := velocity * 0.01
 
@@ -388,6 +394,8 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	if cLength/tickDistance > 32768 {
 		tickDistance = cLength / 32768
 	}
+
+	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
 
 	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
 	for span := 0; span < int(slider.RepeatCount); span++ {
@@ -418,12 +426,34 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 		})
 	}
 
-	sort.Slice(slider.ScorePointsLazer, func(i, j int) bool {
-		return slider.ScorePointsLazer[i].Time < slider.ScorePointsLazer[j].Time
-	})
+	slices.SortFunc(slider.ScorePointsLazer, func(a, b TickPoint) int { return cmp.Compare(a.Time, b.Time) })
+}
 
-	if diffCalcOnly { // We're not interested in stable-like path in difficulty calculator mode
-		return
+func (slider *Slider) calculateFollowPointsStable(beatmapVersion int) {
+	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
+
+	lines := slider.multiCurve.GetLines()
+
+	startTime := slider.StartTime
+
+	velocity := slider.Timings.GetVelocity(slider.TPoint)
+
+	cLength := float64(slider.multiCurve.GetLength())
+
+	minDistanceFromEnd := velocity * 0.01
+
+	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	if beatmapVersion < 8 {
+		tickDistance = slider.Timings.GetScoringDistance()
+	}
+
+	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
+		tickDistance = slider.pixelLength
+	}
+
+	// Sanity limit to 32768 ticks per repeat
+	if cLength/tickDistance > 32768 {
+		tickDistance = cLength / 32768
 	}
 
 	scoringLengthTotal := 0.0
@@ -514,12 +544,8 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	//	log.Println("Warning: slider", slider.HitObjectID, "at ", slider.StartTime, "is broken.")
 	//}
 
-	slider.calculateFollowPoints()
-}
-
-func (slider *Slider) calculateFollowPoints() {
-	sort.Slice(slider.TickPoints, func(i, j int) bool { return slider.TickPoints[i].Time < slider.TickPoints[j].Time })
-	sort.Slice(slider.ScorePoints, func(i, j int) bool { return slider.ScorePoints[i].Time < slider.ScorePoints[j].Time })
+	slices.SortFunc(slider.TickPoints, func(a, b TickPoint) int { return cmp.Compare(a.Time, b.Time) })
+	slices.SortFunc(slider.ScorePoints, func(a, b TickPoint) int { return cmp.Compare(a.Time, b.Time) })
 }
 
 func copySliderHOData(target, base *HitObject) {
