@@ -32,6 +32,14 @@ func (t TimingPoint) GetRatio() float64 {
 	return float64(float32(mutils.Clamp(-t.beatLength, 10, 1000)) / 100)
 }
 
+func (t TimingPoint) GetRatio2() float64 {
+	if t.beatLength >= 0 || math.IsNaN(t.beatLength) {
+		return 1.0
+	}
+
+	return 100 / (-t.beatLength)
+}
+
 func (t TimingPoint) GetBaseBeatLength() float64 {
 	return t.beatLengthBase
 }

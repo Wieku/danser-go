@@ -371,31 +371,32 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 }
 
 func (slider *Slider) calculateFollowPointsLazer(beatmapVersion int) {
-	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
+	const maxLzLength = 100000
 
-	velocity := slider.Timings.GetVelocity(slider.TPoint)
+	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
 
 	cLength := float64(slider.multiCurve.GetLength())
 
-	slider.spanDuration = cLength * 1000 / velocity
+	velocity := 100 * slider.Timings.SliderMult / slider.TPoint.GetBeatLength()
 
-	minDistanceFromEnd := velocity * 0.01
+	scoringDistance := velocity * slider.TPoint.GetBaseBeatLength()
 
-	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	tickDistanceMultiplier := 1.0
 	if beatmapVersion < 8 {
-		tickDistance = slider.Timings.GetScoringDistance()
+		tickDistanceMultiplier = 1.0 / slider.TPoint.GetRatio2()
 	}
 
-	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
-		tickDistance = slider.pixelLength
-	}
+	tickDistance := scoringDistance / slider.Timings.TickRate * tickDistanceMultiplier
 
-	// Sanity limit to 32768 ticks per repeat
-	if cLength/tickDistance > 32768 {
-		tickDistance = cLength / 32768
-	}
+	slider.EndTimeLazer = slider.StartTime + float64(slider.RepeatCount)*cLength/velocity
 
-	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
+	slider.spanDuration = (slider.EndTimeLazer - slider.StartTime) / float64(slider.RepeatCount)
+
+	length := min(maxLzLength, cLength)
+
+	tickDistance = mutils.Clamp(tickDistance, 0, length)
+
+	minDistanceFromEnd := velocity * 10
 
 	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
 	for span := 0; span < int(slider.RepeatCount); span++ {
@@ -403,13 +404,13 @@ func (slider *Slider) calculateFollowPointsLazer(beatmapVersion int) {
 		reversed := span%2 == 1
 
 		// Skip ticks if timingPoint has NaN beatLength
-		for d := tickDistance; d <= cLength && !nanTimingPoint; d += tickDistance {
-			if d >= cLength-minDistanceFromEnd {
+		for d := tickDistance; d <= length && !nanTimingPoint; d += tickDistance {
+			if d >= length-minDistanceFromEnd {
 				break
 			}
 
 			// Always generate ticks from the start of the path rather than the span to ensure that ticks in repeat spans are positioned identically to those in non-repeat spans
-			timeProgress := d / cLength
+			timeProgress := d / length
 			if reversed {
 				timeProgress = 1 - timeProgress
 			}
