@@ -90,6 +90,7 @@ func (v Vector2f) AngleR() float32 {
 	return math32.Atan2(v.Y, v.X)
 }
 
+// Nor - It could be X / sqrt but we need to introduce floating point errors from osu
 func (v Vector2f) Nor() Vector2f {
 	length := v.LenSq()
 
@@ -97,9 +98,9 @@ func (v Vector2f) Nor() Vector2f {
 		return v
 	}
 
-	length = math32.Sqrt(length)
+	scale := 1.0 / math32.Sqrt(length)
 
-	return Vector2f{v.X / length, v.Y / length}
+	return Vector2f{v.X * scale, v.Y * scale}
 }
 
 func (v Vector2f) AngleRV(v1 Vector2f) float32 {
@@ -133,6 +134,10 @@ func (v Vector2f) LenSq() float32 {
 
 func (v Vector2f) Scl(mag float32) Vector2f {
 	return Vector2f{v.X * mag, v.Y * mag}
+}
+
+func (v Vector2f) Scl2(mag float32) Vector2f {
+	return Vector2f{float32(float64(v.X) * float64(mag)), float32(float64(v.Y) * float64(mag))}
 }
 
 func (v Vector2f) Abs() Vector2f {
