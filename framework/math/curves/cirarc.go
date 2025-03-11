@@ -26,8 +26,8 @@ func NewCirArc(a, b, c vector.Vector2f) *CirArc {
 	cSq := c.LenSq()
 
 	arc.centre = vector.NewVec2f(
-		aSq*(b.Y-c.Y)+bSq*(c.Y-a.Y)+cSq*(a.Y-b.Y),
-		aSq*(c.X-b.X)+bSq*(a.X-c.X)+cSq*(b.X-a.X)).Scl(1 / d) //nolint:misspell
+		(aSq*(b.Y-c.Y)+bSq*(c.Y-a.Y)+cSq*(a.Y-b.Y))/d,
+		(aSq*(c.X-b.X)+bSq*(a.X-c.X)+cSq*(b.X-a.X))/d) //nolint:misspell
 
 	arc.r = a.Dst(arc.centre)
 	arc.startAngle = a.Copy64().AngleRV(arc.centre.Copy64())
