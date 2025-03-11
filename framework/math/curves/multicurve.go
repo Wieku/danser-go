@@ -30,26 +30,37 @@ type MultiCurve struct {
 }
 
 func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
-	lines := make([]Linear, 0)
+	points := make([]vector.Vector2f, 0)
 
 	for _, def := range curveDefs {
-		var cLines []Linear
+		var cPoints []vector.Vector2f
 
 		switch def.CurveType {
 		case CCirArc:
-			cLines = processPerfect(def.Points)
+			cPoints = processPerfect(def.Points)
 		case CLine:
-			cLines = processLinear(def.Points)
+			cPoints = processLinear(def.Points)
 		case CBezier:
-			cLines = processBezier(def.Points)
+			cPoints = processBezier(def.Points)
 		case CCatmull:
-			cLines = processCatmull(def.Points)
+			cPoints = processCatmull(def.Points)
 		}
 
-		nLines := make([]Linear, len(lines)+len(cLines))
-		copy(nLines, lines)
-		copy(nLines[len(lines):], cLines)
-		lines = nLines
+		skip := 0
+		if len(points) > 0 && points[len(points)-1] == cPoints[0] {
+			skip = 1
+		}
+
+		nPoints := make([]vector.Vector2f, len(points)+len(cPoints)-skip)
+		copy(nPoints, points)
+		copy(nPoints[len(points):], cPoints[skip:])
+		points = nPoints
+	}
+
+	lines := make([]Linear, len(points)-1)
+
+	for i := 0; i < len(points)-1; i++ {
+		lines[i] = NewLinear(points[i], points[i+1])
 	}
 
 	length := float32(0.0)
@@ -191,31 +202,31 @@ func (mCurve *MultiCurve) GetLines() []Linear {
 	return mCurve.lines
 }
 
-func processPerfect(points []vector.Vector2f) (lines []Linear) {
+func processPerfect(points []vector.Vector2f) (outPoints []vector.Vector2f) {
 	if len(points) > 3 {
-		lines = processBezier(points)
+		outPoints = processBezier(points)
 	} else if len(points) < 3 || vector.IsStraightLine32(points[0], points[1], points[2]) {
-		lines = processLinear(points)
+		outPoints = processLinear(points)
 	} else {
-		lines = append(lines, ApproximateCircularArc(points[0], points[1], points[2], 0.125)...)
+		outPoints = ApproximateCircularArc(points[0], points[1], points[2], 0.125)
 	}
 
 	return
 }
 
-func processLinear(points []vector.Vector2f) (lines []Linear) {
-	for i := 0; i < len(points)-1; i++ {
-		if points[i] == points[i+1] { // skip red anchors, present in old maps like 243
+func processLinear(points []vector.Vector2f) (outPoints []vector.Vector2f) {
+	for i := 0; i < len(points); i++ {
+		if i < len(points)-1 && points[i] == points[i+1] { // skip red anchors, present in old maps like 243
 			continue
 		}
 
-		lines = append(lines, NewLinear(points[i], points[i+1]))
+		outPoints = append(outPoints, points[i])
 	}
 
 	return
 }
 
-func processBezier(points []vector.Vector2f) (lines []Linear) {
+func processBezier(points []vector.Vector2f) (outPoints []vector.Vector2f) {
 	lastIndex := 0
 
 	for i := 0; i < len(points); i++ {
@@ -224,10 +235,18 @@ func processBezier(points []vector.Vector2f) (lines []Linear) {
 		if multi || i == len(points)-1 {
 			subPoints := points[lastIndex : i+1]
 
+			var inter []vector.Vector2f
+
 			if len(subPoints) == 2 {
-				lines = append(lines, NewLinear(subPoints[0], subPoints[1]))
+				inter = []vector.Vector2f{subPoints[0], subPoints[1]}
 			} else {
-				lines = append(lines, ApproximateBezier(subPoints)...)
+				inter = ApproximateBezier(subPoints)
+			}
+
+			if len(outPoints) == 0 || outPoints[len(outPoints)-1] != inter[0] {
+				outPoints = append(outPoints, inter...)
+			} else {
+				outPoints = append(outPoints, inter[1:]...)
 			}
 
 			if multi {
@@ -241,7 +260,7 @@ func processBezier(points []vector.Vector2f) (lines []Linear) {
 	return
 }
 
-func processCatmull(points []vector.Vector2f) (lines []Linear) {
+func processCatmull(points []vector.Vector2f) (outPoints []vector.Vector2f) {
 	for i := 0; i < len(points)-1; i++ {
 		var p1, p2, p3, p4 vector.Vector2f
 
@@ -265,7 +284,7 @@ func processCatmull(points []vector.Vector2f) (lines []Linear) {
 			p4 = p3.Add(p3.Sub(p2))
 		}
 
-		lines = append(lines, ApproximateCatmullRom([]vector.Vector2f{p1, p2, p3, p4}, 50)...)
+		outPoints = append(outPoints, ApproximateCatmullRom([]vector.Vector2f{p1, p2, p3, p4}, 50)...)
 	}
 
 	return
