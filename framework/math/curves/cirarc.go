@@ -55,6 +55,11 @@ func (arc *CirArc) PointAt(t float32) vector.Vector2f {
 	return vector.NewVec2dRad(arc.startAngle+arc.dir*float64(t)*arc.totalAngle, float64(arc.r)).Copy32().Add(arc.centre)
 }
 
+func (arc *CirArc) PointAt64(t float64) vector.Vector2f {
+	theta := arc.startAngle + arc.dir*t*arc.totalAngle
+	return vector.NewVec2f(float32(math.Cos(theta))*arc.r+arc.centre.X, float32(math.Sin(theta))*arc.r+arc.centre.Y)
+}
+
 func (arc *CirArc) GetLength() float32 {
 	return float32(float64(arc.r) * arc.totalAngle)
 }

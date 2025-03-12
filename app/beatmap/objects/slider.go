@@ -322,7 +322,7 @@ func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
 		progress = 2 - progress
 	}
 
-	return slider.multiCurve.PointAt(float32(progress))
+	return slider.multiCurve.PointAtLazer(progress)
 }
 
 func (slider *Slider) GetStackedPositionAtModLazer(time float64, diff *difficulty.Difficulty) vector.Vector2f {
@@ -375,7 +375,7 @@ func (slider *Slider) calculateFollowPointsLazer(beatmapVersion int) {
 
 	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
 
-	cLength := float64(slider.multiCurve.GetLength())
+	cLength := slider.multiCurve.GetLengthLazer()
 
 	velocity := 100 * slider.Timings.SliderMult / slider.TPoint.GetBeatLength()
 
