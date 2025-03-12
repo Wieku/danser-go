@@ -9,8 +9,13 @@ type CirArc struct {
 	pt1, pt2, pt3               vector.Vector2f
 	centre                      vector.Vector2f //nolint:misspell
 	startAngle, totalAngle, dir float64
-	r                           float32
-	Unstable                    bool
+
+	tInitial float64
+	tFinal   float64
+
+	r float32
+
+	Unstable bool
 }
 
 func NewCirArc(a, b, c vector.Vector2f) *CirArc {
@@ -48,16 +53,41 @@ func NewCirArc(a, b, c vector.Vector2f) *CirArc {
 		arc.totalAngle = 2*math.Pi - arc.totalAngle
 	}
 
+	arc.tInitial = ctAt(a, arc.centre)
+	tMid := ctAt(b, arc.centre)
+	arc.tFinal = ctAt(c, arc.centre)
+
+	for tMid < arc.tInitial {
+		tMid += 2 * math.Pi
+	}
+
+	for arc.tFinal < arc.tInitial {
+		arc.tFinal += 2 * math.Pi
+	}
+
+	if tMid > arc.tFinal {
+		arc.tFinal -= 2 * math.Pi
+	}
+
 	return arc
+}
+
+func ctAt(pt, centre vector.Vector2f) float64 {
+	return math.Atan2(float64(pt.Y)-float64(centre.Y), float64(pt.X)-float64(centre.X))
 }
 
 func (arc *CirArc) PointAt(t float32) vector.Vector2f {
 	return vector.NewVec2dRad(arc.startAngle+arc.dir*float64(t)*arc.totalAngle, float64(arc.r)).Copy32().Add(arc.centre)
 }
 
-func (arc *CirArc) PointAt64(t float64) vector.Vector2f {
+func (arc *CirArc) PointAtL(t float64) vector.Vector2f {
 	theta := arc.startAngle + arc.dir*t*arc.totalAngle
 	return vector.NewVec2f(float32(math.Cos(theta))*arc.r+arc.centre.X, float32(math.Sin(theta))*arc.r+arc.centre.Y)
+}
+
+func (arc *CirArc) PointAtS(t float64) vector.Vector2f {
+	theta := arc.tFinal*t + arc.tInitial*(1-t)
+	return vector.NewVec2f(float32(math.Cos(theta)*float64(arc.r))+arc.centre.X, float32(math.Sin(theta)*float64(arc.r))+arc.centre.Y)
 }
 
 func (arc *CirArc) GetLength() float32 {
