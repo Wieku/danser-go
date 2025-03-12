@@ -60,7 +60,7 @@ func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 		nLines := make([]Linear, len(lines)+len(cPoints1)-1)
 		copy(nLines, lines)
 		for i := 0; i < len(cPoints1)-1; i++ {
-			nLines[len(lines)+i] = NewLinear(cPoints1[i], cPoints2[i+1])
+			nLines[len(lines)+i] = NewLinear(cPoints1[i], cPoints1[i+1])
 		}
 		lines = nLines
 
