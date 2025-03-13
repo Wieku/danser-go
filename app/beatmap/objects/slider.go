@@ -486,7 +486,7 @@ func (slider *Slider) calculateFollowPointsStable(beatmapVersion int) {
 				p1, p2 = p2, p1
 			}
 
-			distance := line.GetLength()
+			distance := float32(line.GetCustomLength())
 
 			progress := 1000.0 * float64(distance) / velocity
 
@@ -507,7 +507,7 @@ func (slider *Slider) calculateFollowPointsStable(beatmapVersion int) {
 					break
 				}
 
-				scoreTime := slider.StartTime + math.Floor(float64(float32(scoringLengthTotal)*1000)/velocity)
+				scoreTime := slider.StartTime + math.Floor(float64(float32(scoringLengthTotal))/velocity*1000)
 
 				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false, false, -1}
 				slider.TickPoints = append(slider.TickPoints, point)

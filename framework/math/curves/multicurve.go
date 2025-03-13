@@ -103,22 +103,30 @@ func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 func NewMultiCurveT(curveDefs []CurveDef, desiredLength float64) *MultiCurve {
 	mCurve := NewMultiCurve(curveDefs)
 
-	if mCurve.length > 0 && desiredLength != 0 {
-		diff := float64(mCurve.length) - desiredLength
+	length64 := 0.0
+
+	for _, l := range mCurve.lines {
+		length64 += float64(l.GetLength87())
+	}
+
+	if length64 > 0 && desiredLength != 0 {
+		diff := length64 - desiredLength
 
 		for len(mCurve.lines) > 0 {
 			line := mCurve.lines[len(mCurve.lines)-1]
 
-			if float64(line.GetLength()) > diff+minPartWidth {
+			if float64(line.GetLength87()) > diff+minPartWidth {
 				if line.Point1 != line.Point2 {
-					pt := line.PointAt((line.GetLength() - float32(diff)) / line.GetLength())
+					nor := line.Point2.Sub(line.Point1).Nor87()
+
+					pt := line.Point1.Add(nor.Scl87(line.GetLength87() - float32(diff)))
 					mCurve.lines[len(mCurve.lines)-1] = NewLinear(line.Point1, pt)
 				}
 
 				break
 			}
 
-			diff -= float64(line.GetLength())
+			diff -= float64(line.GetLength87())
 			mCurve.lines = mCurve.lines[:len(mCurve.lines)-1]
 		}
 	}
@@ -160,7 +168,13 @@ func NewMultiCurveT(curveDefs []CurveDef, desiredLength float64) *MultiCurve {
 	mCurve.sections[0] = 0.0
 	prev := float32(0.0)
 
+	length64 = 0.0
+
 	for i := 0; i < len(mCurve.lines); i++ {
+		prevL := length64
+		length64 += float64(mCurve.lines[i].GetLength87())
+		mCurve.lines[i].customLength = length64 - prevL
+
 		prev += mCurve.lines[i].GetLength()
 		mCurve.sections[i+1] = prev
 	}

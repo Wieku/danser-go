@@ -12,7 +12,7 @@ func ApproximateCircularArc(pt1, pt2, pt3 vector.Vector2f, detail float32) []vec
 		return []vector.Vector2f{pt1, pt2, pt3}
 	}
 
-	segments := int(math.Abs((arc.tFinal-arc.tInitial)*float64(arc.r)) * float64(detail))
+	segments := int(math.Abs((arc.tFinalS-arc.tInitialS)*float64(arc.rS)) * float64(detail))
 
 	pts := make([]vector.Vector2f, segments+1)
 
