@@ -41,8 +41,9 @@ type Slider struct {
 	state             map[*difficultyPlayer]*sliderstate
 	fadeStartRelative float64
 
-	lastSliderTime int64
-	sliderPosition vector.Vector2f
+	lastSliderTime   int64
+	sliderPosition   vector.Vector2f
+	sliderPositionLZ vector.Vector2f
 }
 
 func (slider *Slider) GetNumber() int64 {
@@ -229,10 +230,16 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 
 	if time != slider.lastSliderTime {
 		slider.sliderPosition = slider.hitSlider.GetPositionAt(float64(time))
+		slider.sliderPositionLZ = slider.hitSlider.PositionAtLazer(float64(time))
 		slider.lastSliderTime = time
 	}
 
-	sliderPosition := objects.ModifyPosition(slider.hitSlider.HitObject, slider.sliderPosition, player.diff) // Calculate stacked position
+	sliderPosition := slider.sliderPosition
+	if player.diff.CheckModActive(difficulty.Lazer) {
+		sliderPosition = slider.sliderPositionLZ
+	}
+
+	sliderPosition = objects.ModifyPosition(slider.hitSlider.HitObject, sliderPosition, player.diff) // Calculate stacked position
 
 	if time >= int64(slider.hitSlider.GetStartTime()) && ((!state.isHit && !lzMod) || (lzMod && state.isStartHit)) {
 		mouseDownAcceptable := false
