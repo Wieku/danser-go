@@ -126,7 +126,7 @@ func (diff *Difficulty) calculate() {
 	diff.CircleRadiusU = DifficultyRate(cs, 54.4, 32, 9.6)
 	diff.CircleRadius = diff.CircleRadiusU * 1.00041 //some weird allowance osu has
 
-	diff.CircleScaleL = (1.0 - 0.7*float32((diff.GetCS()-5)/5)) / 2 * 1.00041
+	diff.CircleScaleL = (1.0 - 0.7*float32((cs-5)/5)) / 2 * 1.00041
 	diff.CircleRadiusL = float64(diff.CircleScaleL) * 64
 
 	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
