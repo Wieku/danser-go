@@ -28,16 +28,30 @@ func (processor *RelaxInputProcessor) Update(time float64) {
 
 	click := false
 
-	isLazer := processor.ruleset.GetPlayerDifficulty(processor.cursor).CheckModActive(difficulty.Lazer)
+	currDiff := processor.ruleset.GetPlayerDifficulty(processor.cursor)
+	isLazer := currDiff.CheckModActive(difficulty.Lazer)
 
 	for _, o := range processed {
 		circle, c1 := o.(*osu.Circle)
 		slider, c2 := o.(*osu.Slider)
+		_, c3 := o.(*osu.Spinner)
 
-		objectStartTime := processor.ruleset.GetBeatMap().HitObjects[o.GetNumber()].GetStartTime()
+		if c3 || (c1 && circle.IsHit(player)) || (c2 && slider.IsStartHit(player)) {
+			continue
+		}
 
-		if ((c1 && !circle.IsHit(player)) || (c2 && !slider.IsStartHit(player))) &&
-			((!isLazer && time > objectStartTime-leniency) || (isLazer && time >= objectStartTime-leniency)) {
+		obj := o.GetObject()
+
+		if isLazer {
+			pos := obj.GetStackedStartPositionMod(currDiff)
+
+			if (!c2 || time <= obj.GetEndTime()) &&
+				time >= obj.GetStartTime()-leniency &&
+				pos.Dst(processor.cursor.RawPosition) <= float32(currDiff.CircleRadiusL) &&
+				time-obj.GetStartTime() <= currDiff.Hit50U {
+				click = true
+			}
+		} else if time > obj.GetStartTime()-leniency {
 			click = true
 		}
 	}
