@@ -555,11 +555,13 @@ func (controller *ReplayController) processStable(i int, c *subControl, nTime fl
 
 			replayTime := int64(c.replayTime)
 
-			// If next frame is not in the next millisecond, assume it's -36ms slider end
-			processAhead := true
-			if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
-				processAhead = false
-			}
+			//// If next frame is not in the next millisecond, assume it's -36ms slider end
+			//processAhead := true
+			//if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
+			//	processAhead = false
+			//}
+
+			processAhead := false // Always false for now. Slider end issues should be fixed, but leaving the logic just in case
 
 			if !isAutopilot {
 				controller.cursors[i].SetPos(vector.NewVec2d(frame.MouseX, frame.MouseY).Copy32())
