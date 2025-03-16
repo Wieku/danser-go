@@ -186,7 +186,11 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	}
 
 	if (mods&Relax | mods&Relax2) > 0 {
-		multiplier = 0
+		if mods&Lazer > 0 {
+			multiplier *= 0.1
+		} else {
+			multiplier = 0
+		}
 	}
 
 	if mods&SpunOut > 0 {
