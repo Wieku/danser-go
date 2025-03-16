@@ -91,6 +91,14 @@ func (v Vector2f) DstSq(v1 Vector2f) float32 {
 	return x*x + y*y
 }
 
+// DstSq87 is DstSq but follows x87 promotion to double
+func (v Vector2f) DstSq87(v1 Vector2f) float32 {
+	x := float64(v1.X - v.X)
+	y := float64(v1.Y - v.Y)
+
+	return float32(x*x + y*y)
+}
+
 func (v Vector2f) Angle() float32 {
 	return v.AngleR() * 180 / math32.Pi
 }

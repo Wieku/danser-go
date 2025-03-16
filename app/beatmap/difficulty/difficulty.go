@@ -375,6 +375,18 @@ func (diff *Difficulty) GetPitch() float64 {
 	return 1
 }
 
+func (diff *Difficulty) GetRadius() float32 {
+	if diff.Mods&Lazer > 0 {
+		return float32(diff.CircleRadiusL)
+	}
+
+	if diff.Mods&Relax2 > 0 {
+		return 100
+	}
+
+	return float32(diff.CircleRadius)
+}
+
 func (diff *Difficulty) GetScoreMultiplier() float64 {
 	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore | Flashlight))).GetScoreMultiplier()
 
