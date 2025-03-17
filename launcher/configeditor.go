@@ -659,8 +659,6 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 
 		if wasRendered {
 			notFirst = true
-
-			imgui.Dummy(vec2(0, 2))
 		}
 
 		wasRendered = true
