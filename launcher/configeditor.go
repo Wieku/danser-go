@@ -415,7 +415,12 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	imgui.PopFont()
 	imgui.Separator()
 
+	cPad := imgui.CurrentStyle().CellPadding()
+	imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(cPad.X, 0))
+
 	editor.traverseChildren(jsonPath, sPath, u, reflect.StructField{})
+
+	imgui.PopStyleVar()
 
 	if jsonPath == "##Credentials" {
 		centerTable("authbutton", -1, func() {
@@ -828,6 +833,9 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 	drawBox := func() {
 		contentAvail := imgui.ContentRegionAvail().X
 
+		cPad := imgui.CurrentStyle().CellPadding()
+		imgui.PushStyleVarVec2(imgui.StyleVarCellPadding, vec2(cPad.X, 0))
+
 		if imgui.BeginTableV("tv"+jsonPath1, 3, imgui.TableFlagsSizingStretchProp, vec2(contentAvail, 0), contentAvail) {
 			imgui.TableSetupColumnV("tv1"+jsonPath1, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
 			imgui.TableSetupColumnV("tv2"+jsonPath1, imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
@@ -859,6 +867,8 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 
 			imgui.EndTable()
 		}
+
+		imgui.PopStyleVar()
 	}
 
 	cSpec, okC := d.Tag.Lookup("combo")
@@ -1420,6 +1430,8 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 
 	contentAvail := imgui.ContentRegionAvail().X
 
+	dummyExactY(2)
+
 	if imgui.BeginTableV("lbl"+jsonPath, int32(cCount), imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, vec2(contentAvail, 0), contentAvail) {
 		if !long {
 			imgui.TableSetupColumnV("lbl1"+jsonPath, imgui.TableColumnFlagsWidthFixed, contentAvail-width, imgui.ID(0))
@@ -1477,6 +1489,8 @@ func (editor *settingsEditor) drawComponent(jsonPath, label string, long, checkb
 
 		imgui.EndTable()
 	}
+
+	dummyExactY(2)
 
 	if dRunLock {
 		editor.unlockLive(false)
