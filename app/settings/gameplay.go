@@ -260,7 +260,7 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	Statistics              []*Statistic `new:"InitStatistic" minSize:"0"`
+	Statistics              []*Statistic `new:"InitStatistic" minSize:"0" wiki:"Help|https://github.com/Wieku/danser-go/wiki/Templates"`
 	SBFont                  string       `label:"Scoreboard / Ranking font" file:"Select SBR font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for score board names and ranking panel (use Aller Light to match osu!)" liveedit:"false"`
 	HUDFont                 string       `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts" liveedit:"false"`
 	ShowResultsScreen       bool         `liveedit:"false"`

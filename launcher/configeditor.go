@@ -473,7 +473,7 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 	}
 }
 
-func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content func()) {
+func (editor *settingsEditor) subSectionTempl(name string, jsonPath string, d reflect.StructField, afterTitle, content func()) {
 	pos := imgui.CursorScreenPos()
 
 	imgui.Dummy(vec2(3, 0))
@@ -484,7 +484,38 @@ func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content f
 	imgui.PushFont(Font24)
 	imgui.TextUnformatted(strings.ToUpper(name))
 
-	afterTitle()
+	if tVal, ok := d.Tag.Lookup("wiki"); ok {
+		spl := strings.Split(tVal, "|")
+
+		imgui.SameLine()
+
+		contentAvail := imgui.ContentRegionAvail().X - 1
+		if imgui.BeginTableV("subSecButtons"+jsonPath, 2, imgui.TableFlagsSizingStretchProp|imgui.TableFlagsNoPadInnerX|imgui.TableFlagsNoPadOuterX|imgui.TableFlagsNoClip, vec2(contentAvail, 0), contentAvail) {
+			imgui.TableSetupColumnV("subSecButtons1"+jsonPath, imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+			imgui.TableSetupColumnV("subSecButtons2"+jsonPath, imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(1))
+
+			imgui.TableNextColumn()
+
+			if afterTitle != nil {
+				afterTitle()
+			}
+
+			imgui.TableNextColumn()
+
+			imgui.PushFont(Font20)
+
+			if imgui.Button(spl[0] + "##wikiBtn" + jsonPath) {
+				platform.OpenURL(spl[1])
+			}
+
+			imgui.PopFont()
+
+			imgui.EndTable()
+		}
+	} else if afterTitle != nil {
+		imgui.SameLine()
+		afterTitle()
+	}
 
 	imgui.PopFont()
 
@@ -506,7 +537,7 @@ func (editor *settingsEditor) subSectionTempl(name string, afterTitle, content f
 func (editor *settingsEditor) buildSubSection(jsonPath, sPath, name string, u reflect.Value, d reflect.StructField) {
 	dRunLock := editor.tryLockLive(d)
 
-	editor.subSectionTempl(name, func() {}, func() {
+	editor.subSectionTempl(name, jsonPath, d, nil, func() {
 		editor.traverseChildren(jsonPath, sPath, u, d)
 	})
 
@@ -521,11 +552,7 @@ func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect
 		minSize, _ = strconv.Atoi(lVal)
 	}
 
-	editor.subSectionTempl(name, func() {
-		imgui.SameLine()
-		imgui.Dummy(vec2(2, 0))
-		imgui.SameLine()
-
+	editor.subSectionTempl(name, jsonPath, d, func() {
 		ImIO.SetFontGlobalScale(20.0 / 32)
 		imgui.PushFont(FontAw)
 
