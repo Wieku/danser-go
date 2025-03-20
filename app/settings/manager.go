@@ -17,6 +17,8 @@ var currentConfig *Config
 var filePath string
 var watcher *fsnotify.Watcher
 
+var reloadListeners []func()
+
 func initSettings() {
 	if err := os.MkdirAll(env.ConfigDir(), 0755); err != nil {
 		panic(err)
@@ -102,6 +104,10 @@ func setupWatcher(file string) {
 
 					currentConfig.Save("", false)
 					currentConfig.attachToGlobals()
+
+					for _, f := range reloadListeners {
+						f()
+					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -130,6 +136,10 @@ func CloseWatcher() {
 
 		watcher = nil
 	}
+}
+
+func AddReloadListener(f func()) {
+	reloadListeners = append(reloadListeners, f)
 }
 
 func GetCompressedString() string {

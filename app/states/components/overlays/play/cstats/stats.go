@@ -9,6 +9,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	"math"
 	"strconv"
+	"sync"
 	"text/template"
 )
 
@@ -19,6 +20,8 @@ type StatDisplay struct {
 
 	counterMap map[string]*rollingCounter
 	lastTime   int64
+
+	mtx *sync.RWMutex // To not risk a crash during settings reload
 }
 
 type rollingCounter struct {
@@ -32,19 +35,32 @@ func NewStatDisplay(bMap *beatmap.BeatMap, diff *difficulty.Difficulty) *StatDis
 		statHolder: NewStatHolder(bMap, diff),
 		counterMap: make(map[string]*rollingCounter),
 		lastTime:   math.MinInt64,
+		mtx:        &sync.RWMutex{},
 	}
 
 	display.engine.Funcs(templateFuncs)
 
+	display.loadDisplays()
+
+	settings.AddReloadListener(display.loadDisplays)
+
+	return display
+}
+
+func (statDisplay *StatDisplay) loadDisplays() {
+	statDisplay.mtx.Lock()
+
+	statDisplay.stats = make([]*Stat, 0)
+
 	for i, c := range settings.Gameplay.Statistics {
-		stat := NewStat(display, c, display.engine.New(strconv.Itoa(i)))
+		stat := NewStat(statDisplay, c, statDisplay.engine.New(strconv.Itoa(i)))
 
 		if stat != nil {
-			display.stats = append(display.stats, stat)
+			statDisplay.stats = append(statDisplay.stats, stat)
 		}
 	}
 
-	return display
+	statDisplay.mtx.Unlock()
 }
 
 func (statDisplay *StatDisplay) GetStatHolder() *StatHolder {
@@ -58,9 +74,11 @@ func (statDisplay *StatDisplay) Update(audioTime, normalTime float64) {
 	statDisplay.updateRolling(normalTime)
 	statDisplay.updateBTimes(audioTime)
 
+	statDisplay.mtx.RLock()
 	for _, stat := range statDisplay.stats {
 		stat.Update(statDisplay.statHolder.stats)
 	}
+	statDisplay.mtx.RUnlock()
 }
 
 func (statDisplay *StatDisplay) updateRolling(time float64) {
@@ -103,7 +121,9 @@ func (statDisplay *StatDisplay) registerRollingValue(field string, decimals int)
 }
 
 func (statDisplay *StatDisplay) Draw(batch *batch.QuadBatch, alpha float64, sclWidth, sclHeight float64) {
+	statDisplay.mtx.RLock()
 	for _, stat := range statDisplay.stats {
 		stat.Draw(batch, alpha, sclWidth, sclHeight)
 	}
+	statDisplay.mtx.RUnlock()
 }
