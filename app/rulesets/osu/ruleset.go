@@ -792,6 +792,7 @@ func (set *OsuRuleSet) GetFCPP(cursor *graphics.Cursor) api.PPv2Results {
 	apiScore.CountGreat += apiScore.CountMiss
 	apiScore.CountMiss = 0
 	apiScore.SliderBreaks = 0
+	apiScore.Accuracy = 1
 
 	rawScore := int64(apiScore.CountGreat*300 + apiScore.CountOk*100 + apiScore.CountMeh*50)
 	maxRawScore := int64(subSet.score.scoredObjects * 300)
@@ -803,8 +804,12 @@ func (set *OsuRuleSet) GetFCPP(cursor *graphics.Cursor) api.PPv2Results {
 			sEndScore = LegacySliderEnd.ScoreValueMod(subSet.player.diff.Mods)
 		}
 
-		apiScore.Accuracy = float64(rawScore+pointScore+int64(apiScore.SliderEnd)*sEndScore) / float64(maxRawScore+pointScore+int64(subSet.score.MaxSliderEnd)*sEndScore)
-	} else {
+		div := maxRawScore + pointScore + int64(subSet.score.MaxSliderEnd)*sEndScore
+
+		if div > 0 {
+			apiScore.Accuracy = float64(rawScore+pointScore+int64(apiScore.SliderEnd)*sEndScore) / float64(div)
+		}
+	} else if maxRawScore > 0 {
 		apiScore.Accuracy = float64(rawScore) / float64(maxRawScore)
 	}
 

@@ -1,0 +1,109 @@
+package cstats
+
+import (
+	"github.com/spf13/cast"
+	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/graphics/batch"
+	"github.com/wieku/danser-go/framework/math/animation"
+	"math"
+	"strconv"
+	"text/template"
+)
+
+type StatDisplay struct {
+	engine     *template.Template
+	stats      []*Stat
+	statHolder *StatHolder
+
+	counterMap map[string]*rollingCounter
+	lastTime   int64
+}
+
+type rollingCounter struct {
+	src, target string
+	glider      *animation.TargetGlider
+}
+
+func NewStatDisplay(bMap *beatmap.BeatMap, diff *difficulty.Difficulty) *StatDisplay {
+	display := &StatDisplay{
+		engine:     template.New("engine"),
+		statHolder: NewStatHolder(bMap, diff),
+		counterMap: make(map[string]*rollingCounter),
+		lastTime:   math.MinInt64,
+	}
+
+	display.engine.Funcs(templateFuncs)
+
+	for i, c := range settings.Gameplay.Statistics {
+		stat := NewStat(display, c, display.engine.New(strconv.Itoa(i)))
+
+		if stat != nil {
+			display.stats = append(display.stats, stat)
+		}
+	}
+
+	return display
+}
+
+func (statDisplay *StatDisplay) GetStatHolder() *StatHolder {
+	return statDisplay.statHolder
+}
+
+func (statDisplay *StatDisplay) Update(audioTime, normalTime float64) {
+	statDisplay.statHolder.UpdateBPM()
+	statDisplay.statHolder.UpdateTime(audioTime)
+
+	statDisplay.updateRolling(normalTime)
+	statDisplay.updateBTimes(audioTime)
+
+	for _, stat := range statDisplay.stats {
+		stat.Update(statDisplay.statHolder.stats)
+	}
+}
+
+func (statDisplay *StatDisplay) updateRolling(time float64) {
+	for _, counter := range statDisplay.counterMap {
+		counter.glider.SetValue(cast.ToFloat64(statDisplay.statHolder.stats[counter.src]), false)
+		counter.glider.Update(time)
+
+		statDisplay.statHolder.stats[counter.target] = counter.glider.GetValue()
+	}
+}
+
+func (statDisplay *StatDisplay) updateBTimes(time float64) {
+	hitObjects := statDisplay.statHolder.bMap.HitObjects
+	startTime := hitObjects[0].GetStartTime()
+	endTime := hitObjects[len(hitObjects)-1].GetEndTime()
+
+	currentTime := int64(math.Floor((time - startTime) / 1000))
+
+	statDisplay.statHolder.stats["timeFromStart"] = currentTime
+
+	if statDisplay.lastTime != currentTime {
+		statDisplay.statHolder.stats["timeToEnd"] = max(0, int64(math.Floor((endTime-time)/1000)))
+		statDisplay.lastTime = currentTime
+	}
+}
+
+func (statDisplay *StatDisplay) registerRollingValue(field string, decimals int) {
+	rollingName := field + "Roll" + strconv.Itoa(decimals)
+
+	if _, ok := statDisplay.counterMap[rollingName]; !ok {
+		counter := &rollingCounter{
+			src:    field,
+			target: rollingName,
+			glider: animation.NewTargetGlider(cast.ToFloat64(statDisplay.statHolder.stats[field]), decimals),
+		}
+
+		statDisplay.counterMap[rollingName] = counter
+		statDisplay.statHolder.stats[rollingName] = counter.glider.GetValue()
+	}
+}
+
+func (statDisplay *StatDisplay) Draw(batch *batch.QuadBatch, alpha float64, sclWidth, sclHeight float64) {
+	for _, stat := range statDisplay.stats {
+		stat.Draw(batch, alpha, sclWidth, sclHeight)
+	}
+}

@@ -44,6 +44,10 @@ func (t TimingPoint) GetBaseBeatLength() float64 {
 	return t.beatLengthBase
 }
 
+func (t TimingPoint) GetBaseBPM() float64 {
+	return 60000 / t.beatLengthBase
+}
+
 func (t TimingPoint) GetBeatLength() float64 {
 	return t.beatLengthBase * t.GetRatio()
 }
