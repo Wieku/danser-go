@@ -42,6 +42,7 @@ const (
 	Classic
 	DifficultyAdjust
 	Mirror
+	Traceable
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
@@ -105,6 +106,7 @@ var modsString = [...]string{
 	"CL",
 	"DA",
 	"MR",
+	"TC",
 }
 
 var modsStringFull = [...]string{
@@ -144,6 +146,7 @@ var modsStringFull = [...]string{
 	"Classic",
 	"DifficultyAdjust",
 	"Mirror",
+	"Traceable",
 }
 
 func (mods Modifier) GetScoreMultiplier() float64 {

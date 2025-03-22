@@ -49,7 +49,7 @@ func (m *modPopup) drawModMenu() {
 
 			m.modCheckboxMulti(difficulty.DoubleTime, difficulty.Nightcore, difficulty.HalfTime|difficulty.Daycore, difficulty.None)
 
-			m.modCheckbox(difficulty.Hidden, difficulty.None, difficulty.None)
+			m.modCheckbox(difficulty.Hidden, difficulty.Traceable, difficulty.None)
 
 			m.modCheckbox(difficulty.Flashlight, difficulty.None, difficulty.None)
 		})
@@ -74,6 +74,10 @@ func (m *modPopup) drawModMenu() {
 			m.modCheckbox(difficulty.Lazer, difficulty.ScoreV2, difficulty.None)
 
 			m.modCheckbox(difficulty.Classic, difficulty.ScoreV2, difficulty.Lazer)
+		})
+
+		m.drawRow("Fun:", func() {
+			m.modCheckbox(difficulty.Traceable, difficulty.Hidden, difficulty.None)
 		})
 
 		imgui.EndTable()

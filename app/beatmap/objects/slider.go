@@ -1026,7 +1026,7 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 	slider.body.DrawBase(slider.sliderSnakeHead.GetValue(), slider.sliderSnakeTail.GetValue(), projection)
 }
 
-func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
+func (slider *Slider) DrawBody(_ float64, circleColor, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
 	bodyOpacityInner := mutils.Clamp(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
@@ -1037,7 +1037,12 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 	bodyInner := color2.NewL(0)
 	bodyOuter := color2.NewL(0)
 
-	if settings.Skin.UseColorsFromSkin {
+	if slider.diff.CheckModActive(difficulty.Traceable) && slider.HitObjectID != 0 {
+		borderInner = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), circleColor)
+		borderOuter = borderInner
+		bodyOpacityInner = 0
+		bodyOpacityOuter = 0
+	} else if settings.Skin.UseColorsFromSkin {
 		borderOuter = skin.GetInfo().SliderBorder
 		borderInner = borderOuter
 

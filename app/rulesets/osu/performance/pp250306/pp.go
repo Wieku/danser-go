@@ -211,7 +211,7 @@ func (pp *PPv2) computeAimValue() float64 {
 	aimValue *= 1.0 + approachRateFactor*lengthBonus // Buff for longer maps with high AR.
 
 	// We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
-	if pp.diff.Mods.Active(difficulty.Hidden) {
+	if pp.diff.Mods.Active(difficulty.Hidden) || pp.diff.Mods.Active(difficulty.Traceable) {
 		aimValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
@@ -253,7 +253,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	speedValue *= 1.0 + approachRateFactor*lengthBonus
 
-	if pp.diff.Mods.Active(difficulty.Hidden) {
+	if pp.diff.Mods.Active(difficulty.Hidden) || pp.diff.Mods.Active(difficulty.Traceable) {
 		speedValue *= 1.0 + 0.04*(12.0-pp.diff.ARReal)
 	}
 
@@ -299,7 +299,7 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 	// Bonus for many hitcircles - it's harder to keep good accuracy up for longer
 	accuracyValue *= min(1.15, math.Pow(float64(pp.amountHitObjectsWithAccuracy)/1000.0, 0.3))
 
-	if pp.diff.Mods.Active(difficulty.Hidden) {
+	if pp.diff.Mods.Active(difficulty.Hidden) || pp.diff.Mods.Active(difficulty.Traceable) {
 		accuracyValue *= 1.08
 	}
 
