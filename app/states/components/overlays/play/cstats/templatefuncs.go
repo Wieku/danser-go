@@ -18,11 +18,11 @@ var templateFuncs = template.FuncMap{
 	"format": func(format string, v ...any) string {
 		return fmt.Sprintf(format, v)
 	},
-	"formatF": func(decimals int64, v float64) string {
-		return fmt.Sprintf("%.*f", int(decimals), v)
+	"formatF": func(decimals int64, v any) string {
+		return fmt.Sprintf("%.*f", int(decimals), cast.ToFloat64(v))
 	},
-	"formatF0": func(v float64, decimals int64) string {
-		return mutils.FormatWOZeros(v, int(decimals))
+	"formatF0": func(decimals int64, v any) string {
+		return mutils.FormatWOZeros(cast.ToFloat64(v), int(decimals))
 	},
 	"formatC": func(v int64) string {
 		return utils.Humanize(v)
