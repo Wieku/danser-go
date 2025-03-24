@@ -72,6 +72,7 @@ func (h *StatHolder) SetMapStats(bMap *beatmap.BeatMap, pDiff *difficulty.Diffic
 	}
 
 	h.stats["mods"] = mods
+	h.stats["modsA"] = pDiff.Mods.String()
 }
 
 func (h *StatHolder) UpdateBPM() {
