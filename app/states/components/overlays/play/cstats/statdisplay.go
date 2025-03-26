@@ -96,13 +96,13 @@ func (stat *Stat) compile() bool {
 					return false
 				}
 
-				decimals, errP := strconv.Atoi(spl[1])
+				decimals, errP := strconv.Atoi(strings.TrimSuffix(spl[1], "S"))
 				if errP != nil {
 					log.Println("Failed to parse deicmals:", errP.Error())
 					return false
 				}
 
-				stat.display.registerRollingValue(spl[0], decimals)
+				stat.display.registerRollingValue(spl[0], decimals, strings.HasSuffix(spl[1], "S"))
 			}
 		}
 	}

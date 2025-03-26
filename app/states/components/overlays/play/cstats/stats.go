@@ -1,6 +1,7 @@
 package cstats
 
 import (
+	"fmt"
 	"github.com/spf13/cast"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -26,6 +27,9 @@ type StatDisplay struct {
 
 type rollingCounter struct {
 	src, target string
+	toStr       bool
+	decimals    int
+	prevValue   float64
 	glider      *animation.TargetGlider
 }
 
@@ -87,6 +91,12 @@ func (statDisplay *StatDisplay) updateRolling(time float64) {
 		counter.glider.Update(time)
 
 		statDisplay.statHolder.stats[counter.target] = counter.glider.GetValue()
+
+		if counter.toStr && counter.prevValue != counter.glider.GetValue() {
+			statDisplay.statHolder.stats[counter.target+"S"] = fmt.Sprintf("%.*f", counter.decimals, counter.glider.GetValue())
+		}
+
+		counter.prevValue = counter.glider.GetValue()
 	}
 }
 
@@ -105,18 +115,28 @@ func (statDisplay *StatDisplay) updateBTimes(time float64) {
 	}
 }
 
-func (statDisplay *StatDisplay) registerRollingValue(field string, decimals int) {
+func (statDisplay *StatDisplay) registerRollingValue(field string, decimals int, toStr bool) {
 	rollingName := field + "Roll" + strconv.Itoa(decimals)
 
-	if _, ok := statDisplay.counterMap[rollingName]; !ok {
-		counter := &rollingCounter{
-			src:    field,
-			target: rollingName,
-			glider: animation.NewTargetGlider(cast.ToFloat64(statDisplay.statHolder.stats[field]), decimals),
+	counter, ok := statDisplay.counterMap[rollingName]
+
+	if !ok {
+		counter = &rollingCounter{
+			src:       field,
+			target:    rollingName,
+			prevValue: cast.ToFloat64(statDisplay.statHolder.stats[field]),
+			decimals:  decimals,
+			glider:    animation.NewTargetGlider(cast.ToFloat64(statDisplay.statHolder.stats[field]), decimals),
 		}
 
 		statDisplay.counterMap[rollingName] = counter
 		statDisplay.statHolder.stats[rollingName] = counter.glider.GetValue()
+	}
+
+	if !counter.toStr && toStr {
+		counter.toStr = toStr
+
+		statDisplay.statHolder.stats[rollingName+"S"] = fmt.Sprintf("%.*f", decimals, counter.glider.GetValue())
 	}
 }
 
