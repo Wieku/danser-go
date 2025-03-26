@@ -19,3 +19,4 @@ var REPLAY = ""
 var LOCALOFFSET = 0
 var PerfGraph = false
 var CallGraph = false
+var JsonPatch = ""

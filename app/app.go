@@ -147,6 +147,8 @@ func run() {
 
 		flag.BoolVar(&preciseProgress, "preciseprogress", false, "Show rendering progress in 1% increments")
 
+		sPatch := flag.String("sPatch", "", "Patches the currently loaded settings")
+
 		flag.Parse()
 
 		if *mods != "" && *mods2 != "" {
@@ -285,7 +287,11 @@ func run() {
 
 		newSettings := settings.LoadSettings(*settingsVersion)
 
-		log.Println("Current config:", settings.GetCompressedString())
+		if !newSettings {
+			settings.JsonPatch = *sPatch
+			settings.LoadPatch()
+			log.Println("Current config:", settings.GetCompressedString())
+		}
 
 		if !newSettings && len(os.Args) == 1 {
 			platform.OpenURL("https://youtu.be/dQw4w9WgXcQ")
@@ -386,6 +392,11 @@ func run() {
 		if newSettings {
 			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
 			settings.Save()
+
+			settings.JsonPatch = *sPatch
+			settings.LoadPatch()
+
+			log.Println("Current config:", settings.GetCompressedString())
 		}
 
 		if closeAfterSettingsLoad {

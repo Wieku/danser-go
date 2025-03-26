@@ -9,7 +9,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/wieku/danser-go/badge)](https://www.codefactor.io/repository/github/wieku/danser-go)
 [![Discord server](https://img.shields.io/discord/713705871758065685.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/UTPvbe8)
 
-danser-go is a GUI/CLI visualisation tool for osu!standard maps.
+danser-go is a GUI/CLI visualisation tool for osu!standard maps. It can also record osu! mode (stable and lazer) replays to mp4.
 
 As danser is in development phase, some things may break. If that happens please fill an issue with as much detail as possible.
 
@@ -43,7 +43,7 @@ danser-cli <arguments>
 
 If you try to run *danser-cli* without any arguments there's a surprise waiting for you ;)
 
-## Run arguments
+## CLI run arguments
 * `-artist="NOMA"` or `-a="NOMA"`
 * `-title="Brain Power"` or `-t="Brain Power"`
 * `-difficulty="Overdrive"` or `-d="Overdrive"`
@@ -82,6 +82,7 @@ If you try to run *danser-cli* without any arguments there's a surprise waiting 
 * `-quickstart` - skips intro (`-skip` flag), sets `LeadInTime` and `LeadInHold` to 0.
 * `-offset=20` - local audio offset in ms, applies to recordings unlike `Audio.Offset`. ~~Inverted compared to stable~~ not anymore.
 * `-preciseprogress` - prints record progress in 1% increments.
+* `-sPatch="{\"Cursor\":{\"CursorSize\":50}}"` - patches the currently loaded config with supplied JSON string. Patch is preserved during config file reloads. Useful for 3rd party devs to avoid having to parse and modify the settings files on small tweaks.
 
 Examples which should give the same result:
 

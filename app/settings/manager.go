@@ -1,6 +1,8 @@
 package settings
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
@@ -72,6 +74,16 @@ func LoadSettings(version string) bool {
 	return newFile
 }
 
+func LoadPatch() {
+	stripped := strings.TrimSpace(JsonPatch)
+
+	if stripped != "" {
+		if err := json.Unmarshal([]byte(stripped), currentConfig); err != nil {
+			panic(fmt.Errorf("SettingsManager: Failed to parse the patch! Please re-check the sPatch argument for mistakes and ensure that quotation marks are escaped. Error: %s", err))
+		}
+	}
+}
+
 func setupWatcher(file string) {
 	var err error
 
@@ -103,6 +115,9 @@ func setupWatcher(file string) {
 					sFile.Close()
 
 					currentConfig.Save("", false)
+
+					LoadPatch()
+
 					currentConfig.attachToGlobals()
 
 					for _, f := range reloadListeners {
