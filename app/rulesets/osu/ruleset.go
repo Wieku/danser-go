@@ -140,13 +140,23 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 
 	diffPlayers := make([]*difficultyPlayer, 0, len(cursors))
 
-	for i, cursor := range cursors {
+	nonLazerReplays := false
+
+	for i := range cursors {
 		diff := diffs[i]
 
 		beatMap.CalculateStackLeniency(diff) // Calculate additional stack indexes for DA/EZ/HR/whatever that changes Preempt
 
 		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.ScoreV2) // if beatmap has ScoreV2 mod, force it for all players
 		diff.Mods = diff.Mods | (beatMap.Diff.Mods & difficulty.Lazer)   // same for Lazer
+
+		if !diff.CheckModActive(difficulty.Lazer) {
+			nonLazerReplays = true
+		}
+	}
+
+	for i, cursor := range cursors {
+		diff := diffs[i]
 
 		player := &difficultyPlayer{cursor: cursor, diff: diff, maskedModString: diff.GetModStringMasked()}
 		diffPlayers = append(diffPlayers, player)
@@ -232,7 +242,7 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 		var sc scoreProcessor
 
 		if diff.CheckModActive(difficulty.Lazer) {
-			sc = newScoreV3Processor()
+			sc = newScoreV3Processor(nonLazerReplays)
 		} else if diff.CheckModActive(difficulty.ScoreV2) {
 			sc = newScoreV2Processor()
 		} else {

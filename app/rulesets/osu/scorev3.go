@@ -27,10 +27,14 @@ type scoreV3Processor struct {
 	basicHitCount int64
 
 	player *difficultyPlayer
+
+	forceClassic bool
 }
 
-func newScoreV3Processor() *scoreV3Processor {
-	return &scoreV3Processor{}
+func newScoreV3Processor(forceClassic bool) *scoreV3Processor {
+	return &scoreV3Processor{
+		forceClassic: forceClassic,
+	}
 }
 
 func (s *scoreV3Processor) Init(beatMap *beatmap.BeatMap, player *difficultyPlayer) {
@@ -132,7 +136,7 @@ func (s *scoreV3Processor) ModifyResult(result HitResult, src HitObject) HitResu
 }
 
 func (s *scoreV3Processor) GetScore() int64 {
-	if settings.Gameplay.LazerClassicScore {
+	if settings.Gameplay.LazerClassicScore || s.forceClassic {
 		return int64(math.Round((math.Pow(float64(s.basicHitCount), 2)*32.57 + 100000) * float64(s.score) / 1000000))
 	}
 
