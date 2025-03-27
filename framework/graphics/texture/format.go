@@ -7,6 +7,7 @@ type Format int
 const (
 	Red = Format(iota)
 	Depth
+	RG
 	RGB
 	BGR
 	RGB32F
@@ -21,6 +22,8 @@ func (f Format) InternalFormat() uint32 {
 		return gl.R8
 	case Depth:
 		return gl.DEPTH_COMPONENT32F
+	case RG:
+		return gl.RG8
 	case RGB:
 		return gl.RGB8
 	case BGR:
@@ -44,6 +47,8 @@ func (f Format) Format() uint32 {
 		return gl.RED
 	case Depth:
 		return gl.DEPTH_COMPONENT
+	case RG:
+		return gl.RG
 	case RGB, RGB32F:
 		return gl.RGB
 	case BGR:
@@ -61,6 +66,8 @@ func (f Format) Size() int {
 	switch f {
 	case Red, Depth:
 		return 1
+	case RG:
+		return 2
 	case RGB, BGR, RGB32F:
 		return 3
 	case RGBA, BGRA, RGBA32F:
@@ -72,7 +79,7 @@ func (f Format) Size() int {
 
 func (f Format) Type() uint32 {
 	switch f {
-	case Red, RGB, BGR, RGBA, BGRA:
+	case Red, RG, RGB, BGR, RGBA, BGRA:
 		return gl.UNSIGNED_BYTE
 	case Depth, RGB32F, RGBA32F:
 		return gl.FLOAT

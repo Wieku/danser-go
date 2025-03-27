@@ -41,10 +41,12 @@ const (
 	Lazer
 	Classic
 	DifficultyAdjust
+	Mirror
+	Traceable
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
-	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Flashlight | Relax | TouchDevice
+	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Flashlight | Relax | Relax2 | TouchDevice
 )
 
 // GetDiffMaskedMods should be used instead of DifficultyAdjustMask. In 220930 deployment, HDFL is a separate mod difficulty wise
@@ -103,6 +105,8 @@ var modsString = [...]string{
 	"LZ",
 	"CL",
 	"DA",
+	"MR",
+	"TC",
 }
 
 var modsStringFull = [...]string{
@@ -141,6 +145,8 @@ var modsStringFull = [...]string{
 	"Lazer",
 	"Classic",
 	"DifficultyAdjust",
+	"Mirror",
+	"Traceable",
 }
 
 func (mods Modifier) GetScoreMultiplier() float64 {
@@ -183,7 +189,11 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	}
 
 	if (mods&Relax | mods&Relax2) > 0 {
-		multiplier = 0
+		if mods&Lazer > 0 {
+			multiplier *= 0.1
+		} else {
+			multiplier = 0
+		}
 	}
 
 	if mods&SpunOut > 0 {
@@ -329,6 +339,7 @@ func (mods Modifier) Compatible() bool {
 
 	if mods.Active(Target) ||
 		(mods.Active(HardRock) && mods.Active(Easy)) ||
+		(mods.Active(HardRock) && mods.Active(Mirror)) ||
 		(mods.Active(Lazer) && mods.Active(ScoreV2)) ||
 		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
 		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||

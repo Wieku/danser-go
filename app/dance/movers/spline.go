@@ -7,6 +7,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
 const (
@@ -18,16 +19,19 @@ const (
 type SplineMover struct {
 	*basicMover
 
-	curve *curves.Spline
+	curve    *curves.Spline
+	objs     []objects.IHitObject
+	lastTime float64
 }
 
 func NewSplineMover() MultiPointMover {
-	return &SplineMover{basicMover: &basicMover{}}
+	return &SplineMover{basicMover: &basicMover{}, lastTime: -math.MaxFloat64}
 }
 
 func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 	config := settings.CursorDance.MoverSettings.Spline[mover.id%len(settings.CursorDance.MoverSettings.Spline)]
 
+	mover.objs = mover.objs[:0]
 	points := make([]vector.Vector2f, 0)
 	timing := make([]float64, 0)
 
@@ -84,16 +88,16 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			pos2 := o.GetStackedStartPositionMod(mover.diff)
 			pos3 := objs[i+1].GetStackedStartPositionMod(mover.diff)
 
-			min := float32(streamEntryMin)
-			max := float32(streamEntryMax)
+			minV := float32(streamEntryMin)
+			maxV := float32(streamEntryMax)
 			if stream {
-				max = streamEscape
+				maxV = streamEscape
 			}
 
 			sq1 := pos1.DstSq(pos2)
 			sq2 := pos2.DstSq(pos3)
 
-			if sq1 > max && sq2 > max && config.RotationalForce {
+			if sq1 > maxV && sq2 > maxV && config.RotationalForce {
 				if stream {
 					angle = 0
 					stream = false
@@ -106,7 +110,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 						angle = float32(ang) * 90 / 180 * math32.Pi
 					}
 				}
-			} else if sq1 >= min && sq1 <= max && sq2 >= min && sq2 <= max && (config.StreamWobble || config.StreamHalfCircle) {
+			} else if sq1 >= minV && sq1 <= maxV && sq2 >= minV && sq2 <= maxV && (config.StreamWobble || config.StreamHalfCircle) {
 				if stream {
 					angle *= -1
 
@@ -162,6 +166,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 		points = append(points, o.GetStackedEndPositionMod(mover.diff))
 		timing = append(timing, o.GetStartTime())
+		mover.objs = append(mover.objs, o)
 	}
 
 	timeDiff := make([]float32, len(timing)-1)
@@ -190,6 +195,34 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 }
 
 func (mover *SplineMover) Update(time float64) vector.Vector2f {
-	t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
-	return mover.curve.PointAt(float32(t))
+	useMover := true
+	var overridePos vector.Vector2f
+
+	for i := 0; i < len(mover.objs); i++ {
+		g := mover.objs[i]
+
+		gStartTime := mover.GetObjectsStartTime(g)
+
+		if gStartTime > time {
+			break
+		}
+
+		if mover.lastTime <= gStartTime {
+			useMover = false
+
+			mover.objs = append(mover.objs[:i], mover.objs[i+1:]...)
+			i--
+
+			overridePos = mover.GetObjectsStartPosition(g)
+		}
+	}
+
+	mover.lastTime = time
+
+	if useMover {
+		t := mutils.Clamp((time-mover.startTime)/(mover.endTime-mover.startTime), 0, 1)
+		return mover.curve.PointAt(float32(t))
+	}
+
+	return overridePos
 }

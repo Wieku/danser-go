@@ -18,6 +18,7 @@ func init() {
 		Classic:          rfType[ClassicSettings](),
 		Flashlight:       rfType[FlashlightSettings](),
 		DifficultyAdjust: rfType[DiffAdjustSettings](),
+		Mirror:           rfType[MirrorSettings](),
 	}
 }
 
@@ -115,4 +116,24 @@ func (diffAdjust DiffAdjustSettings) postLoad() DiffAdjustSettings {
 	diffAdjust.ExtendedValues = minVal < 0 || maxVal > 10
 
 	return diffAdjust
+}
+
+const (
+	MirrorHorizontal = 0
+	MirrorVertical   = 1
+	MirrorBoth       = 2
+)
+
+type MirrorSettings struct {
+	FlipMode int `json:"reflection"`
+}
+
+func NewMirrorSettings() MirrorSettings {
+	return MirrorSettings{
+		FlipMode: MirrorHorizontal,
+	}
+}
+
+func (s MirrorSettings) postLoad() MirrorSettings {
+	return s
 }

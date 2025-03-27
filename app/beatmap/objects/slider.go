@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"cmp"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -17,6 +18,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -320,7 +322,7 @@ func (slider *Slider) PositionAtLazer(time float64) vector.Vector2f {
 		progress = 2 - progress
 	}
 
-	return slider.multiCurve.PointAt(float32(progress))
+	return slider.multiCurve.PointAtLazer(progress)
 }
 
 func (slider *Slider) GetStackedPositionAtModLazer(time float64, diff *difficulty.Difficulty) vector.Vector2f {
@@ -359,35 +361,42 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	slider.Timings = timings
 	slider.TPoint = timings.GetPointAt(slider.StartTime)
 
+	slider.calculateFollowPointsLazer(beatmapVersion)
+
+	if diffCalcOnly { // We're not interested in stable-like path in difficulty calculator mode
+		return
+	}
+
+	slider.calculateFollowPointsStable(beatmapVersion)
+}
+
+func (slider *Slider) calculateFollowPointsLazer(beatmapVersion int) {
+	const maxLzLength = 100000
+
 	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
 
-	lines := slider.multiCurve.GetLines()
+	cLength := slider.multiCurve.GetLengthLazer()
 
-	startTime := slider.StartTime
+	velocity := 100 * slider.Timings.SliderMult / slider.TPoint.GetBeatLength()
 
-	velocity := slider.Timings.GetVelocity(slider.TPoint)
+	scoringDistance := velocity * slider.TPoint.GetBaseBeatLength()
 
-	cLength := float64(slider.multiCurve.GetLength())
-
-	slider.spanDuration = cLength * 1000 / velocity
-
-	slider.EndTimeLazer = slider.StartTime + cLength*1000*float64(slider.RepeatCount)/velocity
-
-	minDistanceFromEnd := velocity * 0.01
-
-	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	tickDistanceMultiplier := 1.0
 	if beatmapVersion < 8 {
-		tickDistance = slider.Timings.GetScoringDistance()
+		tickDistanceMultiplier = 1.0 / slider.TPoint.GetRatio2()
 	}
 
-	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
-		tickDistance = slider.pixelLength
-	}
+	tickDistance := scoringDistance / slider.Timings.TickRate * tickDistanceMultiplier
 
-	// Sanity limit to 32768 ticks per repeat
-	if cLength/tickDistance > 32768 {
-		tickDistance = cLength / 32768
-	}
+	slider.EndTimeLazer = slider.StartTime + float64(slider.RepeatCount)*cLength/velocity
+
+	slider.spanDuration = (slider.EndTimeLazer - slider.StartTime) / float64(slider.RepeatCount)
+
+	length := min(maxLzLength, cLength)
+
+	tickDistance = mutils.Clamp(tickDistance, 0, length)
+
+	minDistanceFromEnd := velocity * 10
 
 	// Lazer like score point calculations. Clean AF, but not unreliable enough for stable's replay processing. Would need more testing.
 	for span := 0; span < int(slider.RepeatCount); span++ {
@@ -395,13 +404,13 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 		reversed := span%2 == 1
 
 		// Skip ticks if timingPoint has NaN beatLength
-		for d := tickDistance; d <= cLength && !nanTimingPoint; d += tickDistance {
-			if d >= cLength-minDistanceFromEnd {
+		for d := tickDistance; d <= length && !nanTimingPoint; d += tickDistance {
+			if d >= length-minDistanceFromEnd {
 				break
 			}
 
 			// Always generate ticks from the start of the path rather than the span to ensure that ticks in repeat spans are positioned identically to those in non-repeat spans
-			timeProgress := d / cLength
+			timeProgress := d / length
 			if reversed {
 				timeProgress = 1 - timeProgress
 			}
@@ -418,12 +427,34 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 		})
 	}
 
-	sort.Slice(slider.ScorePointsLazer, func(i, j int) bool {
-		return slider.ScorePointsLazer[i].Time < slider.ScorePointsLazer[j].Time
-	})
+	slices.SortFunc(slider.ScorePointsLazer, func(a, b TickPoint) int { return cmp.Compare(a.Time, b.Time) })
+}
 
-	if diffCalcOnly { // We're not interested in stable-like path in difficulty calculator mode
-		return
+func (slider *Slider) calculateFollowPointsStable(beatmapVersion int) {
+	nanTimingPoint := math.IsNaN(slider.TPoint.beatLength)
+
+	lines := slider.multiCurve.GetLines()
+
+	startTime := slider.StartTime
+
+	velocity := slider.Timings.GetVelocity(slider.TPoint)
+
+	cLength := float64(slider.multiCurve.GetLength())
+
+	minDistanceFromEnd := velocity * 0.01
+
+	tickDistance := slider.Timings.GetTickDistance(slider.TPoint)
+	if beatmapVersion < 8 {
+		tickDistance = slider.Timings.GetScoringDistance()
+	}
+
+	if slider.multiCurve.GetLength() > 0 && tickDistance > slider.pixelLength {
+		tickDistance = slider.pixelLength
+	}
+
+	// Sanity limit to 32768 ticks per repeat
+	if cLength/tickDistance > 32768 {
+		tickDistance = cLength / 32768
 	}
 
 	scoringLengthTotal := 0.0
@@ -455,7 +486,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 				p1, p2 = p2, p1
 			}
 
-			distance := line.GetLength()
+			distance := float32(line.GetCustomLength())
 
 			progress := 1000.0 * float64(distance) / velocity
 
@@ -476,7 +507,7 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 					break
 				}
 
-				scoreTime := slider.StartTime + math.Floor(float64(float32(scoringLengthTotal)*1000)/velocity)
+				scoreTime := slider.StartTime + math.Floor(float64(float32(scoringLengthTotal))/velocity*1000)
 
 				point := TickPoint{scoreTime, slider.GetPositionAt(scoreTime), animation.NewGlider(0.0), animation.NewGlider(0.0), false, false, -1}
 				slider.TickPoints = append(slider.TickPoints, point)
@@ -514,12 +545,8 @@ func (slider *Slider) SetTiming(timings *Timings, beatmapVersion int, diffCalcOn
 	//	log.Println("Warning: slider", slider.HitObjectID, "at ", slider.StartTime, "is broken.")
 	//}
 
-	slider.calculateFollowPoints()
-}
-
-func (slider *Slider) calculateFollowPoints() {
-	sort.Slice(slider.TickPoints, func(i, j int) bool { return slider.TickPoints[i].Time < slider.TickPoints[j].Time })
-	sort.Slice(slider.ScorePoints, func(i, j int) bool { return slider.ScorePoints[i].Time < slider.ScorePoints[j].Time })
+	slices.SortFunc(slider.TickPoints, func(a, b TickPoint) int { return cmp.Compare(a.Time, b.Time) })
+	slices.SortFunc(slider.ScorePoints, func(a, b TickPoint) int { return cmp.Compare(a.Time, b.Time) })
 }
 
 func copySliderHOData(target, base *HitObject) {
@@ -607,7 +634,12 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 		slider.TickReverse[i] = p
 	}
 
-	slider.body = sliderrenderer.NewBody(slider.multiCurve, diff.Mods&difficulty.HardRock > 0, float32(slider.diff.CircleRadius))
+	mS, mOk := difficulty.GetModConfig[difficulty.MirrorSettings](slider.diff)
+
+	vFlip := slider.diff.CheckModActive(difficulty.HardRock) != (mOk && (mS.FlipMode+1)&2 == 2)
+	hFlip := mOk && (mS.FlipMode+1)&1 == 1
+
+	slider.body = sliderrenderer.NewBody(slider.multiCurve, vFlip, hFlip, float32(slider.diff.CircleRadius))
 }
 
 func (slider *Slider) IsRetarded() bool {
@@ -673,9 +705,19 @@ func (slider *Slider) Update(time float64) bool {
 	headAngle := slider.multiCurve.GetStartAngleAt(float32(slider.sliderSnakeHead.GetValue())) + math.Pi
 	tailAngle := slider.multiCurve.GetEndAngleAt(float32(slider.sliderSnakeTail.GetValue())) + math.Pi
 
-	if slider.diff.Mods&difficulty.HardRock > 0 {
+	mS, mOk := difficulty.GetModConfig[difficulty.MirrorSettings](slider.diff)
+
+	vFlip := slider.diff.CheckModActive(difficulty.HardRock) != (mOk && (mS.FlipMode+1)&2 == 2)
+	hFlip := mOk && (mS.FlipMode+1)&1 == 1
+
+	if vFlip {
 		headAngle = -headAngle
 		tailAngle = -tailAngle
+	}
+
+	if hFlip {
+		headAngle = mutils.Signum(headAngle)*math.Pi - headAngle
+		tailAngle = mutils.Signum(tailAngle)*math.Pi - tailAngle
 	}
 
 	for _, s := range slider.headEndCircles {
@@ -984,7 +1026,7 @@ func (slider *Slider) DrawBodyBase(_ float64, projection mgl32.Mat4) {
 	slider.body.DrawBase(slider.sliderSnakeHead.GetValue(), slider.sliderSnakeTail.GetValue(), projection)
 }
 
-func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
+func (slider *Slider) DrawBody(_ float64, circleColor, bodyColor, innerBorder, outerBorder color2.Color, projection mgl32.Mat4, scale float32) {
 	colorAlpha := slider.bodyFade.GetValue() * float64(bodyColor.A)
 
 	bodyOpacityInner := mutils.Clamp(float32(settings.Objects.Colors.Sliders.Body.InnerAlpha), 0.0, 1.0)
@@ -995,7 +1037,12 @@ func (slider *Slider) DrawBody(_ float64, bodyColor, innerBorder, outerBorder co
 	bodyInner := color2.NewL(0)
 	bodyOuter := color2.NewL(0)
 
-	if settings.Skin.UseColorsFromSkin {
+	if slider.diff.CheckModActive(difficulty.Traceable) && slider.HitObjectID != 0 {
+		borderInner = skin.GetColor(int(slider.ComboSet), int(slider.ComboSetHax), circleColor)
+		borderOuter = borderInner
+		bodyOpacityInner = 0
+		bodyOpacityOuter = 0
+	} else if settings.Skin.UseColorsFromSkin {
 		borderOuter = skin.GetInfo().SliderBorder
 		borderInner = borderOuter
 

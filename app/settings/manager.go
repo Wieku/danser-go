@@ -1,6 +1,8 @@
 package settings
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
@@ -16,6 +18,8 @@ var currentConfig *Config
 
 var filePath string
 var watcher *fsnotify.Watcher
+
+var reloadListeners []func()
 
 func initSettings() {
 	if err := os.MkdirAll(env.ConfigDir(), 0755); err != nil {
@@ -70,6 +74,16 @@ func LoadSettings(version string) bool {
 	return newFile
 }
 
+func LoadPatch() {
+	stripped := strings.TrimSpace(JsonPatch)
+
+	if stripped != "" {
+		if err := json.Unmarshal([]byte(stripped), currentConfig); err != nil {
+			panic(fmt.Errorf("SettingsManager: Failed to parse the patch! Please re-check the sPatch argument for mistakes and ensure that quotation marks are escaped. Error: %s", err))
+		}
+	}
+}
+
 func setupWatcher(file string) {
 	var err error
 
@@ -101,7 +115,14 @@ func setupWatcher(file string) {
 					sFile.Close()
 
 					currentConfig.Save("", false)
+
+					LoadPatch()
+
 					currentConfig.attachToGlobals()
+
+					for _, f := range reloadListeners {
+						f()
+					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -130,6 +151,10 @@ func CloseWatcher() {
 
 		watcher = nil
 	}
+}
+
+func AddReloadListener(f func()) {
+	reloadListeners = append(reloadListeners, f)
 }
 
 func GetCompressedString() string {

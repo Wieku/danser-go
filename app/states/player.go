@@ -518,7 +518,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	if settings.Audio.OnlineOffset { // Try to load online offset
 		onlineBeatmap, err2 := osuapi.LookupBeatmap(beatMap.MD5)
 		if err2 != nil {
-			log.Println("Failed to load online offset:", err.Error())
+			log.Println("Failed to load online offset:", err2.Error())
 		} else if onlineBeatmap != nil {
 			player.onlineOffset = onlineBeatmap.Beatmapset.Offset
 			log.Println(fmt.Sprintf("Online offset loaded: %.0fms", player.onlineOffset))

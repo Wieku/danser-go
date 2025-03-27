@@ -14,7 +14,13 @@ func parseConfig[T modSetting[T]](base T, config map[string]any) T {
 		sField := rType.Field(i)
 		if fTag, ok := sField.Tag.Lookup("json"); ok && fTag != "-" {
 			if v, ok2 := config[fTag]; ok2 {
-				rVal.Field(i).Set(reflect.ValueOf(v))
+				sVal := reflect.ValueOf(v)
+
+				if rVal.Field(i).CanInt() && !sVal.CanInt() && sVal.CanFloat() {
+					rVal.Field(i).SetInt(int64(sVal.Float()))
+				} else {
+					rVal.Field(i).Set(sVal)
+				}
 			}
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306"
 	"github.com/wieku/danser-go/app/settings"
 )
 
@@ -23,9 +24,12 @@ func initConstructors() {
 	case "220930":
 		diffCalcInit = pp220930.NewDifficultyCalculator
 		ppCalcInit = pp220930.NewPPCalculator
-	default:
+	case "241007":
 		diffCalcInit = pp241007.NewDifficultyCalculator
 		ppCalcInit = pp241007.NewPPCalculator
+	default:
+		diffCalcInit = pp250306.NewDifficultyCalculator
+		ppCalcInit = pp250306.NewPPCalculator
 	}
 }
 

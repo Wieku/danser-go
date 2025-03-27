@@ -361,8 +361,22 @@ func (controller *ReplayController) InitCursors() {
 			controller.cursors = append(controller.cursors, cursor)
 		}
 
-		if controller.bMap.Diff.Mods.Active(difficulty.HardRock) != controller.replays[i].ModsV.Active(difficulty.HardRock) {
-			controller.cursors[i].InvertDisplay = true
+		rMS, rMOk := difficulty.GetModConfig[difficulty.MirrorSettings](c.diff)
+
+		rvFlip := c.diff.CheckModActive(difficulty.HardRock) != (rMOk && (rMS.FlipMode+1)&2 == 2)
+		rhFlip := rMOk && (rMS.FlipMode+1)&1 == 1
+
+		bMS, bMOk := difficulty.GetModConfig[difficulty.MirrorSettings](controller.bMap.Diff)
+
+		bvFlip := controller.bMap.Diff.CheckModActive(difficulty.HardRock) != (bMOk && (bMS.FlipMode+1)&2 == 2)
+		bhFlip := bMOk && (bMS.FlipMode+1)&1 == 1
+
+		if rvFlip != bvFlip {
+			controller.cursors[i].InvertDisplayV = true
+		}
+
+		if rhFlip != bhFlip {
+			controller.cursors[i].InvertDisplayH = true
 		}
 
 		diffs = append(diffs, c.diff)
@@ -384,7 +398,7 @@ func (controller *ReplayController) InitCursors() {
 }
 
 func (controller *ReplayController) Update(time float64, delta float64) {
-	numSkipped := int(time-controller.lastTime) - 1
+	numSkipped := int(time) - int(controller.lastTime) - 1
 
 	if numSkipped >= 1 {
 		for nTime := numSkipped; nTime >= 1; nTime-- {
@@ -541,11 +555,13 @@ func (controller *ReplayController) processStable(i int, c *subControl, nTime fl
 
 			replayTime := int64(c.replayTime)
 
-			// If next frame is not in the next millisecond, assume it's -36ms slider end
-			processAhead := true
-			if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
-				processAhead = false
-			}
+			//// If next frame is not in the next millisecond, assume it's -36ms slider end
+			//processAhead := true
+			//if c.replayIndex+1 < len(c.frames) && c.frames[c.replayIndex+1].Time == 1 {
+			//	processAhead = false
+			//}
+
+			processAhead := false // Always false for now. Slider end issues should be fixed, but leaving the logic just in case
 
 			if !isAutopilot {
 				controller.cursors[i].SetPos(vector.NewVec2d(frame.MouseX, frame.MouseY).Copy32())

@@ -73,8 +73,8 @@ func (d *defaultsFactory) InitSpinner() *spinner {
 }
 
 type cursorDance struct {
-	Movers             []*mover   `new:"InitMover"`
-	Spinners           []*spinner `new:"InitSpinner"`
+	Movers             []*mover   `new:"InitMover" wiki:"Help|https://github.com/Wieku/danser-go/wiki/Movers#available-movers"`
+	Spinners           []*spinner `new:"InitSpinner" wiki:"Help|https://github.com/Wieku/danser-go/wiki/Movers#available-spinner-movers"`
 	ComboTag           bool       `liveedit:"false"`
 	Battle             bool       `liveedit:"false"`
 	DoSpinnersTogether bool       `liveedit:"false"`

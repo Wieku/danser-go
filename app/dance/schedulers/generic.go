@@ -94,7 +94,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	}
 
 	if initKeys {
-		scheduler.input = input.NewNaturalInputProcessor(scheduler.queue, cursor, scheduler.mover)
+		scheduler.input = input.NewNaturalInputProcessor(scheduler.queue, cursor, scheduler.mover, diff.GetSpeed())
 	}
 
 	scheduler.queue = append([]objects.IHitObject{objects.DummyCircle(vector.NewVec2f(100, 100), -500)}, scheduler.queue...)
@@ -126,9 +126,10 @@ func (scheduler *GenericScheduler) Update(time float64) {
 			if scheduler.lastTime <= gStartTime || time <= gEndTime {
 				if scheduler.lastTime <= gStartTime { // brief movement lock for ExGon mover
 					useMover = false
+					scheduler.cursor.SetPos(scheduler.mover.GetObjectsStartPosition(g))
+				} else {
+					scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
 				}
-
-				scheduler.cursor.SetPos(scheduler.mover.GetObjectsPosition(time, g))
 			}
 
 			if time > gEndTime {

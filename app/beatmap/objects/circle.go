@@ -183,7 +183,7 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.Preempt*0.4, 0.0, 1.0))
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 1.0, 0.0))
 			}
-		} else {
+		} else if !diff.CheckModActive(difficulty.Traceable) || circle.HitObjectID == 0 {
 			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.TimeFadeIn, 0.0, 1.0))
 			if !circle.SliderPoint || circle.SliderPointStart {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0))

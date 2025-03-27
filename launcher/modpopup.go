@@ -43,13 +43,13 @@ func (m *modPopup) drawModMenu() {
 		})
 
 		m.drawRow("Increase:", func() {
-			m.modCheckbox(difficulty.HardRock, difficulty.Easy, difficulty.None)
+			m.modCheckbox(difficulty.HardRock, difficulty.Easy|difficulty.Mirror, difficulty.None)
 
 			m.modCheckboxMulti(difficulty.SuddenDeath, difficulty.Perfect, difficulty.NoFail|difficulty.Relax|difficulty.Relax2, difficulty.None)
 
 			m.modCheckboxMulti(difficulty.DoubleTime, difficulty.Nightcore, difficulty.HalfTime|difficulty.Daycore, difficulty.None)
 
-			m.modCheckbox(difficulty.Hidden, difficulty.None, difficulty.None)
+			m.modCheckbox(difficulty.Hidden, difficulty.Traceable, difficulty.None)
 
 			m.modCheckbox(difficulty.Flashlight, difficulty.None, difficulty.None)
 		})
@@ -64,12 +64,20 @@ func (m *modPopup) drawModMenu() {
 			m.modCheckbox(difficulty.SpunOut, difficulty.Relax2, difficulty.None)
 
 			m.modCheckbox(difficulty.DifficultyAdjust, difficulty.None, difficulty.None)
+
+			m.modCheckbox(difficulty.Mirror, difficulty.HardRock, difficulty.None)
 		})
 
 		m.drawRow("Conversion:", func() {
 			m.modCheckbox(difficulty.ScoreV2, difficulty.Lazer|difficulty.Classic, difficulty.None)
+
 			m.modCheckbox(difficulty.Lazer, difficulty.ScoreV2, difficulty.None)
+
 			m.modCheckbox(difficulty.Classic, difficulty.ScoreV2, difficulty.Lazer)
+		})
+
+		m.drawRow("Fun:", func() {
+			m.modCheckbox(difficulty.Traceable, difficulty.Hidden, difficulty.None)
 		})
 
 		imgui.EndTable()
@@ -102,6 +110,7 @@ func (m *modPopup) drawModSettings() {
 	m.tryDrawClassicSettings()
 	m.tryDrawFlashlightSettings()
 	m.tryDrawDASettings()
+	m.tryDrawMirrorSettings()
 }
 
 func (m *modPopup) tryDrawSpeedSettings() {
@@ -177,6 +186,32 @@ func (m *modPopup) tryDrawDASettings() {
 		sliderFloatReset2("Health Drain (HP)", m.bld.currentMap.Diff.GetBaseHP(), &conf.DrainRate, 0, vMax, "%.1f")
 
 		checkboxOption("Extended values", &conf.ExtendedValues)
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+var mirrorMap = map[int]string{
+	difficulty.MirrorHorizontal: "Horizontal",
+	difficulty.MirrorVertical:   "Vertical",
+	difficulty.MirrorBoth:       "Both",
+}
+
+var mirrorMapR = map[string]int{
+	"Horizontal": difficulty.MirrorHorizontal,
+	"Vertical":   difficulty.MirrorVertical,
+	"Both":       difficulty.MirrorBoth,
+}
+
+func (m *modPopup) tryDrawMirrorSettings() {
+	m.drawSettingsBase(difficulty.Mirror, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.MirrorSettings](m.bld.diff)
+
+		mMode := mirrorMap[conf.FlipMode]
+
+		if comboOption("Flip axis", &mMode, []string{"Horizontal", "Vertical", "Both"}) {
+			conf.FlipMode = mirrorMapR[mMode]
+		}
 
 		difficulty.SetModConfig(m.bld.diff, conf)
 	})

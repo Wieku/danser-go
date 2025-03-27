@@ -5,7 +5,8 @@ type Attributes struct {
 	Total float64
 
 	// Aim stars, needed for Performance Points (aka PP) calculations
-	Aim float64
+	Aim          float64
+	AimNoSliders float64
 
 	// Speed stars, needed for Performance Points (aka PP) calculations
 	Speed float64
@@ -13,6 +14,7 @@ type Attributes struct {
 	SpeedNoteCount float64
 
 	AimDifficultStrainCount   float64
+	AimDifficultSliderCount   float64
 	SpeedDifficultStrainCount float64
 
 	// Flashlight stars, needed for Performance Points (aka PP) calculations

@@ -3,6 +3,7 @@ package osu
 import (
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/framework/math/math87"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"math"
 )
@@ -40,8 +41,9 @@ type Slider struct {
 	state             map[*difficultyPlayer]*sliderstate
 	fadeStartRelative float64
 
-	lastSliderTime int64
-	sliderPosition vector.Vector2f
+	lastSliderTime   int64
+	sliderPosition   vector.Vector2f
+	sliderPositionLZ vector.Vector2f
 }
 
 func (slider *Slider) GetNumber() int64 {
@@ -119,12 +121,7 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 
 	clicked := player.leftCondE || player.rightCondE
 
-	radius := float32(player.diff.CircleRadius)
-	if player.diff.CheckModActive(difficulty.Relax2) {
-		radius = 100
-	}
-
-	inRadius := player.cursor.RawPosition.Dst(position) <= radius
+	inRadius := player.cursor.RawPosition.Dst(position) <= player.diff.GetRadius()
 
 	if clicked && !state.isStartHit && (!state.isHit || player.diff.CheckModActive(difficulty.Lazer)) {
 		action := slider.ruleSet.CanBeHit(time, slider, player)
@@ -187,11 +184,11 @@ func (slider *Slider) UpdateClickFor(player *difficultyPlayer, time int64) bool 
 }
 
 func (slider *Slider) lazerPostHeadProcess(player *difficultyPlayer, state *sliderstate, time int64) {
-	sliderPosition := slider.hitSlider.GetStackedPositionAtMod(float64(time), player.diff)
+	sliderPosition := slider.hitSlider.GetStackedPositionAtModLazer(float64(time), player.diff)
 
-	followRadiusFull := player.diff.CircleRadius * 2.4
+	followRadiusFull := player.diff.GetRadius() * 2.4
 
-	if player.cursor.RawPosition.Dst(sliderPosition) > float32(followRadiusFull) {
+	if player.cursor.RawPosition.Dst(sliderPosition) > followRadiusFull {
 		return
 	}
 
@@ -202,9 +199,9 @@ func (slider *Slider) lazerPostHeadProcess(player *difficultyPlayer, state *slid
 			break
 		}
 
-		currPos := slider.hitSlider.GetStackedPositionAtMod(float64(point.time), player.diff)
+		currPos := slider.hitSlider.GetStackedPositionAtModLazer(float64(point.time), player.diff)
 
-		if player.cursor.RawPosition.Dst(currPos) > float32(followRadiusFull) {
+		if player.cursor.RawPosition.Dst(currPos) > followRadiusFull {
 			allTicksInRange = false
 			break
 		}
@@ -212,7 +209,7 @@ func (slider *Slider) lazerPostHeadProcess(player *difficultyPlayer, state *slid
 
 	slider.processTicksLazer(player, state, time, allTicksInRange, sliderPosition)
 
-	if allTicksInRange || player.cursor.RawPosition.Dst(sliderPosition) <= float32(player.diff.CircleRadius) {
+	if allTicksInRange || player.cursor.RawPosition.Dst(sliderPosition) <= player.diff.GetRadius() {
 		state.sliding = true
 		state.slideStart = time
 
@@ -233,10 +230,16 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 
 	if time != slider.lastSliderTime {
 		slider.sliderPosition = slider.hitSlider.GetPositionAt(float64(time))
+		slider.sliderPositionLZ = slider.hitSlider.PositionAtLazer(float64(time))
 		slider.lastSliderTime = time
 	}
 
-	sliderPosition := objects.ModifyPosition(slider.hitSlider.HitObject, slider.sliderPosition, player.diff) // Calculate stacked position
+	sliderPosition := slider.sliderPosition
+	if player.diff.CheckModActive(difficulty.Lazer) {
+		sliderPosition = slider.sliderPositionLZ
+	}
+
+	sliderPosition = objects.ModifyPosition(slider.hitSlider.HitObject, sliderPosition, player.diff) // Calculate stacked position
 
 	if time >= int64(slider.hitSlider.GetStartTime()) && ((!state.isHit && !lzMod) || (lzMod && state.isStartHit)) {
 		mouseDownAcceptable := false
@@ -265,12 +268,22 @@ func (slider *Slider) UpdateFor(player *difficultyPlayer, time int64, processSli
 
 		mouseDownAcceptable = mouseDownAcceptable || mouseDownAcceptableSwap || player.diff.CheckModActive(difficulty.Relax)
 
-		radiusNeeded := player.diff.CircleRadius
-		if state.sliding {
-			radiusNeeded *= 2.4
-		}
+		allowable := mouseDownAcceptable
+		radiusNeeded := player.diff.GetRadius()
 
-		allowable := mouseDownAcceptable && player.cursor.RawPosition.Dst(sliderPosition) <= float32(radiusNeeded)
+		if player.diff.CheckModActive(difficulty.Lazer) {
+			if state.sliding {
+				radiusNeeded *= 2.4
+			}
+
+			allowable = allowable && player.cursor.RawPosition.DstSq(sliderPosition) <= radiusNeeded*radiusNeeded
+		} else {
+			if state.sliding {
+				radiusNeeded = math87.Mul87(radiusNeeded, 2.4)
+			}
+
+			allowable = allowable && player.cursor.RawPosition.DstSq87(sliderPosition) < math87.Mul87(radiusNeeded, radiusNeeded)
+		}
 
 		if allowable && !state.sliding {
 			state.sliding = true
@@ -513,7 +526,11 @@ func (slider *Slider) MissForcefully(player *difficultyPlayer, time int64) {
 			slider.hitSlider.HitEdge(0, float64(time), false)
 		}
 
-		slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
+		if player.diff.CheckModActive(difficulty.Lazer) && !player.lzNoSliderAcc {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(Miss, Hit300, Reset, time, position, slider))
+		} else {
+			slider.ruleSet.SendResult(player.cursor, createJudgementResult(SliderMiss, SliderStart, Reset, time, position, slider))
+		}
 
 		state.isStartHit = true
 		state.startResult = Miss

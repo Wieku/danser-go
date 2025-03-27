@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/wieku/danser-go/framework/math/math32"
+	. "github.com/wieku/danser-go/framework/math/math87"
 )
 
 const epsilon = 0.00001
@@ -75,11 +76,27 @@ func (v Vector2f) Dst(v1 Vector2f) float32 {
 	return math32.Sqrt(x*x + y*y)
 }
 
+// Dst87 is Dst but follows x87 promotion to double
+func (v Vector2f) Dst87(v1 Vector2f) float32 { // dotnet framework why
+	x := float64(v1.X - v.X)
+	y := float64(v1.Y - v.Y)
+
+	return math32.Sqrt(float32(x*x + y*y))
+}
+
 func (v Vector2f) DstSq(v1 Vector2f) float32 {
 	x := v1.X - v.X
 	y := v1.Y - v.Y
 
 	return x*x + y*y
+}
+
+// DstSq87 is DstSq but follows x87 promotion to double
+func (v Vector2f) DstSq87(v1 Vector2f) float32 {
+	x := float64(v1.X - v.X)
+	y := float64(v1.Y - v.Y)
+
+	return float32(x*x + y*y)
 }
 
 func (v Vector2f) Angle() float32 {
@@ -90,6 +107,7 @@ func (v Vector2f) AngleR() float32 {
 	return math32.Atan2(v.Y, v.X)
 }
 
+// Nor - It could be X / sqrt but we need to introduce floating point errors from osu
 func (v Vector2f) Nor() Vector2f {
 	length := v.LenSq()
 
@@ -97,9 +115,22 @@ func (v Vector2f) Nor() Vector2f {
 		return v
 	}
 
-	length = math32.Sqrt(length)
+	scale := 1.0 / math32.Sqrt(length)
 
-	return Vector2f{v.X / length, v.Y / length}
+	return Vector2f{v.X * scale, v.Y * scale}
+}
+
+// Nor87 is Nor but follows x87 promotion to double
+func (v Vector2f) Nor87() Vector2f {
+	length := v.LenSq87()
+
+	if length < epsilon {
+		return v
+	}
+
+	scale := Div87(1.0, math32.Sqrt(length))
+
+	return Vector2f{Mul87(v.X, scale), Mul87(v.Y, scale)}
 }
 
 func (v Vector2f) AngleRV(v1 Vector2f) float32 {
@@ -131,8 +162,20 @@ func (v Vector2f) LenSq() float32 {
 	return v.X*v.X + v.Y*v.Y
 }
 
+// LenSq87 is LenSq but follows x87 promotion to double
+func (v Vector2f) LenSq87() float32 {
+	pX := float64(v.X)
+	pY := float64(v.Y)
+	return float32(pX*pX + pY*pY)
+}
+
 func (v Vector2f) Scl(mag float32) Vector2f {
 	return Vector2f{v.X * mag, v.Y * mag}
+}
+
+// Scl87 is Scl but follows x87 promotion to double
+func (v Vector2f) Scl87(mag float32) Vector2f {
+	return Vector2f{Mul87(v.X, mag), Mul87(v.Y, mag)}
 }
 
 func (v Vector2f) Abs() Vector2f {

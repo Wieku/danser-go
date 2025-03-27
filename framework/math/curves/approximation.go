@@ -2,54 +2,66 @@ package curves
 
 import (
 	"github.com/wieku/danser-go/framework/math/vector"
+	"math"
 )
 
-func ApproximateCircularArc(pt1, pt2, pt3 vector.Vector2f, detail float32) []Linear {
+func ApproximateCircularArc(pt1, pt2, pt3 vector.Vector2f, detail float32) []vector.Vector2f {
 	arc := NewCirArc(pt1, pt2, pt3)
 
 	if arc.Unstable {
-		return []Linear{NewLinear(pt1, pt2), NewLinear(pt2, pt3)}
+		return []vector.Vector2f{pt1, pt2, pt3}
 	}
 
-	segments := int(float64(arc.r) * arc.totalAngle * float64(detail))
+	segments := int(math.Abs((arc.tFinalS-arc.tInitialS)*float64(arc.rS)) * float64(detail))
 
-	lines := make([]Linear, 0)
+	pts := make([]vector.Vector2f, segments+1)
 
-	p := pt1
+	pts[0] = pt1
+	pts[segments] = pt3
 
 	for i := 1; i < segments; i++ {
-		vector3 := arc.PointAt(float32(i) / float32(segments))
-
-		lines = append(lines, NewLinear(p, vector3))
-
-		p = vector3
+		vector3 := arc.PointAtS(float64(i) / float64(segments))
+		pts[i] = vector3
 	}
 
-	lines = append(lines, NewLinear(p, pt3))
-
-	return lines
+	return pts
 }
 
-func ApproximateCatmullRom(points []vector.Vector2f, detail int) []Linear {
+func ApproximateCircularArcLazer(pt1, pt2, pt3 vector.Vector2f) []vector.Vector2f {
+	arc := NewCirArc(pt1, pt2, pt3)
+
+	if arc.Unstable {
+		return []vector.Vector2f{pt1, pt2, pt3}
+	}
+
+	segments := 2
+	if 2*arc.r > 0.1 {
+		segments = max(2, int(math.Ceil(arc.totalAngle/(2*math.Acos(1-0.1/float64(arc.r))))))
+	}
+
+	pts := make([]vector.Vector2f, segments)
+
+	for i := 0; i < segments; i++ {
+		fract := float64(i) / float64(segments-1)
+		pts[i] = arc.PointAtL(fract)
+	}
+
+	return pts
+}
+
+func ApproximateCatmullRom(points []vector.Vector2f, detail int) []vector.Vector2f {
 	catmull := NewCatmull(points)
 
-	lines := make([]Linear, detail)
+	outPoints := make([]vector.Vector2f, detail+1)
 
-	for i := 0; i < detail; i++ {
-		lines[i] = NewLinear(catmull.PointAt(float32(i)/float32(detail)), catmull.PointAt(float32(i+1)/float32(detail)))
+	for i := 0; i <= detail; i++ {
+		outPoints[i] = catmull.PointAt(float32(i) / float32(detail))
 	}
 
-	return lines
+	return outPoints
 }
 
-func ApproximateBezier(points []vector.Vector2f) []Linear {
+func ApproximateBezier(points []vector.Vector2f) []vector.Vector2f {
 	extracted := NewBezierApproximator(points).CreateBezier()
-
-	lines := make([]Linear, len(extracted)-1)
-
-	for i := 0; i < len(lines); i++ {
-		lines[i] = NewLinear(extracted[i], extracted[i+1])
-	}
-
-	return lines
+	return extracted
 }

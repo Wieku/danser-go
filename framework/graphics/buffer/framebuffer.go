@@ -19,6 +19,7 @@ type Framebuffer struct {
 	height int
 
 	tex             *texture.TextureSingle
+	texs            []texture.Texture
 	multisampled    bool
 	helperHandle    uint32
 	helperTexture   uint32
@@ -144,11 +145,63 @@ func NewFrameMultisampleScreen(width, height int, depth bool, samples int) *Fram
 	return f
 }
 
+func NewFrameYUV(width, height int) *Framebuffer {
+	f := new(Framebuffer)
+	f.width = width
+	f.height = height
+
+	f.texs = append(f.texs, texture.NewTextureSingleFormat(width, height, texture.Red, 0))
+	f.texs = append(f.texs, texture.NewTextureSingleFormat(width, height, texture.Red, 0))
+	f.texs = append(f.texs, texture.NewTextureSingleFormat(width, height, texture.Red, 0))
+
+	gl.CreateFramebuffers(1, &f.handle)
+
+	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT0, f.texs[0].GetID(), 0, 0)
+	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT1, f.texs[1].GetID(), 0, 0)
+	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT2, f.texs[2].GetID(), 0, 0)
+
+	attchs := []uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
+
+	gl.NamedFramebufferDrawBuffers(f.handle, 3, &attchs[0])
+
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
+
+	return f
+}
+
+func NewFrameYUVSmall(width, height int) *Framebuffer {
+	f := new(Framebuffer)
+	f.width = width
+	f.height = height
+
+	f.texs = append(f.texs, texture.NewTextureSingleFormat(width, height, texture.RG, 0))
+	f.texs = append(f.texs, texture.NewTextureSingleFormat(width, height, texture.Red, 0))
+
+	gl.CreateFramebuffers(1, &f.handle)
+
+	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT0, f.texs[0].GetID(), 0, 0)
+	gl.NamedFramebufferTextureLayer(f.handle, gl.COLOR_ATTACHMENT1, f.texs[1].GetID(), 0, 0)
+
+	attchs := []uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
+
+	gl.NamedFramebufferDrawBuffers(f.handle, 2, &attchs[0])
+
+	runtime.SetFinalizer(f, (*Framebuffer).Dispose)
+
+	return f
+}
+
 func (f *Framebuffer) Dispose() {
 	if !f.disposed {
 		goroutines.CallNonBlockMain(func() {
 			if f.tex != nil {
 				f.tex.Dispose()
+			}
+
+			if f.texs != nil && len(f.texs) > 0 {
+				for _, tex := range f.texs {
+					tex.Dispose()
+				}
 			}
 
 			if f.depth > 0 {
@@ -214,6 +267,10 @@ func (f *Framebuffer) Unbind() {
 // Texture returns the Framebuffer's underlying Texture that the Framebuffer draws on.
 func (f *Framebuffer) Texture() texture.Texture {
 	return f.tex
+}
+
+func (f *Framebuffer) Textures() []texture.Texture {
+	return f.texs
 }
 
 func (f *Framebuffer) GetWidth() int {

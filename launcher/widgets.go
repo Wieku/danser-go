@@ -152,45 +152,45 @@ func popupInter(name string, opened *bool, size imgui.Vec2, ignoreFlags, additio
 	}
 }
 
-func sliderFloatReset(label string, val *floatParam, min, max float64, format string) {
-	sliderFloatResetBase(label, val, min, max, func() bool {
-		return sliderFloatSlide("##"+label, &val.value, min, max, format, imgui.SliderFlagsNoInput)
+func sliderFloatReset(label string, val *floatParam, minV, maxV float64, format string) {
+	sliderFloatResetBase(label, val, minV, maxV, func() bool {
+		return sliderFloatSlide("##"+label, &val.value, minV, maxV, format, imgui.SliderFlagsNoInput)
 	})
 }
 
-func sliderFloatReset2[T constraints.Float](label string, ogValue T, value *T, min, max T, format string) {
+func sliderFloatReset2[T constraints.Float](label string, ogValue T, value *T, minV, maxV T, format string) {
 	val := floatParam{
 		ogValue: float64(ogValue),
 		value:   float64(*value),
 		changed: mutils.Abs(ogValue-*value) > 0.001,
 	}
 
-	sliderFloatReset(label, &val, float64(min), float64(max), format)
+	sliderFloatReset(label, &val, float64(minV), float64(maxV), format)
 
 	*value = T(val.value)
 }
 
-func sliderFloatResetStep(label string, val *floatParam, min, max, step float64, format string) {
-	sliderFloatResetBase(label, val, min, max, func() bool {
-		return sliderFloatStep("##"+label, &val.value, min, max, step, format)
+func sliderFloatResetStep(label string, val *floatParam, minV, maxV, step float64, format string) {
+	sliderFloatResetBase(label, val, minV, maxV, func() bool {
+		return sliderFloatStep("##"+label, &val.value, minV, maxV, step, format)
 	})
 }
 
-func sliderFloatResetStep2[T constraints.Float](label string, ogValue T, value *T, min, max, step T, format string) {
+func sliderFloatResetStep2[T constraints.Float](label string, ogValue T, value *T, minV, maxV, step T, format string) {
 	val := floatParam{
 		ogValue: float64(ogValue),
 		value:   float64(*value),
 		changed: mutils.Abs(ogValue-*value) > 0.001,
 	}
 
-	sliderFloatResetStep(label, &val, float64(min), float64(max), float64(step), format)
+	sliderFloatResetStep(label, &val, float64(minV), float64(maxV), float64(step), format)
 
 	*value = T(val.value)
 }
 
-func sliderFloatResetBase(label string, val *floatParam, min, max float64, sliderFunc func() bool) {
-	if val.value < min || val.value > max {
-		val.value = mutils.Clamp(val.value, min, max)
+func sliderFloatResetBase(label string, val *floatParam, minV, maxV float64, sliderFunc func() bool) {
+	if val.value < minV || val.value > maxV {
+		val.value = mutils.Clamp(val.value, minV, maxV)
 		paramChanged(val)
 	}
 
@@ -213,21 +213,21 @@ func paramChanged(val *floatParam) {
 	}
 }
 
-func sliderIntReset2[T constraints.Integer](label string, ogValue T, value *T, min, max T, format string) {
+func sliderIntReset2[T constraints.Integer](label string, ogValue T, value *T, minV, maxV T, format string) {
 	val := intParam{
 		ogValue: int32(ogValue),
 		value:   int32(*value),
 		changed: ogValue != *value,
 	}
 
-	sliderIntReset(label, &val, int32(min), int32(max), format)
+	sliderIntReset(label, &val, int32(minV), int32(maxV), format)
 
 	*value = T(val.value)
 }
 
-func sliderIntReset(label string, val *intParam, min, max int32, format string) {
+func sliderIntReset(label string, val *intParam, minV, maxV int32, format string) {
 	sliderResetBase(label, !val.changed, func() {
-		if sliderIntSlide("##"+label, &val.value, min, max, format, imgui.SliderFlagsNoInput) {
+		if sliderIntSlide("##"+label, &val.value, minV, maxV, format, imgui.SliderFlagsNoInput) {
 			val.changed = val.value != val.ogValue
 		}
 	}, func() {
@@ -280,10 +280,10 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 	imgui.PopFont()
 }
 
-func sliderFloatStep(label string, val *float64, min, max, step float64, format string) bool {
-	stepNum := int32((max - min) / step)
+func sliderFloatStep(label string, val *float64, minV, maxV, step float64, format string) bool {
+	stepNum := int32((maxV - minV) / step)
 
-	v := int32(math.Round((*val - min) / step))
+	v := int32(math.Round((*val - minV) / step))
 
 	cPos := imgui.CursorPos()
 	iW := imgui.CalcItemWidth() + imgui.CurrentStyle().FramePadding().X*2
@@ -292,7 +292,7 @@ func sliderFloatStep(label string, val *float64, min, max, step float64, format 
 
 	cPos2 := imgui.CursorPos()
 
-	*val = (float64(v) * step) + min
+	*val = (float64(v) * step) + minV
 
 	tx := fmt.Sprintf(format, *val)
 
@@ -313,20 +313,20 @@ func sliderFloatStep(label string, val *float64, min, max, step float64, format 
 	return ret
 }
 
-func sliderIntSlide(label string, value *int32, min, max int32, format string, flags imgui.SliderFlags) (ret bool) {
-	ret = imgui.SliderIntV(label, value, min, max, format, flags)
+func sliderIntSlide(label string, value *int32, minV, maxV int32, format string, flags imgui.SliderFlags) (ret bool) {
+	ret = imgui.SliderIntV(label, value, minV, maxV, format, flags)
 
 	sliderSledThisFrame = sliderSledThisFrame || ret
 
 	if imgui.IsItemHovered() || imgui.IsItemActive() {
-		ret = ret || keySlideInt(value, min, max)
+		ret = ret || keySlideInt(value, minV, maxV)
 	}
 
 	return
 }
 
-func sliderFloatSlide(label string, value *float64, min, max float64, format string, flags imgui.SliderFlags) (ret bool) {
-	ret = sliderDoubleV(label, value, min, max, format, flags)
+func sliderFloatSlide(label string, value *float64, minV, maxV float64, format string, flags imgui.SliderFlags) (ret bool) {
+	ret = sliderDoubleV(label, value, minV, maxV, format, flags)
 
 	sliderSledThisFrame = sliderSledThisFrame || ret
 
@@ -336,34 +336,34 @@ func sliderFloatSlide(label string, value *float64, min, max float64, format str
 		prec, _ := strconv.Atoi(format[iDot+1 : iF])
 		step := math.Pow(10, -float64(prec))
 
-		ret = ret || keySlideFloat(value, min, max, step)
+		ret = ret || keySlideFloat(value, minV, maxV, step)
 	}
 
 	return
 }
 
-func keySlideInt[T constraints.Integer](value *T, min, max T) (ret bool) {
+func keySlideInt[T constraints.Integer](value *T, minV, maxV T) (ret bool) {
 	if imgui.IsKeyPressedBool(imgui.KeyLeftArrow) {
-		*value = mutils.Clamp(*value-1, min, max)
+		*value = mutils.Clamp(*value-1, minV, maxV)
 		ret = true
 	}
 
 	if imgui.IsKeyPressedBool(imgui.KeyRightArrow) {
-		*value = mutils.Clamp(*value+1, min, max)
+		*value = mutils.Clamp(*value+1, minV, maxV)
 		ret = true
 	}
 
 	return
 }
 
-func keySlideFloat[T constraints.Float](value *T, min, max, step T) (ret bool) {
+func keySlideFloat[T constraints.Float](value *T, minV, maxV, step T) (ret bool) {
 	if imgui.IsKeyPressedBool(imgui.KeyLeftArrow) {
-		*value = mutils.Clamp(*value-step, min, max)
+		*value = mutils.Clamp(*value-step, minV, maxV)
 		ret = true
 	}
 
 	if imgui.IsKeyPressedBool(imgui.KeyRightArrow) {
-		*value = mutils.Clamp(*value+step, min, max)
+		*value = mutils.Clamp(*value+step, minV, maxV)
 		ret = true
 	}
 
@@ -430,8 +430,18 @@ func inputText(label string, text *string) bool {
 	return inputTextV(label, text, imgui.InputTextFlagsNone, nil)
 }
 
+func inputTextMulti(label string, text *string) bool {
+	return inputTextMultiV(label, text, imgui.InputTextFlagsNone, nil)
+}
+
 func inputTextV(label string, text *string, flags imgui.InputTextFlags, cb imgui.InputTextCallback) bool {
 	return imgui.InputTextWithHint(label, "", text, flags, cb)
+}
+
+func inputTextMultiV(label string, text *string, flags imgui.InputTextFlags, cb imgui.InputTextCallback) bool {
+	lSize := mutils.Clamp(strings.Count(*text, "\n")+1, 1, 5)
+
+	return imgui.InputTextMultiline(label, text, vec2(0, float32(lSize)*imgui.FontSize()+imgui.CurrentStyle().FramePadding().Y*2), flags, cb)
 }
 
 func checkboxOption(text string, value *bool) {
@@ -460,4 +470,40 @@ func checkboxOption(text string, value *bool) {
 
 		imgui.EndTable()
 	}
+}
+
+func comboOption(text string, value *string, values []string) (success bool) {
+	if imgui.BeginTableV(text+"table", 2, 0, vec2(-1, 0), -1) {
+		imgui.TableSetupColumnV(text+"table1", imgui.TableColumnFlagsWidthStretch, 0, imgui.ID(0))
+		imgui.TableSetupColumnV(text+"table2", imgui.TableColumnFlagsWidthFixed, 180, imgui.ID(1))
+
+		imgui.TableNextColumn()
+
+		imgui.AlignTextToFramePadding()
+
+		imgui.PushTextWrapPos()
+
+		imgui.TextUnformatted(text)
+
+		imgui.PopTextWrapPos()
+
+		imgui.TableNextColumn()
+
+		imgui.SetNextItemWidth(-1)
+
+		if imgui.BeginCombo("##text", *value) {
+			for _, m := range values {
+				if imgui.SelectableBoolV(m, *value == m, 0, vzero()) {
+					*value = m
+					success = true
+				}
+			}
+
+			imgui.EndCombo()
+		}
+
+		imgui.EndTable()
+	}
+
+	return
 }

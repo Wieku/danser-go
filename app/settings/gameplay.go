@@ -230,6 +230,7 @@ func initGameplay() *gameplay {
 			Path:       "",
 			AboveHpBar: false,
 		},
+		Statistics:              make([]*Statistic, 0),
 		SBFont:                  "",
 		HUDFont:                 "",
 		ShowResultsScreen:       true,
@@ -259,17 +260,18 @@ type gameplay struct {
 	Mods                    *mods
 	Boundaries              *boundaries
 	Underlay                *underlay
-	SBFont                  string  `label:"Scoreboard / Ranking font" file:"Select SBR font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for score board names and ranking panel (use Aller Light to match osu!)" liveedit:"false"`
-	HUDFont                 string  `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts" liveedit:"false"`
-	ShowResultsScreen       bool    `liveedit:"false"`
-	ResultsScreenTime       float64 `label:"Results screen duration" min:"1" max:"20" format:"%.1fs" liveedit:"false"`
-	ResultsUseLocalTimeZone bool    `label:"Show PC's time zone instead of UTC"`
+	Statistics              []*Statistic `new:"InitStatistic" minSize:"0" wiki:"Help|https://github.com/Wieku/danser-go/wiki/Templates"`
+	SBFont                  string       `label:"Scoreboard / Ranking font" file:"Select SBR font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for score board names and ranking panel (use Aller Light to match osu!)" liveedit:"false"`
+	HUDFont                 string       `label:"Overlay (HUD) font" file:"Select HUD font" filter:"TrueType/OpenType Font (*.ttf, *.otf)|ttf,otf" tooltip:"Sets the font that will be used for PP/UR/hit counts" liveedit:"false"`
+	ShowResultsScreen       bool         `liveedit:"false"`
+	ResultsScreenTime       float64      `label:"Results screen duration" min:"1" max:"20" format:"%.1fs" liveedit:"false"`
+	ResultsUseLocalTimeZone bool         `label:"Show PC's time zone instead of UTC"`
 	ShowWarningArrows       bool
 	ShowHitLighting         bool
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
 	IgnoreFailsInReplays    bool
-	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021-11-12 (First Xexxar),220930|2022-09-30 (current web),latest|2024 pp rework (latest)"`
+	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021 pp rework (First Xexxar),220930|2022 pp rework,241007|2024 pp rework,latest|2025 Q1 update (latest)"`
 	LazerClassicScore       bool   `label:"Use \"Classic\" score for osu!lazer plays"`
 }
 
@@ -419,4 +421,39 @@ type outline struct {
 type underlay struct {
 	Path       string `file:"Select underlay image" filter:"PNG file (*.png)|png" tooltip:"PNG file that will be used as HUD background (similar to custom HP bar backgrounds). It's scaled automatically to fit the screen vertically" liveedit:"false"`
 	AboveHpBar bool   `label:"Show underlay above HP bar" tooltip:"Use this if HP bar background is large"`
+}
+
+type Statistic struct {
+	Show bool
+
+	Template string `long:"true" multi:"true"`
+
+	position  string  `vector:"true" left:"XPosition" right:"YPosition"`
+	XPosition float64 `min:"-10000" max:"10000"`
+	YPosition float64 `min:"-10000" max:"10000"`
+
+	Align  string `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
+	Anchor string `combo:"TopLeft,Top,TopRight,Left,Centre,Right,BottomLeft,Bottom,BottomRight"`
+
+	Size    float64 `min:"3" max:"128" format:"%.0fo!px"`
+	Opacity float64 `scale:"100.0" format:"%.0f%%"`
+	Color   *HSV
+}
+
+func (d *defaultsFactory) InitStatistic() *Statistic {
+	return &Statistic{
+		Show:      true,
+		Template:  "{{.pp}}PP",
+		XPosition: 100,
+		YPosition: 100,
+		Align:     "TopLeft",
+		Anchor:    "TopLeft",
+		Size:      24,
+		Opacity:   1,
+		Color: &HSV{
+			Hue:        0,
+			Saturation: 0,
+			Value:      1,
+		},
+	}
 }

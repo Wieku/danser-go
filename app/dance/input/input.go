@@ -20,15 +20,18 @@ type NaturalInputProcessor struct {
 	releaseLeftAt  float64
 	releaseRightAt float64
 	mover          movers.MultiPointMover
+	speed          float64
 }
 
-func NewNaturalInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor, mover movers.MultiPointMover) *NaturalInputProcessor {
-	processor := new(NaturalInputProcessor)
-	processor.mover = mover
-	processor.cursor = cursor
-	processor.queue = make([]objects.IHitObject, len(objs))
-	processor.releaseLeftAt = -10000000
-	processor.releaseRightAt = -10000000
+func NewNaturalInputProcessor(objs []objects.IHitObject, cursor *graphics.Cursor, mover movers.MultiPointMover, speed float64) *NaturalInputProcessor {
+	processor := &NaturalInputProcessor{
+		mover:          mover,
+		cursor:         cursor,
+		queue:          make([]objects.IHitObject, len(objs)),
+		releaseLeftAt:  -10000000,
+		releaseRightAt: -10000000,
+		speed:          speed,
+	}
 
 	copy(processor.queue, objs)
 
@@ -91,7 +94,7 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 					}
 				}
 
-				shouldBeLeft := !processor.wasLeftBefore && startTime-processor.previousEnd < singleTapThreshold
+				shouldBeLeft := !processor.wasLeftBefore && startTime-processor.previousEnd < singleTapThreshold*processor.speed
 
 				if isDoubleClick {
 					processor.releaseLeftAt = releaseAt

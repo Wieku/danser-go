@@ -42,7 +42,7 @@ func NewRGBYUV(width, height int, subsample bool) *RGBYUV {
 		panic(err)
 	}
 
-	fpass, err := assets.GetString("assets/shaders/fbopass.fsh")
+	fpass, err := assets.GetString("assets/shaders/rgbyuv_scale.fsh")
 	if err != nil {
 		panic(err)
 	}
@@ -71,9 +71,9 @@ func NewRGBYUV(width, height int, subsample bool) *RGBYUV {
 
 	effect.fbo = buffer.NewFrame(width, height, false, false)
 
-	effect.yuvFBO = buffer.NewFrame(width, height, false, false)
+	effect.yuvFBO = buffer.NewFrameYUV(width, height)
 
-	effect.subsampleFBO = buffer.NewFrame((width+1)/2, (height+1)/2, false, false)
+	effect.subsampleFBO = buffer.NewFrameYUVSmall((width+1)/2, (height+1)/2)
 
 	return effect
 }
@@ -88,13 +88,13 @@ func (effect *RGBYUV) End() {
 	effect.fbo.Unbind()
 }
 
-func (effect *RGBYUV) Draw() (y texture.Texture, uv texture.Texture) {
+func (effect *RGBYUV) Draw() (yuv, uv []texture.Texture) {
 	blend.Push()
 	blend.Disable()
 
-	effect.fbo.Texture().Bind(0)
+	effect.fbo.Texture().Bind(5)
 
-	effect.yuvShader.SetUniform("tex", 0)
+	effect.yuvShader.SetUniform("tex", 5)
 
 	effect.vao.Bind()
 
@@ -113,8 +113,11 @@ func (effect *RGBYUV) Draw() (y texture.Texture, uv texture.Texture) {
 	effect.yuvFBO.Unbind()
 
 	if effect.subsample {
-		effect.yuvFBO.Texture().Bind(0)
-		effect.subsampleShader.SetUniform("tex", 0)
+		effect.yuvFBO.Textures()[1].Bind(6)
+		effect.yuvFBO.Textures()[2].Bind(7)
+
+		effect.subsampleShader.SetUniform("texU", 6)
+		effect.subsampleShader.SetUniform("texV", 7)
 
 		effect.subsampleFBO.Bind()
 
@@ -135,5 +138,5 @@ func (effect *RGBYUV) Draw() (y texture.Texture, uv texture.Texture) {
 
 	blend.Pop()
 
-	return effect.yuvFBO.Texture(), effect.subsampleFBO.Texture()
+	return effect.yuvFBO.Textures(), effect.subsampleFBO.Textures()
 }

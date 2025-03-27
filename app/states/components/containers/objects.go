@@ -242,7 +242,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 						}
 
 						slidersRendered = true
-						s.DrawBody(time, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
+						s.DrawBody(time, objectColors[j], bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
 					}
 				}
 			}
@@ -293,7 +293,7 @@ func (container *HitObjectContainer) Draw(batch *batch.QuadBatch, baseCamera mgl
 					}
 
 					slidersRendered = true
-					proxy.renderable.(*objects.Slider).DrawBody(time, bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
+					proxy.renderable.(*objects.Slider).DrawBody(time, objectColors[j], bodyColors[j], borderColors[j], borderColors[ind], cameras[j], scale)
 				}
 
 				if proxy.endTime <= time {

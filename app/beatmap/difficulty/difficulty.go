@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -31,12 +32,17 @@ type Difficulty struct {
 	baseCS float64
 	baseHP float64
 
-	PreemptU      float64
-	Preempt       float64
-	TimeFadeIn    float64
+	PreemptU   float64
+	Preempt    float64
+	TimeFadeIn float64
+
 	CircleRadiusU float64
 	CircleRadius  float64
-	Mods          Modifier
+
+	CircleScaleL  float32
+	CircleRadiusL float64
+
+	Mods Modifier
 
 	Hit50U  float64
 	Hit100U float64
@@ -59,6 +65,8 @@ type Difficulty struct {
 
 	modSettings map[reflect.Type]any
 	adjustPitch bool
+
+	DiffCalcMode bool
 }
 
 func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
@@ -87,20 +95,23 @@ func NewDifficulty(hp, cs, od, ar float64) *Difficulty {
 
 func (diff *Difficulty) calculate() {
 	diff.hp, diff.cs, diff.od, diff.ar = diff.baseHP, diff.baseCS, diff.baseOD, diff.baseAR
-	if s, ok := diff.modSettings[rfType[DiffAdjustSettings]()].(DiffAdjustSettings); ok {
-		diff.ar = s.ApproachRate
-		diff.od = s.OverallDifficulty
-		diff.hp = s.DrainRate
-		diff.cs = s.CircleSize
+
+	dS, dOk := diff.modSettings[rfType[DiffAdjustSettings]()].(DiffAdjustSettings)
+
+	if dOk {
+		diff.ar = dS.ApproachRate
+		diff.od = dS.OverallDifficulty
+		diff.hp = dS.DrainRate
+		diff.cs = dS.CircleSize
 	}
 
 	hpDrain, cs, od, ar := diff.hp, diff.cs, diff.od, diff.ar
 
 	if diff.Mods&HardRock > 0 {
-		ar = min(ar*1.4, 10)
-		cs = min(cs*1.3, 10)
-		od = min(od*1.4, 10)
-		hpDrain = min(hpDrain*1.4, 10)
+		ar = min(ar*1.4, cMax(dOk, 10, dS.ApproachRate))
+		cs = min(cs*1.3, cMax(dOk, 10, dS.CircleSize))
+		od = min(od*1.4, cMax(dOk, 10, dS.OverallDifficulty))
+		hpDrain = min(hpDrain*1.4, cMax(dOk, 10, dS.DrainRate))
 	}
 
 	if diff.Mods&Easy > 0 {
@@ -114,6 +125,9 @@ func (diff *Difficulty) calculate() {
 
 	diff.CircleRadiusU = DifficultyRate(cs, 54.4, 32, 9.6)
 	diff.CircleRadius = diff.CircleRadiusU * 1.00041 //some weird allowance osu has
+
+	diff.CircleScaleL = (1.0 - 0.7*float32((cs-5)/5)) / 2 * 1.00041
+	diff.CircleRadiusL = float64(diff.CircleScaleL) * 64
 
 	diff.PreemptU = DifficultyRate(ar, 1800, 1200, 450)
 	diff.Preempt = math.Floor(diff.PreemptU)
@@ -151,7 +165,15 @@ func (diff *Difficulty) calculate() {
 	}
 
 	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
-	diff.ODReal = DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
+	diff.ODReal = (80 - diff.GetModifiedTime(diff.Hit300U)) / 6 //DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
+}
+
+func cMax(cond bool, a, b float64) float64 {
+	if cond {
+		return max(10, b)
+	}
+
+	return a
 }
 
 func (diff *Difficulty) SetMods(mods Modifier) {
@@ -185,6 +207,10 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 
 	if mods.Active(Classic) {
 		diff.modSettings[rfType[ClassicSettings]()] = NewClassicSettings()
+	}
+
+	if mods.Active(Mirror) {
+		diff.modSettings[rfType[MirrorSettings]()] = NewMirrorSettings()
 	}
 
 	diff.calculate()
@@ -225,6 +251,10 @@ func (diff *Difficulty) RemoveMod(mods Modifier) {
 		delete(diff.modSettings, rfType[ClassicSettings]())
 	}
 
+	if mods.Active(Mirror) {
+		delete(diff.modSettings, rfType[MirrorSettings]())
+	}
+
 	diff.calculate()
 }
 
@@ -259,6 +289,10 @@ func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 
 			if mod.Active(Classic) {
 				diff.modSettings[rfType[ClassicSettings]()] = parseConfig(NewClassicSettings(), mInfo.Settings)
+			}
+
+			if mod.Active(Mirror) {
+				diff.modSettings[rfType[MirrorSettings]()] = parseConfig(NewMirrorSettings(), mInfo.Settings)
 			}
 		}
 	}
@@ -339,6 +373,18 @@ func (diff *Difficulty) GetPitch() float64 {
 	}
 
 	return 1
+}
+
+func (diff *Difficulty) GetRadius() float32 {
+	if diff.Mods&Lazer > 0 {
+		return float32(diff.CircleRadiusL)
+	}
+
+	if diff.Mods&Relax2 > 0 {
+		return 100
+	}
+
+	return float32(diff.CircleRadius)
 }
 
 func (diff *Difficulty) GetScoreMultiplier() float64 {
@@ -436,7 +482,7 @@ func (diff *Difficulty) GetModStringMasked() string {
 }
 
 func (diff *Difficulty) getModStringBase(mod Modifier) string {
-	mods := mod.String()
+	mods := (mod & ^Mirror).String()
 
 	if ar := diff.GetAR(); math.Abs(ar-diff.GetBaseAR()) > 0.001 {
 		mods += fmt.Sprintf("AR%s", mutils.FormatWOZeros(ar, 2))
@@ -456,6 +502,14 @@ func (diff *Difficulty) getModStringBase(mod Modifier) string {
 
 	if cSpeed := diff.Speed; math.Abs(cSpeed-diff.BaseModSpeed) > 0.001 {
 		mods += fmt.Sprintf("S%sx", mutils.FormatWOZeros(cSpeed, 2))
+	}
+
+	if diff.Mods.Active(Mirror) {
+		if mrS, ok := GetModConfig[MirrorSettings](diff); ok {
+			mods += "MR" + strconv.Itoa(mrS.FlipMode)
+		} else {
+			mods += "MR0"
+		}
 	}
 
 	return mods
@@ -586,29 +640,29 @@ func (diff *Difficulty) Equals(diff2 *Difficulty) bool {
 	return true
 }
 
-func DifficultyRate(diff, min, mid, max float64) float64 {
+func DifficultyRate(diff, minV, midV, maxV float64) float64 {
 	diff = float64(float32(diff))
 
 	if diff > 5 {
-		return mid + (max-mid)*(diff-5)/5
+		return midV + (maxV-midV)*(diff-5)/5
 	}
 
 	if diff < 5 {
-		return mid - (mid-min)*(5-diff)/5
+		return midV - (midV-minV)*(5-diff)/5
 	}
 
-	return mid
+	return midV
 }
 
-func DiffFromRate(rate, min, mid, max float64) float64 {
+func DiffFromRate(rate, minV, midV, maxV float64) float64 {
 	rate = float64(float32(rate))
 
-	minStep := (min - mid) / 5
-	maxStep := (mid - max) / 5
+	minVStep := (minV - midV) / 5
+	maxVStep := (midV - maxV) / 5
 
-	if rate > mid {
-		return -(rate - min) / minStep
+	if rate > midV {
+		return -(rate - minV) / minVStep
 	}
 
-	return 5.0 - (rate-mid)/maxStep
+	return 5.0 - (rate-midV)/maxVStep
 }

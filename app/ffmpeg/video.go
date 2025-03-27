@@ -53,11 +53,8 @@ type PBO struct {
 	data       []byte
 
 	convFormat pixconv.PixFmt
-	convData   []byte
 
 	sync uintptr
-
-	convertSync *sync.WaitGroup
 }
 
 func createPBO(format pixconv.PixFmt) *PBO {
@@ -66,15 +63,8 @@ func createPBO(format pixconv.PixFmt) *PBO {
 
 	glSize := w * h * 3
 
-	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
+	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 {
 		glSize = w * h * 3 / 2
-
-		if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
-			pbo.convData = make([]byte, glSize)
-		}
-	} else if pbo.convFormat != pixconv.ARGB && pbo.convFormat != pixconv.I444 {
-		convSize := pixconv.GetRequiredBufferSize(pbo.convFormat, w, h)
-		pbo.convData = make([]byte, convSize)
 	}
 
 	gl.CreateBuffers(1, &pbo.handle)
@@ -83,8 +73,6 @@ func createPBO(format pixconv.PixFmt) *PBO {
 	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_COHERENT_BIT|gl.MAP_READ_BIT)
 
 	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[:glSize:glSize]
-
-	pbo.convertSync = &sync.WaitGroup{}
 
 	return pbo
 }
@@ -103,6 +91,8 @@ func startVideo(fps, _w, _h int) {
 
 	if strings.HasSuffix(encoder, "_qsv") { // qsv works best with nv12 format
 		outputFormat = "nv12"
+	} else if encoder == "libsvtav1" {
+		outputFormat = "yuv420p"
 	}
 
 	parsedFormat = pixconv.ARGB
@@ -110,24 +100,24 @@ func startVideo(fps, _w, _h int) {
 	switch outputFormat {
 	case "yuv420p":
 		parsedFormat = pixconv.I420
-	case "yuv422p":
-		parsedFormat = pixconv.I422
 	case "yuv444p":
 		parsedFormat = pixconv.I444
 	case "nv12":
 		parsedFormat = pixconv.NV12
-	case "nv21":
-		parsedFormat = pixconv.NV21
 	}
+
+	var filters []string
 
 	inputPixFmt := "rgb24"
 	if parsedFormat != pixconv.ARGB {
 		inputPixFmt = outputFormat
+	} else {
+		filters = append(filters, "vflip")
 	}
 
 	videoFilters := strings.TrimSpace(settings.Recording.Filters)
 	if len(videoFilters) > 0 {
-		videoFilters = "," + videoFilters
+		filters = append(filters, videoFilters)
 	}
 
 	inputName := "-"
@@ -143,25 +133,40 @@ func startVideo(fps, _w, _h int) {
 	}
 
 	options := []string{
-		"-y", //(optional) overwrite output file if it exists
-
+		"-y",  //(optional) overwrite output file if it exists
+		"-an", // no audio
 		"-f", "rawvideo",
-		"-vcodec", "rawvideo",
+		"-c:v", "rawvideo",
 		"-s", fmt.Sprintf("%dx%d", w, h), //size of one frame
 		"-pix_fmt", inputPixFmt,
 		"-r", strconv.Itoa(fps), //frames per second
+	}
+
+	if inputPixFmt != "rgb24" {
+		options = append(options,
+			"-color_range", "1",
+			"-colorspace", "1",
+			"-color_trc", "1",
+			"-color_primaries", "1",
+		)
+	}
+
+	options = append(options,
 		"-i", inputName, //The input comes from a videoPipe
+	)
 
-		"-an",
+	if len(filters) > 0 {
+		options = append(options, "-vf", strings.Join(filters, ","))
+	}
 
-		"-vf", "vflip" + videoFilters,
+	options = append(options,
 		"-c:v", encoder,
 		"-color_range", "1",
 		"-colorspace", "1",
 		"-color_trc", "1",
 		"-color_primaries", "1",
 		"-movflags", "+write_colr",
-	}
+	)
 
 	if parsedFormat == pixconv.ARGB {
 		options = append(options, "-pix_fmt", outputFormat)
@@ -270,10 +275,8 @@ func startVideo(fps, _w, _h int) {
 
 	goroutines.RunOS(func() {
 		for pbo := range videoWriteQueue {
-			pbo.convertSync.Wait() // Wait for conversion to end
-
-			if _, err := videoPipe.Write(pbo.convData); err != nil {
-				errorMsg := err.Error()
+			if _, err2 := videoPipe.Write(pbo.data); err2 != nil {
+				errorMsg := err2.Error()
 
 				videoErrorWait.Wait()
 
@@ -338,7 +341,7 @@ func MakeFrame() {
 		blend.Blend()
 	}
 
-	var yuvFull, yuvHalf texture.Texture
+	var yuvFull, yuvHalf []texture.Texture
 
 	if rgbToYuvConverter != nil {
 		rgbToYuvConverter.End()
@@ -356,15 +359,19 @@ func MakeFrame() {
 
 	gl.PixelStorei(gl.PACK_ALIGNMENT, 1)
 
-	if pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 { //Read as yuv420p
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+	if pbo.convFormat == pixconv.NV12 {
+		gl.GetTextureSubImage(yuvFull[0].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
 
-		gl.GetTextureSubImage(yuvHalf.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
-		gl.GetTextureSubImage(yuvHalf.GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
+		gl.GetTextureSubImage(yuvHalf[0].GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.RG, gl.UNSIGNED_BYTE, int32(w*h/2), gl.PtrOffset(w*h))
+	} else if pbo.convFormat == pixconv.I420 {
+		gl.GetTextureSubImage(yuvFull[0].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+
+		gl.GetTextureSubImage(yuvHalf[0].GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(yuvHalf[1].GetID(), 0, 0, 0, 0, int32(w/2), int32(h/2), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h/4), gl.PtrOffset(w*h*5/4))
 	} else if pbo.convFormat != pixconv.ARGB { //Read as yuv444p
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.GREEN, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
-		gl.GetTextureSubImage(yuvFull.GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.BLUE, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
+		gl.GetTextureSubImage(yuvFull[0].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.Ptr(nil))
+		gl.GetTextureSubImage(yuvFull[1].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h))
+		gl.GetTextureSubImage(yuvFull[2].GetID(), 0, 0, 0, 0, int32(w), int32(h), 1, gl.RED, gl.UNSIGNED_BYTE, int32(w*h), gl.PtrOffset(w*h*2))
 	} else {
 		gl.ReadPixels(0, 0, int32(w), int32(h), uint32(gl.RGB), gl.UNSIGNED_BYTE, gl.Ptr(nil))
 	}
@@ -406,26 +413,6 @@ func checkData(waitForFirst, waitForAll bool) { // I tried to do that on another
 
 		frameReadQueue = frameReadQueue[1:]
 
-		submitFrame(pbo)
+		videoWriteQueue <- pbo
 	}
-}
-
-func submitFrame(pbo *PBO) {
-	if pbo.convFormat == pixconv.I444 || pbo.convFormat == pixconv.I420 || pbo.convFormat == pixconv.ARGB { // For yuv444p and yuv420p or raw just dump the frame
-		pbo.convData = pbo.data
-	} else {
-		pbo.convertSync.Add(1)
-
-		goroutines.RunOS(func() { // offload conversion to another thread
-			if pbo.convFormat == pixconv.NV12 || pbo.convFormat == pixconv.NV21 {
-				pixconv.Convert(pbo.data, pixconv.I420, pbo.convData, pbo.convFormat, w, h) // Technically we could just merge planes, but converting whole frame is faster ¯\_(ツ)_/¯
-			} else {
-				pixconv.Convert(pbo.data, pixconv.I444, pbo.convData, pbo.convFormat, w, h)
-			}
-
-			pbo.convertSync.Done()
-		})
-	}
-
-	videoWriteQueue <- pbo
 }
