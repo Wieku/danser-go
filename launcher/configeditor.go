@@ -978,8 +978,8 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 }
 
 func (editor *settingsEditor) buildFloatBox(jsonPath string, f reflect.Value, d reflect.StructField) {
-	min := float64(parseFloatOr(d.Tag.Get("min"), 0))
-	max := float64(parseFloatOr(d.Tag.Get("max"), 1))
+	minV := float64(parseFloatOr(d.Tag.Get("min"), 0))
+	maxV := float64(parseFloatOr(d.Tag.Get("max"), 1))
 	scale := float64(parseFloatOr(d.Tag.Get("scale"), 1))
 
 	base := f.Float()
@@ -994,20 +994,20 @@ func (editor *settingsEditor) buildFloatBox(jsonPath string, f reflect.Value, d 
 		if err != nil {
 			valText = prevText
 		} else {
-			parsed = mutils.Clamp(parsed/scale, min, max)
+			parsed = mutils.Clamp(parsed/scale, minV, maxV)
 			f.SetFloat(parsed)
 		}
 	}
 }
 
 func (editor *settingsEditor) buildIntBox(jsonPath string, f reflect.Value, d reflect.StructField) {
-	min := parseIntOr(d.Tag.Get("min"), 0)
-	max := parseIntOr(d.Tag.Get("max"), 100)
+	minV := parseIntOr(d.Tag.Get("min"), 0)
+	maxV := parseIntOr(d.Tag.Get("max"), 100)
 
 	base := int32(f.Int())
 
 	if imgui.InputIntV(jsonPath, &base, 1, 1, 0) {
-		base = mutils.Clamp(base, int32(min), int32(max))
+		base = mutils.Clamp(base, int32(minV), int32(maxV))
 		f.SetInt(int64(base))
 	}
 }
@@ -1320,10 +1320,10 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 				}
 
 				if hasCustom {
-					min := parseIntOr(d.Tag.Get("min"), 0)
-					max := parseIntOr(d.Tag.Get("max"), 100)
+					minV := parseIntOr(d.Tag.Get("min"), 0)
+					maxV := parseIntOr(d.Tag.Get("max"), 100)
 
-					if base >= int32(min) {
+					if base >= int32(minV) {
 						pad := vec2(imgui.CurrentStyle().FramePadding().X, imgui.CurrentStyle().ItemSpacing().Y*0.5)
 						scPos := imgui.CursorScreenPos().Sub(pad)
 
@@ -1340,7 +1340,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 					imgui.SetNextItemWidth(imgui.ContentRegionAvail().X)
 
 					if imgui.InputIntV(jsonPath, &base, 1, 1, 0) {
-						base = mutils.Clamp(base, int32(min), int32(max))
+						base = mutils.Clamp(base, int32(minV), int32(maxV))
 						f.SetInt(int64(base))
 					}
 				}
@@ -1350,12 +1350,12 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 		} else if okS {
 			editor.buildIntBox(jsonPath, f, d)
 		} else {
-			min := parseIntOr(d.Tag.Get("min"), 0)
-			max := parseIntOr(d.Tag.Get("max"), 100)
+			minV := parseIntOr(d.Tag.Get("min"), 0)
+			maxV := parseIntOr(d.Tag.Get("max"), 100)
 
 			imgui.PushStyleVarVec2(imgui.StyleVarFramePadding, vec2(0, -3))
 
-			if sliderIntSlide(jsonPath, &base, int32(min), int32(max), "##"+format, imgui.SliderFlagsNoInput) {
+			if sliderIntSlide(jsonPath, &base, int32(minV), int32(maxV), "##"+format, imgui.SliderFlagsNoInput) {
 				f.SetInt(int64(base))
 			}
 

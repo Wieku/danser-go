@@ -88,16 +88,16 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 			pos2 := o.GetStackedStartPositionMod(mover.diff)
 			pos3 := objs[i+1].GetStackedStartPositionMod(mover.diff)
 
-			min := float32(streamEntryMin)
-			max := float32(streamEntryMax)
+			minV := float32(streamEntryMin)
+			maxV := float32(streamEntryMax)
 			if stream {
-				max = streamEscape
+				maxV = streamEscape
 			}
 
 			sq1 := pos1.DstSq(pos2)
 			sq2 := pos2.DstSq(pos3)
 
-			if sq1 > max && sq2 > max && config.RotationalForce {
+			if sq1 > maxV && sq2 > maxV && config.RotationalForce {
 				if stream {
 					angle = 0
 					stream = false
@@ -110,7 +110,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 						angle = float32(ang) * 90 / 180 * math32.Pi
 					}
 				}
-			} else if sq1 >= min && sq1 <= max && sq2 >= min && sq2 <= max && (config.StreamWobble || config.StreamHalfCircle) {
+			} else if sq1 >= minV && sq1 <= maxV && sq2 >= minV && sq2 <= maxV && (config.StreamWobble || config.StreamHalfCircle) {
 				if stream {
 					angle *= -1
 
