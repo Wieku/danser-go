@@ -640,29 +640,29 @@ func (diff *Difficulty) Equals(diff2 *Difficulty) bool {
 	return true
 }
 
-func DifficultyRate(diff, min, mid, max float64) float64 {
+func DifficultyRate(diff, minV, midV, maxV float64) float64 {
 	diff = float64(float32(diff))
 
 	if diff > 5 {
-		return mid + (max-mid)*(diff-5)/5
+		return midV + (maxV-midV)*(diff-5)/5
 	}
 
 	if diff < 5 {
-		return mid - (mid-min)*(5-diff)/5
+		return midV - (midV-minV)*(5-diff)/5
 	}
 
-	return mid
+	return midV
 }
 
-func DiffFromRate(rate, min, mid, max float64) float64 {
+func DiffFromRate(rate, minV, midV, maxV float64) float64 {
 	rate = float64(float32(rate))
 
-	minStep := (min - mid) / 5
-	maxStep := (mid - max) / 5
+	minVStep := (minV - midV) / 5
+	maxVStep := (midV - maxV) / 5
 
-	if rate > mid {
-		return -(rate - min) / minStep
+	if rate > midV {
+		return -(rate - minV) / minVStep
 	}
 
-	return 5.0 - (rate-mid)/maxStep
+	return 5.0 - (rate-midV)/maxVStep
 }
