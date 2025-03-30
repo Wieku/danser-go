@@ -69,6 +69,7 @@ jobs:
         id: build
 
       - name: Sign files with Trusted Signing
+        if: ${{ inputs.sign == true || inputs.sign == 'true' }}
         uses: azure/trusted-signing-action@v0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
