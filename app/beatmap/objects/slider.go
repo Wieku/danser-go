@@ -404,7 +404,7 @@ func (slider *Slider) calculateFollowPointsLazer(beatmapVersion int) {
 		reversed := span%2 == 1
 
 		// Skip ticks if timingPoint has NaN beatLength
-		for d := tickDistance; d <= length && !nanTimingPoint; d += tickDistance {
+		for d := tickDistance; d <= length && !nanTimingPoint && tickDistance != 0; d += tickDistance {
 			if d >= length-minDistanceFromEnd {
 				break
 			}
