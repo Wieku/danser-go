@@ -131,6 +131,8 @@ type ScoreOverlay struct {
 	customStats *cstats.StatDisplay
 
 	lazerScore bool
+
+	skipped bool
 }
 
 type keyInfo struct {
@@ -538,8 +540,9 @@ func (overlay *ScoreOverlay) Update(time float64) {
 
 	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
 		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
-			if overlay.audioTime < overlay.skipTo {
+			if overlay.audioTime < overlay.skipTo && !overlay.skipped {
 				overlay.music.SetPosition(overlay.skipTo / 1000)
+				overlay.skipped = true
 			}
 		}
 	}
