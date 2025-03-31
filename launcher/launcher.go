@@ -476,9 +476,13 @@ func (l *launcher) loadBeatmaps() {
 
 		l.splashText = bSplash + "\n"
 
-		database.UpdateStarRating(beatmaps, func(processed, target int) {
+		database.UpdateStarRating(beatmaps, func(processed, target int, message string) {
 			percent := float64(processed) / float64(target) * 100
 			l.splashText = bSplash + fmt.Sprintf("%d / %d\n%.0f%%", processed, target, percent)
+
+			if message != "" {
+				l.splashText += "\n" + message
+			}
 		})
 
 		for _, bMap := range beatmaps {

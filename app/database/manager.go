@@ -413,7 +413,7 @@ func trySendStatus(listener ImportListener, stage ImportStage, progress, target 
 	}
 }
 
-func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, target int)) {
+func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, target int, message string)) {
 	const workers = 1 // For now using only one thread because calculating 4 aspire maps at once can OOM since (de)allocation can't keep up with many complex sliders
 
 	var toCalculate []*beatmap.BeatMap
@@ -428,14 +428,25 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 		return
 	}
 
+	var message string
+
 	if progressListener != nil {
-		progressListener(0, len(toCalculate))
+		progressListener(0, len(toCalculate), message)
 	}
 
 	receive := make(chan *beatmap.BeatMap, workers)
 
+	var progress int
+
 	goroutines.Run(func() {
-		util.BalanceChan(workers, toCalculate, receive, func(bMap *beatmap.BeatMap) (ret *beatmap.BeatMap, ret2 bool) {
+		util.BalanceChanWatchdog(workers, toCalculate, receive, time.Minute, func(worker int, a *beatmap.BeatMap) {
+			log.Println("DatabaseManager: It seems like SR calculation for this file got stuck! Please report it to developer(s). File:", a.Dir+"/"+a.File)
+			message = "Calculation got stuck! Please check logs"
+
+			if progressListener != nil {
+				progressListener(progress, len(toCalculate), message)
+			}
+		}, func(bMap *beatmap.BeatMap) (ret *beatmap.BeatMap, ret2 bool) {
 			ret = bMap // HACK: still return the beatmap even if execution panics: https://golangbyexample.com/return-value-function-panic-recover-go/
 			ret2 = true
 
@@ -467,12 +478,12 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 	})
 
 	var calculated []*beatmap.BeatMap
-	var progress int
 
 	for bMap := range receive {
 		if progressListener != nil {
+			message = ""
 			progress++
-			progressListener(progress, len(toCalculate))
+			progressListener(progress, len(toCalculate), message)
 		}
 
 		calculated = append(calculated, bMap)
