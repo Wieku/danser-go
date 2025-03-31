@@ -488,7 +488,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 
 		calculated = append(calculated, bMap)
 
-		if len(calculated) >= 1000 { // Commit to database every 1k beatmaps to not lose progress in case of crash/close
+		if len(calculated) >= 200 { // Commit to database every 1k beatmaps to not lose progress in case of crash/close
 			pushSRToDB(calculated)
 
 			calculated = calculated[:0]
