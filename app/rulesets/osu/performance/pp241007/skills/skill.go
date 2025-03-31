@@ -68,11 +68,7 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 		skill.currentSectionEnd = math.Ceil(current.StartTime/skill.SectionLength) * skill.SectionLength
 	}
 
-	for current.StartTime > skill.currentSectionEnd {
-		skill.saveCurrentPeak()
-		skill.startNewSectionFrom(skill.currentSectionEnd, current)
-		skill.currentSectionEnd += skill.SectionLength
-	}
+	skill.processSectionEnd(current)
 
 	currentStrain := skill.StrainValueOf(current)
 
@@ -91,6 +87,26 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 	}
 
 	skill.lastDifficulty = skill.difficulty
+}
+
+func (skill *Skill) processSectionEnd(nextObj *preprocessing.DifficultyObject) {
+	for nextObj.StartTime > skill.currentSectionEnd {
+		sectionsLeft := math.Floor((nextObj.StartTime - skill.currentSectionEnd) / skill.SectionLength)
+
+		if skill.currentSectionPeak == 0 && sectionsLeft > 100 { // skip for maps with huge distances between objects
+			newPeaks := make([]float64, len(skill.strainPeaks)+int(sectionsLeft))
+			copy(newPeaks, skill.strainPeaks)
+			skill.strainPeaks = newPeaks // just add it to temporal list, we don't need to add 0's to sorted one
+
+			skill.currentSectionEnd += skill.SectionLength * sectionsLeft
+
+			continue
+		}
+
+		skill.saveCurrentPeak()
+		skill.startNewSectionFrom(skill.currentSectionEnd, nextObj)
+		skill.currentSectionEnd += skill.SectionLength
+	}
 }
 
 func (skill *Skill) GetCurrentStrainPeaks() []float64 {
@@ -185,7 +201,10 @@ func (skill *Skill) CountDifficultStrains() float64 {
 
 func (skill *Skill) saveCurrentPeak() {
 	skill.strainPeaks = append(skill.strainPeaks, skill.currentSectionPeak)
-	skill.strainPeaksSorted.Add(skill.currentSectionPeak)
+
+	if skill.currentSectionPeak > 0 {
+		skill.strainPeaksSorted.Add(skill.currentSectionPeak)
+	}
 }
 
 func (skill *Skill) startNewSectionFrom(end float64, current *preprocessing.DifficultyObject) {
