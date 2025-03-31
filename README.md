@@ -107,7 +107,7 @@ You need to clone it or download as a .zip (and unpack it to desired directory)
 
 #### Prerequisites
 
-* [64-bit go (1.22 at least)](https://go.dev/dl/)
+* [64-bit go (1.24 at least)](https://go.dev/dl/)
 * gcc/g++ (Linux/Unix), [WinLibs](http://winlibs.com/) MSVCRT+POSIX (Windows, TDM-GCC won't work, mingw-w64 is outdated)
 * OpenGL library (shipped with drivers, `libgl1-mesa-dev` when building on Linux servers)
 * xorg-dev, libgtk-3 and libgtk-3-dev (Linux)

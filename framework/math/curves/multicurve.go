@@ -57,7 +57,7 @@ func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 			cPoints2 = processPerfect(def.Points, true)
 		}
 
-		nLines := make([]Linear, len(lines)+len(cPoints1)-1)
+		nLines := make([]Linear, max(0, len(lines)+len(cPoints1)-1))
 		copy(nLines, lines)
 		for i := 0; i < len(cPoints1)-1; i++ {
 			nLines[len(lines)+i] = NewLinear(cPoints1[i], cPoints1[i+1])
@@ -81,7 +81,7 @@ func NewMultiCurve(curveDefs []CurveDef) *MultiCurve {
 		length += l.GetLength()
 	}
 
-	cumLength := make([]float64, len(points))
+	cumLength := make([]float64, max(1, len(points)))
 	for i := 0; i < len(points)-1; i++ {
 		cumLength[i+1] = cumLength[i] + float64(points[i+1].Dst(points[i]))
 	}
@@ -238,6 +238,10 @@ func (mCurve *MultiCurve) GetLength() float32 {
 }
 
 func (mCurve *MultiCurve) GetLengthLazer() float64 {
+	if len(mCurve.cumLength) == 0 {
+		return 0
+	}
+
 	return mCurve.cumLength[len(mCurve.cumLength)-1]
 }
 

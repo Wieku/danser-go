@@ -35,7 +35,7 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v3
         with:
-          go-version: '1.22.4'
+          go-version: '1.24.1'
           cache: true
 
       - name: Build danser
@@ -69,6 +69,7 @@ jobs:
         id: build
 
       - name: Sign files with Trusted Signing
+        if: ${{ inputs.sign == true || inputs.sign == 'true' }}
         uses: azure/trusted-signing-action@v0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -107,7 +108,7 @@ jobs:
 
   build_linux:
     name: Building linux version
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout branch
         uses: actions/checkout@v3
@@ -120,7 +121,7 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v3
         with:
-          go-version: '1.22.4'
+          go-version: '1.24.1'
           cache: true
 
       - name: Build danser

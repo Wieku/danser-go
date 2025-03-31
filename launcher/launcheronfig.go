@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"io"
 	"io/fs"
 	"os"
@@ -24,6 +25,8 @@ var launcherConfig = &launcherConf{
 	SkipMapUpdate:    false,
 	AutoRefreshDB:    false,
 	ShowJSONPaths:    false,
+	CurrentMode:      CursorDance,
+	CurrentPMode:     Watch,
 }
 
 type launcherConf struct {
@@ -39,6 +42,8 @@ type launcherConf struct {
 	AutoRefreshDB    bool
 	ShowJSONPaths    bool
 	LastKnockoutPath string
+	CurrentMode      Mode
+	CurrentPMode     PMode
 }
 
 func loadLauncherConfig() {
@@ -79,6 +84,9 @@ func loadLauncherConfig() {
 		def := "default"
 		launcherConfig.Profile = &def
 	}
+
+	launcherConfig.CurrentMode = mutils.Clamp(launcherConfig.CurrentMode, CursorDance, Play)
+	launcherConfig.CurrentPMode = mutils.Clamp(launcherConfig.CurrentPMode, Watch, Screenshot)
 
 	saveLauncherConfig()
 }
