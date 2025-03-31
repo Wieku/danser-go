@@ -808,7 +808,7 @@ func (l *launcher) drawSplash() {
 	for _, sText := range splText {
 		tSize := imgui.CalcTextSizeV(sText, false, 0)
 
-		imgui.SetCursorPos(vec2(20+(w-tSize.X)/2, 20+(h-height)/2+dHeight))
+		imgui.SetCursorPos(vec2(10+(w-tSize.X)/2, 10+(h-height)/2+dHeight))
 
 		dHeight += tSize.Y
 
