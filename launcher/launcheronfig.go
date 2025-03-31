@@ -24,6 +24,8 @@ var launcherConfig = &launcherConf{
 	SkipMapUpdate:    false,
 	AutoRefreshDB:    false,
 	ShowJSONPaths:    false,
+	CurrentMode:      CursorDance,
+	CurrentPMode:     Watch,
 }
 
 type launcherConf struct {
@@ -39,6 +41,8 @@ type launcherConf struct {
 	AutoRefreshDB    bool
 	ShowJSONPaths    bool
 	LastKnockoutPath string
+	CurrentMode      Mode
+	CurrentPMode     PMode
 }
 
 func loadLauncherConfig() {

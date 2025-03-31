@@ -607,7 +607,7 @@ func (l *launcher) Draw() {
 			l.batch.DrawStObject(vector.NewVec2d(0, settings.Graphics.GetHeightF()), vector.BottomLeft, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, bSnow)
 
 			//record button
-			if l.bld.currentMode != Play {
+			if launcherConfig.CurrentMode != Play {
 				l.batch.DrawStObject(l.recordSnowPos.Copy64().AddS(0, 2), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[2])
 			}
 
@@ -616,7 +616,7 @@ func (l *launcher) Draw() {
 
 			l.batch.DrawStObject(vector.NewVec2d(115, 240), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[4])
 
-			if l.bld.currentMode != Replay {
+			if launcherConfig.CurrentMode != Replay {
 				l.batch.DrawStObject(vector.NewVec2d(314, 240), vector.BottomCentre, vector.NewVec2d(1, 1), false, false, 0, color2.NewL(1), false, *graphics.Snow[3])
 			}
 
@@ -720,11 +720,11 @@ func (l *launcher) drawMain() {
 
 		imgui.SetNextItemWidth(-1)
 
-		if imgui.BeginCombo("##mode", l.bld.currentMode.String()) {
+		if imgui.BeginCombo("##mode", launcherConfig.CurrentMode.String()) {
 			for _, m := range modes {
-				if imgui.SelectableBoolV(m.String(), l.bld.currentMode == m, 0, vzero()) {
+				if imgui.SelectableBoolV(m.String(), launcherConfig.CurrentMode == m, 0, vzero()) {
 					if m == Play {
-						l.bld.currentPMode = Watch
+						launcherConfig.CurrentPMode = Watch
 					}
 
 					if m != Replay {
@@ -736,7 +736,7 @@ func (l *launcher) drawMain() {
 						l.bld.knockoutReplays = nil
 					}
 
-					l.bld.currentMode = m
+					launcherConfig.CurrentMode = m
 				}
 			}
 
@@ -824,7 +824,7 @@ func (l *launcher) drawSplash() {
 
 func (l *launcher) drawControls() {
 	imgui.SetCursorPos(vec2(20, 88))
-	switch l.bld.currentMode {
+	switch launcherConfig.CurrentMode {
 	case Replay:
 		l.selectReplay()
 	case Knockout:
@@ -888,7 +888,7 @@ func (l *launcher) drawControls() {
 
 		imgui.TableNextColumn()
 
-		if l.bld.currentMode == CursorDance {
+		if launcherConfig.CurrentMode == CursorDance {
 			if imgui.ButtonV("Mirrors/Tags", vec2(-1, imgui.TextLineHeight()*2)) {
 				l.openPopup(newPopupF("Difficulty adjust", popDynamic, func() {
 					drawCDMenu(l.bld)
@@ -979,7 +979,7 @@ func (l *launcher) trySelectReplaysFromPaths(p []string) {
 		for _, replay := range replays {
 			for _, bMap := range l.beatmaps {
 				if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-					l.bld.currentMode = Knockout
+					launcherConfig.CurrentMode = Knockout
 					l.bld.setMap(bMap)
 
 					found = true
@@ -1016,7 +1016,7 @@ func (l *launcher) trySelectReplaysFromPaths(p []string) {
 func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 	for _, bMap := range l.beatmaps {
 		if strings.ToLower(bMap.MD5) == strings.ToLower(replay.parsedReplay.BeatmapMD5) {
-			l.bld.currentMode = Replay
+			launcherConfig.CurrentMode = Replay
 			l.bld.replayPath = replay.path
 			l.bld.setMap(bMap)
 			l.bld.setReplay(replay.parsedReplay)
@@ -1175,8 +1175,8 @@ func (l *launcher) showSelect() {
 func (l *launcher) drawLowerPanel() {
 	w, h := contentRegionMax().X, contentRegionMax().Y
 
-	if l.bld.currentMode != Play {
-		showProgress := l.bld.currentPMode == Record && l.showProgressBar
+	if launcherConfig.CurrentMode != Play {
+		showProgress := launcherConfig.CurrentPMode == Record && l.showProgressBar
 
 		spacing := imgui.FrameHeightWithSpacing()
 		if showProgress {
@@ -1189,17 +1189,17 @@ func (l *launcher) drawLowerPanel() {
 
 		l.recordSnowPos = vector.NewVec2f(20+(imgui.WindowWidth()-40)/4/2, h-spacing-2)
 
-		if imgui.BeginCombo("##Watch mode", l.bld.currentPMode.String()) {
+		if imgui.BeginCombo("##Watch mode", launcherConfig.CurrentPMode.String()) {
 			for _, m := range pModes {
-				if imgui.SelectableBoolV(m.String(), l.bld.currentPMode == m, 0, vzero()) {
-					l.bld.currentPMode = m
+				if imgui.SelectableBoolV(m.String(), launcherConfig.CurrentPMode == m, 0, vzero()) {
+					launcherConfig.CurrentPMode = m
 				}
 			}
 
 			imgui.EndCombo()
 		}
 
-		if l.bld.currentPMode != Watch {
+		if launcherConfig.CurrentPMode != Watch {
 			imgui.SameLine()
 			if imgui.Button("Configure") {
 				l.openPopup(newPopupF("Record settings", popDynamic, func() {
@@ -1261,11 +1261,11 @@ func (l *launcher) drawLowerPanel() {
 	centerTable("dansebutton", w/2.5, func() {
 		imgui.PushFont(Font48)
 		{
-			dRun := l.danserRunning && l.bld.currentPMode == Record
+			dRun := l.danserRunning && launcherConfig.CurrentPMode == Record
 
-			s := (l.bld.currentMode == Replay && l.bld.currentReplay == nil) ||
-				(l.bld.currentMode != Replay && l.bld.currentMap == nil) ||
-				(l.bld.currentMode == Knockout && l.bld.numKnockoutReplays() == 0)
+			s := (launcherConfig.CurrentMode == Replay && l.bld.currentReplay == nil) ||
+				(launcherConfig.CurrentMode != Replay && l.bld.currentMap == nil) ||
+				(launcherConfig.CurrentMode == Knockout && l.bld.numKnockoutReplays() == 0)
 
 			if !dRun {
 				if s {
@@ -1301,7 +1301,7 @@ func (l *launcher) drawLowerPanel() {
 
 					l.triangleSpeed.AddEventS(l.triangleSpeed.GetTime(), l.triangleSpeed.GetTime()+1000, 50, 1)
 
-					if l.bld.currentPMode != Watch {
+					if launcherConfig.CurrentPMode != Watch {
 						l.startDanser()
 					} else {
 						goroutines.Run(func() {
@@ -1327,7 +1327,7 @@ func (l *launcher) drawLowerPanel() {
 
 func (l *launcher) drawConfigPanel() {
 	if l.currentEditor != nil {
-		l.currentEditor.setDanserRunning(l.danserRunning && l.bld.currentPMode == Watch)
+		l.currentEditor.setDanserRunning(l.danserRunning && launcherConfig.CurrentPMode == Watch)
 	}
 
 	w := contentRegionMax().X
@@ -1485,7 +1485,7 @@ func (l *launcher) drawConfigPanel() {
 
 		imgui.TableNextColumn()
 
-		dRun := l.danserRunning && l.bld.currentPMode == Watch
+		dRun := l.danserRunning && launcherConfig.CurrentPMode == Watch
 
 		if dRun {
 			imgui.PushItemFlag(imgui.ItemFlags(imgui.ItemFlagsDisabled), false)
@@ -1726,9 +1726,9 @@ func (l *launcher) startDanser() {
 		return
 	}
 
-	if l.bld.currentPMode == Watch {
+	if launcherConfig.CurrentPMode == Watch {
 		l.win.Iconify()
-	} else if l.bld.currentPMode == Record {
+	} else if launcherConfig.CurrentPMode == Record {
 		l.showProgressBar = true
 	}
 
@@ -1836,7 +1836,7 @@ func (l *launcher) startDanser() {
 
 				showMessage(mError, "danser crashed! %s\n\n%s", err.Error(), pMsg)
 			})
-		} else if l.bld.currentPMode != Watch && l.bld.currentMode != Play {
+		} else if launcherConfig.CurrentPMode != Watch && launcherConfig.CurrentMode != Play {
 			if launcherConfig.ShowFileAfter && resultFile != "" {
 				platform.ShowFileInManager(resultFile)
 			}

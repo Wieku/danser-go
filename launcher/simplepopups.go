@@ -67,7 +67,7 @@ func drawRecordMenu(bld *builder) {
 
 		inputTextV("##oname", &bld.outputName, imgui.InputTextFlagsCallbackCharFilter, imguiPathFilter)
 
-		if bld.currentPMode == Screenshot {
+		if launcherConfig.CurrentPMode == Screenshot {
 			imgui.TableNextColumn()
 
 			imgui.AlignTextToFramePadding()
