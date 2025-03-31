@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/wieku/danser-go/framework/env"
 	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/math/mutils"
 	"io"
 	"io/fs"
 	"os"
@@ -83,6 +84,9 @@ func loadLauncherConfig() {
 		def := "default"
 		launcherConfig.Profile = &def
 	}
+
+	launcherConfig.CurrentMode = mutils.Clamp(launcherConfig.CurrentMode, CursorDance, Play)
+	launcherConfig.CurrentPMode = mutils.Clamp(launcherConfig.CurrentPMode, Watch, Screenshot)
 
 	saveLauncherConfig()
 }
