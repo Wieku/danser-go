@@ -1,8 +1,6 @@
 module github.com/wieku/danser-go
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/AllenDang/cimgui-go v1.0.0
@@ -22,10 +20,10 @@ require (
 	github.com/sqweek/dialog v0.0.0-20220504154117-be45b268883a
 	github.com/wieku/rplpa v1.0.2
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
-	golang.org/x/image v0.25.0
+	golang.org/x/image v0.38.0
 	golang.org/x/oauth2 v0.28.0
-	golang.org/x/sys v0.31.0
-	golang.org/x/text v0.23.0
+	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.35.0
 )
 
 require (
@@ -45,9 +43,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/tools v0.31.0 // indirect
+	golang.org/x/mod v0.33.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/tools v0.42.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
