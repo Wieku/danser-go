@@ -92,7 +92,7 @@ func startVideo(fps, _w, _h int) {
 	encoder := strings.ToLower(settings.Recording.Encoder)
 	outputFormat := strings.ToLower(settings.Recording.PixelFormat)
 
-	if strings.HasSuffix(encoder, "_qsv") { // qsv works best with nv12 format
+	if strings.HasSuffix(encoder, "_qsv") || strings.HasSuffix(encoder, "_vaapi") { // qsv and vaapi work best with nv12 format
 		outputFormat = "nv12"
 	} else if encoder == "libsvtav1" {
 		outputFormat = "yuv420p"

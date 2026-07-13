@@ -103,6 +103,32 @@ func initRecording() *recording {
 			Preset:            "high_quality",
 			AdditionalOptions: "",
 		},
+		H264VaapiSettings: &h264VaapiSettings{
+			Device:            "/dev/dri/renderD128",
+			RateControl:       "cqp",
+			Bitrate:           "10M",
+			QP:                20,
+			Profile:           "high",
+			AdditionalOptions: "",
+		},
+		HEVCVaapiSettings: &hevcVaapiSettings{
+			Device:            "/dev/dri/renderD128",
+			RateControl:       "icq",
+			Bitrate:           "10M",
+			QP:                22,
+			Quality:           22,
+			Profile:           "main",
+			AdditionalOptions: "",
+		},
+		AV1VaapiSettings: &av1VaapiSettings{
+			Device:            "/dev/dri/renderD128",
+			RateControl:       "icq",
+			Bitrate:           "10M",
+			QP:                24,
+			Quality:           24,
+			CompressionLevel:  4,
+			AdditionalOptions: "",
+		},
 		CustomSettings: &custom{
 			CustomOptions: "",
 		},
@@ -150,7 +176,7 @@ type recording struct {
 	FrameHeight         int                `min:"1" max:"17280"`
 	FPS                 int                `label:"FPS (PLEASE READ TOOLTIP)" string:"true" min:"1" max:"10727" tooltip:"IMPORTANT: If you plan to have a \"high fps\" video, use Motion Blur below instead of setting FPS to absurd numbers. Setting the value too high will result in a broken video!"`
 	EncodingFPSCap      int                `string:"true" min:"0" max:"10727" label:"Max Encoding FPS (Speed)" tooltip:"Limits the speed at which danser renders the video. If FPS is set to 60 and this option to 30, then it means 2 minute map will take at least 4 minutes to render"`
-	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),libsvtav1|Software AV1,h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),av1_nvenc|NVIDIA NVENC AV1,h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC),h264_amf|AMD AMF H.264 (AVC),hevc_amf|AMD AMF H.265 (HEVC),av1_amf|AMD AMF AV1" comboSrc:"EncoderOptions"`
+	Encoder             string             `combo:"libx264|Software x264 (AVC),libx265|Software x265 (HEVC),libsvtav1|Software AV1,h264_nvenc|NVIDIA NVENC H.264 (AVC),hevc_nvenc|NVIDIA NVENC H.265 (HEVC),av1_nvenc|NVIDIA NVENC AV1,h264_qsv|Intel QuickSync H.264 (AVC),hevc_qsv|Intel QuickSync H.265 (HEVC),h264_amf|AMD AMF H.264 (AVC),hevc_amf|AMD AMF H.265 (HEVC),av1_amf|AMD AMF AV1,h264_vaapi|VAAPI H.264 (AVC),hevc_vaapi|VAAPI HEVC,av1_vaapi|VAAPI AV1" comboSrc:"EncoderOptions"`
 	X264Settings        *x264Settings      `json:"libx264" label:"Software x264 (AVC) Settings" showif:"Encoder=libx264"`
 	X265Settings        *x265Settings      `json:"libx265" label:"Software x265 (HEVC) Settings" showif:"Encoder=libx265"`
 	AV1Settings         *av1Settings       `json:"libsvtav1" label:"Software AV1 Settings" showif:"Encoder=libsvtav1"`
@@ -162,8 +188,11 @@ type recording struct {
 	H264AmfSettings     *h264AmfSettings   `json:"h264_amf" label:"AMD AMF H.264 (AVC) Settings" showif:"Encoder=h264_amf"`
 	HEVCAmfSettings     *hevcAmfSettings   `json:"hevc_amf" label:"AMD AMF H.265 (HEVC) Settings" showif:"Encoder=hevc_amf"`
 	AV1AmfSettings      *av1AmfSettings    `json:"av1_amf" label:"AMD AMF AV1 Settings" showif:"Encoder=av1_amf"`
+	H264VaapiSettings   *h264VaapiSettings `json:"h264_vaapi" label:"VAAPI H.264 (AVC) Settings" showif:"Encoder=h264_vaapi"`
+	HEVCVaapiSettings   *hevcVaapiSettings `json:"hevc_vaapi" label:"VAAPI HEVC Settings" showif:"Encoder=hevc_vaapi"`
+	AV1VaapiSettings    *av1VaapiSettings  `json:"av1_vaapi" label:"VAAPI AV1 Settings" showif:"Encoder=av1_vaapi"`
 	CustomSettings      *custom            `json:"custom" label:"Custom Encoder Settings" showif:"Encoder=!"`
-	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12" showif:"Encoder=!h264_qsv,!hevc_qsv,!libsvtav1"`
+	PixelFormat         string             `combo:"yuv420p|I420,yuv444p|I444,nv12|NV12" showif:"Encoder=!h264_qsv,!hevc_qsv,!libsvtav1,!h264_vaapi,!hevc_vaapi,!av1_vaapi"`
 	Filters             string             `label:"FFmpeg Video Filters"`
 	AudioCodec          string             `combo:"aac|AAC,libmp3lame|MP3,libopus|OPUS,flac|FLAC"`
 	AACSettings         *aacSettings       `json:"aac" label:"AAC Settings" showif:"AudioCodec=aac"`
@@ -205,6 +234,12 @@ func (g *recording) GetEncoderOptions() EncoderOptions {
 		return g.HEVCAmfSettings
 	case "av1_amf":
 		return g.AV1AmfSettings
+	case "h264_vaapi":
+		return g.H264VaapiSettings
+	case "hevc_vaapi":
+		return g.HEVCVaapiSettings
+	case "av1_vaapi":
+		return g.AV1VaapiSettings
 	default:
 		return g.CustomSettings
 	}
@@ -303,7 +338,15 @@ func (d *defaultsFactory) EncoderOptions() []string {
 		toRemove := util.Balance(8, encoderCache, func(encoder string) (string, bool) {
 			eName := strings.Split(encoder, "|")[0]
 
-			cmd, err := platform.PrepareFFMpeg("ffmpeg", "-f", "lavfi", "-i", "color=black:s=240x144", "-vframes", "1", "-an", "-c:v", eName, "-f", "null", "-")
+			args := []string{"-f", "lavfi", "-i", "color=black:s=240x144", "-vframes", "1", "-an", "-c:v", eName}
+
+			if strings.HasSuffix(eName, "_vaapi") {
+				args = append(args, "-vaapi_device", "/dev/dri/renderD128", "-vf", "format=nv12,hwupload")
+			}
+
+			args = append(args, "-f", "null", "-")
+
+			cmd, err := platform.PrepareFFMpeg("ffmpeg", args...)
 
 			if err != nil {
 				return "", false
