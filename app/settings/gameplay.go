@@ -273,7 +273,7 @@ type gameplay struct {
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
 	IgnoreFailsInReplays    bool
-	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021 pp rework (First Xexxar),220930|2022 pp rework,241007|2024 pp rework,250306|2025 Q1 update,26xxxx|Upcoming,latest|2025 Q4 update (latest)"`
+	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021 pp rework (First Xexxar),220930|2022 pp rework,241007|2024 pp rework,250306|2025 Q1 update,251020|2025 Q4 update,26xxxx|March 2026 preview,latest|2026 Q2 SR & PP (latest)"`
 	LazerClassicScore       bool   `label:"Use \"Classic\" score for osu!lazer plays"`
 	AlwaysSkipIntro         bool   `liveedit:"false"`
 }

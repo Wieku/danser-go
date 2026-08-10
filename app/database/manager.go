@@ -17,7 +17,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260727"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/env"
@@ -48,7 +48,7 @@ var migrations []Migration
 
 var songsDir string
 
-var difficultyCalc = pp250306.NewDifficultyCalculator()
+var difficultyCalc = pp260727.NewDifficultyCalculator()
 
 func Init() error {
 	log.Println("DatabaseManager: Initializing database...")

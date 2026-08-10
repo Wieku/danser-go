@@ -78,6 +78,12 @@ $resgen <<< $resDanser
 
 cp {bass.dll,bass_fx.dll,bassmix.dll,libyuv.dll,SDL3.dll} $BUILD_DIR/
 
+pnpm --dir pp-runtime install --prod --frozen-lockfile
+mkdir -p $BUILD_DIR/pp-runtime
+cp pp-runtime/{pp-server.cjs,package.json,pnpm-lock.yaml,README.md} $BUILD_DIR/pp-runtime/
+cp -r pp-runtime/node_modules $BUILD_DIR/pp-runtime/
+cp "$(command -v node)" $BUILD_DIR/pp-runtime/node.exe
+
 $CC <<< --verbose -O3 -o $BUILD_DIR/danser-cli.exe -I. cmain/main_danser.c -I$BUILD_DIR/ -L$BUILD_DIR/ -ldanser-core $BUILD_DIR/danser.syso -municode
 
 $resgen <<< $resLauncher

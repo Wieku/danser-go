@@ -1,0 +1,43 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@tosuapp/lazer-calculator-prebuilt':
+        specifier: 0.6.1-20260729-main.0
+        version: 0.6.1-20260729-main.0
+
+packages:
+
+  '@tosuapp/lazer-calculator-linux-x64@0.6.1-20260729-main.0':
+    resolution: {integrity: sha512-z6JQt9Y2Gp3DqA2UWjOhaiZQVWQ1kDPJx10e3n6+NcUKgw8YwsKrTWFfgs7lmiVDiE0YBxtxfWRxZpyRpnofcQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@tosuapp/lazer-calculator-prebuilt@0.6.1-20260729-main.0':
+    resolution: {integrity: sha512-ymhZSBU/SZuMGD+4j35AcngBhFhjJWvokhfTWbFTYE8hAX2xVGFIsh1rhBoZvqY95yTdnVjFay/qMMsjZLVZng==}
+    cpu: [x64]
+    os: [win32, linux]
+
+  '@tosuapp/lazer-calculator-win32-x64@0.6.1-20260729-main.0':
+    resolution: {integrity: sha512-HhWNJuhFEDk5InEZLD63hQIMfP5qnBGF4V2pPiL/FsAxcNLgY8PjsqxrwhOGy9c8secwLqI+F/OxLYCoBPmXVA==}
+    cpu: [x64]
+    os: [win32]
+
+snapshots:
+
+  '@tosuapp/lazer-calculator-linux-x64@0.6.1-20260729-main.0':
+    optional: true
+
+  '@tosuapp/lazer-calculator-prebuilt@0.6.1-20260729-main.0':
+    optionalDependencies:
+      '@tosuapp/lazer-calculator-linux-x64': 0.6.1-20260729-main.0
+      '@tosuapp/lazer-calculator-win32-x64': 0.6.1-20260729-main.0
+
+  '@tosuapp/lazer-calculator-win32-x64@0.6.1-20260729-main.0':
+    optional: true

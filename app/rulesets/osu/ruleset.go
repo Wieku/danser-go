@@ -359,7 +359,7 @@ func (set *OsuRuleSet) printEndTable() {
 		data = append(data, fmt.Sprintf("%d", i+1))
 		data = append(data, c.Name)
 		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetScore()))
-		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.Accuracy*100))
+		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.AccuracyDisplay()))
 		data = append(data, set.cursors[c].score.Grade.String())
 		data = append(data, utils.Humanize(set.cursors[c].score.Count300))
 		data = append(data, utils.Humanize(set.cursors[c].score.Count100))
@@ -558,7 +558,7 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 			subSet.scoreProcessor.GetCombo(),
 			subSet.score.Combo,
 			subSet.scoreProcessor.GetScore(),
-			subSet.score.Accuracy*100,
+			subSet.score.AccuracyDisplay(),
 			subSet.score.Count300,
 			subSet.score.Count100,
 			subSet.score.Count50,

@@ -391,29 +391,23 @@ func (diff *Difficulty) GetRadius() float32 {
 }
 
 func (diff *Difficulty) GetScoreMultiplier() float64 {
+	if diff.Mods.Active(Lazer) {
+		return diff.getLazerScoreMultiplier()
+	}
+
 	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore | Flashlight))).GetScoreMultiplier()
 
-	if diff.Mods.Active(Lazer) {
-		value := math.Floor(diff.Speed*10)/10 - 1
-
-		if diff.Speed >= 1 {
-			baseMultiplier *= 1 + value/5
+	if diff.Speed > 1 {
+		if diff.Mods.Active(ScoreV2) {
+			baseMultiplier *= 1 + (0.40 * (diff.Speed - 1))
 		} else {
-			baseMultiplier *= 0.6 + value
+			baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
 		}
-	} else {
-		if diff.Speed > 1 {
-			if diff.Mods.Active(ScoreV2) {
-				baseMultiplier *= 1 + (0.40 * (diff.Speed - 1))
-			} else {
-				baseMultiplier *= 1 + (0.24 * (diff.Speed - 1))
-			}
-		} else if diff.Speed < 1 {
-			if diff.Speed >= 0.75 {
-				baseMultiplier *= 0.3 + 0.7*(1-(1-diff.Speed)/0.25)
-			} else {
-				baseMultiplier *= max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
-			}
+	} else if diff.Speed < 1 {
+		if diff.Speed >= 0.75 {
+			baseMultiplier *= 0.3 + 0.7*(1-(1-diff.Speed)/0.25)
+		} else {
+			baseMultiplier *= max(0, 0.3*(1-(0.75-diff.Speed)/0.75))
 		}
 	}
 
@@ -430,6 +424,87 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 	}
 
 	return baseMultiplier
+}
+
+func (diff *Difficulty) getLazerScoreMultiplier() float64 {
+	multiplier := 1.0
+
+	if diff.Mods.Active(NoFail) {
+		multiplier *= 0.5
+	}
+	if diff.Mods.Active(Easy) {
+		retries := NewEasySettings().Retries
+		if config, ok := GetModConfig[EasySettings](diff); ok {
+			retries = config.Retries
+		}
+		multiplier *= max(0.4, 0.8-max(0, 0.1*float64(retries-NewEasySettings().Retries)))
+	}
+	if diff.Mods.Active(HardRock) {
+		multiplier *= 1.09
+	}
+	if diff.Mods.Active(Hidden) {
+		multiplier *= 1.04
+	}
+	if diff.Mods.Active(Target) {
+		multiplier *= 0.01
+	}
+	if diff.Mods.Active(Classic) {
+		classicNoteLock := NewClassicSettings().ClassicNoteLock
+		if config, ok := GetModConfig[ClassicSettings](diff); ok {
+			classicNoteLock = config.ClassicNoteLock
+		}
+		if classicNoteLock {
+			multiplier *= 0.985
+		} else {
+			multiplier *= 0.96
+		}
+	}
+	if diff.Mods.Active(Random) {
+		multiplier *= 0.7
+	}
+	if diff.Mods.Active(Relax) || diff.Mods.Active(Relax2) {
+		multiplier *= 0.1
+	}
+	if diff.Mods.Active(SpunOut) {
+		multiplier *= 0.95
+	}
+	if diff.Mods.Active(Traceable) {
+		multiplier *= 1.02
+	}
+
+	if diff.Speed >= 1 {
+		value := math.Floor(diff.Speed*10) / 10
+		penalty := 0.0
+		if value != 1 && value != 1.5 {
+			penalty = 0.01
+		}
+		multiplier *= (value-1)*0.46 + 1 - penalty
+	} else {
+		multiplier *= math.Floor(diff.Speed*20)/20*1.4 - 0.5
+	}
+
+	if diff.Mods.Active(Flashlight) {
+		config := NewFlashlightSettings()
+		if custom, ok := GetModConfig[FlashlightSettings](diff); ok {
+			config = custom
+		}
+
+		flashlightMultiplier := mutils.Clamp(1.2-0.2*(config.SizeMultiplier-1), 1.02, 1.2)
+		if !config.ComboBasedSize {
+			flashlightMultiplier = 1 + (flashlightMultiplier-1)/5
+		}
+		multiplier *= flashlightMultiplier
+	}
+
+	if diff.Mods.Active(DifficultyAdjust) {
+		csMultiplier := max(0.1, 1-math.Abs(diff.GetCS()-diff.GetBaseCS())*0.5)
+		hpMultiplier := max(0.1, 1-math.Abs(diff.GetHP()-diff.GetBaseHP())*0.5)
+		odMultiplier := max(0.1, 1-math.Abs(diff.GetOD()-diff.GetBaseOD())*0.5)
+		arMultiplier := max(0.1, 1-math.Abs(diff.GetAR()-diff.GetBaseAR())*0.5)
+		multiplier *= max(0.1, csMultiplier*hpMultiplier*odMultiplier*arMultiplier)
+	}
+
+	return multiplier
 }
 
 func (diff *Difficulty) GetModStringFull() []string {

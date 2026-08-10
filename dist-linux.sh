@@ -24,6 +24,12 @@ go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=
 mv $BUILD_DIR/danser-core.so $BUILD_DIR/libdanser-core.so
 cp {libbass.so,libbass_fx.so,libbassmix.so,libyuv.so,libSDL3.so} $BUILD_DIR/
 
+pnpm --dir pp-runtime install --prod --frozen-lockfile
+mkdir -p $BUILD_DIR/pp-runtime
+cp pp-runtime/{pp-server.cjs,package.json,pnpm-lock.yaml,README.md} $BUILD_DIR/pp-runtime/
+cp -r pp-runtime/node_modules $BUILD_DIR/pp-runtime/
+cp "$(command -v node)" $BUILD_DIR/pp-runtime/node
+
 gcc -no-pie --verbose -O3 -o $BUILD_DIR/danser-cli -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,'$ORIGIN' -L$BUILD_DIR/ -ldanser-core
 
 gcc -no-pie --verbose -O3 -D LAUNCHER -o $BUILD_DIR/danser -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,'$ORIGIN' -L$BUILD_DIR/ -ldanser-core

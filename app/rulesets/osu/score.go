@@ -1,6 +1,8 @@
 package osu
 
 import (
+	"math"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
@@ -13,6 +15,12 @@ type scoreProcessor interface {
 	GetScore() int64
 	GetCombo() int64
 	GetAccuracy() float64
+}
+
+// AccuracyDisplay returns the two-decimal percentage shown by osu!'s score
+// pages. osu! truncates this value rather than rounding it.
+func (s *Score) AccuracyDisplay() float64 {
+	return math.Floor(s.Accuracy*10000) / 100
 }
 
 type Score struct {
@@ -39,15 +47,16 @@ type Score struct {
 
 func (s *Score) ToPerfScore() api.PerfScore {
 	return api.PerfScore{
-		Score:        int(s.Score),
-		MaxCombo:     int(s.Combo),
-		CountGreat:   int(s.Count300),
-		CountOk:      int(s.Count100),
-		CountMeh:     int(s.Count50),
-		CountMiss:    int(s.CountMiss),
-		SliderBreaks: int(s.CountSB),
-		SliderEnd:    int(s.SliderEnd),
-		Accuracy:     s.Accuracy,
+		Score:           int(s.Score),
+		MaxCombo:        int(s.Combo),
+		CountGreat:      int(s.Count300),
+		CountOk:         int(s.Count100),
+		CountMeh:        int(s.Count50),
+		CountMiss:       int(s.CountMiss),
+		SliderBreaks:    int(s.CountSB),
+		SliderTickTotal: int(s.MaxTicks),
+		SliderEnd:       int(s.SliderEnd),
+		Accuracy:        s.Accuracy,
 	}
 }
 

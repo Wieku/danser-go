@@ -1,13 +1,14 @@
 package api
 
 type PerfScore struct {
-	Score        int
-	Accuracy     float64
-	MaxCombo     int
-	CountGreat   int
-	CountOk      int
-	CountMeh     int
-	CountMiss    int
-	SliderBreaks int
-	SliderEnd    int
+	Score           int
+	Accuracy        float64
+	MaxCombo        int
+	CountGreat      int
+	CountOk         int
+	CountMeh        int
+	CountMiss       int
+	SliderBreaks    int
+	SliderTickTotal int
+	SliderEnd       int
 }
