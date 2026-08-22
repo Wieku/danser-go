@@ -708,22 +708,32 @@ func mainLoopSS() {
 
 	for !p.Update(1) {
 		if p.GetTime() >= screenshotTime*1000 {
-			log.Println("Scheduling screenshot")
-			goroutines.CallMain(func() {
-				fbo.Bind()
-
-				viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
-				pushFrame()
-				viewport.Pop()
-
-				utils.MakeScreenshot(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), output, false)
-
-				fbo.Unbind()
-			})
-
 			break
 		}
 	}
+
+	goroutines.CallMain(func() {
+		fbo.Bind()
+
+		viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+		pushFrame()
+		viewport.Pop()
+
+		fbo.Unbind()
+	})
+
+	log.Println("Scheduling screenshot")
+	goroutines.CallMain(func() {
+		fbo.Bind()
+
+		viewport.Push(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()))
+		pushFrame()
+		viewport.Pop()
+
+		utils.MakeScreenshot(int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()), output, false)
+
+		fbo.Unbind()
+	})
 }
 
 func mainLoopNormal() {
