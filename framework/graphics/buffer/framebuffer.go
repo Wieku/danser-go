@@ -300,7 +300,12 @@ func (f *Framebuffer) ClearColorIM(index int, color color2.Color) {
 }
 
 func (f *Framebuffer) ClearDepthV(v float32) {
-	gl.ClearNamedFramebufferfv(f.handle, gl.DEPTH, 0, &v)
+	// BIG STINKY HACK: On Vega AMD GPU, the driver use movups WHICH reads 16 BYTES INSTEAD
+	// OF 4 BYTES, which causes a crash when the next 12 bytes are NOT within mapped memory.
+	// So we're just feeding movups a valid data, and it will work.
+	values := [4]float32{v, 0, 0, 0}
+	gl.ClearNamedFramebufferfv(f.handle, gl.DEPTH, 0, &values[0]);
+	runtime.KeepAlive(values)
 }
 
 func (f *Framebuffer) ClearDepth() {
