@@ -94,6 +94,7 @@ type Slider struct {
 	isSliding bool
 
 	EndTimeLazer     float64
+	EndTimeRaw       float64
 	ScorePointsLazer []TickPoint
 	spanDuration     float64
 
@@ -271,6 +272,10 @@ func tryGetType(str string) curves.CType {
 
 func (slider *Slider) GetLength() float32 {
 	return slider.multiCurve.GetLength()
+}
+
+func (slider *Slider) GetLegacyTailTime() int64 {
+	return int64(math.Ceil(float64(float32(slider.EndTimeRaw) - 37)))
 }
 
 func (slider *Slider) GetStartAngleMod(diff *difficulty.Difficulty) float32 {
@@ -494,6 +499,7 @@ func (slider *Slider) calculateFollowPointsStable(beatmapVersion int) {
 
 			startTime += progress
 			slider.EndTime = math.Floor(startTime)
+			slider.EndTimeRaw = startTime
 
 			scoringDistance += float64(distance)
 
