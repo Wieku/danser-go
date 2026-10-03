@@ -3,13 +3,13 @@ package evaluators
 import (
 	"math"
 
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 const (
-	velocityChangeMultiplier = 2.0
+	velocityChangeMultiplier = 0.52
 )
 
 func EvaluateFlowAim(current *preprocessing.DifficultyObject, withSliderTravelDistance bool) float64 {
@@ -43,11 +43,11 @@ func EvaluateFlowAim(current *preprocessing.DifficultyObject, withSliderTravelDi
 
 	// Apply high circle size bonus to the base velocity.
 	// We use reduced CS bonus here because the bonus was made for an evaluator with a different d/t scaling
-	flowDifficulty *= math.Pow(osuCurrObj.SmallCircleBonus, 0.75)
+	flowDifficulty *= math.Sqrt(osuCurrObj.SmallCircleBonus)
 
 	// Rhythm changes are harder to flow
 	flowDifficulty *= 1 + min(0.25,
-		math.Pow((max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)-min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime))/50, 4))
+		putils.Powi((max(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime)-min(osuCurrObj.AdjustedDeltaTime, osuLastObj.AdjustedDeltaTime))/50, 4))
 
 	if !math.IsNaN(osuCurrObj.Angle) && !math.IsNaN(osuLastObj.Angle) {
 		angleDifference := math.Abs(osuCurrObj.Angle - osuLastObj.Angle)
@@ -69,11 +69,10 @@ func EvaluateFlowAim(current *preprocessing.DifficultyObject, withSliderTravelDi
 		overlappedNotesWeight = 1 - o1*o2*o3
 	}
 
-	if !math.IsNaN(osuCurrObj.Angle) && !math.IsNaN(osuLastObj.Angle) {
+	if !math.IsNaN(osuCurrObj.Angle) {
 		// Acute angles are also hard to flow
-		// We square root velocity to make acute angle switches in streams aren't having difficulty higher than snap
-		flowDifficulty += math.Sqrt(currVelocity) *
-			calcAcuteAngleBonus(osuCurrObj.Angle) *
+		flowDifficulty += currVelocity *
+			calcAngleAcuteness(osuCurrObj.Angle) *
 			overlappedNotesWeight
 	}
 
@@ -98,7 +97,11 @@ func EvaluateFlowAim(current *preprocessing.DifficultyObject, withSliderTravelDi
 	}
 
 	// Final velocity is being raised to a power because flow difficulty scales harder with both high distance and time, and we want to account for that
-	return math.Pow(flowDifficulty, 1.45)
+
+	flowDifficulty = math.Pow(flowDifficulty, 1.45)
+
+	// Reduce difficulty for low spacing since spacing below radius is always to be flowed
+	return flowDifficulty * putils.Smootherstep(currDistance, 0, preprocessing.NormalizedRadius)
 }
 
 func calculateOverlapFactor(first, second *preprocessing.DifficultyObject) float64 {
@@ -107,5 +110,5 @@ func calculateOverlapFactor(first, second *preprocessing.DifficultyObject) float
 	objectRadius := first.Diff.CircleRadiusL
 
 	distance := float64(firstBase.GetStackedStartPositionMod(first.Diff).Dst(secondBase.GetStackedStartPositionMod(second.Diff)))
-	return mutils.Clamp(1-math.Pow(max(distance-objectRadius, 0)/objectRadius, 2), 0, 1)
+	return mutils.Clamp(1-putils.Powi(max(distance-objectRadius, 0)/objectRadius, 2), 0, 1)
 }

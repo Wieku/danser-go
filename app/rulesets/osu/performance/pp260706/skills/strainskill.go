@@ -4,12 +4,12 @@ import (
 	"math"
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/collections"
 )
 
-type Skill struct {
+type StrainSkill struct {
 	// The weight by which each strain value decays.
 	DecayWeight float64
 
@@ -39,8 +39,8 @@ type Skill struct {
 	stepCalc bool
 }
 
-func NewSkill(d *difficulty.Difficulty, stepCalc bool) *Skill {
-	skill := &Skill{
+func NewSkill(d *difficulty.Difficulty, stepCalc bool) *StrainSkill {
+	skill := &StrainSkill{
 		DecayWeight:       0.9,
 		SectionLength:     400,
 		strainPeaksSorted: collections.NewSortedList[float64](),
@@ -66,7 +66,7 @@ func NewSkill(d *difficulty.Difficulty, stepCalc bool) *Skill {
 }
 
 // Processes given DifficultyObject
-func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
+func (skill *StrainSkill) Process(current *preprocessing.DifficultyObject) {
 	if current.Index == 0 {
 		skill.currentSectionEnd = math.Ceil(current.StartTime/skill.SectionLength) * skill.SectionLength
 	}
@@ -92,7 +92,7 @@ func (skill *Skill) Process(current *preprocessing.DifficultyObject) {
 	}
 }
 
-func (skill *Skill) processSectionEnd(nextObj *preprocessing.DifficultyObject) {
+func (skill *StrainSkill) processSectionEnd(nextObj *preprocessing.DifficultyObject) {
 	for nextObj.StartTime > skill.currentSectionEnd {
 		sectionsLeft := math.Floor((nextObj.StartTime - skill.currentSectionEnd) / skill.SectionLength)
 
@@ -112,7 +112,7 @@ func (skill *Skill) processSectionEnd(nextObj *preprocessing.DifficultyObject) {
 	}
 }
 
-func (skill *Skill) GetCurrentStrainPeaks() []float64 {
+func (skill *StrainSkill) GetCurrentStrainPeaks() []float64 {
 	peaks := make([]float64, len(skill.strainPeaks)+1)
 	copy(peaks, skill.strainPeaks)
 	peaks[len(peaks)-1] = skill.currentSectionPeak
@@ -120,7 +120,7 @@ func (skill *Skill) GetCurrentStrainPeaks() []float64 {
 	return peaks
 }
 
-func (skill *Skill) getCurrentStrainPeaksSorted() []float64 {
+func (skill *StrainSkill) getCurrentStrainPeaksSorted() []float64 {
 	peaks := skill.strainPeaksSorted.CloneWithAddCap(1)
 
 	peaks.Add(skill.currentSectionPeak)
@@ -128,7 +128,7 @@ func (skill *Skill) getCurrentStrainPeaksSorted() []float64 {
 	return peaks.Slice
 }
 
-func (skill *Skill) defaultDifficulty() float64 {
+func (skill *StrainSkill) defaultDifficulty() float64 {
 	diffValue := 0.0
 	weight := 1.0
 
@@ -150,7 +150,7 @@ func (skill *Skill) defaultDifficulty() float64 {
 	return diffValue
 }
 
-func (skill *Skill) DifficultyValue() float64 {
+func (skill *StrainSkill) DifficultyValue() float64 {
 	if skill.stepCalc {
 		return skill.difficulty
 	}
@@ -158,11 +158,11 @@ func (skill *Skill) DifficultyValue() float64 {
 	return skill.CalculateDifficulty()
 }
 
-func (skill *Skill) CountTopWeightedStrains() float64 {
+func (skill *StrainSkill) CountTopWeightedStrains() float64 {
 	return skill.diffStrains.GetValue()
 }
 
-func (skill *Skill) saveCurrentPeak() {
+func (skill *StrainSkill) saveCurrentPeak() {
 	skill.strainPeaks = append(skill.strainPeaks, skill.currentSectionPeak)
 
 	if skill.currentSectionPeak > 0 {
@@ -170,7 +170,7 @@ func (skill *Skill) saveCurrentPeak() {
 	}
 }
 
-func (skill *Skill) startNewSectionFrom(end float64, current *preprocessing.DifficultyObject) {
+func (skill *StrainSkill) startNewSectionFrom(end float64, current *preprocessing.DifficultyObject) {
 	skill.currentSectionPeak = skill.CalculateInitialStrain(end, current)
 }
 

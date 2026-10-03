@@ -5,6 +5,7 @@ import (
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
@@ -68,9 +69,6 @@ type DifficultyObject struct {
 	SmallCircleBonus float64
 
 	LastObjectEndDeltaTime float64
-
-	lastLastDifficultyObject *DifficultyObject
-	lastDifficultyObject     *DifficultyObject
 }
 
 func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObject, d *difficulty.Difficulty, listOfDiffs *[]*DifficultyObject, index int) *DifficultyObject {
@@ -90,19 +88,11 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 		DeltaTime:             (hitObject.GetStartTime() - lastObject.GetStartTime()) / d.Speed,
 		StartTime:             hitObject.GetStartTime() / d.Speed,
 		EndTime:               endTime / d.Speed,
-		Preempt:               d.PreemptU / d.Speed,
+		Preempt:               d.Preempt / d.Speed,
 		Angle:                 math.NaN(),
 		NormalisedVectorAngle: math.NaN(),
 		GreatWindow:           2 * d.Hit300U / d.Speed,
 		SmallCircleBonus:      max(1.0, 1.0+(30-d.CircleRadiusL)/70),
-	}
-
-	if index > 1 {
-		obj.lastLastDifficultyObject = (*listOfDiffs)[index-2]
-	}
-
-	if index > 0 {
-		obj.lastDifficultyObject = (*listOfDiffs)[index-1]
 	}
 
 	if _, ok := hitObject.(*objects.Spinner); ok {
@@ -116,8 +106,8 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 	obj.AdjustedDeltaTime = max(obj.DeltaTime, MinDeltaTime)
 	obj.LastObjectEndDeltaTime = obj.AdjustedDeltaTime
 
-	if obj.lastDifficultyObject != nil {
-		obj.LastObjectEndDeltaTime = max(obj.StartTime-obj.lastDifficultyObject.EndTime, MinDeltaTime)
+	if last := obj.Previous(0); last != nil {
+		obj.LastObjectEndDeltaTime = max(obj.StartTime-last.EndTime, MinDeltaTime)
 	}
 
 	obj.setDistances()
@@ -125,30 +115,39 @@ func NewDifficultyObject(hitObject, lastLastObject, lastObject objects.IHitObjec
 	return obj
 }
 
-func (o *DifficultyObject) GetDoubletapness(osuNextObj *DifficultyObject) float64 {
-	if osuNextObj != nil {
-		currDeltaTime := max(1, o.DeltaTime)
-		nextDeltaTime := max(1, osuNextObj.DeltaTime)
-		deltaDifference := math.Abs(nextDeltaTime - currDeltaTime)
-		speedRatio := currDeltaTime / max(currDeltaTime, deltaDifference)
-		windowRatio := math.Pow(min(1, currDeltaTime/o.GreatWindow), 5)
-		return 1 - math.Pow(speedRatio, 1-windowRatio)
+func (o *DifficultyObject) CalculateDoubleTapFeasibility(nextObj *DifficultyObject) float64 {
+	if nextObj == nil {
+		return 0
 	}
 
-	return 0
+	currDeltaTime := max(1, o.DeltaTime)
+	nextDeltaTime := max(1, nextObj.DeltaTime)
+
+	deltaDifference := math.Abs(nextDeltaTime - currDeltaTime)
+
+	speedRatio := currDeltaTime / max(currDeltaTime, deltaDifference)
+	windowRatio := putils.Powi(min(1, currDeltaTime/o.GreatWindow), 5)
+
+	// Can't doubletap if circles don't intersect
+	distanceFactor := putils.Powi(putils.ReverseLerp(o.LazyJumpDistance, NormalizedDiameter, NormalizedRadius), 2)
+
+	return 1 - math.Pow(speedRatio, distanceFactor*(1-windowRatio))
 }
 
 func (o *DifficultyObject) OpacityAt(time float64, hidden bool) float64 {
 	if time > o.BaseObject.GetStartTime() {
+		// Consider a hitobject as being invisible when its start time is passed.
+		// In reality the hitobject will be visible beyond its start time up until its hittable window has passed,
+		// but this is an approximation and such a case is unlikely to be hit where this function is used.
 		return 0
 	}
 
-	fadeInStartTime := o.BaseObject.GetStartTime() - o.Diff.PreemptU
+	fadeInStartTime := o.BaseObject.GetStartTime() - o.Diff.Preempt
 	fadeInDuration := o.Diff.TimeFadeIn
 
 	if hidden {
-		fadeOutStartTime := o.BaseObject.GetStartTime() - o.Diff.PreemptU + o.Diff.TimeFadeIn
-		fadeOutDuration := o.Diff.PreemptU * 0.3
+		fadeOutStartTime := o.BaseObject.GetStartTime() - o.Diff.Preempt + o.Diff.TimeFadeIn
+		fadeOutDuration := o.Diff.Preempt * 0.3
 
 		return min(
 			mutils.Clamp((time-fadeInStartTime)/fadeInDuration, 0.0, 1.0),
@@ -189,6 +188,8 @@ func (o *DifficultyObject) setDistances() {
 		o.TravelTime = max(o.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
 	}
 
+	o.MinimumJumpTime = o.AdjustedDeltaTime
+
 	_, ok1 := o.BaseObject.(*objects.Spinner)
 	_, ok2 := o.LastObject.(*objects.Spinner)
 
@@ -196,20 +197,23 @@ func (o *DifficultyObject) setDistances() {
 		return
 	}
 
+	// We will scale distances by this factor, so we can assume a uniform CircleSize among beatmaps.
 	scalingFactor := NormalizedRadius / float32(o.Diff.CircleRadiusL)
 
+	lastDifficultyObject := o.Previous(0)
+	lastLastDifficultyObject := o.Previous(1)
+
 	lastCursorPosition := o.LastObject.GetStackedStartPositionMod(o.Diff)
-	if o.lastDifficultyObject != nil {
-		lastCursorPosition = getEndCursorPosition(o.lastDifficultyObject)
+	if lastDifficultyObject != nil {
+		lastCursorPosition = getEndCursorPosition(lastDifficultyObject)
 	}
 
 	o.JumpDistance = float64((o.LastObject.GetStackedStartPositionMod(o.Diff)).Dst(o.BaseObject.GetStackedStartPositionMod(o.Diff)) * scalingFactor)
 	o.LazyJumpDistance = float64(o.BaseObject.GetStackedStartPositionMod(o.Diff).Dst(lastCursorPosition) * scalingFactor)
-	o.MinimumJumpTime = o.AdjustedDeltaTime
 	o.MinimumJumpDistance = o.LazyJumpDistance
 
-	if lastSlider, ok := o.LastObject.(*LazySlider); ok && o.lastDifficultyObject != nil {
-		lastTravelTime := max(o.lastDifficultyObject.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
+	if lastSlider, ok := o.LastObject.(*LazySlider); ok && lastDifficultyObject != nil {
+		lastTravelTime := max(lastDifficultyObject.LazyTravelTime/o.Diff.Speed, MinDeltaTime)
 		o.MinimumJumpTime = max(o.AdjustedDeltaTime-lastTravelTime, MinDeltaTime)
 
 		//
@@ -238,15 +242,15 @@ func (o *DifficultyObject) setDistances() {
 		o.MinimumJumpDistance = max(0, min(o.LazyJumpDistance-float64(maximumSliderRadius-assumedSliderRadius), float64(tailJumpDistance-maximumSliderRadius)))
 	}
 
-	if o.lastLastDifficultyObject != nil && !o.lastLastDifficultyObject.IsSpinner {
-		if o.lastDifficultyObject.IsSlider && o.lastDifficultyObject.TravelDistance > 0 {
-			lastCursorPosition = o.lastDifficultyObject.BaseObject.GetStackedStartPositionMod(o.lastDifficultyObject.Diff)
+	if lastLastDifficultyObject != nil && !lastLastDifficultyObject.IsSpinner {
+		if lastDifficultyObject.IsSlider && lastDifficultyObject.TravelDistance > 0 {
+			lastCursorPosition = lastDifficultyObject.BaseObject.GetStackedStartPositionMod(lastDifficultyObject.Diff)
 		}
 
-		lastLastCursorPosition := getEndCursorPosition(o.lastLastDifficultyObject)
+		lastLastCursorPosition := getEndCursorPosition(lastLastDifficultyObject)
 
 		angle := o.calculateAngle(o.BaseObject.GetStackedStartPositionMod(o.Diff), lastCursorPosition, lastLastCursorPosition)
-		sliderAngle := o.calculateSliderAngle(o.lastDifficultyObject, lastLastCursorPosition)
+		sliderAngle := o.calculateSliderAngle(lastDifficultyObject, lastLastCursorPosition)
 
 		v := o.BaseObject.GetStackedStartPositionMod(o.Diff).Sub(lastCursorPosition)
 		o.NormalisedVectorAngle = math.Atan2(math.Abs(float64(v.Y)), math.Abs(float64(v.X)))

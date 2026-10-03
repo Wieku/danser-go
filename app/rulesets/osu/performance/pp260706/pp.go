@@ -1,11 +1,11 @@
-package pp26xxxx
+package pp260706
 
 import (
 	"math"
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/skills"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/skills"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 )
@@ -47,11 +47,12 @@ func NewPPCalculator() api.IPerformanceCalculator {
 }
 
 func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *difficulty.Difficulty) api.PPv2Results {
-	attribs.MaxCombo = max(1, attribs.MaxCombo)
-
 	if score.MaxCombo < 0 {
 		score.MaxCombo = attribs.MaxCombo
 	}
+
+	score.Accuracy = mutils.Clamp(score.Accuracy, 0.0, 1.0)
+	score.MaxCombo = mutils.Clamp(score.MaxCombo, 0, attribs.MaxCombo)
 
 	if score.CountGreat < 0 {
 		score.CountGreat = attribs.ObjectCount - score.CountOk - score.CountMeh - score.CountMiss
@@ -83,16 +84,23 @@ func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *dif
 	pp.okHitWindow = diff.Hit100U / diff.GetSpeed()
 	pp.mehHitWindow = diff.Hit50U / diff.GetSpeed()
 
-	if pp.attribs.Sliders > 0 {
-		if pp.usingClassicSliderAccuracy {
-			pp.effectiveMissCount = CalculateMissCount(score, attribs, diff)
-		} else {
-			pp.effectiveMissCount = pp.calculateComboBasedEstimatedMissCount(pp.attribs)
-		}
+	// Score contains a legacy total only for non-lazer, non-ScoreV2 scores.
+	if pp.usingClassicSliderAccuracy && !diff.CheckModActive(difficulty.Lazer) && !diff.CheckModActive(difficulty.ScoreV2) && score.Score > 0 {
+		pp.effectiveMissCount = CalculateMissCount(score, attribs, diff)
+	} else {
+		pp.effectiveMissCount = pp.calculateComboBasedEstimatedMissCount(pp.attribs)
 	}
 
 	pp.effectiveMissCount = max(float64(pp.score.CountMiss), pp.effectiveMissCount)
 	pp.effectiveMissCount = min(float64(pp.totalHits), pp.effectiveMissCount)
+	pp.effectiveMissCount = max(0, pp.effectiveMissCount)
+
+	pp.aimEstimatedSliderBreaks = 0
+	pp.speedEstimatedSliderBreaks = 0
+	if pp.effectiveMissCount > 0 {
+		pp.aimEstimatedSliderBreaks = pp.calculateEstimatedSliderBreaks(pp.attribs.AimTopWeightedSliderFactor, pp.attribs)
+		pp.speedEstimatedSliderBreaks = pp.calculateEstimatedSliderBreaks(pp.attribs.SpeedTopWeightedSliderFactor, pp.attribs)
+	}
 
 	// total pp
 
@@ -111,7 +119,7 @@ func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *dif
 		mehMultiplier := 1.0
 
 		if diff.ODReal > 0.0 {
-			okMultiplier *= max(0.0, 1-math.Pow(diff.ODReal/13.33, 1.8))
+			okMultiplier *= max(0.0, 1-diff.ODReal/13.33)
 			mehMultiplier *= max(0.0, 1-math.Pow(diff.ODReal/13.33, 5))
 		}
 
@@ -120,14 +128,18 @@ func (pp *PPv2) Calculate(attribs api.Attributes, score api.PerfScore, diff *dif
 
 	pp.speedDeviation = pp.calculateSpeedDeviation(pp.attribs)
 
+	aimValue := pp.computeAimValue()
+	speedValue := pp.computeSpeedValue()
+	accuracyValue := pp.computeAccuracyValue()
+
 	readingValue := pp.computeReadingValue()
 	flashlightValue := pp.computeFlashlightValue()
 	cognitionValue := sumCognitionDifficulty(readingValue, flashlightValue)
 
 	results := api.PPv2Results{
-		Aim:       pp.computeAimValue(),
-		Speed:     pp.computeSpeedValue(),
-		Acc:       pp.computeAccuracyValue(),
+		Aim:       aimValue,
+		Speed:     speedValue,
+		Acc:       accuracyValue,
 		Cognition: cognitionValue,
 	}
 
@@ -142,9 +154,6 @@ func (pp *PPv2) computeAimValue() float64 {
 	}
 
 	aimDifficulty := pp.attribs.Aim
-
-	// We assume 15% of sliders in a map are difficult since there's no way to tell from the performance calculator.
-	//estimateDifficultSliders := float64(pp.attribs.Sliders) * 0.15
 
 	if pp.attribs.Sliders > 0 && pp.attribs.AimDifficultSliderCount > 0 {
 		estimateImproperlyFollowedDifficultSliders := 0.0
@@ -174,8 +183,6 @@ func (pp *PPv2) computeAimValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		pp.aimEstimatedSliderBreaks = pp.calculateEstimatedSliderBreaks(pp.attribs.AimTopWeightedSliderFactor, pp.attribs)
-
 		relevantMissCount := min(pp.effectiveMissCount+pp.aimEstimatedSliderBreaks, float64(pp.totalImperfectHits+pp.score.SliderBreaks))
 
 		aimValue *= pp.calculateMissPenalty(relevantMissCount, pp.attribs.AimDifficultStrainCount)
@@ -199,15 +206,9 @@ func (pp *PPv2) computeSpeedValue() float64 {
 
 	// Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
 	if pp.effectiveMissCount > 0 {
-		pp.speedEstimatedSliderBreaks = pp.calculateEstimatedSliderBreaks(pp.attribs.SpeedTopWeightedSliderFactor, pp.attribs)
-
 		relevantMissCount := min(pp.effectiveMissCount+pp.speedEstimatedSliderBreaks, float64(pp.totalImperfectHits+pp.score.SliderBreaks))
 
 		speedValue *= pp.calculateMissPenalty(relevantMissCount, pp.attribs.SpeedDifficultStrainCount)
-	}
-
-	if pp.diff.Mods.Active(difficulty.Traceable) {
-		speedValue *= 1.0 + pp.calculateTraceableBonus1()
 	}
 
 	speedHighDeviationMultiplier := pp.calculateSpeedHighDeviationNerf(pp.attribs)
@@ -261,10 +262,6 @@ func (pp *PPv2) computeAccuracyValue() float64 {
 
 	if pp.diff.Mods.Active(difficulty.Traceable) {
 		accuracyValue *= 1 + 0.08*putils.ReverseLerp(pp.diff.ARReal, 11.5, 10)
-	}
-
-	if pp.diff.Mods.Active(difficulty.Flashlight) {
-		accuracyValue *= 1.02
 	}
 
 	return accuracyValue
@@ -351,20 +348,23 @@ func (pp *PPv2) calculateComboBasedEstimatedMissCount(attributes api.Attributes)
 }
 
 func (pp *PPv2) calculateEstimatedSliderBreaks(topWeightedSliderFactor float64, attributes api.Attributes) float64 {
-	if !pp.usingClassicSliderAccuracy || pp.score.CountOk == 0 {
+	nonMissMistakes := pp.score.CountOk + pp.score.CountMeh
+
+	if !pp.usingClassicSliderAccuracy || nonMissMistakes == 0 {
 		return 0
 	}
 
 	missedComboPercent := 1.0 - float64(pp.score.MaxCombo)/float64(attributes.MaxCombo)
-	estimatedSliderBreaks := min(float64(pp.score.CountOk), pp.effectiveMissCount*topWeightedSliderFactor)
+	estimatedSliderBreaks := min(float64(nonMissMistakes), pp.effectiveMissCount*topWeightedSliderFactor)
 
-	// Scores with more Oks are more likely to have slider breaks.
-	okAdjustment := ((float64(pp.score.CountOk) - estimatedSliderBreaks) + 0.5) / float64(pp.score.CountOk)
+	// Scores with more Oks and Mehs are more likely to have slider breaks.
+	// We add an arbitrary value to both sides of the division to make it more stable on extreme ends.
+	nonMissMistakeAdjustment := (float64(nonMissMistakes) - estimatedSliderBreaks + 4.5) / float64(nonMissMistakes+4)
 
 	// There is a low probability of extra slider breaks on effective miss counts close to 1, as score based calculations are good at indicating if only a single break occurred.
 	estimatedSliderBreaks *= putils.Smoothstep(pp.effectiveMissCount, 1, 2)
 
-	return estimatedSliderBreaks * okAdjustment * putils.Logistic(missedComboPercent, 0.33, 15, 1)
+	return estimatedSliderBreaks * nonMissMistakeAdjustment * putils.Logistic(missedComboPercent, 0.33, 15, 1)
 }
 
 // Estimates player's deviation on speed notes using <see cref="calculateDeviation"/>, assuming worst-case.
@@ -456,32 +456,30 @@ func (pp *PPv2) calculateSpeedHighDeviationNerf(attributes api.Attributes) float
 	return adjustedSpeedValue / speedValue
 }
 
-func (pp *PPv2) calculateTraceableBonus1() float64 {
-	return pp.calculateTraceableBonus(1)
-}
-
 func (pp *PPv2) calculateTraceableBonus(sliderFactor float64) float64 {
-	// Start from normal curve, rewarding lower AR up to AR7
-	traceableBonus := 0.025 * (12.0 - max(pp.diff.ARReal, 7))
+	// We want to reward slider aim less, more so at lower AR
+	highApproachRateSliderVisibilityFactor := 0.5 + math.Pow(sliderFactor, 6)/2
+	lowApproachRateSliderVisibilityFactor := math.Pow(sliderFactor, 6)
 
-	// We want to reward slider aim on low AR less
-	sliderVisibilityFactor := math.Pow(sliderFactor, 3)
+	// Start from normal curve, rewarding lower AR up to AR7
+	traceableBonus := 0.0275
+	traceableBonus += 0.025 * (12.0 - max(pp.diff.ARReal, 7)) * highApproachRateSliderVisibilityFactor
 
 	// For AR up to 0 - reduce reward for very low ARs when object is visible
 	if pp.diff.ARReal < 7 {
-		traceableBonus += 0.02 * (7.0 - max(pp.diff.ARReal, 0)) * sliderVisibilityFactor
+		traceableBonus += 0.025 * (7.0 - max(pp.diff.ARReal, 0)) * lowApproachRateSliderVisibilityFactor
 	}
 
 	// Starting from AR0 - cap values so they won't grow to infinity
 	if pp.diff.ARReal < 0 {
-		traceableBonus += 0.01 * (1 - math.Pow(1.5, pp.diff.ARReal)) * sliderVisibilityFactor
+		traceableBonus += 0.025 * (1 - math.Pow(1.5, pp.diff.ARReal)) * lowApproachRateSliderVisibilityFactor
 	}
 
 	return traceableBonus
 }
 
 func (pp *PPv2) calculateMissPenalty(missCount, difficultStrainCount float64) float64 {
-	return 0.93 / ((missCount / (4 * math.Log(difficultStrainCount))) + 1)
+	return 0.93 / ((missCount / (4 * math.Log(max(1, difficultStrainCount)))) + 1)
 }
 
 func (pp *PPv2) getComboScalingFactor() float64 {

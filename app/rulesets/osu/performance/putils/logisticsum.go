@@ -46,6 +46,18 @@ func (lsum *LogisticSum) ProcessLastStrain(divider float64) {
 	}
 }
 
+func (lsum *LogisticSum) UpdateDivider(divider float64) {
+	if !lsum.stepCalc {
+		return
+	}
+
+	if lsum.first || lsum.recalculateCheck(lsum.previousDivider, divider) {
+		lsum.first = false
+		lsum.previousDivider = divider
+		lsum.value = lsum.calculateFull()
+	}
+}
+
 func (lsum *LogisticSum) calculateStrain(strain float64) float64 {
 	return Logistic(strain/lsum.previousDivider, lsum.midpointOffset, lsum.multiplier, lsum.maxValue)
 }
@@ -65,6 +77,10 @@ func (lsum *LogisticSum) calculateFull() (sum float64) {
 func (lsum *LogisticSum) GetValue() float64 {
 	if lsum.stepCalc {
 		return lsum.value
+	}
+
+	if len(lsum.strains) == 0 {
+		return 0
 	}
 
 	lsum.previousDivider = lsum.fullDivider(lsum.strains)

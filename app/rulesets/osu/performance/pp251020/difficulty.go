@@ -155,7 +155,7 @@ func (diffCalc *DifficultyCalculator) CalculateStep(bMap *beatmap.BeatMap, diff 
 
 	sim := newScoreSim(bMap, diff)
 
-	sim.AddFirst(diffObjects[0])
+	sim.AddFirst(bMap.HitObjects[0])
 	stars[0] = diffCalc.getStars(aimSkill, aimNoSlidersSkill, speedSkill, flashlightSkill, sim, diff)
 
 	for _, o := range diffObjects {

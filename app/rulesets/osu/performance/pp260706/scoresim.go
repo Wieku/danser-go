@@ -1,4 +1,4 @@
-package pp26xxxx
+package pp260706
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
 	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
@@ -48,14 +48,14 @@ func newScoreSim(bMap *beatmap.BeatMap, diff *difficulty.Difficulty) *scoreSimul
 	return sim
 }
 
-func (s *scoreSimulator) AddFirst(obj *preprocessing.DifficultyObject) {
-	s.oStartTime = obj.LastObject.GetStartTime()
-	s.add(obj.LastObject)
+func (s *scoreSimulator) AddFirst(obj objects.IHitObject) {
+	s.oStartTime = obj.GetStartTime()
+	s.add(obj)
 }
 
 func (s *scoreSimulator) Add(obj *preprocessing.DifficultyObject, first bool) {
 	if first {
-		s.AddFirst(obj)
+		s.AddFirst(obj.LastObject)
 	}
 
 	s.add(obj.BaseObject)
@@ -65,6 +65,10 @@ func (s *scoreSimulator) add(obj objects.IHitObject) {
 	s.hitObjects++
 
 	if slider, ok := obj.(*preprocessing.LazySlider); ok {
+		obj = slider.Slider
+	}
+
+	if slider, ok := obj.(*objects.Slider); ok {
 		s.sliders++
 		for _, p := range slider.ScorePointsLazer {
 			if !p.IsReverse && !p.LastPoint {

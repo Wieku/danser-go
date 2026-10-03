@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 )
 
@@ -20,9 +20,12 @@ type Harmonic struct {
 	DifficultyOf func(obj *preprocessing.DifficultyObject) float64
 	PostProcess  func(obj *preprocessing.DifficultyObject, strain, diffValue float64)
 
+	// Delegate to decay recorded strains when reconstructing graph peaks.
+	StrainDecay func(ms float64) float64
+
 	ApplyDifficultyTransformation func(difficulties []float64)
 
-	difficulties        []float64
+	difficulties        []timedStrain
 	difficultiesNonZero []float64
 
 	diffStrains *putils.LogisticSum
@@ -39,7 +42,7 @@ func NewHarmonic(d *difficulty.Difficulty, stepCalc bool) *Harmonic {
 		HarmonicScale: 1.0,
 		DecayExponent: 0.9,
 
-		difficulties:        make([]float64, 0),
+		difficulties:        make([]timedStrain, 0),
 		difficultiesNonZero: make([]float64, 0),
 		diff:                d,
 		stepCalc:            stepCalc,
@@ -68,7 +71,7 @@ func NewHarmonic(d *difficulty.Difficulty, stepCalc bool) *Harmonic {
 func (skill *Harmonic) Process(current *preprocessing.DifficultyObject) {
 	currentDiff := skill.DifficultyOf(current)
 
-	skill.difficulties = append(skill.difficulties, currentDiff)
+	skill.difficulties = append(skill.difficulties, timedStrain{value: currentDiff, startTime: current.StartTime})
 	if currentDiff > 0 {
 		skill.difficultiesNonZero = append(skill.difficultiesNonZero, currentDiff)
 	}
@@ -110,6 +113,11 @@ func (skill *Harmonic) defaultDifficulty() float64 {
 
 	for i := range len(difficulties) {
 		note := difficulties[len(difficulties)-1-i]
+
+		if note == 0 {
+			break
+		}
+
 		// Use a harmonic sum that considers each note of the map according to a predefined weight.
 		weight := (1 + (skill.HarmonicScale / (1 + float64(i)))) / (math.Pow(float64(i), skill.DecayExponent) + 1 + (skill.HarmonicScale / (1 + float64(i))))
 
@@ -119,6 +127,10 @@ func (skill *Harmonic) defaultDifficulty() float64 {
 	}
 
 	return diffValue
+}
+
+func (skill *Harmonic) GetCurrentStrainPeaks() []float64 {
+	return getStrainPeaks(skill.difficulties, skill.StrainDecay)
 }
 
 func (skill *Harmonic) DifficultyValue() float64 {

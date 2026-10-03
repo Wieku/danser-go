@@ -5,44 +5,37 @@ import (
 	"slices"
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/evaluators"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/evaluators"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 const (
-	aimSkillMultiplierSnap    = 71
-	aimSkillMultiplierAgility = 2.5
-	aimSkillMultiplierFlow    = 245.0
-	aimSkillMultiplierTotal   = 1.1
-	aimMeanExponent           = 1.2
-
-	aimStrainDecayBase       = 0.15
-	aimReducedSectionCount   = 10
-	aimReducedStrainBaseline = 0.75
+	aimStrainDecayBase       = 0.2
+	aimReducedSectionTime    = 4000
+	aimReducedStrainBaseline = 0.727
 )
 
 type AimSkill struct {
-	*Skill
+	*VariableLengthStrainSkill
 	withSliders   bool
 	currentStrain float64
 
 	diffSliders *putils.LogisticSum
 	topSliders  *putils.LogisticSum
-
-	peakWeights []float64
 }
 
 func NewAimSkill(d *difficulty.Difficulty, withSliders, stepCalc bool) *AimSkill {
 	skill := &AimSkill{
-		Skill:       NewSkill(d, stepCalc),
-		withSliders: withSliders,
+		VariableLengthStrainSkill: NewVariableLengthStrainSkill(d, stepCalc),
+		withSliders:               withSliders,
 	}
 
 	skill.StrainValueOf = skill.aimStrainValue
 	skill.PostProcess = skill.postProcess
 	skill.CalculateInitialStrain = skill.aimInitialStrain
+	skill.StrainDecay = skill.strainDecay
 	skill.CalculateDifficulty = skill.aimDifficulty
 
 	skill.diffSliders = putils.NewLogisticSum(stepCalc, 6, 1, 1, func(previous, current float64) bool {
@@ -69,26 +62,14 @@ func (skill *AimSkill) aimInitialStrain(time float64, current *preprocessing.Dif
 }
 
 func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) float64 {
+	if current.Diff.CheckModActive(difficulty.Relax2) {
+		return 0
+	}
+
 	decay := skill.strainDecay(current.AdjustedDeltaTime)
 
-	snapDifficulty := evaluators.EvaluateSnapAim(current, skill.withSliders) * aimSkillMultiplierSnap
-	agilityDifficulty := evaluators.EvaluateAgility(current) * aimSkillMultiplierAgility
-	flowDifficulty := evaluators.EvaluateFlowAim(current, skill.withSliders) * aimSkillMultiplierFlow
-
-	if skill.diff.CheckModActive(difficulty.TouchDevice) {
-		snapDifficulty = math.Pow(snapDifficulty, 0.89)
-		// we don't adjust agility here since agility represents TD difficulty in a decent enough way
-		flowDifficulty = math.Pow(flowDifficulty, 1.1)
-	}
-
-	if skill.diff.CheckModActive(difficulty.Relax) {
-		agilityDifficulty *= 0.3
-	}
-
-	totalDifficulty := calculateAimTotalValue(snapDifficulty, agilityDifficulty, flowDifficulty)
-
 	skill.currentStrain *= decay
-	skill.currentStrain += totalDifficulty * (1 - decay)
+	skill.currentStrain += skill.calculateAdjustedDifficulty(current) * (1 - decay)
 
 	if current.IsSlider {
 		skill.diffSliders.AddStrain(skill.currentStrain)
@@ -98,14 +79,44 @@ func (skill *AimSkill) aimStrainValue(current *preprocessing.DifficultyObject) f
 	return skill.currentStrain
 }
 
-func calculateAimTotalValue(snapDifficulty, agilityDifficulty, flowDifficulty float64) float64 {
+func (skill *AimSkill) calculateAdjustedDifficulty(current *preprocessing.DifficultyObject) float64 {
+	const aimSkillMultiplierSnap = 70.9
+	const aimSkillMultiplierAgility = 2.35
+	const aimSkillMultiplierFlow = 242.0
+
+	snapDifficulty := evaluators.EvaluateSnapAim(current, skill.withSliders) * aimSkillMultiplierSnap
+	agilityDifficulty := evaluators.EvaluateAgility(current) * aimSkillMultiplierAgility
+	flowDifficulty := evaluators.EvaluateFlowAim(current, skill.withSliders) * aimSkillMultiplierFlow
+
+	totalDifficulty := skill.calculateAimTotalValue(snapDifficulty, agilityDifficulty, flowDifficulty)
+
+	totalDifficulty *= 0.985 + putils.Powi(max(0, current.Diff.ODReal), 2)/4000
+
+	return totalDifficulty
+}
+
+func (skill *AimSkill) calculateAimTotalValue(snapDifficulty, agilityDifficulty, flowDifficulty float64) float64 {
+	const aimSkillMultiplierTotal = 1.12
+	const combinedSnapNormExponent = 1.2
+
 	// We compare flow to combined snap and agility because snap by itself doesn't have enough difficulty to be above flow on streams
 	// Agility on the other hand is supposed to measure the rate of cursor velocity changes while snapping
 	// So snapping every circle on a stream requires an enormous amount of agility at which point it's easier to flow
-	combinedSnapDifficulty := putils.Norm(aimMeanExponent, snapDifficulty, agilityDifficulty)
+	combinedSnapDifficulty := putils.Norm(combinedSnapNormExponent, snapDifficulty, agilityDifficulty)
 
 	pSnap := calculateSnapFlowProbability(flowDifficulty / combinedSnapDifficulty)
 	pFlow := 1 - pSnap
+
+	if skill.diff.CheckModActive(difficulty.TouchDevice) {
+		// we don't adjust agility here since agility represents TD difficulty in a decent enough way
+		snapDifficulty = math.Pow(snapDifficulty, 0.89)
+		combinedSnapDifficulty = putils.Norm(combinedSnapNormExponent, snapDifficulty, agilityDifficulty)
+	}
+
+	if skill.diff.CheckModActive(difficulty.Relax) {
+		combinedSnapDifficulty *= 0.75
+		flowDifficulty *= 0.6
+	}
 
 	totalDifficulty := combinedSnapDifficulty*pSnap + flowDifficulty*pFlow
 
@@ -144,46 +155,61 @@ func (skill *AimSkill) postProcess(current *preprocessing.DifficultyObject, stra
 }
 
 func (skill *AimSkill) aimDifficulty() float64 {
-	if skill.peakWeights == nil { //Precalculated peak weights
-		skill.peakWeights = make([]float64, aimReducedSectionCount)
-		for i := range aimReducedSectionCount {
-			scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(aimReducedSectionCount), 0, 1)))
-			skill.peakWeights[i] = mutils.Lerp(aimReducedStrainBaseline, 1.0, scale)
-		}
-	}
-
 	diffValue := 0.0
-	weight := 1.0
+	time := 0.0
 
-	strains := skill.getCurrentStrainPeaksSorted()
+	for _, strain := range skill.getReducedStrainPeaks() {
+		startTime := time
+		endTime := time + strain.SectionLength/skill.MaxSectionLength
 
-	lowest := strains[len(strains)-1]
+		weight := math.Pow(skill.DecayWeight, startTime) - math.Pow(skill.DecayWeight, endTime)
 
-	sectionsReduced := min(len(strains), aimReducedSectionCount)
-
-	for i := range sectionsReduced {
-		strains[len(strains)-1-i] *= skill.peakWeights[i]
-		lowest = min(lowest, strains[len(strains)-1-i])
+		diffValue += strain.Value * weight
+		time = endTime
 	}
 
-	// Search for lowest strain that's higher or equal than lowest reduced strain to avoid unnecessary sorting
-	idx, _ := slices.BinarySearch(strains[:len(strains)-sectionsReduced], lowest)
-	slices.Sort(strains[idx:])
+	return diffValue / (1 - skill.DecayWeight)
+}
 
-	lastDiff := -math.MaxFloat64
+func (skill *AimSkill) getReducedStrainPeaks() []StrainPeak {
+	strains := slices.DeleteFunc(slices.Clone(skill.getCurrentStrainPeaks()), func(peak StrainPeak) bool {
+		return peak.Value <= 0
+	})
 
-	for i := range len(strains) {
-		diffValue += strains[len(strains)-1-i] * weight
-		weight *= skill.DecayWeight
+	const chunkSize = 20
+	time := 0.0
+	skipCount := 0
 
-		if math.Abs(diffValue-lastDiff) < math.SmallestNonzeroFloat64 { // escape when strain * weight calculates to 0
-			break
+	for len(strains) > skipCount && time < aimReducedSectionTime {
+		strain := strains[skipCount]
+
+		for addedTime := 0.0; addedTime < strain.SectionLength; addedTime += chunkSize {
+			scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp((time+addedTime)/aimReducedSectionTime, 0.0, 1.0)))
+
+			strains = append(strains, newStrainPeak(
+				strain.Value*mutils.Lerp(aimReducedStrainBaseline, 1.0, scale),
+				min(chunkSize, strain.SectionLength-addedTime),
+			))
 		}
 
-		lastDiff = diffValue
+		time += strain.SectionLength
+		skipCount++
 	}
 
-	return diffValue
+	strains = strains[skipCount:]
+	slices.SortFunc(strains, func(a, b StrainPeak) int {
+		if a.Value > b.Value {
+			return -1
+		}
+
+		if a.Value < b.Value {
+			return 1
+		}
+
+		return 0
+	})
+
+	return strains
 }
 
 func (skill *AimSkill) GetDifficultSliders() float64 {

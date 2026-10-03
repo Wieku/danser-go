@@ -5,8 +5,8 @@ import (
 	"slices"
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/evaluators"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/evaluators"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 )
 
@@ -32,6 +32,7 @@ func NewSpeedSkill(d *difficulty.Difficulty, stepCalc bool) *SpeedSkill {
 	skill.HarmonicScale = 20
 	skill.DecayExponent = 0.9
 	skill.DifficultyOf = skill.speedDifficulty
+	skill.StrainDecay = skill.strainDecay
 	skill.PostProcess = skill.postProcess
 
 	skill.relevantCount = putils.NewLogisticSum(stepCalc, 6, 1, 1, func(previous, current float64) bool {
@@ -58,10 +59,14 @@ func (s *SpeedSkill) strainDecay(ms float64) float64 {
 }
 
 func (s *SpeedSkill) speedDifficulty(current *preprocessing.DifficultyObject) float64 {
+	if s.diff.CheckModActive(difficulty.Relax) {
+		return 0
+	}
+
 	decay := s.strainDecay(current.AdjustedDeltaTime)
 
 	s.currentDiff *= decay
-	s.currentDiff += evaluators.EvaluateSpeed(current) * (1 - decay) * speedSkillMultiplier
+	s.currentDiff += s.calculateAdjustedDifficulty(current) * (1 - decay) * speedSkillMultiplier
 
 	currentRhythm := evaluators.EvaluateRhythm(current)
 
@@ -81,8 +86,10 @@ func (s *SpeedSkill) postProcess(current *preprocessing.DifficultyObject, strain
 
 	if s.NoteWeightSum == 0 {
 		s.topSliders.ProcessLastStrain(0)
-	} else {
+	} else if current.IsSlider {
 		s.topSliders.ProcessLastStrain(diffValue / s.NoteWeightSum)
+	} else {
+		s.topSliders.UpdateDivider(diffValue / s.NoteWeightSum)
 	}
 }
 
@@ -92,4 +99,14 @@ func (s *SpeedSkill) RelevantNoteCount() float64 {
 
 func (s *SpeedSkill) CountTopWeightedSliders() float64 {
 	return s.topSliders.GetValue()
+}
+
+func (s *SpeedSkill) calculateAdjustedDifficulty(current *preprocessing.DifficultyObject) float64 {
+	diffc := evaluators.EvaluateSpeed(current)
+
+	if s.diff.CheckModActive(difficulty.Relax2) {
+		diffc *= 0.5
+	}
+
+	return diffc
 }

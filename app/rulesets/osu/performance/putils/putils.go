@@ -48,6 +48,12 @@ func SmoothstepBellCurve(x, mean, width float64) float64 {
 	return Smoothstep(x, 0, width)
 }
 
+func SmoothstepBellCurvex(x float64) float64 {
+	x = 0.5 - math.Abs(x-0.5)
+	x = mutils.Clamp(x*2.0, 0.0, 1.0)
+	return x * x * (3.0 - 2.0*x)
+}
+
 func Smootherstep(x, start, end float64) float64 {
 	x = mutils.Clamp((x-start)/(end-start), 0, 1)
 
@@ -69,4 +75,23 @@ func Norm(p float64, values ...float64) float64 {
 	}
 
 	return math.Pow(sum, 1/p)
+}
+
+func Powi(x float64, exp int) float64 {
+	switch exp {
+	case 0:
+		return 1
+	case 1:
+		return x
+	case 2:
+		return x * x
+	case 3:
+		return x * x * x
+	case 4:
+		return x * x * x * x
+	case 5:
+		return x * x * x * x * x
+	default:
+		return math.Pow(x, float64(exp))
+	}
 }

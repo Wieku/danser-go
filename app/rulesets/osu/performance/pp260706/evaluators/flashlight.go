@@ -4,7 +4,8 @@ import (
 	"math"
 
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp26xxxx/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706/preprocessing"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/putils"
 )
 
 const (
@@ -24,7 +25,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 	smallDistNerf := 1.0
 	cumulativeStrainTime := 0.0
 
-	result := 0.0
+	flashlightDifficulty := 0.0
 
 	lastObj := current
 
@@ -46,9 +47,10 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 			// We also want to nerf stacks so that only the first object of the stack is accounted for.
 			stackNerf := min(1.0, (currentObj.LazyJumpDistance/scalingFactor)/25.0)
 
+			// Bonus based on how visible the object is.
 			opacityBonus := 1.0 + flMaxOpacityBonus*(1.0-current.OpacityAt(currentObj.BaseObject.GetStartTime(), current.Diff.CheckModActive(difficulty.Hidden)))
 
-			result += stackNerf * opacityBonus * scalingFactor * jumpDistance / cumulativeStrainTime
+			flashlightDifficulty += stackNerf * opacityBonus * scalingFactor * jumpDistance / cumulativeStrainTime
 
 			if !math.IsNaN(currentObj.Angle) && !math.IsNaN(current.Angle) {
 				// Objects further back in time should count less for the nerf.
@@ -61,15 +63,15 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 		lastObj = currentObj
 	}
 
-	result = math.Pow(smallDistNerf*result, 2.0)
+	flashlightDifficulty = putils.Powi(smallDistNerf*flashlightDifficulty, 2.0)
 
 	// Additional bonus for Hidden due to there being no approach circles.
 	if current.Diff.CheckModActive(difficulty.Hidden) {
-		result *= 1.0 + flHiddenBonus
+		flashlightDifficulty *= 1.0 + flHiddenBonus
 	}
 
 	// Nerf patterns with repeated angles.
-	result *= flMinAngleMultiplier + (1.0-flMinAngleMultiplier)/(angleRepeatCount+1.0)
+	flashlightDifficulty *= flMinAngleMultiplier + (1.0-flMinAngleMultiplier)/(angleRepeatCount+1.0)
 
 	sliderBonus := 0.0
 
@@ -93,7 +95,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 		}
 	}
 
-	result += sliderBonus * flSliderMultiplier
+	flashlightDifficulty += sliderBonus * flSliderMultiplier
 
-	return result
+	return flashlightDifficulty
 }
