@@ -378,3 +378,7 @@ func AddToClipboard(text string) {
 		panic(err)
 	}
 }
+
+func IsMainThread() bool {
+	return sdl.IsMainThread()
+}

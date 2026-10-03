@@ -17,6 +17,7 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/color"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 )
 
 type Source int
@@ -189,7 +190,19 @@ func GetTexture(name string) *texture.TextureRegion {
 	return GetTextureSource(name, ALL)
 }
 
-func GetTextureSource(name string, source Source) *texture.TextureRegion {
+func GetTextureSource(name string, source Source) (region *texture.TextureRegion) {
+	if settings.RECORD && !gcontext.IsMainThread() {
+		goroutines.CallMain(func() {
+			region = getTextureSource(name, source)
+		})
+	} else {
+		region = getTextureSource(name, source)
+	}
+
+	return
+}
+
+func getTextureSource(name string, source Source) *texture.TextureRegion {
 	checkInit()
 
 	textureLock.Lock()
@@ -381,7 +394,7 @@ func loadTexture(name string, source Source) *texture.TextureRegion {
 
 	if region != nil {
 		// Upload this texture in GL thread
-		goroutines.CallNonBlockMain(func() {
+		upload := func() {
 			checkAtlas()
 
 			var rg *texture.TextureRegion
@@ -414,7 +427,13 @@ func loadTexture(name string, source Source) *texture.TextureRegion {
 			region.U2 = rg.U2
 			region.V1 = rg.V1
 			region.V2 = rg.V2
-		})
+		}
+
+		if settings.RECORD {
+			upload()
+		} else {
+			goroutines.CallNonBlockMain(upload)
+		}
 	}
 
 	return region
