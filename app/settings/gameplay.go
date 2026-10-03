@@ -379,7 +379,7 @@ type hitCounter struct {
 
 type scoreBoard struct {
 	*hudElementOffset
-	Mode           string `combo:"Normal,Country,Friends" tooltip:"Country and Friends modes require osu!supporter and Authorization Code API Mode!"`
+	Mode           string `combo:"Normal,Country,Friends,Team" tooltip:"Team mode requires Authorization Code API Mode. Country and Friends modes require osu!supporter and Authorization Code API Mode!"`
 	ModsOnly       bool   `label:"Show mod leaderboard"`
 	AlignRight     bool   `label:"Align to the right" label:"Simulates the second team of osu! multiplayer"`
 	HideOthers     bool
