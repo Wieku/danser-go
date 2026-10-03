@@ -143,10 +143,14 @@ func (o *DifficultyObject) OpacityAt(time float64, hidden bool) float64 {
 	}
 
 	fadeInStartTime := o.BaseObject.GetStartTime() - o.Diff.Preempt
-	fadeInDuration := o.Diff.TimeFadeIn
+	fadeInDuration := difficulty.HitFadeIn * min(1, o.Diff.Preempt/450)
 
 	if hidden {
-		fadeOutStartTime := o.BaseObject.GetStartTime() - o.Diff.Preempt + o.Diff.TimeFadeIn
+		fadeOutStartTime := fadeInStartTime + fadeInDuration
+		if !o.IsSlider {
+			fadeOutStartTime = fadeInStartTime + o.Diff.Preempt*0.4
+		}
+
 		fadeOutDuration := o.Diff.Preempt * 0.3
 
 		return min(
