@@ -1,24 +1,18 @@
-package platform
+package gcontext
 
 import "C"
 import (
 	"fmt"
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/wieku/danser-go/framework/graphics/hacks"
 	"log"
 	"os"
 	"strings"
 	"unsafe"
-)
 
-// SetupContext sets glfw hints about OpenGL version
-func SetupContext() {
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-}
+	"github.com/Zyko0/go-sdl3/sdl"
+	"github.com/go-gl/gl/v3.3-core/gl"
+
+	"github.com/wieku/danser-go/framework/graphics/hacks"
+)
 
 // GLInit initializes OpenGL, checks for needed extensions, eventually sets up GPU debug logs
 func GLInit(debugLogs bool, additionalExtensions ...string) error {
@@ -94,7 +88,7 @@ func GLInit(debugLogs bool, additionalExtensions ...string) error {
 	return nil
 }
 
-func extensionCheck(additionalExtensions []string) error {
+func extensionCheck(additionalExtensions []string) (ret error) {
 	extensions := []string{
 		"GL_ARB_clear_texture",
 		"GL_ARB_direct_state_access",
@@ -110,7 +104,7 @@ func extensionCheck(additionalExtensions []string) error {
 	var notSupported []string
 
 	for _, ext := range extensions {
-		if !glfw.ExtensionSupported(ext) {
+		if !sdl.GL_ExtensionSupported(ext) {
 			notSupported = append(notSupported, ext)
 		}
 	}

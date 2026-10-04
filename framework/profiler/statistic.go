@@ -6,7 +6,7 @@ var pastCounters = make([]int64, size)
 func ResetStats() {
 	pastCounters, counters = counters, pastCounters
 
-	for i := StatisticType(0); i < size; i++ {
+	for i := range size {
 		counters[i] = 0
 	}
 }

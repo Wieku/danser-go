@@ -1,14 +1,16 @@
 package pp241007
 
 import (
+	"log"
+	"math"
+	"time"
+
+	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/preprocessing"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp241007/skills"
-	"log"
-	"math"
-	"time"
 )
 
 const (
@@ -110,8 +112,8 @@ func (diffCalc *DifficultyCalculator) addObjectToAttribs(o objects.IHitObject, a
 }
 
 // CalculateSingle calculates the final difficultyapi.Attributes of a map
-func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObject, diff *difficulty.Difficulty) api.Attributes {
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
+func (diffCalc *DifficultyCalculator) CalculateSingle(bMap *beatmap.BeatMap, diff *difficulty.Difficulty) api.Attributes {
+	diffObjects := preprocessing.CreateDifficultyObjects(bMap.HitObjects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true, false)
 	aimNoSlidersSkill := skills.NewAimSkill(diff, false, false)
@@ -120,10 +122,10 @@ func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObje
 
 	attr := api.Attributes{}
 
-	diffCalc.addObjectToAttribs(objects[0], &attr)
+	diffCalc.addObjectToAttribs(bMap.HitObjects[0], &attr)
 
 	for i, o := range diffObjects {
-		diffCalc.addObjectToAttribs(objects[i+1], &attr)
+		diffCalc.addObjectToAttribs(bMap.HitObjects[i+1], &attr)
 
 		aimSkill.Process(o)
 		aimNoSlidersSkill.Process(o)
@@ -135,7 +137,7 @@ func (diffCalc *DifficultyCalculator) CalculateSingle(objects []objects.IHitObje
 }
 
 // CalculateStep calculates successive star ratings for every part of a beatmap
-func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject, diff *difficulty.Difficulty) []api.Attributes {
+func (diffCalc *DifficultyCalculator) CalculateStep(bMap *beatmap.BeatMap, diff *difficulty.Difficulty) []api.Attributes {
 	modString := difficulty.GetDiffMaskedMods(diff.Mods).String()
 	if modString == "" {
 		modString = "NM"
@@ -145,20 +147,20 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 
 	startTime := time.Now()
 
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
+	diffObjects := preprocessing.CreateDifficultyObjects(bMap.HitObjects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true, true)
 	aimNoSlidersSkill := skills.NewAimSkill(diff, false, false)
 	speedSkill := skills.NewSpeedSkill(diff, true)
 	flashlightSkill := skills.NewFlashlightSkill(diff)
 
-	stars := make([]api.Attributes, 1, len(objects))
+	stars := make([]api.Attributes, 1, len(bMap.HitObjects))
 
-	diffCalc.addObjectToAttribs(objects[0], &stars[0])
+	diffCalc.addObjectToAttribs(bMap.HitObjects[0], &stars[0])
 
 	for i, o := range diffObjects {
 		attr := stars[i]
-		diffCalc.addObjectToAttribs(objects[i+1], &attr)
+		diffCalc.addObjectToAttribs(bMap.HitObjects[i+1], &attr)
 
 		aimSkill.Process(o)
 		aimNoSlidersSkill.Process(o)
@@ -175,8 +177,8 @@ func (diffCalc *DifficultyCalculator) CalculateStep(objects []objects.IHitObject
 	return stars
 }
 
-func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHitObject, diff *difficulty.Difficulty) api.StrainPeaks {
-	diffObjects := preprocessing.CreateDifficultyObjects(objects, diff)
+func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(bMap *beatmap.BeatMap, diff *difficulty.Difficulty) api.StrainPeaks {
+	diffObjects := preprocessing.CreateDifficultyObjects(bMap.HitObjects, diff)
 
 	aimSkill := skills.NewAimSkill(diff, true, false)
 	speedSkill := skills.NewSpeedSkill(diff, false)
@@ -196,7 +198,7 @@ func (diffCalc *DifficultyCalculator) CalculateStrainPeaks(objects []objects.IHi
 
 	peaks.Total = make([]float64, len(peaks.Aim))
 
-	for i := 0; i < len(peaks.Aim); i++ {
+	for i := range peaks.Aim {
 		stars := diffCalc.getStarsFromRawValues(peaks.Aim[i], peaks.Aim[i], peaks.Speed[i], peaks.Flashlight[i], diff, api.Attributes{})
 		peaks.Total[i] = stars.Total
 	}

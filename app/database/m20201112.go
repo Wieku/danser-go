@@ -18,8 +18,8 @@ func (m *M20201112) FieldsToMigrate() []string {
 	}
 }
 
-func (m *M20201112) GetValues(beatMap *beatmap.BeatMap) []interface{} {
-	return []interface{}{
+func (m *M20201112) GetValues(beatMap *beatmap.BeatMap) []any {
+	return []any{
 		beatMap.PreviewTime,
 	}
 }

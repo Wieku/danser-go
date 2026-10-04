@@ -1,6 +1,7 @@
 package api
 
 type PerfScore struct {
+	Score        int
 	Accuracy     float64
 	MaxCombo     int
 	CountGreat   int

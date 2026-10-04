@@ -1,10 +1,11 @@
 package curves
 
 import (
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"github.com/wieku/danser-go/framework/math/vector"
 	"slices"
 	"sort"
+
+	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/math/vector"
 )
 
 type CType int
@@ -313,7 +314,7 @@ func processPerfect(points []vector.Vector2f, lazer bool) (outPoints []vector.Ve
 }
 
 func processLinear(points []vector.Vector2f) (outPoints []vector.Vector2f) {
-	for i := 0; i < len(points); i++ {
+	for i := range len(points) {
 		if i < len(points)-1 && points[i] == points[i+1] { // skip red anchors, present in old maps like 243
 			continue
 		}

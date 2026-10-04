@@ -92,7 +92,7 @@ func (font *Font) drawInternal(renderer *batch.QuadBatch, x, y, width, size, rot
 
 		pos := vector.NewVec2d(pX*cos-pY*sin+x, pX*sin+pY*cos+y)
 
-		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, rotation, color, false, *char.region)
+		renderer.DrawStObject(pos, vector.TopLeft, scl, false, font.flip, rotation-renderer.GetRotation(), color, false, *char.region)
 
 		if monospaced && (unicode.IsDigit(c) || unicode.IsSpace(c)) {
 			advance += font.biggest
@@ -177,7 +177,7 @@ func (font *Font) DrawOriginRotation(renderer *batch.QuadBatch, x, y float64, or
 
 func (font *Font) DrawOriginRotationColor(renderer *batch.QuadBatch, x, y float64, origin vector.Vector2d, size, rotation float64, monospaced bool, color color2.Color, text string) {
 	width := font.getWidthInternal(size, text, monospaced)
-	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize*font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale()).Rotate(rotation)
+	align := origin.AddS(1, 1).Mult(vector.NewVec2d(-width/2, -(size/font.initialSize*font.ascent)/2)).Mult(renderer.GetScale()).Mult(renderer.GetSubScale()).Rotate(rotation + renderer.GetRotation())
 
 	font.drawInternal(renderer, x+align.X, y+align.Y, width, size, rotation, text, monospaced, color)
 }

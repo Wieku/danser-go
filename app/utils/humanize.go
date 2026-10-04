@@ -1,8 +1,10 @@
 package utils
 
 import (
-	"golang.org/x/exp/constraints"
 	"strconv"
+	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 func Humanize[T constraints.Integer](number T) string {
@@ -13,11 +15,13 @@ func Humanize[T constraints.Integer](number T) string {
 		a = 3
 	}
 
-	humanized := stringified[0:a]
+	var humanized strings.Builder
+	humanized.WriteString(stringified[:a])
 
 	for i := a; i < len(stringified); i += 3 {
-		humanized += "," + stringified[i:i+3]
+		humanized.WriteRune(',')
+		humanized.WriteString(stringified[i : i+3])
 	}
 
-	return humanized
+	return humanized.String()
 }

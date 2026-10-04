@@ -9,7 +9,7 @@ func createUnitCircle(segments int) ([]float32, []uint16) {
 	points := make([]float32, (segments+1)*3)
 	indices := make([]uint16, segments*3)
 
-	for i := 0; i < segments; i++ {
+	for i := range segments {
 		p := vector.NewVec2fRad(float32(i)/float32(segments)*2*math32.Pi, 1)
 
 		j := i * 3

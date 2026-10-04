@@ -2,17 +2,19 @@ package platform
 
 import (
 	"fmt"
-	"github.com/dustin/go-humanize"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/mem"
-	"github.com/wieku/danser-go/build"
-	"github.com/wieku/danser-go/framework/env"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/dustin/go-humanize"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/mem"
+
+	"github.com/wieku/danser-go/build"
+	"github.com/wieku/danser-go/framework/env"
 )
 
 func StartLogging(logName string) {

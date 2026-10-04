@@ -2,14 +2,19 @@ package launcher
 
 /*
 #include <stdlib.h>
+#include <string.h>
 */
 import "C"
 import (
+	"log"
+	"runtime"
+	"unsafe"
+
 	"github.com/AllenDang/cimgui-go/imgui"
+	"github.com/Zyko0/go-sdl3/sdl"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/wieku/danser-go/app/input"
+
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
@@ -19,23 +24,18 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/math32"
-	"log"
-	"runtime"
-	"unsafe"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
+	"github.com/wieku/danser-go/framework/qpc"
 )
 
 var context *imgui.Context
 var ImIO *imgui.IO
-var tex *texture.TextureSingle
 var rShader *shader.RShader
 var vao *buffer.VertexArrayObject
 
 var ibo *buffer.IndexBufferObject
-var Font16 *imgui.Font
-var Font20 *imgui.Font
-var Font24 *imgui.Font
-var Font32 *imgui.Font
-var Font48 *imgui.Font
+
+var Font *imgui.Font
 var FontAw *imgui.Font
 
 type sCache struct {
@@ -59,7 +59,7 @@ type scrollContainer struct {
 
 var scrollDeltas = make(map[imgui.ID]scrollContainer)
 
-func SetupImgui(win *glfw.Window) {
+func SetupImgui() {
 	log.Println("Imgui setup")
 
 	context = imgui.CreateContext()
@@ -88,75 +88,12 @@ func SetupImgui(win *glfw.Window) {
 
 	ImIO.SetIniFilename("")
 
+	ImIO.SetBackendFlags(imgui.BackendFlagsRendererHasTextures)
+
 	//region texture
 
-	quicksandBytes, err := assets.GetBytes("assets/fonts/Quicksand-Bold.ttf")
-	if err != nil {
-		panic(err)
-	}
-
-	quicksandPtr := unsafe.Pointer(&quicksandBytes[0])
-
-	//TODO: switch from multiple fonts to own custom PushFont implementation that sets global scale for each font
-	Font16 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 16)
-	Font20 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 20)
-	Font24 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 24)
-	Font32 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 32)
-	Font48 = ImIO.Fonts().AddFontFromMemoryTTF(uintptr(quicksandPtr), int32(len(quicksandBytes)), 48)
-
-	fontAwesomeBytes, err := assets.GetBytes("assets/fonts/Font Awesome 6 Free-Solid-900.otf")
-	if err != nil {
-		panic(err)
-	}
-
-	awesomePtr := unsafe.Pointer(&fontAwesomeBytes[0])
-
-	//fontawesome is quite large so for now we will load only needed glyphs
-	awesomeBuilder := imgui.NewFontGlyphRangesBuilder()
-	awesomeBuilder.AddChar(0xF04B) // play
-	awesomeBuilder.AddChar(0xF04D) // stop
-	awesomeBuilder.AddChar('+')
-	awesomeBuilder.AddChar(0xF068) // minus
-	awesomeBuilder.AddChar(0xF0AD) // wrench
-	awesomeBuilder.AddChar(0xE163) // display
-	awesomeBuilder.AddChar(0xF028) // volume-high
-	awesomeBuilder.AddChar(0xF11C) // keyboard
-	awesomeBuilder.AddChar(0xF245) // arrow-pointer
-	awesomeBuilder.AddChar(0xE599) // worm
-	awesomeBuilder.AddChar(0xF0CB) // list-ol
-	awesomeBuilder.AddChar(0xF03D) // video
-	awesomeBuilder.AddChar(0xF882) // arrow-up-z-a
-	awesomeBuilder.AddChar(0xF15D) // arrow-down-a-z
-	awesomeBuilder.AddChar(0xF084) // key
-	awesomeBuilder.AddChar(0xF7A2) // earth-europe
-	awesomeBuilder.AddChar(0xF192) // circle-dot
-	awesomeBuilder.AddChar(0xF1E0) // share-nodes
-	awesomeBuilder.AddChar(0xF1FC) // paintbrush
-	awesomeBuilder.AddChar(0xF43C) // chess-board
-	awesomeBuilder.AddChar(0xF188) // bug
-	awesomeBuilder.AddChar(0xF2EA) // rotate-left
-
-	awesomeRange := imgui.NewGlyphRange()
-	awesomeBuilder.BuildRanges(awesomeRange)
-
-	FontAw = ImIO.Fonts().AddFontFromMemoryTTFV(uintptr(awesomePtr), int32(len(fontAwesomeBytes)), 32, imgui.NewFontConfig(), awesomeRange.Data())
-
-	img0, w0, h0, _ := ImIO.Fonts().TextureDataAsAlpha8()
-	img1, _, _, _ := ImIO.Fonts().GetTextureDataAsRGBA32()
-
-	runtime.KeepAlive(quicksandPtr)
-	runtime.KeepAlive(awesomePtr)
-
-	tex = texture.NewTextureSingleFormat(int(w0), int(h0), texture.Red, 0) // mip-mapping fails miserably because igui doesn't apply padding to sub-textures
-
-	size := w0 * h0
-
-	pixels := (*[1 << 30]uint8)(img0)[:size:size] // cast from unsafe pointer to uint8 slice
-
-	tex.SetData(0, 0, int(w0), int(h0), pixels)
-
-	C.free(img0) //Reduce some memory, seems that imgui doesn't explode
-	C.free(img1) //Reduce some memory, seems that imgui doesn't explode
+	Font = addFont("Quicksand-Bold.ttf", false)
+	FontAw = addFont("Font Awesome 6 Free-Solid-900.otf", false)
 
 	//endregion
 
@@ -180,274 +117,319 @@ func SetupImgui(win *glfw.Window) {
 
 	ibo = buffer.NewIndexBufferObject(100000)
 
-	win.SetScrollCallback(func(w *glfw.Window, xoff float64, yoff float64) {
-		ImIO.AddMouseWheelDelta(float32(xoff), float32(yoff))
+	gcontext.RegisterListener(func(event gcontext.ScrollEvent) {
+		ImIO.AddMouseWheelDelta(-event.X, event.Y)
 	})
 
-	input.Win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		input.CallListeners(w, key, scancode, action, mods)
-
-		if action != glfw.Press && action != glfw.Release {
+	gcontext.RegisterListener(func(event gcontext.KeyEvent) {
+		if event.Action == gcontext.Repeat {
 			return
 		}
 
-		if nMods := keyToModifier(key); nMods > 0 {
-			if action == glfw.Press {
-				mods = mods | nMods
-			} else {
-				mods = mods & (^nMods)
-			}
-		}
+		sdlUpdateKeyModifiers(event.Mod)
 
-		updateKeyModifiers(mods)
-
-		iKey := glfwKeyToImGuiKey(key)
-
-		ImIO.AddKeyEvent(iKey, action == glfw.Press)
+		iKey := sdlKeyToImGuiKey(event.Key, event.Scancode)
+		ImIO.AddKeyEvent(iKey, event.Action == gcontext.Press)
 	})
 
-	input.Win.SetCharCallback(func(w *glfw.Window, char rune) {
-		ImIO.AddInputCharactersUTF8(string(char))
+	gcontext.RegisterListener(func(event gcontext.CharEvent) {
+		ImIO.AddInputCharactersUTF8(event.Text)
 	})
 }
 
-func glfwKeyToImGuiKey(k glfw.Key) imgui.Key {
-	switch k {
-	case glfw.KeyTab:
-		return imgui.KeyTab
-	case glfw.KeyLeft:
-		return imgui.KeyLeftArrow
-	case glfw.KeyRight:
-		return imgui.KeyRightArrow
-	case glfw.KeyUp:
-		return imgui.KeyUpArrow
-	case glfw.KeyDown:
-		return imgui.KeyDownArrow
-	case glfw.KeyPageUp:
-		return imgui.KeyPageUp
-	case glfw.KeyPageDown:
-		return imgui.KeyPageDown
-	case glfw.KeyHome:
-		return imgui.KeyHome
-	case glfw.KeyEnd:
-		return imgui.KeyEnd
-	case glfw.KeyInsert:
-		return imgui.KeyInsert
-	case glfw.KeyDelete:
-		return imgui.KeyDelete
-	case glfw.KeyBackspace:
-		return imgui.KeyBackspace
-	case glfw.KeySpace:
-		return imgui.KeySpace
-	case glfw.KeyEnter:
-		return imgui.KeyEnter
-	case glfw.KeyEscape:
-		return imgui.KeyEscape
-	case glfw.KeyApostrophe:
-		return imgui.KeyApostrophe
-	case glfw.KeyComma:
-		return imgui.KeyComma
-	case glfw.KeyMinus:
-		return imgui.KeyMinus
-	case glfw.KeyPeriod:
-		return imgui.KeyPeriod
-	case glfw.KeySlash:
-		return imgui.KeySlash
-	case glfw.KeySemicolon:
-		return imgui.KeySemicolon
-	case glfw.KeyEqual:
-		return imgui.KeyEqual
-	case glfw.KeyLeftBracket:
-		return imgui.KeyLeftBracket
-	case glfw.KeyBackslash:
-		return imgui.KeyBackslash
-	case glfw.KeyRightBracket:
-		return imgui.KeyRightBracket
-	case glfw.KeyGraveAccent:
-		return imgui.KeyGraveAccent
-	case glfw.KeyCapsLock:
-		return imgui.KeyCapsLock
-	case glfw.KeyScrollLock:
-		return imgui.KeyScrollLock
-	case glfw.KeyNumLock:
-		return imgui.KeyNumLock
-	case glfw.KeyPrintScreen:
-		return imgui.KeyPrintScreen
-	case glfw.KeyPause:
-		return imgui.KeyPause
-	case glfw.KeyKP0:
+func addFont(fileName string, merge bool) *imgui.Font {
+	fontBytes, err := assets.GetBytes("assets/fonts/" + fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	ftPtr := C.malloc(C.size_t(len(fontBytes)))
+
+	fontPtr := unsafe.Pointer(&fontBytes[0])
+
+	C.memcpy(ftPtr, fontPtr, C.size_t(len(fontBytes)))
+
+	runtime.KeepAlive(fontPtr)
+
+	fc := imgui.NewFontConfig()
+	fc.SetMergeMode(merge)
+	defer fc.Destroy()
+
+	return ImIO.Fonts().AddFontFromMemoryTTFV(uintptr(ftPtr), int32(len(fontBytes)), -1, fc, nil)
+}
+
+func sdlKeyToImGuiKey(keycode sdl.Keycode, scancode sdl.Scancode) imgui.Key {
+	// Keypad doesn't have individual key values in SDL3
+	switch scancode {
+	case sdl.SCANCODE_KP_0:
 		return imgui.KeyKeypad0
-	case glfw.KeyKP1:
+	case sdl.SCANCODE_KP_1:
 		return imgui.KeyKeypad1
-	case glfw.KeyKP2:
+	case sdl.SCANCODE_KP_2:
 		return imgui.KeyKeypad2
-	case glfw.KeyKP3:
+	case sdl.SCANCODE_KP_3:
 		return imgui.KeyKeypad3
-	case glfw.KeyKP4:
+	case sdl.SCANCODE_KP_4:
 		return imgui.KeyKeypad4
-	case glfw.KeyKP5:
+	case sdl.SCANCODE_KP_5:
 		return imgui.KeyKeypad5
-	case glfw.KeyKP6:
+	case sdl.SCANCODE_KP_6:
 		return imgui.KeyKeypad6
-	case glfw.KeyKP7:
+	case sdl.SCANCODE_KP_7:
 		return imgui.KeyKeypad7
-	case glfw.KeyKP8:
+	case sdl.SCANCODE_KP_8:
 		return imgui.KeyKeypad8
-	case glfw.KeyKP9:
+	case sdl.SCANCODE_KP_9:
 		return imgui.KeyKeypad9
-	case glfw.KeyKPDecimal:
+	case sdl.SCANCODE_KP_PERIOD:
 		return imgui.KeyKeypadDecimal
-	case glfw.KeyKPDivide:
+	case sdl.SCANCODE_KP_DIVIDE:
 		return imgui.KeyKeypadDivide
-	case glfw.KeyKPMultiply:
+	case sdl.SCANCODE_KP_MULTIPLY:
 		return imgui.KeyKeypadMultiply
-	case glfw.KeyKPSubtract:
+	case sdl.SCANCODE_KP_MINUS:
 		return imgui.KeyKeypadSubtract
-	case glfw.KeyKPAdd:
+	case sdl.SCANCODE_KP_PLUS:
 		return imgui.KeyKeypadAdd
-	case glfw.KeyKPEnter:
+	case sdl.SCANCODE_KP_ENTER:
 		return imgui.KeyKeypadEnter
-	case glfw.KeyKPEqual:
+	case sdl.SCANCODE_KP_EQUALS:
 		return imgui.KeyKeypadEqual
-	case glfw.KeyLeftShift:
-		return imgui.KeyLeftShift
-	case glfw.KeyLeftControl:
-		return imgui.KeyLeftCtrl
-	case glfw.KeyLeftAlt:
-		return imgui.KeyLeftAlt
-	case glfw.KeyLeftSuper:
-		return imgui.KeyLeftSuper
-	case glfw.KeyRightShift:
-		return imgui.KeyRightShift
-	case glfw.KeyRightControl:
-		return imgui.KeyRightCtrl
-	case glfw.KeyRightAlt:
-		return imgui.KeyRightAlt
-	case glfw.KeyRightSuper:
-		return imgui.KeyRightSuper
-	case glfw.KeyMenu:
-		return imgui.KeyMenu
-	case glfw.Key0:
-		return imgui.Key0
-	case glfw.Key1:
-		return imgui.Key1
-	case glfw.Key2:
-		return imgui.Key2
-	case glfw.Key3:
-		return imgui.Key3
-	case glfw.Key4:
-		return imgui.Key4
-	case glfw.Key5:
-		return imgui.Key5
-	case glfw.Key6:
-		return imgui.Key6
-	case glfw.Key7:
-		return imgui.Key7
-	case glfw.Key8:
-		return imgui.Key8
-	case glfw.Key9:
-		return imgui.Key9
-	case glfw.KeyA:
-		return imgui.KeyA
-	case glfw.KeyB:
-		return imgui.KeyB
-	case glfw.KeyC:
-		return imgui.KeyC
-	case glfw.KeyD:
-		return imgui.KeyD
-	case glfw.KeyE:
-		return imgui.KeyE
-	case glfw.KeyF:
-		return imgui.KeyF
-	case glfw.KeyG:
-		return imgui.KeyG
-	case glfw.KeyH:
-		return imgui.KeyH
-	case glfw.KeyI:
-		return imgui.KeyI
-	case glfw.KeyJ:
-		return imgui.KeyJ
-	case glfw.KeyK:
-		return imgui.KeyK
-	case glfw.KeyL:
-		return imgui.KeyL
-	case glfw.KeyM:
-		return imgui.KeyM
-	case glfw.KeyN:
-		return imgui.KeyN
-	case glfw.KeyO:
-		return imgui.KeyO
-	case glfw.KeyP:
-		return imgui.KeyP
-	case glfw.KeyQ:
-		return imgui.KeyQ
-	case glfw.KeyR:
-		return imgui.KeyR
-	case glfw.KeyS:
-		return imgui.KeyS
-	case glfw.KeyT:
-		return imgui.KeyT
-	case glfw.KeyU:
-		return imgui.KeyU
-	case glfw.KeyV:
-		return imgui.KeyV
-	case glfw.KeyW:
-		return imgui.KeyW
-	case glfw.KeyX:
-		return imgui.KeyX
-	case glfw.KeyY:
-		return imgui.KeyY
-	case glfw.KeyZ:
-		return imgui.KeyZ
-	case glfw.KeyF1:
-		return imgui.KeyF1
-	case glfw.KeyF2:
-		return imgui.KeyF2
-	case glfw.KeyF3:
-		return imgui.KeyF3
-	case glfw.KeyF4:
-		return imgui.KeyF4
-	case glfw.KeyF5:
-		return imgui.KeyF5
-	case glfw.KeyF6:
-		return imgui.KeyF6
-	case glfw.KeyF7:
-		return imgui.KeyF7
-	case glfw.KeyF8:
-		return imgui.KeyF8
-	case glfw.KeyF9:
-		return imgui.KeyF9
-	case glfw.KeyF10:
-		return imgui.KeyF10
-	case glfw.KeyF11:
-		return imgui.KeyF11
-	case glfw.KeyF12:
-		return imgui.KeyF12
 	default:
-		return imgui.KeyNone
+		break
 	}
+	switch keycode {
+	case sdl.K_TAB:
+		return imgui.KeyTab
+	case sdl.K_LEFT:
+		return imgui.KeyLeftArrow
+	case sdl.K_RIGHT:
+		return imgui.KeyRightArrow
+	case sdl.K_UP:
+		return imgui.KeyUpArrow
+	case sdl.K_DOWN:
+		return imgui.KeyDownArrow
+	case sdl.K_PAGEUP:
+		return imgui.KeyPageUp
+	case sdl.K_PAGEDOWN:
+		return imgui.KeyPageDown
+	case sdl.K_HOME:
+		return imgui.KeyHome
+	case sdl.K_END:
+		return imgui.KeyEnd
+	case sdl.K_INSERT:
+		return imgui.KeyInsert
+	case sdl.K_DELETE:
+		return imgui.KeyDelete
+	case sdl.K_BACKSPACE:
+		return imgui.KeyBackspace
+	case sdl.K_SPACE:
+		return imgui.KeySpace
+	case sdl.K_RETURN:
+		return imgui.KeyEnter
+	case sdl.K_ESCAPE:
+		return imgui.KeyEscape
+	case sdl.K_COMMA:
+		return imgui.KeyComma
+
+	case sdl.K_PERIOD:
+		return imgui.KeyPeriod
+
+	case sdl.K_SEMICOLON:
+		return imgui.KeySemicolon
+
+	case sdl.K_CAPSLOCK:
+		return imgui.KeyCapsLock
+	case sdl.K_SCROLLLOCK:
+		return imgui.KeyScrollLock
+	case sdl.K_NUMLOCKCLEAR:
+		return imgui.KeyNumLock
+	case sdl.K_PRINTSCREEN:
+		return imgui.KeyPrintScreen
+	case sdl.K_PAUSE:
+		return imgui.KeyPause
+	case sdl.K_LCTRL:
+		return imgui.KeyLeftCtrl
+	case sdl.K_LSHIFT:
+		return imgui.KeyLeftShift
+	case sdl.K_LALT:
+		return imgui.KeyLeftAlt
+	case sdl.K_LGUI:
+		return imgui.KeyLeftSuper
+	case sdl.K_RCTRL:
+		return imgui.KeyRightCtrl
+	case sdl.K_RSHIFT:
+		return imgui.KeyRightShift
+	case sdl.K_RALT:
+		return imgui.KeyRightAlt
+	case sdl.K_RGUI:
+		return imgui.KeyRightSuper
+	case sdl.K_APPLICATION:
+		return imgui.KeyMenu
+	case sdl.K_0:
+		return imgui.Key0
+	case sdl.K_1:
+		return imgui.Key1
+	case sdl.K_2:
+		return imgui.Key2
+	case sdl.K_3:
+		return imgui.Key3
+	case sdl.K_4:
+		return imgui.Key4
+	case sdl.K_5:
+		return imgui.Key5
+	case sdl.K_6:
+		return imgui.Key6
+	case sdl.K_7:
+		return imgui.Key7
+	case sdl.K_8:
+		return imgui.Key8
+	case sdl.K_9:
+		return imgui.Key9
+	case sdl.K_A:
+		return imgui.KeyA
+	case sdl.K_B:
+		return imgui.KeyB
+	case sdl.K_C:
+		return imgui.KeyC
+	case sdl.K_D:
+		return imgui.KeyD
+	case sdl.K_E:
+		return imgui.KeyE
+	case sdl.K_F:
+		return imgui.KeyF
+	case sdl.K_G:
+		return imgui.KeyG
+	case sdl.K_H:
+		return imgui.KeyH
+	case sdl.K_I:
+		return imgui.KeyI
+	case sdl.K_J:
+		return imgui.KeyJ
+	case sdl.K_K:
+		return imgui.KeyK
+	case sdl.K_L:
+		return imgui.KeyL
+	case sdl.K_M:
+		return imgui.KeyM
+	case sdl.K_N:
+		return imgui.KeyN
+	case sdl.K_O:
+		return imgui.KeyO
+	case sdl.K_P:
+		return imgui.KeyP
+	case sdl.K_Q:
+		return imgui.KeyQ
+	case sdl.K_R:
+		return imgui.KeyR
+	case sdl.K_S:
+		return imgui.KeyS
+	case sdl.K_T:
+		return imgui.KeyT
+	case sdl.K_U:
+		return imgui.KeyU
+	case sdl.K_V:
+		return imgui.KeyV
+	case sdl.K_W:
+		return imgui.KeyW
+	case sdl.K_X:
+		return imgui.KeyX
+	case sdl.K_Y:
+		return imgui.KeyY
+	case sdl.K_Z:
+		return imgui.KeyZ
+	case sdl.K_F1:
+		return imgui.KeyF1
+	case sdl.K_F2:
+		return imgui.KeyF2
+	case sdl.K_F3:
+		return imgui.KeyF3
+	case sdl.K_F4:
+		return imgui.KeyF4
+	case sdl.K_F5:
+		return imgui.KeyF5
+	case sdl.K_F6:
+		return imgui.KeyF6
+	case sdl.K_F7:
+		return imgui.KeyF7
+	case sdl.K_F8:
+		return imgui.KeyF8
+	case sdl.K_F9:
+		return imgui.KeyF9
+	case sdl.K_F10:
+		return imgui.KeyF10
+	case sdl.K_F11:
+		return imgui.KeyF11
+	case sdl.K_F12:
+		return imgui.KeyF12
+	case sdl.K_F13:
+		return imgui.KeyF13
+	case sdl.K_F14:
+		return imgui.KeyF14
+	case sdl.K_F15:
+		return imgui.KeyF15
+	case sdl.K_F16:
+		return imgui.KeyF16
+	case sdl.K_F17:
+		return imgui.KeyF17
+	case sdl.K_F18:
+		return imgui.KeyF18
+	case sdl.K_F19:
+		return imgui.KeyF19
+	case sdl.K_F20:
+		return imgui.KeyF20
+	case sdl.K_F21:
+		return imgui.KeyF21
+	case sdl.K_F22:
+		return imgui.KeyF22
+	case sdl.K_F23:
+		return imgui.KeyF23
+	case sdl.K_F24:
+		return imgui.KeyF24
+	case sdl.K_AC_BACK:
+		return imgui.KeyAppBack
+	case sdl.K_AC_FORWARD:
+		return imgui.KeyAppForward
+	default:
+		break
+	}
+
+	// Fallback to scancode
+	switch scancode {
+	case sdl.SCANCODE_GRAVE:
+		return imgui.KeyGraveAccent
+	case sdl.SCANCODE_MINUS:
+		return imgui.KeyMinus
+	case sdl.SCANCODE_EQUALS:
+		return imgui.KeyEqual
+	case sdl.SCANCODE_LEFTBRACKET:
+		return imgui.KeyLeftBracket
+	case sdl.SCANCODE_RIGHTBRACKET:
+		return imgui.KeyRightBracket
+		//case sdl.SCANCODE_NONUSBACKSLASH: return imgui.KeyOem102;
+	case sdl.SCANCODE_BACKSLASH:
+		return imgui.KeyBackslash
+	case sdl.SCANCODE_SEMICOLON:
+		return imgui.KeySemicolon
+	case sdl.SCANCODE_APOSTROPHE:
+		return imgui.KeyApostrophe
+	case sdl.SCANCODE_COMMA:
+		return imgui.KeyComma
+	case sdl.SCANCODE_PERIOD:
+		return imgui.KeyPeriod
+	case sdl.SCANCODE_SLASH:
+		return imgui.KeySlash
+	default:
+		break
+	}
+	return imgui.KeyNone
 }
 
-func keyToModifier(key glfw.Key) glfw.ModifierKey {
-	switch {
-	case key == glfw.KeyLeftControl || key == glfw.KeyRightControl:
-		return glfw.ModControl
-	case key == glfw.KeyLeftShift || key == glfw.KeyRightShift:
-		return glfw.ModShift
-	case key == glfw.KeyLeftAlt || key == glfw.KeyRightAlt:
-		return glfw.ModAlt
-	case key == glfw.KeyLeftSuper || key == glfw.KeyRightSuper:
-		return glfw.ModSuper
-	}
-
-	return 0
-}
-
-func updateKeyModifiers(mods glfw.ModifierKey) {
-	ImIO.AddKeyEvent(imgui.KeyReservedForModCtrl, (mods&glfw.ModControl) != 0)
-	ImIO.AddKeyEvent(imgui.KeyReservedForModShift, (mods&glfw.ModShift) != 0)
-	ImIO.AddKeyEvent(imgui.KeyReservedForModAlt, (mods&glfw.ModAlt) != 0)
-	ImIO.AddKeyEvent(imgui.KeyReservedForModSuper, (mods&glfw.ModSuper) != 0)
+func sdlUpdateKeyModifiers(mods sdl.Keymod) {
+	ImIO.AddKeyEvent(imgui.KeyReservedForModCtrl, (mods&sdl.KMOD_CTRL) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModShift, (mods&sdl.KMOD_SHIFT) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModAlt, (mods&sdl.KMOD_ALT) != 0)
+	ImIO.AddKeyEvent(imgui.KeyReservedForModSuper, (mods&sdl.KMOD_GUI) != 0)
 }
 
 var lastTime float64
@@ -456,20 +438,20 @@ func Begin() {
 	sliderSledLastFrame = sliderSledThisFrame
 	sliderSledThisFrame = false
 
-	x, y := input.Win.GetCursorPos()
+	x, y := gcontext.GetCursorPosition()
 
 	w, h := int(settings.Graphics.GetWidth()), int(settings.Graphics.GetHeight()) //input.Win.GetFramebufferSize()
-	_, h1 := glfw.GetCurrentContext().GetFramebufferSize()
+	_, h1 := gcontext.GetFramebufferSize()
 
 	scaling := float32(h1) / float32(h)
 
-	ImIO.AddMousePosEvent(float32(x)/scaling, float32(y)/scaling)
-	ImIO.AddMouseButtonEvent(0, input.Win.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press)
-	ImIO.AddMouseButtonEvent(1, input.Win.GetMouseButton(glfw.MouseButtonRight) == glfw.Press)
+	ImIO.AddMousePosEvent(x/scaling, y/scaling)
+	ImIO.AddMouseButtonEvent(0, gcontext.GetLeftClick())
+	ImIO.AddMouseButtonEvent(1, gcontext.GetRightClick())
 
 	ImIO.SetDisplaySize(imgui.Vec2{X: float32(w), Y: float32(h)})
 
-	time := glfw.GetTime()
+	time := qpc.GetMilliTimeF() / 1000
 
 	delta := float32(time - lastTime)
 
@@ -515,11 +497,18 @@ func DrawImgui() {
 
 	rShader.SetUniform("proj", mgl32.Ortho(0, float32(w), float32(h), 0, -1, 1))
 
-	tex.Bind(0)
-	rShader.SetUniform("tex", 0)
-	rShader.SetUniform("texRGBA", 0)
+	imTextures := drawData.Textures()
+	if imTextures.Size() > 0 {
+		for _, tex := range imTextures.Slice() {
+			if tex.Status() != imgui.TextureStatusOK {
+				handleTexture(tex)
+			}
+		}
+	}
 
-	lastBound := imgui.TextureID{Data: 0}
+	rShader.SetUniform("tex", 0)
+
+	lastBound := imgui.TextureID(0)
 
 	vao.Bind()
 	ibo.Bind()
@@ -528,7 +517,7 @@ func DrawImgui() {
 	blend.Enable()
 	blend.SetFunction(blend.SrcAlpha, blend.OneMinusSrcAlpha)
 
-	_, h1 := glfw.GetCurrentContext().GetFramebufferSize()
+	_, h1 := gcontext.GetFramebufferSize()
 
 	scaling := float32(h1) / float32(h)
 
@@ -536,7 +525,7 @@ func DrawImgui() {
 		vertexBuffer, vertexBufferSize := list.GetVertexBuffer()
 		vertexBufferSize /= 4 // convert size in bytes to size in float32
 
-		vertices := (*[1 << 30]float32)(vertexBuffer)[:vertexBufferSize:vertexBufferSize] // cast from unsafe to float32 slice
+		vertices := unsafe.Slice((*float32)(vertexBuffer), vertexBufferSize) // cast from unsafe to float32 slice
 
 		if vao.GetVBO("default").Capacity() < vertexBufferSize {
 			vao.Resize("default", vertexBufferSize) // resize, if necessary
@@ -547,27 +536,21 @@ func DrawImgui() {
 		indexBuffer, indexBufferSize := list.GetIndexBuffer()
 		indexBufferSize /= 2
 
-		indices := (*[1 << 30]uint16)(indexBuffer)[:indexBufferSize:indexBufferSize]
+		indices := unsafe.Slice((*uint16)(indexBuffer), indexBufferSize)
 
 		ibo.SetData(0, indices)
 
 		for _, cmd := range list.Commands() {
-			cId := cmd.TextureId()
-			if cId != lastBound {
-				if cId.Data == 0 {
-					rShader.SetUniform("texRGBA", 0)
-					tex.Bind(0)
-				} else {
-					rShader.SetUniform("texRGBA", 1)
-					gl.BindTextureUnit(0, uint32(cId.Data))
-				}
-
-				lastBound = cId
-			}
-
 			if cmd.HasUserCallback() {
 				cmd.CallUserCallback(list)
 			} else {
+				cId := cmd.TexID()
+				if cId != lastBound {
+					gl.BindTextureUnit(0, uint32(cId))
+
+					lastBound = cId
+				}
+
 				clipRect := cmd.ClipRect() //.Times(scaling)
 				clipRect.X *= scaling
 				clipRect.Y *= scaling
@@ -588,6 +571,66 @@ func DrawImgui() {
 	ibo.Unbind()
 	vao.Unbind()
 	rShader.Unbind()
+}
+
+var textures = make(map[uint32]*texture.TextureSingle)
+
+func handleTexture(tex imgui.TextureData) {
+	if tex.Status() == imgui.TextureStatusWantCreate {
+		if tex.TexID() != 0 {
+			panic("invalid texture state: want to create existing texture")
+		}
+
+		if tex.Format() != imgui.TextureFormatRGBA32 {
+			panic("invalid texture state: want to create non rgba32 texture")
+		}
+
+		tW := int(tex.Width())
+		tH := int(tex.Height())
+
+		// go vet workaround
+		data := unsafe.Slice(*(**byte)(unsafe.Pointer(new(tex.Pixels()))), 4*tW*tH)
+
+		gTex := texture.NewTextureSingle(tW, tH, 0)
+		gTex.SetData(0, 0, tW, tH, data)
+
+		tex.SetTexID(imgui.TextureID(gTex.GetID()))
+		tex.SetStatus(imgui.TextureStatusOK)
+
+		textures[gTex.GetID()] = gTex
+	} else if tex.Status() == imgui.TextureStatusWantUpdates {
+		texId := uint32(tex.TexID())
+
+		gTex, ok := textures[texId]
+		if !ok {
+			panic("invalid texture state: missing gl texture")
+		}
+
+		for _, rc := range tex.Updates().Slice() {
+			uW := int(rc.W())
+			uH := int(rc.H())
+
+			rPtr := tex.PixelsAt(int32(rc.X()), int32(rc.Y()))
+
+			gTex.SetDataBuf(int(rc.X()), int(rc.Y()), uW, uH, int(tex.Width()), rPtr)
+		}
+
+		tex.SetStatus(imgui.TextureStatusOK)
+	} else if tex.Status() == imgui.TextureStatusWantDestroy {
+		texId := uint32(tex.TexID())
+
+		gTex, ok := textures[texId]
+		if !ok {
+			panic("invalid texture state: gl texture already destroyed")
+		}
+
+		gTex.Dispose()
+
+		delete(textures, texId)
+
+		tex.SetTexID(imgui.TextureID(0))
+		tex.SetStatus(imgui.TextureStatusDestroyed)
+	}
 }
 
 func handleDragScroll() (ret bool) {

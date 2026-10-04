@@ -3,12 +3,12 @@ package video
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/wieku/danser-go/framework/platform"
 )
 
 type Metadata struct {
@@ -45,13 +45,7 @@ func LoadMetadata(path string) *Metadata {
 		return nil
 	}
 
-	probeExec, err := files.GetCommandExec("ffmpeg", "ffprobe")
-	if err != nil {
-		log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
-		return nil
-	}
-
-	mData := getProbeOutput(probeExec, path, false)
+	mData := getProbeOutput(path, false)
 
 	if mData == nil {
 		return nil
@@ -82,7 +76,7 @@ func LoadMetadata(path string) *Metadata {
 	}
 }
 
-func getProbeOutput(probeExec, path string, mov bool) *probeOutput {
+func getProbeOutput(path string, mov bool) *probeOutput {
 	var args []string
 
 	if mov {
@@ -97,7 +91,14 @@ func getProbeOutput(probeExec, path string, mov bool) *probeOutput {
 		"-loglevel", "quiet",
 	)
 
-	output, err := exec.Command(probeExec, args...).Output()
+	cmd, err := platform.PrepareFFMpeg("ffprobe", args...)
+	if err != nil {
+		log.Println(err)
+
+		return nil
+	}
+
+	output, err := cmd.Output()
 
 	if err != nil {
 		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
@@ -119,7 +120,7 @@ func getProbeOutput(probeExec, path string, mov bool) *probeOutput {
 
 	// Run a second pass if mov/mp4 is detected
 	if !mov && strings.Contains(mData.Format.FormatName, "mov") {
-		return getProbeOutput(probeExec, path, true)
+		return getProbeOutput(path, true)
 	}
 
 	return mData

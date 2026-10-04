@@ -2,6 +2,13 @@ package skin
 
 import (
 	"fmt"
+	"log"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/assets"
 	"github.com/wieku/danser-go/framework/bass"
@@ -10,15 +17,12 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/font"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/color"
-	"log"
-	"path/filepath"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 )
 
 type Source int
+
+type Color int
 
 const (
 	UNKNOWN = Source(0)
@@ -27,6 +31,13 @@ const (
 	SKIN
 	BEATMAP
 	ALL = LOCAL | FALLBACK | SKIN | BEATMAP
+)
+
+const (
+	InputOverlayText = Color(iota)
+	SliderBorder
+	SliderTrackOverride
+	SliderBall
 )
 
 const defaultName = "default"
@@ -179,7 +190,19 @@ func GetTexture(name string) *texture.TextureRegion {
 	return GetTextureSource(name, ALL)
 }
 
-func GetTextureSource(name string, source Source) *texture.TextureRegion {
+func GetTextureSource(name string, source Source) (region *texture.TextureRegion) {
+	if settings.RECORD && !gcontext.IsMainThread() {
+		goroutines.CallMain(func() {
+			region = getTextureSource(name, source)
+		})
+	} else {
+		region = getTextureSource(name, source)
+	}
+
+	return
+}
+
+func getTextureSource(name string, source Source) *texture.TextureRegion {
 	checkInit()
 
 	textureLock.Lock()
@@ -371,7 +394,7 @@ func loadTexture(name string, source Source) *texture.TextureRegion {
 
 	if region != nil {
 		// Upload this texture in GL thread
-		goroutines.CallNonBlockMain(func() {
+		upload := func() {
 			checkAtlas()
 
 			var rg *texture.TextureRegion
@@ -404,7 +427,13 @@ func loadTexture(name string, source Source) *texture.TextureRegion {
 			region.U2 = rg.U2
 			region.V1 = rg.V1
 			region.V2 = rg.V2
-		})
+		}
+
+		if settings.RECORD {
+			upload()
+		} else {
+			goroutines.CallNonBlockMain(upload)
+		}
 	}
 
 	return region
@@ -484,12 +513,25 @@ func tryLoad(basePath string, source Source) *bass.Sample {
 var beatmapColorsI []colorI
 var beatmapColors []color.Color
 
+var beatmapCustomColors = make(map[Color]color.Color)
+
 func AddBeatmapColor(data []string) {
-	index, _ := strconv.ParseInt(strings.TrimPrefix(data[0], "Combo"), 10, 64)
-	beatmapColorsI = append(beatmapColorsI, colorI{
-		index: int(index),
-		color: ParseColor(data[1], data[0]),
-	})
+	switch data[0] {
+	case "InputOverlayText":
+		beatmapCustomColors[InputOverlayText] = ParseColor(data[1], data[0])
+	case "SliderBorder":
+		beatmapCustomColors[SliderBorder] = ParseColor(data[1], data[0])
+	case "SliderTrackOverride":
+		beatmapCustomColors[SliderTrackOverride] = ParseColor(data[1], data[0])
+	case "SliderBall":
+		beatmapCustomColors[SliderBall] = ParseColor(data[1], data[0])
+	case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
+		index, _ := strconv.ParseInt(strings.TrimPrefix(data[0], "Combo"), 10, 64)
+		beatmapColorsI = append(beatmapColorsI, colorI{
+			index: int(index),
+			color: ParseColor(data[1], data[0]),
+		})
+	}
 }
 
 func FinishBeatmapColors() {
@@ -514,7 +556,28 @@ func GetColors() []color.Color {
 	return info.ComboColors
 }
 
-func GetColor(comboSet, comboSetHax int, base color.Color) (col color.Color) {
+func TryGetColor(col Color) (color.Color, bool) {
+	if settings.Skin.UseBeatmapColors {
+		if c, ok := beatmapCustomColors[col]; ok {
+			return c, true
+		}
+	}
+
+	c, ok := info.Colors[col]
+	return c, ok
+}
+
+func GetColor(col Color) color.Color {
+	c, ok := TryGetColor(col)
+
+	if !ok {
+		panic("missing color in skin info")
+	}
+
+	return c
+}
+
+func GetObjectColor(comboSet, comboSetHax int, base color.Color) (col color.Color) {
 	col = color.NewRGB(base.R, base.G, base.B)
 
 	if settings.Skin.UseColorsFromSkin && len(GetColors()) > 0 {

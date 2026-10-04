@@ -15,7 +15,7 @@ type Migration interface {
 	FieldsToMigrate() []string
 
 	// Returns beatmap values to update
-	GetValues(beatMap *beatmap.BeatMap) []interface{}
+	GetValues(beatMap *beatmap.BeatMap) []any
 
 	// Returns database version on which changes were made
 	Date() int

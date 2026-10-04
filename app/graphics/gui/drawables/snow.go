@@ -2,13 +2,14 @@ package drawables
 
 import (
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
+
 	"math"
 	"math/rand"
 )
@@ -70,8 +71,8 @@ func (vis *Snow) Update(time float64) {
 
 	delta := (time - vis.lastTime) / 16
 
-	mX, _ := input.Win.GetCursorPos()
-	mX = mutils.Clamp(mX, 0, settings.Graphics.GetWidthF())
+	cX, _ := gcontext.GetCursorPosition()
+	mX := mutils.Clamp(float64(cX), 0, settings.Graphics.GetWidthF())
 
 	vUpdate := 0.0
 
@@ -84,7 +85,7 @@ func (vis *Snow) Update(time float64) {
 	triangles := vis.manager.GetProcessedSprites()
 	existingSnow := len(triangles)
 
-	for i := 0; i < len(triangles); i++ {
+	for i := range triangles {
 		t := triangles[i].(*Snowflake)
 		t.Update(time)
 
@@ -104,7 +105,7 @@ func (vis *Snow) Update(time float64) {
 	toAdd := maxTriangles*5 - existingSnow
 
 	if toAdd > 0 {
-		for i := 0; i < toAdd; i++ {
+		for range toAdd {
 			vis.AddSnowflake(vis.firstUpdate)
 		}
 

@@ -3,9 +3,19 @@ package launcher
 import (
 	"cmp"
 	"fmt"
+	"iter"
+	"os"
+	"path/filepath"
+	"reflect"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/AllenDang/cimgui-go/imgui"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/sqweek/dialog"
+
 	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/env"
@@ -14,13 +24,7 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/platform"
-	"os"
-	"path/filepath"
-	"reflect"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 )
 
 const padY = 30
@@ -76,12 +80,10 @@ func newSettingsEditor(config *settings.Config) *settingsEditor {
 	return editor
 }
 
-func (editor *settingsEditor) updateKey(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
-	if editor.opened && editor.keyChange != "" && action == glfw.Press {
-		keyText, ok := platform.GetKeyName(key, scancode)
-
-		if ok && keyText != "" {
-			editor.keyChangeVal.SetString(keyText)
+func (editor *settingsEditor) updateKey(event gcontext.KeyEvent) {
+	if editor.opened && editor.keyChange != "" && event.Action == gcontext.Press {
+		if event.Name != "" {
+			editor.keyChangeVal.SetString(event.Name)
 			editor.keyChangeOpened = false
 			editor.keyChange = ""
 
@@ -108,7 +110,7 @@ func (editor *settingsEditor) drawEditor() {
 
 	currentRunning := editor.danserRunning
 
-	imgui.PushFont(Font20)
+	imgui.PushFont(Font, 20)
 
 	height := imgui.ContentRegionAvail().Y
 	if currentRunning {
@@ -131,7 +133,7 @@ func (editor *settingsEditor) drawEditor() {
 
 			imgui.PushStyleColorVec4(imgui.ColChildBg, vec4(0, 0, 0, .5))
 
-			imgui.PushFont(FontAw)
+			imgui.PushFont(FontAw, 32)
 			{
 
 				imgui.PushStyleVarFloat(imgui.StyleVarScrollbarSize, 9)
@@ -161,7 +163,7 @@ func (editor *settingsEditor) drawEditor() {
 
 			imgui.TableNextColumn()
 
-			imgui.PushFont(Font32)
+			imgui.PushFont(Font, 32)
 			{
 				imgui.SetNextItemWidth(-1)
 
@@ -182,7 +184,7 @@ func (editor *settingsEditor) drawEditor() {
 
 				editor.blockSearch = handleDragScroll()
 
-				imgui.PushFont(Font20)
+				imgui.PushFont(Font, 20)
 
 				editor.drawSettings()
 
@@ -201,7 +203,7 @@ func (editor *settingsEditor) drawEditor() {
 
 	imgui.EndChild()
 
-	imgui.PushFont(Font20)
+	imgui.PushFont(Font, 20)
 
 	if currentRunning {
 		centerTable("tabdanser is running", -1, func() {
@@ -243,7 +245,7 @@ func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, sea
 	skipMap := make(map[string]uint8)
 	consumed := make(map[string]uint8)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		field := typ.Field(i)
 		dF := def.Field(i)
 
@@ -261,7 +263,7 @@ func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, sea
 
 		match := omitSearch || strings.Contains(strings.ToLower(label), search)
 
-		if field.Type().Kind() == reflect.Ptr && (field.CanInterface() || def.Field(i).Anonymous) && !field.IsNil() && !field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
+		if field.Type().Kind() == reflect.Pointer && (field.CanInterface() || def.Field(i).Anonymous) && !field.IsNil() && !field.Type().AssignableTo(reflect.TypeFor[*settings.HSV]()) {
 			sub := editor.buildSearchCache(sPath, field, search, match)
 			match = match || sub
 		} else if field.Type().Kind() == reflect.Slice && field.CanInterface() {
@@ -280,7 +282,7 @@ func (editor *settingsEditor) buildSearchCache(path string, u reflect.Value, sea
 	return found
 }
 
-func (editor *settingsEditor) buildNavigationFor(u interface{}) {
+func (editor *settingsEditor) buildNavigationFor(u any) {
 	typ := reflect.ValueOf(u).Elem()
 	def := reflect.TypeOf(u).Elem()
 
@@ -294,7 +296,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 	sc1 := imgui.ScrollY()
 	sc2 := sc1 + cAvail
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		label := editor.getLabel(def.Field(i))
 
 		if editor.searchCache["Main."+label] > 0 && (typ.Field(i).CanInterface() && !typ.Field(i).IsNil()) {
@@ -331,7 +333,7 @@ func (editor *settingsEditor) buildNavigationFor(u interface{}) {
 			}
 
 			if imgui.IsItemHovered() {
-				imgui.PushFont(Font24)
+				imgui.PushFont(Font, 24)
 				imgui.BeginTooltip()
 				setTooltip(label)
 				imgui.EndTooltip()
@@ -366,7 +368,7 @@ func (editor *settingsEditor) drawSettings() {
 			continue
 		}
 
-		if field.CanInterface() && field.Type().Kind() == reflect.Ptr && !field.IsNil() {
+		if field.CanInterface() && field.Type().Kind() == reflect.Pointer && !field.IsNil() {
 			if j > 0 {
 				imgui.Dummy(vec2(1, 2*padY))
 			}
@@ -409,7 +411,7 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 
 	posLocal := imgui.CursorPos()
 
-	imgui.PushFont(Font48)
+	imgui.PushFont(Font, 48)
 	imgui.TextUnformatted(name)
 
 	imgui.PopFont()
@@ -434,7 +436,7 @@ func (editor *settingsEditor) buildMainSection(jsonPath, sPath, name string, u r
 
 			if settings.Credentails.AuthType == "AuthorizationCode" {
 				if imgui.Button("Copy callback URL##auth") {
-					glfw.GetCurrentContext().SetClipboardString("http://localhost:" + strconv.Itoa(settings.Credentails.CallbackPort))
+					gcontext.AddToClipboard("http://localhost:" + strconv.Itoa(settings.Credentails.CallbackPort))
 				}
 
 				imgui.SameLine()
@@ -481,7 +483,7 @@ func (editor *settingsEditor) subSectionTempl(name string, jsonPath string, d re
 
 	imgui.BeginGroup()
 
-	imgui.PushFont(Font24)
+	imgui.PushFont(Font, 24)
 	imgui.TextUnformatted(strings.ToUpper(name))
 
 	if tVal, ok := d.Tag.Lookup("wiki"); ok {
@@ -502,7 +504,7 @@ func (editor *settingsEditor) subSectionTempl(name string, jsonPath string, d re
 
 			imgui.TableNextColumn()
 
-			imgui.PushFont(Font20)
+			imgui.PushFont(Font, 20)
 
 			if imgui.Button(spl[0] + "##wikiBtn" + jsonPath) {
 				platform.OpenURL(spl[1])
@@ -553,8 +555,7 @@ func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect
 	}
 
 	editor.subSectionTempl(name, jsonPath, d, func() {
-		ImIO.SetFontGlobalScale(20.0 / 32)
-		imgui.PushFont(FontAw)
+		imgui.PushFont(FontAw, 20)
 
 		if imgui.Button("+" + jsonPath) {
 			if fName, ok := d.Tag.Lookup("new"); ok {
@@ -566,7 +567,6 @@ func (editor *settingsEditor) buildArray(jsonPath, sPath, name string, u reflect
 			}
 		}
 
-		ImIO.SetFontGlobalScale(1)
 		imgui.PopFont()
 	}, func() {
 		for j := 0; j < u.Len(); j++ {
@@ -622,14 +622,12 @@ func (editor *settingsEditor) buildArrayElement(jsonPath, sPath string, u reflec
 		imgui.Dummy(vec2(1, 0))
 		imgui.SameLine()
 
-		ImIO.SetFontGlobalScale(0.625)
-		imgui.PushFont(FontAw)
+		imgui.PushFont(FontAw, 20)
 
 		imgui.SetCursorPos(vec2(imgui.CursorPosX(), (posLocal.Y+posLocal1.Y-imgui.FrameHeight())/2))
 
 		removed = imgui.Button("\uF068" + jsonPath)
 
-		ImIO.SetFontGlobalScale(1)
 		imgui.PopFont()
 
 		imgui.SameLine()
@@ -645,7 +643,7 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	typ := u.Elem()
 	def := u.Type().Elem()
 
-	if u.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) { // special case, if it's an array of colors we want to see color picker instead of Hue, Saturation and Value sliders
+	if u.Type().AssignableTo(reflect.TypeFor[*settings.HSV]()) { // special case, if it's an array of colors we want to see color picker instead of Hue, Saturation and Value sliders
 		editor.buildColor(jsonPath, u, d, false)
 		return
 	}
@@ -659,7 +657,7 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 	wasRendered := false
 	wasSection := false
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		field := typ.Field(i)
 		dF := def.Field(i)
 
@@ -696,7 +694,7 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 		wasRendered = true
 
 		switch field.Type().Kind() {
-		case reflect.String, reflect.Float64, reflect.Int64, reflect.Int, reflect.Int32, reflect.Bool, reflect.Slice, reflect.Ptr:
+		case reflect.String, reflect.Float64, reflect.Int64, reflect.Int, reflect.Int32, reflect.Bool, reflect.Slice, reflect.Pointer:
 			if wasSection {
 				imgui.Dummy(vec2(0, padY/2))
 			}
@@ -738,8 +736,8 @@ func (editor *settingsEditor) traverseChildren(jsonPath, lPath string, u reflect
 
 				editor.buildArray(jsonPath1, sPath2, label, field, dF)
 				isSection = true
-			case reflect.Ptr:
-				if field.Type().AssignableTo(reflect.TypeOf(&settings.HSV{})) {
+			case reflect.Pointer:
+				if field.Type().AssignableTo(reflect.TypeFor[*settings.HSV]()) {
 					editor.buildColor(jsonPath1, field, dF, true)
 				} else if !field.IsNil() {
 					if dF.Anonymous {
@@ -803,7 +801,7 @@ func (editor *settingsEditor) shouldBeHidden(consumed map[string]uint8, hidden m
 
 			found := false
 
-			for _, toCheck := range strings.Split(s1[1], ",") {
+			for toCheck := range strings.SplitSeq(s1[1], ",") {
 				if toCheck[:1] == "!" {
 					found = cF != toCheck[1:]
 
@@ -915,7 +913,7 @@ func (editor *settingsEditor) buildVector(jsonPath1, jsonPath2 string, d reflect
 			hasCustom := false
 			normalFound := false
 
-			for _, s := range strings.Split(cSpec, ",") {
+			for s := range strings.SplitSeq(cSpec, ",") {
 				if s == "custom" {
 					hasCustom = true
 					continue
@@ -1112,17 +1110,17 @@ func (editor *settingsEditor) buildString(jsonPath string, f reflect.Value, d re
 			var values []string
 			var labels []string
 
-			var options []string
+			var options iter.Seq[string]
 
 			if okCS {
-				options = reflect.ValueOf(settings.DefaultsFactory).MethodByName(cFunc).Call(nil)[0].Interface().([]string)
+				options = slices.Values(reflect.ValueOf(settings.DefaultsFactory).MethodByName(cFunc).Call(nil)[0].Interface().([]string))
 			} else {
-				options = strings.Split(cSpec, ",")
+				options = strings.SplitSeq(cSpec, ",")
 			}
 
 			lb := base
 
-			for _, s := range options {
+			for s := range options {
 				splt := strings.Split(s, "|")
 
 				optionLabel := splt[0]
@@ -1284,7 +1282,7 @@ func (editor *settingsEditor) buildInt(jsonPath string, f reflect.Value, d refle
 
 			hasCustom := false
 
-			for _, s := range strings.Split(cSpec, ",") {
+			for s := range strings.SplitSeq(cSpec, ",") {
 				if s == "custom" {
 					hasCustom = true
 					continue

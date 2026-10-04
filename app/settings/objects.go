@@ -7,12 +7,14 @@ func initObjects() *objects {
 		DrawApproachCircles: true,
 		DrawComboNumbers:    true,
 		DrawFollowPoints:    true,
+		HitAnimations:       true,
 		LoadSpinners:        true,
 		ScaleToTheBeat:      false,
 		StackEnabled:        true,
 		Sliders: &sliders{
 			ForceSliderBallTexture: true,
 			DrawEndCircles:         true,
+			DrawReverseArrows:      true,
 			DrawSliderFollowCircle: true,
 			DrawScorePoints:        true,
 			SliderMerge:            false,
@@ -102,6 +104,7 @@ type objects struct {
 	DrawApproachCircles bool //true
 	DrawComboNumbers    bool
 	DrawFollowPoints    bool
+	HitAnimations       bool `tooltip:"Disabling this will make hit circles, slider heads and slider tails fade out in 60 ms instead of playing the full hit animation."`
 	LoadSpinners        bool `liveedit:"false"`
 	ScaleToTheBeat      bool //true, objects size is changing with music peak amplitude
 	StackEnabled        bool `label:"Enable stack leniency" liveedit:"false"` //true, stack leniency
@@ -112,6 +115,7 @@ type objects struct {
 type sliders struct {
 	ForceSliderBallTexture bool `label:"Force slider ball texture on mandalas"`
 	DrawEndCircles         bool
+	DrawReverseArrows      bool
 	DrawSliderFollowCircle bool
 	DrawScorePoints        bool //true
 	SliderMerge            bool

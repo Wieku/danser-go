@@ -10,7 +10,7 @@ func GetColorsSV(baseHue, hueShift float64, times int, S, V, alpha float64) []co
 
 	baseHue = mutils.Sanitize(baseHue, 360)
 
-	for i := 0; i < times; i++ {
+	for i := range times {
 		hue := baseHue + float64(i)*hueShift
 		hue = mutils.Sanitize(hue, 360)
 

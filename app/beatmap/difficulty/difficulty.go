@@ -2,13 +2,16 @@ package difficulty
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"github.com/wieku/rplpa"
+	"maps"
 	"math"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/wieku/rplpa"
+
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 const (
@@ -43,6 +46,8 @@ type Difficulty struct {
 	CircleRadiusL float64
 
 	Mods Modifier
+
+	ScoreVersion int32 // 0 means current scoring; otherwise the replay's score version.
 
 	Hit50U  float64
 	Hit100U float64
@@ -134,13 +139,13 @@ func (diff *Difficulty) calculate() {
 
 	diff.TimeFadeIn = HitFadeIn * min(1, diff.PreemptU/450)
 
-	diff.Hit50U = DifficultyRate(od, 200, 150, 100)
-	diff.Hit100U = DifficultyRate(od, 140, 100, 60)
-	diff.Hit300U = DifficultyRate(od, 80, 50, 20)
+	diff.Hit50U = math.Floor(DifficultyRate(od, 200, 150, 100)) - 0.5
+	diff.Hit100U = math.Floor(DifficultyRate(od, 140, 100, 60)) - 0.5
+	diff.Hit300U = math.Floor(DifficultyRate(od, 80, 50, 20)) - 0.5
 
-	diff.Hit50 = int64(diff.Hit50U)
-	diff.Hit100 = int64(diff.Hit100U)
-	diff.Hit300 = int64(diff.Hit300U)
+	diff.Hit50 = int64(DifficultyRate(od, 200, 150, 100))
+	diff.Hit100 = int64(DifficultyRate(od, 140, 100, 60))
+	diff.Hit300 = int64(DifficultyRate(od, 80, 50, 20))
 
 	diff.SpinnerRatio = DifficultyRate(od, 3, 5, 7.5)
 	diff.LzSpinnerMinRPS = DifficultyRate(od, 90, 150, 225) / 60
@@ -165,7 +170,7 @@ func (diff *Difficulty) calculate() {
 	}
 
 	diff.ARReal = DiffFromRate(diff.GetModifiedTime(diff.PreemptU), 1800, 1200, 450)
-	diff.ODReal = (80 - diff.GetModifiedTime(diff.Hit300U)) / 6 //DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
+	diff.ODReal = (79.5 - diff.GetModifiedTime(diff.Hit300U)) / 6 //DiffFromRate(diff.GetModifiedTime(diff.Hit300U), 80, 50, 20)
 }
 
 func cMax(cond bool, a, b float64) float64 {
@@ -195,6 +200,14 @@ func (diff *Difficulty) AddMod(mods Modifier) {
 
 	if mods.Active(Easy) {
 		diff.modSettings[rfType[EasySettings]()] = NewEasySettings()
+	}
+
+	if mods.Active(SuddenDeath) {
+		diff.modSettings[rfType[SuddenDeathSettings]()] = NewSuddenDeathSettings()
+	}
+
+	if mods.Active(Hidden) {
+		diff.modSettings[rfType[HiddenSettings]()] = NewHiddenSettings()
 	}
 
 	if mods.Active(Flashlight) {
@@ -239,6 +252,14 @@ func (diff *Difficulty) RemoveMod(mods Modifier) {
 		delete(diff.modSettings, rfType[EasySettings]())
 	}
 
+	if mods.Active(SuddenDeath) {
+		delete(diff.modSettings, rfType[SuddenDeathSettings]())
+	}
+
+	if mods.Active(Hidden) {
+		delete(diff.modSettings, rfType[HiddenSettings]())
+	}
+
 	if mods.Active(Flashlight) {
 		delete(diff.modSettings, rfType[FlashlightSettings]())
 	}
@@ -277,6 +298,14 @@ func (diff *Difficulty) SetMods2(mods []rplpa.ModInfo) {
 
 			if mod.Active(Easy) {
 				diff.modSettings[rfType[EasySettings]()] = parseConfig(NewEasySettings(), mInfo.Settings)
+			}
+
+			if mod.Active(SuddenDeath) {
+				diff.modSettings[rfType[SuddenDeathSettings]()] = parseConfig(NewSuddenDeathSettings(), mInfo.Settings)
+			}
+
+			if mod.Active(Hidden) {
+				diff.modSettings[rfType[HiddenSettings]()] = parseConfig(NewHiddenSettings(), mInfo.Settings)
 			}
 
 			if mod.Active(Flashlight) {
@@ -355,6 +384,16 @@ func (diff *Difficulty) CheckModActive(mods Modifier) bool {
 	return diff.Mods&mods > 0
 }
 
+// HiddenFadesObjects excludes Hidden configurations that only hide approach circles.
+func (diff *Difficulty) HiddenFadesObjects() bool {
+	if !diff.CheckModActive(Hidden) {
+		return false
+	}
+
+	hd, _ := GetModConfig[HiddenSettings](diff)
+	return !hd.OnlyFadeApproachCircles
+}
+
 func (diff *Difficulty) GetModifiedTime(time float64) float64 {
 	return time / diff.Speed
 }
@@ -388,7 +427,15 @@ func (diff *Difficulty) GetRadius() float32 {
 }
 
 func (diff *Difficulty) GetScoreMultiplier() float64 {
-	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore | Flashlight))).GetScoreMultiplier()
+	if diff.CheckModActive(Lazer) && (diff.ScoreVersion == 0 || diff.ScoreVersion >= 30000017) {
+		return diff.GetScoreMultiplierV2()
+	}
+
+	return diff.GetScoreMultiplierV1()
+}
+
+func (diff *Difficulty) GetScoreMultiplierV1() float64 {
+	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore | Hidden | Flashlight))).GetScoreMultiplier()
 
 	if diff.Mods.Active(Lazer) {
 		value := math.Floor(diff.Speed*10)/10 - 1
@@ -414,6 +461,10 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 		}
 	}
 
+	if diff.HiddenFadesObjects() {
+		baseMultiplier *= 1.06
+	}
+
 	if diff.CheckModActive(Flashlight) {
 		mult := 1.12
 
@@ -424,6 +475,83 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 		}
 
 		baseMultiplier *= mult
+	}
+
+	return baseMultiplier
+}
+
+func (diff *Difficulty) GetScoreMultiplierV2() float64 {
+	baseMultiplier := diff.Mods.GetScoreMultiplierV2()
+
+	if diff.CheckModActive(Easy) {
+		mult := 0.8
+
+		if ez, ok := GetModConfig[EasySettings](diff); ok {
+			mult = max(0.4, mult-max(0, 0.1*float64(ez.Retries-NewEasySettings().Retries)))
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.Mods.Active(HalfTime | Daycore) {
+		baseMultiplier *= math.Floor(diff.Speed*20)/20*1.4 - 0.5
+	} else if diff.Mods.Active(DoubleTime | Nightcore) {
+		value := math.Floor(diff.Speed*10) / 10
+		penalty := 0.0
+
+		if value != 1.5 && value != 1.0 {
+			penalty = 0.01
+		}
+
+		baseMultiplier *= (value-1)*0.46 + 1 - penalty
+	}
+
+	if diff.CheckModActive(Hidden) {
+		mult := 1.04
+
+		if hd, ok := GetModConfig[HiddenSettings](diff); ok && hd.OnlyFadeApproachCircles {
+			mult -= 0.02
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.CheckModActive(Flashlight) {
+		mult := 1.2
+
+		if fl, ok := GetModConfig[FlashlightSettings](diff); ok {
+			mult = mutils.Clamp(1.2-0.2*(fl.SizeMultiplier-1), 1.02, 1.2)
+
+			if !fl.ComboBasedSize {
+				mult = 1 + (mult-1)/5
+			}
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.CheckModActive(Classic) {
+		mult := 0.985
+
+		if cl, ok := GetModConfig[ClassicSettings](diff); ok && !cl.ClassicNoteLock {
+			mult = 0.96
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.CheckModActive(DifficultyAdjust) {
+		da := NewDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD)
+		if conf, ok := GetModConfig[DiffAdjustSettings](diff); ok {
+			da = conf
+		}
+
+		csMultiplier := max(0.1, 1-math.Abs(da.CircleSize-diff.baseCS)*0.5)
+		hpMultiplier := max(0.1, 1-math.Abs(da.DrainRate-diff.baseHP)*0.5)
+		odMultiplier := max(0.1, 1-math.Abs(da.OverallDifficulty-diff.baseOD)*0.5)
+		arMultiplier := max(0.1, 1-math.Abs(da.ApproachRate-diff.baseAR)*0.5)
+
+		baseMultiplier *= max(0.1, csMultiplier*hpMultiplier*odMultiplier*arMultiplier)
 	}
 
 	return baseMultiplier
@@ -483,6 +611,12 @@ func (diff *Difficulty) GetModStringMasked() string {
 
 func (diff *Difficulty) getModStringBase(mod Modifier) string {
 	mods := (mod & ^Mirror).String()
+
+	if mod.Active(Hidden) {
+		if hd, ok := GetModConfig[HiddenSettings](diff); ok && hd.OnlyFadeApproachCircles {
+			mods = strings.Replace(mods, Hidden.String(), "HD(AC)", 1)
+		}
+	}
 
 	if ar := diff.GetAR(); math.Abs(ar-diff.GetBaseAR()) > 0.001 {
 		mods += fmt.Sprintf("AR%s", mutils.FormatWOZeros(ar, 2))
@@ -593,10 +727,7 @@ func (diff *Difficulty) SetARCustom(ar float64) {
 
 func (diff *Difficulty) Clone() *Difficulty {
 	diff2 := *diff
-	diff2.modSettings = make(map[reflect.Type]any)
-	for k, v := range diff.modSettings {
-		diff2.modSettings[k] = v
-	}
+	diff2.modSettings = maps.Clone(diff.modSettings)
 
 	return &diff2
 }

@@ -10,10 +10,6 @@ extern "C" {
 #include <stdint.h>
 #include <shobjidl.h>
 
-void setState(HWND window, TBPFLAG flag);
-
-void setProgress(HWND window, int32_t progress, int32_t max);
-
 HRESULT openInExplorer(const wchar_t* filePath);
 
 #ifdef __cplusplus

@@ -1,7 +1,10 @@
 package dance
 
 import (
-	"github.com/go-gl/glfw/v3.3/glfw"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/dance/input"
@@ -9,22 +12,17 @@ import (
 	"github.com/wieku/danser-go/app/dance/schedulers"
 	"github.com/wieku/danser-go/app/dance/spinners"
 	"github.com/wieku/danser-go/app/graphics"
-	input2 "github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"github.com/wieku/danser-go/framework/platform"
-	"log"
-	"strings"
-	"time"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 )
 
 type PlayerController struct {
 	bMap     *beatmap.BeatMap
 	cursors  []*graphics.Cursor
-	window   *glfw.Window
 	ruleset  *osu.OsuRuleSet
 	lastTime float64
 	counter  float64
@@ -32,7 +30,6 @@ type PlayerController struct {
 	relaxController *input.RelaxInputProcessor
 	mouseController schedulers.Scheduler
 	firstTime       bool
-	previousPos     vector.Vector2f
 	position        vector.Vector2f
 
 	rawInput bool
@@ -55,105 +52,85 @@ func (controller *PlayerController) InitCursors() {
 	controller.cursors[0].IsPlayer = true
 	controller.cursors[0].Name = settings.Gameplay.PlayUsername
 	controller.cursors[0].ScoreTime = time.Now()
-	controller.window = glfw.GetCurrentContext()
 	controller.ruleset = osu.NewOsuRuleset(controller.bMap, controller.cursors, []*difficulty.Difficulty{controller.bMap.Diff.Clone()})
 
 	if !controller.bMap.Diff.CheckModActive(difficulty.Relax) {
-		input2.RegisterListener(controller.KeyEvent)
+		gcontext.RegisterListener(controller.KeyEvent)
 	} else {
 		controller.relaxController = input.NewRelaxInputProcessor(controller.ruleset, controller.cursors[0])
 	}
 
-	controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
+	gcontext.SetCursorVisible(false)
 
 	if controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
 		controller.mouseController = schedulers.NewGenericScheduler(movers.NewLinearMoverSimple, 0, 0)
 		controller.mouseController.Init(controller.bMap.GetObjectsCopy(), controller.bMap.Diff, controller.cursors[0], spinners.GetMoverCtorByName("circle"), false)
 	} else if settings.Input.MouseHighPrecision {
-		if glfw.RawMouseMotionSupported() {
-			controller.rawInput = true
-			controller.window.SetInputMode(glfw.RawMouseMotion, glfw.True)
-		} else {
-			log.Println("InputManager: Raw input not supported!")
-		}
+		controller.rawInput = true
 	}
 }
 
-func (controller *PlayerController) KeyEvent(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, _ glfw.ModifierKey) {
-	kName, ok := platform.GetKeyName(key, scancode)
-	if !ok {
+func (controller *PlayerController) KeyEvent(event gcontext.KeyEvent) {
+	if event.Name == "" {
 		return
 	}
 
-	if strings.EqualFold(kName, settings.Input.LeftKey) {
-		if action == glfw.Press {
-			controller.cursors[0].LeftKey = true
-		} else if action == glfw.Release {
-			controller.cursors[0].LeftKey = false
+	processKey(&controller.cursors[0].LeftKey, settings.Input.LeftKey, event)
+	processKey(&controller.cursors[0].RightKey, settings.Input.RightKey, event)
+	processKey(&controller.cursors[0].SmokeKey, settings.Input.SmokeKey, event)
+
+	if processKey(&controller.quickRestart, settings.Input.RestartKey, event) == gcontext.Press {
+		controller.quickRestartTime = controller.lastTime
+	}
+}
+
+func processKey(value *bool, expect string, event gcontext.KeyEvent) gcontext.Action {
+	if strings.EqualFold(event.Name, expect) {
+		if event.Action == gcontext.Press {
+			*value = true
+		} else if event.Action == gcontext.Release {
+			*value = false
 		}
+
+		return event.Action
 	}
 
-	if strings.EqualFold(kName, settings.Input.RightKey) {
-		if action == glfw.Press {
-			controller.cursors[0].RightKey = true
-		} else if action == glfw.Release {
-			controller.cursors[0].RightKey = false
-		}
-	}
-
-	if strings.EqualFold(kName, settings.Input.RestartKey) {
-		if action == glfw.Press {
-			controller.quickRestartTime = controller.lastTime
-			controller.quickRestart = true
-		} else if action == glfw.Release {
-			controller.quickRestart = false
-		}
-	}
-
-	if strings.EqualFold(kName, settings.Input.SmokeKey) {
-		if action == glfw.Press {
-			controller.cursors[0].SmokeKey = true
-		} else if action == glfw.Release {
-			controller.cursors[0].SmokeKey = false
-		}
-	}
+	return gcontext.None
 }
 
 func (controller *PlayerController) Update(time float64, delta float64) {
 	controller.bMap.Update(time)
 
-	if controller.window != nil {
-		if !controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
-			mousePosition := vector.NewVec2d(controller.window.GetCursorPos()).Copy32()
+	if !controller.bMap.Diff.CheckModActive(difficulty.Relax2) {
+		mousePosition := vector.NewVec2f(gcontext.GetCursorPosition())
 
-			if controller.rawInput {
-				controller.updateRaw(mousePosition)
-			} else {
-				controller.position = mousePosition
-			}
-
-			controller.cursors[0].SetScreenPos(controller.position)
+		if controller.rawInput {
+			controller.updateRaw(mousePosition)
 		} else {
-			controller.mouseController.Update(time)
+			controller.position = mousePosition
 		}
 
-		if !controller.bMap.Diff.CheckModActive(difficulty.Relax) {
-			mouseEnabled := !settings.Input.MouseButtonsDisabled
+		controller.cursors[0].SetScreenPos(controller.position)
+	} else {
+		controller.mouseController.Update(time)
+	}
 
-			controller.cursors[0].LeftMouse = mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
-			controller.cursors[0].RightMouse = mouseEnabled && controller.window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press
+	if !controller.bMap.Diff.CheckModActive(difficulty.Relax) {
+		mouseEnabled := !settings.Input.MouseButtonsDisabled
 
-			controller.cursors[0].LeftButton = controller.cursors[0].LeftKey || controller.cursors[0].LeftMouse
-			controller.cursors[0].RightButton = controller.cursors[0].RightKey || controller.cursors[0].RightMouse
-		} else {
-			controller.relaxController.Update(time)
-		}
+		controller.cursors[0].LeftMouse = mouseEnabled && gcontext.GetLeftClick()
+		controller.cursors[0].RightMouse = mouseEnabled && gcontext.GetRightClick()
 
-		if controller.quickRestart && time-controller.quickRestartTime > 500 {
-			controller.quickRestart = false
+		controller.cursors[0].LeftButton = controller.cursors[0].LeftKey || controller.cursors[0].LeftMouse
+		controller.cursors[0].RightButton = controller.cursors[0].RightKey || controller.cursors[0].RightMouse
+	} else {
+		controller.relaxController.Update(time)
+	}
 
-			utils.QuickRestart()
-		}
+	if controller.quickRestart && time-controller.quickRestartTime > 500 {
+		controller.quickRestart = false
+
+		utils.QuickRestart()
 	}
 
 	controller.counter += time - controller.lastTime
@@ -184,14 +161,13 @@ func (controller *PlayerController) GetCursors() []*graphics.Cursor {
 }
 
 func (controller *PlayerController) updateRaw(mousePos vector.Vector2f) {
-	hovered := controller.window.GetAttrib(glfw.Hovered) == 1
+	hovered := gcontext.IsHovered()
 
 	if controller.firstTime {
-		controller.previousPos = vector.NewVec2d(controller.window.GetCursorPos()).Copy32()
-		controller.position = controller.previousPos
+		controller.position = vector.NewVec2f(gcontext.GetCursorPosition())
 		controller.firstTime = false
 
-		if hovered && input2.Focused {
+		if hovered && gcontext.IsFocused() {
 			controller.setRawStatus(true)
 		} else {
 			controller.setRawStatus(false)
@@ -199,9 +175,13 @@ func (controller *PlayerController) updateRaw(mousePos vector.Vector2f) {
 	}
 
 	if controller.inside {
-		direction := mousePos.Sub(controller.previousPos).Scl(float32(settings.Input.MouseSensitivity))
+		wHalf := vector.NewVec2d(settings.Graphics.GetSizeF()).Scl(0.5).Copy32()
+
+		direction := mousePos.Sub(wHalf).Scl(float32(settings.Input.MouseSensitivity))
+
+		gcontext.SetWindowCursorPosition(wHalf.X, wHalf.Y)
+
 		controller.position = controller.position.Add(direction)
-		controller.previousPos = controller.position
 	} else {
 		controller.position = mousePos
 	}
@@ -210,11 +190,9 @@ func (controller *PlayerController) updateRaw(mousePos vector.Vector2f) {
 		(controller.position.X < 0 || controller.position.X64() > settings.Graphics.GetWidthF() ||
 			controller.position.Y < 0 || controller.position.Y64() > settings.Graphics.GetHeightF() || !hovered) {
 		controller.setRawStatus(false)
-	} else if input2.Focused && hovered && !controller.inside {
+	} else if gcontext.IsFocused() && hovered && !controller.inside {
 		controller.setRawStatus(true)
 	}
-
-	controller.previousPos = mousePos
 }
 
 func (controller *PlayerController) setRawStatus(state bool) {
@@ -222,21 +200,17 @@ func (controller *PlayerController) setRawStatus(state bool) {
 		if state {
 			log.Println("InputManager: Switching to raw input mode")
 
-			controller.position = vector.NewVec2d(controller.window.GetCursorPos()).Copy32()
+			controller.position = vector.NewVec2f(gcontext.GetCursorPosition())
 
-			controller.window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+			gcontext.SetRawInput(true)
 
-			controller.previousPos = vector.NewVec2d(controller.window.GetCursorPos()).Copy32()
+			gcontext.SetWindowCursorPosition(float32(settings.Graphics.GetWidthF()/2), float32(settings.Graphics.GetHeightF()/2))
 		} else {
 			log.Println("InputManager: Switching to normal input mode")
 
-			controller.previousPos = controller.position
+			gcontext.SetRawInput(false)
 
-			controller.window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
-
-			for i := 0; i < 20; i++ {
-				controller.window.SetCursorPos(controller.position.X64(), controller.position.Y64())
-			}
+			gcontext.SetCursorPosition(controller.position.X, controller.position.Y)
 		}
 	})
 

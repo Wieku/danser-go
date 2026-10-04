@@ -36,13 +36,22 @@ func main() {
 
 	os.MkdirAll(filepath.Join(targetDir, "ffmpeg"), 0755)
 
+	if runtime.GOOS == "linux" {
+		os.MkdirAll(filepath.Join(targetDir, "ffmpeg", "bin"), 0755)
+		os.MkdirAll(filepath.Join(targetDir, "ffmpeg", "lib"), 0755)
+	}
+
 	log.Println("Starting unpacking...")
 
 	for _, f := range zipFile.File {
 		strName := strings.TrimPrefix(f.Name, archiveName+"/")
 
 		if strings.HasPrefix(strName, "bin/") && !strings.HasSuffix(strName, "bin/") {
-			unpack(f, filepath.Join(targetDir, "ffmpeg", strings.TrimPrefix(strName, "bin/")))
+			if runtime.GOOS == "linux" {
+				unpack(f, filepath.Join(targetDir, "ffmpeg", "bin", strings.TrimPrefix(strName, "bin/")))
+			} else {
+				unpack(f, filepath.Join(targetDir, "ffmpeg", strings.TrimPrefix(strName, "bin/")))
+			}
 		}
 
 		if runtime.GOOS == "linux" {
@@ -50,7 +59,7 @@ func main() {
 				matches := len(strings.Split(strName, ".")) == 3 // matching lib***.so.version
 
 				if matches {
-					unpack(f, filepath.Join(targetDir, "ffmpeg", strings.TrimPrefix(strName, "lib/")))
+					unpack(f, filepath.Join(targetDir, "ffmpeg", "lib", strings.TrimPrefix(strName, "lib/")))
 				}
 			}
 		}

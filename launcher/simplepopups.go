@@ -1,12 +1,14 @@
 package launcher
 
 import (
+	"strconv"
+
 	"github.com/AllenDang/cimgui-go/imgui"
+
 	"github.com/wieku/danser-go/build"
 	"github.com/wieku/danser-go/framework/graphics/texture"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/platform"
-	"strconv"
 )
 
 func drawSpeedMenu(bld *builder) {
@@ -111,7 +113,10 @@ func drawRecordMenu(bld *builder) {
 
 func drawAbout(dTex texture.Texture) {
 	centerTable("about1", -1, func() {
-		imgui.Image(imgui.TextureID{Data: uintptr(dTex.GetID())}, vec2(100, 100))
+		texRef := imgui.NewTextureRefTextureID(imgui.TextureID(dTex.GetID()))
+		defer texRef.Destroy()
+
+		imgui.Image(*texRef, vec2(100, 100))
 	})
 
 	centerTable("about2", -1, func() {
@@ -187,7 +192,7 @@ func drawLauncherConfig() {
 
 	volume := int32(launcherConfig.PreviewVolume * 100)
 
-	imgui.PushFont(Font16)
+	imgui.PushFont(Font, 16)
 
 	imgui.SetNextItemWidth(-1)
 

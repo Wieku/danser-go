@@ -2,32 +2,26 @@ package ffmpeg
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/files"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-)
 
-var ffmpegExec string
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/platform"
+)
 
 var output string
 
 // check used encoders exist
 func preCheck() {
-	var err error
-
-	ffmpegExec, err = files.GetCommandExec("ffmpeg", "ffmpeg")
+	cmd, err := platform.PrepareFFMpeg("ffmpeg", "-encoders")
 	if err != nil {
-		panic("ffmpeg not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
+		panic(err)
 	}
 
-	log.Println("FFmpeg exec location:", ffmpegExec)
-
-	out, err := exec.Command(ffmpegExec, "-encoders").Output()
+	out, err := cmd.Output()
 	if err != nil {
 		if strings.Contains(err.Error(), "127") || strings.Contains(strings.ToLower(err.Error()), "0xc0000135") {
 			panic(fmt.Sprintf("ffmpeg was installed incorrectly! Please make sure needed libraries (libs/*.so or bin/*.dll) are installed as well. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg. Error: %s", err))
@@ -125,7 +119,11 @@ func combine() {
 
 	log.Println("Starting composing audio and video into one file...")
 	log.Println("Running ffmpeg with options:", options)
-	cmd2 := exec.Command(ffmpegExec, options...)
+
+	cmd2, err := platform.PrepareFFMpeg("ffmpeg", options...)
+	if err != nil {
+		panic(err)
+	}
 
 	if settings.Recording.ShowFFmpegLogs {
 		cmd2.Stdout = os.Stdout

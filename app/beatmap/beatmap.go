@@ -2,17 +2,18 @@ package beatmap
 
 import (
 	"cmp"
-	"github.com/wieku/danser-go/app/audio"
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
-	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/files"
 	"math"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/wieku/danser-go/app/audio"
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/files"
 )
 
 type BeatMap struct {
@@ -104,8 +105,7 @@ func (beatMap *BeatMap) Update(time float64) {
 
 	toRemove := 0
 
-	for i := 0; i < len(beatMap.Queue); i++ {
-		g := beatMap.Queue[i]
+	for _, g := range beatMap.Queue {
 		if g.GetStartTime()-beatMap.Diff.Preempt > time {
 			break
 		}
@@ -125,9 +125,7 @@ func (beatMap *BeatMap) Update(time float64) {
 
 	toRemove2 := 0
 
-	for i := 0; i < len(beatMap.processed); i++ {
-		g := beatMap.processed[i]
-
+	for _, g := range beatMap.processed {
 		g.Update(time)
 
 		if time >= g.GetEndTime()+difficulty.HitFadeOut+float64(beatMap.Diff.Hit50) {
@@ -153,6 +151,10 @@ func (beatMap *BeatMap) ParsePoint(point string) {
 	line := strings.Split(point, ",")
 	pointTime, _ := strconv.ParseFloat(line[0], 64)
 	bpm, _ := strconv.ParseFloat(line[1], 64)
+
+	if bpm > math.MaxInt32 { // ignore absurd timing points
+		return
+	}
 
 	if !math.IsNaN(bpm) && bpm >= 0 {
 		rBPM := 60000 / bpm

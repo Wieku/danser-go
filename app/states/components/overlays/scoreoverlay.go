@@ -2,7 +2,15 @@ package overlays
 
 import (
 	"fmt"
-	"github.com/go-gl/glfw/v3.3/glfw"
+	"log"
+	"math"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/Zyko0/go-sdl3/sdl"
+
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -10,7 +18,6 @@ import (
 	camera2 "github.com/wieku/danser-go/app/bmath/camera"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/settings"
@@ -32,12 +39,7 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
-	"math"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 )
 
 const (
@@ -209,7 +211,7 @@ func NewScoreOverlay(ruleset *osu.OsuRuleSet, cursor *graphics.Cursor) *ScoreOve
 
 	overlay.lazerScore = ruleset.GetBeatMap().Diff.CheckModActive(difficulty.Lazer)
 
-	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap(), performance.GetDifficultyCalculator().CalculateStrainPeaks(ruleset.GetBeatMap().HitObjects, ruleset.GetBeatMap().Diff), false, true)
+	overlay.strainGraph = play.NewStrainGraph(ruleset.GetBeatMap(), performance.GetDifficultyCalculator().CalculateStrainPeaks(ruleset.GetBeatMap(), ruleset.GetBeatMap().Diff), false, true)
 
 	overlay.resultsFade = animation.NewGlider(0)
 
@@ -538,7 +540,7 @@ func (overlay *ScoreOverlay) Update(time float64) {
 		overlay.initMods()
 	}
 
-	if input.Win.GetKey(glfw.KeySpace) == glfw.Press {
+	if gcontext.GetKeyState(sdl.K_SPACE) == gcontext.Press {
 		if overlay.skip != nil && overlay.music != nil && overlay.music.GetState() == bass.MusicPlaying {
 			if overlay.audioTime < overlay.skipTo && !overlay.skipped {
 				overlay.music.SetPosition(overlay.skipTo / 1000)
@@ -905,7 +907,7 @@ func (overlay *ScoreOverlay) drawKeys(batch *batch.QuadBatch, alpha float64) {
 
 	overlay.keyOverlay.Draw(overlay.lastTime, batch)
 
-	col := skin.GetInfo().InputOverlayText
+	col := skin.GetColor(skin.InputOverlayText)
 	batch.SetColor(float64(col.R), float64(col.G), float64(col.B), keyAlpha)
 
 	for i, k := range overlay.keyInfos {
@@ -1096,7 +1098,7 @@ func (overlay *ScoreOverlay) initArrows() {
 
 	addTransforms := func(start float64, times int) {
 		for _, arrow := range arrows {
-			for i := 0; i < times; i++ {
+			for i := range times {
 				time := start + float64(i)*blinkTime
 				arrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time, time, 1, 1))
 				arrow.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, time+blinkTime/2, time+blinkTime/2, 0, 0))

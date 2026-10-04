@@ -117,6 +117,10 @@ func (b *builder) setReplay(replay *rplpa.Replay) {
 	b.currentReplay = replay
 	b.diff.RemoveMod(^difficulty.None)
 
+	b.sourceDiff.ScoreVersion = replay.OsuVersion
+	b.baseDiff.ScoreVersion = replay.OsuVersion
+	b.diff.ScoreVersion = replay.OsuVersion
+
 	if replay.ScoreInfo != nil && replay.ScoreInfo.Mods != nil && len(replay.ScoreInfo.Mods) > 0 {
 		modsNew := make([]rplpa.ModInfo, 0, len(replay.ScoreInfo.Mods))
 
@@ -143,6 +147,9 @@ func (b *builder) setReplay(replay *rplpa.Replay) {
 func (b *builder) removeReplay() {
 	b.currentReplay = nil
 	b.sourceDiff.RemoveMod(^difficulty.None)
+	b.sourceDiff.ScoreVersion = 0
+	b.baseDiff.ScoreVersion = 0
+	b.diff.ScoreVersion = 0
 }
 
 func (b *builder) numKnockoutReplays() (ret int) {

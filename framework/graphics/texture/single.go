@@ -1,9 +1,10 @@
 package texture
 
 import (
-	"github.com/wieku/danser-go/framework/goroutines"
 	"image"
 	"runtime"
+
+	"github.com/wieku/danser-go/framework/goroutines"
 )
 
 type TextureSingle struct {
@@ -33,6 +34,10 @@ func LoadTextureSingle(img *image.RGBA, mipmaps int) *TextureSingle {
 
 func (texture *TextureSingle) SetData(x, y, width, height int, data []uint8) {
 	texture.store.SetData(x, y, width, height, 0, data, true)
+}
+
+func (texture *TextureSingle) SetDataBuf(x, y, width, height int, stride int, ptr uintptr) {
+	texture.store.SetDataBuf(x, y, width, height, 0, stride, ptr, true)
 }
 
 func (texture *TextureSingle) GetID() uint32 {

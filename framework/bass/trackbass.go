@@ -8,11 +8,12 @@ package bass
 import "C"
 
 import (
-	"github.com/wieku/danser-go/app/settings"
 	"math"
 	"runtime"
 	"unicode/utf16"
 	"unsafe"
+
+	"github.com/wieku/danser-go/app/settings"
 )
 
 type TrackBass struct {
@@ -75,6 +76,7 @@ func NewTrack(path string) *TrackBass {
 }
 
 func setupFXChannel(channel C.HSTREAM) {
+	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_TEMPO_OPTION_OLDPOS, 1)
 	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_TEMPO_OPTION_USE_QUICKALGO, 1)
 	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS, C.float(4.0))
 	C.BASS_ChannelSetAttribute(channel, C.BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, C.float(30.0))

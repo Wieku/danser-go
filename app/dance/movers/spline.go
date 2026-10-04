@@ -1,13 +1,14 @@
 package movers
 
 import (
+	"math"
+
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/curves"
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 const (
@@ -171,7 +172,7 @@ func (mover *SplineMover) SetObjects(objs []objects.IHitObject) int {
 
 	timeDiff := make([]float32, len(timing)-1)
 
-	for j := 0; j < len(timeDiff); j++ {
+	for j := range timeDiff {
 		timeDiff[j] = float32(timing[j+1] - timing[j])
 	}
 

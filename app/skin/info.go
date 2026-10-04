@@ -2,15 +2,16 @@ package skin
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/framework/assets"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/math/color"
 	"io"
 	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/wieku/danser-go/framework/assets"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/math/color"
 )
 
 const latestVersion = 2.7
@@ -46,15 +47,8 @@ type SkinInfo struct {
 
 	//slider style unnecessary
 
-	SliderBallTint      bool
-	SliderBallFlip      bool
-	SliderBorder        color.Color
-	SliderTrackOverride *color.Color
-	SliderBall          *color.Color
-
-	SongSelectInactiveText color.Color
-	SongSelectActiveText   color.Color
-	InputOverlayText       color.Color
+	SliderBallTint bool
+	SliderBallFlip bool
 
 	//hit circle font settings
 	HitCirclePrefix             string
@@ -68,6 +62,8 @@ type SkinInfo struct {
 	//combo font settings
 	ComboPrefix  string
 	ComboOverlap float64
+
+	Colors map[Color]color.Color
 }
 
 func newDefaultInfo() *SkinInfo {
@@ -89,13 +85,12 @@ func newDefaultInfo() *SkinInfo {
 			color.NewIRGB(18, 124, 255),
 			color.NewIRGB(242, 24, 57),
 		},
-		SliderBallTint:              false,
-		SliderBallFlip:              false,
-		SliderBorder:                color.NewL(1),
-		SliderTrackOverride:         nil,
-		SongSelectInactiveText:      color.NewL(1),
-		SongSelectActiveText:        color.NewL(0),
-		InputOverlayText:            color.NewL(0),
+		SliderBallTint: false,
+		SliderBallFlip: false,
+		Colors: map[Color]color.Color{
+			SliderBorder:     color.NewL(1),
+			InputOverlayText: color.NewL(0),
+		},
 		HitCirclePrefix:             "default",
 		HitCircleOverlap:            -2,
 		HitCircleOverlayAboveNumber: false,
@@ -243,32 +238,12 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 			ParseBool(tokenized[1], tokenized[0], &info.CursorExpand)
 		case "CursorRotate":
 			ParseBool(tokenized[1], tokenized[0], &info.CursorRotate)
-		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
-			index, _ := strconv.ParseInt(strings.TrimPrefix(tokenized[0], "Combo"), 10, 64)
-			colorsI = append(colorsI, colorI{
-				index: int(index),
-				color: ParseColor(tokenized[1], tokenized[0]),
-			})
 		case "DefaultSkinFollowpointBehavior":
 			ParseBool(tokenized[1], tokenized[0], &info.DefaultSkinFollowpointBehavior)
 		case "AllowSliderBallTint":
 			ParseBool(tokenized[1], tokenized[0], &info.SliderBallTint)
 		case "SliderBallFlip":
 			ParseBool(tokenized[1], tokenized[0], &info.SliderBallFlip)
-		case "SliderBorder":
-			info.SliderBorder = ParseColor(tokenized[1], tokenized[0])
-		case "SliderTrackOverride":
-			col := ParseColor(tokenized[1], tokenized[0])
-			info.SliderTrackOverride = &col
-		case "SliderBall":
-			col := ParseColor(tokenized[1], tokenized[0])
-			info.SliderBall = &col
-		case "SongSelectInactiveText":
-			info.SongSelectInactiveText = ParseColor(tokenized[1], tokenized[0])
-		case "SongSelectActiveText":
-			info.SongSelectActiveText = ParseColor(tokenized[1], tokenized[0])
-		case "InputOverlayText":
-			info.InputOverlayText = ParseColor(tokenized[1], tokenized[0])
 		case "HitCirclePrefix":
 			info.HitCirclePrefix = tokenized[1]
 		case "HitCircleOverlap":
@@ -283,6 +258,20 @@ func LoadInfo(path string, local bool) (*SkinInfo, error) {
 			info.ComboPrefix = tokenized[1]
 		case "ComboOverlap":
 			info.ComboOverlap = ParseFloat(tokenized[1], tokenized[0])
+		case "InputOverlayText":
+			info.Colors[InputOverlayText] = ParseColor(tokenized[1], tokenized[0])
+		case "SliderBorder":
+			info.Colors[SliderBorder] = ParseColor(tokenized[1], tokenized[0])
+		case "SliderTrackOverride":
+			info.Colors[SliderTrackOverride] = ParseColor(tokenized[1], tokenized[0])
+		case "SliderBall":
+			info.Colors[SliderBall] = ParseColor(tokenized[1], tokenized[0])
+		case "Combo1", "Combo2", "Combo3", "Combo4", "Combo5", "Combo6", "Combo7", "Combo8":
+			index, _ := strconv.ParseInt(strings.TrimPrefix(tokenized[0], "Combo"), 10, 64)
+			colorsI = append(colorsI, colorI{
+				index: int(index),
+				color: ParseColor(tokenized[1], tokenized[0]),
+			})
 		}
 	}
 

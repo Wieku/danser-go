@@ -1,13 +1,15 @@
 package buffer
 
 import (
+	"runtime"
+
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/profiler"
-	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+
 	"github.com/wieku/danser-go/framework/graphics/texture"
 )
 
@@ -299,8 +301,14 @@ func (f *Framebuffer) ClearColorIM(index int, color color2.Color) {
 	gl.ClearNamedFramebufferfv(f.handle, gl.COLOR, int32(index), &color.ToArray()[0])
 }
 
+var dCache [4]float32
+
 func (f *Framebuffer) ClearDepthV(v float32) {
-	gl.ClearNamedFramebufferfv(f.handle, gl.DEPTH, 0, &v)
+	// BIG STINKY HACK: On Vega AMD GPU, the driver use movups WHICH reads 16 BYTES INSTEAD
+	// OF 4 BYTES, which causes a crash when the next 12 bytes are NOT within mapped memory.
+	// So we're just feeding movups a valid data, and it will work.
+	dCache[0] = v
+	gl.ClearNamedFramebufferfv(f.handle, gl.DEPTH, 0, &dCache[0])
 }
 
 func (f *Framebuffer) ClearDepth() {

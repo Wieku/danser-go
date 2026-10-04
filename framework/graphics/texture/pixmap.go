@@ -54,7 +54,7 @@ func NewPixMapC(width, height, components int) *Pixmap {
 	size := width * height * components
 
 	pixmap.RawPointer = C.calloc(C.size_t(size), C.size_t(1))
-	pixmap.Data = (*[1 << 30]uint8)(pixmap.RawPointer)[:size:size]
+	pixmap.Data = unsafe.Slice((*uint8)(pixmap.RawPointer), size)
 
 	return pixmap
 }
@@ -74,7 +74,7 @@ func NewPixmapFile(file *os.File) (*Pixmap, error) {
 
 func NewPixmapReader(file io.ReadCloser, _size int64) (*Pixmap, error) {
 	filePointer := C.stbi__malloc(C.size_t(_size))
-	fileData := (*[1 << 30]uint8)(filePointer)[:_size:_size]
+	fileData := unsafe.Slice((*uint8)(filePointer), _size)
 
 	defer C.free(filePointer)
 
@@ -105,7 +105,7 @@ func NewPixmapFromBytes(bytes []byte) (*Pixmap, error) {
 	size := x * y * 4
 
 	pixmap.RawPointer = unsafe.Pointer(data)
-	pixmap.Data = (*[1 << 30]uint8)(pixmap.RawPointer)[:size:size]
+	pixmap.Data = unsafe.Slice((*uint8)(pixmap.RawPointer), size)
 
 	return pixmap, nil
 }
@@ -157,7 +157,7 @@ func (pixmap *Pixmap) WritePng(destination string, flip bool) error {
 
 	actPointer := unsafe.Pointer(memPointer)
 
-	data := (*[1 << 30]byte)(actPointer)[:length:length]
+	data := unsafe.Slice((*byte)(actPointer), int(length))
 
 	err := ioutil.WriteFile(destination, data, 0644)
 

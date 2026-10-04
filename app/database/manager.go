@@ -5,16 +5,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/wieku/danser-go/app/beatmap"
-	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp250306"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/env"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/goroutines"
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"github.com/wieku/danser-go/framework/util"
 	"io"
 	"log"
 	"os"
@@ -23,6 +13,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/wieku/danser-go/app/beatmap"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp260706"
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/math/mutils"
+	"github.com/wieku/danser-go/framework/util"
 )
 
 var dbFile *sql.DB
@@ -46,7 +48,7 @@ var migrations []Migration
 
 var songsDir string
 
-var difficultyCalc = pp250306.NewDifficultyCalculator()
+var difficultyCalc = pp260706.NewDifficultyCalculator()
 
 func Init() error {
 	log.Println("DatabaseManager: Initializing database...")
@@ -126,15 +128,15 @@ func Init() error {
 	if currentSchemaPreVersion != databaseVersion {
 		log.Println("DatabaseManager: Database schema is too old! Updating...")
 
-		statement := ""
+		var statement strings.Builder
 
 		for _, m := range migrations {
 			if currentPreVersion < m.Date() {
-				statement += m.GetMigrationStmts()
+				statement.WriteString(m.GetMigrationStmts())
 			}
 		}
 
-		_, err = dbFile.Exec(statement)
+		_, err = dbFile.Exec(statement.String())
 		if err != nil {
 			panic(err)
 		}
@@ -467,7 +469,7 @@ func UpdateStarRating(maps []*beatmap.BeatMap, progressListener func(processed, 
 				log.Println("DatabaseManager:", bMap.Dir+"/"+bMap.File, "doesn't have enough hitobjects")
 				bMap.Stars = 0
 			} else {
-				attr := difficultyCalc.CalculateSingle(bMap.HitObjects, bMap.Diff)
+				attr := difficultyCalc.CalculateSingle(bMap, bMap.Diff)
 				bMap.Stars = attr.Total
 			}
 

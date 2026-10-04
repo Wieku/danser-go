@@ -1,7 +1,10 @@
 package shape
 
 import (
+	"strconv"
+
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/framework/frame"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -13,7 +16,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/profiler"
-	"strconv"
 )
 
 const gVert = `
@@ -139,7 +141,7 @@ func NewSteppingGraph(x, y, width, height, layers int, maxVal float32, unit stri
 
 	graph.labels = make([]*label, layers)
 
-	for i := 0; i < layers; i++ {
+	for i := range layers {
 		graph.labels[i] = &label{
 			name:   "Unknown",
 			color2: color.NewL(1),
@@ -166,7 +168,7 @@ func (graph *SteppingGraph) SetMaxValue(maxVal float64) {
 
 func (graph *SteppingGraph) Draw() {
 	if graph.labelsDirty {
-		for i := 0; i < graph.layers; i++ {
+		for i := range graph.layers {
 			graph.shader.SetUniformArr("colors", i, graph.labels[i].color2)
 		}
 

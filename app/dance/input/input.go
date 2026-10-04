@@ -59,7 +59,7 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 				startTime := gStartTime
 				endTime := gEndTime
 
-				releaseAt := endTime + 50.0
+				releaseAt := endTime + 50.0*processor.speed
 
 				if i+1 < len(processor.queue) {
 					j := i + 1
@@ -67,7 +67,7 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 						// Prolong the click if slider tick is the next object
 						if cC, ok := processor.queue[j].(*objects.Circle); ok && cC.SliderPoint && !cC.SliderPointStart {
 							endTime = cC.GetEndTime()
-							releaseAt = endTime + 50.0
+							releaseAt = endTime + 50.0*processor.speed
 						} else {
 							break
 						}
@@ -94,7 +94,7 @@ func (processor *NaturalInputProcessor) Update(time float64) {
 					}
 				}
 
-				shouldBeLeft := !processor.wasLeftBefore && startTime-processor.previousEnd < singleTapThreshold*processor.speed
+				shouldBeLeft := !processor.wasLeftBefore && (startTime-processor.previousEnd < singleTapThreshold*processor.speed || processor.releaseRightAt >= startTime)
 
 				if isDoubleClick {
 					processor.releaseLeftAt = releaseAt

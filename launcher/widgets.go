@@ -2,13 +2,15 @@ package launcher
 
 import (
 	"fmt"
-	"github.com/AllenDang/cimgui-go/imgui"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"golang.org/x/exp/constraints"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/AllenDang/cimgui-go/imgui"
+	"golang.org/x/exp/constraints"
+
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 type popupType int
@@ -253,15 +255,13 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 			imgui.BeginDisabled()
 		}
 
-		ImIO.SetFontGlobalScale(16.0 / 32)
-		imgui.PushFont(FontAw)
+		imgui.PushFont(FontAw, 16)
 
 		imgui.AlignTextToFramePadding()
 		if imgui.ButtonV("\uF2EA##"+label, vec2(imgui.FrameHeight(), imgui.FrameHeight())) {
 			reset()
 		}
 
-		ImIO.SetFontGlobalScale(1)
 		imgui.PopFont()
 
 		if blockButton {
@@ -271,7 +271,7 @@ func sliderResetBase(label string, blockButton bool, draw, reset func()) {
 		imgui.EndTable()
 	}
 
-	imgui.PushFont(Font16)
+	imgui.PushFont(Font, 16)
 
 	imgui.SetNextItemWidth(-1)
 

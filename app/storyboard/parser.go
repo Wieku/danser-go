@@ -1,14 +1,15 @@
 package storyboard
 
 import (
-	"github.com/wieku/danser-go/framework/math/animation"
-	"github.com/wieku/danser-go/framework/math/animation/easing"
-	color2 "github.com/wieku/danser-go/framework/math/color"
 	"log"
 	"math"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/wieku/danser-go/framework/math/animation"
+	"github.com/wieku/danser-go/framework/math/animation/easing"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 func cutWhites(text string) (string, int) {
@@ -131,10 +132,10 @@ func parseCommand(data []string) []*animation.Transformation {
 
 	sections := make([][]float64, numSections)
 
-	for i := 0; i < numSections; i++ {
+	for i := range numSections {
 		sections[i] = make([]float64, arguments)
 
-		for j := 0; j < arguments; j++ {
+		for j := range arguments {
 			sections[i][j], err = strconv.ParseFloat(parameters[arguments*i+j], 64)
 			checkError(err)
 		}

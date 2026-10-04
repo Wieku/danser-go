@@ -10,11 +10,13 @@ import (
 	"time"
 )
 
+var tStart = time.Now()
+
 func GetNanoTime() int64 {
 	if runtime.GOOS == "windows" {
 		return int64(C.getNanoTime())
 	}
-	return time.Now().UnixNano()
+	return time.Now().Sub(tStart).Nanoseconds()
 }
 
 func GetNanoTimeF() float64 {

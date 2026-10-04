@@ -3,11 +3,6 @@ package beatmap
 import (
 	"cmp"
 	"errors"
-	"github.com/wieku/danser-go/app/beatmap/objects"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/app/skin"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,6 +10,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/wieku/danser-go/app/beatmap/objects"
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/app/skin"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 const bufferSize = 10 * 1024 * 1024
@@ -316,13 +317,17 @@ func ParseObjects(beatMap *BeatMap, diffCalcOnly, parseColors bool) {
 	defer bufferPool.Put(buf)
 
 	var currentSection string
+	var versionFound bool
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.HasPrefix(line, "osu file format v") {
-			trim := strings.TrimPrefix(line, "osu file format v")
-			beatMap.Version, _ = strconv.Atoi(trim)
+		if !versionFound {
+			if after, ok := strings.CutPrefix(line, "osu file format v"); ok {
+				beatMap.Version, _ = strconv.Atoi(after)
+				versionFound = true
+				continue
+			}
 		}
 
 		section := getSection(line)

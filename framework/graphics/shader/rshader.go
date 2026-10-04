@@ -2,15 +2,17 @@ package shader
 
 import (
 	"fmt"
+	"log"
+	"runtime"
+
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
-	"runtime"
 )
 
 type RShader struct {
@@ -190,7 +192,7 @@ func (s *RShader) SetUniform(name string, value any) {
 	s.setUniformInternal(uniform.Location, uniform.Type, value)
 }
 
-func (s *RShader) SetUniformArr(name string, offset int, value interface{}) {
+func (s *RShader) SetUniformArr(name string, offset int, value any) {
 	name += "[0]"
 
 	uniform, exists := s.uniforms[name]

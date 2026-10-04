@@ -62,8 +62,13 @@ func NewAimErrorMeter(diff *difficulty.Difficulty) *AimErrorMeter {
 
 	meter.errorDisplay.Add(meter.errorDot)
 
-	meter.hitCircle = skin.GetTexture("hitcircle")
-	meter.hitCircleOverlay = skin.GetTexture("hitcircleoverlay")
+	src := skin.ALL
+	if settings.Gameplay.AimErrorMeter.UseFallbackSkin {
+		src = skin.FALLBACK | skin.LOCAL
+	}
+
+	meter.hitCircle = skin.GetTextureSource("hitcircle", src)
+	meter.hitCircleOverlay = skin.GetTextureSource("hitcircleoverlay", src)
 
 	meter.normalized = settings.Gameplay.AimErrorMeter.AngleNormalized
 

@@ -1,12 +1,13 @@
 package drawables
 
 import (
+	"math"
+
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/framework/bass"
 	"github.com/wieku/danser-go/framework/graphics/batch"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
 )
 
 type Visualiser struct {
@@ -59,7 +60,7 @@ func (vis *Visualiser) Update(time float64) {
 		if vis.music != nil {
 			fft := vis.music.GetFFT()
 
-			for i := 0; i < vis.bars; i++ {
+			for i := range vis.bars {
 				value := float64(fft[(i+vis.jumpCounter)%vis.bars]) * mult
 				if value > vis.fft[i] {
 					vis.fft[i] = value
@@ -73,7 +74,7 @@ func (vis *Visualiser) Update(time float64) {
 		vis.counter = math.Mod(vis.counter, vis.updateDelay)
 	}
 
-	for i := 0; i < vis.bars; i++ {
+	for i := range vis.bars {
 		vis.fft[i] -= (vis.fft[i] + 0.03) * decay
 		if vis.fft[i] < 0 {
 			vis.fft[i] = 0
@@ -91,7 +92,7 @@ func (vis *Visualiser) Draw(_ float64, batch *batch.QuadBatch) {
 	color := color2.NewLA(1, 0.3)
 	region := graphics.Pixel.GetRegion()
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		for j, v := range vis.fft {
 			if v < cutoff {
 				continue

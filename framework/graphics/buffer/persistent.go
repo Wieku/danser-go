@@ -2,12 +2,15 @@ package buffer
 
 import (
 	"fmt"
+	"runtime"
+	"unsafe"
+
+	"github.com/Zyko0/go-sdl3/sdl"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
+
 	"github.com/wieku/danser-go/framework/goroutines"
 	"github.com/wieku/danser-go/framework/graphics/history"
 	"github.com/wieku/danser-go/framework/profiler"
-	"runtime"
 )
 
 type PersistentBufferObject struct {
@@ -20,7 +23,7 @@ type PersistentBufferObject struct {
 }
 
 func NewPersistentBufferObject(maxFloats int) *PersistentBufferObject {
-	if !glfw.ExtensionSupported("GL_ARB_buffer_storage") {
+	if !sdl.GL_ExtensionSupported("GL_ARB_buffer_storage") {
 		panic("Your GPU does not support one or more required OpenGL extensions: [GL_ARB_buffer_storage]. Please update your graphics drivers or upgrade your GPU.")
 	}
 
@@ -33,7 +36,7 @@ func NewPersistentBufferObject(maxFloats int) *PersistentBufferObject {
 
 	pt := gl.MapNamedBufferRange(vbo.handle, 0, maxFloats*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
 
-	vbo.data = (*[1 << 30]float32)(pt)[:maxFloats:maxFloats]
+	vbo.data = unsafe.Slice((*float32)(pt), maxFloats)
 
 	runtime.SetFinalizer(vbo, (*PersistentBufferObject).Dispose)
 
@@ -71,7 +74,7 @@ func (vbo *PersistentBufferObject) Resize(newCapacity int) {
 
 	pt := gl.MapNamedBufferRange(vbo.handle, 0, newCapacity*4, gl.MAP_PERSISTENT_BIT|gl.MAP_WRITE_BIT|gl.MAP_COHERENT_BIT)
 
-	vbo.data = (*[1 << 30]float32)(pt)[:newCapacity:newCapacity]
+	vbo.data = unsafe.Slice((*float32)(pt), newCapacity)
 
 	vbo.offset = 0
 }

@@ -1,9 +1,11 @@
 package launcher
 
 import (
-	"github.com/AllenDang/cimgui-go/imgui"
-	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"strings"
+
+	"github.com/AllenDang/cimgui-go/imgui"
+
+	"github.com/wieku/danser-go/app/beatmap/difficulty"
 )
 
 type modPopup struct {
@@ -35,49 +37,48 @@ func (m *modPopup) drawModMenu() {
 
 	if imgui.BeginTable("mfa", 6) {
 		m.drawRow("Reduction:", func() {
-			m.modCheckbox(difficulty.Easy, difficulty.HardRock, difficulty.None)
+			m.modCheckbox(difficulty.Easy, difficulty.None)
 
-			m.modCheckbox(difficulty.NoFail, difficulty.SuddenDeath|difficulty.Perfect|difficulty.Relax|difficulty.Relax2, difficulty.None)
+			m.modCheckbox(difficulty.NoFail, difficulty.None)
 
-			m.modCheckboxMulti(difficulty.HalfTime, difficulty.Daycore, difficulty.DoubleTime|difficulty.Nightcore, difficulty.None)
+			m.modCheckboxMulti(difficulty.HalfTime, difficulty.Daycore, difficulty.None)
 		})
 
 		m.drawRow("Increase:", func() {
-			m.modCheckbox(difficulty.HardRock, difficulty.Easy|difficulty.Mirror, difficulty.None)
+			m.modCheckbox(difficulty.HardRock, difficulty.None)
 
-			m.modCheckboxMulti(difficulty.SuddenDeath, difficulty.Perfect, difficulty.NoFail|difficulty.Relax|difficulty.Relax2, difficulty.None)
+			m.modCheckboxMulti(difficulty.SuddenDeath, difficulty.Perfect, difficulty.None)
 
-			m.modCheckboxMulti(difficulty.DoubleTime, difficulty.Nightcore, difficulty.HalfTime|difficulty.Daycore, difficulty.None)
+			m.modCheckboxMulti(difficulty.DoubleTime, difficulty.Nightcore, difficulty.None)
 
-			m.modCheckbox(difficulty.Hidden, difficulty.Traceable, difficulty.None)
+			m.modCheckbox(difficulty.Hidden, difficulty.None)
 
-			m.modCheckbox(difficulty.Flashlight, difficulty.None, difficulty.None)
+			m.modCheckbox(difficulty.Flashlight, difficulty.None)
 		})
 
 		m.drawRow("Special:", func() {
-			nfSD := difficulty.NoFail | difficulty.SuddenDeath | difficulty.Perfect
 
-			m.modCheckbox(difficulty.Relax, difficulty.Relax2|nfSD, difficulty.None)
+			m.modCheckbox(difficulty.Relax, difficulty.None)
 
-			m.modCheckbox(difficulty.Relax2, difficulty.Relax|difficulty.SpunOut|nfSD, difficulty.None)
+			m.modCheckbox(difficulty.Relax2, difficulty.None)
 
-			m.modCheckbox(difficulty.SpunOut, difficulty.Relax2, difficulty.None)
+			m.modCheckbox(difficulty.SpunOut, difficulty.None)
 
-			m.modCheckbox(difficulty.DifficultyAdjust, difficulty.None, difficulty.None)
+			m.modCheckbox(difficulty.DifficultyAdjust, difficulty.None)
 
-			m.modCheckbox(difficulty.Mirror, difficulty.HardRock, difficulty.None)
+			m.modCheckbox(difficulty.Mirror, difficulty.None)
 		})
 
 		m.drawRow("Conversion:", func() {
-			m.modCheckbox(difficulty.ScoreV2, difficulty.Lazer|difficulty.Classic, difficulty.None)
+			m.modCheckbox(difficulty.ScoreV2, difficulty.None)
 
-			m.modCheckbox(difficulty.Lazer, difficulty.ScoreV2, difficulty.None)
+			m.modCheckbox(difficulty.Lazer, difficulty.None)
 
-			m.modCheckbox(difficulty.Classic, difficulty.ScoreV2, difficulty.Lazer)
+			m.modCheckbox(difficulty.Classic, difficulty.Lazer)
 		})
 
 		m.drawRow("Fun:", func() {
-			m.modCheckbox(difficulty.Traceable, difficulty.Hidden, difficulty.None)
+			m.modCheckbox(difficulty.Traceable, difficulty.None)
 		})
 
 		imgui.EndTable()
@@ -107,6 +108,8 @@ func (m *modPopup) drawModSettings() {
 	m.settingsDrawn = false
 	m.tryDrawSpeedSettings()
 	m.tryDrawEasySettings()
+	m.tryDrawFailSettings()
+	m.tryDrawHiddenSettings()
 	m.tryDrawClassicSettings()
 	m.tryDrawFlashlightSettings()
 	m.tryDrawDASettings()
@@ -141,6 +144,30 @@ func (m *modPopup) tryDrawEasySettings() {
 		conf, _ := difficulty.GetModConfig[difficulty.EasySettings](m.bld.diff)
 
 		sliderIntReset2("Extra lives", 2, &conf.Retries, 0, 10, "%d")
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawFailSettings() {
+	if !m.bld.diff.CheckModActive(difficulty.Lazer) || m.bld.diff.CheckModActive(difficulty.Perfect) {
+		return
+	}
+
+	m.drawSettingsBase(difficulty.SuddenDeath, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.SuddenDeathSettings](m.bld.diff)
+
+		checkboxOption("Also fail when missing a slider tail", &conf.FailOnSliderTail)
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawHiddenSettings() {
+	m.drawSettingsBase(difficulty.Hidden, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.HiddenSettings](m.bld.diff)
+
+		checkboxOption("Only fade approach circles", &conf.OnlyFadeApproachCircles)
 
 		difficulty.SetModConfig(m.bld.diff, conf)
 	})
@@ -223,7 +250,7 @@ func (m *modPopup) drawSettingsBase(mask difficulty.Modifier, draw func()) {
 			imgui.Dummy(vec2(0, 10))
 		}
 
-		imgui.PushFont(Font32)
+		imgui.PushFont(Font, 32)
 		imgui.TextUnformatted((m.bld.diff.Mods & mask).StringFull()[0] + ":")
 		imgui.PopFont()
 		imgui.WindowDrawList().AddLine(imgui.CursorScreenPos(), imgui.CursorScreenPos().Add(vec2(contentRegionMax().X, 0)), packColor(*imgui.StyleColorVec4(imgui.ColSeparator)))
@@ -255,8 +282,15 @@ func (m *modPopup) drawRow(name string, work func()) {
 	imgui.TextUnformatted(name)
 }
 
-func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret bool) {
+func (m *modPopup) modCheckbox(mod, required difficulty.Modifier) (ret bool) {
 	imgui.TableNextColumn()
+
+	preLazer := m.bld.diff.CheckModActive(difficulty.Lazer)
+
+	incompat := mod.GetStableIncompatibleMods()
+	if preLazer {
+		incompat = mod.GetLazerIncompatibleMods()
+	}
 
 	req := required == difficulty.None || m.bld.diff.CheckModActive(required)
 
@@ -287,6 +321,13 @@ func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret
 			m.bld.baseDiff.AddMod(mod)
 			m.bld.diff.AddMod(mod)
 		}
+
+		if preLazer && !m.bld.diff.CheckModActive(difficulty.Lazer) && m.bld.diff.CheckModActive(difficulty.Relax|difficulty.Relax2) {
+			// Special handling so Relax/AP is more important than NF/SD/PF
+			failMods := difficulty.NoFail | difficulty.SuddenDeath | difficulty.Perfect
+			m.bld.baseDiff.RemoveMod(failMods)
+			m.bld.diff.RemoveMod(failMods)
+		}
 	}
 
 	if s {
@@ -303,13 +344,10 @@ func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret
 		imgui.BeginTooltip()
 
 		modTip := mod.StringFull()[0]
-		if modTip == "Relax2" {
-			modTip = "AutoPilot"
-		}
 
 		imgui.TextUnformatted(modTip)
 
-		imgui.PushFont(Font20)
+		imgui.PushFont(Font, 20)
 		imgui.PushTextWrapPosV(300)
 
 		if !req {
@@ -329,13 +367,13 @@ func (m *modPopup) modCheckbox(mod, incompat, required difficulty.Modifier) (ret
 	return
 }
 
-func (m *modPopup) modCheckboxMulti(mod1, mod2, incompat, required difficulty.Modifier) {
+func (m *modPopup) modCheckboxMulti(mod1, mod2, required difficulty.Modifier) {
 	if !m.bld.diff.CheckModActive(mod2) {
-		if m.modCheckbox(mod1, incompat, required) && !m.bld.diff.CheckModActive(mod1) {
+		if m.modCheckbox(mod1, required) && !m.bld.diff.CheckModActive(mod1) {
 			m.bld.baseDiff.AddMod(mod2)
 			m.bld.diff.AddMod(mod2)
 		}
 	} else {
-		m.modCheckbox(mod2, incompat, required)
+		m.modCheckbox(mod2, required)
 	}
 }

@@ -2,15 +2,17 @@ package cstats
 
 import (
 	"fmt"
-	"github.com/spf13/cast"
-	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/math/mutils"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"math"
 	"reflect"
 	"strings"
 	"text/template"
+
+	"github.com/spf13/cast"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
+	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 var templateFuncs = template.FuncMap{
@@ -76,7 +78,7 @@ var templateFuncs = template.FuncMap{
 
 	//int math
 	"addi":   func(a, b any) int64 { return cast.ToInt64(a) + cast.ToInt64(b) },
-	"inc":    func(i interface{}) int64 { return cast.ToInt64(i) + 1 },
+	"inc":    func(i any) int64 { return cast.ToInt64(i) + 1 },
 	"subi":   func(a, b any) int64 { return cast.ToInt64(a) - cast.ToInt64(b) },
 	"muli":   func(a, b any) int64 { return cast.ToInt64(a) * cast.ToInt64(b) },
 	"divi":   func(a, b any) int64 { return cast.ToInt64(a) / cast.ToInt64(b) },
@@ -165,19 +167,19 @@ func padLeft(length any, str string) string {
 	return strings.Repeat(" ", tLen-len(str)) + str
 }
 
-func list(v ...interface{}) []interface{} {
+func list(v ...any) []any {
 	return v
 }
 
-func push(list interface{}, v interface{}) []interface{} {
+func push(list any, v any) []any {
 	tp := reflect.TypeOf(list).Kind()
 	switch tp {
 	case reflect.Slice, reflect.Array:
 		l2 := reflect.ValueOf(list)
 
 		l := l2.Len()
-		nl := make([]interface{}, l)
-		for i := 0; i < l; i++ {
+		nl := make([]any, l)
+		for i := range l {
 			nl[i] = l2.Index(i).Interface()
 		}
 
@@ -188,7 +190,7 @@ func push(list interface{}, v interface{}) []interface{} {
 	}
 }
 
-func slice(list interface{}, indices ...interface{}) interface{} {
+func slice(list any, indices ...any) any {
 	tp := reflect.TypeOf(list).Kind()
 	switch tp {
 	case reflect.Slice, reflect.Array:
@@ -215,15 +217,15 @@ func slice(list interface{}, indices ...interface{}) interface{} {
 	}
 }
 
-func join(sep string, v interface{}) string {
+func join(sep string, v any) string {
 	return strings.Join(strslice(v), sep)
 }
 
-func strslice(v interface{}) []string {
+func strslice(v any) []string {
 	switch v := v.(type) {
 	case []string:
 		return v
-	case []interface{}:
+	case []any:
 		b := make([]string, 0, len(v))
 		for _, s := range v {
 			if s != nil {
@@ -237,7 +239,7 @@ func strslice(v interface{}) []string {
 		case reflect.Array, reflect.Slice:
 			l := val.Len()
 			b := make([]string, 0, l)
-			for i := 0; i < l; i++ {
+			for i := range l {
 				value := val.Index(i).Interface()
 				if value != nil {
 					b = append(b, cast.ToString(value))

@@ -2,7 +2,10 @@ package play
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
+	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/batch"
@@ -10,7 +13,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"strconv"
 )
 
 type PPDisplay struct {
@@ -28,8 +30,13 @@ type PPDisplay struct {
 	flashlightGlider *animation.TargetGlider
 	flashlightText   string
 
+	readingGlider *animation.TargetGlider
+	readingText   string
+
 	ppGlider *animation.TargetGlider
 	ppText   string
+
+	hasReading bool
 
 	mText string
 
@@ -46,15 +53,18 @@ func NewPPDisplay(mods difficulty.Modifier) *PPDisplay {
 		tapGlider:        animation.NewTargetGlider(0, 0),
 		accGlider:        animation.NewTargetGlider(0, 0),
 		flashlightGlider: animation.NewTargetGlider(0, 0),
+		readingGlider:    animation.NewTargetGlider(0, 0),
 		ppGlider:         animation.NewTargetGlider(0, 0),
 		aimText:          "0pp",
 		tapText:          "0pp",
 		accText:          "0pp",
+		readingText:      "0pp",
 		ppText:           "0pp",
 		mText:            "0pp",
 		decimals:         0,
 		format:           "%.0fpp",
 		mods:             mods,
+		hasReading:       performance.GetDifficultyCalculator().GetVersion() >= 20260101,
 	}
 }
 
@@ -65,6 +75,7 @@ func (ppDisplay *PPDisplay) Add(results api.PPv2Results) {
 	ppDisplay.tapGlider.SetValue(results.Speed, static)
 	ppDisplay.accGlider.SetValue(results.Acc, static)
 	ppDisplay.flashlightGlider.SetValue(results.Flashlight, static)
+	ppDisplay.readingGlider.SetValue(results.Cognition, static)
 	ppDisplay.ppGlider.SetValue(results.Total, static)
 }
 
@@ -82,7 +93,12 @@ func (ppDisplay *PPDisplay) Update(time float64) {
 		ppDisplay.updatePP(ppDisplay.aimGlider, &ppDisplay.aimText, time, &mText)
 		ppDisplay.updatePP(ppDisplay.tapGlider, &ppDisplay.tapText, time, &mText)
 		ppDisplay.updatePP(ppDisplay.accGlider, &ppDisplay.accText, time, &mText)
-		ppDisplay.updatePP(ppDisplay.flashlightGlider, &ppDisplay.flashlightText, time, &mText)
+
+		if ppDisplay.hasReading {
+			ppDisplay.updatePP(ppDisplay.readingGlider, &ppDisplay.readingText, time, &mText)
+		} else if ppDisplay.mods.Active(difficulty.Flashlight) {
+			ppDisplay.updatePP(ppDisplay.flashlightGlider, &ppDisplay.flashlightText, time, &mText)
+		}
 	}
 
 	ppDisplay.mText = mText
@@ -117,7 +133,13 @@ func (ppDisplay *PPDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 	color := color2.NewHSVA(float32(cS.Hue), float32(cS.Saturation), float32(cS.Value), float32(ppAlpha))
 
 	if settings.Gameplay.PPCounter.ShowPPComponents {
-		length := ppDisplay.ppFont.GetWidthMonospaced(40*ppScale, "Total: ")
+		var length float64
+		if ppDisplay.hasReading {
+			length = ppDisplay.ppFont.GetWidthMonospaced(40*ppScale, "Reading: ")
+		} else {
+			length = ppDisplay.ppFont.GetWidthMonospaced(40*ppScale, "Total: ")
+		}
+
 		pLength := ppDisplay.ppFont.GetWidthMonospaced(40*ppScale, ppDisplay.mText)
 
 		position = position.Add(origin.AddS(1, 1).Mult(vector.NewVec2d(-(length+pLength)/2, -(160*ppScale)/2)))
@@ -128,7 +150,11 @@ func (ppDisplay *PPDisplay) Draw(batch *batch.QuadBatch, alpha float64) {
 
 		offset := 0.0
 
-		if ppDisplay.mods.Active(difficulty.Flashlight) {
+		if ppDisplay.hasReading {
+			ppDisplay.drawPP(batch, "Reading:", ppDisplay.readingText, position.AddS(0, 120*ppScale), length, ppScale, color, vector.TopLeft)
+
+			offset = 40
+		} else if ppDisplay.mods.Active(difficulty.Flashlight) {
 			ppDisplay.drawPP(batch, "FL:", ppDisplay.flashlightText, position.AddS(0, 120*ppScale), length, ppScale, color, vector.TopLeft)
 
 			offset = 40

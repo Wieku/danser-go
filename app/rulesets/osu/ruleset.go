@@ -2,7 +2,13 @@ package osu
 
 import (
 	"fmt"
+	"log"
+	"math"
+	"sort"
+	"strings"
+
 	"github.com/olekukonko/tablewriter"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
@@ -11,10 +17,6 @@ import (
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/utils"
-	"log"
-	"math"
-	"sort"
-	"strings"
 )
 
 const Tolerance2B = 3
@@ -95,10 +97,10 @@ type subSet struct {
 
 	ppv2 api.IPerformanceCalculator
 
-	recoveries int
-	failed     bool
-	sdpfFail   bool
-	forceFail  bool
+	recoveries  int
+	failed      bool
+	sdpfFail    bool
+	replayEnded bool
 
 	potentialCombo int
 }
@@ -155,6 +157,8 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 		}
 	}
 
+	diffCalc := performance.GetDifficultyCalculator()
+
 	for i, cursor := range cursors {
 		diff := diffs[i]
 
@@ -175,35 +179,37 @@ func NewOsuRuleset(beatMap *beatmap.BeatMap, cursors []*graphics.Cursor, diffs [
 		if ruleset.oppDiffs[player.maskedModString] == nil {
 			player.diff.DiffCalcMode = true // To use lazer's stack offset for stable plays without having to put LZ mod
 
-			ruleset.oppDiffs[player.maskedModString] = performance.GetDifficultyCalculator().CalculateStep(ruleset.beatMap.HitObjects, player.diff)
+			ruleset.oppDiffs[player.maskedModString] = diffCalc.CalculateStep(ruleset.beatMap, player.diff)
 
 			player.diff.DiffCalcMode = false
 
 			star := ruleset.oppDiffs[player.maskedModString][len(ruleset.oppDiffs[player.maskedModString])-1]
 
 			log.Println("Stars:")
-			log.Println("\tAim:  ", star.Aim)
-			log.Println("\tSpeed:", star.Speed)
+			log.Println("\tAim:    ", star.Aim)
+			log.Println("\tSpeed:  ", star.Speed)
 
-			if diff.CheckModActive(difficulty.Flashlight) {
-				log.Println("\tFlash:", star.Flashlight)
+			if diffCalc.GetVersion() >= 20260101 {
+				log.Println("\tReading:", star.Reading)
+			} else if diff.CheckModActive(difficulty.Flashlight) {
+				log.Println("\tFlash:  ", star.Flashlight)
 			}
 
-			log.Println("\tTotal:", star.Total)
+			log.Println("\tTotal:  ", star.Total)
 
 			pp := performance.CreatePPCalculator()
 			ppResults := pp.Calculate(star, api.PerfScore{CountGreat: -1, MaxCombo: -1, Accuracy: 1, SliderEnd: -1}, diff)
 
 			log.Println("SS PP:")
-			log.Println("\tAim:  ", ppResults.Aim)
-			log.Println("\tTap:  ", ppResults.Speed)
-
-			if diff.CheckModActive(difficulty.Flashlight) {
-				log.Println("\tFlash:", star.Flashlight)
+			log.Println("\tAim:    ", ppResults.Aim)
+			log.Println("\tTap:    ", ppResults.Speed)
+			log.Println("\tAcc:    ", ppResults.Acc)
+			if diffCalc.GetVersion() >= 20260101 {
+				log.Println("\tReading:", ppResults.Cognition)
+			} else if diff.CheckModActive(difficulty.Flashlight) {
+				log.Println("\tFlash:  ", ppResults.Flashlight)
 			}
-
-			log.Println("\tAcc:  ", ppResults.Acc)
-			log.Println("\tTotal:", ppResults.Total)
+			log.Println("\tTotal:  ", ppResults.Total)
 		}
 
 		log.Println(fmt.Sprintf("Calculating HP rates for \"%s\"...", cursor.Name))
@@ -341,7 +347,12 @@ func (set *OsuRuleSet) printEndTable() {
 
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP"})
+
+	defer func() {
+		_ = table.Close()
+	}()
+
+	table.Header("#", "Player", "Score", "Accuracy", "Grade", "300", "100", "50", "Miss", "Combo", "Max Combo", "Mods", "PP")
 
 	for i, c := range cs {
 		var data []string
@@ -357,13 +368,13 @@ func (set *OsuRuleSet) printEndTable() {
 		data = append(data, utils.Humanize(set.cursors[c].scoreProcessor.GetCombo()))
 		data = append(data, utils.Humanize(set.cursors[c].score.Combo))
 		data = append(data, set.cursors[c].player.diff.GetModString())
-		data = append(data, fmt.Sprintf("%.2f", set.cursors[c].score.PP.Total))
-		table.Append(data)
+		data = append(data, fmt.Sprintf("%.3f", set.cursors[c].score.PP.Total))
+		_ = table.Append(data)
 	}
 
-	table.Render()
+	_ = table.Render()
 
-	for _, s := range strings.Split(tableString.String(), "\n") {
+	for s := range strings.SplitSeq(tableString.String(), "\n") {
 		log.Println(s)
 	}
 }
@@ -494,7 +505,21 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 		return
 	}
 
-	if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && judgementResult.ComboResult == Reset) ||
+	if subSet.player.diff.CheckModActive(difficulty.Lazer) {
+		if subSet.player.diff.CheckModActive(difficulty.Perfect) {
+			relevantResult := (judgementResult.HitResult|judgementResult.MaxResult)&(BaseHitsM|SliderHits|SliderMiss) > 0
+			if relevantResult && judgementResult.HitResult != judgementResult.MaxResult {
+				subSet.sdpfFail = true
+			}
+		} else if subSet.player.diff.CheckModActive(difficulty.SuddenDeath) {
+			conf, _ := difficulty.GetModConfig[difficulty.SuddenDeathSettings](subSet.player.diff)
+			missedTail := judgementResult.MaxResult&(SliderEnd|LegacySliderEnd) > 0 && judgementResult.HitResult == SliderMiss
+
+			if judgementResult.ComboResult == Reset || (conf.FailOnSliderTail && missedTail) {
+				subSet.sdpfFail = true
+			}
+		}
+	} else if (subSet.player.diff.Mods.Active(difficulty.SuddenDeath|difficulty.Perfect) && judgementResult.ComboResult == Reset) ||
 		(subSet.player.diff.Mods.Active(difficulty.Perfect) && (judgementResult.HitResult&BaseHitsM > 0 && judgementResult.HitResult&BaseHitsM != Hit300)) {
 		if judgementResult.HitResult&BaseHitsM > 0 {
 			judgementResult.HitResult = Miss
@@ -530,10 +555,14 @@ func (set *OsuRuleSet) SendResult(cursor *graphics.Cursor, judgementResult Judge
 
 	set.processGekiKatu(subSet, &judgementResult)
 
-	if subSet.sdpfFail {
+	if subSet.sdpfFail && !subSet.player.diff.CheckModActive(difficulty.Lazer) {
 		subSet.hp.Increase(-100000, true)
 	} else {
 		subSet.hp.AddResult(judgementResult)
+
+		if subSet.sdpfFail {
+			set.failInternal(subSet.player)
+		}
 	}
 
 	if set.hitListener != nil {
@@ -740,16 +769,17 @@ func (set *OsuRuleSet) PostHit(time int64, object HitObject, player *difficultyP
 func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 	subSet := set.cursors[player.cursor]
 
-	if player.cursor.IsReplay && settings.Gameplay.IgnoreFailsInReplays {
+	if player.cursor.IsReplay && (settings.Gameplay.IgnoreFailsInReplays || !subSet.replayEnded) {
 		return
 	}
 
-	if !subSet.forceFail && player.diff.CheckModActive(difficulty.NoFail|difficulty.Relax|difficulty.Relax2) {
+	if !subSet.replayEnded && (player.diff.CheckModActive(difficulty.NoFail) ||
+		(!player.diff.CheckModActive(difficulty.Lazer) && player.diff.CheckModActive(difficulty.Relax|difficulty.Relax2))) {
 		return
 	}
 
 	// EZ mod gives 2 additional lives
-	if subSet.recoveries > 0 && !subSet.sdpfFail && !subSet.forceFail {
+	if subSet.recoveries > 0 && !subSet.sdpfFail && !subSet.replayEnded {
 		subSet.hp.IncreaseRelative(0.8, false)
 		subSet.recoveries--
 
@@ -767,11 +797,7 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 func (set *OsuRuleSet) PlayerStopped(cursor *graphics.Cursor, time int64) {
 	subSet := set.cursors[cursor]
 
-	// Let's believe in hp system. 1ms just in case for slider calculation inconsistencies
-	if time < int64(set.beatMap.HitObjects[len(set.beatMap.HitObjects)-1].GetEndTime())-1 /*+subSet.player.diff.Hit50+20*/ {
-		subSet.forceFail = true
-		subSet.hp.Increase(-10000, true)
-	}
+	subSet.replayEnded = true
 }
 
 func (set *OsuRuleSet) SetListener(listener hitListener) {

@@ -2,6 +2,7 @@ package camera
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
 )
@@ -177,7 +178,7 @@ func (camera *Camera) GenRotated(rotations int, rotOffset float64) []mgl32.Mat4 
 		pos := mgl32.Translate3D(camera.position.X32()+camera.positionV.X32(), camera.position.Y32()+camera.positionV.Y32(), 0)
 		view := mgl32.HomogRotate3DZ(float32(camera.rotation + camera.rotationV)).Mul4(mgl32.Scale3D(camera.scale.X32()*camera.scaleV.X32(), camera.scale.Y32()*camera.scaleV.Y32(), 1)).Mul4(mgl32.Translate3D(camera.origin.X32()+camera.originV.X32(), camera.origin.Y32()+camera.originV.Y32(), 0))
 
-		for i := 0; i < rotations; i++ {
+		for i := range rotations {
 			camera.cache[i] = camera.projection.Mul4(pos).Mul4(mgl32.HomogRotate3DZ(float32(i) * float32(rotOffset))).Mul4(view)
 		}
 

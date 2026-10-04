@@ -1,8 +1,12 @@
 package sliderrenderer
 
 import (
+	"math"
+	"sort"
+
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/graphics/attribute"
 	"github.com/wieku/danser-go/framework/graphics/buffer"
@@ -13,8 +17,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/math32"
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math"
-	"sort"
 )
 
 const LevelOfDetail = 50
@@ -188,7 +190,7 @@ func (body *Body) setupFillVAO() {
 	cvBuffer := make([]float32, LevelOfDetail*5+10)
 	ciBuffer := make([]uint32, LevelOfDetail*3)
 
-	for i := 0; i < len(body.sections)-1; i++ {
+	for i := range len(body.sections) - 1 {
 		cSection := body.sections[i]
 		nSection := body.sections[i+1]
 

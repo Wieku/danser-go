@@ -1,6 +1,8 @@
 package drawables
 
 import (
+	"math/rand"
+
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/bass"
@@ -8,7 +10,6 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/sprite"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math/rand"
 )
 
 const baseSpeed = 100.0
@@ -94,7 +95,7 @@ func (vis *Triangles) SetColors(colors []color2.Color) {
 
 	triangles := vis.manager.GetProcessedSprites()
 
-	for i := 0; i < len(triangles); i++ {
+	for i := range triangles {
 		t := triangles[i].(*Triangle)
 
 		if vis.colorPalette == nil || len(vis.colorPalette) == 0 {
@@ -117,7 +118,7 @@ func (vis *Triangles) Update(time float64) {
 	if vis.music != nil {
 		fft := vis.music.GetFFT()
 
-		for i := 0; i < bars; i++ {
+		for i := range bars {
 			boost += 2 * float64(fft[i]*fft[i]) * float64(bars-i) / float64(bars)
 		}
 	}
@@ -131,7 +132,7 @@ func (vis *Triangles) Update(time float64) {
 	triangles := vis.manager.GetProcessedSprites()
 	existingTriangles := len(triangles)
 
-	for i := 0; i < len(triangles); i++ {
+	for i := range triangles {
 		t := triangles[i]
 		t.Update(time)
 
@@ -147,7 +148,7 @@ func (vis *Triangles) Update(time float64) {
 	toAdd := int(maxTriangles*vis.density) - existingTriangles
 
 	if toAdd > 0 {
-		for i := 0; i < toAdd; i++ {
+		for range toAdd {
 			vis.AddTriangle(vis.firstUpdate)
 		}
 

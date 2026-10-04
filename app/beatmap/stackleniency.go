@@ -1,9 +1,10 @@
 package beatmap
 
 import (
+	"math"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
-	"math"
 )
 
 //Original code by: https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
@@ -148,9 +149,7 @@ func applyNewStacking(hitObjects []objects.IHitObject, stackThreshold int64) {
 func applyOldStacking(hitObjects []objects.IHitObject, stackThreshold int64) {
 	stackThresholdF := float64(stackThreshold)
 
-	for i := 0; i < len(hitObjects); i++ {
-		objectI := hitObjects[i]
-
+	for i, objectI := range hitObjects {
 		startTime := objectI.GetEndTime()
 
 		if objectI.GetStackIndex(stackThreshold) == 0 || isSlider(objectI) {

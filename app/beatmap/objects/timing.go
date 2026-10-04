@@ -1,16 +1,18 @@
 package objects
 
 import (
-	"github.com/wieku/danser-go/framework/math/mutils"
 	"math"
 	"sort"
+
+	"github.com/wieku/danser-go/framework/math/mutils"
 )
 
 type TimingPoint struct {
 	Time float64
 
-	beatLengthBase float64
-	beatLength     float64
+	beatLengthBase      float64
+	beatLengthBaseLazer float64
+	beatLength          float64
 
 	SampleSet    int
 	SampleIndex  int
@@ -32,7 +34,7 @@ func (t TimingPoint) GetRatio() float64 {
 	return float64(float32(mutils.Clamp(-t.beatLength, 10, 1000)) / 100)
 }
 
-func (t TimingPoint) GetRatio2() float64 {
+func (t TimingPoint) GetRatioLazer() float64 {
 	if t.beatLength >= 0 || math.IsNaN(t.beatLength) {
 		return 1.0
 	}
@@ -50,6 +52,17 @@ func (t TimingPoint) GetBaseBPM() float64 {
 
 func (t TimingPoint) GetBeatLength() float64 {
 	return t.beatLengthBase * t.GetRatio()
+}
+
+func (t TimingPoint) GetBeatLengthLazer() float64 {
+	sliderVelocityAsBeatLength := -100 / t.GetRatioLazer()
+
+	bpmMultiplier := 1.0
+	if sliderVelocityAsBeatLength < 0 {
+		bpmMultiplier = float64(mutils.Clamp(float32(-sliderVelocityAsBeatLength), 10, 1000) / 100)
+	}
+
+	return t.beatLengthBaseLazer * bpmMultiplier
 }
 
 type Timings struct {
@@ -86,16 +99,17 @@ func NewTimings() *Timings {
 
 func (tim *Timings) AddPoint(time, beatLength float64, sampleSet, sampleIndex int, sampleVolume float64, signature int, inherited, kiai, omitFirstBarLine bool) {
 	point := TimingPoint{
-		Time:             time,
-		beatLengthBase:   beatLength,
-		beatLength:       beatLength,
-		SampleSet:        sampleSet,
-		SampleIndex:      sampleIndex,
-		SampleVolume:     sampleVolume,
-		Signature:        signature,
-		Inherited:        inherited,
-		Kiai:             kiai,
-		OmitFirstBarLine: omitFirstBarLine,
+		Time:                time,
+		beatLengthBase:      beatLength,
+		beatLengthBaseLazer: beatLength,
+		beatLength:          beatLength,
+		SampleSet:           sampleSet,
+		SampleIndex:         sampleIndex,
+		SampleVolume:        sampleVolume,
+		Signature:           signature,
+		Inherited:           inherited,
+		Kiai:                kiai,
+		OmitFirstBarLine:    omitFirstBarLine,
 	}
 
 	tim.points = append(tim.points, point)
@@ -106,14 +120,21 @@ func (tim *Timings) FinalizePoints() {
 		return tim.points[i].Time < tim.points[j].Time
 	})
 
+	for _, point := range tim.points {
+		if !point.Inherited {
+			tim.originalPoints = append(tim.originalPoints, point)
+		}
+	}
+
 	for i, point := range tim.points {
-		if point.Inherited && i > 0 {
-			lastPoint := tim.points[i-1]
-			point.beatLengthBase = lastPoint.beatLengthBase
+		if point.Inherited {
+			if i > 0 {
+				point.beatLengthBase = tim.points[i-1].beatLengthBase
+			}
+
+			point.beatLengthBaseLazer = tim.GetOriginalPointAt(point.Time).beatLength
 
 			tim.points[i] = point
-		} else {
-			tim.originalPoints = append(tim.originalPoints, point)
 		}
 	}
 }
@@ -138,6 +159,10 @@ func (tim *Timings) GetPointAt(time float64) TimingPoint {
 
 func (tim *Timings) GetOriginalPointAt(time float64) TimingPoint {
 	tLen := len(tim.originalPoints)
+
+	if tLen == 0 {
+		return tim.defaultTimingPoint
+	}
 
 	index := sort.Search(tLen, func(i int) bool {
 		return time < tim.originalPoints[i].Time

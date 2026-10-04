@@ -2,9 +2,11 @@ package launcher
 
 import (
 	"fmt"
-	"github.com/AllenDang/cimgui-go/imgui"
-	"github.com/wieku/danser-go/app/utils"
 	"strconv"
+
+	"github.com/AllenDang/cimgui-go/imgui"
+
+	"github.com/wieku/danser-go/app/utils"
 )
 
 type knockoutManagerPopup struct {
@@ -53,7 +55,7 @@ func (km *knockoutManagerPopup) refreshCount() {
 }
 
 func (km *knockoutManagerPopup) drawManager() {
-	imgui.PushFont(Font20)
+	imgui.PushFont(Font, 20)
 
 	numText := "No replays"
 	if km.countEnabled == 1 {
@@ -83,7 +85,7 @@ func (km *knockoutManagerPopup) drawManager() {
 
 		imgui.TableSetColumnIndex(0)
 
-		imgui.PushFont(Font20)
+		imgui.PushFont(Font, 20)
 
 		if imgui.Checkbox("##mass replay disable", &km.includeSwitch) {
 			for _, replay := range km.bld.knockoutReplays {

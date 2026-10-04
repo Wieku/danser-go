@@ -1,8 +1,13 @@
 package common
 
 import (
+	"log"
+	"math"
+	"path/filepath"
+
 	"github.com/EdlinOrg/prominentcolor"
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
 	"github.com/wieku/danser-go/app/settings"
@@ -19,9 +24,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
-	"math"
-	"path/filepath"
 )
 
 type Background struct {
@@ -378,12 +380,12 @@ func (bg *Background) getColors(image *texture.Pixmap) []color2.Color {
 		cItems, err1 := prominentcolor.KmeansWithAll(10, image.NRGBA(), prominentcolor.ArgumentDefault, prominentcolor.DefaultSize, prominentcolor.GetDefaultMasks())
 
 		if err1 == nil {
-			for i := 0; i < len(cItems); i++ {
-				if cItems[i].Color.R+cItems[i].Color.G+cItems[i].Color.B == 0 { //skip black colors as they're useless
+			for _, cItem := range cItems {
+				if cItem.Color.R+cItem.Color.G+cItem.Color.B == 0 { //skip black colors as they're useless
 					continue
 				}
 
-				newCol = append(newCol, color2.NewIRGB(uint8(cItems[i].Color.R), uint8(cItems[i].Color.G), uint8(cItems[i].Color.B)) /*.Lighten2(0.15)*/)
+				newCol = append(newCol, color2.NewIRGB(uint8(cItem.Color.R), uint8(cItem.Color.G), uint8(cItem.Color.B)) /*.Lighten2(0.15)*/)
 			}
 		}
 	}

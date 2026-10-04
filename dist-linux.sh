@@ -22,7 +22,7 @@ go run tools/assets/assets.go ./ $BUILD_DIR/
 go build -trimpath -ldflags "-s -w -X 'github.com/wieku/danser-go/build.VERSION=$build' -X 'github.com/wieku/danser-go/build.Stream=Release'" -buildmode=c-shared -o $BUILD_DIR/danser-core.so -v -x -tags "exclude_cimgui_glfw exclude_cimgui_sdli"
 
 mv $BUILD_DIR/danser-core.so $BUILD_DIR/libdanser-core.so
-cp {libbass.so,libbass_fx.so,libbassmix.so,libyuv.so} $BUILD_DIR/
+cp {libbass.so,libbass_fx.so,libbassmix.so,libyuv.so,libSDL3.so} $BUILD_DIR/
 
 gcc -no-pie --verbose -O3 -o $BUILD_DIR/danser-cli -I. cmain/main_danser.c -I$BUILD_DIR/ -Wl,-rpath,'$ORIGIN' -L$BUILD_DIR/ -ldanser-core
 

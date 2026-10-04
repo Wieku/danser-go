@@ -3,12 +3,14 @@
 package files
 
 import (
-	"github.com/Microsoft/go-winio"
-	"github.com/wieku/danser-go/framework/goroutines"
-	"github.com/wieku/danser-go/framework/util"
 	"net"
 	"strings"
 	"sync"
+
+	"github.com/Microsoft/go-winio"
+
+	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/util"
 )
 
 type NamedPipe struct {
@@ -18,13 +20,14 @@ type NamedPipe struct {
 	wg      *sync.WaitGroup
 	connErr error
 
+	path string
 	name string
 }
 
 // NewNamedPipe creates a new named pipe to use in IPC (Inter-process communication)
 // If name is empty, it generates a random 32 character hex string
 // Warning: name provided is only a hint, if you want to use this pipe in IPC, retrieve the name by (*NamedPipe).Name()
-func NewNamedPipe(name string) (*NamedPipe, error) {
+func NewNamedPipe(path, name string) (*NamedPipe, error) {
 	if strings.TrimSpace(name) == "" {
 		name = util.RandomHexString(32)
 	}
@@ -40,6 +43,7 @@ func NewNamedPipe(name string) (*NamedPipe, error) {
 	pipe := &NamedPipe{
 		listener: listener,
 		wg:       &sync.WaitGroup{},
+		path:     path,
 		name:     name,
 	}
 
@@ -92,5 +96,10 @@ func (namedPipe *NamedPipe) Close() (err error) {
 
 // Name returns a system name of the pipe to use in IPC
 func (namedPipe *NamedPipe) Name() string {
+	return namedPipe.name
+}
+
+// Path returns full path of pipe file
+func (namedPipe *NamedPipe) Path() string {
 	return namedPipe.name
 }

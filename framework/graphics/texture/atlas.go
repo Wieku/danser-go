@@ -1,10 +1,12 @@
 package texture
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
-	color2 "github.com/wieku/danser-go/framework/math/color"
 	"log"
 	"runtime"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
+
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 type rectangle struct {
@@ -39,7 +41,7 @@ func NewTextureAtlasFormatCC(size int, format Format, mipmaps int, layers int, c
 	texture.subTextures = make(map[string]*TextureRegion)
 	texture.emptySpaces = make(map[int][]rectangle)
 
-	for i := 0; i < layers; i++ {
+	for i := range layers {
 		texture.emptySpaces[i] = []rectangle{{0, 0, size, size}}
 	}
 

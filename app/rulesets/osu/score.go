@@ -39,6 +39,7 @@ type Score struct {
 
 func (s *Score) ToPerfScore() api.PerfScore {
 	return api.PerfScore{
+		Score:        int(s.Score),
 		MaxCombo:     int(s.Combo),
 		CountGreat:   int(s.Count300),
 		CountOk:      int(s.Count100),

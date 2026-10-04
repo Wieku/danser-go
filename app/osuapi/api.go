@@ -13,6 +13,7 @@ const (
 	NormalMode ScoreType = iota
 	FriendsMode
 	CountryMode
+	TeamMode
 )
 
 func LookupBeatmap(checksum string) (*LookupResult, error) {
@@ -59,6 +60,8 @@ func GetScores(beatmapId int64, legacyOnly bool, mode ScoreType, limit int, mods
 		vls.Set("type", "country")
 	case FriendsMode:
 		vls.Set("type", "friend")
+	case TeamMode:
+		vls.Set("type", "team")
 	}
 
 	if limit > -1 {

@@ -7,10 +7,11 @@ package bass
 import "C"
 
 import (
-	"github.com/wieku/danser-go/app/settings"
 	"io/ioutil"
 	"os"
 	"unsafe"
+
+	"github.com/wieku/danser-go/app/settings"
 )
 
 var emptyData = make([]byte, 1024)
@@ -67,21 +68,7 @@ func (sample *Sample) GetLength() float64 {
 }
 
 func (sample *Sample) Play() *SampleChannel {
-	channel := &SampleChannel{source: sample.bassSample}
-
-	if channel.source == 0 {
-		return channel
-	}
-
-	channel.channel = C.BASS_SampleGetChannel(channel.source, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
-
-	if channel.channel != 0 {
-		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume))
-
-		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
-	}
-
-	return channel
+	return sample.PlayRV(1)
 }
 
 func (sample *Sample) PlayLoop() *SampleChannel {
@@ -119,21 +106,7 @@ func (sample *Sample) PlayVLoop(volume float64) *SampleChannel {
 }
 
 func (sample *Sample) PlayRV(volume float64) *SampleChannel {
-	channel := &SampleChannel{source: sample.bassSample}
-
-	if channel.source == 0 {
-		return channel
-	}
-
-	channel.channel = C.BASS_SampleGetChannel(channel.source, C.BASS_SAMCHAN_STREAM|C.BASS_STREAM_DECODE)
-
-	if channel.channel != 0 {
-		C.BASS_ChannelSetAttribute(channel.channel, C.BASS_ATTRIB_VOL, C.float(settings.Audio.GeneralVolume*settings.Audio.SampleVolume*volume))
-
-		C.BASS_Mixer_StreamAddChannel(masterMixer, channel.channel, C.BASS_MIXER_CHAN_NORAMPIN|C.BASS_STREAM_AUTOFREE)
-	}
-
-	return channel
+	return sample.PlayV(settings.Audio.GeneralVolume * settings.Audio.SampleVolume * volume)
 }
 
 func (sample *Sample) PlayRVLoop(volume float64) *SampleChannel {

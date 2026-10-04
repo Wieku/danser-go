@@ -1,15 +1,17 @@
 package schedulers
 
 import (
+	"math/rand"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/dance/input"
 	"github.com/wieku/danser-go/app/dance/movers"
 	"github.com/wieku/danser-go/app/dance/spinners"
+	"github.com/wieku/danser-go/app/dance/utils"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"math/rand"
 )
 
 type GenericScheduler struct {
@@ -36,15 +38,19 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 
 	config := settings.CursorDance.Movers[scheduler.index%len(settings.CursorDance.Movers)]
 
+	if settings.CursorDance.Resolve2BAfterTAG {
+		scheduler.queue = utils.Solve2B(scheduler.queue)
+	}
+
 	// Slider dance / random slider dance resolving
 	for i := 0; i < len(scheduler.queue); i++ {
-		scheduler.queue = PreprocessQueue(i, scheduler.queue, (config.SliderDance && !config.RandomSliderDance) || (config.RandomSliderDance && rand.Intn(2) == 0))
+		scheduler.queue = utils.PreprocessQueue(i, scheduler.queue, (config.SliderDance && !config.RandomSliderDance) || (config.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
 	// Convert spinners to pseudo spinners that have beginning and ending angles, simplifies mover codes as well
-	for i := 0; i < len(scheduler.queue); i++ {
+	for i := range len(scheduler.queue) {
 		if s, ok := scheduler.queue[i].(*objects.Spinner); ok {
-			scheduler.queue[i] = spinners.NewSpinner(s, spinnerMoverCtor, scheduler.index)
+			scheduler.queue[i] = spinners.NewSpinner(s, diff, spinnerMoverCtor, scheduler.index)
 		}
 	}
 
@@ -77,8 +83,12 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	}
 
 	// Spread overlapping circles timing-wise
-	for i := 0; i < len(scheduler.queue)-1; i++ {
+	for i := range len(scheduler.queue) - 1 {
 		current := scheduler.queue[i]
+		dtP := 0.0
+		if c, cOk := current.(*objects.Circle); cOk && c.DoubleClick {
+			dtP = 1
+		}
 
 		for j := i + 1; j < len(scheduler.queue); j++ {
 			o := scheduler.queue[j]
@@ -88,7 +98,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 			}
 
 			if c, cOk := o.(*objects.Circle); cOk && (!c.SliderPoint || c.SliderPointStart) {
-				scheduler.queue[j] = objects.DummyCircle(c.GetStackedStartPositionMod(diff), c.GetStartTime()+1)
+				scheduler.queue[j] = objects.DummyCircle(c.GetStackedStartPositionMod(diff), c.GetStartTime()+float64(j-i)+dtP)
 			}
 		}
 	}

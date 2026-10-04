@@ -4,7 +4,7 @@ import (
 	"github.com/wieku/danser-go/app/beatmap"
 )
 
-type M20210104 struct {}
+type M20210104 struct{}
 
 func (m *M20210104) RequiredSections() []string {
 	return []string{
@@ -25,8 +25,8 @@ func (m *M20210104) FieldsToMigrate() []string {
 	}
 }
 
-func (m *M20210104) GetValues(beatMap *beatmap.BeatMap) []interface{} {
-	return []interface{}{
+func (m *M20210104) GetValues(beatMap *beatmap.BeatMap) []any {
+	return []any{
 		beatMap.Name,
 		beatMap.NameUnicode,
 		beatMap.Artist,

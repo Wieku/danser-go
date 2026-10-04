@@ -2,9 +2,18 @@ package states
 
 import (
 	"fmt"
+	"log"
+	"math"
+	"math/rand"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/Zyko0/go-sdl3/sdl"
 	"github.com/dustin/go-humanize"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -13,7 +22,6 @@ import (
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/graphics"
-	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/rulesets/osu"
 	"github.com/wieku/danser-go/app/settings"
@@ -35,15 +43,9 @@ import (
 	"github.com/wieku/danser-go/framework/math/mutils"
 	"github.com/wieku/danser-go/framework/math/scaling"
 	"github.com/wieku/danser-go/framework/math/vector"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
-	"log"
-	"math"
-	"math/rand"
-	"runtime"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const windowsOffset = 15
@@ -193,6 +195,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 		log.Println(err)
 	}
 
+	settings.SKIP = settings.SKIP || settings.Gameplay.AlwaysSkipIntro
+
 	settings.START = min(settings.START, (beatMap.HitObjects[len(beatMap.HitObjects)-1].GetStartTime()-1)/1000) // cap start to start time of the last HitObject - 1ms
 
 	if (settings.START > 0.01 || !math.IsInf(settings.END, 1)) && (settings.PLAY || !settings.KNOCKOUT) {
@@ -213,8 +217,8 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 			removed = true
 		}
 
-		for i := 0; i < len(beatMap.HitObjects); i++ {
-			beatMap.HitObjects[i].SetID(int64(i))
+		for i, hO := range beatMap.HitObjects {
+			hO.SetID(int64(i))
 		}
 
 		for i := 0; i < len(beatMap.Pauses); i++ {
@@ -532,7 +536,7 @@ func NewPlayer(beatMap *beatmap.BeatMap) *Player {
 	goroutines.RunOS(func() {
 		var lastTimeNano = qpc.GetNanoTime()
 
-		for !input.Win.ShouldClose() {
+		for !gcontext.ShouldClose() {
 			currentTimeNano := qpc.GetNanoTime()
 
 			delta := float64(currentTimeNano-lastTimeNano) / 1000000.0
@@ -639,6 +643,10 @@ func (player *Player) trySetupFail() {
 }
 
 func (player *Player) Update(delta float64) bool {
+	// Due to no device/system delays etc during recording, music is late compared to hitobjects, so we need to delay it a bit.
+	// 50ms seems good enuf from limited testing.
+	const recordingDelay = 50
+
 	speed := 1.0
 
 	if player.musicPlayer.GetState() == bass.MusicPlaying {
@@ -654,7 +662,7 @@ func (player *Player) Update(delta float64) bool {
 		oldOffset = 24
 	}
 
-	player.progressMsF = player.rawPositionF - oldOffset - float64(settings.LOCALOFFSET) - player.onlineOffset
+	player.progressMsF = player.rawPositionF - oldOffset - float64(settings.LOCALOFFSET) - player.onlineOffset - recordingDelay
 
 	player.updateMain(delta)
 
@@ -1162,7 +1170,7 @@ func (player *Player) drawDebug() {
 
 		if settings.DEBUG || settings.Graphics.ShowFPS || settings.PerfGraph {
 			if settings.PerfGraph {
-				if profRes != nil && input.Win.GetKey(glfw.KeyLeftShift) != glfw.Press {
+				if profRes != nil && gcontext.GetKeyState(sdl.K_LSHIFT) != gcontext.Press {
 					root := profRes.TimeTotal
 					sched := profRes.Nodes[0].TimeTotal
 					input := profRes.Nodes[1].TimeTotal

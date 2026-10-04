@@ -3,14 +3,6 @@ package ffmpeg
 import (
 	"bufio"
 	"fmt"
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/frame"
-	"github.com/wieku/danser-go/framework/goroutines"
-	"github.com/wieku/danser-go/framework/graphics/effects"
-	"github.com/wieku/danser-go/framework/graphics/texture"
-	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
 	"log"
 	"os"
@@ -21,6 +13,17 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
+
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/frame"
+	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/graphics/effects"
+	"github.com/wieku/danser-go/framework/graphics/texture"
+	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/util/pixconv"
 )
 
 const MaxVideoBuffers = 10
@@ -72,7 +75,7 @@ func createPBO(format pixconv.PixFmt) *PBO {
 
 	pbo.memPointer = gl.MapNamedBufferRange(pbo.handle, 0, glSize, gl.MAP_PERSISTENT_BIT|gl.MAP_COHERENT_BIT|gl.MAP_READ_BIT)
 
-	pbo.data = (*[1 << 30]byte)(pbo.memPointer)[:glSize:glSize]
+	pbo.data = unsafe.Slice((*byte)(pbo.memPointer), glSize)
 
 	return pbo
 }
@@ -120,15 +123,21 @@ func startVideo(fps, _w, _h int) {
 		filters = append(filters, videoFilters)
 	}
 
+	tempDir := filepath.Join(settings.Recording.GetOutputDir(), output+"_temp")
+
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		panic(err)
+	}
+
 	inputName := "-"
 
 	if runtime.GOOS != "windows" {
-		pipe, err := files.NewNamedPipe("")
+		pipe, err := files.NewNamedPipe(tempDir, "")
 		if err != nil {
 			panic(err)
 		}
 
-		inputName = pipe.Name()
+		inputName = pipe.Path()
 		videoPipe = pipe
 	}
 
@@ -179,11 +188,14 @@ func startVideo(fps, _w, _h int) {
 		options = append(options, encOptions...)
 	}
 
-	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "video."+settings.Recording.Container))
+	options = append(options, filepath.Join(tempDir, "video."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
-	cmdVideo = exec.Command(ffmpegExec, options...)
+	cmdVideo, err = platform.PrepareFFMpeg("ffmpeg", options...)
+	if err != nil {
+		panic(err)
+	}
 
 	if runtime.GOOS == "windows" {
 		videoPipe, err = cmdVideo.StdinPipe()
@@ -220,7 +232,7 @@ func startVideo(fps, _w, _h int) {
 			rgbToYuvConverter = effects.NewRGBYUV(w, h, parsedFormat != pixconv.I444 && parsedFormat != pixconv.I422)
 		}
 
-		for i := 0; i < MaxVideoBuffers; i++ {
+		for range MaxVideoBuffers {
 			freePBOPool <- createPBO(parsedFormat)
 		}
 
@@ -243,10 +255,9 @@ func startVideo(fps, _w, _h int) {
 		for sc.Scan() {
 			line := sc.Text()
 
-			cutIndex := strings.Index(line, "] ") //searching for encoder error
+			_, cutLine, ok := strings.Cut(line, "] ") //searching for encoder error
 
-			if cutIndex > -1 {
-				cutLine := line[cutIndex+2:]
+			if ok {
 				lineLower := strings.ToLower(cutLine)
 
 				if strings.Contains(lineLower, "error setting") ||

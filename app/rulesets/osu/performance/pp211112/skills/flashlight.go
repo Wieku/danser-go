@@ -1,10 +1,11 @@
 package skills
 
 import (
+	"math"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp211112/preprocessing"
-	"math"
 )
 
 type Flashlight struct {
@@ -41,7 +42,7 @@ func (s *Flashlight) flashlightStrainValue(current *preprocessing.DifficultyObje
 
 	lastObj := current
 
-	for i := 0; i < len(s.Previous); i++ {
+	for i := range len(s.Previous) {
 		previous := s.GetPrevious(i)
 
 		if _, ok := previous.BaseObject.(*objects.Spinner); !ok {

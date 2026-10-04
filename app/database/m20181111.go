@@ -20,8 +20,8 @@ func (m *M20181111) FieldsToMigrate() []string {
 	}
 }
 
-func (m *M20181111) GetValues(beatMap *beatmap.BeatMap) []interface{} {
-	return []interface{}{
+func (m *M20181111) GetValues(beatMap *beatmap.BeatMap) []any {
+	return []any{
 		beatMap.Diff.GetHP(),
 		beatMap.Diff.GetOD(),
 	}

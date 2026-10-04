@@ -2,10 +2,6 @@ package ffmpeg
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/app/settings"
-	"github.com/wieku/danser-go/framework/bass"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/goroutines"
 	"io"
 	"log"
 	"os"
@@ -14,6 +10,12 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/wieku/danser-go/app/settings"
+	"github.com/wieku/danser-go/framework/bass"
+	"github.com/wieku/danser-go/framework/files"
+	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/platform"
 )
 
 const MaxAudioBuffers = 2000
@@ -28,15 +30,20 @@ var audioWriteQueue chan []byte
 var endSyncAudio *sync.WaitGroup
 
 func startAudio(audioFPS float64) {
+	tempDir := filepath.Join(settings.Recording.GetOutputDir(), output+"_temp")
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		panic(err)
+	}
+
 	inputName := "-"
 
 	if runtime.GOOS != "windows" {
-		pipe, err := files.NewNamedPipe("")
+		pipe, err := files.NewNamedPipe(tempDir, "")
 		if err != nil {
 			panic(err)
 		}
 
-		inputName = pipe.Name()
+		inputName = pipe.Path()
 		audioPipe = pipe
 	}
 
@@ -67,11 +74,14 @@ func startAudio(audioFPS float64) {
 		options = append(options, encOptions...)
 	}
 
-	options = append(options, filepath.Join(settings.Recording.GetOutputDir(), output+"_temp", "audio."+settings.Recording.Container))
+	options = append(options, filepath.Join(tempDir, "audio."+settings.Recording.Container))
 
 	log.Println("Running ffmpeg with options:", options)
 
-	cmdAudio = exec.Command(ffmpegExec, options...)
+	cmdAudio, err = platform.PrepareFFMpeg("ffmpeg", options...)
+	if err != nil {
+		panic(err)
+	}
 
 	if runtime.GOOS == "windows" {
 		audioPipe, err = cmdAudio.StdinPipe()
@@ -94,7 +104,7 @@ func startAudio(audioFPS float64) {
 
 	audioPool = make(chan []byte, MaxAudioBuffers)
 
-	for i := 0; i < MaxAudioBuffers; i++ {
+	for range MaxAudioBuffers {
 		audioPool <- make([]byte, audioBufSize)
 	}
 

@@ -1,9 +1,10 @@
 package ffmpeg
 
 import (
+	"math"
+
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/framework/math/animation/easing"
-	"math"
 )
 
 var easings = []easing.Easing{
@@ -48,7 +49,7 @@ func calculateWeights(bFrames int) []float32 {
 	}
 
 	easeFunc := easings[id]
-	for i := 0; i < bFrames; i++ {
+	for i := range bFrames {
 		w := 1.0 + easeFunc(float64(i)/float64(bFrames-1))*100
 		weights = append(weights, float32(w))
 	}

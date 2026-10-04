@@ -3,6 +3,7 @@ package launcher
 import (
 	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/api"
@@ -63,13 +64,35 @@ func newTimePopup(bld *builder) *timePopup {
 }
 
 func (m *timePopup) drawTimeMenu() {
+	locked := settings.Gameplay.AlwaysSkipIntro
+
+	if locked {
+		imgui.BeginGroup()
+		imgui.PushItemFlag(imgui.ItemFlagsDisabled, true)
+		imgui.PushStyleColorVec4(imgui.ColText, vec4(0.6, 0.6, 0.6, 1))
+	}
+
 	imgui.Checkbox("Skip map's beginning", &m.bld.skip)
+
+	if locked {
+		imgui.PopStyleColor()
+		imgui.PopItemFlag()
+		imgui.EndGroup()
+
+		if imgui.IsItemHovered() {
+			imgui.BeginTooltip()
+
+			imgui.TextUnformatted("Always skipped due to current config")
+
+			imgui.EndTooltip()
+		}
+	}
 
 	start := &m.bld.start
 	end := &m.bld.end
 
 	imgui.TextUnformatted("Start time:")
-	imgui.PushFont(Font16)
+	imgui.PushFont(Font, 16)
 	imgui.SetNextItemWidth(-1)
 	if sliderIntSlide("##Start time", &start.value, 0, end.ogValue-1, util.FormatSeconds(int(start.value)), imgui.SliderFlagsNoInput) {
 		start.changed = start.value != start.ogValue
@@ -81,7 +104,7 @@ func (m *timePopup) drawTimeMenu() {
 	}
 
 	imgui.TextUnformatted("End time:")
-	imgui.PushFont(Font16)
+	imgui.PushFont(Font, 16)
 	imgui.SetNextItemWidth(-1)
 	if sliderIntSlide("##End time", &end.value, 1, end.ogValue, util.FormatSeconds(int(end.value)), imgui.SliderFlagsNoInput) {
 		end.changed = end.value != end.ogValue
@@ -113,7 +136,7 @@ func (m *timePopup) drawStrainGraph() {
 			beatmap.ParseTimingPointsAndPauses(m.timeCMap)
 			beatmap.ParseObjects(m.timeCMap, true, false)
 
-			m.peaks = performance.GetDifficultyCalculator().CalculateStrainPeaks(m.timeCMap.HitObjects, m.timeCMap.Diff)
+			m.peaks = performance.GetDifficultyCalculator().CalculateStrainPeaks(m.timeCMap, m.timeCMap.Diff)
 
 			m.graphStatus = ""
 		})
@@ -175,6 +198,9 @@ func (m *timePopup) drawStrainGraph() {
 			viewport.Pop()
 		}
 
-		imgui.Image(imgui.TextureID{Data: uintptr(m.fbo.Texture().GetID())}, vec2(float32(sWidth), float32(sHeight)))
+		texRef := imgui.NewTextureRefTextureID(imgui.TextureID(m.fbo.Texture().GetID()))
+		defer texRef.Destroy()
+
+		imgui.Image(*texRef, vec2(float32(sWidth), float32(sHeight)))
 	}
 }

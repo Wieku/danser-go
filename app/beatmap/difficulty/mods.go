@@ -46,10 +46,10 @@ const (
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
-	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Flashlight | Relax | Relax2 | TouchDevice
+	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Hidden | Flashlight | Relax | Relax2 | TouchDevice
 )
 
-// GetDiffMaskedMods should be used instead of DifficultyAdjustMask. In 220930 deployment, HDFL is a separate mod difficulty wise
+// GetDiffMaskedMods should be used instead of DifficultyAdjustMask. Hidden affects reading difficulty since 260706.
 func GetDiffMaskedMods(mods Modifier) Modifier {
 	//Probably redundant
 	if mods.Active(Nightcore) {
@@ -61,10 +61,6 @@ func GetDiffMaskedMods(mods Modifier) Modifier {
 	}
 
 	base := difficultyAdjustMaskNew & mods
-
-	if mods&(Hidden|Flashlight) == (Hidden | Flashlight) {
-		base |= Hidden
-	}
 
 	return base
 }
@@ -123,7 +119,7 @@ var modsStringFull = [...]string{
 	"Flashlight",
 	"Autoplay",
 	"SpunOut",
-	"Relax2",
+	"AutoPilot",
 	"Perfect",
 	"Key4",
 	"Key5",
@@ -211,6 +207,32 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	return multiplier
 }
 
+func (mods Modifier) GetScoreMultiplierV2() float64 {
+	multiplier := 1.0
+
+	if mods&NoFail > 0 {
+		multiplier *= 0.5
+	}
+
+	if mods&HardRock > 0 {
+		multiplier *= 1.09
+	}
+
+	if mods&Traceable > 0 {
+		multiplier *= 1.02
+	}
+
+	if (mods&Relax | mods&Relax2) > 0 {
+		multiplier *= 0.1
+	}
+
+	if mods&SpunOut > 0 {
+		multiplier *= 0.95
+	}
+
+	return multiplier
+}
+
 func (mods Modifier) String() (s string) {
 	if mods.Active(Nightcore) {
 		mods &= ^DoubleTime
@@ -224,7 +246,7 @@ func (mods Modifier) String() (s string) {
 		mods &= ^SuddenDeath
 	}
 
-	for i := 0; i < len(modsString); i++ {
+	for i := range len(modsString) {
 		activated := mods&1 == 1
 		if activated {
 			s += modsString[i]
@@ -253,7 +275,7 @@ func (mods Modifier) StringFull() (s []string) {
 }
 
 func (mods Modifier) StringFull2() (s []string) {
-	for i := 0; i < len(modsString); i++ {
+	for i := range len(modsString) {
 		activated := mods&1 == 1
 		if activated {
 			s = append(s, modsStringFull[i])
@@ -289,7 +311,7 @@ func (mods Modifier) ConvertToModInfoList() (mi []rplpa.ModInfo) {
 		mods &= ^SuddenDeath
 	}
 
-	for i := 0; i < len(modsString); i++ {
+	for i := range len(modsString) {
 		if mods&1 == 1 {
 			mi = append(mi, rplpa.ModInfo{
 				Acronym:  modsString[i],
@@ -332,22 +354,114 @@ func (mods Modifier) Active(mod Modifier) bool {
 	return mods&mod > 0
 }
 
-func (mods Modifier) Compatible() bool {
+func (mod Modifier) GetStableIncompatibleMods() Modifier {
+	incompat := mod.GetCommonIncompatibleMods()
+
+	switch mod {
+	case NoFail, SuddenDeath, Perfect:
+		return incompat | Relax | Relax2
+	case Relax, Relax2:
+		return incompat | NoFail | SuddenDeath | Perfect
+	}
+
+	return incompat
+}
+
+func (mod Modifier) GetLazerIncompatibleMods() Modifier {
+	return mod.GetCommonIncompatibleMods()
+}
+
+func (mod Modifier) GetCommonIncompatibleMods() Modifier {
+	switch mod {
+	case Easy:
+		return HardRock
+	case HardRock:
+		return Easy | Mirror
+	case Mirror:
+		return HardRock
+	case NoFail:
+		return SuddenDeath | Perfect
+	case SuddenDeath:
+		return NoFail | Perfect
+	case Perfect:
+		return NoFail | SuddenDeath
+	case DoubleTime:
+		return Nightcore | HalfTime | Daycore
+	case Nightcore:
+		return DoubleTime | HalfTime | Daycore
+	case HalfTime:
+		return Daycore | DoubleTime | Nightcore
+	case Daycore:
+		return HalfTime | DoubleTime | Nightcore
+	case Hidden:
+		return Traceable
+	case Traceable:
+		return Hidden
+	case Relax:
+		return Autoplay
+	case Relax2:
+		return SpunOut | Autoplay | TouchDevice
+	case SpunOut:
+		return Relax2 | Autoplay
+	case Autoplay:
+		return Relax | Relax2 | SpunOut | TouchDevice
+	case TouchDevice:
+		return Autoplay | Relax2
+	case Lazer:
+		return ScoreV2
+	case ScoreV2:
+		return Lazer | Classic
+	case Classic:
+		return ScoreV2
+	}
+
+	return None
+}
+
+func (mods Modifier) GetIncompatibleMods(lazer bool) Modifier {
+	if lazer {
+		return mods.GetLazerIncompatibleMods()
+	}
+
+	return mods.GetStableIncompatibleMods()
+}
+
+func (mods Modifier) GetIncompatibleCombo() Modifier {
 	if mods == None {
-		return true
+		return None
 	}
 
-	if mods.Active(Target) ||
-		(mods.Active(HardRock) && mods.Active(Easy)) ||
-		(mods.Active(HardRock) && mods.Active(Mirror)) ||
-		(mods.Active(Lazer) && mods.Active(ScoreV2)) ||
-		((mods.Active(Nightcore) || mods.Active(DoubleTime)) && (mods.Active(HalfTime) || mods.Active(Daycore))) ||
-		((mods.Active(Perfect) || mods.Active(SuddenDeath)) && mods.Active(NoFail)) ||
-		(mods.Active(Relax) && mods.Active(Relax2)) ||
-		((mods.Active(Relax) || mods.Active(Relax2)) && (mods.Active(SuddenDeath) || mods.Active(Perfect) || mods.Active(Autoplay) || mods.Active(NoFail))) ||
-		(mods.Active(Relax2) && mods.Active(SpunOut)) {
-		return false
+	if mods.Active(Target) {
+		return Target
 	}
 
-	return true
+	if mods.Active(Cinema) {
+		return Cinema
+	}
+
+	// These flags also contain their stable counterparts when imported from a replay.
+	if mods.Active(Nightcore) {
+		mods &= ^DoubleTime
+	}
+	if mods.Active(Daycore) {
+		mods &= ^HalfTime
+	}
+	if mods.Active(Perfect) {
+		mods &= ^SuddenDeath
+	}
+
+	for i := range len(modsString) {
+		mod := Modifier(1 << i)
+
+		incompat := mods & mod.GetIncompatibleMods(mods.Active(Lazer))
+		if mods.Active(mod) && incompat > 0 {
+			return mod | incompat
+		}
+	}
+
+	return None
+}
+
+func (mods Modifier) Compatible() bool {
+	return mods.GetIncompatibleCombo() == None
 }

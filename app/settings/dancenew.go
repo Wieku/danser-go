@@ -14,6 +14,7 @@ func initCursorDance() *cursorDance {
 		Battle:             false,
 		DoSpinnersTogether: true,
 		TAGSliderDance:     false,
+		Resolve2BAfterTAG:  false,
 		MoverSettings: &moverSettings{
 			Bezier: []*bezier{
 				DefaultsFactory.InitBezier(),
@@ -75,10 +76,11 @@ func (d *defaultsFactory) InitSpinner() *spinner {
 type cursorDance struct {
 	Movers             []*mover   `new:"InitMover" wiki:"Help|https://github.com/Wieku/danser-go/wiki/Movers#available-movers"`
 	Spinners           []*spinner `new:"InitSpinner" wiki:"Help|https://github.com/Wieku/danser-go/wiki/Movers#available-spinner-movers"`
-	ComboTag           bool       `liveedit:"false"`
-	Battle             bool       `liveedit:"false"`
+	ComboTag           bool       `liveedit:"false" tooltip:"Splits objects by combo, like osu!stable TAG multiplayer"`
+	Battle             bool       `liveedit:"false" tooltip:"All cursors together, like a knockout"`
 	DoSpinnersTogether bool       `liveedit:"false"`
-	TAGSliderDance     bool       `label:"TAG slider dance" liveedit:"false"`
+	TAGSliderDance     bool       `label:"TAG slider dance" liveedit:"false" tooltip:"Splits all sliders to \"circles\" if TAG is enabled"`
+	Resolve2BAfterTAG  bool       `label:"Resolve 2B conflicts per TAG cursor" liveedit:"false" tooltip:"Delays 2B evaluation until after objects are assigned to cursors"`
 	MoverSettings      *moverSettings
 }
 

@@ -1,4 +1,4 @@
-package schedulers
+package utils
 
 import (
 	"github.com/wieku/danser-go/app/beatmap/objects"

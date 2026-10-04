@@ -14,13 +14,13 @@ type DanceSpinner struct {
 	id    int
 }
 
-func NewSpinner(spinner *objects.Spinner, moverCtor func() SpinnerMover, id int) *DanceSpinner {
+func NewSpinner(spinner *objects.Spinner, diff *difficulty.Difficulty, moverCtor func() SpinnerMover, id int) *DanceSpinner {
 	// data copy
 	hO := *spinner.HitObject
 
 	mover := moverCtor()
 
-	mover.Init(hO.StartTime, hO.EndTime, id)
+	mover.Init(hO.StartTime, hO.EndTime, id, diff.GetSpeed())
 
 	danceSpinner := &DanceSpinner{
 		HitObject: &hO,

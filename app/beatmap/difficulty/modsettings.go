@@ -1,6 +1,10 @@
 package difficulty
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/wieku/danser-go/framework/math/mutils"
+)
 
 var modConfigs map[Modifier]reflect.Type
 
@@ -15,6 +19,8 @@ func init() {
 		DoubleTime:       rfType[SpeedSettings](),
 		Nightcore:        rfType[SpeedSettings](),
 		Easy:             rfType[EasySettings](),
+		SuddenDeath:      rfType[SuddenDeathSettings](),
+		Hidden:           rfType[HiddenSettings](),
 		Classic:          rfType[ClassicSettings](),
 		Flashlight:       rfType[FlashlightSettings](),
 		DifficultyAdjust: rfType[DiffAdjustSettings](),
@@ -35,6 +41,7 @@ func NewSpeedSettings(rate float64, adjustPitch bool) SpeedSettings {
 }
 
 func (s SpeedSettings) postLoad() SpeedSettings {
+	s.SpeedChange = mutils.Clamp(s.SpeedChange, 0.1, 10)
 	return s
 }
 
@@ -71,6 +78,30 @@ func NewEasySettings() EasySettings {
 }
 
 func (s EasySettings) postLoad() EasySettings {
+	return s
+}
+
+type SuddenDeathSettings struct {
+	FailOnSliderTail bool `json:"fail_on_slider_tail"`
+}
+
+func NewSuddenDeathSettings() SuddenDeathSettings {
+	return SuddenDeathSettings{}
+}
+
+func (s SuddenDeathSettings) postLoad() SuddenDeathSettings {
+	return s
+}
+
+type HiddenSettings struct {
+	OnlyFadeApproachCircles bool `json:"only_fade_approach_circles"`
+}
+
+func NewHiddenSettings() HiddenSettings {
+	return HiddenSettings{}
+}
+
+func (s HiddenSettings) postLoad() HiddenSettings {
 	return s
 }
 

@@ -14,7 +14,7 @@ func (m *M20220605) FieldsToMigrate() []string {
 	return nil
 }
 
-func (m *M20220605) GetValues(_ *beatmap.BeatMap) []interface{} {
+func (m *M20220605) GetValues(_ *beatmap.BeatMap) []any {
 	return nil
 }
 

@@ -1,9 +1,10 @@
 package util
 
 import (
-	"github.com/wieku/danser-go/framework/goroutines"
 	"sync"
 	"time"
+
+	"github.com/wieku/danser-go/framework/goroutines"
 )
 
 func Balance[T, B any](workers int, candidates []T, workerFunc func(a T) (B, bool)) []B {
@@ -28,7 +29,7 @@ func BalanceChan[T, B any](workers int, candidates []T, receive chan<- B, worker
 
 	wg := &sync.WaitGroup{}
 
-	for i := 0; i < workers; i++ {
+	for range workers {
 		wg.Add(1)
 
 		goroutines.Run(func() {
@@ -57,7 +58,7 @@ func BalanceChanWatchdog[T, B any](workers int, candidates []T, receive chan<- B
 
 	wg := &sync.WaitGroup{}
 
-	for i := 0; i < workers; i++ {
+	for i := range workers {
 		wg.Add(1)
 
 		processed := make(chan T)

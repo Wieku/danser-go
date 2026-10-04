@@ -42,6 +42,7 @@ func initGameplay() *gameplay {
 			StaticUnstableRate:   false,
 			CapPositionalMisses:  true,
 			AngleNormalized:      false,
+			UseFallbackSkin:      false,
 		},
 		Score: &score{
 			hudElementOffset: &hudElementOffset{
@@ -243,6 +244,7 @@ func initGameplay() *gameplay {
 		IgnoreFailsInReplays:    false,
 		PPVersion:               "latest",
 		LazerClassicScore:       false,
+		AlwaysSkipIntro:         false,
 	}
 }
 
@@ -271,8 +273,9 @@ type gameplay struct {
 	FlashlightDim           float64
 	PlayUsername            string `liveedit:"false"`
 	IgnoreFailsInReplays    bool
-	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021 pp rework (First Xexxar),220930|2022 pp rework,241007|2024 pp rework,latest|2025 Q1 update (latest)"`
+	PPVersion               string `liveedit:"false" label:"PP counter version" combo:"211112|2021 pp rework (First Xexxar),220930|2022 pp rework,241007|2024 pp rework,250306|2025 Q1 update,251020|2025 Q4 update,latest|2026 Q3 update (latest)"`
 	LazerClassicScore       bool   `label:"Use \"Classic\" score for osu!lazer plays"`
+	AlwaysSkipIntro         bool   `liveedit:"false"`
 }
 
 type boundaries struct {
@@ -331,6 +334,7 @@ type aimError struct {
 	StaticUnstableRate   bool
 	CapPositionalMisses  bool
 	AngleNormalized      bool
+	UseFallbackSkin      bool `tooltip:"Useful for \"instafade\" skins" liveedit:"false"`
 }
 
 type score struct {
@@ -375,7 +379,7 @@ type hitCounter struct {
 
 type scoreBoard struct {
 	*hudElementOffset
-	Mode           string `combo:"Normal,Country,Friends" tooltip:"Country and Friends modes require osu!supporter and Authorization Code API Mode!"`
+	Mode           string `combo:"Normal,Country,Friends,Team" tooltip:"Team mode requires Authorization Code API Mode. Country and Friends modes require osu!supporter and Authorization Code API Mode!"`
 	ModsOnly       bool   `label:"Show mod leaderboard"`
 	AlignRight     bool   `label:"Align to the right" label:"Simulates the second team of osu! multiplayer"`
 	HideOthers     bool

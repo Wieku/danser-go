@@ -5,8 +5,20 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"math"
+	"os"
+	"runtime"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/Zyko0/go-sdl3/sdl"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
+
+	"github.com/wieku/rplpa"
+
 	"github.com/wieku/danser-go/app/audio"
 	"github.com/wieku/danser-go/app/beatmap"
 	difficulty2 "github.com/wieku/danser-go/app/beatmap/difficulty"
@@ -14,7 +26,6 @@ import (
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/discord"
 	"github.com/wieku/danser-go/app/ffmpeg"
-	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states"
 	"github.com/wieku/danser-go/app/utils"
@@ -31,18 +42,10 @@ import (
 	"github.com/wieku/danser-go/framework/graphics/viewport"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 	"github.com/wieku/danser-go/framework/profiler"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
-	"github.com/wieku/rplpa"
-	"io/ioutil"
-	"log"
-	"math"
-	"os"
-	"runtime"
-	"slices"
-	"strings"
-	"time"
 )
 
 const (
@@ -61,7 +64,6 @@ var scheduleScreenshot = false
 
 var batch *batch2.QuadBatch
 
-var win *glfw.Window
 var limiter *frame.Limiter
 var screenFBO *buffer.Framebuffer
 var lastSamples int
@@ -256,8 +258,8 @@ func run() {
 			modsParsed = tempDiff.Mods
 		}
 
-		if !modsParsed.Compatible() {
-			panic("Incompatible mods selected!")
+		if incompatibleMods := modsParsed.GetIncompatibleCombo(); incompatibleMods != difficulty2.None {
+			panic(fmt.Errorf("Incompatible mods selected: %s", strings.Join(incompatibleMods.StringFull(), ", ")))
 		}
 
 		closeAfterSettingsLoad := false
@@ -366,31 +368,24 @@ func run() {
 		assets.Init(build.Stream == "Dev")
 
 		if !closeAfterSettingsLoad {
-			log.Println("Initializing GLFW...")
+			log.Println("Initializing SDL...")
 		}
 
-		err := glfw.Init()
+		err := gcontext.Initialize(settings.RECORD)
 		if err != nil {
-			panic("Failed to initialize GLFW: " + err.Error())
+			panic("Failed to initialize SDL: " + err.Error())
 		}
 
 		if !closeAfterSettingsLoad {
-			log.Println("GLFW Initialized!")
+			log.Println("SDL Initialized!")
 		}
 
-		platform.SetupContext()
+		vm := gcontext.GetPrimaryVideoMode()
 
-		glfw.WindowHint(glfw.Resizable, glfw.False)
-		glfw.WindowHint(glfw.Samples, 0)
-		glfw.WindowHint(glfw.Visible, glfw.False)
-
-		monitor := glfw.GetPrimaryMonitor()
-		mWidth, mHeight := monitor.GetVideoMode().Width, monitor.GetVideoMode().Height
-
-		monitorHz = monitor.GetVideoMode().RefreshRate
+		monitorHz = int(vm.RefreshRate)
 
 		if newSettings {
-			settings.Graphics.SetDefaults(int64(mWidth), int64(mHeight))
+			settings.Graphics.SetDefaults(int64(vm.W), int64(vm.H))
 			settings.Save()
 
 			settings.JsonPatch = *sPatch
@@ -444,49 +439,33 @@ func run() {
 
 		log.Println("Creating window...")
 
-		if settings.Graphics.Fullscreen {
-			glfw.WindowHint(glfw.RedBits, monitor.GetVideoMode().RedBits)
-			glfw.WindowHint(glfw.GreenBits, monitor.GetVideoMode().GreenBits)
-			glfw.WindowHint(glfw.BlueBits, monitor.GetVideoMode().BlueBits)
-			glfw.WindowHint(glfw.RefreshRate, monitor.GetVideoMode().RefreshRate)
-			//glfw.WindowHint(glfw.Decorated, glfw.False)
-			win, err = glfw.CreateWindow(int(settings.Graphics.Width), int(settings.Graphics.Height), "danser", monitor, nil)
-		} else {
-			win, err = glfw.CreateWindow(int(settings.Graphics.WindowWidth), int(settings.Graphics.WindowHeight), "danser", nil, nil)
-		}
-
-		if err != nil {
-			panic(err)
-		}
-
-		if !*record {
-			win.SetFocusCallback(func(w *glfw.Window, focused bool) {
-				log.Println("Focus changed: ", focused)
-				input.Focused = focused
-			})
-		}
-
-		win.SetTitle("danser " + build.VERSION + " - " + beatMap.Artist + " - " + beatMap.Name + " [" + beatMap.Difficulty + "]")
-		input.Win = win
-
+		iconName := "dansercoin*"
 		if cTime := time.Now(); cTime.Month() == 12 && cTime.Day() >= 6 {
-			platform.LoadIcons(win, "dansercoin", "-s")
-		} else {
-			platform.LoadIcons(win, "dansercoin", "")
+			iconName += "-s"
 		}
 
-		win.MakeContextCurrent()
+		gcontext.SDLCreateWindow(
+			int(settings.Graphics.GetWidth()),
+			int(settings.Graphics.GetHeight()),
+			"danser "+build.VERSION+" - "+beatMap.Artist+" - "+beatMap.Name+" ["+beatMap.Difficulty+"]",
+			gcontext.OptionalProps{
+				IconName:       iconName,
+				BuiltinMSAA:    false,
+				Resizable:      false,
+				ScaleToMonitor: false,
+				Hidden:         settings.RECORD,
+				Fullscreen:     settings.Graphics.Fullscreen,
+			})
 
 		log.Println("Window created!")
 
-		err = platform.GLInit(*gldebug)
+		err = gcontext.GLInit(*gldebug)
 		if err != nil {
 			panic("Failed to initialize OpenGL: " + err.Error())
 		}
 
 		if !settings.RECORD {
 			discord.Connect()
-			win.Show()
 		}
 
 		gl.Enable(gl.BLEND)
@@ -509,9 +488,9 @@ func run() {
 		font.GetFont("Quicksand Bold").Draw(batch, 0, settings.Graphics.GetHeightF()-10, 32, "Loading...")
 
 		batch.End()
-		win.SwapBuffers()
+		gcontext.SwapBuffers()
 
-		glfw.SwapInterval(1)
+		gcontext.SetSwapInterval(1)
 		lastVSync = true
 
 		bass.Init(settings.RECORD)
@@ -602,6 +581,11 @@ func run() {
 		beatmap.ParseObjects(beatMap, false, true)
 		beatMap.LoadCustomSamples()
 		player = states.NewPlayer(beatMap)
+
+		if !settings.RECORD {
+			gcontext.Restore()
+			gcontext.Focus()
+		}
 
 		limiter = frame.NewLimiter(int(settings.Graphics.FPSCap))
 	})
@@ -744,67 +728,66 @@ func mainLoopSS() {
 
 func mainLoopNormal() {
 	goroutines.CallMain(func() {
-		win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-			if action == glfw.Press {
-				switch key {
-				case glfw.KeyF11:
-					switch mods {
-					case glfw.ModShift:
-						settings.PerfGraph = !settings.PerfGraph
-					case glfw.ModControl:
+		gcontext.RegisterListener(func(event gcontext.KeyEvent) {
+			if event.Action == gcontext.Press {
+				switch event.Name {
+				case "F11":
+					if (event.Mod & sdl.KMOD_CTRL) > 0 {
 						settings.CallGraph = !settings.CallGraph
-					default:
+					} else if (event.Mod & sdl.KMOD_SHIFT) > 0 {
+						settings.PerfGraph = !settings.PerfGraph
+					} else {
 						settings.DEBUG = !settings.DEBUG
 					}
-				case glfw.KeyEscape:
-					win.SetShouldClose(true)
-				case glfw.KeyMinus:
+				case "ESCAPE":
+					gcontext.SetShouldClose(true)
+				case "MINUS":
 					settings.DIVIDES = max(1, settings.DIVIDES-1)
-				case glfw.KeyEqual:
+				case "=":
 					settings.DIVIDES += 1
-				case glfw.KeyO:
-					if mods == glfw.ModControl {
+				case "O":
+					if event.Mod&sdl.KMOD_CTRL > 0 {
 						log.Println("Launcher: Open settings")
 					}
 				default:
-					if kName, ok := platform.GetKeyName(key, scancode); ok && kName == settings.Input.ScreenshotKey {
+					if event.Name == settings.Input.ScreenshotKey {
 						scheduleScreenshot = true
 					}
 				}
 			}
-
-			input.CallListeners(w, key, scancode, action, mods)
 		})
 	})
 
 	goroutines.RunMainLoop(func() bool {
-		return !win.ShouldClose()
+		return !gcontext.ShouldClose()
 	}, func() {
 		if lastVSync != settings.Graphics.VSync {
 			if settings.Graphics.VSync {
-				glfw.SwapInterval(1)
+				gcontext.SetSwapInterval(1)
 			} else {
-				glfw.SwapInterval(0)
+				gcontext.SetSwapInterval(0)
 			}
 
 			lastVSync = settings.Graphics.VSync
 		}
 
-		profiler.StartGroup("glfw.PollEvents", profiler.PInput)
-		glfw.PollEvents()
+		profiler.StartGroup("gcontext.HandleEvents", profiler.PInput)
+
+		gcontext.HandleEvents()
+
 		profiler.EndGroup()
 
 		pushFrame()
 
 		if scheduleScreenshot {
-			w, h := win.GetFramebufferSize()
+			w, h := gcontext.GetFramebufferSize()
 			utils.MakeScreenshot(w, h, "", true)
 			scheduleScreenshot = false
 		}
 
 		profiler.StartGroup("App.mainLoopNormal", profiler.PSwapBuffers)
 
-		win.SwapBuffers()
+		gcontext.SwapBuffers()
 
 		profiler.EndGroup()
 

@@ -1,5 +1,5 @@
 /*===========================================================================
- BASS_FX 2.4 - Copyright (c) 2002-2018 (: JOBnik! :) [Arthur Aminov, ISRAEL]
+ BASS_FX 2.4 - Copyright (c) 2002-2019 (: JOBnik! :) [Arthur Aminov, ISRAEL]
                                                      [http://www.jobnik.org]
 
       bugs/suggestions/questions:
@@ -286,8 +286,8 @@ typedef struct {
 	float fBandwidth;						// [0.1...........<10] Bandwidth in octaves (fQ is not in use (fBandwidth has a priority over fQ))
 											// 						(between -3 dB frequencies for BANDPASS and NOTCH or between midpoint
 											// 						(fGgain/2) gain frequencies for PEAKINGEQ)
-	float fQ;								// [0.1.............1] The EE kinda definition (linear) (if fBandwidth is not in use)
-	float fS;								// [0.1.............1] A "shelf slope" parameter (linear) (used only with Shelving filters)
+	float fQ;								// [0.1.....1.......n] The EE kinda definition (linear) (if fBandwidth is not in use)
+	float fS;								// [0.1.....1.......n] A "shelf slope" parameter (linear) (used only with Shelving filters)
 											// 						when fS = 1, the shelf slope is as steep as you can get it and remain monotonically
 											// 						increasing or decreasing gain with frequency.
 	int   lChannel;							// BASS_BFX_CHANxxx flag/s
@@ -308,9 +308,9 @@ typedef struct {
 	float fPitchShift;						// A factor value which is between 0.5 (one octave down) and 2 (one octave up) (1 won't change the pitch) [1 default]
 											// (fSemitones is not in use, fPitchShift has a priority over fSemitones)
 	float fSemitones;						// Semitones (0 won't change the pitch) [0 default]
-	long  lFFTsize;							// Defines the FFT frame size used for the processing. Typical values are 1024, 2048 and 4096 [2048 default]
+	int  lFFTsize;							// Defines the FFT frame size used for the processing. Typical values are 1024, 2048 and 4096 [2048 default]
 											// It may be any value <= 8192 but it MUST be a power of 2
-	long  lOsamp;							// Is the STFT oversampling factor which also determines the overlap between adjacent STFT frames [8 default]
+	int  lOsamp;							// Is the STFT oversampling factor which also determines the overlap between adjacent STFT frames [8 default]
 											// It should at least be 4 for moderate scaling ratios. A value of 32 is recommended for best quality (better quality = higher CPU usage)
 	int   lChannel;							// BASS_BFX_CHANxxx flag/s
 } BASS_BFX_PITCHSHIFT;
@@ -357,7 +357,8 @@ enum {
 	BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS,				// 82 default, 0 = automatic
 	BASS_ATTRIB_TEMPO_OPTION_SEEKWINDOW_MS,				// 28 default, 0 = automatic
 	BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS,				// 8  default
-	BASS_ATTRIB_TEMPO_OPTION_PREVENT_CLICK				// TRUE / FALSE (default)
+	BASS_ATTRIB_TEMPO_OPTION_PREVENT_CLICK,				// TRUE / FALSE (default)
+	BASS_ATTRIB_TEMPO_OPTION_OLDPOS
 };
 
 // tempo algorithm flags

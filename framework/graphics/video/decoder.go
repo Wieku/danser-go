@@ -2,14 +2,15 @@ package video
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/goroutines"
-	"github.com/wieku/danser-go/framework/util/pixconv"
 	"io"
 	"log"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/util/pixconv"
 )
 
 const BufferSize = 3
@@ -24,13 +25,12 @@ type VideoDecoder struct {
 	decodingQueue chan Frame
 	readyQueue    chan Frame
 
-	ffmpegExec string
-	command    *exec.Cmd
-	pipe       io.ReadCloser
-	running    bool
-	wg         *sync.WaitGroup
-	finished   bool
-	format     pixconv.PixFmt
+	command  *exec.Cmd
+	pipe     io.ReadCloser
+	running  bool
+	wg       *sync.WaitGroup
+	finished bool
+	format   pixconv.PixFmt
 }
 
 func NewVideoDecoder(filePath string) *VideoDecoder {
@@ -39,17 +39,11 @@ func NewVideoDecoder(filePath string) *VideoDecoder {
 		return nil
 	}
 
-	ffmpegExec, err := files.GetCommandExec("ffmpeg", "ffmpeg")
-	if err != nil {
-		log.Println("ffprobe not found! Please make sure it's installed in danser directory or in PATH. Follow download instructions at https://github.com/Wieku/danser-go/wiki/FFmpeg")
-	}
-
 	decoder := &VideoDecoder{
-		ffmpegExec: ffmpegExec,
-		filePath:   filePath,
-		Metadata:   metadata,
-		wg:         &sync.WaitGroup{},
-		format:     pixconv.RGB,
+		filePath: filePath,
+		Metadata: metadata,
+		wg:       &sync.WaitGroup{},
+		format:   pixconv.RGB,
 	}
 
 	switch strings.ToLower(metadata.PixFmt) {
@@ -113,12 +107,12 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 
 	args = append(args, "-")
 
-	dec.command = exec.Command(
-		dec.ffmpegExec,
-		args...,
-	)
-
 	var err error
+	dec.command, err = platform.PrepareFFMpeg("ffmpeg", args...)
+	if err != nil {
+		log.Println(err)
+	}
+
 	dec.pipe, err = dec.command.StdoutPipe()
 	if err != nil {
 		panic(err)
@@ -138,7 +132,7 @@ func (dec *VideoDecoder) StartFFmpeg(millis int64) {
 	dec.decodingQueue = make(chan Frame, BufferSize)
 	dec.readyQueue = make(chan Frame, BufferSize)
 
-	for i := 0; i < BufferSize; i++ {
+	for range BufferSize {
 		dec.decodingQueue <- make([]byte, dec.Metadata.Width*dec.Metadata.Height*3)
 	}
 

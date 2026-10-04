@@ -83,8 +83,8 @@ func (cr *cursor) GetColors(divides, cursors int, beatScale, alpha float64) []co
 	colors := cr.Colors.GetColors(divides, beatScale, alpha)
 	colors1 := make([]color2.Color, divides*cursors)
 
-	for i := 0; i < divides; i++ {
-		for j := 0; j < cursors; j++ {
+	for i := range divides {
+		for j := range cursors {
 			colors1[i*cursors+j] = colors[i].Shift(float32(j)*float32(cr.TagColorOffset), 0, 0)
 		}
 	}

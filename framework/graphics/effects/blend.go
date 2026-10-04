@@ -73,7 +73,7 @@ func NewBlend(width, height, frames int, weights []float32) *Blend {
 
 	effect.multiTexture = texture.NewTextureMultiLayerFormat(width, height, texture.RGB, 0, frames)
 
-	for i := 0; i < frames; i++ {
+	for i := range frames {
 		effect.fbos = append(effect.fbos, buffer.NewFrameLayer(effect.multiTexture, i))
 	}
 

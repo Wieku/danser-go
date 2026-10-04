@@ -2,6 +2,7 @@ package texture
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+
 	"github.com/wieku/danser-go/framework/graphics/hacks"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 )
@@ -88,6 +89,28 @@ func (store *textureStore) SetData(x, y, width, height, layer int, data []uint8,
 	}
 
 	gl.TextureSubImage3D(store.id, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, store.format.Format(), store.format.Type(), gl.Ptr(data))
+
+	if amdHack {
+		gl.BindTextureUnit(uint32(store.binding), store.id)
+	}
+
+	if store.mipmaps > 1 && generateMipmaps {
+		gl.GenerateTextureMipmap(store.id)
+	}
+}
+
+func (store *textureStore) SetDataBuf(x, y, width, height, layer int, rowWidth int, ptr uintptr, generateMipmaps bool) {
+	amdHack := store.binding == 0 && hacks.IsOldAMD
+
+	if amdHack {
+		gl.BindTextureUnit(11, store.id)
+	}
+
+	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, int32(rowWidth))
+
+	gl.TextureSubImage3D(store.id, 0, int32(x), int32(y), int32(layer), int32(width), int32(height), 1, store.format.Format(), store.format.Type(), gl.Ptr(ptr))
+
+	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
 
 	if amdHack {
 		gl.BindTextureUnit(uint32(store.binding), store.id)

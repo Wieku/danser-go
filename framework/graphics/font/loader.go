@@ -1,24 +1,25 @@
 package font
 
 import (
-	"github.com/wieku/danser-go/app/utils"
-	"github.com/wieku/danser-go/framework/graphics/texture"
-	color2 "github.com/wieku/danser-go/framework/math/color"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/opentype"
-	"golang.org/x/image/font/sfnt"
-	"golang.org/x/image/math/fixed"
 	"image"
 	"io"
-	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/math/fixed"
+
+	"github.com/wieku/danser-go/app/utils"
+	"github.com/wieku/danser-go/framework/graphics/texture"
+	color2 "github.com/wieku/danser-go/framework/math/color"
 )
 
 func LoadFont(reader io.Reader) *Font {
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		panic("Error reading font: " + err.Error())
 	}

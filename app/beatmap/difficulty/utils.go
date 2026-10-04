@@ -3,7 +3,7 @@ package difficulty
 import "reflect"
 
 func rfType[T any]() reflect.Type {
-	return reflect.TypeOf((*T)(nil)).Elem()
+	return reflect.TypeFor[T]()
 }
 
 func parseConfig[T modSetting[T]](base T, config map[string]any) T {

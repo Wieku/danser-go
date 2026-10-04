@@ -5,18 +5,33 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+	"unicode"
+
 	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sqweek/dialog"
+	"github.com/wieku/rplpa"
+
 	"github.com/wieku/danser-go/app/beatmap"
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/database"
 	"github.com/wieku/danser-go/app/graphics"
 	"github.com/wieku/danser-go/app/graphics/gui/drawables"
-	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/app/osuapi"
 	"github.com/wieku/danser-go/app/settings"
 	"github.com/wieku/danser-go/app/states/components/common"
@@ -33,22 +48,9 @@ import (
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
 	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
 	"github.com/wieku/danser-go/framework/qpc"
 	"github.com/wieku/danser-go/framework/util"
-	"github.com/wieku/rplpa"
-	"io"
-	"io/fs"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"slices"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-	"unicode"
 )
 
 type Mode int
@@ -112,8 +114,6 @@ const (
 )
 
 type launcher struct {
-	win *glfw.Window
-
 	bg *common.Background
 
 	batch *batch.QuadBatch
@@ -136,7 +136,7 @@ type launcher struct {
 	configPrevName string
 
 	newCloneName     string
-	refreshRate      int
+	refreshRate      float32
 	configEditOpened bool
 	configEditPos    imgui.Vec2
 
@@ -228,22 +228,22 @@ func StartLauncher() {
 			}
 		}()
 
-		goroutines.CallMain(launcher.startGLFW)
+		goroutines.CallMain(launcher.startContext)
 
-		for !launcher.win.ShouldClose() {
+		for !gcontext.ShouldClose() {
 			goroutines.CallMain(func() {
-				if launcher.win.GetAttrib(glfw.Iconified) == glfw.False {
-					if launcher.win.GetAttrib(glfw.Focused) == glfw.False {
-						glfw.SwapInterval(2)
+				if !gcontext.IsMinimized() {
+					if !gcontext.IsFocused() {
+						gcontext.SetSwapInterval(2)
 					} else {
-						glfw.SwapInterval(1)
+						gcontext.SetSwapInterval(1)
 					}
 				} else {
-					glfw.SwapInterval(launcher.refreshRate / 10)
+					gcontext.SetSwapInterval(int(launcher.refreshRate / 10))
 				}
 				launcher.Draw()
-				launcher.win.SwapBuffers()
-				glfw.PollEvents()
+				gcontext.SwapBuffers()
+				gcontext.HandleEvents()
 			})
 		}
 	})
@@ -272,13 +272,12 @@ func closeHandler(err any, stackTrace []string) {
 	log.Println("Exiting normally.")
 }
 
-func (l *launcher) startGLFW() {
-	err := glfw.Init()
-	if err != nil {
-		panic("Failed to initialize GLFW: " + err.Error())
+func (l *launcher) startContext() {
+	if err := gcontext.Initialize(false); err != nil {
+		panic(err)
 	}
 
-	l.refreshRate = glfw.GetPrimaryMonitor().GetVideoMode().RefreshRate
+	l.refreshRate = gcontext.GetPrimaryRefreshRate()
 
 	l.tryCreateDefaultConfig()
 	l.createConfigList()
@@ -304,42 +303,32 @@ func (l *launcher) startGLFW() {
 
 	l.currentConfig = c
 
-	platform.SetupContext()
-
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ScaleToMonitor, glfw.True)
-	glfw.WindowHint(glfw.Samples, 4)
-
 	settings.Graphics.Fullscreen = false
 	settings.Graphics.WindowWidth = 800
 	settings.Graphics.WindowHeight = 534
 
-	l.win, err = glfw.CreateWindow(800, 534, "danser-go "+build.VERSION+" launcher", nil, nil)
-
-	if err != nil {
-		panic(err)
-	}
-
-	input.Win = l.win
+	iconName := "dansercoin*"
 
 	if l.christmas {
-		platform.LoadIcons(l.win, "dansercoin", "-s")
-	} else {
-		platform.LoadIcons(l.win, "dansercoin", "")
+		iconName += "-s"
 	}
 
-	l.win.MakeContextCurrent()
+	gcontext.SDLCreateWindow(800, 534, "danser-go "+build.VERSION+" launcher", gcontext.OptionalProps{
+		IconName:       iconName,
+		ScaleToMonitor: true,
+		BuiltinMSAA:    true,
+	})
 
-	log.Println("GLFW initialized!")
+	log.Println("SDL initialized!")
 
-	err = platform.GLInit(false)
+	err = gcontext.GLInit(false)
 	if err != nil {
 		panic("Failed to initialize OpenGL: " + err.Error())
 	}
 
-	glfw.SwapInterval(1)
+	gcontext.SetSwapInterval(1)
 
-	SetupImgui(l.win)
+	SetupImgui()
 
 	graphics.LoadTextures()
 
@@ -381,23 +370,23 @@ func (l *launcher) startGLFW() {
 
 		l.loadBeatmaps()
 
-		l.win.SetDropCallback(func(w *glfw.Window, names []string) {
+		gcontext.RegisterListener(func(event gcontext.DropEvent) {
 			if l.danserRunning {
 				return
 			}
 
-			if strings.HasSuffix(names[0], ".osz") {
-				l.loadOSZs(names)
-			} else if len(names) > 1 {
-				l.trySelectReplaysFromPaths(names)
+			if strings.HasSuffix(event.Names[0], ".osz") {
+				l.loadOSZs(event.Names)
+			} else if len(event.Names) > 1 {
+				l.trySelectReplaysFromPaths(event.Names)
 			} else {
-				l.trySelectReplayFromPath(names[0])
+				l.trySelectReplayFromPath(event.Names[0])
 			}
 		})
 
-		l.win.SetCloseCallback(func(w *glfw.Window) {
+		gcontext.RegisterListener(func(_ gcontext.CloseEvent) {
 			if l.danserCmd != nil {
-				l.win.SetShouldClose(false)
+				gcontext.SetShouldClose(false)
 
 				goroutines.Run(func() {
 					if showMessage(mQuestion, "Recording is in progress, do you want to exit?") {
@@ -406,7 +395,7 @@ func (l *launcher) startGLFW() {
 							l.danserCleanup(false)
 						}
 
-						l.win.SetShouldClose(true)
+						gcontext.SetShouldClose(true)
 					}
 				})
 			}
@@ -430,9 +419,9 @@ func (l *launcher) startGLFW() {
 		}
 	})
 
-	input.RegisterListener(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	gcontext.RegisterListener(func(event gcontext.KeyEvent) {
 		if l.currentEditor != nil {
-			l.currentEditor.updateKey(w, key, scancode, action, mods)
+			l.currentEditor.updateKey(event)
 		}
 	})
 }
@@ -542,7 +531,7 @@ func (l *launcher) loadLatestReplay() {
 }
 
 func (l *launcher) Draw() {
-	w, h := l.win.GetFramebufferSize()
+	w, h := gcontext.GetFramebufferSize() //l.win.GetFramebufferSize()
 	viewport.Push(w, h)
 
 	if l.bg.HasBackground() {
@@ -563,6 +552,7 @@ func (l *launcher) Draw() {
 	if l.currentConfig != nil {
 		settings.Audio.GeneralVolume = l.currentConfig.Audio.GeneralVolume
 		settings.Audio.MusicVolume = l.currentConfig.Audio.MusicVolume
+		settings.Gameplay.AlwaysSkipIntro = l.currentConfig.Gameplay.AlwaysSkipIntro
 	}
 
 	t := qpc.GetMilliTimeF()
@@ -705,7 +695,7 @@ func (l *launcher) drawImgui() {
 func (l *launcher) drawMain() {
 	w := contentRegionMax().X
 
-	imgui.PushFont(Font24)
+	imgui.PushFont(Font, 24)
 
 	if imgui.BeginTableV("ltpanel", 2, imgui.TableFlagsSizingStretchProp, vec2(float32(w)/2, 0), -1) {
 		imgui.TableSetupColumnV("ltpanel1", imgui.TableColumnFlagsWidthFixed, 0, imgui.ID(0))
@@ -768,7 +758,7 @@ func (l *launcher) drawMain() {
 	imgui.PopFont()
 
 	if imgui.IsMouseClickedBool(0) && !l.danserRunning {
-		platform.StopProgress(l.win)
+		gcontext.StopProgress()
 		l.showProgressBar = false
 		l.recordStatus = ""
 		l.recordProgress = 0
@@ -797,7 +787,7 @@ func (l *launcher) drawMain() {
 func (l *launcher) drawSplash() {
 	w, h := contentRegionMax().X, contentRegionMax().Y
 
-	imgui.PushFont(Font48)
+	imgui.PushFont(Font, 48)
 
 	splText := strings.Split(l.splashText, "\n")
 
@@ -904,7 +894,7 @@ func (l *launcher) drawControls() {
 func (l *launcher) selectReplay() {
 	bSize := vec2((imgui.WindowWidth()-40)/4, imgui.TextLineHeight()*2)
 
-	imgui.PushFont(Font32)
+	imgui.PushFont(Font, 32)
 
 	if imgui.ButtonV("Select replay", bSize) {
 		dir := l.currentConfig.General.GetReplaysDir()
@@ -920,7 +910,7 @@ func (l *launcher) selectReplay() {
 
 	imgui.PopFont()
 
-	imgui.PushFont(Font20)
+	imgui.PushFont(Font, 20)
 	imgui.IndentV(5)
 
 	if l.bld.currentReplay != nil {
@@ -1031,7 +1021,7 @@ func (l *launcher) trySelectReplay(replay *knockoutReplay) {
 func (l *launcher) newKnockout() {
 	bSize := vec2((imgui.WindowWidth()-40)/4, imgui.TextLineHeight()*2)
 
-	imgui.PushFont(Font32)
+	imgui.PushFont(Font, 32)
 
 	if imgui.ButtonV("Select replays", bSize) {
 		kPath := getAbsPath(launcherConfig.LastKnockoutPath)
@@ -1051,7 +1041,7 @@ func (l *launcher) newKnockout() {
 
 	imgui.PopFont()
 
-	imgui.PushFont(Font20)
+	imgui.PushFont(Font, 20)
 
 	imgui.IndentV(5)
 
@@ -1138,7 +1128,7 @@ func (l *launcher) loadReplay(p string) (*knockoutReplay, error) {
 func (l *launcher) showSelect() {
 	bSize := vec2((imgui.WindowWidth()-40)/4, imgui.TextLineHeight()*2)
 
-	imgui.PushFont(Font32)
+	imgui.PushFont(Font, 32)
 
 	if imgui.ButtonV("Select map", bSize) {
 		if l.selectWindow == nil {
@@ -1151,7 +1141,7 @@ func (l *launcher) showSelect() {
 
 	imgui.PopFont()
 
-	imgui.PushFont(Font20)
+	imgui.PushFont(Font, 20)
 
 	imgui.IndentV(5)
 
@@ -1225,7 +1215,7 @@ func (l *launcher) drawLowerPanel() {
 			imgui.ProgressBarV(l.recordProgress, vec2(w/2, imgui.FrameHeight()), l.recordStatus)
 
 			if l.encodeInProgress {
-				imgui.PushFont(Font16)
+				imgui.PushFont(Font, 16)
 
 				cPos := imgui.CursorPos()
 
@@ -1259,7 +1249,7 @@ func (l *launcher) drawLowerPanel() {
 	imgui.SetCursorPos(vec2(contentRegionMax().X-w/2.5, h-imgui.FrameHeightWithSpacing()*2))
 
 	centerTable("dansebutton", w/2.5, func() {
-		imgui.PushFont(Font48)
+		imgui.PushFont(Font, 48)
 		{
 			dRun := l.danserRunning && launcherConfig.CurrentPMode == Record
 
@@ -1592,10 +1582,10 @@ func (l *launcher) tryCreateDefaultConfig() {
 }
 
 func (l *launcher) createConfig(name string) {
-	vm := glfw.GetPrimaryMonitor().GetVideoMode()
+	vm := gcontext.GetPrimaryVideoMode()
 
 	conf := settings.NewConfigFile()
-	conf.Graphics.SetDefaults(int64(vm.Width), int64(vm.Height))
+	conf.Graphics.SetDefaults(int64(vm.W), int64(vm.H))
 	conf.Save(filepath.Join(env.ConfigDir(), name+".json"), true)
 
 	l.createConfigList()
@@ -1709,6 +1699,12 @@ func (l *launcher) startDanser() {
 		dExec = filepath.Join(env.LibDir(), build.DanserExec)
 	}
 
+	if runtime.GOOS != "windows" {
+		if stat, err := os.Stat(dExec); err == nil {
+			os.Chmod(dExec, (stat.Mode()&os.ModePerm)|0111) // Just try
+		}
+	}
+
 	l.danserCmd = exec.Command(dExec, l.bld.getArguments()...)
 
 	rFile, oFile, err := os.Pipe()
@@ -1727,7 +1723,7 @@ func (l *launcher) startDanser() {
 	}
 
 	if launcherConfig.CurrentPMode == Watch {
-		l.win.Iconify()
+		gcontext.Minimize()
 	} else if launcherConfig.CurrentPMode == Record {
 		l.showProgressBar = true
 	}
@@ -1754,8 +1750,8 @@ func (l *launcher) startDanser() {
 					l.openCurrentSettingsEditor()
 				}
 
-				l.win.Restore()
-				l.win.Focus()
+				gcontext.Restore()
+				gcontext.Focus()
 			}
 
 			if strings.Contains(line, "panic:") {
@@ -1767,14 +1763,19 @@ func (l *launcher) startDanser() {
 				l.encodeInProgress = true
 				l.encodeStart = time.Now()
 
-				platform.StartProgress(l.win)
+				goroutines.CallMain(func() {
+					gcontext.StartProgress()
+				})
 			}
 
 			if strings.Contains(line, "Finishing rendering") {
 				l.encodeInProgress = false
 
 				l.recordProgress = 1
-				platform.SetProgress(l.win, 100, 100)
+				goroutines.CallMain(func() {
+					gcontext.SetProgress(1)
+				})
+
 				l.recordStatus = "Finalizing..."
 				l.recordStatusSpeed = ""
 				l.recordStatusETA = ""
@@ -1810,7 +1811,9 @@ func (l *launcher) startDanser() {
 				at, _ := strconv.Atoi(spl[:len(spl)-1])
 
 				l.recordProgress = float32(at) / 100
-				platform.SetProgress(l.win, at, 100)
+				goroutines.CallMain(func() {
+					gcontext.SetProgress(l.recordProgress)
+				})
 			}
 		}
 
@@ -1825,6 +1828,8 @@ func (l *launcher) startDanser() {
 
 		l.danserCleanup(err == nil)
 
+		restore := true
+
 		if err != nil {
 			panicWait.Wait()
 
@@ -1833,6 +1838,12 @@ func (l *launcher) startDanser() {
 				if idx := strings.Index(pMsg, "Error:"); idx > -1 {
 					pMsg = pMsg[:idx-1] + "\n\n" + pMsg[idx+7:]
 				}
+
+				gcontext.ErrorProgress()
+
+				restore = false
+				gcontext.Restore()
+				gcontext.Focus()
 
 				showMessage(mError, "danser crashed! %s\n\n%s", err.Error(), pMsg)
 			})
@@ -1847,7 +1858,11 @@ func (l *launcher) startDanser() {
 		rFile.Close()
 		oFile.Close()
 
-		l.win.Restore()
+		if restore {
+			goroutines.CallMain(func() {
+				gcontext.Restore()
+			})
+		}
 	})
 }
 
@@ -1859,7 +1874,9 @@ func (l *launcher) danserCleanup(success bool) {
 	l.danserCmd = nil
 
 	if !success {
-		platform.StopProgress(l.win)
+		goroutines.CallMain(func() {
+			gcontext.StopProgress()
+		})
 		l.recordStatus = ""
 		l.showProgressBar = false
 	}

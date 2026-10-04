@@ -2,6 +2,13 @@ package overlays
 
 import (
 	"fmt"
+	"log"
+	"math"
+	"math/rand"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/dance"
 	"github.com/wieku/danser-go/app/discord"
@@ -20,12 +27,6 @@ import (
 	"github.com/wieku/danser-go/framework/math/animation/easing"
 	color2 "github.com/wieku/danser-go/framework/math/color"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"log"
-	"math"
-	"math/rand"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 type stats struct {
@@ -529,7 +530,7 @@ func (overlay *KnockoutOverlay) DrawHUD(batch *batch.QuadBatch, colors []color2.
 
 		batch.SetColor(float64(colors[rep.oldIndex].R), float64(colors[rep.oldIndex].G), float64(colors[rep.oldIndex].B), alpha*player.fade.GetValue())
 
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			batch.SetSubScale(scl*0.8/2, scl*0.8/2)
 			batch.SetTranslation(vector.NewVec2d((float64(j)+0.5)*scl+xSlideLeft, rowBaseY))
 

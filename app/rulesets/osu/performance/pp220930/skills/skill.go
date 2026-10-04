@@ -1,11 +1,12 @@
 package skills
 
 import (
+	"math"
+	"slices"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/rulesets/osu/performance/pp220930/preprocessing"
 	"github.com/wieku/danser-go/framework/math/mutils"
-	"math"
-	"sort"
 )
 
 type Skill struct {
@@ -82,7 +83,7 @@ func (skill *Skill) DifficultyValue() float64 {
 
 	numReduced := min(len(strains), skill.ReducedSectionCount)
 
-	for i := 0; i < numReduced; i++ {
+	for i := range numReduced {
 		scale := math.Log10(mutils.Lerp(1.0, 10.0, mutils.Clamp(float64(i)/float64(skill.ReducedSectionCount), 0, 1)))
 		strains[i] *= mutils.Lerp(skill.ReducedStrainBaseline, 1.0, scale)
 	}
@@ -106,11 +107,6 @@ func (skill *Skill) startNewSectionFrom(end float64, current *preprocessing.Diff
 }
 
 func reverseSortFloat64s(arr []float64) {
-	sort.Float64s(arr)
-
-	n := len(arr)
-	for i := 0; i < n/2; i++ {
-		j := n - i - 1
-		arr[i], arr[j] = arr[j], arr[i]
-	}
+	slices.Sort(arr)
+	slices.Reverse(arr)
 }

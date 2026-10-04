@@ -1,14 +1,14 @@
 package settings
 
 import (
-	"github.com/wieku/danser-go/framework/env"
-	"github.com/wieku/danser-go/framework/files"
-	"github.com/wieku/danser-go/framework/util"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/wieku/danser-go/framework/env"
+	"github.com/wieku/danser-go/framework/platform"
+	"github.com/wieku/danser-go/framework/util"
 )
 
 var Recording = initRecording()
@@ -290,13 +290,12 @@ func (d *defaultsFactory) EncoderOptions() []string {
 		possibleEncoders := strings.Split(eField.Tag.Get("combo"), ",")
 		encoderCache = slices.Clone(possibleEncoders)
 
-		ffmpegExec, err := files.GetCommandExec("ffmpeg", "ffmpeg")
-		if err != nil { // Fail silently and show all encoders
+		// control group, if libx264 fails it means ffmpeg was not installed correctly
+		ctrl, err := platform.PrepareFFMpeg("ffmpeg", "-f", "lavfi", "-i", "color=black:s=240x144", "-vframes", "1", "-an", "-c:v", "libx264", "-f", "null", "-")
+		if err != nil {
 			return encoderCache
 		}
 
-		// control group, if libx264 fails it means ffmpeg was not installed correctly
-		ctrl := exec.Command(ffmpegExec, "-f", "lavfi", "-i", "color=black:s=240x144", "-vframes", "1", "-an", "-c:v", "libx264", "-f", "null", "-")
 		if ctrl.Run() != nil {
 			return encoderCache
 		}
@@ -304,7 +303,12 @@ func (d *defaultsFactory) EncoderOptions() []string {
 		toRemove := util.Balance(8, encoderCache, func(encoder string) (string, bool) {
 			eName := strings.Split(encoder, "|")[0]
 
-			cmd := exec.Command(ffmpegExec, "-f", "lavfi", "-i", "color=black:s=240x144", "-vframes", "1", "-an", "-c:v", eName, "-f", "null", "-")
+			cmd, err := platform.PrepareFFMpeg("ffmpeg", "-f", "lavfi", "-i", "color=black:s=240x144", "-vframes", "1", "-an", "-c:v", eName, "-f", "null", "-")
+
+			if err != nil {
+				return "", false
+			}
+
 			if cmd.Run() != nil {
 				return encoder, true
 			}

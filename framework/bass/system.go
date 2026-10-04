@@ -11,9 +11,10 @@ import "C"
 
 import (
 	"fmt"
-	"github.com/wieku/danser-go/app/settings"
 	"log"
 	"runtime"
+
+	"github.com/wieku/danser-go/app/settings"
 )
 
 var masterMixer C.HSTREAM

@@ -2,10 +2,11 @@ package preprocessing
 
 import (
 	"cmp"
+	"slices"
+
 	"github.com/wieku/danser-go/app/beatmap/difficulty"
 	"github.com/wieku/danser-go/app/beatmap/objects"
 	"github.com/wieku/danser-go/framework/math/vector"
-	"slices"
 )
 
 const (
@@ -50,9 +51,7 @@ func (slider *LazySlider) calculateEndPosition() {
 	currCursorPosition := slider.GetStackedStartPositionMod(slider.diff)
 	scalingFactor := NormalizedRadius / slider.diff.CircleRadiusU // lazySliderDistance is coded to be sensitive to scaling, this makes the maths easier with the thresholds being used.
 
-	for i := 0; i < len(scorePoints); i++ {
-		var currMovementObj = scorePoints[i]
-
+	for i, currMovementObj := range scorePoints {
 		var stackedPosition vector.Vector2f
 		if currMovementObj.LastPoint { // bug that made into deployment but well
 			stackedPosition = slider.GetStackedPositionAtModLazer(slider.EndTimeLazer, slider.diff)

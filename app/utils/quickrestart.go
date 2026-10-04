@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/wieku/danser-go/app/input"
 	"github.com/wieku/danser-go/framework/goroutines"
+	"github.com/wieku/danser-go/framework/platform/gcontext"
+
 	"os"
 	"os/exec"
 )
@@ -42,6 +43,6 @@ func QuickRestart() {
 	cmd.Start()
 
 	goroutines.CallNonBlockMain(func() {
-		input.Win.SetShouldClose(true)
+		gcontext.SetShouldClose(true)
 	})
 }
