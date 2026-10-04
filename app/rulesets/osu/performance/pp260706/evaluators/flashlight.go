@@ -48,7 +48,7 @@ func EvaluateFlashlight(current *preprocessing.DifficultyObject) float64 {
 			stackNerf := min(1.0, (currentObj.LazyJumpDistance/scalingFactor)/25.0)
 
 			// Bonus based on how visible the object is.
-			opacityBonus := 1.0 + flMaxOpacityBonus*(1.0-current.OpacityAt(currentObj.BaseObject.GetStartTime(), current.Diff.CheckModActive(difficulty.Hidden)))
+			opacityBonus := 1.0 + flMaxOpacityBonus*(1.0-current.OpacityAt(currentObj.BaseObject.GetStartTime(), current.Diff.HiddenFadesObjects()))
 
 			flashlightDifficulty += stackNerf * opacityBonus * scalingFactor * jumpDistance / cumulativeStrainTime
 

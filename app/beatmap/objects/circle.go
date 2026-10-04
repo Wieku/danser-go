@@ -181,14 +181,19 @@ func (circle *Circle) SetDifficulty(diff *difficulty.Difficulty) {
 
 	circles := []sprite.ISprite{circle.hitCircle, circle.hitCircleOverlay, circle.comboText}
 
+	fadeIn := diff.TimeFadeIn
+	if diff.CheckModActive(difficulty.Hidden) {
+		fadeIn = diff.Preempt * 0.4
+	}
+
 	for _, t := range circles {
-		if diff.CheckModActive(difficulty.Hidden) {
+		if diff.HiddenFadesObjects() {
 			if !circle.SliderPoint || circle.SliderPointStart || circle.firstEndCircle {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.Preempt*0.4, 0.0, 1.0))
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime+diff.Preempt*0.4, startTime+diff.Preempt*0.7, 1.0, 0.0))
 			}
 		} else if !diff.CheckModActive(difficulty.Traceable) || circle.HitObjectID == 0 {
-			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+diff.TimeFadeIn, 0.0, 1.0))
+			t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, startTime, startTime+fadeIn, 0.0, 1.0))
 			if !circle.SliderPoint || circle.SliderPointStart {
 				t.AddTransform(animation.NewSingleTransform(animation.Fade, easing.Linear, endTime+float64(diff.Hit100), endTime+float64(diff.Hit50), 1.0, 0.0))
 			} else {
@@ -268,7 +273,7 @@ func (circle *Circle) Arm(clicked bool, time float64) {
 		endScale = 1.8
 	}
 
-	if clicked && !circle.diff.CheckModActive(difficulty.Hidden) && !circle.diff.CheckModActive(difficulty.Traceable) {
+	if clicked && !circle.diff.HiddenFadesObjects() && !circle.diff.CheckModActive(difficulty.Traceable) {
 		endTime := startTime + difficulty.HitFadeOut
 		circle.hitCircle.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))
 		circle.hitCircleOverlay.AddTransform(animation.NewSingleTransform(animation.Scale, easing.OutQuad, startTime, endTime, 1.0, endScale))

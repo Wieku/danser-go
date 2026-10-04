@@ -571,7 +571,7 @@ func (slider *Slider) SetDifficulty(diff *difficulty.Difficulty) {
 	slider.bodyFade = animation.NewGlider(0)
 	slider.bodyFade.AddEvent(slider.StartTime-diff.Preempt, slider.StartTime-(diff.Preempt-diff.TimeFadeIn), 1)
 
-	if diff.CheckModActive(difficulty.Hidden) {
+	if diff.HiddenFadesObjects() {
 		slider.bodyFade.AddEventEase(slider.StartTime-diff.Preempt+diff.TimeFadeIn, slider.EndTime, 0, easing.OutQuad)
 	}
 
@@ -821,7 +821,7 @@ func (slider *Slider) ArmStart(clicked bool, time float64) {
 		}
 	}
 
-	if !slider.diff.CheckModActive(difficulty.Hidden) {
+	if !slider.diff.HiddenFadesObjects() {
 		if settings.Objects.Sliders.Snaking.Out && settings.Objects.Sliders.Snaking.OutFadeInstant {
 			slider.bodyFade.AddEvent(slider.EndTime, slider.EndTime, 0)
 		} else {
@@ -871,7 +871,7 @@ func (slider *Slider) initSnake() {
 		p.scale.AddEventSEase(endTime, endTime+150, 1.2, 1.0, easing.OutQuad)
 		p.fade.AddEventS(startTime, endTime, 0.0, 1.0)
 
-		if slider.diff.CheckModActive(difficulty.Hidden) {
+		if slider.diff.HiddenFadesObjects() {
 			p.fade.AddEventS(max(endTime, p.Time-1000), p.Time, 1.0, 0.0)
 		} else {
 			p.fade.AddEventS(p.Time, p.Time, 1.0, 0.0)

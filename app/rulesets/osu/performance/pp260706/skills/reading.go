@@ -92,7 +92,7 @@ func (s *ReadingSkill) readingDifficulty(current *preprocessing.DifficultyObject
 }
 
 func (s *ReadingSkill) calculateAdjustedDifficulty(current *preprocessing.DifficultyObject) float64 {
-	diffc := evaluators.EvaluateReading(current, s.diff.CheckModActive(difficulty.Hidden))
+	diffc := evaluators.EvaluateReading(current, s.diff.HiddenFadesObjects())
 
 	if s.diff.CheckModActive(difficulty.TouchDevice) {
 		diffc = math.Pow(diffc, 0.89)

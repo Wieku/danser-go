@@ -19,6 +19,7 @@ func init() {
 		DoubleTime:       rfType[SpeedSettings](),
 		Nightcore:        rfType[SpeedSettings](),
 		Easy:             rfType[EasySettings](),
+		Hidden:           rfType[HiddenSettings](),
 		Classic:          rfType[ClassicSettings](),
 		Flashlight:       rfType[FlashlightSettings](),
 		DifficultyAdjust: rfType[DiffAdjustSettings](),
@@ -76,6 +77,18 @@ func NewEasySettings() EasySettings {
 }
 
 func (s EasySettings) postLoad() EasySettings {
+	return s
+}
+
+type HiddenSettings struct {
+	OnlyFadeApproachCircles bool `json:"only_fade_approach_circles"`
+}
+
+func NewHiddenSettings() HiddenSettings {
+	return HiddenSettings{}
+}
+
+func (s HiddenSettings) postLoad() HiddenSettings {
 	return s
 }
 

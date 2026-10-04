@@ -109,6 +109,7 @@ func (m *modPopup) drawModSettings() {
 	m.settingsDrawn = false
 	m.tryDrawSpeedSettings()
 	m.tryDrawEasySettings()
+	m.tryDrawHiddenSettings()
 	m.tryDrawClassicSettings()
 	m.tryDrawFlashlightSettings()
 	m.tryDrawDASettings()
@@ -143,6 +144,16 @@ func (m *modPopup) tryDrawEasySettings() {
 		conf, _ := difficulty.GetModConfig[difficulty.EasySettings](m.bld.diff)
 
 		sliderIntReset2("Extra lives", 2, &conf.Retries, 0, 10, "%d")
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawHiddenSettings() {
+	m.drawSettingsBase(difficulty.Hidden, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.HiddenSettings](m.bld.diff)
+
+		checkboxOption("Only fade approach circles", &conf.OnlyFadeApproachCircles)
 
 		difficulty.SetModConfig(m.bld.diff, conf)
 	})

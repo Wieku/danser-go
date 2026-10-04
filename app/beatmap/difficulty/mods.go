@@ -46,10 +46,10 @@ const (
 
 	// DifficultyAdjustMask is outdated, use GetDiffMaskedMods instead
 	DifficultyAdjustMask    = HardRock | Easy | DoubleTime | Nightcore | HalfTime | Daycore | Flashlight | Relax
-	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Flashlight | Relax | Relax2 | TouchDevice
+	difficultyAdjustMaskNew = HardRock | Easy | DoubleTime | HalfTime | Hidden | Flashlight | Relax | Relax2 | TouchDevice
 )
 
-// GetDiffMaskedMods should be used instead of DifficultyAdjustMask. In 220930 deployment, HDFL is a separate mod difficulty wise
+// GetDiffMaskedMods should be used instead of DifficultyAdjustMask. Hidden affects reading difficulty since 260706.
 func GetDiffMaskedMods(mods Modifier) Modifier {
 	//Probably redundant
 	if mods.Active(Nightcore) {
@@ -61,10 +61,6 @@ func GetDiffMaskedMods(mods Modifier) Modifier {
 	}
 
 	base := difficultyAdjustMaskNew & mods
-
-	if mods&(Hidden|Flashlight) == (Hidden | Flashlight) {
-		base |= Hidden
-	}
 
 	return base
 }
