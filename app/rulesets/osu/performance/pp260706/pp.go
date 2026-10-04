@@ -219,7 +219,7 @@ func (pp *PPv2) computeSpeedValue() float64 {
 	effectiveHitWindow := 20 * math.Pow(4/pp.attribs.Speed, 0.35)
 
 	// Find the proportion of 300s on speed notes assuming the hit window was the effective hit window.
-	effectiveAccuracy := math.Erf(effectiveHitWindow / (*pp.speedDeviation))
+	effectiveAccuracy := putils.Erf(effectiveHitWindow / (*pp.speedDeviation))
 
 	// Scale speed value by normalized accuracy.
 	speedValue *= math.Pow(effectiveAccuracy, 2)
@@ -409,12 +409,12 @@ func (pp *PPv2) calculateDeviation(relevantCountGreat, relevantCountOk, relevant
 
 	if pLowerBound > 0.01 {
 		// Compute deviation assuming greats and oks are normally distributed.
-		deviation = pp.greatHitWindow / (math.Sqrt(2) * math.Erfinv(pLowerBound))
+		deviation = pp.greatHitWindow / (math.Sqrt(2) * putils.ErfInv(pLowerBound))
 
 		// Subtract the deviation provided by tails that land outside the ok hit window from the deviation computed above.
 		// This is equivalent to calculating the deviation of a normal distribution truncated at +-okHitWindow.
 		okHitWindowTailAmount := math.Sqrt(2/math.Pi) * pp.okHitWindow * math.Exp(-0.5*math.Pow(pp.okHitWindow/deviation, 2)) /
-			(deviation * math.Erf(pp.okHitWindow/(math.Sqrt(2)*deviation)))
+			(deviation * putils.Erf(pp.okHitWindow/(math.Sqrt(2)*deviation)))
 
 		deviation *= math.Sqrt(1 - okHitWindowTailAmount)
 	} else {

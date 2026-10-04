@@ -95,3 +95,66 @@ func Powi(x float64, exp int) float64 {
 		return math.Pow(x, float64(exp))
 	}
 }
+
+// Erf approximates the error function using osu's DiffUtils implementation.
+// https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Difficulty/Utils/DiffUtils.cs
+func Erf(x float64) float64 {
+	if x == 0 {
+		return 0
+	}
+
+	if math.IsInf(x, 1) {
+		return 1
+	}
+
+	if math.IsInf(x, -1) {
+		return -1
+	}
+
+	if math.IsNaN(x) {
+		return math.NaN()
+	}
+
+	// Constants for approximation (Abramowitz and Stegun formula 7.1.26).
+	t := 1.0 / (1.0 + 0.3275911*math.Abs(x))
+	tau := t * (0.254829592 + t*(-0.284496736+t*(1.421413741+t*(-1.453152027+t*1.061405429))))
+
+	value := 1.0 - tau*math.Exp(-x*x)
+	if x >= 0 {
+		return value
+	}
+
+	return -value
+}
+
+// ErfInv approximates the inverse error function using osu's DiffUtils implementation.
+func ErfInv(x float64) float64 {
+	if x <= -1 {
+		return math.Inf(-1)
+	}
+
+	if x >= 1 {
+		return math.Inf(1)
+	}
+
+	if x == 0 {
+		return 0
+	}
+
+	const a = 0.147
+	sign := math.Copysign(1, x)
+	x = math.Abs(x)
+
+	ln := math.Log(1 - x*x)
+	t1 := 2/(math.Pi*a) + ln/2
+	t2 := ln / a
+	baseApprox := math.Sqrt(t1*t1-t2) - t1
+
+	// Correction reduces max error from -0.005 to -0.00045.
+	correction := 0.0
+	if x >= 0.85 {
+		correction = math.Pow((x-0.85)/0.293, 8)
+	}
+
+	return sign * (math.Sqrt(baseApprox) + correction)
+}
