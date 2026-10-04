@@ -108,6 +108,7 @@ func (m *modPopup) drawModSettings() {
 	m.settingsDrawn = false
 	m.tryDrawSpeedSettings()
 	m.tryDrawEasySettings()
+	m.tryDrawFailSettings()
 	m.tryDrawHiddenSettings()
 	m.tryDrawClassicSettings()
 	m.tryDrawFlashlightSettings()
@@ -143,6 +144,20 @@ func (m *modPopup) tryDrawEasySettings() {
 		conf, _ := difficulty.GetModConfig[difficulty.EasySettings](m.bld.diff)
 
 		sliderIntReset2("Extra lives", 2, &conf.Retries, 0, 10, "%d")
+
+		difficulty.SetModConfig(m.bld.diff, conf)
+	})
+}
+
+func (m *modPopup) tryDrawFailSettings() {
+	if !m.bld.diff.CheckModActive(difficulty.Lazer) || m.bld.diff.CheckModActive(difficulty.Perfect) {
+		return
+	}
+
+	m.drawSettingsBase(difficulty.SuddenDeath, func() {
+		conf, _ := difficulty.GetModConfig[difficulty.SuddenDeathSettings](m.bld.diff)
+
+		checkboxOption("Also fail when missing a slider tail", &conf.FailOnSliderTail)
 
 		difficulty.SetModConfig(m.bld.diff, conf)
 	})
