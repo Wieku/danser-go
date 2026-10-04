@@ -43,7 +43,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	}
 
 	// Slider dance / random slider dance resolving
-	for i := range len(scheduler.queue) {
+	for i := 0; i < len(scheduler.queue); i++ {
 		scheduler.queue = utils.PreprocessQueue(i, scheduler.queue, (config.SliderDance && !config.RandomSliderDance) || (config.RandomSliderDance && rand.Intn(2) == 0))
 	}
 
@@ -55,7 +55,7 @@ func (scheduler *GenericScheduler) Init(objs []objects.IHitObject, diff *difficu
 	}
 
 	// Convert two overlapping circles (slider starts too if slider danced) to one double-tap circle
-	for i := range len(scheduler.queue) - 1 {
+	for i := 0; i < len(scheduler.queue)-1; i++ {
 		current, pOk := scheduler.queue[i].(*objects.Circle)
 		next, cOk := scheduler.queue[i+1].(*objects.Circle)
 
