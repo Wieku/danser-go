@@ -47,6 +47,8 @@ type Difficulty struct {
 
 	Mods Modifier
 
+	ScoreVersion int32 // 0 means current scoring; otherwise the replay's score version.
+
 	Hit50U  float64
 	Hit100U float64
 	Hit300U float64
@@ -391,6 +393,14 @@ func (diff *Difficulty) GetRadius() float32 {
 }
 
 func (diff *Difficulty) GetScoreMultiplier() float64 {
+	if diff.CheckModActive(Lazer) && (diff.ScoreVersion == 0 || diff.ScoreVersion >= 30000017) {
+		return diff.GetScoreMultiplierV2()
+	}
+
+	return diff.GetScoreMultiplierV1()
+}
+
+func (diff *Difficulty) GetScoreMultiplierV1() float64 {
 	baseMultiplier := (diff.Mods & (^(HalfTime | Daycore | DoubleTime | Nightcore | Flashlight))).GetScoreMultiplier()
 
 	if diff.Mods.Active(Lazer) {
@@ -427,6 +437,77 @@ func (diff *Difficulty) GetScoreMultiplier() float64 {
 		}
 
 		baseMultiplier *= mult
+	}
+
+	return baseMultiplier
+}
+
+func (diff *Difficulty) GetScoreMultiplierV2() float64 {
+	baseMultiplier := diff.Mods.GetScoreMultiplierV2()
+
+	if diff.CheckModActive(Easy) {
+		mult := 0.8
+
+		if ez, ok := GetModConfig[EasySettings](diff); ok {
+			mult = max(0.4, mult-max(0, 0.1*float64(ez.Retries-NewEasySettings().Retries)))
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.Mods.Active(HalfTime | Daycore) {
+		baseMultiplier *= math.Floor(diff.Speed*20)/20*1.4 - 0.5
+	} else if diff.Mods.Active(DoubleTime | Nightcore) {
+		value := math.Floor(diff.Speed*10) / 10
+		penalty := 0.0
+
+		if value != 1.5 && value != 1.0 {
+			penalty = 0.01
+		}
+
+		baseMultiplier *= (value-1)*0.46 + 1 - penalty
+	}
+
+	if diff.CheckModActive(Hidden) {
+		baseMultiplier *= 1.04
+	}
+
+	if diff.CheckModActive(Flashlight) {
+		mult := 1.2
+
+		if fl, ok := GetModConfig[FlashlightSettings](diff); ok {
+			mult = mutils.Clamp(1.2-0.2*(fl.SizeMultiplier-1), 1.02, 1.2)
+
+			if !fl.ComboBasedSize {
+				mult = 1 + (mult-1)/5
+			}
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.CheckModActive(Classic) {
+		mult := 0.985
+
+		if cl, ok := GetModConfig[ClassicSettings](diff); ok && !cl.ClassicNoteLock {
+			mult = 0.96
+		}
+
+		baseMultiplier *= mult
+	}
+
+	if diff.CheckModActive(DifficultyAdjust) {
+		da := NewDiffAdjustSettings(diff.baseAR, diff.baseCS, diff.baseHP, diff.baseOD)
+		if conf, ok := GetModConfig[DiffAdjustSettings](diff); ok {
+			da = conf
+		}
+
+		csMultiplier := max(0.1, 1-math.Abs(da.CircleSize-diff.baseCS)*0.5)
+		hpMultiplier := max(0.1, 1-math.Abs(da.DrainRate-diff.baseHP)*0.5)
+		odMultiplier := max(0.1, 1-math.Abs(da.OverallDifficulty-diff.baseOD)*0.5)
+		arMultiplier := max(0.1, 1-math.Abs(da.ApproachRate-diff.baseAR)*0.5)
+
+		baseMultiplier *= max(0.1, csMultiplier*hpMultiplier*odMultiplier*arMultiplier)
 	}
 
 	return baseMultiplier

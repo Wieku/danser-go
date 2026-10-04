@@ -148,6 +148,8 @@ func (controller *ReplayController) SetBeatMap(beatMap *beatmap.BeatMap) {
 			control.modifiedMods = true
 		}
 
+		control.diff.ScoreVersion = replay.OsuVersion
+
 		log.Println("\tMods:", control.diff.GetModString())
 
 		loadFrames(control, replay.ReplayData)

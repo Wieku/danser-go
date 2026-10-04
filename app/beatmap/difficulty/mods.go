@@ -211,6 +211,32 @@ func (mods Modifier) GetScoreMultiplier() float64 {
 	return multiplier
 }
 
+func (mods Modifier) GetScoreMultiplierV2() float64 {
+	multiplier := 1.0
+
+	if mods&NoFail > 0 {
+		multiplier *= 0.5
+	}
+
+	if mods&HardRock > 0 {
+		multiplier *= 1.09
+	}
+
+	if mods&Traceable > 0 {
+		multiplier *= 1.02
+	}
+
+	if (mods&Relax | mods&Relax2) > 0 {
+		multiplier *= 0.1
+	}
+
+	if mods&SpunOut > 0 {
+		multiplier *= 0.95
+	}
+
+	return multiplier
+}
+
 func (mods Modifier) String() (s string) {
 	if mods.Active(Nightcore) {
 		mods &= ^DoubleTime
