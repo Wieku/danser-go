@@ -227,7 +227,7 @@ func (diffCalc *DifficultyCalculator) GetVersion() int {
 }
 
 func (diffCalc *DifficultyCalculator) GetVersionMessage() string {
-	return "Not yet released 2026 changes"
+	return "2026-07-06: https://osu.ppy.sh/home/news/2026-07-03-performance-points-star-rating-updates"
 }
 
 func calculateStarRating(basePerformance float64) float64 {
