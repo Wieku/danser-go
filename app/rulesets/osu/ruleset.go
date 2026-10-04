@@ -755,7 +755,8 @@ func (set *OsuRuleSet) failInternal(player *difficultyPlayer) {
 		return
 	}
 
-	if !subSet.replayEnded && player.diff.CheckModActive(difficulty.NoFail|difficulty.Relax|difficulty.Relax2) {
+	if !subSet.replayEnded && (player.diff.CheckModActive(difficulty.NoFail) ||
+		(!player.diff.CheckModActive(difficulty.Lazer) && player.diff.CheckModActive(difficulty.Relax|difficulty.Relax2))) {
 		return
 	}
 

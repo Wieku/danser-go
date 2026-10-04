@@ -244,7 +244,23 @@ func (controller *ReplayController) getCandidates() (candidates []*rplpa.Replay)
 			return
 		}
 
-		if !difficulty.Modifier(replayD.Mods).Compatible() || difficulty.Modifier(replayD.Mods).Active(difficulty.Target) {
+		mods := difficulty.Modifier(replayD.Mods)
+		if replayD.OsuVersion >= 30000000 {
+			if replayD.ScoreInfo != nil && len(replayD.ScoreInfo.Mods) > 0 {
+				modsNew := make([]rplpa.ModInfo, 0, len(replayD.ScoreInfo.Mods))
+				for _, mod := range replayD.ScoreInfo.Mods {
+					modsNew = append(modsNew, *mod)
+				}
+
+				diff := difficulty.NewDifficulty(1, 1, 1, 1)
+				diff.SetMods2(modsNew)
+				mods = diff.Mods
+			}
+
+			mods |= difficulty.Lazer
+		}
+
+		if !mods.Compatible() {
 			log.Println("Excluding for incompatible mods:", replayD.Username)
 			return
 		}

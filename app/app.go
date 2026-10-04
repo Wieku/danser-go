@@ -258,8 +258,8 @@ func run() {
 			modsParsed = tempDiff.Mods
 		}
 
-		if !modsParsed.Compatible() {
-			panic("Incompatible mods selected!")
+		if incompatibleMods := modsParsed.GetIncompatibleCombo(); incompatibleMods != difficulty2.None {
+			panic(fmt.Errorf("Incompatible mods selected: %s", strings.Join(incompatibleMods.StringFull(), ", ")))
 		}
 
 		closeAfterSettingsLoad := false
