@@ -643,10 +643,6 @@ func (player *Player) trySetupFail() {
 }
 
 func (player *Player) Update(delta float64) bool {
-	// Due to no device/system delays etc during recording, music is late compared to hitobjects, so we need to delay it a bit.
-	// 50ms seems good enuf from limited testing.
-	const recordingDelay = 50
-
 	speed := 1.0
 
 	if player.musicPlayer.GetState() == bass.MusicPlaying {
@@ -662,7 +658,7 @@ func (player *Player) Update(delta float64) bool {
 		oldOffset = 24
 	}
 
-	player.progressMsF = player.rawPositionF - oldOffset - float64(settings.LOCALOFFSET) - player.onlineOffset - recordingDelay
+	player.progressMsF = player.rawPositionF - oldOffset - float64(settings.LOCALOFFSET) - player.onlineOffset
 
 	player.updateMain(delta)
 
