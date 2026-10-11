@@ -40,7 +40,8 @@ func Init(offscreen bool) {
 	C.BASS_SetConfig(C.BASS_CONFIG_DEV_NONSTOP, C.DWORD(1))
 
 	// Worse time resolution but lower latency with DirectSound
-	C.BASS_SetConfig(C.BASS_CONFIG_VISTA_TRUEPOS, C.DWORD(0))
+	// BASS_CONFIG_VISTA_TRUEPOS
+	C.BASS_SetConfig(C.DWORD(30), C.DWORD(0))
 
 	// Smaller stream buffer length, reduces latency
 	C.BASS_SetConfig(C.BASS_CONFIG_BUFFER, C.DWORD(playbackBufferLength))
